@@ -140,7 +140,8 @@ let private initialize
     }
 
 type Fixture() =
-    let directory = FixtureFiles.directory ()
+    let ownedDirectory = FixtureCleanup.OwnedDirectory()
+    let directory = ownedDirectory.Path
     let root = ClaimCore.TestSupport.RepositoryRoot.find ()
     let postgres = database (Guid.NewGuid().ToString("N"))
     let origin = "https://localhost:" + string (FixtureFiles.port ())
@@ -246,6 +247,7 @@ type Fixture() =
                         postgres.DisposeAsync().AsTask().GetAwaiter().GetResult()
                         http.Dispose()
                         certificate.Dispose()
+                        ownedDirectory.RemoveGenerated directory
 
                         if completed then
                             Directory.Delete(directory, true)

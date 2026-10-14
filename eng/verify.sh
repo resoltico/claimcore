@@ -42,7 +42,7 @@ tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj SET-IN-
 tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj SET-IN-WP15
 npm --prefix web run build
 # Published acceptance owns the fresh service and runs all three browser engines.
-tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 13 Release 40m
+tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 16 Release 40m
 
 platform="$(uname -s)"
 echo "complete gate passed on ${platform}"

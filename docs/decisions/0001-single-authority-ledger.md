@@ -1297,3 +1297,41 @@ claimed without a reproducing failure. CI qualification of this follow-up remain
 Process deviation: pushed WP12 commit a18d178 was amended to e08f332 and force-updated
 with an exact lease. The pack forbids rewriting pushed history; this was a mistake, not
 an authorized design correction. Subsequent repairs use new commits and preserve history.
+
+### Fixture efficiency and discoverable controls
+
+Parallel campaign follow-up measured21 retained acceptance directories:360,926,758logical
+bytes/366,751,744allocated;357,114,151bytes were reproducible published/build outputs.
+Preserved every existing directory. Newly constructed OwnedDirectory now removes only five
+fixed generated trees after teardown, even on failure; logs and useful failure evidence stay.
+Another root or a redirected generated tree refuses before deletion. Synthetic controls prove
+removal, retained logs and outside evidence. Reports, browser/Docker/cache storage and aggregate
+retention across reruns remain outside this cleanup guarantee; no total disk cap is claimed.
+
+Batched the same nine ordered authority setup frames through one owner-authenticated published
+CLI session, retaining exit0,stderr0,exact reply count and every APPLIED assertion. This removes
+32 repeated setup PKCE launches across four fixtures, not accepted writes or boundary coverage.
+Removed the unused role-fixture CLOSE preview/identity; case opens and all authorization/read
+assertions remain. No campaign ran and no controlled wall-time speedup is claimed.
+
+The first complete rerun executed14 tests against the required15 floor: all14 passed but
+exit9 rejected qualification. The missing control was annotated in an internal module that
+Expecto does not discover. Moved it to public CliSetupTests and strengthened the shared guard:
+attributed or public static Test properties, and public Test fields, require visible declaring
+types/public static access/TestsAttribute. Compiled hidden-type/private-getter controls reject.
+An initial expanded scan falsely treated private F#StartupCode storage fields as entries
+(243/244 passed,exit2). Scoped the guard to supported entry values; no name whitelist or IL
+parser remains. The compiled controls and actual Release/Debug assemblies prove both directions.
+
+Final complete command dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj
+ --configuration Release --no-build --no-restore --minimum-expected-tests=16 --zero-tests-policy=strict
+ --timeout=40m -- --settings="$PWD/eng/expecto.runsettings", with the owned1.64 browser path,
+passed16/16,failed0/skipped0,19m30.990s. All3×229 cases and CLI readback completed.
+Current full core244/244(12.529s), Debug architecture28/28(11.029s), PostgreSQL79/79(116.993s),
+Web67/67(60.187s) passed; solution Release/Debug builds had0warnings/errors; full format/FSharpLint
+passed. Frontend181/181(7.78s), types and lint passed. The WP13-specific core/documentation and
+architecture additions are recorded separately and are not yet part of this fixture commit.
+
+All nine commands in examples/README were additionally run literally via /bin/bash against a
+fresh owned published fixture; each printed exit0/stderr0/ACCEPTED, and both containers were
+removed. Original evaluation containers remain healthy/untouched.

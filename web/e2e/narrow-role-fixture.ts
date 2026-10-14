@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Page } from "@playwright/test";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
-import { openCase, startCommand, prepare, returnToCase } from "./case-workflow";
+import { openCase } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
 
 export type NarrowRole = "CASE_READER" | "CASE_EDITOR" | "DATA_STEWARD";
@@ -14,12 +14,9 @@ export const prepareRoleFixture = async (page: Page) => {
   await openCase(page, unrelated);
   await page.getByRole("button", { name: "Cases", exact: true }).click();
   await openCase(page, reference);
-  await startCommand(page, "Close the case");
-  const identity = await prepare(page);
-  await returnToCase(page);
   const inventory = await syntheticPrincipals();
   const principal = { kind: "HUMAN", issuer: inventory.issuer, subject: inventory.stewardSubject };
-  return { reference, unrelated, identity, principal };
+  return { reference, unrelated, principal };
 };
 
 const setGrant = (

@@ -81,10 +81,8 @@ let principal (fixture: PublishedFixture.Fixture) kind subject =
 
 let installation = {| ``type`` = "INSTALLATION" |}
 
-let grant fixture target role =
-    human
-        fixture
-        "synthetic-owner"
+let private grantFrame target role =
+    frame
         "authority.setGrant"
         {|
             eventId = id ()
@@ -93,32 +91,62 @@ let grant fixture target role =
             scope = installation
             active = true
         |}
+
+let grant fixture target role =
+    run
+        fixture
+        (interactiveEnvironment fixture "synthetic-owner" "valid")
+        (grantFrame target role)
         0
     |> require "APPLIED"
     |> ignore
 
-let setup fixture =
-    for kind, subject, role in
+let private setupFrames fixture =
+    let registrations =
         [
             "SERVICE", "service", "CASE_EDITOR"
             "HUMAN", IdentityRealm.stewardSubject, "DATA_STEWARD"
             "HUMAN", IdentityRealm.readerSubject, "CASE_READER"
             "HUMAN", IdentityRealm.editorSubject, "CASE_EDITOR"
-        ] do
-        let target = principal fixture kind subject
+        ]
+        |> List.collect (fun (kind, subject, role) ->
+            let target = principal fixture kind subject
 
-        human
-            fixture
-            "synthetic-owner"
-            "authority.register"
-            {|
-                eventId = id ()
-                principal = target
-            |}
-            0
-        |> require "APPLIED"
-        |> ignore
+            [
+                frame
+                    "authority.register"
+                    {|
+                        eventId = id ()
+                        principal = target
+                    |}
+                grantFrame target role
+            ])
 
-        grant fixture target role
+    registrations
+    @ [
+        grantFrame (principal fixture "HUMAN" IdentityRealm.ownerSubject) "CASE_EDITOR"
+    ]
 
-    grant fixture (principal fixture "HUMAN" IdentityRealm.ownerSubject) "CASE_EDITOR"
+let internal requireAppliedReplies expected (result: ProcessRunner.Result) =
+    Expect.equal result.ExitCode 0 "Published CLI session exit"
+    Expect.equal result.StandardError.Length 0 "No private diagnostics"
+    let lines = UTF8Encoding(false, true).GetString(result.StandardOutput).Split('\n')
+    Expect.equal lines[lines.Length - 1] "" "Every reply ends with a newline"
+    Expect.equal (lines.Length - 1) expected "One reply for every authority frame"
+
+    for line in lines[.. lines.Length - 2] do
+        use document = JsonDocument.Parse(line)
+        document.RootElement |> require "APPLIED" |> ignore
+
+let setup fixture =
+    let frames = setupFrames fixture
+
+    let source =
+        frames
+        |> List.map (fun value -> Array.append value [| byte '\n' |])
+        |> Array.concat
+
+    let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
+
+    ProcessRunner.dotnet 90_000 fixture.Cli [ "session" ] environment (Some source)
+    |> requireAppliedReplies frames.Length

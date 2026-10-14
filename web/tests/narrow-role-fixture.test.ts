@@ -3,9 +3,6 @@ import { expect, it, vi, beforeEach } from "vitest";
 vi.mock("../e2e/session-helpers", () => ({ openAuthenticated: vi.fn() }));
 vi.mock("../e2e/case-workflow", () => ({
   openCase: vi.fn(),
-  startCommand: vi.fn(),
-  preview: vi.fn(),
-  keepForRecovery: vi.fn(),
 }));
 vi.mock("../e2e/authority-setup", () => ({
   applyAuthority: vi.fn(),
@@ -18,7 +15,6 @@ import type { Page } from "@playwright/test";
 const fixture: RoleFixture = {
   reference: "SYNTHETIC-NARROW",
   unrelated: "SYNTHETIC-UNRELATED",
-  identity: { operationId: "10000000-0000-4000-8000-000000000001", requestSha256: "a".repeat(64) },
   principal: {
     kind: "HUMAN",
     issuer: "https://identity.example.test",

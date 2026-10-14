@@ -8,30 +8,50 @@ open System.Text.Json
 open System.Xml.Linq
 open Expecto
 
+let private publicStatic (value: MemberInfo) =
+    match value with
+    | :? PropertyInfo as property ->
+        match property.GetGetMethod true with
+        | null -> false
+        | getter -> getter.IsPublic && getter.IsStatic
+    | :? FieldInfo as field -> field.IsPublic && field.IsStatic
+    | _ -> false
+
+let private testMembers (subject: Type) =
+    let flags =
+        BindingFlags.Public
+        ||| BindingFlags.NonPublic
+        ||| BindingFlags.Static
+        ||| BindingFlags.Instance
+        ||| BindingFlags.DeclaredOnly
+
+    let properties =
+        subject.GetProperties flags
+        |> Array.filter (fun value ->
+            value.PropertyType = typeof<Test>
+            && (value.IsDefined(typeof<TestsAttribute>, false) || publicStatic value))
+        |> Array.map (fun value -> value :> MemberInfo)
+
+    // Private fields are storage/helpers, not the runner's supported public field entrypoints.
+    let fields =
+        subject.GetFields flags
+        |> Array.filter (fun value -> value.FieldType = typeof<Test> && value.IsPublic)
+        |> Array.map (fun value -> value :> MemberInfo)
+
+    Array.append properties fields
+
 let undiscoveredTests (assembly: Assembly) =
     assembly.GetTypes()
-    |> Array.collect (fun subject ->
-        let flags = BindingFlags.Public ||| BindingFlags.Static
-
-        let properties =
-            subject.GetProperties flags
-            |> Array.filter (fun value -> value.PropertyType = typeof<Test>)
-            |> Array.map (fun value -> value :> MemberInfo)
-
-        let fields =
-            subject.GetFields flags
-            |> Array.filter (fun value -> value.FieldType = typeof<Test>)
-            |> Array.map (fun value -> value :> MemberInfo)
-
-        let name =
-            subject.FullName
-            |> Option.ofObj
-            |> Option.defaultWith (fun () ->
-                invalidOp "A reflected test type must have a full name.")
-
-        Array.append properties fields
-        |> Array.filter (fun value -> not (value.IsDefined(typeof<TestsAttribute>, false)))
-        |> Array.map (fun value -> name + "." + value.Name))
+    |> Array.collect testMembers
+    |> Array.filter (fun value ->
+        not (
+            (value.DeclaringType |> nonNull).IsVisible
+            && publicStatic value
+            && value.IsDefined(typeof<TestsAttribute>, false)
+        ))
+    |> Array.map (fun value ->
+        let name = (value.DeclaringType |> nonNull).FullName |> nonNull
+        name + "." + value.Name)
 
 let requiredAttribute name (item: XElement) =
     match item.Attribute(XName.Get name) with

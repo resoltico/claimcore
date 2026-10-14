@@ -77,8 +77,7 @@ for (const [name, role, scoped] of cases) {
     page,
     browser,
   }) => {
-    const fixture = await test.step("Create owner cases and review", () =>
-      prepareRoleFixture(page));
+    const fixture = await test.step("Create owner cases", () => prepareRoleFixture(page));
     const context = await browser.newContext({
       baseURL: new URL(page.url()).origin,
       ignoreHTTPSErrors: true,

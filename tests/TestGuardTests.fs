@@ -43,6 +43,71 @@ let private unattributedFixture () =
     subject.CreateType() |> ignore
     assembly :> Assembly
 
+let private emittedProperty (subject: TypeBuilder) name visibility attribute =
+    let getter =
+        subject.DefineMethod(
+            "get_" + name,
+            visibility ||| MethodAttributes.Static ||| MethodAttributes.SpecialName,
+            typeof<Test>,
+            Type.EmptyTypes
+        )
+
+    let body = getter.GetILGenerator()
+
+    body.Emit OpCodes.Ldnull
+    body.Emit OpCodes.Ret
+
+    let property =
+        subject.DefineProperty(name, PropertyAttributes.None, typeof<Test>, Type.EmptyTypes)
+
+    property.SetGetMethod getter
+    attribute |> Option.iter property.SetCustomAttribute
+
+let private emittedField (subject: TypeBuilder) name visibility attribute =
+    let field =
+        subject.DefineField(name, typeof<Test>, visibility ||| FieldAttributes.Static)
+
+    attribute |> Option.iter field.SetCustomAttribute
+    field
+
+let private invisibleFixture () =
+    let assembly =
+        AssemblyBuilder.DefineDynamicAssembly(
+            AssemblyName("InvisibleTestFixture"),
+            AssemblyBuilderAccess.RunAndCollect
+        )
+
+    let code = assembly.DefineDynamicModule("Fixture")
+
+    let attribute =
+        CustomAttributeBuilder(
+            typeof<TestsAttribute>.GetConstructor(Type.EmptyTypes) |> nonNull,
+            [||]
+        )
+
+    let hidden = code.DefineType("HiddenFixture", TypeAttributes.NotPublic)
+    emittedProperty hidden "annotatedProperty" MethodAttributes.Public (Some attribute)
+
+    emittedField hidden "annotatedField" FieldAttributes.Public (Some attribute)
+    |> ignore
+
+    hidden.CreateType() |> ignore
+    let visible = code.DefineType("VisibleFixture", TypeAttributes.Public)
+    emittedProperty visible "privateProperty" MethodAttributes.Private (Some attribute)
+
+    emittedField visible "privateStorage" FieldAttributes.Private (Some attribute)
+    |> ignore
+
+    emittedProperty visible "helper" MethodAttributes.Private None
+    emittedField visible "backingField" FieldAttributes.Private None |> ignore
+    emittedProperty visible "discoveredProperty" MethodAttributes.Public (Some attribute)
+
+    emittedField visible "discoveredField" FieldAttributes.Public (Some attribute)
+    |> ignore
+
+    visible.CreateType() |> ignore
+    assembly :> Assembly
+
 let private withProject action =
     let directory =
         Path.Combine(Path.GetTempPath(), "claimcore-source-guard-" + Guid.NewGuid().ToString("N"))
@@ -86,6 +151,16 @@ let tests =
                     (unattributedFixture () |> TestGuards.undiscoveredTests)
                     [| "Fixture.unregistered"; "Fixture.missing" |]
                     "The guard detects a value the runner would miss")
+            testCase "annotated test properties and public fields must be discoverable" (fun () ->
+                Expect.equal
+                    (invisibleFixture () |> TestGuards.undiscoveredTests |> Set.ofArray)
+                    (set
+                        [
+                            "HiddenFixture.annotatedProperty"
+                            "HiddenFixture.annotatedField"
+                            "VisibleFixture.privateProperty"
+                        ])
+                    "Hidden public values and private annotated getters refuse; private fields are storage, not public test entrypoints")
             testCase "every solution project's source is compiled and exists" (fun () ->
                 for project in projects () do
                     let uncompiled, missing = membership project

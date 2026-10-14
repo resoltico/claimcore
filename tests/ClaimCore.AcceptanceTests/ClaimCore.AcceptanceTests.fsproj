@@ -7,6 +7,7 @@
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="ProcessRunner.fs" />
     <Compile Include="FixtureFiles.fs" />
+    <Compile Include="FixtureCleanup.fs" />
     <Compile Include="IdentityRealm.fs" />
     <Compile Include="IdentityServer.fs" />
     <Compile Include="PublishedProcesses.fs" />
@@ -14,6 +15,7 @@
     <Compile Include="HttpsProxy.fs" />
     <Compile Include="PublishedFixture.fs" />
     <Compile Include="CliCalls.fs" />
+    <Compile Include="CliSetupTests.fs" />
     <Compile Include="DifferentClient.fs" />
     <Compile Include="PublishedAssets.fs" />
     <Compile Include="RejectedDrafts.fs" />
