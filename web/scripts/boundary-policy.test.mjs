@@ -26,7 +26,7 @@ const stateFiles = [
   "src/api/outcomes.ts",
   "src/domain/operationReducer.ts",
   "src/hooks/useOperation.ts",
-  "src/views/recovery/RecoveryState.ts",
+  "src/hooks/operation/operationDelivery.ts",
 ];
 
 /** @param {string} path @param {string[]} codes @param {boolean} expectViolation */
@@ -45,7 +45,11 @@ for (const path of ["src/App.tsx", ...stateFiles]) {
 }
 
 test("only the validated API module may use browser networking", async () => {
-  await assertEach("src/api/v3.ts", ['fetch("/api");', "new WebSocket('wss://localhost');"], false);
+  await assertEach(
+    "src/api/service.ts",
+    ['fetch("/api");', "new WebSocket('wss://localhost');"],
+    false,
+  );
   await assertEach("src/api/outcomes.ts", ['fetch("/api");'], true);
 });
 
@@ -58,7 +62,7 @@ for (const path of stateFiles) {
 
 test("presentation code may use locale access and the validated API keeps its network ownership", async () => {
   await assertEach("src/presentation/format.ts", ["new Intl.NumberFormat();"], false);
-  await assertEach("src/api/v3.ts", localeCode.slice(3), true);
+  await assertEach("src/api/service.ts", localeCode.slice(3), true);
 });
 
 test("ordinary local identifiers are not falsely rejected", async () => {

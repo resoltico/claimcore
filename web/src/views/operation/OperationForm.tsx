@@ -5,7 +5,7 @@ import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
 import type { RefObject } from "react";
-import type { CurrentCase, PublicDefinition } from "../../api/v3";
+import type { CurrentCase, PublicDefinition } from "../../api/service";
 import { DescriptorField } from "../../components/DescriptorField";
 import {
   correctionGroupName,
@@ -19,7 +19,7 @@ type OperationFormProps = {
   current: CurrentCase | null;
   model: OperationEditorModel;
   onClose: () => void;
-  prepareButtonRef: RefObject<HTMLButtonElement | null>;
+  previewButtonRef: RefObject<HTMLButtonElement | null>;
 };
 
 const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
@@ -44,7 +44,7 @@ const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
       <select
         id="command-picker"
         value={model.state.command}
-        disabled={!model.canPrepare}
+        disabled={!model.canPreview}
         onChange={(event) => {
           change(event.target.value);
         }}
@@ -66,7 +66,7 @@ const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "mod
       <DescriptorField
         field={model.referenceField}
         value={model.state.caseReference}
-        disabled={!model.canPrepare}
+        disabled={!model.canPreview}
         error={
           model.state.fieldError?.name === model.referenceField.name
             ? model.state.fieldError.message
@@ -99,7 +99,7 @@ const AuthoringFields = ({ model }: Pick<OperationFormProps, "model">) => {
           key={field.name}
           field={field}
           value={values[field.name] ?? ""}
-          disabled={!model.canPrepare}
+          disabled={!model.canPreview}
           error={
             model.state.fieldError?.name === field.name ? model.state.fieldError.message : undefined
           }
@@ -130,7 +130,7 @@ const ReplacementFields = ({
       field={field}
       inputName={`${name}.${field.name}`}
       value={values[field.name] ?? ""}
-      disabled={!model.canPrepare}
+      disabled={!model.canPreview}
       error={
         model.state.fieldError?.name === field.name ||
         model.state.fieldError?.name === `${name}.${field.name}`
@@ -171,7 +171,7 @@ const CorrectionGroup = ({
         name={name}
         mode={value.mode}
         actions={actions}
-        locked={!model.canPrepare}
+        locked={!model.canPreview}
         error={
           model.state.fieldError?.name === name || model.state.fieldError?.name === `${name}.action`
             ? model.state.fieldError.message
@@ -212,17 +212,16 @@ const Actions = ({
   current,
   model,
   onClose,
-  prepareButtonRef,
-}: Pick<OperationFormProps, "current" | "model" | "onClose" | "prepareButtonRef">) => {
+  previewButtonRef,
+}: Pick<OperationFormProps, "current" | "model" | "onClose" | "previewButtonRef">) => {
   const p = usePresentation();
   return (
     <div className="actions">
-      <Button ref={prepareButtonRef} type="submit" isDisabled={!model.canPrepare}>
-        {model.state.delivery === "PREPARING" ? p.text("ui.preparing") : p.text("ui.prepareExact")}
+      <Button ref={previewButtonRef} type="submit" isDisabled={!model.canPreview}>
+        {model.state.delivery === "PREVIEWING"
+          ? p.text("ui.previewing")
+          : p.text("ui.previewOperation")}
       </Button>
-      {model.state.delivery === "PREPARATION_UNKNOWN" ? (
-        <Button onPress={() => void model.prepare()}>{p.text("ui.retryPrepare")}</Button>
-      ) : null}
       <Button className="secondary-button" onPress={onClose} isDisabled={model.locked}>
         {p.text(current === null ? "ui.backToCases" : "ui.backToCase")}
       </Button>
@@ -234,12 +233,12 @@ export const OperationForm = ({
   current,
   model,
   onClose,
-  prepareButtonRef,
+  previewButtonRef,
 }: OperationFormProps) => (
   <Form
     onSubmit={(event) => {
       event.preventDefault();
-      void model.prepare();
+      void model.preview();
     }}
   >
     <Reference current={current} model={model} />
@@ -255,7 +254,7 @@ export const OperationForm = ({
       current={current}
       model={model}
       onClose={onClose}
-      prepareButtonRef={prepareButtonRef}
+      previewButtonRef={previewButtonRef}
     />
   </Form>
 );

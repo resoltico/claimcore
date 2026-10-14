@@ -4,7 +4,6 @@ open System.IO
 open System.Text
 open System.Text.Json
 open Expecto
-open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
@@ -60,11 +59,7 @@ let private commandVectors =
             let request = expectedRequests[text vector "command"]
 
             Expect.isTrue
-                (RequestRecord.decode
-                    SemanticContract.current.RequestByteLimit
-                    (Encoding.UTF8.GetBytes canonical)
-                    =
-                    Ok request)
+                (RequestRecord.decode 65536 (Encoding.UTF8.GetBytes canonical) = Ok request)
                 "Decoded fields match independently constructed command meaning"
 
             let actual = request |> RequestRecord.encode |> Encoding.UTF8.GetString
@@ -73,7 +68,12 @@ let private commandVectors =
                 (actual = canonical)
                 "Canonical format matches its independent fixed golden bytes"
 
-            let fingerprint = request |> Operation.prepare |> accepted |> Operation.fingerprint
+            let fingerprint =
+                request
+                |> RequestRecord.encode
+                |> LedgerEntry.requestDigest
+                |> System.Convert.ToHexStringLower
+
             Expect.equal fingerprint (text vector "sha256") "Fixed independently computed identity")
 
 let private snapshotVector =
@@ -176,6 +176,7 @@ let private correctionRecord =
                 (RequestRecord.decode 65536 (Encoding.UTF8.GetBytes incomplete))
                 "Every group is required")
 
+[<Tests>]
 let tests =
     testList
         "current identity and durable encoding"

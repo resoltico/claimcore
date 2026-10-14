@@ -18,13 +18,12 @@ let private write outputDirectory (artifact: Artifact) =
 let main arguments =
     let output = outputDirectory arguments
     Directory.CreateDirectory(output) |> ignore
-    let projection = ContractProjection.current ()
-    let artifacts = ContractArtifacts.all projection
+    let artifacts = ContractArtifacts.all ()
     artifacts |> List.iter (write output)
 
     File.WriteAllBytes(
         Path.Combine(output, "contracts-manifest.json"),
-        ContractArtifacts.manifest artifacts projection
+        ContractArtifacts.manifest artifacts
     )
 
     0

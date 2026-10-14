@@ -14,7 +14,7 @@ module internal OidcTrustRoot =
             WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
 
         let pem =
-            match PrivateFileService.readUtf8Text 32768 path with
+            match PrivateInputs.text 32768 path with
             | Ok value -> value
             | Error _ -> invalid ()
 

@@ -5,8 +5,8 @@ import {
   seedPresentation,
   selectLanguage,
   pauseJsonReply,
-  preparedFrom,
-  confirmPrepared,
+  reviewFrom,
+  confirmReview,
   noHorizontalOverflow,
   trackRequests,
 } from "./localization-support";
@@ -28,13 +28,13 @@ const startPseudo = async (page: Page) => {
   for (const [name, value] of Object.entries(values)) {
     await page.locator(`input[name="${name}"]`).fill(value);
   }
-  const pending = await pauseJsonReply(page, "command.prepare");
+  const pending = await pauseJsonReply(page, "command.preview");
   await page.locator('.operation-editor button[type="submit"]').click();
   const captured = await pending.ready;
-  const identity = preparedFrom(captured.reply);
+  const identity = reviewFrom(captured.reply, captured.bytes);
   pending.release();
   await expect(page.getByRole("dialog")).toContainText(identity.requestSha256);
-  await confirmPrepared(page);
+  await confirmReview(page);
   return { values, identity };
 };
 

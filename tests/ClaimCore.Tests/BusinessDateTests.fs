@@ -197,4 +197,5 @@ let private corrections =
             spellingDoesNotRevise
         ]
 
+[<Tests>]
 let tests = testList "business date assertions" [ ordinary; corrections ]

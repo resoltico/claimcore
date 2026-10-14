@@ -33,7 +33,15 @@ module PrincipalKey =
 
     let private identifier maximum value =
         if not (String.IsNullOrWhiteSpace value) && value.Length <= maximum then
-            Ok value
+            try
+                Text.UTF8Encoding(false, true).GetByteCount(value) |> ignore
+
+                if value.Contains('\u0000') then
+                    Error "ACTOR_IDENTITY_INVALID"
+                else
+                    Ok value
+            with :? Text.EncoderFallbackException ->
+                Error "ACTOR_IDENTITY_INVALID"
         else
             Error "ACTOR_IDENTITY_INVALID"
 
@@ -69,10 +77,23 @@ type Role =
     | Owner
     | CaseReader
     | CaseEditor
-    | RecoveryOperator
-    | RecoveryExporter
-    | AuditorCustodian
     | DataSteward
+    | Auditor
+
+module Roles =
+    let all =
+        [ Role.Owner; Role.CaseReader; Role.CaseEditor; Role.DataSteward; Role.Auditor ]
+
+    let token =
+        function
+        | Role.Owner -> "OWNER"
+        | Role.CaseReader -> "CASE_READER"
+        | Role.CaseEditor -> "CASE_EDITOR"
+        | Role.DataSteward -> "DATA_STEWARD"
+        | Role.Auditor -> "AUDITOR"
+
+    let tryParse value =
+        all |> List.tryFind (token >> (=) value)
 
 [<RequireQualifiedAccess>]
 type GrantScope =
@@ -81,57 +102,15 @@ type GrantScope =
 
 type ActorGrant = { Role: Role; Scope: GrantScope }
 
-/// A scoped, revisioned snapshot supplied by a trusted grant store. Constructing this value is
-/// not mutation authority: commit must re-read it under the grant and case locks.
 type ActorAuthority =
     {
         ActorId: Guid
         Principal: PrincipalKey
         Enabled: bool
-        GrantRevision: int64
         Grants: ActorGrant list
     }
 
-/// Exact witnessed actor/grant action; transport and storage encode this value canonically.
-type internal ActorAuthorityAction =
-    {
-        EventId: Guid
-        Revision: int64
-        ActionName: string
-        TargetActorId: Guid
-        ApproverActorId: Guid option
-        Principal: PrincipalKey option
-        Grant: ActorGrant option
-        Enabled: bool option
-    }
-
-/// A verified authority snapshot is carried explicitly through core and storage calls.
-/// A mutation must re-read this revision under its authoritative lock before COMMIT.
-type internal ActorBinding =
-    {
-        Principal: PrincipalKey
-        ActorId: Guid
-        GrantRevision: int64
-    }
-
-type internal CommandAuthority = { Actor: ActorBinding; CaseId: Guid }
-
 [<RequireQualifiedAccess>]
-type internal AttemptActorPhase =
-    | NormalSubmit
-    | RecoveryResolve
-
-type internal ExecutionAttribution =
-    {
-        Command: CommandAuthority
-        PreparerActorId: Guid
-        ImporterActorId: Guid option
-        Phase: AttemptActorPhase
-    }
-
-type internal RevocationActorEvidence =
-    {
-        CaseId: Guid
-        RevokingActorId: Guid
-        GrantRevision: int64
-    }
+type GrantTarget =
+    | Installation
+    | CaseReference of string

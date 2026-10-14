@@ -1,9 +1,8 @@
-import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
-import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
-import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
+import { isResponse } from "../src/generated/contracts/validation";
+import { endpoints } from "../src/generated/contracts/endpoint-catalog";
 import { browserRequest, progress, sessionToken } from "./session-helpers";
 
 type Principals = Readonly<{
@@ -50,7 +49,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const pathFor = (endpoint: ManagementEndpoint): string => {
-  const descriptor = webV3Endpoints.find((item) => item.id === endpoint);
+  const descriptor = endpoints.find((item) => item.id === endpoint);
   if (descriptor === undefined) {
     throw new Error("Synthetic authority endpoint is missing.");
   }
@@ -68,7 +67,7 @@ const call = async (page: Page, endpoint: ManagementEndpoint, body: object) => {
     body: JSON.stringify(body),
   });
   const { payload } = reply;
-  if (reply.status !== 200 || !(await isWebV3Response(endpoint, payload))) {
+  if (reply.status !== 200 || !(await isResponse(endpoint, payload))) {
     await progress(`authority-wire-${endpoint.replace(".", "-")}-${reply.status}`);
     throw new Error(`Synthetic authority ${endpoint} wire response is invalid.`);
   }
@@ -92,10 +91,10 @@ export const applyAuthority = async (
   body: Readonly<Record<string, unknown>> & { eventId: string },
 ) => {
   const tag = await call(page, endpoint, body);
-  if (tag === "APPLIED") {
+  if (tag === "APPLIED" || tag === "ALREADY_APPLIED") {
     return;
   }
-  if (tag !== "UNCONFIRMED") {
+  if (tag !== "OUTCOME_UNKNOWN") {
     throw new Error("Synthetic authority action was refused.");
   }
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -103,82 +102,9 @@ export const applyAuthority = async (
     if (observed === "APPLIED") {
       return;
     }
-    if (observed !== "UNCONFIRMED") {
+    if (observed !== "OUTCOME_UNKNOWN") {
       break;
     }
   }
   throw new Error("Synthetic authority completion remains unconfirmed.");
-};
-
-const grantService = async (page: Page, principal: object, scope: object): Promise<void> => {
-  await progress("authority-service-register-start");
-  await applyAuthority(page, "authority.register", { eventId: randomUUID(), principal });
-  await progress("authority-service-register-done");
-  for (const role of ["CASE_EDITOR", "RECOVERY_OPERATOR", "RECOVERY_EXPORTER"] as const) {
-    await progress(`authority-service-${role.toLowerCase().replaceAll("_", "-")}-start`);
-    await applyAuthority(page, "authority.setGrant", {
-      eventId: randomUUID(),
-      principal,
-      role,
-      scope,
-      active: true,
-    });
-    await progress(`authority-service-${role.toLowerCase().replaceAll("_", "-")}-done`);
-  }
-};
-
-const assertSession = async (page: Page): Promise<void> => {
-  const snapshot = await browserRequest(page, "/api/v3/session");
-  expect(snapshot.status).toBe(200);
-};
-
-export const grantSyntheticCasework = async (page: Page): Promise<void> => {
-  await progress("authority-principals-start");
-  let inventory: Principals;
-  try {
-    inventory = await syntheticPrincipals();
-  } catch {
-    await progress("authority-principals-invalid");
-    throw new Error("Synthetic principal inventory admission failed.");
-  }
-  await progress("authority-principals-ready");
-  const { issuer, ownerSubject, stewardSubject, serviceClientId } = inventory;
-  const owner = { kind: "HUMAN", issuer, subject: ownerSubject };
-  const steward = { kind: "HUMAN", issuer, subject: stewardSubject };
-  const service = { kind: "SERVICE", issuer, clientId: serviceClientId };
-  const scope = { kind: "INSTALLATION" };
-  await progress("authority-register-start");
-  await applyAuthority(page, "authority.register", { eventId: randomUUID(), principal: steward });
-  await progress("authority-register-done");
-  await progress("authority-steward-grant-start");
-  await applyAuthority(page, "authority.setGrant", {
-    eventId: randomUUID(),
-    principal: steward,
-    role: "DATA_STEWARD",
-    scope,
-    active: true,
-  });
-  await progress("authority-steward-grant-done");
-  await progress("authority-owner-editor-start");
-  await applyAuthority(page, "authority.setGrant", {
-    eventId: randomUUID(),
-    principal: owner,
-    role: "CASE_EDITOR",
-    scope,
-    active: true,
-  });
-  await progress("authority-owner-editor-done");
-  for (const role of ["RECOVERY_OPERATOR", "RECOVERY_EXPORTER"] as const) {
-    await progress(`authority-owner-${role.toLowerCase().replace("_", "-")}-start`);
-    await applyAuthority(page, "authority.setGrant", {
-      eventId: randomUUID(),
-      principal: owner,
-      role,
-      scope,
-      active: true,
-    });
-    await progress(`authority-owner-${role.toLowerCase().replace("_", "-")}-done`);
-  }
-  await grantService(page, service, scope);
-  await assertSession(page);
 };

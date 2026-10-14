@@ -17,10 +17,10 @@ import { renderedTokens, validateTokens } from "./localization-tokens.mjs";
 const root = resolve(import.meta.dirname, "../src");
 /** @param {string} path */
 const json = (path) => JSON.parse(readFileSync(resolve(root, path), "utf8"));
-const semantic = json("generated/contracts/semantic-core-v1.contract.json");
+const semantic = json("generated/contracts/semantic-core.contract.json");
 const requirements = diagnosticRequirements(
   semantic,
-  json("generated/contracts/web-v3.host-failure.schema.json"),
+  json("generated/contracts/host-failure.schema.json"),
 );
 /** @param {string} language @returns {Record<string, import("./localization-policy.mjs").Message>} */
 const catalog = (language) =>
@@ -53,15 +53,15 @@ test("runtime pseudolocalization preserves every generated pseudo AST and Englis
 
 test("every shipped real catalog covers the native metadata and diagnostic parameter vocabulary", () => {
   const en = catalog("en");
-  assert.ok(Object.keys(en).length > 300);
-  assert.ok(Object.keys(requirements).length > 100);
+  validateCoverage(en, semantic, requirements);
+  assert.ok(Object.hasOwn(requirements, "CORE_STORE_INTEGRITY_ERROR"));
   for (const language of ["en", "lv", "ar"]) {
     validateCatalog(en, catalog(language), language);
   }
   validateCoverage(en, semantic, requirements);
   const tokens = renderedTokens(
     semantic,
-    readFileSync(resolve(root, "generated/contracts/web-v3.types.recovery.ts"), "utf8"),
+    readFileSync(resolve(root, "generated/contracts/types.ts"), "utf8"),
   );
   validateTokens(en, tokens);
 });

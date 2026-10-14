@@ -2,18 +2,9 @@ namespace ClaimCore.Web
 
 open System
 open System.Collections.Generic
-open System.IO
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Authentication
 open Microsoft.AspNetCore.Authentication.Cookies
-open Microsoft.Win32.SafeHandles
-open ClaimCore.HostSecurity
-open ClaimCore.Contracts
-
-[<Sealed>]
-type StateDirectoryLease internal (handle: SafeFileHandle) =
-    interface IDisposable with
-        member _.Dispose() = handle.Dispose()
 
 [<NoEquality; NoComparison>]
 type private TicketEntry =
@@ -157,11 +148,3 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
         member _.RemoveAsync(key) =
             lock gate (fun () -> remove key)
             Task.CompletedTask
-
-module Security =
-    let acquireStateDirectory (stateDirectory: string) =
-        let path = Path.Combine(stateDirectory, ".claimcore-web.lock")
-
-        match PrivateFileService.openExclusive path with
-        | Ok stream -> new StateDirectoryLease(stream)
-        | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.StateLockRefused

@@ -3,7 +3,7 @@ import { createDraft } from "../src/domain/metadata";
 import { freezeRequest } from "../src/domain/operationRequest";
 import { initialOperation, operationReducer } from "../src/domain/operationReducer";
 import { firstId, secondId, refused, begin, reviewed } from "./operation-identity.fixtures";
-import { groupedCorrectionValues } from "./v3-foundation.fixtures";
+import { groupedCorrectionValues } from "./service-foundation.fixtures";
 
 it("detaches replacement group values so later authoring cannot change a frozen request", () => {
   const authored = {

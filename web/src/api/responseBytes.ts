@@ -19,7 +19,7 @@ export const responseBytes = async (
   signal.addEventListener("abort", cancelReader, { once: true });
   try {
     while (true) {
-      // oxlint-disable-next-line no-await-in-loop -- lint-exception: LX-0050
+      // oxlint-disable-next-line no-await-in-loop -- Consume one bounded stream in order.
       const { value, done } = await reader.read();
       if (signal.aborted) {
         throw new Error("Response consumption cancelled.");

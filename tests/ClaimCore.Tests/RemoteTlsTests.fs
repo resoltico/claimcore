@@ -86,6 +86,7 @@ let private rootValidityBoundaries () =
         (TlsCertificatePurpose.validRoot signed first.UtcDateTime)
         "Private roots refuse."
 
+[<Tests>]
 let tests =
     testList
         "CLI TLS trust"

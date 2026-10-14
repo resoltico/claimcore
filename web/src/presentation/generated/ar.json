@@ -44,94 +44,12 @@
   "command.REOPEN.meaning": [
     { "type": 0, "value": "تعيين حالة الملف إلى مفتوح مع الاحتفاظ ببقية الحقول والسجل." }
   ],
-  "diagnostic.INPUT_TEXT_REQUIRED": [{ "type": 0, "value": "يجب إدخال قيمة غير فارغة." }],
-  "diagnostic.INPUT_MALFORMED_UNICODE": [{ "type": 0, "value": "لا يُقبل Unicode غير السليم." }],
-  "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
-    { "type": 0, "value": "لا تُقبل المسافات في بداية القيمة أو نهايتها." }
-  ],
-  "diagnostic.INPUT_TEXT_TOO_SHORT": [
-    { "type": 0, "value": "يجب أن تحتوي القيمة على " },
-    { "type": 1, "value": "minimumCharacters" },
-    { "type": 0, "value": " محارف Unicode على الأقل." }
-  ],
-  "diagnostic.INPUT_TEXT_TOO_LONG": [
-    { "type": 0, "value": "يجب ألا تتجاوز القيمة " },
-    { "type": 1, "value": "maximumCharacters" },
-    { "type": 0, "value": " محارف Unicode." }
-  ],
-  "diagnostic.INPUT_CONTROL_CHARACTERS": [{ "type": 0, "value": "لا تُقبل محارف التحكم." }],
-  "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
-    { "type": 0, "value": "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD." }
-  ],
-  "diagnostic.INPUT_DATE_ORDER": [{ "type": 0, "value": "الترتيب الزمني للتواريخ غير صالح." }],
-  "diagnostic.INPUT_FUTURE_DATE": [
-    { "type": 0, "value": "لا يمكن استخدام تاريخ مستقبلي لتسجيل واقعة حدثت بالفعل." }
-  ],
-  "diagnostic.INPUT_DECIMAL_FORMAT": [
-    { "type": 0, "value": "استخدم نصًا عشريًا غير سالب: حتى " },
-    { "type": 1, "value": "maximumIntegerDigits" },
-    { "type": 0, "value": " رقمًا صحيحًا و" },
-    { "type": 1, "value": "maximumFractionalDigits" },
-    { "type": 0, "value": " أرقام كسرية؛ دون إشارة أو أس." }
-  ],
-  "diagnostic.INPUT_CURRENCY_FORMAT": [
-    { "type": 0, "value": "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة." }
-  ],
-  "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
-    { "type": 0, "value": "لا يمكن تمثيل المبلغ العشري بدقة." }
-  ],
-  "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [{ "type": 0, "value": "استخدم UUID غير فارغ." }],
-  "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
-    { "type": 0, "value": "استخدم مراجعة غير سالبة وأقل من Int64.MaxValue." }
-  ],
-  "diagnostic.STATE_STORED_REVISION_RANGE": [
-    { "type": 0, "value": "يجب أن تكون المراجعات المخزنة موجبة وأقل من Int64.MaxValue." }
-  ],
-  "diagnostic.STATE_REVISION_EXHAUSTED": [
-    { "type": 0, "value": "لا يمكن زيادة مراجعة الملف مع بقائها أقل من Int64.MaxValue." }
-  ],
-  "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
-    { "type": 0, "value": "الملف المحمّل لا يطابق هذا الأمر." }
-  ],
-  "diagnostic.STATE_TRANSITION_MISMATCH": [
-    { "type": 0, "value": "يوجد تعارض بين قيد الحالة وانتقال الدفع." }
-  ],
-  "diagnostic.INPUT_EXACT_FIELDS_REQUIRED": [
-    { "type": 0, "value": "قدّم كل حقل إدخال معلن للأمر مرة واحدة فقط، دون حقول إضافية." }
-  ],
-  "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
-    { "type": 0, "value": "قدّم مجموعات التصحيح الثلاث ذات الوسوم." }
-  ],
-  "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
-    { "type": 0, "value": "يجب وجود تاريخ القرار والمبلغ المستحق وعملته معًا أو غيابها جميعًا." }
-  ],
-  "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
-    { "type": 0, "value": "يتطلب مسح قرار مدفوع مسح سجل الدفع أيضًا." }
-  ],
-  "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": [
-    { "type": 0, "value": "يتطلب استبدال قرار مدفوع إعادة تأكيد الدفع صراحةً أو مسح سجل الدفع." }
-  ],
-  "diagnostic.CORRECTION_PAYMENT_DECISION_REQUIRED": [
-    { "type": 0, "value": "يتطلب سجل الدفع قرار دفع كاملًا." }
-  ],
-  "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
-    { "type": 0, "value": "استخدم الاستبدال مع كل الحقول المعلنة." }
-  ],
-  "diagnostic.CORRECTION_REGISTRATION_CLEAR_FORBIDDEN": [
-    { "type": 0, "value": "لا يمكن مسح التسجيل." }
-  ],
-  "diagnostic.CASE_NOT_FOUND": [{ "type": 0, "value": "لم يتم العثور على مرجع الملف." }],
-  "diagnostic.CASE_ALREADY_EXISTS": [{ "type": 0, "value": "مرجع الملف موجود بالفعل." }],
-  "diagnostic.CASE_REVISION_CONFLICT": [
-    { "type": 0, "value": "اقرأ الملف الحالي قبل إنشاء طلب معدّل." }
-  ],
-  "diagnostic.CASE_CLOSED": [
-    {
-      "type": 0,
-      "value": "لا يمكن لهذا الإجراء تغيير ملف مغلق. استخدم «تصحيح وقائع الملف» لتصحيح الوقائع مع الاحتفاظ بالحالة، أو «إعادة فتح الملف» إذا كنت تريد استئناف العمل المعتاد عليه."
-    }
-  ],
+  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [{ "type": 0, "value": "هذا المورد غير متاح." }],
+  "diagnostic.ACTOR_ALREADY_REGISTERED": [{ "type": 0, "value": "هذه الهوية مسجلة بالفعل." }],
+  "diagnostic.ACTOR_UNKNOWN": [{ "type": 0, "value": "هذه الهوية غير مسجلة." }],
+  "diagnostic.ALREADY_VOIDED": [{ "type": 0, "value": "هذا الملف ملغى بالفعل." }],
   "diagnostic.CASE_ALREADY_CLOSED": [{ "type": 0, "value": "الملف مغلق بالفعل." }],
+  "diagnostic.CASE_ALREADY_EXISTS": [{ "type": 0, "value": "مرجع الملف موجود بالفعل." }],
   "diagnostic.CASE_ALREADY_OPENED": [{ "type": 0, "value": "الملف مفتوح بالفعل." }],
   "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
     {
@@ -139,30 +57,145 @@
       "value": "يتطلب «تعديل التسجيل» ملفًا بلا قرار. استخدم «تصحيح وقائع الملف» لتصحيح تفاصيل التسجيل المسجلة مع الاحتفاظ بالقرار."
     }
   ],
-  "diagnostic.CORRECTION_NO_CHANGES": [
-    { "type": 0, "value": "اختر تصحيحًا واقعيًا واحدًا على الأقل يغيّر الملف الحالي." }
+  "diagnostic.CASE_CLOSED": [
+    {
+      "type": 0,
+      "value": "لا يمكن لهذا الإجراء تغيير ملف مغلق. استخدم «تصحيح وقائع الملف» لتصحيح الوقائع مع الاحتفاظ بالحالة، أو «إعادة فتح الملف» إذا كنت تريد استئناف العمل المعتاد عليه."
+    }
   ],
-  "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
-    { "type": 0, "value": "يمكن للتصحيح استبدال أو مسح قيمة مسجّلة بالفعل في هذا الملف فقط." }
-  ],
-  "diagnostic.CASE_DECISION_REQUIRED": [{ "type": 0, "value": "سجّل قرار الدفع أولًا." }],
-  "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
-    { "type": 0, "value": "يسجّل ClaimCore دفعة كاملة واحدة." }
-  ],
-  "diagnostic.CASE_PAYMENT_NOT_RECORDED": [{ "type": 0, "value": "لا يوجد سجل دفع لمسحه." }],
   "diagnostic.CASE_DECISION_ALREADY_PAID": [
     {
       "type": 0,
       "value": "لا يمكن لـ«تسجيل قرار الدفع» و«سحب قرار الدفع» تغيير قرار تم دفعه. استخدم «تصحيح وقائع الملف» للتصحيح، مع إعادة تأكيد الدفع صراحةً أو مسح سجله عند استبدال قرار تم دفعه."
     }
   ],
+  "diagnostic.CASE_DECISION_REQUIRED": [{ "type": 0, "value": "سجّل قرار الدفع أولًا." }],
+  "diagnostic.CASE_ERASED": [{ "type": 0, "value": "تم محو هذا الملف." }],
+  "diagnostic.CASE_NOT_FOUND": [{ "type": 0, "value": "لم يتم العثور على مرجع الملف." }],
+  "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
+    { "type": 0, "value": "يسجّل ClaimCore دفعة كاملة واحدة." }
+  ],
+  "diagnostic.CASE_PAYMENT_NOT_RECORDED": [{ "type": 0, "value": "لا يوجد سجل دفع لمسحه." }],
+  "diagnostic.CASE_REVISION_CONFLICT": [
+    { "type": 0, "value": "اقرأ الملف الحالي قبل إنشاء طلب معدّل." }
+  ],
+  "diagnostic.CASE_VOIDED": [{ "type": 0, "value": "هذا الملف ملغى." }],
   "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
     { "type": 0, "value": "القرار بمبلغ صفر ليس دفعًا." }
   ],
-  "diagnostic.QUERY_PAGE_LIMIT_RANGE": [
-    { "type": 0, "value": "استخدم قيمة من 1 إلى " },
-    { "type": 1, "value": "maximumPageSize" },
-    { "type": 0, "value": "." }
+  "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
+    { "type": 0, "value": "استخدم مراجعة غير سالبة وأقل من Int64.MaxValue." }
+  ],
+  "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
+    { "type": 0, "value": "قدّم مجموعات التصحيح الثلاث ذات الوسوم." }
+  ],
+  "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [{ "type": 0, "value": "استخدم UUID غير فارغ." }],
+  "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "يخص معرّف العملية محتوى طلب مختلفًا." }
+  ],
+  "diagnostic.CORE_SCHEMA_MISMATCH": [
+    { "type": 0, "value": "مخطط التشغيل أو إعدادات قاعدة البيانات غير متوافقة." }
+  ],
+  "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
+    { "type": 0, "value": "لم تجتز البيانات المخزنة التحقق من السلامة." }
+  ],
+  "diagnostic.CORE_STORE_UNAVAILABLE": [
+    { "type": 0, "value": "لم يكن المخزن متاحًا قبل تأكيد الاكتمال." }
+  ],
+  "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
+    { "type": 0, "value": "يجب وجود تاريخ القرار والمبلغ المستحق وعملته معًا أو غيابها جميعًا." }
+  ],
+  "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
+    { "type": 0, "value": "يمكن للتصحيح استبدال أو مسح قيمة مسجّلة بالفعل في هذا الملف فقط." }
+  ],
+  "diagnostic.CORRECTION_NO_CHANGES": [
+    { "type": 0, "value": "اختر تصحيحًا واقعيًا واحدًا على الأقل يغيّر الملف الحالي." }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": [
+    { "type": 0, "value": "يتطلب استبدال قرار مدفوع إعادة تأكيد الدفع صراحةً أو مسح سجل الدفع." }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
+    { "type": 0, "value": "يتطلب مسح قرار مدفوع مسح سجل الدفع أيضًا." }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_DECISION_REQUIRED": [
+    { "type": 0, "value": "يتطلب سجل الدفع قرار دفع كاملًا." }
+  ],
+  "diagnostic.CORRECTION_REGISTRATION_CLEAR_FORBIDDEN": [
+    { "type": 0, "value": "لا يمكن مسح التسجيل." }
+  ],
+  "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
+    { "type": 0, "value": "استخدم الاستبدال مع كل الحقول المعلنة." }
+  ],
+  "diagnostic.HOST_ANTIFORGERYREJECTED": [{ "type": 0, "value": "رُفض التحقق من الطلب." }],
+  "diagnostic.HOST_BEFOREDISPATCHFAILED": [
+    { "type": 0, "value": "فشلت المعالجة قبل بدء التنفيذ." }
+  ],
+  "diagnostic.HOST_BODYTOOLARGE": [{ "type": 0, "value": "محتوى الطلب كبير جدًا." }],
+  "diagnostic.HOST_COMPLETEDRESPONSEFAILED": [
+    { "type": 0, "value": "تعذر تسليم استجابة العملية المكتملة." }
+  ],
+  "diagnostic.HOST_CONNECTIONREJECTED": [{ "type": 0, "value": "رُفض الاتصال." }],
+  "diagnostic.HOST_CONTRACTMISMATCH": [
+    { "type": 0, "value": "عقد العميل مختلف. أعد تحميل الصفحة أو استخدم عميلًا متوافقًا." }
+  ],
+  "diagnostic.HOST_DISPATCHUNCONFIRMED": [
+    { "type": 0, "value": "احتفظ بالطلب الأصلي وأعد إرساله كما هو." }
+  ],
+  "diagnostic.HOST_ENDPOINTMISSING": [{ "type": 0, "value": "لم تُعثر على نقطة النهاية." }],
+  "diagnostic.HOST_INPUTINVALID": [{ "type": 0, "value": "المدخلات لا تطابق عقد نقطة النهاية." }],
+  "diagnostic.HOST_MEDIATYPEREJECTED": [
+    { "type": 0, "value": "استخدم نوع المحتوى المحدد لنقطة النهاية." }
+  ],
+  "diagnostic.HOST_METHODREJECTED": [{ "type": 0, "value": "الطريقة غير مدعومة." }],
+  "diagnostic.HOST_ORIGINREJECTED": [{ "type": 0, "value": "رُفض مصدر الطلب." }],
+  "diagnostic.HOST_RATELIMITED": [{ "type": 0, "value": "قبول الطلبات مشغول حاليًا." }],
+  "diagnostic.HOST_SESSIONFORBIDDEN": [{ "type": 0, "value": "رُفض الوصول إلى الجلسة." }],
+  "diagnostic.HOST_SESSIONREJECTED": [{ "type": 0, "value": "رُفضت المصادقة." }],
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": [{ "type": 0, "value": "يتطلب هذا الدور هوية شخص." }],
+  "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
+    { "type": 0, "value": "لا يمكن تمثيل المبلغ العشري بدقة." }
+  ],
+  "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
+    { "type": 0, "value": "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD." }
+  ],
+  "diagnostic.INPUT_CONTROL_CHARACTERS": [{ "type": 0, "value": "لا تُقبل محارف التحكم." }],
+  "diagnostic.INPUT_CURRENCY_FORMAT": [
+    { "type": 0, "value": "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة." }
+  ],
+  "diagnostic.INPUT_DATE_ORDER": [{ "type": 0, "value": "الترتيب الزمني للتواريخ غير صالح." }],
+  "diagnostic.INPUT_DECIMAL_FORMAT": [
+    { "type": 0, "value": "استخدم نصًا عشريًا غير سالب: حتى " },
+    { "type": 1, "value": "maximumIntegerDigits" },
+    { "type": 0, "value": " رقمًا صحيحًا و" },
+    { "type": 1, "value": "maximumFractionalDigits" },
+    { "type": 0, "value": " أرقام كسرية؛ دون إشارة أو أس." }
+  ],
+  "diagnostic.INPUT_EXACT_FIELDS_REQUIRED": [
+    { "type": 0, "value": "قدّم كل حقل إدخال معلن للأمر مرة واحدة فقط، دون حقول إضافية." }
+  ],
+  "diagnostic.INPUT_FUTURE_DATE": [
+    { "type": 0, "value": "لا يمكن استخدام تاريخ مستقبلي لتسجيل واقعة حدثت بالفعل." }
+  ],
+  "diagnostic.INPUT_MALFORMED_UNICODE": [{ "type": 0, "value": "لا يُقبل Unicode غير السليم." }],
+  "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
+    { "type": 0, "value": "لا تُقبل المسافات في بداية القيمة أو نهايتها." }
+  ],
+  "diagnostic.INPUT_TEXT_REQUIRED": [{ "type": 0, "value": "يجب إدخال قيمة غير فارغة." }],
+  "diagnostic.INPUT_TEXT_TOO_LONG": [
+    { "type": 0, "value": "يجب ألا تتجاوز القيمة " },
+    { "type": 1, "value": "maximumCharacters" },
+    { "type": 0, "value": " محارف Unicode." }
+  ],
+  "diagnostic.INPUT_TEXT_TOO_SHORT": [
+    { "type": 0, "value": "يجب أن تحتوي القيمة على " },
+    { "type": 1, "value": "minimumCharacters" },
+    { "type": 0, "value": " محارف Unicode على الأقل." }
+  ],
+  "diagnostic.INVALID_REASON": [{ "type": 0, "value": "أدخل سببًا صالحًا لا يتجاوز 200 حرف." }],
+  "diagnostic.LAST_OWNER": [{ "type": 0, "value": "يجب أن يبقى مالك بشري واحد مفعّل على الأقل." }],
+  "diagnostic.NOT_VOIDED": [{ "type": 0, "value": "هذا الملف غير ملغى." }],
+  "diagnostic.OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "يخص معرّف العملية هذا محتوى أمر مختلفًا. لا تعِد استخدامه." }
   ],
   "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": [
     {
@@ -173,238 +206,22 @@
   "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
     { "type": 0, "value": "استخدم مؤشر سجل معتمًا واحدًا أعاده ClaimCore." }
   ],
-  "diagnostic.OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "يخص معرّف العملية هذا محتوى أمر مختلفًا. لا تعِد استخدامه." }
+  "diagnostic.QUERY_PAGE_LIMIT_RANGE": [
+    { "type": 0, "value": "استخدم قيمة من 1 إلى " },
+    { "type": 1, "value": "maximumPageSize" },
+    { "type": 0, "value": "." }
   ],
-  "diagnostic.OPERATION_REVOKED": [
-    {
-      "type": 0,
-      "value": "سُحبت بصورة دائمة صلاحية التنفيذ المستقبلي لهذه العملية نفسها. لم يتغير عدم اليقين بشأن المحاولات السابقة؛ افحص أدلتها الدقيقة."
-    }
+  "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
+    { "type": 0, "value": "الملف المحمّل لا يطابق هذا الأمر." }
   ],
-  "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
-    {
-      "type": 0,
-      "value": "بلغت هذه العملية حد محاولات الاسترداد. افحص أدلتها الدقيقة وتحقق من نتائج المحاولات غير المحسومة قبل إنشاء عمل جديد."
-    }
+  "diagnostic.STATE_REVISION_EXHAUSTED": [
+    { "type": 0, "value": "لا يمكن زيادة مراجعة الملف مع بقائها أقل من Int64.MaxValue." }
   ],
-  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [{ "type": 0, "value": "هذا المورد غير متاح." }],
-  "diagnostic.RESOURCE_UNAVAILABLE": [{ "type": 0, "value": "مورد الاسترداد هذا غير متاح." }],
-  "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "يخص معرّف العملية محتوى طلب مختلفًا." }
+  "diagnostic.STATE_STORED_REVISION_RANGE": [
+    { "type": 0, "value": "يجب أن تكون المراجعات المخزنة موجبة وأقل من Int64.MaxValue." }
   ],
-  "diagnostic.CORE_STORE_UNAVAILABLE": [
-    { "type": 0, "value": "لم يكن المخزن متاحًا قبل تأكيد الاكتمال." }
-  ],
-  "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN": [
-    { "type": 0, "value": "لم يُؤكَّد اكتمال تثبيت المعاملة." }
-  ],
-  "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
-    { "type": 0, "value": "لم تجتز البيانات المخزنة التحقق من السلامة." }
-  ],
-  "diagnostic.CORE_SCHEMA_MISMATCH": [
-    { "type": 0, "value": "مخطط التشغيل أو إعدادات قاعدة البيانات غير متوافقة." }
-  ],
-  "diagnostic.RECOVERY_STORE_RESPONSE_INVALID": [
-    { "type": 0, "value": "أعاد مخزن الاسترداد استجابة تقنية غير صالحة." }
-  ],
-  "diagnostic.RECOVERY_STORE_CONTENT_CONFLICT": [
-    { "type": 0, "value": "تتعارض هوية الاسترداد مع البيانات المحتفظ بها." }
-  ],
-  "diagnostic.RECOVERY_STORE_PREPARATION_MISSING": [
-    { "type": 0, "value": "يفتقد مخزن الاسترداد تحضيرًا متوقعًا." }
-  ],
-  "diagnostic.RECOVERY_CAPACITY_EXHAUSTED": [{ "type": 0, "value": "نَفِدت سعة الاسترداد." }],
-  "diagnostic.RECOVERY_SCHEMA_MISMATCH": [
-    { "type": 0, "value": "مخزن الاسترداد غير متوافق مع هذا التشغيل." }
-  ],
-  "diagnostic.RECOVERY_STORE_UNAVAILABLE": [
-    { "type": 0, "value": "لم يكن مخزن الاسترداد متاحًا قبل تأكيد الاكتمال." }
-  ],
-  "diagnostic.RECOVERY_STORE_INTEGRITY_ERROR": [
-    { "type": 0, "value": "لم يجتز مخزن الاسترداد التحقق من السلامة." }
-  ],
-  "diagnostic.RECOVERY_READ_CANCELLED": [{ "type": 0, "value": "أُلغيت قراءة الاسترداد." }],
-  "diagnostic.RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT": [
-    { "type": 0, "value": "أُلغي التعديل التقني قبل تثبيت المعاملة." }
-  ],
-  "diagnostic.RECOVERY_MUTATION_OUTCOME_UNKNOWN": [
-    { "type": 0, "value": "ربما ثُبّت تعديل حالة الاسترداد، لكن تعذر تأكيده." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_CANONICAL_INVALID": [
-    { "type": 0, "value": "لم تجتز بايتات الطلب المعياري المحتفظ بها التحقق من السلامة." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID": [
-    { "type": 0, "value": "لا يطابق الطلب المحتفظ به بنية النطاق المغلقة." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE": [
-    { "type": 0, "value": "تعذر التحقق من التحضير نفسه المحتفظ به." }
-  ],
-  "diagnostic.RECOVERY_NEW_PREPARATION_MISSING": [
-    { "type": 0, "value": "لم يكن التحضير المحتفظ به حديثًا متاحًا للتنفيذ." }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION": [
-    { "type": 0, "value": "استُبعد التحضير قبل أن يبدأ التنفيذ." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_DIGEST_MISMATCH": [
-    { "type": 0, "value": "لا تطابق بصمة التحضير المحتفظ به المسودة المقدّمة." }
-  ],
-  "diagnostic.RECOVERY_STORED_DATA_INVALID": [
-    { "type": 0, "value": "لم تجتز بيانات الاسترداد المخزنة التحقق." }
-  ],
-  "diagnostic.RECOVERY_OPERATION_ID_REQUIRED": [
-    { "type": 0, "value": "يلزم معرّف عملية استرداد غير فارغ." }
-  ],
-  "diagnostic.RECOVERY_REQUEST_DIGEST_INVALID": [
-    { "type": 0, "value": "يجب أن تكون بصمة طلب الاسترداد بصيغة SHA-256 وبأحرف صغيرة." }
-  ],
-  "diagnostic.RECOVERY_PAGE_LIMIT_RANGE": [
-    { "type": 0, "value": "حد صفحة الاسترداد خارج النطاق المدعوم." }
-  ],
-  "diagnostic.RECOVERY_LIST_CURSOR_INVALID": [
-    { "type": 0, "value": "مؤشر قائمة الاسترداد غير صالح." }
-  ],
-  "diagnostic.RECOVERY_LIST_CURSOR_VIEW_MISMATCH": [
-    { "type": 0, "value": "يخص مؤشر قائمة الاسترداد عرضًا مختلفًا." }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": [
-    { "type": 0, "value": "مؤشر محاولات الاسترداد غير صالح." }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH": [
-    { "type": 0, "value": "يخص مؤشر محاولات الاسترداد عملية مختلفة." }
-  ],
-  "diagnostic.RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED": [
-    { "type": 0, "value": "يلزم تأكيد صريح لاستبعاد تحضير استرداد." }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_NOT_FOUND": [
-    { "type": 0, "value": "لم يتم العثور على تحضير الاسترداد." }
-  ],
-  "diagnostic.RECOVERY_OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "تتعارض هوية الاسترداد المقدّمة مع عملية موجودة." }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_DISMISSED": [
-    { "type": 0, "value": "لا يمكن إرسال تحضير مستبعد." }
-  ],
-  "diagnostic.RECOVERY_SUBMISSION_ALREADY_STARTED": [
-    { "type": 0, "value": "بدأ إرسال التحضير بالفعل ويجب معالجة التحضير نفسه تمامًا." }
-  ],
-  "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": [
-    { "type": 0, "value": "لا يمكن استبعاد عملية معتمدة. افحص إيصالها المحتفظ به." }
-  ],
-  "diagnostic.RECOVERY_SOURCE_DIGEST_MISMATCH": [
-    { "type": 0, "value": "لا تطابق بصمة المصدر المقدّمة بايتات الاستيراد الدقيقة." }
-  ],
-  "diagnostic.RECOVERY_REQUEST_DIGEST_MISMATCH": [
-    { "type": 0, "value": "لا تطابق البصمة المقدّمة بايتات الطلب الدقيقة المحتفظ بها." }
-  ],
-  "diagnostic.RECOVERY_INSTALLATION_MISMATCH": [
-    { "type": 0, "value": "تخص حافظة الاسترداد تثبيت ClaimCore مختلفًا." }
-  ],
-  "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
-    { "type": 0, "value": "حافظة الاسترداد غير مدعومة أو أخفقت في فك الترميز المعياري." }
-  ],
-  "diagnostic.RECOVERY_OPERATION_REVOKED": [
-    {
-      "type": 0,
-      "value": "سُحبت بصورة دائمة صلاحية التنفيذ المستقبلي لهذه العملية نفسها. لم يتغير عدم اليقين بشأن المحاولات السابقة؛ افحص أدلتها الدقيقة."
-    }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
-    {
-      "type": 0,
-      "value": "بلغت هذه العملية حد محاولات الاسترداد. افحص أدلتها الدقيقة وتحقق من نتائج المحاولات غير المحسومة قبل إنشاء عمل جديد."
-    }
-  ],
-  "diagnostic.WEB_HOST_CONNECTION_REJECTED": [{ "type": 0, "value": "رفض الخادم هذا الاتصال." }],
-  "diagnostic.WEB_HOST_ORIGIN_REJECTED": [{ "type": 0, "value": "رُفض أصل الطلب." }],
-  "diagnostic.WEB_HOST_MEDIA_TYPE_REJECTED": [{ "type": 0, "value": "نوع محتوى الطلب غير مدعوم." }],
-  "diagnostic.WEB_HOST_BODY_TOO_LARGE": [
-    { "type": 0, "value": "يتجاوز الطلب حد البايتات المضبوط." }
-  ],
-  "diagnostic.WEB_INPUT_BODY_TOO_LARGE": [
-    { "type": 0, "value": "يتجاوز الطلب حد البايتات المضبوط." }
-  ],
-  "diagnostic.WEB_HOST_SESSION_REJECTED": [
-    { "type": 0, "value": "رُفضت الجلسة. سجّل الدخول إلى التثبيت المحلي." }
-  ],
-  "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
-    { "type": 0, "value": "فشل التحقق من الحماية من تزوير الطلبات." }
-  ],
-  "diagnostic.WEB_HOST_ENDPOINT_MISSING": [
-    { "type": 0, "value": "لم يتم العثور على نقطة النهاية المطلوبة." }
-  ],
-  "diagnostic.WEB_HOST_BUSY": [{ "type": 0, "value": "الخادم المحلي مشغول." }],
-  "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": [
-    { "type": 0, "value": "لم تجتز بيانات تصدير الاسترداد الوصفية التحقق." }
-  ],
-  "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": [
-    { "type": 0, "value": "أخفق الخادم قبل إحالة الطلب للتنفيذ." }
-  ],
-  "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": [
-    { "type": 0, "value": "نتيجة الطلب المُحال غير مؤكدة. افحص الاسترداد قبل إجراء تعديل آخر." }
-  ],
-  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": [
-    { "type": 0, "value": "اكتملت معالجة الطلب، لكن تعذّر تسليم الردّ." }
-  ],
-  "diagnostic.WEB_HOST_SESSION_FORBIDDEN": [
-    { "type": 0, "value": "لا يُسمح لهذه الجلسة بالوصول إلى المورد." }
-  ],
-  "diagnostic.WEB_HOST_METHOD_REJECTED": [
-    { "type": 0, "value": "لا تدعم نقطة النهاية طريقة الطلب هذه." }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_OBJECT": [{ "type": 0, "value": "يلزم كائن JSON." }],
-  "diagnostic.WEB_INPUT_DUPLICATE_PROPERTY": [
-    { "type": 0, "value": "لا تُقبل خصائص الطلب المكررة." }
-  ],
-  "diagnostic.WEB_INPUT_UNKNOWN_PROPERTY": [
-    { "type": 0, "value": "يحتوي الطلب على خاصية غير معلنة." }
-  ],
-  "diagnostic.WEB_INPUT_MISSING_PROPERTY": [{ "type": 0, "value": "خاصية مطلوبة للطلب مفقودة." }],
-  "diagnostic.WEB_INPUT_EXPECTED_STRING": [{ "type": 0, "value": "يلزم إدخال قيمة نصية." }],
-  "diagnostic.WEB_INPUT_NULL_FORBIDDEN": [
-    { "type": 0, "value": "لا تُقبل null في هذا الموضع من الطلب." }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_BOOLEAN": [{ "type": 0, "value": "تلزم قيمة منطقية." }],
-  "diagnostic.WEB_INPUT_EXPECTED_INTEGER": [{ "type": 0, "value": "تلزم قيمة عدد صحيح." }],
-  "diagnostic.WEB_INPUT_INVALID_REVISION": [{ "type": 0, "value": "قدّم مراجعة معيارية مدعومة." }],
-  "diagnostic.WEB_INPUT_INVALID_UUID": [
-    { "type": 0, "value": "قدّم UUID معياريًا غير فارغ للعملية." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_DIGEST": [
-    { "type": 0, "value": "قدّم بصمة SHA-256 معيارية بأحرف صغيرة." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UNICODE": [
-    { "type": 0, "value": "يحتوي الطلب على Unicode غير سليم." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UTF8": [{ "type": 0, "value": "الطلب ليس بصيغة UTF-8 صالحة." }],
-  "diagnostic.WEB_INPUT_INVALID_JSON": [{ "type": 0, "value": "الطلب ليس JSON صالحًا." }],
-  "diagnostic.WEB_INPUT_BODY_UNREADABLE": [{ "type": 0, "value": "تعذرت قراءة محتوى الطلب." }],
-  "diagnostic.WEB_INPUT_BODY_CANCELLED": [{ "type": 0, "value": "أُلغيت قراءة محتوى الطلب." }],
-  "diagnostic.WEB_INPUT_UNKNOWN_COMMAND": [{ "type": 0, "value": "الأمر غير معروف." }],
-  "diagnostic.WEB_INPUT_MISSING_COMMAND_VALUE": [
-    { "type": 0, "value": "قيمة مطلوبة للأمر مفقودة." }
-  ],
-  "diagnostic.WEB_INPUT_CORRECTION_ACTION": [
-    { "type": 0, "value": "إجراء التصحيح غير صالح لهذه المجموعة." }
-  ],
-  "diagnostic.WEB_INPUT_LOGOUT_SHAPE": [{ "type": 0, "value": "بنية طلب تسجيل الخروج غير صالحة." }],
-  "diagnostic.WEB_INPUT_PAGE_RANGE": [
-    { "type": 0, "value": "حجم الصفحة المطلوب خارج النطاق المسموح." }
-  ],
-  "diagnostic.WEB_INPUT_HISTORY_DETAIL": [
-    { "type": 0, "value": "مستوى تفاصيل السجل المطلوب غير مدعوم." }
-  ],
-  "diagnostic.WEB_INPUT_RECOVERY_VIEW": [
-    { "type": 0, "value": "عرض الاسترداد المطلوب غير مدعوم." }
-  ],
-  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
-    { "type": 0, "value": "ترويسة بصمة المصدر مفقودة أو غير صالحة." }
-  ],
-  "diagnostic.RECOVERY_ACCESS_UNAVAILABLE": [
-    {
-      "type": 0,
-      "value": "تم رفض الوصول إلى هذه العملية. احتفظ بهويتها الدقيقة وافحص أدلتها عندما يصبح الوصول متاحًا. لا يحسم هذا الرفض نتائج المحاولات السابقة."
-    }
+  "diagnostic.STATE_TRANSITION_MISMATCH": [
+    { "type": 0, "value": "يوجد تعارض بين قيد الحالة وانتقال الدفع." }
   ],
   "field.incidentDate.label": [{ "type": 0, "value": "تاريخ الواقعة" }],
   "field.incidentDate.meaning": [{ "type": 0, "value": "التاريخ الذي وقعت فيه الواقعة." }],
@@ -509,15 +326,6 @@
     { "type": 0, "value": " بايت." }
   ],
   "notice.fileUnreadable": [{ "type": 0, "value": "تعذرت قراءة الملف المحدد." }],
-  "notice.exportInvalid": [
-    { "type": 0, "value": "لم تجتز استجابة تصدير الاسترداد فحوص البروتوكول." }
-  ],
-  "notice.incomplete": [
-    {
-      "type": 0,
-      "value": "تحقّق من النتيجة المُبلّغ عنها قبل المحاولة مجددًا. إذا لم تُؤكّد، فافحص الاسترداد."
-    }
-  ],
   "notice.definitionMismatch": [
     {
       "type": 0,
@@ -528,68 +336,38 @@
   "notice.missingCsrf": [
     { "type": 0, "value": "لم تتضمن الجلسة الموثّقة رمز الحماية من تزوير الطلبات." }
   ],
-  "notice.dismissed": [{ "type": 0, "value": "استُبعد التحضير." }],
-  "notice.alreadyDismissed": [{ "type": 0, "value": "سبق استبعاد التحضير." }],
-  "notice.retained": [{ "type": 0, "value": "احتُفظ بمادة الاسترداد." }],
-  "notice.existing": [{ "type": 0, "value": "سبق الاحتفاظ بمادة الاسترداد." }],
   "notice.accepted": [
     { "type": 0, "value": "اعتُمدت العملية نفسها " },
     { "type": 1, "value": "operationId" },
     { "type": 0, "value": "." }
   ],
-  "notice.digestUnavailable": [
-    { "type": 0, "value": "بصمة الاسترداد الدقيقة غير متاحة؛ افحص التحضير." }
-  ],
-  "notice.exportStarted": [
-    {
-      "type": 0,
-      "value": "بدأ تصدير الاسترداد. يحتوي الملف على بيانات المطالب؛ احتفظ به بشكل خاص."
-    }
-  ],
-  "notice.inspectBeforeRetry": [
-    { "type": 0, "value": "افحص الاسترداد قبل إعادة محاولة العملية نفسها." }
-  ],
-  "notice.inspectBeforeAction": [{ "type": 0, "value": "افحص الاسترداد قبل اتخاذ إجراء آخر." }],
-  "notice.keptForRecovery": [
-    { "type": 0, "value": "احتُفظ بالطلب المحضّر. استخدم الاسترداد لفحصه أو معالجته أو استبعاده." }
-  ],
-  "notice.unknownDiagnostic": [
-    {
-      "type": 0,
-      "value": "الشرح غير متاح. اتبع النتيجة المعلنة وإرشادات الاسترداد؛ لا تفترض السماح بإعادة المحاولة."
-    }
-  ],
   "notice.cancelled": [
     { "type": 0, "value": "أُلغي هذا الطلب. لا يحسم هذا الإلغاء نتائج المحاولات السابقة." }
   ],
-  "notice.cancelledBeforeAdmission": [
-    {
-      "type": 0,
-      "value": "أُلغي هذا الطلب قبل قبوله للمعالجة. لا يحسم هذا الإلغاء نتائج المحاولات السابقة."
-    }
+  "notice.outcomeUnknown": [
+    { "type": 0, "value": "نتيجة العملية غير معروفة. أعد إرسال العملية نفسها دون تغيير." }
   ],
-  "notice.cancelledBeforeAttempt": [
-    {
-      "type": 0,
-      "value": "أُلغي هذا الطلب قبل بدء محاولة جديدة. افحص الأدلة الدقيقة لأي محاولات سابقة غير محسومة."
-    }
-  ],
+  "notice.unknownDiagnostic": [{ "type": 0, "value": "تم استلام تشخيص غير مدعوم." }],
   "token.OPENED": [{ "type": 0, "value": "مفتوح" }],
   "token.CLOSED": [{ "type": 0, "value": "مغلق" }],
   "token.KEEP": [{ "type": 0, "value": "إبقاء التفاصيل الحالية" }],
   "token.REPLACE": [{ "type": 0, "value": "استبدال التفاصيل" }],
   "token.CLEAR": [{ "type": 0, "value": "مسح القيمة المسجّلة" }],
-  "token.PENDING": [{ "type": 0, "value": "معلّقة" }],
-  "token.ACCEPTED": [{ "type": 0, "value": "معتمدة" }],
-  "token.REVOKED": [{ "type": 0, "value": "مسحوبة" }],
-  "token.REJECTED": [{ "type": 0, "value": "مرفوضة" }],
-  "token.ERROR": [{ "type": 0, "value": "خطأ في التنفيذ" }],
-  "token.REVOKED_BEFORE_EXECUTION": [
-    { "type": 0, "value": "سُحبت صلاحية التنفيذ قبل بدء التنفيذ" }
-  ],
-  "token.ENVELOPE": [{ "type": 0, "value": "حافظة" }],
-  "token.FOUND": [{ "type": 0, "value": "وُجدت عملية معتمدة" }],
-  "token.NOT_FOUND": [{ "type": 0, "value": "لم تُرصد العملية" }],
+  "token.ACTIVE": [{ "type": 0, "value": "نشط" }],
+  "token.VOIDED": [{ "type": 0, "value": "ملغى" }],
+  "token.ERASED": [{ "type": 0, "value": "تم المحو" }],
+  "token.VOID": [{ "type": 0, "value": "إلغاء" }],
+  "token.REINSTATE": [{ "type": 0, "value": "إعادة التفعيل" }],
+  "token.ERASE": [{ "type": 0, "value": "محو" }],
+  "token.OPEN": [{ "type": 0, "value": "فتح ملف" }],
+  "token.AMEND_REGISTRATION": [{ "type": 0, "value": "تعديل التسجيل" }],
+  "token.CORRECT_CASE": [{ "type": 0, "value": "تصحيح وقائع الملف" }],
+  "token.DECIDE": [{ "type": 0, "value": "تسجيل قرار الدفع" }],
+  "token.WITHDRAW_DECISION": [{ "type": 0, "value": "سحب قرار الدفع" }],
+  "token.RECORD_PAYMENT": [{ "type": 0, "value": "تسجيل الدفع الفعلي" }],
+  "token.CLEAR_PAYMENT": [{ "type": 0, "value": "تصحيح سجل دفع خاطئ" }],
+  "token.CLOSE": [{ "type": 0, "value": "إغلاق الملف" }],
+  "token.REOPEN": [{ "type": 0, "value": "إعادة فتح الملف" }],
   "ui.language": [{ "type": 0, "value": "لغة الواجهة" }],
   "ui.displayLocale": [{ "type": 0, "value": "تنسيق التواريخ والأرقام" }],
   "ui.preferencesHint": [
@@ -608,7 +386,6 @@
   "ui.signOut": [{ "type": 0, "value": "تسجيل الخروج" }],
   "ui.primary": [{ "type": 0, "value": "التنقل الرئيسي" }],
   "ui.cases": [{ "type": 0, "value": "الملفات" }],
-  "ui.recovery": [{ "type": 0, "value": "الاسترداد" }],
   "ui.operations": [{ "type": 0, "value": "العمليات" }],
   "ui.loadingDefinition": [{ "type": 0, "value": "جارٍ تحميل التطبيق…" }],
   "ui.loginInstructions": [
@@ -682,22 +459,6 @@
   ],
   "ui.lifecycleActive": [{ "type": 0, "value": "نشط" }],
   "ui.lifecycleVoided": [{ "type": 0, "value": "أُبطل بسبب خطأ في إدخال البيانات" }],
-  "ui.lifecycleErasureRequested": [{ "type": 0, "value": "طُلب المحو" }],
-  "ui.lifecycleErasurePending": [{ "type": 0, "value": "المحو قيد الانتظار" }],
-  "ui.lifecycleSuppressionRetained": [
-    { "type": 0, "value": "مُحيت البيانات الحية مع الاحتفاظ بدليل منع الاستعادة" }
-  ],
-  "ui.lifecycleErasureFinal": [
-    { "type": 0, "value": "اكتمل محو النسخ المُدارة مع الاحتفاظ بدليل منع الاستعادة" }
-  ],
-  "ui.lifecycleNoHolds": [{ "type": 0, "value": "لا يوجد قيد احتفاظ نشط مسجّل." }],
-  "ui.lifecycleHeld": [
-    { "type": 0, "value": "مقيّد للاحتفاظ: تمنع قيود الاحتفاظ النشطة محو البيانات." }
-  ],
-  "ui.lifecycleHoldReview": [
-    { "type": 0, "value": "مراجعة قيد الاحتفاظ بحلول " },
-    { "type": 1, "value": "date" }
-  ],
   "ui.lifecycleVoidApproval": [
     { "type": 0, "value": "يتطلب إبطال هذا الملف موافقتين من شخصين مختلفين، ولا يعكس دفعة مالية." }
   ],
@@ -707,7 +468,9 @@
     { "type": 0, "value": " (دقيق): " },
     { "type": 1, "value": "reference" }
   ],
-  "ui.unchangedUntilSubmit": [{ "type": 0, "value": "راجع تغييراتك قبل تسجيلها." }],
+  "ui.unchangedUntilSubmit": [
+    { "type": 0, "value": "المراجعة استشارية. لا يتغير الملف إلا بعد قبول العملية." }
+  ],
   "ui.observedReceipt": [
     { "type": 0, "value": "العملية المعتمدة " },
     { "type": 1, "value": "operationId" },
@@ -783,12 +546,11 @@
       "value": "اختر إجراء كل مجموعة. تُؤخذ التفاصيل المحتفظ بها من حالة الملف عند التسجيل."
     }
   ],
-  "ui.preparing": [{ "type": 0, "value": "جارٍ إعداد المراجعة…" }],
-  "ui.prepareExact": [{ "type": 0, "value": "مراجعة التغييرات" }],
-  "ui.retryPrepare": [{ "type": 0, "value": "إعادة طلب المراجعة نفسه" }],
+  "ui.previewing": [{ "type": 0, "value": "جارٍ إعداد المراجعة…" }],
+  "ui.previewOperation": [{ "type": 0, "value": "مراجعة التغييرات" }],
   "ui.changeCommandTitle": [{ "type": 0, "value": "تجاهل هذه التغييرات المسودة؟" }],
   "ui.changeCommandDescription": [
-    { "type": 0, "value": "تغيير الإجراء يتجاهل تفاصيل هذه المسودة ويبدأ طلبًا مختلفًا." }
+    { "type": 0, "value": "هل تريد تجاهل هذه المسودة واختيار أمر آخر؟" }
   ],
   "ui.discardAndChange": [{ "type": 0, "value": "تجاهل وتغيير الإجراء" }],
   "ui.acceptedOperation": [{ "type": 0, "value": "التغيير المسجّل" }],
@@ -803,12 +565,7 @@
   ],
   "ui.returnToCase": [{ "type": 0, "value": "العودة إلى الملف" }],
   "ui.reviewTitle": [{ "type": 0, "value": "مراجعة التغييرات" }],
-  "ui.reviewDescription": [
-    {
-      "type": 0,
-      "value": "راجع التفاصيل وأكّدها. إذا لم يتأكد التسجيل، افحص الاسترداد قبل المحاولة مجددًا."
-    }
-  ],
+  "ui.reviewDescription": [{ "type": 0, "value": "راجع القيم المقترحة وأكّد هذه العملية بعينها." }],
   "ui.reviewTarget": [
     { "type": 0, "value": "الهدف " },
     { "type": 1, "value": "reference" },
@@ -822,7 +579,6 @@
     { "type": 1, "value": "digest" }
   ],
   "ui.reviewConfirmation": [{ "type": 0, "value": "أؤكّد هذه التغييرات." }],
-  "ui.keepForRecovery": [{ "type": 0, "value": "العودة إلى التحرير؛ الاحتفاظ للاسترداد" }],
   "ui.submitting": [{ "type": 0, "value": "جارٍ التسجيل…" }],
   "ui.submitExact": [{ "type": 0, "value": "تسجيل التغييرات" }],
   "ui.before": [
@@ -833,39 +589,9 @@
     { "type": 0, "value": "بعد: " },
     { "type": 1, "value": "value" }
   ],
-  "ui.recoveryView": [{ "type": 0, "value": "عرض الاسترداد" }],
   "ui.pending": [{ "type": 0, "value": "المعلّقة" }],
   "ui.terminal": [{ "type": 0, "value": "النهائية" }],
   "ui.reload": [{ "type": 0, "value": "إعادة التحميل" }],
-  "ui.capacity": [
-    { "type": 0, "value": "تخزين طلبات الاسترداد المعلقة: " },
-    { "type": 1, "value": "count" },
-    { "type": 0, "value": " / " },
-    { "type": 1, "value": "maximum" },
-    { "type": 0, "value": " طلبات · " },
-    { "type": 1, "value": "bytes" },
-    { "type": 0, "value": " / " },
-    { "type": 1, "value": "maximumBytes" },
-    { "type": 0, "value": " بايت من محتوى الطلبات الدقيق." }
-  ],
-  "ui.nearCapacity": [
-    { "type": 0, "value": "اقتربت السعة من الحد؛ عالج التحضيرات المعلّقة المعروفة أو استبعدها." }
-  ],
-  "ui.recoveryHint": [
-    {
-      "type": 0,
-      "value": "تظهر الطلبات المعلّقة افتراضيًا. يعرض القسم النهائي الصلاحيات المعتمدة والمستبعدة والمسحوبة كأدلة غير قابلة للتنفيذ. افحص حالة الخادم قبل التسجيل أو الاستبعاد."
-    }
-  ],
-  "ui.recoverySummary": [
-    { "type": 1, "value": "command" },
-    { "type": 0, "value": " · " },
-    { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · " },
-    { "type": 1, "value": "authority" },
-    { "type": 0, "value": " · " },
-    { "type": 1, "value": "operationId" }
-  ],
   "ui.revocationSummary": [
     { "type": 0, "value": "مسحوبة · " },
     { "type": 1, "value": "operationId" },
@@ -907,26 +633,6 @@
     }
   ],
   "ui.moreAttempts": [{ "type": 0, "value": "تحميل المزيد من المحاولات" }],
-  "ui.retainedIdentity": [
-    { "type": 0, "value": "العملية " },
-    { "type": 1, "value": "operationId" },
-    { "type": 0, "value": " · الصلاحية " },
-    { "type": 1, "value": "authority" },
-    { "type": 0, "value": " · البصمة " },
-    { "type": 1, "value": "digest" }
-  ],
-  "ui.retainedCommand": [
-    { "type": 0, "value": "الملف " },
-    { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · الإجراء " },
-    { "type": 1, "value": "command" }
-  ],
-  "ui.retainedFormat": [
-    { "type": 0, "value": "المراجعة المتوقعة " },
-    { "type": 1, "value": "revision" },
-    { "type": 0, "value": " · التنسيق المعياري " },
-    { "type": 1, "value": "format" }
-  ],
   "ui.provenance": [
     { "type": 0, "value": "أُعدّ باستخدام " },
     { "type": 1, "value": "version" },
@@ -945,17 +651,7 @@
   ],
   "ui.inspect": [{ "type": 0, "value": "فحص" }],
   "ui.inspectRevocation": [{ "type": 0, "value": "فحص السحب" }],
-  "ui.moreRecovery": [{ "type": 0, "value": "تحميل المزيد من الاسترداد" }],
   "ui.resolveExact": [{ "type": 0, "value": "محاولة تسجيل هذا الطلب" }],
-  "ui.dismissPreparation": [{ "type": 0, "value": "إيقاف التسجيل المستقبلي لهذا الطلب" }],
-  "ui.exportEnvelope": [{ "type": 0, "value": "تصدير حافظة الاسترداد" }],
-  "ui.recoveryDetails": [{ "type": 0, "value": "تفاصيل الاسترداد" }],
-  "ui.recoveryDetailsHint": [
-    {
-      "type": 0,
-      "value": "صلاحية الطلب وأدلة المحاولات من الخادم. تحافظ تفاصيل الطلب على القيم المُدخلة نفسها."
-    }
-  ],
   "ui.observation": [
     { "type": 0, "value": "الرصد: " },
     { "type": 1, "value": "state" }
@@ -965,23 +661,8 @@
     { "type": 1, "value": "operationId" },
     { "type": 0, "value": "." }
   ],
-  "ui.exportTitle": [{ "type": 0, "value": "تصدير حافظة الاسترداد؟" }],
   "ui.resolveTitle": [{ "type": 0, "value": "محاولة تسجيل الطلب الذي تمت مراجعته؟" }],
-  "ui.dismissTitle": [{ "type": 0, "value": "إنهاء صلاحية هذا الطلب المستقبلية نهائيًا؟" }],
-  "ui.exportWarning": [
-    {
-      "type": 0,
-      "value": "يحتوي هذا الملف على بيانات المطالب وبيانات الاسترداد. احفظه في تخزين خاص فقط."
-    }
-  ],
   "ui.working": [{ "type": 0, "value": "جارٍ العمل…" }],
-  "ui.confirmExport": [{ "type": 0, "value": "تأكيد التصدير" }],
-  "ui.artifact": [
-    { "type": 0, "value": "الأثر " },
-    { "type": 1, "value": "kind" },
-    { "type": 0, "value": " · بصمة المصدر " },
-    { "type": 1, "value": "digest" }
-  ],
   "ui.importTarget": [
     { "type": 0, "value": "الهدف المستورد " },
     { "type": 1, "value": "reference" },
@@ -990,15 +671,6 @@
     { "type": 0, "value": " · المراجعة المتوقعة " },
     { "type": 1, "value": "revision" }
   ],
-  "ui.importEnvelope": [{ "type": 0, "value": "استيراد حافظة الاسترداد" }],
-  "ui.importTitle": [{ "type": 0, "value": "الاحتفاظ بمادة الاسترداد المستوردة؟" }],
-  "ui.importDescription": [
-    {
-      "type": 0,
-      "value": "يُحتفظ به بعد التأكيد فقط لإجراء استرداد صريح؛ لا يُرسل تلقائيًا مطلقًا."
-    }
-  ],
-  "ui.retainForRecovery": [{ "type": 0, "value": "الاحتفاظ للاسترداد" }],
   "ui.keepEditing": [{ "type": 0, "value": "متابعة التحرير" }],
   "ui.backToCase": [{ "type": 0, "value": "العودة إلى الملف" }],
   "ui.registerLabel": [{ "type": 0, "value": "سجل ملفات المطالبات ClaimCore" }],
@@ -1009,22 +681,10 @@
       "value": "قد يسجّل الخادم هذا الطلب نفسه إذا ظل مسموحًا به، أو يعرض نتيجة سبق اعتمادها. النتيجة المُعادة تحدّد ما حدث؛ النجاح غير مضمون."
     }
   ],
-  "ui.dismissConsequence": [
-    {
-      "type": 0,
-      "value": "الاستبعاد المؤكّد يمنع نهائيًا تنفيذ هذا الطلب غير المعتمد مستقبلًا. لا يمكن التراجع عنه، ولا يحسم المحاولات السابقة غير المؤكّدة. تحقّق من النتيجة المُعادة لتأكيد الاستبعاد."
-    }
-  ],
   "ui.canonicalCopyHint": [
     {
       "type": 0,
       "value": "ينسخ القيمة الأصلية بدقة. تُنسخ التواريخ بصيغة YYYY-MM-DD والمبالغ بفاصلة عشرية نقطية، بغض النظر عن تنسيق العرض."
-    }
-  ],
-  "ui.leaveDraftDescription": [
-    {
-      "type": 0,
-      "value": "المغادرة تتجاهل تعديلات المسودة. تبقى الطلبات المحفوظة في الاسترداد؛ المغادرة لا توقفها ولا تحسم المحاولات السابقة."
     }
   ],
   "ui.discardAndLeave": [{ "type": 0, "value": "تجاهل ومغادرة" }],
@@ -1038,7 +698,7 @@
     { "type": 1, "value": "digest" }
   ],
   "ui.webIdentity": [
-    { "type": 0, "value": "عقد Web v3: " },
+    { "type": 0, "value": "عقد الاتصال: " },
     { "type": 1, "value": "digest" }
   ],
   "ui.fieldHelp": [{ "type": 0, "value": "المعنى والنسخ الدقيق" }],
@@ -1047,5 +707,20 @@
   "ui.fullHistory": [{ "type": 0, "value": "جميع الحقول المسجلة" }],
   "ui.requestDigest": [{ "type": 0, "value": "بصمة SHA-256 الدقيقة للطلب" }],
   "ui.inspectOperationId": [{ "type": 0, "value": "فحص معرّف العملية" }],
-  "ui.exportKnownIdentity": [{ "type": 0, "value": "تصدير باستخدام المعرّف والبصمة" }]
+  "ui.returnToEdit": [{ "type": 0, "value": "العودة إلى التحرير" }],
+  "ui.retryExact": [{ "type": 0, "value": "إعادة محاولة العملية نفسها" }],
+  "ui.retryExactDescription": [
+    {
+      "type": 0,
+      "value": "نتيجة العملية غير معروفة. أبقِ هذه الصفحة مفتوحة وأعد محاولة العملية نفسها."
+    }
+  ],
+  "ui.reloadContract": [{ "type": 0, "value": "إعادة تحميل الصفحة" }],
+  "ui.lifecycleErased": [
+    { "type": 0, "value": "تم المحو — لم يبقَ سوى مرجع الملف ورقم المراجعة." }
+  ],
+  "ui.languageDescription": [
+    { "type": 0, "value": "تغيّر اللغة النص المعروض مع الاحتفاظ بالمسودة والمراجعة الحاليتين." }
+  ],
+  "ui.leaveDraftDescription": [{ "type": 0, "value": "هل تريد تجاهل هذه المسودة ومغادرة المحرر؟" }]
 }

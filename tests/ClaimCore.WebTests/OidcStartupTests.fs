@@ -94,6 +94,7 @@ let private suspendedStartup () =
     Expect.isTrue (work.Wait(2000)) "Startup does not wait forever on a body after headers"
     Expect.isTrue work.Result "The bounded startup diagnostic contains no provider body"
 
+[<Tests>]
 let tests =
     testList
         "OIDC startup requests"

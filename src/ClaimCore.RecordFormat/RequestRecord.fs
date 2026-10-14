@@ -152,7 +152,7 @@ module RequestRecord =
                 "$.command.type"
                 "Unknown command type. Use capabilities to discover supported commands."
 
-    /// Strict canonical-command-format-3 decoding shared by durable recovery and imports.
+    /// Strict canonical-command-format-3 decoding.
     let decode maxBytes (bytes: byte array) =
         if bytes.Length > maxBytes then
             Error
@@ -181,15 +181,7 @@ module RequestRecord =
                         "$.canonicalCommandFormat"
                         $"Only canonical command format {RecordVersions.CanonicalCommandFormat} is supported."
 
-                let idText = Json.text "$" "operationId" root
-
-                let operationId =
-                    match Guid.TryParseExact(idText, "D") with
-                    | true, value when value <> Guid.Empty && value.ToString("D") = idText -> value
-                    | _ ->
-                        Json.reject
-                            "$.operationId"
-                            "Use one non-empty UUID in canonical lowercase hyphenated form."
+                let operationId = Json.guid "$" "operationId" root
 
                 {
                     OperationId = operationId

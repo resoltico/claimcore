@@ -29,7 +29,7 @@ let private help () =
     printfn
         "  ClaimCore.Web probe live     Probe this configured listener without opening a runtime"
 
-    printfn "  ClaimCore.Web probe ready    Probe independently qualified real-data readiness"
+    printfn "  ClaimCore.Web probe ready    Probe database reachability and current schema"
     printfn "Required settings (credentials are private file paths):"
 
     WebSettings.required
@@ -40,21 +40,27 @@ let private help () =
     WebSettings.optional
     |> List.iter (fun setting -> printfn "  %s" (WebSettings.token setting))
 
-    printfn "Conditional real-data evidence settings:"
-
-    WebSettings.realData
-    |> List.iter (fun setting -> printfn "  %s" (WebSettings.token setting))
-
 let private writeVersion () =
     let output = Console.OpenStandardOutput()
-    output.Write(BuildIdentityCodec.bytes BuildIdentity.current)
+    let value = BuildIdentity.current
+
+    output.Write(
+        System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
+            {|
+                product = value.Product
+                version = value.Version
+                assemblyVersion = value.AssemblyVersion
+                fileVersion = value.FileVersion
+            |}
+    )
+
     0
 
 let private assetDirectory () =
     let published = Path.Combine(AppContext.BaseDirectory, "wwwroot")
-    let manifest = Path.Combine(published, "claimcore-assets.manifest.json")
+    let index = Path.Combine(published, "index.html")
 
-    if Directory.Exists(published) && File.Exists(manifest) then
+    if Directory.Exists(published) && File.Exists(index) then
         published
     else
         WebStartupDiagnostics.refuse WebStartupProblem.AssetsMissing
@@ -62,15 +68,13 @@ let private assetDirectory () =
 let private writeHostFailure context reason =
     task {
         HttpHeaders.noStore context
-        do! (WebWire.hostFailure reason).ExecuteAsync(context)
+        do! (RouteSupport.hostFailure context reason).ExecuteAsync(context)
     }
 
 let private configureKestrel (configuration: WebConfiguration) (builder: WebApplicationBuilder) =
     builder.WebHost.ConfigureKestrel(fun options ->
         options.AddServerHeader <- false
-        // The raw envelope import is the largest intentional request. Every endpoint still enforces
-        // its own tighter allocation bound before it reads the body.
-        options.Limits.MaxRequestBodySize <- 131072L
+        options.Limits.MaxRequestBodySize <- int64 configuration.Admission.MaximumJsonBytes
 
         options.Listen(
             configuration.Binding.ListenAddress,
@@ -122,25 +126,17 @@ let private requireTrustedConnection
         if Admission.trustedConnection configuration.Binding context then
             do! next.Invoke(context)
         else
-            do! writeHostFailure context WebHostFailure.ConnectionRejected
+            do! writeHostFailure context HostFailure.ConnectionRejected
     }
     :> Task)
 
 let private openRuntime (configuration: WebConfiguration) (ct: CancellationToken) =
     task {
-        let! opened =
-            Runtime.OpenPostgres(
-                configuration.ConnectionString,
-                configuration.WitnessConnectionString,
-                configuration.WitnessKeyRingPath,
-                configuration.SuppressionKeyPath,
-                configuration.RecoveryArtifactKeyPath,
-                ct
-            )
+        let! opened = Runtime.openConnection configuration.ConnectionString ct
 
         match opened with
         | Ok value -> return value
-        | Error RuntimeOpenFault.RuntimeCancelled when ct.IsCancellationRequested ->
+        | Error ClaimCore.Hosting.RuntimeOpenFault.Cancelled when ct.IsCancellationRequested ->
             return raise (OperationCanceledException(ct))
         | Error reason -> return WebStartupDiagnostics.refuse (WebStartupProblem.RuntimeOpen reason)
     }
@@ -160,14 +156,13 @@ let private configuredBuilder assets (configuration: WebConfiguration) oidc =
         builder.Services
 
     RateLimits.configure configuration.Admission builder.Services
-    builder.Services.AddSingleton<HostDiagnosticSink>() |> ignore
     builder.Services.AddAuthorization() |> ignore
     builder
 
 let private configureRoutes
     assets
     (configuration: WebConfiguration)
-    (runtime: Runtime)
+    (runtime: IRuntime)
     (application: WebApplication)
     =
     application.Use(
@@ -177,7 +172,12 @@ let private configureRoutes
     )
     |> ignore
 
-    application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures))
+    application.Use(Func<HttpContext, RequestDelegate, Task>(RequestLog.middleware Console.Error))
+    |> ignore
+
+    application.Use(
+        Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures Console.Error)
+    )
     |> ignore
 
     application.Use(
@@ -187,7 +187,7 @@ let private configureRoutes
 
     application.Use(
         Func<HttpContext, RequestDelegate, Task>(
-            HostRoutes.health (fun () -> runtime.HealthReadiness)
+            HostRoutes.health (fun () -> runtime.Ready System.Threading.CancellationToken.None)
         )
     )
     |> ignore
@@ -195,12 +195,26 @@ let private configureRoutes
     application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))
     |> ignore
 
+    application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
+    |> ignore
+
     application.UseAuthentication() |> ignore
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
 
-    HostRoutes.map assets configuration (fun principal -> runtime.ForActor principal) application
+    HostRoutes.map assets configuration (fun principal -> runtime.Actor principal) application
 
+
+let private runtimeLifetime (runtime: IRuntime) =
+    { new IAsyncDisposable with
+        member _.DisposeAsync() =
+            ValueTask(
+                task {
+                    let! _ = runtime.Shutdown(TimeSpan.FromSeconds 30.)
+                    return ()
+                }
+            )
+    }
 
 let private runAsync (ct: CancellationToken) =
     task {
@@ -215,11 +229,10 @@ let private runAsync (ct: CancellationToken) =
 
         do! verifyOidcMetadata oidc ct
 
-        use _stateLease = Security.acquireStateDirectory configuration.StateDirectory
         let assets = assetDirectory ()
 
         let! runtime = openRuntime configuration ct
-        use! _runtimeLease = Task.FromResult(runtime :> IAsyncDisposable)
+        use! _runtimeLease = Task.FromResult(runtimeLifetime runtime)
         ct.ThrowIfCancellationRequested()
 
         let builder = configuredBuilder assets configuration oidc
@@ -281,6 +294,7 @@ let main arguments =
             64
         else
             3
-    | _ ->
+    | error ->
+        RequestLog.reportException Console.Error error
         report WebStartupProblem.UnexpectedFailure
         70

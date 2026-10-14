@@ -1,4 +1,4 @@
-# Shared by every shell script in the repository; the stage plan adds no further options.
+# Shared Shellcheck policy for repository shell scripts.
 external-sources=true
 enable=all
 severity=style

@@ -10,7 +10,7 @@ module internal TlsCertificate =
     let load hostname path =
 
         let bytes =
-            match PrivateFileService.readBinary (8 * 1024 * 1024) path with
+            match PrivateFile.read (8 * 1024 * 1024) path with
             | Ok value when value.Length > 0 -> value
             | Ok _
             | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.CertificateAccessRefused

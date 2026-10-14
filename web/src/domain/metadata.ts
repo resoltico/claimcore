@@ -8,7 +8,7 @@ import type {
   CorrectionGroupDescriptor,
   FieldDescriptor,
   SemanticDefinition,
-} from "../api/v3";
+} from "../api/service";
 
 type FlatDraftValues = Record<string, string>;
 export type CorrectionGroupName = "registration" | "decision" | "payment";
@@ -92,7 +92,6 @@ export const correctionGroups = (
 
 /** The definition names every correction group, so the entries cover the whole record. */
 const correctionValues = (entries: [string, CorrectionGroupValues][]): CorrectionDraftValues =>
-  // lint-exception: LX-0015
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   Object.fromEntries(entries) as CorrectionDraftValues;
 
@@ -202,7 +201,6 @@ export const createDraft = (
     operationId,
     caseReference,
     expectedRevision,
-    // lint-exception: LX-0015
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     command: { kind: command, values: { ...values } } as CommandDraft["command"],
   };

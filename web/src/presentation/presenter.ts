@@ -1,6 +1,6 @@
 import correctionTargets from "./generated/correction-targets.json";
 import type { Notice } from "../api/notices";
-import type { FieldDescriptor } from "../api/v3";
+import type { FieldDescriptor } from "../api/service";
 import { calendarDate, displayField, exactAmount, exactInteger } from "./format";
 import { hasMessage, renderKey, translate } from "./messages";
 import { renderNotice } from "./notice";
@@ -82,6 +82,7 @@ export const createPresenter = (preferences: Preferences) => ({
   commandMeaning: (name: string) => metadata(preferences, "command", name, "meaning"),
   groupLabel: (name: string) => metadata(preferences, "group", name, "label"),
   groupMeaning: (name: string) => metadata(preferences, "group", name, "meaning"),
+  actLabel: (value: string) => token(preferences, value),
   token: (value: string) => token(preferences, value),
   hint: (field: FieldDescriptor) => hint(preferences, field),
   integer: (value: string | number) => exactInteger(String(value), preferences.displayLocale),

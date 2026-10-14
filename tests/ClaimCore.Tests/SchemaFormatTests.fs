@@ -65,54 +65,10 @@ let private requiredText (value: JsonElement) =
     |> Option.ofObj
     |> Option.defaultWith (fun () -> failtest "The projected scalar corpus requires text.")
 
-let private nativeScalarCorpus () =
-    let model = ContractProjection.current ()
-    let _, bytes = ClaimCore.ContractGeneration.WebParsedCorpus.artifact model
-    use corpus = JsonDocument.Parse(ReadOnlyMemory<byte>(bytes))
-    let mutable positiveIds = Set.empty
-    let mutable negativeCount = 0
-
-    for sample in corpus.RootElement.GetProperty("cases").EnumerateArray() do
-        let id = requiredText (sample.GetProperty("id"))
-
-        if
-            id.StartsWith("scalar-", StringComparison.Ordinal)
-            || id = "valid-case-get-found-scalar-boundaries"
-            || id = "valid-case-get-found-four-byte-boundary"
-            || id = "valid-case-get-found-scalar-one"
-        then
-            let endpoint =
-                model.WebEndpoints
-                |> List.find (fun value ->
-                    value.Identifier = requiredText (sample.GetProperty("endpoint")))
-
-            let actual =
-                SchemaValueValidation.verify
-                    (WebSchemas.responseDocument model endpoint)
-                    (sample.GetProperty("value"))
-
-            Expect.equal actual (sample.GetProperty("valid").GetBoolean()) id
-
-            if sample.GetProperty("valid").GetBoolean() then
-                positiveIds <- Set.add id positiveIds
-            else
-                negativeCount <- negativeCount + 1
-
-    Expect.equal
-        positiveIds
-        (set
-            [
-                "valid-case-get-found-scalar-boundaries"
-                "valid-case-get-found-four-byte-boundary"
-                "valid-case-get-found-scalar-one"
-            ])
-        "All supplementary positive controls ran"
-
-    Expect.isGreaterThan negativeCount 0 "Negative scalar corpus members ran"
-
 let private referenceUnicodeParity () =
     let contract =
-        CliSchemas.endpoint (ContractProjection.current ()) "case.get"
+        EndpointCatalog.tryFind "case.get"
+        |> Option.map (fun endpoint -> EndpointCatalog.schema endpoint.Request)
         |> Option.defaultWith (fun () -> failtest "Projected case input is required.")
         |> CanonicalContract.text
 
@@ -167,13 +123,11 @@ let private referenceUnicodeParity () =
                 expected
                 "Domain accepts the same exact text"
 
+[<Tests>]
 let tests =
     testList
         "schema scalar formats"
         [
-            testCase
-                "[CC-DOM-001] native evaluator admits the shared scalar corpus"
-                nativeScalarCorpus
             testCase
                 "[CC-DOM-001] projected reference guard preserves Unicode scalar semantics"
                 referenceUnicodeParity

@@ -1,46 +1,33 @@
 # Security policy
 
-## Reporting a vulnerability
+## Report privately
 
-Do not place vulnerabilities, credentials, connection strings, request or recovery files, claimant
-information, database extracts, or unredacted diagnostics in a public issue.
+Use this repository's GitHub Security → Advisories → Report a vulnerability flow. Include
+the affected revision, impact and a minimal synthetic reproduction. Never send active
+credentials, claimant data or unredacted database extracts, including in a private report.
+Rotate exposed credentials through the operator's process.
 
-Use this repository's GitHub private vulnerability reporting workflow:
+If private reporting is unavailable, open a public issue asking for a private reporting path.
+Do not disclose the vulnerability, affected component or reproduction in that issue.
 
-1. Open the repository's **Security** tab.
-2. Open **Advisories**, then select **Report a vulnerability**.
-3. Include the affected revision, likely impact, a minimal synthetic reproduction, and whether any
-   credential or real data may have been exposed.
+## Trust boundary
 
-Never attach active credentials, real claimant data, or an unredacted database extract, even to the
-private report. Revoke or rotate an exposed credential through its operator-controlled process and
-use synthetic replacements in the reproduction.
+OIDC identifies human and service principals. Scoped actor grants are default-deny and
+rechecked against authoritative locked state. Browser sessions use secure cookies and
+antiforgery admission. The browser and CLI are HTTPS clients and receive no database credentials.
+Database administration uses a separate owner credential and executable.
 
-If GitHub does not offer **Report a vulnerability**, open a public issue containing only a request
-for a maintainer to enable a private reporting path. Do not identify the affected component,
-vulnerability class, impact, reproduction steps, or sensitive value in that fallback issue.
+The identity provider, service host, database owner and backup operator remain trusted.
+Ledger hashes detect inconsistency against trusted retained evidence. They do not prove
+independent freshness or protect against rewriting all evidence. Erasure clears live case
+payloads; it cannot reach dead row versions, WAL, replicas, exports or backups, and the
+retained case reference may still identify someone.
 
-## Supported security boundary
+The included loopback Compose installation is for evaluation. Operators own deployment,
+TLS, identity administration, monitoring, backup/restore, retention and incident response.
+Read [Operations](docs/operations.md). The project supplies no multi-tenancy or production
+qualification. The repository promises no security fixes for historical revisions;
+identify the affected revision and reproduce against maintained source where possible.
 
-ClaimCore is a pre-1.0 application for a single trusted local administrative boundary. The repository
-does not promise security fixes for historical revisions; reproduce findings against the current
-maintained revision.
-
-The Web service validates individual OIDC browser identities and CLI/automation bearer identities.
-Browser tickets remain server-side behind secure cookies; ClaimCore actor and resource grants are
-default-deny and rechecked under authority locks. Owner administration is a separate credential and
-executable boundary. The browser and CLI receive neither database nor witness credentials.
-
-The service is loopback-bound and does not supply multi-tenancy or a qualified nonloopback deployment.
-Primary schema owners, witness administrators and host/storage administrators remain trusted; control
-of both databases, keys or all retained evidence can defeat the application boundary. Keep runtime
-and owner credentials out of browser clients, untrusted agents and generated code. Individual login,
-a green test run or a current-pair audit does not certify independent-host recovery or total erasure.
-
-Use only synthetic data unless the deployment has separately defined and tested identity, access,
-secret custody, TLS, monitoring, backup and restore, retention and deletion, and incident response.
-The complete operating limits are in [Security and operations](docs/operations.md).
-
-The local development and test database uses the official PostgreSQL image pinned by digest in
-`db/postgresql-baseline.json`; ClaimCore ships no database image. Dependabot proposes image updates
-weekly, and a newer image is adopted only through that reviewed change.
+PostgreSQL image identity is pinned in `db/postgresql-baseline.json`; ClaimCore ships no
+database image. Dependency and image updates require review and verification.

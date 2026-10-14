@@ -2,8 +2,8 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "./presentation-test-support";
 import { editor, draftAt, current } from "./presentation-state.fixtures";
-import type { CurrentCase } from "../src/api/v3";
-import { response } from "./v3-ui.fixtures";
+import type { CurrentCase } from "../src/api/service";
+import { response } from "./service-ui.fixtures";
 import { preferenceKey } from "../src/presentation/preferences";
 
 const paidCase: CurrentCase = {
@@ -81,16 +81,13 @@ it("associates payment acknowledgement with the generated mode control [CC-DOM-0
     "fetch",
     vi.fn().mockImplementation(() =>
       Promise.resolve(
-        response("command.prepare", "REJECTED", {
-          operationId: draftAt(0).operationId,
-          rejection: {
-            code: "INVALID_INPUT",
-            field: "payment",
-            actualRevision: null,
-            recommendedAction: "CORRECT_INPUT",
-            message: "Synthetic payment acknowledgement refusal.",
-            diagnostic: { id: "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED", parameters: {} },
-          },
+        response("command.preview", "REJECTED", {
+          code: "INVALID_INPUT",
+          field: "payment",
+          actualRevision: null,
+          recommendedAction: "CORRECT_INPUT",
+          message: "Synthetic payment acknowledgement refusal.",
+          diagnostic: { id: "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED", parameters: {} },
         }),
       ),
     ),

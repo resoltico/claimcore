@@ -1,263 +1,89 @@
 namespace ClaimCore.Hosting
 
 open System
-open System.IO
-open System.Threading
 open System.Threading.Tasks
-open Npgsql
+open System.Threading
 open ClaimCore.Application
-open ClaimCore.HostSecurity
-open ClaimCore.Postgres
-open ClaimCore.Witness
 
+[<RequireQualifiedAccess>]
+type RuntimeOpenFault =
+    | InvalidTransport
+    | UnsupportedServer
+    | UnsafeRole
+    | SchemaMismatch
+    | InstallationInvalid
+    | HeadMismatch
+    | Unavailable
+    | Cancelled
 
-/// Trusted local composition root. No store, mutable accepted state or credential is exposed.
-[<Sealed>]
-type Runtime
-    private
-    (
-        resources: RuntimeResources,
-        safety: RuntimeSafetySupervisor,
-        initialState: InstallationUseState
-    ) =
-    let realDataScope = initialState.Scope = InstallationUseScope.RealData
+/// A case-work host receives actor-bound operations and a bounded shutdown operation.
+type IRuntime =
+    inherit IDisposable
+    abstract Actor: PrincipalKey -> IActorClaimsCore
+    abstract BusinessTimeZone: string
+    abstract Ready: CancellationToken -> Task<bool>
+    abstract Shutdown: TimeSpan -> Task<ShutdownOutcome>
 
-    let health = new RuntimeHealthObservation()
-    do safety.SetInvalidation(health.Invalidate)
+type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBusinessCalendar) =
+    let gate = AdmissionGate(fun () -> storage.Dispose())
 
-    let auditCadence =
-        new RuntimeAuditCadence(resources, RuntimeAuditInterval.configured (), health.Invalidate)
+    interface IRuntime with
+        member _.Actor principal =
+            Core.create
+                storage.Installation.InstallationId
+                (ClaimCore.Postgres.Runtime.store storage)
+                calendar
+                principal
+            |> ActorFacade.bind gate
 
-    let commitHealth =
-        { new IMutationCommitHealth with
-            member _.VerifyLocked(connection, transaction, ct) =
-                task {
-                    auditCadence.RequireHealthy()
+        member _.BusinessTimeZone = calendar.TimeZoneId
 
-                    if realDataScope then
-                        do!
-                            RuntimeBackupHealthFiles.requireLocked
-                                resources
-                                connection
-                                transaction
-                                ct
-                }
-                :> Task
-        }
-
-    let admission =
-        new RuntimeAdmission(
-            { new IDisposable with
-                member _.Dispose() =
-                    try
-                        try
-                            (health :> IDisposable).Dispose()
-                        finally
-                            (auditCadence :> IDisposable).Dispose()
-                    finally
-                        (resources :> IDisposable).Dispose()
-            },
-            TimeSpan.FromSeconds 30.,
-            safety.RequireCurrent,
-            safety.AcquireReadFence,
-            {
-                RequireCaseMutation =
-                    (fun ct ->
-                        task {
-                            auditCadence.RequireHealthy()
-                            do! safety.RequireCaseMutation(ct)
-                        })
-                RequireCaseRead =
-                    (fun ct ->
-                        task {
-                            auditCadence.RequireHealthy()
-                            do! safety.RequireCaseRead(ct)
-                        })
-                RequireAuthoritySetup =
-                    (fun ct ->
-                        task {
-                            auditCadence.RequireHealthy()
-                            do! safety.RequireAuthoritySetup(ct)
-                        })
-                RequireAuthorityRead =
-                    (fun ct ->
-                        task {
-                            auditCadence.RequireHealthy()
-                            do! safety.RequireAuthorityRead(ct)
-                        })
-                RequireAuditTrust = auditCadence.RequireHealthy
-                AuthorityHealth =
-                    { new IMutationCommitHealth with
-                        member _.VerifyLocked(_, _, _) =
-                            task { auditCadence.RequireHealthy() } :> Task
-                    }
-                CommitHealth = commitHealth
-                CommitHealthRequired = realDataScope
+        member _.Ready token =
+            task {
+                match gate.Acquire() with
+                | None -> return false
+                | Some lease ->
+                    use _lease = lease
+                    return! storage.Ready token
             }
-        )
 
-    do health.Start(RuntimeReadiness.observe safety auditCadence.RequireHealthy)
+        member _.Shutdown bound = gate.Shutdown bound
+        member _.Dispose() = gate.Stop() |> ignore
 
-    member _.HealthReadiness =
-        try
-            use _lease = admission.Admit()
+module Runtime =
+    let internal fault =
+        function
+        | ClaimCore.Postgres.RuntimeOpenFault.InvalidTransport -> RuntimeOpenFault.InvalidTransport
+        | ClaimCore.Postgres.RuntimeOpenFault.UnsupportedServer ->
+            RuntimeOpenFault.UnsupportedServer
+        | ClaimCore.Postgres.RuntimeOpenFault.UnsafeRole -> RuntimeOpenFault.UnsafeRole
+        | ClaimCore.Postgres.RuntimeOpenFault.SchemaMismatch -> RuntimeOpenFault.SchemaMismatch
+        | ClaimCore.Postgres.RuntimeOpenFault.InstallationInvalid ->
+            RuntimeOpenFault.InstallationInvalid
+        | ClaimCore.Postgres.RuntimeOpenFault.HeadMismatch -> RuntimeOpenFault.HeadMismatch
+        | ClaimCore.Postgres.RuntimeOpenFault.Unavailable -> RuntimeOpenFault.Unavailable
+        | ClaimCore.Postgres.RuntimeOpenFault.Cancelled -> RuntimeOpenFault.Cancelled
 
-            if auditCadence.IsHealthy then
-                health.Read()
-            else
-                "UNKNOWN", "QUARANTINED", false
-        with _ ->
-            "UNKNOWN", "QUARANTINED", false
-
-    /// Safe operator-facing readiness is advisory at one fenced observation.
-    member _.DataUseReadiness(?cancellationToken: CancellationToken) =
+    let openConnection connectionString cancellationToken =
         task {
-            let ct = defaultArg cancellationToken CancellationToken.None
-            use _lease = admission.Admit()
-            return! RuntimeReadiness.observe safety auditCadence.RequireHealthy ct
+            let! opened =
+                ClaimCore.Postgres.Runtime.openConnection connectionString cancellationToken
+
+            match opened with
+            | Error error -> return Error(fault error)
+            | Ok storage ->
+                try
+                    return
+                        Ok(
+                            new RuntimeResource(
+                                storage,
+                                BusinessCalendar.resolve storage.Installation.BusinessTimeZone
+                            )
+                            :> IRuntime
+                        )
+                with
+                | :? TimeZoneNotFoundException
+                | :? InvalidTimeZoneException ->
+                    storage.Dispose()
+                    return Error RuntimeOpenFault.InstallationInvalid
         }
-
-    /// The caller passes a PrincipalKey obtained from validated OIDC/OAuth, not a display
-    /// name or group claim. A fresh scoped core is composed for each admitted endpoint call.
-    member private _.ForActorUsing(principal: PrincipalKey, selectedAdmission: RuntimeAdmission) =
-        use _lease = selectedAdmission.Admit()
-
-        let gate =
-            new PostgresActorGate(resources.DataSource, resources.Suppression) :> IActorGate
-
-        let factory = RuntimeActorFactory.create resources
-
-        let management =
-            new PostgresActorManagement(resources.DataSource, resources.Witness, principal)
-            :> IActorManagement
-
-        let lifecycleStore =
-            new PostgresCaseLifecycleStore(
-                resources.DataSource,
-                resources.Witness,
-                resources.Suppression
-            )
-            :> ICaseLifecycleStore
-
-        let lifecycle = ActorLifecycleApi.create gate lifecycleStore principal
-
-        let tombstoneStore =
-            new PostgresCaseTombstoneStore(resources.DataSource, resources.Witness)
-            :> ITombstoneStore
-
-        let tombstones = ActorTombstoneApi.create gate tombstoneStore principal
-
-        let signerApproval = RuntimeActorApprovalStores.signer resources
-        let deletionApproval = RuntimeActorApprovalStores.deletion resources
-        let adoptionApproval = RuntimeActorApprovalStores.adoption resources
-        let handoffApproval = RuntimeActorApprovalStores.handoff resources
-
-        let realDataActivationApproval =
-            RuntimeActorApprovalStores.realDataActivation resources
-
-        ActorCoreApi.create
-            gate
-            factory
-            principal
-            management
-            lifecycle
-            tombstones
-            signerApproval
-            deletionApproval
-            adoptionApproval
-            handoffApproval
-            realDataActivationApproval
-        |> RuntimeActorFacade.wrap selectedAdmission gate principal
-
-    member this.ForActor(principal: PrincipalKey) : IActorClaimsCore =
-        this.ForActorUsing(principal, admission)
-
-    /// Internal qualification seam; it cannot select a reviewed trust root or reach
-    /// the public Web/CLI composition path.
-    member internal this.ForActorWithAdmission(principal: PrincipalKey, selectedAdmission) =
-        this.ForActorUsing(principal, selectedAdmission)
-
-    static member private OpenWithCustody
-        (
-            connectionString: string,
-            witnessConnection: string,
-            custodyFactory: Store -> Task<IKeyCustody>,
-            suppressionKeyFilePath: string,
-            artifactKeyRingPath: string,
-            cancellationToken: CancellationToken
-        ) =
-        RuntimeSourceOwnership.openOwned
-            (fun () ->
-                BuildIdentity.requireCompatibleAssembly typeof<Runtime>.Assembly
-                BuildIdentity.requireCompatibleAssembly typeof<PostgresStore>.Assembly
-                BuildIdentity.requireCompatibleAssembly typeof<Store>.Assembly
-                new RuntimeResources(connectionString, artifactKeyRingPath))
-            (fun resources ->
-                RuntimeOpening.core
-                    resources
-                    witnessConnection
-                    custodyFactory
-                    suppressionKeyFilePath
-                    cancellationToken)
-            (fun () resources ->
-                task {
-                    let safety = new RuntimeSafetySupervisor(resources)
-                    let! state = safety.Initialize(cancellationToken)
-                    return new Runtime(resources, safety, state)
-                })
-            RuntimeOpening.fault
-            cancellationToken
-
-    static member OpenPostgres
-        (
-            connectionString: string,
-            witnessConnection: string,
-            witnessKey: byte array,
-            suppressionKeyFilePath: string,
-            artifactKeyRingPath: string,
-            cancellationToken: CancellationToken
-        ) =
-        Runtime.OpenWithCustody(
-            connectionString,
-            witnessConnection,
-            (fun store ->
-                task {
-                    let! activeKeyId, _ = store.ReadKeyCheck(cancellationToken)
-                    return new KeyRing(activeKeyId, [ activeKeyId, witnessKey ]) :> IKeyCustody
-                }),
-            suppressionKeyFilePath,
-            artifactKeyRingPath,
-            cancellationToken
-        )
-
-    static member OpenPostgres
-        (
-            connectionString: string,
-            witnessConnection: string,
-            witnessKeyRingFilePath: string,
-            suppressionKeyFilePath: string,
-            artifactKeyRingPath: string,
-            cancellationToken: CancellationToken
-        ) =
-        Runtime.OpenWithCustody(
-            connectionString,
-            witnessConnection,
-            (fun _ -> Task.FromResult(WitnessKeyCustody.load witnessKeyRingFilePath)),
-            suppressionKeyFilePath,
-            artifactKeyRingPath,
-            cancellationToken
-        )
-
-    interface IDisposable with
-        member _.Dispose() =
-            admission.CloseAndDrain(fun () ->
-                health.RequestStop()
-                auditCadence.RequestStop())
-
-    interface IAsyncDisposable with
-        member _.DisposeAsync() =
-            ValueTask(
-                admission.CloseAndDrainAsync(fun () ->
-                    health.RequestStop()
-                    auditCadence.RequestStop())
-            )

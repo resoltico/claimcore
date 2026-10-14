@@ -1,5 +1,5 @@
 import { useId } from "react";
-import type { CaseFields, CaseView, FieldDescriptor } from "../api/v3";
+import type { CaseFields, CaseView, FieldDescriptor } from "../api/service";
 import { BusinessValue } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
 import type { Presentation } from "../presentation/context";
@@ -10,7 +10,8 @@ type CaseFieldsViewProps = {
   fields: ReadonlyArray<FieldDescriptor>;
   context: string;
 };
-const valueFor = (fields: CaseFields, name: string): string | null => fields[name] ?? null;
+const valueFor = (fields: CaseFields, name: keyof CaseFields): string | null =>
+  fields[name] ?? null;
 const acceptedSummary = (
   p: Presentation,
   caseView: CaseView,

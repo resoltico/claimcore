@@ -154,11 +154,7 @@ export const validateCatalog = (source, translated, language) => {
 /** @param {import("./tooling-types.mjs").JsonRecord} semantic @param {import("./tooling-types.mjs").JsonRecord} hostSchema @returns {Record<string, Record<string, unknown>>} */
 export const diagnosticRequirements = (semantic, hostSchema) => {
   const result = Object.fromEntries(
-    [
-      semantic["rejectionDiagnostics"],
-      semantic["faultDiagnostics"],
-      semantic["recoveryDiagnostics"],
-    ]
+    [semantic["rejectionDiagnostics"], semantic["faultDiagnostics"]]
       .flat()
       .map((d) => [
         d.id,

@@ -52,7 +52,7 @@ test("bounds repeated published login admission and recovers after its window", 
           payload: await response.json(),
         },
         429,
-        "WEB_BUSY",
+        "RATE_LIMITED",
       );
       bounded = true;
       continue;

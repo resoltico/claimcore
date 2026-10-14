@@ -8,9 +8,9 @@ import {
   openLabel,
 } from "./localization-support";
 import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
-import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
-import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
-import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
+import { endpoints } from "../src/generated/contracts/endpoint-catalog";
+import { isResponse } from "../src/generated/contracts/validation";
+import type { ServiceResponse } from "../src/api/types";
 import type { Language } from "../src/presentation/preferences";
 
 const openPairPage = async (page: Page, source: Language, authenticated: boolean) => {
@@ -18,7 +18,7 @@ const openPairPage = async (page: Page, source: Language, authenticated: boolean
     await openApplication(page, "ClaimCore");
     return;
   }
-  const endpoint = webV3Endpoints.find((entry) => entry.id === "case.list");
+  const endpoint = endpoints.find((entry) => entry.id === "case.list");
   if (endpoint === undefined) {
     throw new Error("E2E_CASE_LIST_ENDPOINT_MISSING");
   }
@@ -31,8 +31,8 @@ const openPairPage = async (page: Page, source: Language, authenticated: boolean
     .then(async (reply) => {
       expect(reply.status()).toBe(200);
       const payload: unknown = await reply.json();
-      expect(await isWebV3Response("case.list", payload)).toBe(true);
-      expect((payload as WebV3Response<"case.list">).outcome.tag).toBe("SUCCEEDED");
+      expect(await isResponse("case.list", payload)).toBe(true);
+      expect((payload as ServiceResponse<"case.list">).outcome.tag).toBe("SUCCEEDED");
     });
   await Promise.all([
     initialList,

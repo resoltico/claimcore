@@ -10,6 +10,9 @@ open ClaimCore.WebTests.OidcLiveBrowser
 open ClaimCore.WebTests.OidcLiveKeys
 open ClaimCore.WebTests.OidcLiveTokens
 
+exception CredentialDispatchMismatch of int * int * int
+exception InvalidBearerAdmission of int * int
+
 let private value (root: JsonElement) (name: string) =
     root.GetProperty(name).GetString()
     |> Option.ofObj
@@ -45,7 +48,7 @@ let bearerRequest (local: HttpClient) token =
 
 let private caseRequest (local: HttpClient) token browserCookies =
     task {
-        use request = new HttpRequestMessage(HttpMethod.Post, "/api/v3/cases/get")
+        use request = new HttpRequestMessage(HttpMethod.Post, "/api/case.get")
 
         request.Content <-
             new StringContent(
@@ -55,6 +58,13 @@ let private caseRequest (local: HttpClient) token browserCookies =
             )
 
         request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + token)
+        |> ignore
+
+        request.Headers.TryAddWithoutValidation(
+            "ClaimCore-Contract",
+            ClaimCore.Contracts.WireContractFingerprint.value
+                ClaimCore.Contracts.EndpointCatalog.fingerprint
+        )
         |> ignore
 
         browserCookies
@@ -68,11 +78,11 @@ let private caseRequest (local: HttpClient) token browserCookies =
 
 let private requireDenied (local: HttpClient) tokens =
     task {
-        for token in tokens do
+        for index, token in List.indexed tokens do
             let! status = bearerRequest local token
 
             if status <> 401 then
-                invalidOp "Synthetic invalid bearer was accepted."
+                raise (InvalidBearerAdmission(index, status))
     }
 
 let private wrongIssuerToken issuer (identity: HttpClient) (credentials: JsonElement) =
@@ -109,7 +119,7 @@ let qualifyBearers
         let! mixed = caseRequest local token (Some browserCookies)
 
         if allowed <> 204 || caseAllowed <> 200 || mixed <> 401 then
-            invalidOp "Synthetic case API credential dispatch failed."
+            raise (CredentialDispatchMismatch(allowed, caseAllowed, mixed))
 
         let! unscoped =
             serviceToken

@@ -30,12 +30,9 @@ module HttpHeaders =
 
     /// Registered outermost: reverse callback order makes this the final owned policy.
     let register (context: HttpContext) =
-        let id = HostDiagnostics.identify context
-
         context.Response.OnStarting(
             Func<Task>(fun () ->
                 apply context
                 noStore context
-                context.Response.Headers["X-ClaimCore-Diagnostic-Id"] <- id
                 Task.CompletedTask)
         )

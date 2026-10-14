@@ -7,15 +7,14 @@
 .env
 .env.*
 !.env.example
-# Only the reviewed, credential-free Web and engineering npm policies are repository source.
+# The credential-free frontend npm policy is repository source.
 .npmrc
 !/web/.npmrc
-!/eng/.npmrc
 .netrc
 _netrc
 *.connection
 bootstrap-credential-*
-claimcore-recovery-*.json
+claimcore-*.json
 *.pfx
 *.p12
 *.pkcs12
@@ -86,5 +85,6 @@ Desktop.ini
 # Contract artifacts are generated from the F# projection; config/contracts.lock.json is what is reviewed.
 /web/src/generated/
 
-# Recognizable contract writer, stage and interrupted-promotion evidence.
-/web/src/generated/.contracts-*
+# Private credential inputs
+*.secret
+*.password

@@ -1,9 +1,8 @@
-import type { Notice } from "../api/notices";
 import type { CommandKind, DraftValues } from "./metadata";
 import { isCorrectionValues } from "./metadata";
 import { freezeRequest } from "./operationRequest";
-import type { CompletionResponse, EditingAction, PrepareResponse } from "./operationReducerTypes";
-import type { DeliveryState, OperationAction, OperationState } from "./operationState";
+import type { CompletionResponse, EditingAction } from "./operationReducerTypes";
+import type { OperationAction, OperationState } from "./operationState";
 
 export { initialOperation } from "./operationInitial";
 
@@ -21,7 +20,8 @@ const reset = (
   operationId,
   command,
   values,
-  preparation: null,
+  requestSha256: null,
+  requestBytes: null,
   review: null,
   receipt: null,
   delivery: "EDITING",
@@ -96,63 +96,87 @@ const change = (
   action: Extract<OperationAction, { type: "CHANGE_COMMAND" }>,
 ) =>
   editable(state) ? reset(state, action.values, action.nextOperationId, action.command) : state;
-const only = (
+const beginPreview = (
   state: OperationState,
-  delivery: DeliveryState,
-  message: Notice | null,
-): OperationState => ({ ...state, delivery, message, fieldError: null });
-const preparing = (
-  state: OperationState,
-  action: Extract<OperationAction, { type: "PREPARING" }>,
-) => {
-  if (!editable(state) && state.delivery !== "PREPARATION_UNKNOWN") {
+  action: Extract<OperationAction, { type: "PREVIEWING" }>,
+): OperationState => {
+  if (!editable(state) || action.draft.operationId !== state.operationId) {
     return state;
   }
   if (state.exposedRequest !== null && state.exposedRequest !== action.draft) {
     return state;
   }
-  if (action.draft.operationId !== state.operationId) {
-    return state;
-  }
+  const draft = state.exposedRequest ?? freezeRequest(action.draft);
   return {
-    ...only(state, "PREPARING", null),
-    exposedRequest: state.exposedRequest ?? freezeRequest(action.draft),
-    pending: { kind: "PREPARE" as const, requestId: action.requestId },
+    ...state,
+    delivery: "PREVIEWING",
+    exposedRequest: draft,
+    requestBytes: JSON.stringify(draft),
+    message: null,
+    fieldError: null,
+    pending: { kind: "PREVIEW", requestId: action.requestId },
   };
 };
-const submitting = (
-  state: OperationState,
-  action: Extract<OperationAction, { type: "SUBMITTING" }>,
-) =>
-  state.delivery === "REVIEWING" && state.exposedRequest !== null
-    ? {
-        ...only(state, "SUBMITTING", null),
-        pending: { kind: "SUBMIT" as const, requestId: action.requestId },
-      }
+const complete = (state: OperationState, action: CompletionResponse): OperationState => {
+  if (state.pending?.requestId !== action.requestId) {
+    return state;
+  }
+  if (action.type === "ACCEPTED") {
+    return {
+      ...state,
+      delivery: "ACCEPTED",
+      receipt: action.receipt,
+      pending: null,
+      message: null,
+    };
+  }
+  if (action.type === "OUTCOME_UNKNOWN") {
+    return state.pending.kind === "SUBMIT"
+      ? { ...state, delivery: "OUTCOME_UNKNOWN", pending: null, message: action.message }
+      : state;
+  }
+  return {
+    ...state,
+    delivery: "DEFINITELY_REJECTED",
+    pending: null,
+    message: action.message,
+    fieldError: action.field === null ? null : { name: action.field, message: action.message },
+  };
+};
+const submit = (state: OperationState, requestId: number): OperationState =>
+  (state.delivery === "REVIEWING" || state.delivery === "OUTCOME_UNKNOWN") &&
+  state.requestBytes !== null
+    ? { ...state, delivery: "SUBMITTING", pending: { kind: "SUBMIT", requestId }, message: null }
     : state;
-const retain = (state: OperationState): OperationState =>
-  state.delivery === "REVIEWING"
-    ? {
-        ...state,
-        delivery: "EDITING",
-        preparation: null,
-        review: null,
-        pending: null,
-      }
-    : state;
-
-const reject = (
+const transition = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "DEFINITELY_REJECTED" }>,
-): OperationState => ({
-  ...only(state, "DEFINITELY_REJECTED", action.message),
-  fieldError: action.field === null ? null : { name: action.field, message: action.message },
-  pending: null,
-});
-
-const matchesPending = (state: OperationState, kind: "PREPARE" | "SUBMIT", requestId: number) =>
-  state.pending?.kind === kind && state.pending.requestId === requestId;
-
+  action: Exclude<OperationAction, EditingAction>,
+): OperationState => {
+  switch (action.type) {
+    case "PREVIEWING":
+      return beginPreview(state, action);
+    case "REVIEWED":
+      return state.pending?.kind === "PREVIEW" && state.pending.requestId === action.requestId
+        ? {
+            ...state,
+            delivery: "REVIEWING",
+            review: action.review,
+            requestSha256: action.requestSha256,
+            pending: null,
+          }
+        : state;
+    case "SUBMITTING":
+      return submit(state, action.requestId);
+    case "RETURN_TO_EDIT":
+      return state.delivery === "REVIEWING"
+        ? { ...state, delivery: "EDITING", review: null, requestSha256: null, pending: null }
+        : state;
+    case "RESET_MESSAGE":
+      return { ...state, message: null };
+    default:
+      return complete(state, action);
+  }
+};
 const editingReducer = (state: OperationState, action: EditingAction): OperationState => {
   switch (action.type) {
     case "EDIT":
@@ -167,100 +191,11 @@ const editingReducer = (state: OperationState, action: EditingAction): Operation
       return change(state, action);
   }
 };
-
-const prepareResponse = (state: OperationState, action: PrepareResponse): OperationState => {
-  if (!matchesPending(state, "PREPARE", action.requestId)) {
-    return state;
-  }
-  switch (action.type) {
-    case "PREPARED":
-      return {
-        ...state,
-        delivery: "REVIEWING",
-        preparation: action.preparation,
-        review: action.review,
-        message: null,
-        fieldError: null,
-        pending: null,
-      };
-    case "PREPARATION_UNKNOWN":
-      return { ...only(state, "PREPARATION_UNKNOWN", action.message), pending: null };
-    case "RETAINED_FOR_RECOVERY":
-      return {
-        ...only(state, "RETAINED_FOR_RECOVERY", action.message),
-        preparation: action.preparation,
-        pending: null,
-      };
-  }
-};
-
-const completionResponse = (state: OperationState, action: CompletionResponse): OperationState => {
-  if (state.pending?.requestId !== action.requestId) {
-    return state;
-  }
-  switch (action.type) {
-    case "DEFINITELY_REJECTED":
-      return reject(state, action);
-    case "ACCEPTED":
-      return {
-        ...state,
-        delivery: "ACCEPTED",
-        receipt: action.receipt,
-        message: action.message ?? null,
-        pending: null,
-      };
-    case "OUTCOME_UNKNOWN":
-      return state.pending.kind === "SUBMIT"
-        ? {
-            ...only(state, "OUTCOME_UNKNOWN", action.message),
-            pending: null,
-            caseReference: "",
-            values: {},
-            preparation: null,
-            review: null,
-            receipt: null,
-            exposedRequest: null,
-          }
-        : state;
-  }
-};
-
-const transitionReducer = (
-  state: OperationState,
-  action: Exclude<OperationAction, EditingAction>,
-): OperationState => {
-  switch (action.type) {
-    case "PREPARING":
-      return preparing(state, action);
-    case "SUBMITTING":
-      return submitting(state, action);
-    case "KEEP_FOR_RECOVERY":
-      return retain(state);
-    case "RESET_MESSAGE":
-      return { ...state, message: null };
-    case "PREPARED":
-    case "PREPARATION_UNKNOWN":
-    case "RETAINED_FOR_RECOVERY":
-      return prepareResponse(state, action);
-    case "DEFINITELY_REJECTED":
-    case "ACCEPTED":
-    case "OUTCOME_UNKNOWN":
-      return completionResponse(state, action);
-  }
-};
-
-export const operationReducer = (
-  state: OperationState,
-  action: OperationAction,
-): OperationState => {
-  if (
-    action.type === "EDIT" ||
-    action.type === "EDIT_CORRECTION" ||
-    action.type === "SET_CORRECTION_MODE" ||
-    action.type === "EDIT_REFERENCE" ||
-    action.type === "CHANGE_COMMAND"
-  ) {
-    return editingReducer(state, action);
-  }
-  return transitionReducer(state, action);
-};
+export const operationReducer = (state: OperationState, action: OperationAction): OperationState =>
+  action.type === "EDIT" ||
+  action.type === "EDIT_CORRECTION" ||
+  action.type === "SET_CORRECTION_MODE" ||
+  action.type === "EDIT_REFERENCE" ||
+  action.type === "CHANGE_COMMAND"
+    ? editingReducer(state, action)
+    : transition(state, action);

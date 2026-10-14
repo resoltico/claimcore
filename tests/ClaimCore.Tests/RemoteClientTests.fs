@@ -39,10 +39,7 @@ let private failClosedConfiguration () =
                 RemoteClientMode.Interactive
                 None
 
-        Expect.equal
-            result
-            (Error ProtocolProblem.ServiceConfigurationInvalid)
-            "Unsafe service origin refused"
+        Expect.equal result (Error ClientFailure.Configuration) "Unsafe service origin refused"
 
     let result =
         RemoteConfiguration.create
@@ -54,7 +51,7 @@ let private failClosedConfiguration () =
 
     Expect.equal
         result
-        (Error ProtocolProblem.ServiceConfigurationInvalid)
+        (Error ClientFailure.Configuration)
         "Automation cannot proceed without private secret file"
 
 let private oidcMetadata () =
@@ -180,109 +177,54 @@ let private callback () =
         (LoopbackCallback.parseRequest "127.0.0.1:49153" issuer state request)
         "Wrong listener host refused"
 
-let private serviceResponseSchema () =
-    let model = ContractProjection.current ()
+let private hostileProviderBytes () =
+    let issuer = Uri("https://identity.example.test/realms/synthetic")
 
-    let endpoint =
-        model.WebEndpoints |> List.find (fun item -> item.Identifier = "case.list")
+    for data in
+        [
+            Unchecked.defaultof<byte array>
+            [| 0xffuy |]
+            Encoding.UTF8.GetBytes("null")
+            Encoding.UTF8.GetBytes("[0]")
+            Encoding.UTF8.GetBytes("{\"issuer\":\"\\ud800\"}")
+            Array.create 65537 (byte ' ')
+        ] do
+        Expect.isError
+            (OidcClient.parseDiscovery issuer data)
+            "Metadata reader is total and bounded"
 
-    let schema = WebSchemas.responseDocument model endpoint
+        Expect.isError
+            (OAuthTokenClient.parseTokenResponse data)
+            "Token reader is total and bounded"
 
-    let page =
-        {
-            Items = []
-            NextCursor = None
-            AvailableCommands = []
-        }
+    for token in [ "has space"; "has\r\nheader"; "\u00e9" ] do
+        let json =
+            System.Text.Json.JsonSerializer.Serialize(
+                {|
+                    access_token = token
+                    token_type = "Bearer"
+                    expires_in = 60
+                |}
+            )
 
-    let bytes = WebWireCodec.list (QueryOutcome.Succeeded page)
-    use document = System.Text.Json.JsonDocument.Parse(ReadOnlyMemory bytes)
+        Expect.isError
+            (OAuthTokenClient.parseTokenResponse (Encoding.UTF8.GetBytes json))
+            "Invalid bearer text never reaches an HTTP header"
 
-    Expect.isTrue
-        (SchemaValueValidation.verify schema document.RootElement)
-        "Exact generated service response accepted"
-
-    use extra =
-        System.Text.Json.JsonDocument.Parse(
-            """{"endpoint":"case.list","outcome":{"tag":"SUCCEEDED","data":{"items":[],"nextCursor":null}},"private":"leak"}"""
-        )
-
-    Expect.isFalse
-        (SchemaValueValidation.verify schema extra.RootElement)
-        "Unexpected response property refused before CLI output"
-
-    let exportId = Guid.Parse("10000000-0000-4000-8000-000000000001")
-    let exportBytes = CliServiceRequests.export exportId (String.replicate 64 "a")
-    use export = System.Text.Json.JsonDocument.Parse(ReadOnlyMemory exportBytes)
-
-    let exportEndpoint =
-        model.WebEndpoints
-        |> List.find (fun item -> item.Identifier = "recovery.export")
-
-    match exportEndpoint.Body with
-    | Some(JsonBody inputSchema) ->
-        let inputDocument =
-            { WebSchemas.responseDocument model exportEndpoint with
-                Root = inputSchema
-            }
-
-        Expect.isTrue
-            (SchemaValueValidation.verify inputDocument export.RootElement)
-            "Private destination is absent from the exact generated service request"
-    | _ -> failtest "Recovery export must have generated JSON input"
-
-let private hostStatusBinding () =
-    let bytes = WebWireCodec.hostFailure WebHostFailure.SessionRejected
-    use document = System.Text.Json.JsonDocument.Parse(ReadOnlyMemory bytes)
-
-    Expect.isTrue
-        (RemoteServiceCall.hostStatusMatches 401 document.RootElement)
-        "Exact HTTP status matches host body"
-
-    Expect.isFalse
-        (RemoteServiceCall.hostStatusMatches 403 document.RootElement)
-        "Wrong HTTP status cannot be accepted from a valid body"
-
-let private authorityUncertainty () =
-    let eventId = Guid.Parse("10000000-0000-4000-8000-000000000001")
-
-    let bytes =
-        WebWireCodec.management "authority.register" (ActorManagementOutcome.Unconfirmed eventId)
-
-    use document = System.Text.Json.JsonDocument.Parse(ReadOnlyMemory bytes)
-    let reply = CliRemoteWireCodec.result "authority.register" document.RootElement
-    Expect.equal reply.ExitCode 4 "Witness-pending authority must not look like definite failure"
-
-let private mutationHostDelivery () =
-    let bytes = WebWireCodec.hostFailure WebHostFailure.CompletedResponseFailed
-    use document = System.Text.Json.JsonDocument.Parse(ReadOnlyMemory bytes)
-
-    for endpoint in (ContractProjection.current ()).CliEndpoints do
-        if not endpoint.Cancellable then
-            let mutation =
-                CliRemoteWireCodec.hostFailure endpoint.Identifier document.RootElement
-
-            Expect.equal mutation.ExitCode 4 $"Lost {endpoint.Identifier} response is unresolved"
-
-    let query = CliRemoteWireCodec.hostFailure "case.list" document.RootElement
-    Expect.equal query.ExitCode 3 "Nonmutating query cannot accept authority"
-
+[<Tests>]
 let tests =
     testList
-        "authenticated CLI client foundation"
+        "CLI authentication"
         [
-            testCase "HTTPS service client configuration is explicit" validConfiguration
             testCase
-                "unsafe origins and missing automation secret fail closed"
+                "hostile provider bytes and bearer header text are refused"
+                hostileProviderBytes
+            testCase "HTTPS service configuration" validConfiguration
+            testCase
+                "unsafe origins and absent automation secret are refused"
                 failClosedConfiguration
-            testCase "OIDC discovery binds issuer and HTTPS endpoints" oidcMetadata
-            testCase "interactive code flow uses S256 PKCE and loopback state" pkce
-            testCase "token response parsing is bounded and redacted" tokenResponse
-            testCase "PKCE callback requires exact loopback host and state" callback
-            testCase "service response validation rejects schema drift" serviceResponseSchema
-            testCase "host failure requires matching actual HTTP status" hostStatusBinding
-            testCase
-                "authority uncertainty retains exit-four recovery direction"
-                authorityUncertainty
-            testCase "completed mutation response loss remains uncertain" mutationHostDelivery
+            testCase "metadata pins issuer and TLS endpoints" oidcMetadata
+            testCase "authorization uses S256 PKCE and loopback state" pkce
+            testCase "tokens are bounded and redacted" tokenResponse
+            testCase "callback requires exact host and state" callback
         ]

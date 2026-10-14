@@ -8,7 +8,7 @@ import { Form } from "react-aria-components/Form";
 import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { TextField } from "react-aria-components/TextField";
-import type { PublicDefinition, Receipt } from "../api/v3";
+import type { PublicDefinition, Receipt } from "../api/service";
 import { useOperationObservation } from "../hooks/useOperationObservation";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 
@@ -31,15 +31,19 @@ const ReceiptView = ({
       <p>
         {p.text("ui.observedReceipt", {
           operationId: receipt.operationId,
-          command: p.commandLabel(receipt.command),
+          command: p.actLabel(receipt.act),
           actor: receipt.recordedBy,
         })}
       </p>
-      <CaseFieldsView
-        caseView={receipt.snapshot}
-        fields={definition.definition.fields}
-        context={p.text("ui.observedContext", { operationId: receipt.operationId })}
-      />
+      {receipt.snapshot === null ? (
+        <p>{p.text("ui.lifecycleErased")}</p>
+      ) : (
+        <CaseFieldsView
+          caseView={receipt.snapshot}
+          fields={definition.definition.fields}
+          context={p.text("ui.observedContext", { operationId: receipt.operationId })}
+        />
+      )}
     </>
   );
 };
@@ -72,8 +76,7 @@ export const OperationLookup = ({
   const p = usePresentation();
   const { operationId, setOperationId, receipt, message, notObserved, loading, observe } =
     useOperationObservation(token, initialOperationId);
-  const invalid =
-    message?.kind === "diagnostic" && message.diagnostic.id === "WEB_INPUT_INVALID_UUID";
+  const invalid = message?.kind === "diagnostic" && message.diagnostic.id === "HOST_INPUTINVALID";
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (invalid && !loading) {

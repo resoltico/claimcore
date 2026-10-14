@@ -2,18 +2,6 @@
   "version": 2,
   "dependencies": {
     "net10.0": {
-      "coverlet.MTP": {
-        "type": "Direct",
-        "requested": "[10.1.0, )",
-        "resolved": "10.1.0",
-        "contentHash": "FbW1D7OFFUmITgKzYhasyaX0m/oQzuU3ab4ooOURngztKK/QulCT/YuADhRDSGrE79S2dVoEQPgNkg2qBz29tg==",
-        "dependencies": {
-          "Microsoft.Extensions.Configuration": "10.0.12",
-          "Microsoft.Extensions.Configuration.Json": "10.0.12",
-          "Microsoft.Extensions.DependencyInjection": "10.0.12",
-          "Microsoft.Testing.Platform": "2.4.1"
-        }
-      },
       "Expecto": {
         "type": "Direct",
         "requested": "[11.1.0, )",
@@ -47,15 +35,6 @@
         "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
-        }
-      },
-      "NSec.Cryptography": {
-        "type": "Direct",
-        "requested": "[26.4.0, )",
-        "resolved": "26.4.0",
-        "contentHash": "0vsCtY5f+YgQROiWNqzgWp+l2pddfk9FkWoGV/bEo0MuEYPKlJWuoA8aOfO6qp3f+EnObKE3zSJhn1PspJeJVg==",
-        "dependencies": {
-          "libsodium": "[1.0.22, 1.0.23)"
         }
       },
       "Testcontainers.PostgreSql": {
@@ -145,11 +124,6 @@
           "Docker.DotNet.Enhanced.Handler.Abstractions": "4.3.3"
         }
       },
-      "libsodium": {
-        "type": "Transitive",
-        "resolved": "1.0.22",
-        "contentHash": "KPD9SloJFclrsjnhABu7dzWrcyYkwPbvx5l1gRSPAX/0n+OBtSiVCKtGFv4n+ecWUHU0tCG9LSSwoZZx673zBQ=="
-      },
       "Microsoft.Testing.Extensions.Telemetry": {
         "type": "Transitive",
         "resolved": "2.4.1",
@@ -191,34 +165,20 @@
           "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
         }
       },
-      "Testcontainers": {
-        "type": "Transitive",
-        "resolved": "4.15.0",
-        "contentHash": "8tCZKMm++C/9dHIr8lsE1iDBIBmthbo2XlGFDr4gorT1vgZrJwU36fNkCGuX7h7V39rpQoTK/aG+FhJz3jhY3A==",
-        "dependencies": {
-          "Docker.DotNet.Enhanced": "4.3.3",
-          "Docker.DotNet.Enhanced.X509": "4.3.3",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
-          "SSH.NET": "2026.0.0",
-          "SharpZipLib": "1.4.2"
-        }
-      },
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.RecordFormat": "[0.6.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
+          "ClaimCore.RecordFormat": "[0.8.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.database": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.HostSecurity": "[0.6.0, )",
-          "ClaimCore.Postgres": "[0.6.0, )",
-          "ClaimCore.Witness": "[0.6.0, )",
+          "ClaimCore.Application": "[0.8.0, )",
+          "ClaimCore.HostSecurity": "[0.8.0, )",
+          "ClaimCore.Postgres": "[0.8.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -231,14 +191,10 @@
       "claimcore.hosting": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.HostSecurity": "[0.6.0, )",
-          "ClaimCore.Postgres": "[0.6.0, )",
-          "ClaimCore.RecordFormat": "[0.6.0, )",
-          "ClaimCore.Witness": "[0.6.0, )",
-          "FSharp.Core": "[10.1.401, )",
-          "Npgsql": "[10.0.3, )"
+          "ClaimCore.Application": "[0.8.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
+          "ClaimCore.Postgres": "[0.8.0, )",
+          "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.hostsecurity": {
@@ -250,27 +206,18 @@
       "claimcore.postgres": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.RecordFormat": "[0.6.0, )",
-          "ClaimCore.Witness": "[0.6.0, )",
+          "ClaimCore.Application": "[0.8.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
+          "ClaimCore.RecordFormat": "[0.8.0, )",
           "FSharp.Core": "[10.1.401, )",
-          "NSec.Cryptography": "[26.4.0, )",
           "Npgsql": "[10.0.3, )"
         }
       },
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.6.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
           "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.witness": {
-        "type": "Project",
-        "dependencies": {
-          "FSharp.Core": "[10.1.401, )",
-          "Npgsql": "[10.0.3, )"
         }
       },
       "Azure.Core": {
@@ -353,31 +300,6 @@
           "Microsoft.Extensions.Configuration.Abstractions": "10.0.12"
         }
       },
-      "Microsoft.Extensions.Configuration.FileExtensions": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.12, )",
-        "resolved": "10.0.12",
-        "contentHash": "PNPS7yYH9U2M0dExn0tMkQFVtE53xTlCs/dgTfsWTTFyCF6qwGT3VrTgm2nnnkSRlSmvM9/J+n9xCpyzd9xTpQ==",
-        "dependencies": {
-          "Microsoft.Extensions.Configuration": "10.0.12",
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.12",
-          "Microsoft.Extensions.FileProviders.Abstractions": "10.0.12",
-          "Microsoft.Extensions.FileProviders.Physical": "10.0.12",
-          "Microsoft.Extensions.Primitives": "10.0.12"
-        }
-      },
-      "Microsoft.Extensions.Configuration.Json": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.12, )",
-        "resolved": "10.0.12",
-        "contentHash": "H4u2ZeIhjmRQvbHj7S7U4MK1kXb0khx3UtOWcir32VHczdFyIVF0lvHew/VVHmCF7Uk0QseAUaO7HyFKOCSiKA==",
-        "dependencies": {
-          "Microsoft.Extensions.Configuration": "10.0.12",
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Configuration.FileExtensions": "10.0.12",
-          "Microsoft.Extensions.FileProviders.Abstractions": "10.0.12"
-        }
-      },
       "Microsoft.Extensions.DependencyInjection": {
         "type": "CentralTransitive",
         "requested": "[10.0.12, )",
@@ -411,23 +333,6 @@
         "dependencies": {
           "Microsoft.Extensions.Primitives": "10.0.12"
         }
-      },
-      "Microsoft.Extensions.FileProviders.Physical": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.12, )",
-        "resolved": "10.0.12",
-        "contentHash": "3cY+wo2+Qe65BVwShhr2fFqZv5Ns73h3kX4mpW3WvSgfT3AWCk0hKArKW4TF7Dg3mvbJdA6RhWPW7FR+PS5/1w==",
-        "dependencies": {
-          "Microsoft.Extensions.FileProviders.Abstractions": "10.0.12",
-          "Microsoft.Extensions.FileSystemGlobbing": "10.0.12",
-          "Microsoft.Extensions.Primitives": "10.0.12"
-        }
-      },
-      "Microsoft.Extensions.FileSystemGlobbing": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.12, )",
-        "resolved": "10.0.12",
-        "contentHash": "45cV+UeI0chPAIXrx9Wv7K4PJXuuIR2pnOur5MOAo6kOFclBHSLLDrvGAxMfWRMtUvpv/kQZkxlgaUN56jwzSQ=="
       },
       "Microsoft.Extensions.Hosting.Abstractions": {
         "type": "CentralTransitive",
@@ -635,6 +540,19 @@
         "requested": "[10.0.12, )",
         "resolved": "10.0.12",
         "contentHash": "wO0W8VDMeRJZakRySOmemAnrBZMwEFRlbfBtATxUiLf2I3IhSRnCp1Vt157NWptdE4IJ7eftd5n8q9LtaKHFTQ=="
+      },
+      "Testcontainers": {
+        "type": "CentralTransitive",
+        "requested": "[4.15.0, )",
+        "resolved": "4.15.0",
+        "contentHash": "8tCZKMm++C/9dHIr8lsE1iDBIBmthbo2XlGFDr4gorT1vgZrJwU36fNkCGuX7h7V39rpQoTK/aG+FhJz3jhY3A==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced": "4.3.3",
+          "Docker.DotNet.Enhanced.X509": "4.3.3",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
+          "SSH.NET": "2026.0.0",
+          "SharpZipLib": "1.4.2"
+        }
       }
     }
   }

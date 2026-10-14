@@ -1,125 +1,61 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
-    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
-    <Compile Include="../../eng/RejectionExamples.fs" Link="RejectionExamples.fs" />
-    <Compile Include="../../eng/ClaimCore.ContractGenerator/DefaultPresentation.fs" Link="DefaultPresentation.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
-    <Compile Include="../CommandExecution.fs" Link="CommandExecution.fs" />
+    <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
+    <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="PropertyHarness.fs" />
     <Compile Include="PropertyHarnessTests.fs" />
     <Compile Include="Fixtures.fs" />
-    <Compile Include="CommandIdentityIsolationTests.fs" />
     <Compile Include="ScalarPropertyTests.fs" />
-    <Compile Include="RecordPropertyTests.fs" />
     <Compile Include="TransitionOracle.fs" />
     <Compile Include="TransitionPropertyTests.fs" />
-    <Compile Include="CoreStore.fs" />
-    <Compile Include="CoreRecoveryStoreState.fs" />
-    <Compile Include="CoreRecoveryStoreRead.fs" />
-    <Compile Include="CoreRecoveryStoreMutation.fs" />
-    <Compile Include="CoreRecoveryStore.fs" />
-    <Compile Include="SignedRecoveryTestSupport.fs" />
-    <Compile Include="ActorCoreFixture.fs" />
-    <Compile Include="PreparationAttributionTests.fs" />
-    <Compile Include="SignedRecoveryImportTests.fs" />
-    <Compile Include="ExportDeliveryTests.fs" />
     <Compile Include="DomainTests.fs" />
-    <Compile Include="CaseLifecycleTestSupport.fs" />
-    <Compile Include="OwnerErasureTestSupport.fs" />
-    <Compile Include="CaseDispositionTests.fs" />
-    <Compile Include="CaseErasureTests.fs" />
-    <Compile Include="CaseLifecycleProjectionTests.fs" />
-    <Compile Include="CasePurgeAuthorizationTests.fs" />
     <Compile Include="CaseCorrectionTests.fs" />
-    <Compile Include="CorrectionGuidanceTests.fs" />
     <Compile Include="BusinessDateTests.fs" />
     <Compile Include="DomainAdmissionTests.fs" />
     <Compile Include="CorrectionMatrixTests.fs" />
     <Compile Include="DomainValidationTests.fs" />
     <Compile Include="AvailabilityTests.fs" />
-    <Compile Include="PaginationTests.fs" />
-    <Compile Include="CoreTests.fs" />
-    <Compile Include="TypedCoreTests.fs" />
-    <Compile Include="ExactReplayTests.fs" />
-    <Compile Include="ReceiptFirstTests.fs" />
-    <Compile Include="ScriptedClaimStore.fs" />
-    <Compile Include="RecoveryOutcomeTests.fs" />
-    <Compile Include="RecoveryAccessOutcomeTests.fs" />
-    <Compile Include="RecoveryAdmissionOutcomeTests.fs" />
-    <Compile Include="RecoveryCancellationOutcomeTests.fs" />
-    <Compile Include="RecoveryAuthorityTests.fs" />
-    <Compile Include="CoreQueryTests.fs" />
-    <Compile Include="CaseListCursorTests.fs" />
-    <Compile Include="CoreBoundaryParityTests.fs" />
-    <Compile Include="ExampleContractTests.fs" />
-    <Compile Include="ProtocolTests.fs" />
-    <Compile Include="CliExitContractTests.fs" />
-    <Compile Include="CanonicalRecordTests.fs" />
-    <Compile Include="FreshRecoveryFormatTests.fs" />
-    <Compile Include="RecoveryArtifactFixture.fs" />
-    <Compile Include="RecoveryArtifactV3Tests.fs" />
-    <Compile Include="DraftTests.fs" />
-    <Compile Include="BuildIdentityTests.fs" />
-    <Compile Include="ArchitectureTests.fs" />
-    <Compile Include="InstallationCalendarTests.fs" />
-    <Compile Include="FieldSchemaTests.fs" />
     <Compile Include="DomainDescriptorTests.fs" />
-    <Compile Include="ContractsTests.fs" />
-    <Compile Include="EndpointExtensionTests.fs" />
-    <Compile Include="SemanticIdentityTests.fs" />
-    <Compile Include="RejectionDiagnosticTests.fs" />
-    <Compile Include="PresentationProjectionTests.fs" />
-    <Compile Include="RejectionEmissionTests.fs" />
-    <Compile Include="FaultDiagnosticExamples.fs" />
-    <Compile Include="RecoveryDiagnosticExamples.fs" />
-    <Compile Include="OutcomeDiagnosticTests.fs" />
-    <Compile Include="OutcomeEmissionTests.fs" />
-    <Compile Include="ConfigurationTests.fs" />
-    <Compile Include="CliProcessTests.fs" />
-    <Compile Include="BoundedProcessTests.fs" />
+    <Compile Include="StewardshipTests.fs" />
+    <Compile Include="CanonicalRecordTests.fs" />
+    <Compile Include="RecordPropertyTests.fs" />
+    <Compile Include="DecoderCorpora.fs" />
+    <Compile Include="OperationRecordTests.fs" />
+    <Compile Include="LedgerEntryTests.fs" />
+    <Compile Include="CaseReferenceIdTests.fs" />
+    <Compile Include="PrivateFileTests.fs" />
+    <Compile Include="MemoryLedgerStore.fs" />
+    <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
+    <Compile Include="HostingTests.fs" />
+    <Compile Include="ApplicationTests.fs" />
+    <Compile Include="ContractTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
     <Compile Include="RemoteTlsTests.fs" />
-    <Compile Include="CliTrustRootProcessTests.fs" />
     <Compile Include="TokenLifetimeTests.fs" />
-    <Compile Include="HttpResponseDeadlineTests.fs" />
-    <Compile Include="RemoteResponseBoundsTests.fs" />
-    <Compile Include="IssuerIdentityTests.fs" />
-    <Compile Include="RemoteInvocationTests.fs" />
-    <Compile Include="ScalarInvocationDiagnosticTests.fs" />
-    <Compile Include="ActorAuthorizationTests.fs" />
-    <Compile Include="ActorAuthorizationMatrixTests.fs" />
-    <Compile Include="ActorCommandCapabilityTests.fs" />
-    <Compile Include="ActorPrincipalIdentityTests.fs" />
-    <Compile Include="PrivateFileSecurityTests.fs" />
-    <Compile Include="PrivateFileHashTests.fs" />
-    <Compile Include="NativePrivateFileRaceTests.fs" />
-    <Compile Include="NativeFileBoundaryTests.fs" />
-    <Compile Include="DatabasePrivateFileTests.fs" />
-    <Compile Include="CompilerBoundaryTests.fs" />
-    <Compile Include="DiagnosticTestStreams.fs" />
-    <Compile Include="FrameDeliveryTests.fs" />
-    <Compile Include="AdministrationPrivateCommandTests.fs" />
-    <Compile Include="AdministrationLossCommandTests.fs" />
-    <Compile Include="AdministrationDiagnosticTests.fs" />
-    <Compile Include="ProtocolDiagnosticTests.fs" />
-    <Compile Include="Suite.fs" />
+    <Compile Include="CliTransportFixture.fs" />
+    <Compile Include="CliTransportTests.fs" />
+    <Compile Include="CliReplyLossTests.fs" />
+    <Compile Include="CliFrameTests.fs" />
+    <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
+    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
+    <Compile Include="DocumentationDiscovery.fs" />
+    <Compile Include="DocumentationChecks.fs" />
+    <Compile Include="DocumentationTests.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.CliProtocol/ClaimCore.CliProtocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
-    <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
     <PackageReference Include="Hedgehog" />
+    <PackageReference Include="Markdig" />
   </ItemGroup>
-  <Import Project="../../src/ClaimCore.HostSecurity/HostSecurity.Native.targets" />
 </Project>

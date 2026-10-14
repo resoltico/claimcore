@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <Compile Include="Suite.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" />
-  </ItemGroup>
-</Project>

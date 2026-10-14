@@ -1,10 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { completeCommand } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
 import {
   pauseJsonReply,
-  confirmPrepared,
+  confirmReview,
   selectLanguage,
   ui,
   trackRequests,
@@ -18,8 +17,8 @@ import {
   type Modes,
 } from "./localization-correction-workflow";
 
-// This complete published workflow includes three witnessed setup commits, language changes,
-// correction and authoritative readback; allow its instrumented host a whole-workflow budget.
+// Each independent case is accepted through the authenticated service before browser-authored
+// correction, language changes and authoritative readback.
 test.setTimeout(45_000);
 
 // Independent paid-case outcomes; all replacement values actually change their groups.
@@ -64,7 +63,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
     await selectLanguage(page, language);
     await expect(page.getByText(ui(language, "ui.correctionHint"), { exact: true })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: ui(language, "ui.prepareExact"), exact: true }),
+      page.getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true }),
     ).toBeVisible();
     for (const [group, mode] of Object.entries(modes)) {
       await expect(page.locator(`#correction-${group}-mode`)).toHaveValue(mode);
@@ -76,10 +75,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
   expect(requests).toHaveLength(0);
 };
 const paidInStatus = async (page: Page, reference: string, status: "OPENED" | "CLOSED") => {
-  await paidCase(page, reference);
-  if (status === "CLOSED") {
-    await completeCommand(page, "Close the case");
-  }
+  await paidCase(page, reference, status);
   const before = await currentCase(page, reference);
   expect(before.revision).toBe(status === "CLOSED" ? "4" : "3");
   expect(before.fields.status).toBe(status);
@@ -121,18 +117,18 @@ for (const status of ["OPENED", "CLOSED"] as const) {
         await chooseGroups(page, modes, language);
         await preserveChoice(page, modes);
         await selectLanguage(page, language);
-        const pending = await pauseJsonReply(page, "command.prepare");
+        const pending = await pauseJsonReply(page, "command.preview");
         await page
-          .getByRole("button", { name: ui(language, "ui.prepareExact"), exact: true })
+          .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
           .click();
         const captured = await pending.ready;
         expectAuthored(captured.bytes, reference, modes, before.revision);
         pending.release();
         if (refusal === null) {
-          expect(captured.reply.outcome.tag).toBe("PREPARED");
-          await confirmPrepared(page);
+          expect(captured.reply.outcome.tag).toBe("REVIEWED");
+          await confirmReview(page);
           const recorded = page.waitForResponse(
-            (response) => new URL(response.url()).pathname === "/api/v3/operations/submit",
+            (response) => new URL(response.url()).pathname === "/api/command.execute",
           );
           await page
             .getByRole("button", { name: ui(language, "ui.submitExact"), exact: true })
@@ -144,13 +140,13 @@ for (const status of ["OPENED", "CLOSED"] as const) {
           expect(acceptedHistory).toHaveLength(Number(before.revision) + 1);
           expect(
             acceptedHistory.some(
-              (entry) => entry.tag === "FULL" && entry.receipt.command === "CORRECT_CASE",
+              (entry) => entry.tag === "FULL" && entry.receipt.act === "CORRECT_CASE",
             ),
           ).toBe(true);
         } else {
           expect(captured.reply.outcome.tag).toBe("REJECTED");
           if (captured.reply.outcome.tag === "REJECTED") {
-            expect(captured.reply.outcome.data.rejection.diagnostic.id).toBe(refusal);
+            expect(captured.reply.outcome.data.diagnostic.id).toBe(refusal);
           }
           await expect(page.getByRole("alert")).toBeVisible();
           await expectPaymentGuidance(page, refusal);

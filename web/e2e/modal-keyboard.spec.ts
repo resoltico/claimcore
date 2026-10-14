@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 
-import { prepare, startOpen } from "./case-workflow";
+import { reviewDraft, startOpen } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
-test("contains keyboard focus and returns it after safely dismissing a prepared review", async ({
+test("contains keyboard focus and returns it after safely dismissing a advisory review", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -14,7 +14,7 @@ test("contains keyboard focus and returns it after safely dismissing a prepared 
   await expect(page.getByRole("heading", { name: "Open a case" })).toBeVisible();
   await page.getByRole("button", { name: "Back to cases" }).click();
   await startOpen(page, `KEYBOARD-${randomUUID()}`);
-  await prepare(page);
+  await reviewDraft(page);
   const review = page.getByRole("dialog", { name: "Review changes" });
   await expectAccessible(page);
   await review.getByRole("checkbox").focus();

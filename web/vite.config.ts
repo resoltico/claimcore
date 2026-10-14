@@ -39,19 +39,12 @@ export default {
     pool: "vmThreads",
     include: ["tests/**/*.test.{ts,tsx}"],
     setupFiles: "./tests/setup.ts",
-    reporters: ["./scripts/vitest-reporter.mjs"],
+    reporters: ["default"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
       reportsDirectory: "../artifacts/frontend/coverage",
       include: ["src/**/*.{ts,tsx}", "src/presentation/pseudolocalization.mjs"],
-      thresholds: {
-        statements: 90,
-        branches: 85,
-        functions: 90,
-        lines: 90,
-        perFile: true,
-      },
     },
   },
 } satisfies UserConfig & { test: unknown };

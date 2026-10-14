@@ -1,96 +1,89 @@
 # Coding-agent instructions
 
-Apply these principles within the authorized task and governing instructions; resolve conflicts by instruction precedence and flag unresolved conflicts. Treat audit claims and historical design records as leads, not authority over current contracts.
+Apply these principles within the authorized task and governing instructions; resolve conflicts by
+instruction precedence and flag unresolved conflicts. Treat audit claims and decision records as
+leads, not authority over current contracts.
 
 Start with the [README](README.md) and [documentation map](docs/README.md) to find owner documents.
 Read [Contributing](CONTRIBUTING.md) before edits; read [domain](docs/domain.md) and
-[architecture](docs/architecture.md) before changing behavior, contracts, persistence, recovery, or
-trust boundaries. [Development](docs/development.md) owns commands and gates.
+[architecture](docs/architecture.md) before changing behavior, contracts, persistence or trust
+boundaries. [Development](docs/development.md) owns commands and gates.
 
 ## Product boundaries
 
-- `CaseFields` has exactly thirteen business fields. Revisions, operation IDs, timestamps,
-  attribution, and available commands remain outside it. Business-text acceptance and display safety are distinct; follow the Domain contract.
-- Domain and Application own business rules, transitions, available commands, outcomes, actor
-  authorization, and recovery decisions. Normal service callers use actor-bound `IActorClaimsCore`;
-  recovery, lifecycle, tombstone and management work stays behind its typed members. Web binds an
-  OIDC principal to that facade and renders its outcomes; the browser and CLI are authenticated
-  HTTPS clients, not database peers. They do not invent rules or receive stores, retained
-  preparations, recovery ports, witness credentials, or transition callbacks.
-- `ClaimCore.Hosting` is the only case-work runtime composition root. A case-work host never
-  directly references `ClaimCore.Postgres` or reaches schema administration; Hosting owns the runtime
-  storage dependency. `ClaimCore.CliProtocol` owns CLI-v4
-  framing, OIDC delivery, and response classification over the generated service contract;
-  `ClaimCore.Cli` is only the process entry point. `ClaimCore.Database` is the separate owner-only
-  administration surface, not a CLI or Web backdoor.
-- RecordFormat owns canonical operation and snapshot encoding. An uncertain retry must preserve the
-  exact operation ID and request bytes; never rebase it or infer that a commit failed.
-- Operation identity, authority, and knowledge are separate. Accepted history proves acceptance;
-  durable revocation ends future unaccepted authority without rewriting old attempt uncertainty.
-  Recovery list defaults to pending work, detailed attempts are operation-bound and paged, and a
-  pruned revoked preparation may expose only its tombstone.
-- Native `IClaimsCore.Prepare` and `Execute` accept Domain `CommandRequest`. CLI and Web bind their
-  generated form shape once through `Drafts.bind`; do not add another public raw-field boundary.
-- The separate witness owns ordered authority evidence and exact settlement/readback; primary
-  rows alone do not prove freshness or a definite accepted outcome. Actor grants are default-deny,
-  rechecked under authoritative locks, and cannot be inferred from a database role. An inaccessible
-  case or operation has the same public refusal as an absent one. Case-list cursors are opaque,
-  principal/grant/query-bound and short-lived.
-- A complete data audit first drains authority operations through post-COMMIT witness settlement
-  under an exclusive cross-process session lease, then takes the primary authority lock. During ordinary
-  writer activity, holds the independent witness read fence through one stable snapshot. Pending
-  handoff, activation and loss phases already fence ordinary witness appends; owner audit holds
-  the primary lock and refuses witness-tip movement. Failed or overdue scheduled audits close
-  actor-bound access. Terminal installation-loss retirement is owner-only, signed by two
-  distinct current human owners, and never turns missing history into a restored case or permits
-  old recovery identities to resume.
-- A data-entry-error void preserves history and is not erasure. Live purge, witness-payload prune,
-  managed-copy deletion, and terminal privacy certification are distinct owner/evidence-bound
-  steps. Active holds, unknown copies, unsettled attempts or missing independent verification keep
-  the state pending; keyed suppression evidence remains pseudonymous data.
-- `CORRECT_CASE` has three explicit tagged groups. Keep reads current accepted state; never add a
-  business field, broaden historical `AMEND_REGISTRATION`, or accept an adapter-only correction rule.
-- The fresh initializer atomically stores the installation's immutable canonical IANA business time zone. Runtime
-  opening requires it; derive business dates from one captured instant and that stored zone, never
-  `DateTime.Today`, `TimeZoneInfo.Local`, or a host environment default.
-- Storage has one checksum-bound fresh baseline, not an upgrade engine. Refuse unsupported old
-  namespaces untouched. No reset, adoption, automatic deletion or recovery-format conversion.
-  Update readers, writers, constraints, contracts, tests and documentation together.
+- `CaseFields` has exactly thirteen business fields. Revisions, operation IDs, instants,
+  attribution, disposition and available commands remain outside it. Business-text acceptance
+  and display safety are distinct; follow the Domain contract.
+- Domain owns every transition and every stewardship decision. Application owns operation
+  identity, authorization policy and outcomes. Execution decides again against locked
+  authoritative state; a preview, a view or an advertised command is advice. Adapters render
+  outcomes and invent no rules.
+- The ledger is the only record of what was accepted. Every accepted case operation and
+  authority change is exactly one ledger entry, appended in the same transaction that updates the
+  `cases`, `actors` and `grants` projections. Never write a projection alone, never read one as
+  proof of acceptance, and never add a second store that must agree with the ledger at commit.
+- A write is one `READ COMMITTED` transaction that first calls `claimcore.lock_ledger_head()`
+  and only then reads authority, the operation ID and the case. Nothing that a decision depends
+  on is read before the lock.
+- The store locks, loads, calls one pure decision function and persists its result. It never
+  decides. Domain, RecordFormat, Application and Contracts perform no I/O and read no clock,
+  time zone, environment or randomness; the instant and the payload nonce arrive in the locked
+  view.
+- An operation is its caller-chosen ID plus its exact content. An exact replay returns the
+  original receipt; different content under a used ID is refused; a rejection records nothing.
+  `OUTCOME_UNKNOWN` means a commit confirmation was lost and nothing else. Never infer that a
+  commit failed, mint a replacement ID, or rebase a request.
+- RecordFormat owns every byte-stable encoding. A format's number changes only when its bytes
+  change. The entry hash covers the salted payload commitment and never the payload, so erasure
+  leaves the chain verifiable; do not add content-derived data to the hash preimage or to any
+  column that erasure does not clear.
+- `VOID`, `REINSTATE` and `ERASE` are stewardship acts on a case record, not business commands.
+  Erasure removes the business payload of a case and its whole history from the live database
+  and retains the reference, revision, and ledger metadata. It does not reach WAL or backups,
+  and the documentation must keep saying so.
+- Actor grants are default-deny, scoped to the installation or one case, and owned by ClaimCore,
+  not the identity provider. They are evaluated under the write lock or in the same snapshot as
+  the read. An inaccessible case or operation has the same public refusal as an absent one. The
+  role-to-capability matrix lives in one F# table; SQL never encodes it.
+- `ClaimCore.Hosting` is the only case-work composition root. Only Hosting and Database
+  reference `ClaimCore.Postgres`; only Web references Hosting. The browser and CLI are
+  authenticated HTTPS clients of one generated contract and never database peers.
+  `ClaimCore.Database` is owner administration and serves no case work.
+- The installation stores one immutable canonical IANA business time zone. Business dates derive
+  from the database instant read under the lock and that zone, never from `DateTime.Today`,
+  `TimeZoneInfo.Local` or a host default.
+- The schema is an ordered, forward-only list of migrations in `db/migrations/`. A change ships
+  as a new numbered script with its readers, writers, tests and documentation. Never edit an
+  applied migration. A database whose history is not exactly a prefix of that list is refused
+  untouched.
+- The trust model and the non-goals in [operations](docs/operations.md) are part of the design.
+  Do not add machinery for backup, restore, replication, handoff, copy custody, multi-party
+  approval or a data-readiness mode without an owner decision that changes that document first.
 
 ## Safety and evidence
 
-- Follow [Owner review](docs/owner-review.md). Source review and green CI never grant owner approval.
-  Publish a branch/PR and report its exact revisions; do not approve, merge, enable auto-merge or
-  change native protections unless separately and explicitly authorized. Do not use shared owner
-  credentials as evidence of independent human review. Evaluate compiled permissions as well as actual runtime authority; do not infer either from filenames.
-- Test only with synthetic data in isolated databases. Preserve adopted cases, database volumes,
-  private `.local` state, and retained old installation evidence. Never print secrets, connection strings,
-  recovery bytes, or claimant payloads.
-- Keep contract headings in their registered owner documents and name at least one test per contract with
-  its `[CC-…]` token; `ClaimCore.Docs check` fails on an unnamed contract and on a token that names none.
-  There are no review hashes to refresh: review a contract by reading its heading and the tests that name it.
-- Required .NET tests use native .NET 10 Microsoft Testing Platform commands through
-  `node eng/ci/suites/suite.mjs`. A suite's expected tests are the lines of its generated
-  `tests/inventory/<assembly>.txt` (rewrite with `node eng/ci/suites/inventory.mjs --write`, never by hand,
-  and commit it with the test change); the registry `config/test-suites.json` holds no counts. Focused,
-  pending, skipped, expected-failure, conditional, filtered, retried, or unregistered sharded runs cannot
-  satisfy complete verification; the PostgreSQL integration partitions registered there are the only sharding.
-- Contract artifacts are generated, not tracked. `npm --prefix web run contract:generate` must match
-  `config/contracts.lock.json`; accept an intentional contract change only with `contract:lock` and review the
-  lock diff with the F# change.
-- Enforce size, complexity, and lint limits across production and test code without grandfathering.
-  [`config/lint-exceptions.json`](config/lint-exceptions.json) is the sole registry of every lint, type,
-  format and coverage exception for every language (F#, TypeScript, JavaScript, CSS, Python,
-  shell, YAML, MSBuild). Follow [repository quality](docs/development.md#repository-quality):
-  each entry has a stable `LX-nnnn` id, tool, exact rules, one file, kind (`inline` or `config`), an exact
-  occurrence count, a substantive reason, an owner and an ISO review or expiry date. An inline
-  suppression carries `lint-exception: LX-nnnn` in its own comment or the line above; a config-level
-  ignore (ignore patterns, per-file ignores, disabled rules, `NoWarn`) is matched by file, tool and target.
-  `node eng/lint/check-exceptions.mjs` fails on any unregistered, stale, blanket or miscounted exception.
-- Ordinary .NET builds do not run npm. Produce Web assets with the locked frontend and publish only
-  bytes matching its source, lock, contract, and toolchain manifest.
-- Report commands actually executed and their outcomes separately from source inspection. Keep
-  generated reports and private local state in ignored paths, never tracked source.
+- Source review and green CI never grant owner approval. Publish a branch and pull request and
+  report its exact revisions; do not approve, merge, enable auto-merge or change repository
+  protections unless separately and explicitly authorized.
+- Test only with synthetic data in isolated databases. Preserve adopted cases, database volumes
+  and private local state. Never print secrets, connection strings or claimant payloads.
+- Contract headings carry a `[CC-…]` token in their owner document and at least one test names
+  each token; the documentation test fails on an unnamed contract and on a token that names
+  none. Review a contract by reading its heading and the tests that name it.
+- Tests run with `dotnet test` on the Microsoft Testing Platform. Every test module carries
+  `[<Tests>]`; there is no hand-kept registry. Focused, pending, skipped, filtered or retried
+  runs cannot satisfy verification. `bash eng/verify.sh` is the complete local gate and CI runs
+  the same commands.
+- Contract artifacts are generated, not tracked. `npm --prefix web run contract:generate` must
+  match `config/contracts.lock.json`; accept an intentional contract change only with
+  `contract:lock` and review the lock diff with the F# change.
+- Suppress a lint, type or format rule only inline, for one named rule, with the reason on the
+  same line. Function, lambda and member length and complexity limits apply to production and
+  test code without exception. There is no file, module or value length limit: organize by
+  capability, and split a file when it holds two responsibilities, not when it reaches a size.
+- Ordinary .NET builds do not run npm. Report commands actually executed and their outcomes
+  separately from source inspection. Keep generated reports and private local state in ignored
+  paths, never tracked source.
 
 ## Name by meaning, not incidental development history
 

@@ -80,15 +80,11 @@ type CanonicalContract =
             Bytes: byte array
         }
 
-type CliWireContractFingerprint = private CliWireContractFingerprint of string
+type WireContractFingerprint = private WireContractFingerprint of string
 
-module CliWireContractFingerprint =
-    let value (CliWireContractFingerprint value) = value
-
-type WebWireContractFingerprint = private WebWireContractFingerprint of string
-
-module WebWireContractFingerprint =
-    let value (WebWireContractFingerprint value) = value
+module WireContractFingerprint =
+    let value (WireContractFingerprint value) = value
+    let internal create value = WireContractFingerprint value
 
 /// Constructors keep schema objects exact and ordered before any renderer sees them.
 module Schema =

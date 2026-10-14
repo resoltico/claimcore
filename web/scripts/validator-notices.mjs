@@ -48,8 +48,8 @@ const packageNotice = async (webDirectory, lock, name) => {
 export const validatorNotice = async (webDirectory, lock, names) => {
   const notices = await Promise.all(names.map((name) => packageNotice(webDirectory, lock, name)));
   const header =
-    "ClaimCore Web v3 standalone-validator third-party notices\n\n" +
-    "Generated from the exact locked packages whose code is embedded in the split Web-v3 validator modules.";
+    "ClaimCore Web service standalone-validator third-party notices\n\n" +
+    "Generated from the exact locked packages whose code is embedded in the split Web-service validator modules.";
   const separator = `\n\n${"-".repeat(80)}\n\n`;
   return `${header}\n\n${notices.join(separator)}\n`;
 };

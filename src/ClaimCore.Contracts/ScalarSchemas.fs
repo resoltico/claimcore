@@ -39,6 +39,13 @@ module internal ScalarSchemas =
             (Some 1)
             (Some(maximum.ToString(CultureInfo.InvariantCulture).Length))
 
+    let positiveInt64Text =
+        Schema.string
+            None
+            (Some((boundedDecimalPattern Int64.MaxValue).Replace("^(?:", "^(?!0$)(?:")))
+            (Some 1)
+            (Some 19)
+
     // These explicit ranges match Char.IsWhiteSpace/String.Trim for the supported Unicode scalar
     // values. C0/C1 controls and lone UTF-16 surrogates are separate Domain constraints.
     let private whitespace =
@@ -80,6 +87,9 @@ module internal ScalarSchemas =
             + grammar
             + ")$"
         )
+
+    // Drafts carry authored text. Domain binding owns field acceptance and diagnostics.
+    let authoringText = Schema.string None None None None
 
     let uuid =
         Schema.string

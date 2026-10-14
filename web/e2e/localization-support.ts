@@ -1,10 +1,10 @@
 import { writeFile } from "node:fs/promises";
 
 import { expect, type Page, type Locator } from "@playwright/test";
-import type { WebV3EndpointId } from "../src/generated/contracts/web-v3.endpoint-catalog";
-import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
-import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
-import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import type { EndpointId } from "../src/generated/contracts/endpoint-catalog";
+import { endpoints } from "../src/generated/contracts/endpoint-catalog";
+import type { ServiceResponse } from "../src/api/types";
+import { isResponse } from "../src/generated/contracts/validation";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
@@ -13,7 +13,7 @@ import ar from "../src/presentation/catalogs/ar.ui.json" with { type: "json" };
 import enPresentation from "../src/presentation/generated/en.json" with { type: "json" };
 import lvPresentation from "../src/presentation/generated/lv.json" with { type: "json" };
 import arPresentation from "../src/presentation/generated/ar.json" with { type: "json" };
-import type { PreparedIdentity } from "./case-workflow";
+import type { ReviewIdentity } from "./case-workflow";
 
 export const seedPresentation = async (
   page: Page,
@@ -61,17 +61,30 @@ export const trackRequests = (page: Page) => {
   const requests: string[] = [];
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
-    if (path.startsWith("/api/v3/")) {
+    if (endpoints.some((endpoint) => endpoint.id !== "session" && endpoint.path === path)) {
       requests.push(`${request.method()} ${path}`);
     }
   });
   return requests;
 };
-export const preparedFrom = (value: WebV3Response<"command.prepare">): PreparedIdentity => {
-  if (value.outcome.tag !== "PREPARED") {
+export const reviewFrom = (
+  value: ServiceResponse<"command.preview">,
+  bytes: Buffer,
+): ReviewIdentity => {
+  if (value.outcome.tag !== "REVIEWED") {
     throw new Error("E2E_LOCALIZATION_PREPARATION_REFUSED");
   }
-  const { operationId, requestSha256 } = value.outcome.data.details.summary;
+  const draft: unknown = JSON.parse(bytes.toString("utf8"));
+  if (
+    typeof draft !== "object" ||
+    draft === null ||
+    !("operationId" in draft) ||
+    typeof draft.operationId !== "string"
+  ) {
+    throw new Error("Missing operation identity.");
+  }
+  const { operationId } = draft;
+  const { requestSha256 } = value.outcome.data;
   if (requestSha256 === null) {
     throw new Error("E2E_LOCALIZATION_EXACT_DIGEST_MISSING");
   }
@@ -86,17 +99,16 @@ const deferred = <T>() => {
   });
   return { promise, resolve, reject };
 };
-type Captured<K extends WebV3EndpointId> = {
-  reply: WebV3Response<K>;
+type Captured<K extends EndpointId> = {
+  reply: ServiceResponse<K>;
   bytes: Buffer;
-  sourceDigest: string | undefined;
 };
-export const pauseJsonReply = async <K extends WebV3EndpointId>(
+export const pauseJsonReply = async <K extends EndpointId>(
   page: Page,
   endpoint: K,
   drop = false,
 ) => {
-  const path = webV3Endpoints.find((entry) => entry.id === endpoint)?.path;
+  const path = endpoints.find((entry) => entry.id === endpoint)?.path;
   if (path === undefined) {
     throw new Error("E2E_LOCALIZATION_ENDPOINT_MISSING");
   }
@@ -108,7 +120,7 @@ export const pauseJsonReply = async <K extends WebV3EndpointId>(
       try {
         const response = await route.fetch();
         const payload: unknown = await response.json();
-        if (response.status() !== 200 || !(await isWebV3Response(endpoint, payload))) {
+        if (response.status() !== 200 || !(await isResponse(endpoint, payload))) {
           throw new Error("E2E_LOCALIZATION_NATIVE_REPLY_INVALID");
         }
         const bytes = route.request().postDataBuffer();
@@ -116,9 +128,8 @@ export const pauseJsonReply = async <K extends WebV3EndpointId>(
           throw new Error("E2E_LOCALIZATION_REQUEST_BYTES_MISSING");
         }
         ready.resolve({
-          reply: payload as WebV3Response<K>,
+          reply: payload as ServiceResponse<K>,
           bytes,
-          sourceDigest: route.request().headers()["x-claimcore-source-sha256"],
         });
         await released.promise;
         if (drop) {
@@ -138,13 +149,6 @@ export const pauseJsonReply = async <K extends WebV3EndpointId>(
       released.resolve();
     },
   };
-};
-export const inspectPending = async (page: Page, identity: PreparedIdentity): Promise<void> => {
-  await page.getByRole("button", { name: "Recovery", exact: true }).click();
-  const row = page.locator(".recovery-list li").filter({ hasText: identity.operationId });
-  await expect(row).toHaveCount(1);
-  await row.getByRole("button", { name: "Inspect", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText(identity.requestSha256);
 };
 const collectLayoutMetrics = () => {
   const { clientWidth } = document.documentElement;
@@ -218,7 +222,7 @@ export const expectKeyboardContained = async (page: Page, dialog: Locator): Prom
   }
 };
 
-export const confirmPrepared = async (page: Page): Promise<void> => {
+export const confirmReview = async (page: Page): Promise<void> => {
   const dialog = page.getByRole("dialog");
   const checkbox = dialog.getByRole("checkbox");
   await dialog

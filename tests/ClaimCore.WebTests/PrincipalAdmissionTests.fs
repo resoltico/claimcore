@@ -120,6 +120,7 @@ let private rootIssuerDiscovery () =
             (validate (metadata.Replace(source, source.TrimEnd('/'))))
             "Issuer slash substitution is refused"
 
+[<Tests>]
 let tests =
     testList
         "exact principal admission"

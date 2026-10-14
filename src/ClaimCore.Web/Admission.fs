@@ -20,11 +20,6 @@ type AdmissionFailure =
     | AntiforgeryRejected
 
 [<RequireQualifiedAccess>]
-type RequestBody =
-    | Json
-    | Raw of mediaType: string
-
-[<RequireQualifiedAccess>]
 type internal CredentialMode =
     | Missing
     | BrowserCookie
@@ -116,28 +111,23 @@ module Admission =
         | Some supplied ->
             String.Equals(supplied, "same-origin", StringComparison.OrdinalIgnoreCase)
 
-    let private contentType (expected: RequestBody) (context: HttpContext) =
+    let private contentType (context: HttpContext) =
         match context.Request.ContentType |> Option.ofObj with
         | None -> false
         | Some supplied ->
             let parts = supplied.Split(';', StringSplitOptions.None)
             let mediaType = (parts[0]).Trim()
 
-            match expected with
-            | RequestBody.Json ->
-                String.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase)
-            | RequestBody.Raw expectedType ->
-                parts.Length = 1
-                && String.Equals(mediaType, expectedType, StringComparison.OrdinalIgnoreCase)
+            String.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase)
 
-    let postShape origin body maximumBytes context =
+    let postShape origin maximumBytes context =
         if not (trustedConnection origin context) then
             Error AdmissionFailure.UntrustedConnection
         elif not (matchingOrigin origin context) then
             Error AdmissionFailure.OriginRejected
         elif not (sameOriginFetch context) then
             Error AdmissionFailure.FetchMetadataRejected
-        elif not (contentType body context) then
+        elif not (contentType context) then
             Error AdmissionFailure.UnsupportedMediaType
         elif
             context.Request.ContentLength
@@ -157,17 +147,17 @@ module Admission =
                 return Error AdmissionFailure.AntiforgeryRejected
         }
 
-    let validatePost origin body maximumBytes antiforgery context =
-        match postShape origin body maximumBytes context with
+    let validatePost origin maximumBytes antiforgery context =
+        match postShape origin maximumBytes context with
         | Error failure -> Task.FromResult(Error failure)
         | Ok() -> validateAntiforgery antiforgery context
 
-    let private bearerShape origin body maximumBytes (context: HttpContext) =
+    let private bearerShape origin maximumBytes (context: HttpContext) =
         if not (trustedConnection origin context) || not context.Request.IsHttps then
             Error AdmissionFailure.UntrustedConnection
         elif context.Request.Headers.ContainsKey("Origin") then
             Error AdmissionFailure.OriginRejected
-        elif not (contentType body context) then
+        elif not (contentType context) then
             Error AdmissionFailure.UnsupportedMediaType
         elif
             context.Request.ContentLength
@@ -189,23 +179,23 @@ module Admission =
         else
             verifiedPrincipal configuration context
 
-    let private browserPost configuration origin body maximumBytes antiforgery context =
+    let private browserPost configuration origin maximumBytes antiforgery context =
         task {
-            match! validatePost origin body maximumBytes antiforgery context with
+            match! validatePost origin maximumBytes antiforgery context with
             | Error failure -> return Error failure
             | Ok() -> return! verifiedPrincipal configuration context
         }
 
-    let actorPost configuration origin body maximumBytes antiforgery (context: HttpContext) =
+    let actorPost configuration origin maximumBytes antiforgery (context: HttpContext) =
         match credentialMode context with
         | CredentialMode.Missing
         | CredentialMode.Mixed -> Task.FromResult(Error AdmissionFailure.SessionRejected)
         | CredentialMode.Bearer ->
-            match bearerShape origin body maximumBytes context with
+            match bearerShape origin maximumBytes context with
             | Error failure -> Task.FromResult(Error failure)
             | Ok() -> verifiedPrincipal configuration context
         | CredentialMode.BrowserCookie ->
             if not context.Request.IsHttps then
                 Task.FromResult(Error AdmissionFailure.UntrustedConnection)
             else
-                browserPost configuration origin body maximumBytes antiforgery context
+                browserPost configuration origin maximumBytes antiforgery context

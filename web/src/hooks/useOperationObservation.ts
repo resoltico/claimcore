@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { Notice } from "../api/notices";
-import { resultNotice, v3, type Receipt } from "../api/v3";
+import { resultNotice, service, type Receipt } from "../api/service";
 
-const observation = (result: Awaited<ReturnType<typeof v3.observe>>) => {
+const observation = (result: Awaited<ReturnType<typeof service.observe>>) => {
   const found =
     result.kind === "outcome" &&
     result.value.outcome.tag === "SUCCEEDED" &&
@@ -52,7 +52,7 @@ export const useOperationObservation = (token: string, initialOperationId = "") 
     const current = new AbortController();
     controller.current = current;
     setFeedback({ ...emptyFeedback, loading: true });
-    const result = await v3.observe(operationId, token, current.signal);
+    const result = await service.observe(operationId, token, current.signal);
     if (current.signal.aborted) {
       return;
     }

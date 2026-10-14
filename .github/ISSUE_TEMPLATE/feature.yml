@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        This is a public request. Do not include credentials, connection strings, request or recovery
+        This is a public request. Do not include credentials, connection strings, request
         files, claimant information, database extracts, private captures, or unredacted logs. Security
         concerns belong in the private process described by SECURITY.md.
   - type: checkboxes

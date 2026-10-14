@@ -1,15 +1,17 @@
 import { act, renderHook } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import type { CurrentCase } from "../src/api/v3";
+import type { CurrentCase } from "../src/api/service";
 import { useOperationEditor } from "../src/hooks/operation/useOperationEditor";
-import { definition, fields, preparation, response, runtime } from "./v3-ui.fixtures";
+import { definition, fields, digest, response, runtime } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
+  state: "LIVE",
+  disposition: "ACTIVE",
   case: { fields, revision: "1" },
   availableCommands: ["CLOSE"],
 };
 
-it("coalesces duplicate preparation activation while retention is pending", async () => {
+it("coalesces duplicate digest activation while retention is pending", async () => {
   let finish: ((value: Response) => void) | undefined;
   const pending = new Promise<Response>((resolve) => {
     finish = resolve;
@@ -24,20 +26,19 @@ it("coalesces duplicate preparation activation while retention is pending", asyn
       initialCommand: "CLOSE",
       onClose: vi.fn(),
       onCommitted: vi.fn(),
-      onRecovery: vi.fn(),
       onMutationLockChange: vi.fn(),
     }),
   );
   let first: Promise<void> = Promise.resolve();
   act(() => {
-    first = result.current.prepare();
-    void result.current.prepare();
+    first = result.current.preview();
+    void result.current.preview();
   });
   expect(fetch).toHaveBeenCalledOnce();
   await act(async () => {
     finish?.(
-      response("command.prepare", "PREPARED", {
-        details: preparation,
+      response("command.preview", "REVIEWED", {
+        requestSha256: digest,
         review: {
           before: current.case,
           proposed: current.case,

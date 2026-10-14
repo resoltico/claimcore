@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 
-import { openCase, prepare, startCommand } from "./case-workflow";
+import { openCase, reviewDraft, startCommand } from "./case-workflow";
 import { expectAccessible, openAuthenticated, progress } from "./session-helpers";
 
 test("prefills metadata fields and confirms dirty command changes before review", async ({
@@ -27,7 +27,7 @@ test("prefills metadata fields and confirms dirty command changes before review"
   await discard.getByRole("button", { name: "Discard and change action" }).click();
   await progress("metadata-discarded");
   await expect(page.getByLabel("Payment decision date")).toHaveValue("");
-  await prepare(page, {
+  await reviewDraft(page, {
     "Payment decision date": "2026-09-03",
     "Amount to be paid": "300.25",
     "Currency of amount to be paid": "EUR",

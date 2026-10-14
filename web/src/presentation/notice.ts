@@ -47,13 +47,7 @@ export const renderNotice = (preferences: Preferences, notice: Notice): string =
       return translate(preferences, "notice.invalidHttp", {
         status: exactInteger(String(notice.status), preferences.displayLocale),
       });
-    case "fileTooLarge":
-      return translate(preferences, "notice.fileTooLarge", {
-        maximumBytes: exactInteger(String(notice.maximumBytes), preferences.displayLocale),
-      });
     case "accepted":
       return translate(preferences, "notice.accepted", { operationId: notice.operationId });
-    case "recovery":
-      return `${renderNotice(preferences, notice.cause)} ${renderKey(preferences, `notice.${notice.direction}`)}`;
   }
 };

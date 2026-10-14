@@ -1,13 +1,13 @@
 import { useCallback, useState } from "react";
 import { Button } from "react-aria-components/Button";
-import type { FieldDescriptor, HistoryEntry, Receipt, WebV3Response } from "../api/v3";
-import { v3 } from "../api/v3";
+import type { FieldDescriptor, HistoryEntry, Receipt, ServiceResponse } from "../api/service";
+import { service } from "../api/service";
 import { useRetryablePage } from "../hooks/useRead";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 
-const historyPage = (response: WebV3Response<"case.history">) => {
+const historyPage = (response: ServiceResponse<"case.history">) => {
   const { outcome } = response;
   if (outcome.tag !== "SUCCEEDED") {
     return null;
@@ -30,8 +30,8 @@ const HistoryReceipt = ({
     <details>
       <summary>
         {p.text("ui.historySummary", {
-          command: p.commandLabel(receipt.command),
-          revision: p.integer(receipt.snapshot.revision),
+          command: p.actLabel(receipt.act),
+          revision: p.integer(receipt.revision),
           timestamp: receipt.recordedAt,
         })}
       </summary>
@@ -39,14 +39,18 @@ const HistoryReceipt = ({
         {p.text("ui.receiptAttribution", {
           operationId: receipt.operationId,
           actor: receipt.recordedBy,
-          state: receipt.replayed ? p.text("ui.exactReplay") : p.text("ui.accepted"),
+          state: p.text("ui.accepted"),
         })}
       </p>
-      <CaseFieldsView
-        caseView={receipt.snapshot}
-        fields={fields}
-        context={p.text("ui.historyContext", { operationId: receipt.operationId })}
-      />
+      {receipt.snapshot === null ? (
+        <p>{p.text("ui.lifecycleErased")}</p>
+      ) : (
+        <CaseFieldsView
+          caseView={receipt.snapshot}
+          fields={fields}
+          context={p.text("ui.historyContext", { operationId: receipt.operationId })}
+        />
+      )}
     </details>
   );
 };
@@ -67,7 +71,7 @@ const Entry = ({
     <>
       <p>
         {p.text("ui.historySummary", {
-          command: p.commandLabel(change.command),
+          command: p.actLabel(change.act),
           revision: p.integer(change.revision),
           timestamp: change.recordedAt,
         })}
@@ -122,11 +126,11 @@ export const CaseHistory = ({
   const [detail, setDetail] = useState<"SUMMARY" | "FULL">("SUMMARY");
   const request = useCallback(
     (cursor: string | null, signal: AbortSignal) =>
-      v3.history({ caseReference, cursor, limit: 50, detail }, token, signal),
+      service.history({ caseReference, cursor, limit: 50, detail }, token, signal),
     [caseReference, token, detail],
   );
   const { items, cursor, message, loading, load } = useRetryablePage<
-    WebV3Response<"case.history">,
+    ServiceResponse<"case.history">,
     HistoryEntry
   >(request, historyPage);
   return (

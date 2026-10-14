@@ -11,16 +11,5 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true
   },
-  "include": [
-    "vite.config.ts",
-    "playwright.config.ts",
-    "scripts",
-    "lint",
-    "stylelint.config.mjs",
-    "../eng/ci/repository-path.mjs",
-    "../eng/lint/jsonc.mjs",
-    "../eng/ci/publish/inputs.mjs",
-    "../eng/ci/executable.mjs",
-    "../eng/ci/dotnet-host.mjs"
-  ]
+  "include": ["vite.config.ts", "playwright.config.ts", "scripts", "lint", "stylelint.config.mjs"]
 }

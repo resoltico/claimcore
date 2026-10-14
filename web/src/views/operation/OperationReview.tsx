@@ -3,7 +3,7 @@ import { Button } from "react-aria-components/Button";
 import { CheckboxButton, CheckboxField } from "react-aria-components/Checkbox";
 import { BusinessValue } from "../../components/BusinessValue";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
-import type { AdvisoryReview, PreparationDetails, FieldDescriptor } from "../../api/v3";
+import type { Review, CommandDraft, FieldDescriptor } from "../../api/service";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import type { OperationEditorModel } from "./editorTypes";
 
@@ -11,7 +11,7 @@ const ReviewValues = ({
   review,
   fields,
 }: {
-  review: AdvisoryReview;
+  review: Review;
   fields: ReadonlyArray<FieldDescriptor>;
 }) => {
   const p = usePresentation();
@@ -42,25 +42,17 @@ const ReviewValues = ({
   );
 };
 
-const PreparedIdentity = ({ preparation }: { preparation: PreparationDetails }) => {
+const ReviewIdentity = ({ draft, digest }: { draft: CommandDraft; digest: string }) => {
   const p = usePresentation();
   return (
     <>
       <p>
         <ReferenceSummary
           id="ui.reviewTarget"
-          values={{
-            reference: preparation.summary.caseReference,
-            revision: p.integer(preparation.expectedRevision),
-          }}
+          values={{ reference: draft.caseReference, revision: p.integer(draft.expectedRevision) }}
         />
       </p>
-      <p>
-        {p.text("ui.operationDigest", {
-          operationId: preparation.summary.operationId,
-          digest: preparation.summary.requestSha256 ?? p.text("ui.unavailable"),
-        })}
-      </p>
+      <p>{p.text("ui.operationDigest", { operationId: draft.operationId, digest })}</p>
     </>
   );
 };
@@ -109,23 +101,27 @@ export const OperationReview = ({
   fields: ReadonlyArray<FieldDescriptor>;
 }) => {
   const p = usePresentation();
-  if (model.state.preparation === null) {
+  if (
+    model.state.review === null ||
+    model.state.exposedRequest === null ||
+    model.state.requestSha256 === null
+  ) {
     return null;
   }
   return (
     <AccessibleModal
-      closeLabel={p.text("ui.keepForRecovery")}
+      closeLabel={p.text("ui.returnToEdit")}
       title={p.text("ui.reviewTitle")}
       description={p.text("ui.reviewDescription")}
       isOpen={model.state.delivery === "REVIEWING" || model.state.delivery === "SUBMITTING"}
       isDismissable={model.state.delivery === "REVIEWING"}
       onOpenChange={() => {
-        model.dispatch({ type: "KEEP_FOR_RECOVERY" });
+        model.dispatch({ type: "RETURN_TO_EDIT" });
       }}
     >
       <>
-        <PreparedIdentity preparation={model.state.preparation} />
-        <ReviewValues review={model.state.review!} fields={fields} />
+        <ReviewIdentity draft={model.state.exposedRequest} digest={model.state.requestSha256} />
+        <ReviewValues review={model.state.review} fields={fields} />
         <ReviewConfirmation model={model} />
         <ReviewActions model={model} />
       </>

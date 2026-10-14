@@ -104,6 +104,7 @@ let private capacity () =
         (store.RetrieveAsync(keys.Head).Result)
         "Requested expiry is exact even after sweeping."
 
+[<Tests>]
 let tests =
     testList
         "bounded ticket sweeps"

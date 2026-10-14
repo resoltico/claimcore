@@ -167,4 +167,5 @@ let private zeroPaid =
                 (after.Fields.PayableAmount = Some "0" && after.Fields.PaymentDate.IsNone)
                 "An unpaid zero decision is valid")
 
+[<Tests>]
 let tests = testList "correction group invariants" [ matrix; zeroPaid ]

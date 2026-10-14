@@ -100,6 +100,7 @@ let private delayedDelivery () =
         | Error reason ->
             Expect.equal reason "OIDC_TOKEN_UNAVAILABLE" "No secret or provider details"
 
+[<Tests>]
 let tests =
     testList
         "CLI token lifetimes"

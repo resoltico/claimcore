@@ -14,16 +14,6 @@ updates:
     groups:
       web-npm:
         patterns: ["*"]
-  - package-ecosystem: npm
-    directory: /eng
-    schedule:
-      interval: weekly
-    cooldown:
-      default-days: 7
-    open-pull-requests-limit: 5
-    groups:
-      engineering-npm:
-        patterns: ["*"]
   - package-ecosystem: nuget
     directory: /
     schedule:
@@ -41,16 +31,6 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 2
-  - package-ecosystem: uv
-    directory: /
-    schedule:
-      interval: weekly
-    cooldown:
-      default-days: 7
-    open-pull-requests-limit: 5
-    groups:
-      python-tooling:
-        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

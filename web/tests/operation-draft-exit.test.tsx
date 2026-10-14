@@ -1,12 +1,14 @@
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import type { CurrentCase } from "../src/api/v3";
+import type { CurrentCase } from "../src/api/service";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields } from "./v3-ui.fixtures";
-import { preparedReply } from "./presentation-state.fixtures";
+import { definition, fields } from "./service-ui.fixtures";
+import { previewReply } from "./presentation-state.fixtures";
 
 const current: CurrentCase = {
+  state: "LIVE",
+  disposition: "ACTIVE",
   case: { fields, revision: "1" },
   availableCommands: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"],
 };
@@ -20,7 +22,6 @@ const open = (command: "AMEND_REGISTRATION" | "CORRECT_CASE" = "AMEND_REGISTRATI
       initialCommand={command}
       onClose={close}
       onCommitted={vi.fn()}
-      onRecovery={vi.fn()}
       onMutationLockChange={vi.fn()}
     />,
   );
@@ -95,34 +96,15 @@ it("leaves a correction whose mode was changed and reverted without value edits"
   expect(close).toHaveBeenCalledOnce();
 });
 
-it("leaves an unchanged retained review without stopping its server request", async () => {
-  const user = userEvent.setup();
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockImplementationOnce(() => Promise.resolve(preparedReply())),
-  );
-  const close = open();
-  await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await user.click(
-    await screen.findByRole("button", { name: "Back to editing; keep for Recovery" }),
-  );
-  await user.click(screen.getByRole("button", { name: "Back to case" }));
-  expect(close).toHaveBeenCalledOnce();
-  expect(screen.queryByRole("dialog")).toBeNull();
-  expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledOnce();
-});
-
 it("protects exact authored edits after retaining the review", async () => {
   const user = userEvent.setup();
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockImplementationOnce(() => Promise.resolve(preparedReply())),
+    vi.fn().mockImplementationOnce(() => Promise.resolve(previewReply())),
   );
   const close = open();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await user.click(
-    await screen.findByRole("button", { name: "Back to editing; keep for Recovery" }),
-  );
+  await user.click(await screen.findByRole("button", { name: "Return to editing" }));
   const amount = screen.getByLabelText("Amount claimed", { exact: true });
   await user.clear(amount);
   await user.type(amount, "12.3400");

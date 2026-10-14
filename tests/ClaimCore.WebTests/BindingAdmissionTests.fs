@@ -29,7 +29,7 @@ let private peerBoundary () =
         "Explicit container binding permits forwarded TCP peers"
 
     Expect.equal
-        (Admission.postShape container RequestBody.Json 32 forwarded)
+        (Admission.postShape container 32 forwarded)
         (Ok())
         "Exact public origin is preserved"
 
@@ -43,7 +43,7 @@ let private peerBoundary () =
     forwarded.Request.Headers.Origin <- "https://foreign.example.test"
 
     Expect.equal
-        (Admission.postShape container RequestBody.Json 32 forwarded)
+        (Admission.postShape container 32 forwarded)
         (Error AdmissionFailure.OriginRejected)
         "Origin remains exact"
 
@@ -63,6 +63,7 @@ let private invalidBindings () =
             (fun () -> WebBindings.create origin "127.0.0.1" port |> ignore)
             "Invalid listener port"
 
+[<Tests>]
 let tests =
     testList
         "listener and public authority"

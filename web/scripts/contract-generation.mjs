@@ -1,4 +1,3 @@
-import { admitDotnetHost } from "../../eng/ci/dotnet-host.mjs";
 import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -19,7 +18,7 @@ const requiredSdk = async () => {
   return version;
 };
 
-const selectedDotnet = () => admitDotnetHost();
+const selectedDotnet = () => "dotnet";
 
 const resolveDotnet = async () => {
   const expected = await requiredSdk();

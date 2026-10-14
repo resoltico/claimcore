@@ -78,7 +78,7 @@ module CaseRecord =
             Status = status
         }
 
-    /// Snapshot encoding version 2 is a deliberate break from the previous nested field model.
+    /// Strict snapshot-format-2 decoding of the thirteen fields and their revision.
     let decodeSnapshot bytes =
         Json.parse bytes (fun root ->
             Json.properties "$" [ "fields"; "version" ] root

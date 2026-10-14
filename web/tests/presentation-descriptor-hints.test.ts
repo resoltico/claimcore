@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { createPresenter } from "../src/presentation/presenter";
 import { defaults } from "../src/presentation/preferences";
-import { definition } from "./v3-ui.fixtures";
+import { definition } from "./service-ui.fixtures";
 
 it("gives exact scalar syntax and limits from each descriptor rather than an absent hint", () => {
   const p = createPresenter(defaults);

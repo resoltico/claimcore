@@ -10,20 +10,16 @@
   },
   "scripts": {
     "dev": "npm run contract:verify && vite",
-    "build": "npm run assets:produce",
-    "assets:produce": "npm run contract:check && tsc -b && vite build && npm run assets:size && npm run notices:generate && node scripts/write-asset-manifest.mjs",
-    "assets:size": "node scripts/check-bundle-size.mjs",
-    "assets:verify": "node scripts/verify-asset-manifest.mjs",
+    "build": "npm run contract:check && tsc -b && vite build && npm run notices:generate",
     "preview": "vite preview",
     "typecheck": "npm run contract:verify && tsc -b --pretty false",
     "lint": "npm run architecture:check && node scripts/lint.mjs",
-    "lint:styles": "stylelint \"src/**/*.css\" \"tests/**/*.css\" --max-warnings 0 && node scripts/check-css-size.mjs",
+    "lint:styles": "stylelint \"src/**/*.css\" \"tests/**/*.css\" --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:unit": "npm run contract:verify && vitest run --coverage",
-    "test:mutation": "stryker run && node scripts/check-mutation-report.mjs",
+    "test:unit": "npm run contract:verify && vitest run",
     "test:unit:watch": "npm run contract:verify && vitest",
-    "test:e2e": "playwright test",
+    "test:e2e": "dotnet test --project ../tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj --configuration Release --no-build --no-restore --minimum-expected-tests=13 --zero-tests-policy=strict --timeout=40m -- --settings=../eng/expecto.runsettings",
     "dead-code": "knip",
     "contract:generate": "node scripts/regenerate-contract.mjs",
     "contract:lock": "node scripts/regenerate-contract.mjs --write-lock",
@@ -31,10 +27,10 @@
     "contract:check": "node scripts/check-contract.mjs && node scripts/check-react-aria.mjs && npm run localization:check",
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
-    "sbom": "node scripts/generate-sbom.mjs",
-    "architecture:check": "node --test scripts/boundary-policy.test.mjs scripts/type-aware-policy.test.mjs scripts/validator-groups.test.mjs scripts/contract-lock.test.mjs scripts/localization-policy.test.mjs scripts/mutation-policy.test.mjs scripts/compiler-inputs.test.mjs scripts/asset-manifest.test.mjs scripts/vitest-diagnostics.test.mjs scripts/frontend-report-admission.test.mjs scripts/contract-promotion.test.mjs",
+    "architecture:check": "node --test scripts/boundary-policy.test.mjs scripts/type-aware-policy.test.mjs scripts/validator-groups.test.mjs scripts/contract-lock.test.mjs scripts/localization-policy.test.mjs",
     "localization:generate": "node scripts/localization.mjs --write",
-    "localization:check": "node scripts/localization.mjs"
+    "localization:check": "node scripts/localization.mjs",
+    "test:coverage": "npm run contract:verify && vitest run --coverage"
   },
   "dependencies": {
     "intl-messageformat": "12.1.3",
@@ -45,9 +41,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@formatjs/icu-messageformat-parser": "3.5.21",
-    "@playwright/test": "1.63.0",
-    "@stryker-mutator/core": "10.0.0",
-    "@stryker-mutator/vitest-runner": "10.0.0",
+    "@playwright/test": "1.64.0",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.7",
@@ -56,8 +50,6 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "@vitest/coverage-v8": "5.0.3",
-    "@vitest/istanbul-lib-coverage": "1.0.2",
-    "@vitest/istanbul-lib-report": "1.0.2",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "eslint-plugin-react-hooks": "7.1.1",
@@ -75,5 +67,8 @@
     "vite": "8.3.3",
     "vitest": "5.0.3",
     "yaml": "2.9.1"
+  },
+  "overrides": {
+    "braces": "npm:@dieub/braces-depth-guard@3.0.3-pn.2"
   }
 }

@@ -6,5 +6,5 @@
     "e2e/**/*.{ts,tsx,mjs}",
     "scripts/**/*.mjs"
   ],
-  "entry": ["e2e/cli-pkce-driver.mjs", "e2e/browser-trust-driver.mjs"]
+  "entry": ["e2e/cli-pkce-driver.mjs"]
 }

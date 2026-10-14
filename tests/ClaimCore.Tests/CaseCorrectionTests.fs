@@ -159,6 +159,7 @@ let private validationTests =
                     "New correction dates use business time")
         ]
 
+[<Tests>]
 let tests =
     testList
         "atomic case correction"

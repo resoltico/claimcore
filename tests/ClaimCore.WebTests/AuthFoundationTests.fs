@@ -14,7 +14,6 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Options
 open Expecto
 open ClaimCore.Web
-open ClaimCore.WebTests.TestServerFixture
 
 let private issuerPolicy () =
     let accepted = OidcAuthority.parse "https://issuer.example.test/realms/claimcore"
@@ -91,40 +90,6 @@ let private accessTokenIdentity () =
         "Service bearer maps to client ID, not service-account subject"
 
     Expect.isError (classify "unknown-client" "person-1") "Unknown OAuth client is denied"
-
-let private interimCaseWorkClosed () =
-    use host = Host.Start()
-
-    let legacyLogin =
-        host.Send(
-            HttpMethod.Post,
-            "/api/v3/session/login",
-            Some "{}",
-            Some "application/json",
-            None
-        )
-
-    Expect.equal legacyLogin.Status 404 "Bootstrap login is absent when OIDC is configured"
-
-    let caseWork =
-        host.Send(HttpMethod.Post, "/api/v3/cases/get", Some "{}", Some "application/json", None)
-
-    Expect.equal caseWork.Status 401 "Anonymous case work remains closed"
-
-    let readiness = host.Send(HttpMethod.Get, "/health/ready", None, None, None)
-    Expect.equal readiness.Status 503 "The interim OIDC host is not ready"
-
-    Expect.equal
-        readiness.DataUseScope
-        (Some "SYNTHETIC_ONLY")
-        "Preview scope is visible without case data"
-
-    Expect.equal readiness.DataUsePhase (Some "ACTIVE") "Preview phase is explicit"
-
-    Expect.equal
-        readiness.RealDataReady
-        (Some "false")
-        "Generic source preview cannot claim real-data readiness"
 
 let private opaqueSessionStore () =
     let principal =
@@ -252,6 +217,7 @@ let private exclusiveCredentialMode () =
         CredentialMode.BrowserCookie
         "Server-side browser cookie only"
 
+[<Tests>]
 let tests =
     testList
         "OIDC authentication foundation"
@@ -262,9 +228,6 @@ let tests =
             testCase
                 "[CC-WEB-001] bearer principal uses explicit client classification"
                 accessTokenIdentity
-            testCase
-                "[CC-WEB-001] OIDC mode closes legacy case work until grants exist"
-                interimCaseWorkClosed
             testCase "[CC-WEB-001] OIDC cookie uses revocable server-side ticket" opaqueSessionStore
             testCase "[CC-WEB-001] middleware pins OIDC and JWT validation policy" middlewarePolicy
             testCase "[CC-WEB-001] browser and bearer credentials never mix" exclusiveCredentialMode

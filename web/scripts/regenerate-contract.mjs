@@ -1,19 +1,15 @@
-import { resolve } from "node:path";
+import { rm, mkdir } from "node:fs/promises";
 import { generateContracts } from "./contract-generation.mjs";
-import { generatedDirectory } from "./contract-lock.mjs";
-import { assertValidatorSizes } from "./validator-sizes.mjs";
-import { promoteContracts } from "./contract-promotion.mjs";
+import { generatedDirectory, verifyLock, writeLock } from "./contract-lock.mjs";
 
-if (process.argv.some((argument) => argument.startsWith("--") && argument !== "--write-lock")) {
-  throw new Error(
-    "Only intentional --write-lock is supported. Interrupted writers require the preservation procedure in web/README.md.",
-  );
+const args = process.argv.slice(2);
+if (args.length > 1 || (args.length === 1 && args[0] !== "--write-lock")) {
+  throw new Error("Use no arguments, or --write-lock for an intentional contract change.");
 }
-
-await promoteContracts({
-  directory: generatedDirectory,
-  lockFile: resolve(import.meta.dirname, "../../config/contracts.lock.json"),
-  generate: generateContracts,
-  validate: assertValidatorSizes,
-  acceptLock: process.argv.includes("--write-lock"),
-});
+await rm(generatedDirectory, { recursive: true, force: true });
+await mkdir(generatedDirectory, { recursive: true });
+await generateContracts(generatedDirectory);
+if (args.includes("--write-lock")) {
+  await writeLock(generatedDirectory);
+}
+await verifyLock(generatedDirectory);

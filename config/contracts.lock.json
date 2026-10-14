@@ -2,699 +2,259 @@
   "schemaVersion": 1,
   "files": [
     {
-      "path": "administration-v1.catalog.json",
-      "bytes": 77612,
-      "sha256": "48ba49fa5d0b78b9c7f826fcfc19e71d1fede695e507119462c07f84f1a52dd8"
-    },
-    {
-      "path": "administration-v1.response.schema.json",
-      "bytes": 77465,
-      "sha256": "874420a1a37c015e230ab920c089cffbb786c7a8b168c2242cf714d9709f1c49"
-    },
-    {
-      "path": "cli-v4.catalog.json",
-      "bytes": 6052276,
-      "sha256": "8c5d2ff421db222ddd8e7c8ea0c2d95e9421d882bea77a442ff427a80ddf72b7"
-    },
-    {
-      "path": "cli-v4.definition.schema.json",
-      "bytes": 47384,
-      "sha256": "50bba1906242c5c5296c9632eaa1bfafdb04c4a0e907acd41fe766b5cdf6559b"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.approveCopyAdoption.response.schema.json",
-      "bytes": 104089,
-      "sha256": "5e8a19248e1ec80f9eb3521c36c7110667a27114b56707bba6627ceb2d0abf67"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.approveCopyAdoption.schema.json",
-      "bytes": 97001,
-      "sha256": "48f488c69bd240b8d03e8ba6d70e2fe4a3a8a7079cad28841762408c74c8fe81"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.approveCopyDeletion.response.schema.json",
-      "bytes": 104089,
-      "sha256": "28d38279bd718b60fa10d0e4065d59b8082725eb473b42d8e77bf760af75b387"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.approveCopyDeletion.schema.json",
-      "bytes": 94388,
-      "sha256": "2c2de29ab23b46731fbaee5245d52f97fb40092cbd14125112d3106be7f319bb"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.approveCopySigner.response.schema.json",
-      "bytes": 104073,
-      "sha256": "13a434e967046584ea425cf678169587b09e9aa8b732bb1d2f7ee06fad868b00"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.approveCopySigner.schema.json",
-      "bytes": 94325,
-      "sha256": "467b6efac091cc76f2ac6ae550feeffee37bed05607596893e78fc1a606df30d"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.approveRealDataActivation.response.schema.json",
-      "bytes": 104137,
-      "sha256": "b46f1eaa6bb4e0bda30ebf4fea28200abfabbb360568b6fbcbba869f759785ac"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.approveRealDataActivation.schema.json",
-      "bytes": 95749,
-      "sha256": "7a0b4319ab14d7f801faeb729cae538fc390ac61cd3f9e3271b8a65409e638b9"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.approveWriterHandoff.response.schema.json",
-      "bytes": 104097,
-      "sha256": "9889cad2fcdf5f230135860518d75db38bda5436dba866820332998a850b93f5"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.approveWriterHandoff.schema.json",
-      "bytes": 94281,
-      "sha256": "857de445a732e00bc6f05cfcac26dc554037307401477d77af94a7981dd7fb44"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.observe.response.schema.json",
-      "bytes": 104176,
-      "sha256": "757430b1a3f6da61795b01b741b424bc1dcb6edc2572dc3b59f485555445bf5f"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.observe.schema.json",
-      "bytes": 92072,
-      "sha256": "acb4b1a8939143f42a27919fba04aa61dde2989ab3bbdae459e210fef3474fd7"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.register.response.schema.json",
-      "bytes": 104184,
-      "sha256": "c6f17a6f39de6ac23dc416461aa0610bf4d094d8f473acea54b28b1d50969713"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.register.schema.json",
-      "bytes": 92628,
-      "sha256": "eda19a29d954f42bd55be2ccf39046007de80b59584ab614d0609552b9f2dbc7"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.reviewRealDataActivation.response.schema.json",
-      "bytes": 108741,
-      "sha256": "17a71435039012be1dee2dca5be1fba5b009fade2e134362c23684a9e17e7582"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.reviewRealDataActivation.schema.json",
-      "bytes": 92104,
-      "sha256": "f71be41301a849df6372fad60ac32aeddd3f4d8df7ed6f2ced03abaee2df248d"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.setEnabled.response.schema.json",
-      "bytes": 104200,
-      "sha256": "b9174f864178ab2f7a18eaf4571fd0ac0685b5f0838e7872fed4436a7977875c"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.setEnabled.schema.json",
-      "bytes": 92671,
-      "sha256": "8f66f9b306d596f3bc57cb0de6976b6b4d035b54d3e179addebd21faed51fdc6"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.setGrant.response.schema.json",
-      "bytes": 104184,
-      "sha256": "a4fa63df7954e81e8a94ab9cf82e6cbab6a2136bb307bf6389c950ea31efd79f"
-    },
-    {
-      "path": "cli-v4.endpoint.authority.setGrant.schema.json",
-      "bytes": 93569,
-      "sha256": "1a55fbc1d541ec92a78012e3d826bf448f822319a90e3c3f77c7ef47ccbb01b5"
-    },
-    {
-      "path": "cli-v4.endpoint.case.get.response.schema.json",
-      "bytes": 103313,
-      "sha256": "0551591d70aded86df8e442472e2f414bba7321d433d221041956d90709b7a4b"
-    },
-    {
-      "path": "cli-v4.endpoint.case.get.schema.json",
-      "bytes": 92374,
-      "sha256": "8e12038c5d78dc1f672cde217e46afb44603e91b4a7f622ab07323693aa28749"
-    },
-    {
-      "path": "cli-v4.endpoint.case.history.response.schema.json",
-      "bytes": 103457,
-      "sha256": "e4af11c789d3c015af7f421fd86685e99c390dbc22c34295495255fb6c9fd669"
-    },
-    {
-      "path": "cli-v4.endpoint.case.history.schema.json",
-      "bytes": 92529,
-      "sha256": "f36a916229d81948131eeb8eecef9f9844c578e6aac6299d8483365bef0304f6"
-    },
-    {
-      "path": "cli-v4.endpoint.case.list.response.schema.json",
-      "bytes": 103412,
-      "sha256": "e84a61e4b29cd68f63ed326141ed87c78eef80a0a9eaff371f8340b4fc040f06"
-    },
-    {
-      "path": "cli-v4.endpoint.case.list.schema.json",
-      "bytes": 91957,
-      "sha256": "23eb6277a03a2278b6f9426e89a764aacfabeae49e2ad0b64292b90d08a866bc"
-    },
-    {
-      "path": "cli-v4.endpoint.command.execute.response.schema.json",
-      "bytes": 106129,
-      "sha256": "3f023e6eda414ea36c100b87044aa4775f56b3e8ac28dabfcf204bd3f98f0111"
-    },
-    {
-      "path": "cli-v4.endpoint.command.execute.schema.json",
-      "bytes": 107818,
-      "sha256": "a06b9adf74b11d368310649d3181676b8ba8929e052c5214465fefae30978fd8"
-    },
-    {
-      "path": "cli-v4.endpoint.command.prepare.response.schema.json",
-      "bytes": 105246,
-      "sha256": "4e8871e62890882b0074e2ca9535f899c0448b1e0a59947537293a2c56de8e0d"
-    },
-    {
-      "path": "cli-v4.endpoint.command.prepare.schema.json",
-      "bytes": 107818,
-      "sha256": "15f2c44cf39e0d8c309bc6e0647cb5f344de2f71d3ace6eee4d63fd1ebfc0a92"
-    },
-    {
-      "path": "cli-v4.endpoint.lifecycle.apply.response.schema.json",
-      "bytes": 105636,
-      "sha256": "218e1d0a9c93b0743f91c55a31af914edd631fee2e00912b91f59bd9e679c57a"
-    },
-    {
-      "path": "cli-v4.endpoint.lifecycle.apply.schema.json",
-      "bytes": 95470,
-      "sha256": "0c633d2c4b927daf8d407c7ef7dfa8a6d2ab6ae0d135118bbd697782ef3435d3"
-    },
-    {
-      "path": "cli-v4.endpoint.lifecycle.approve.response.schema.json",
-      "bytes": 105652,
-      "sha256": "29fd7320e0863a1eae63c17e477818e016190722b29b89298cc8f4fbdcdb890b"
-    },
-    {
-      "path": "cli-v4.endpoint.lifecycle.approve.schema.json",
-      "bytes": 96252,
-      "sha256": "4ef2fa531e0bddde5acc172ac96024270e85a040c5f06405e8b14480ac476125"
-    },
-    {
-      "path": "cli-v4.endpoint.lifecycle.review.response.schema.json",
-      "bytes": 105046,
-      "sha256": "b78236f461ae1668ee1c805a905778a994777996e47d17a906ae2dc95fadb711"
-    },
-    {
-      "path": "cli-v4.endpoint.lifecycle.review.schema.json",
-      "bytes": 92390,
-      "sha256": "d3ac12526f7566003a3e0ee8bcebba2da07e7769e95d3b523f1acd46c99039c0"
-    },
-    {
-      "path": "cli-v4.endpoint.operation.observe.response.schema.json",
-      "bytes": 103525,
-      "sha256": "f3887cfc83cfc2e4ec1f4facc2baf51249f796b3dd8b457b79e7003df962b35e"
-    },
-    {
-      "path": "cli-v4.endpoint.operation.observe.schema.json",
-      "bytes": 92080,
-      "sha256": "f43d18cc54ba2345c6a164074f17a9f8934b6ab7ae86c54ac3cb45268cfc247e"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.dismiss.response.schema.json",
-      "bytes": 104856,
-      "sha256": "77fa55f9bf27e5f7bbb27b576f7b7aa23be2148f537edb57138d9e756162c1c8"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.dismiss.schema.json",
-      "bytes": 92224,
-      "sha256": "716f4e49f92b853865a0cdc7c1078b725f92df254c644287e9fe6d61cad1a862"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.export.response.schema.json",
-      "bytes": 103816,
-      "sha256": "f50123e8bab88528aef96fa86d346e85aa4491f98eac68ed0ed7b4237b5e89c0"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.export.schema.json",
-      "bytes": 92243,
-      "sha256": "c3de26a96a8db43628169eb16c70d907ed8f409b826bc757e0601458fdbec9a2"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.importEnvelopePreview.response.schema.json",
-      "bytes": 103197,
-      "sha256": "b5099004c1ddbb57bd928207b77a3b4e27853050ee83016cae8525f1409a026e"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.importEnvelopePreview.schema.json",
-      "bytes": 91948,
-      "sha256": "ee4fbc2c51d704b86d75b16aa459defbae30b9bf04f311c2569cbd03d6c454ca"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.importEnvelopeRetain.response.schema.json",
-      "bytes": 104258,
-      "sha256": "bb3a1401500e695c5ddfd5f4362952b1fd93c1c97cfb3a6093ef3d38a46d27c4"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.importEnvelopeRetain.schema.json",
-      "bytes": 92090,
-      "sha256": "b02fd23ee0ed92e92fcd2198781a9977c7efd75158017be6eedec6dc701a1421"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.inspect.response.schema.json",
-      "bytes": 103526,
-      "sha256": "b38b3992c07a224837e59c6e1a53f0d1fb7d7669c0e0dd44fc6ec5464a1940ce"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.inspect.schema.json",
-      "bytes": 92200,
-      "sha256": "5bb4f7e390d039ee7cb6866f48f5338cc416e60237a2a831d5668d10a3651306"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.list.response.schema.json",
-      "bytes": 103052,
-      "sha256": "94235b7225a4c79ba859c341e3458bef3c47b5e2f060180fe4cab8b6afd8e785"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.list.schema.json",
-      "bytes": 92004,
-      "sha256": "9ba1d19e27886bb9e9900ccf55c30167332b15608d801803f3efca65cc5d5122"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.resolve.response.schema.json",
-      "bytes": 105575,
-      "sha256": "384ddd874b83f59e31d73600c2a8eec533a749fd69f1168c329dfc7a385ff7c1"
-    },
-    {
-      "path": "cli-v4.endpoint.recovery.resolve.schema.json",
-      "bytes": 92185,
-      "sha256": "829c39409f8624517a3c3547d893ed577118a8a97f07ce92b7857ffccb3bcd83"
-    },
-    {
-      "path": "cli-v4.endpoint.tombstone.approvePrune.response.schema.json",
-      "bytes": 105154,
-      "sha256": "13871ef4716830641338276e224c24e47542552658e6f92fff573e25e61123e0"
-    },
-    {
-      "path": "cli-v4.endpoint.tombstone.approvePrune.schema.json",
-      "bytes": 96329,
-      "sha256": "74f5713f5ad53c9e81c98df01e84f1942b3c12af445175688996a7556a4f5a94"
-    },
-    {
-      "path": "cli-v4.endpoint.tombstone.approveTerminal.response.schema.json",
-      "bytes": 105178,
-      "sha256": "6beef2dde38d9efc3281c8d5a35f7d5bebf0dac2ed8ee08a830f0a9b364b207c"
-    },
-    {
-      "path": "cli-v4.endpoint.tombstone.approveTerminal.schema.json",
-      "bytes": 103140,
-      "sha256": "7b9f1c55176586d8db231a9096c018e5d4ad3161eb8fec704c2b4104b9952651"
-    },
-    {
-      "path": "cli-v4.endpoint.tombstone.changeHold.response.schema.json",
-      "bytes": 105138,
-      "sha256": "2ef473a86ba22f8c2809b83945de58128d520a975e4ed6e54d7b640aaec7d1e6"
-    },
-    {
-      "path": "cli-v4.endpoint.tombstone.changeHold.schema.json",
-      "bytes": 93934,
-      "sha256": "72b687426bca01b987c7c4d84d1ded0ac3545f0d509a3c61869306cd318cd42d"
-    },
-    {
-      "path": "cli-v4.endpoint.tombstone.review.response.schema.json",
-      "bytes": 107480,
-      "sha256": "6a42f43cd095bbb3ac03f39ba2193aa04706f6394bcdc995af6f2e7786a8423b"
-    },
-    {
-      "path": "cli-v4.endpoint.tombstone.review.schema.json",
-      "bytes": 92068,
-      "sha256": "e96ba040c20a2c948ea4c4dff92296c59610ffd0170800679948552786975a84"
-    },
-    {
-      "path": "cli-v4.invocation.schema.json",
-      "bytes": 182010,
-      "sha256": "420f681f0118c96082c943fd831e495085bae898657d9ff4d0756567d96bd3a1"
-    },
-    {
-      "path": "cli-v4.parsed-value-corpus.json",
-      "bytes": 1541996,
-      "sha256": "a535f8d6d59066e428b450365b290bbce782562d5587079d5da8a886189a09e2"
-    },
-    {
-      "path": "cli-v4.process-failure.schema.json",
-      "bytes": 6264,
-      "sha256": "dfe0486809b92293f9c01042718a6d982105bd93896660c585b7fbfb85d6668f"
-    },
-    {
-      "path": "cli-v4.raw-decoder-corpus.json",
-      "bytes": 19247,
-      "sha256": "e3981096d0f3b27c159f6fe5c5f4ff285dc9cb3c32b463ce58e8dfd8e1834b6a"
-    },
-    {
-      "path": "cli-v4.response.schema.json",
-      "bytes": 498018,
-      "sha256": "6c66afa733540b80e469b9294936a53aa201e2193808dcadec76ea5c125075c7"
+      "path": "catalog.json",
+      "bytes": 3561,
+      "sha256": "d7d371a932fd01b080d72f6783a8f419571439d502d5f22201bd29087a534466"
     },
     {
       "path": "contracts-manifest.json",
-      "bytes": 7218,
-      "sha256": "5c51ef774b648f7aac96446c44046f12bae7566187539bf130a435293c432b6a"
+      "bytes": 2132,
+      "sha256": "8df5868188d2d3311d56af132cc9e583b3d179ccc8f4855ed405c669e2d7c8e6"
     },
     {
       "path": "default-presentation.en.json",
-      "bytes": 14900,
-      "sha256": "3ad3a314b44bd17c4d3db0147846ab02ec2fd1e5e890e539b914689608b61d1a"
-    },
-    {
-      "path": "local-diagnostics.parsed-value-corpus.json",
-      "bytes": 332129,
-      "sha256": "d033ad7d85fe309b37eb1ff7c188d2d04ceffa120535448e865e44d722dee4a1"
-    },
-    {
-      "path": "recovery-artifact-v3.schema.json",
-      "bytes": 3152,
-      "sha256": "86c593d2e0d59a1a273530ff5b37d7d47b90ff8bee44b55079868187cecd5e4d"
-    },
-    {
-      "path": "semantic-core-v1.contract.json",
-      "bytes": 17860,
-      "sha256": "a2813cfd3e2ac08e67a724bc86eb665736d1b6a55a2ac658b1fb66615ad819b5"
-    },
-    {
-      "path": "semantic-core-v1.schema.json",
-      "bytes": 47384,
-      "sha256": "50bba1906242c5c5296c9632eaa1bfafdb04c4a0e907acd41fe766b5cdf6559b"
-    },
-    {
-      "path": "web-v3.catalog.json",
-      "bytes": 3254178,
-      "sha256": "63a9f1c31b037aa23e8c6f6dadd631beaeee784eed6de6106d3d48cca7836de3"
-    },
-    {
-      "path": "web-v3.endpoint-catalog.authority.ts",
-      "bytes": 5382,
-      "sha256": "12528559e6071c47d1a5b1346ce35c8be815157115747fd5fb1e5596de86af84"
-    },
-    {
-      "path": "web-v3.endpoint-catalog.casework.ts",
-      "bytes": 4863,
-      "sha256": "c604200e29cc8cd5e400c13a34a5959c8b481f0b37be6b9cde600301a421207c"
-    },
-    {
-      "path": "web-v3.endpoint-catalog.ts",
-      "bytes": 844,
-      "sha256": "ad362fd898b7648ec264cdd37c1ca6dd3e22f12d3acbf59cf43b4b358d1788df"
-    },
-    {
-      "path": "web-v3.endpoint.authority.approveCopyAdoption.response.schema.json",
-      "bytes": 93520,
-      "sha256": "79ae396807957d0dca1c998d36fa3bad0ad8f5e907e6c8ea8b1fc1dc498067b9"
-    },
-    {
-      "path": "web-v3.endpoint.authority.approveCopyDeletion.response.schema.json",
-      "bytes": 93520,
-      "sha256": "8856476a7bde16b7f6a9a353fd209fdb4d2c2b7cd1ce300888b607990c27b143"
-    },
-    {
-      "path": "web-v3.endpoint.authority.approveCopySigner.response.schema.json",
-      "bytes": 93514,
-      "sha256": "d748dd6bae886eabf9719b167ba8c646ca99be4d9a3b8988792ba67c4a23b4b8"
-    },
-    {
-      "path": "web-v3.endpoint.authority.approveRealDataActivation.response.schema.json",
-      "bytes": 93538,
-      "sha256": "59ec15e3e0dd58b38c12be6955f8bc434f5a1a262413f88e1cbc5899bbc5cdb1"
-    },
-    {
-      "path": "web-v3.endpoint.authority.approveWriterHandoff.response.schema.json",
-      "bytes": 93523,
-      "sha256": "ba934d0c4bf92f2c22cf70065f1369791d87b33815838204863088cda8423fcb"
-    },
-    {
-      "path": "web-v3.endpoint.authority.observe.response.schema.json",
-      "bytes": 93667,
-      "sha256": "926997962486502330db370ac7c331ce33fff8e55c8072498b636d8e6a8a8291"
-    },
-    {
-      "path": "web-v3.endpoint.authority.register.response.schema.json",
-      "bytes": 93670,
-      "sha256": "856ae65880c94e0ee5712c2c01abeff34e01e6a7d8b5210b0c9476534a8d2b0f"
-    },
-    {
-      "path": "web-v3.endpoint.authority.reviewRealDataActivation.response.schema.json",
-      "bytes": 98147,
-      "sha256": "33fa1c4821d2bd6241692bb1c6dced37daab1c71db714f219bf6bc85544b5ca0"
-    },
-    {
-      "path": "web-v3.endpoint.authority.setEnabled.response.schema.json",
-      "bytes": 93676,
-      "sha256": "32fada2eea095308a535ba30de45abb5b20cf0e84f7dbe99ecee8cde80f167b1"
-    },
-    {
-      "path": "web-v3.endpoint.authority.setGrant.response.schema.json",
-      "bytes": 93670,
-      "sha256": "dce140a9d475397e05ad645f6ec92c6bbc44ea5ffe8517768641b3d847d1d49c"
-    },
-    {
-      "path": "web-v3.endpoint.case.get.response.schema.json",
-      "bytes": 92849,
-      "sha256": "05850868cae5bd6504be18d160caf4e7b44ad9506afac2b38be006d8f2de8781"
-    },
-    {
-      "path": "web-v3.endpoint.case.history.response.schema.json",
-      "bytes": 92973,
-      "sha256": "1fd0bb2a23f369c646461596eef87c2c5761b1ab1e9032bb1f9e00e953675bf6"
-    },
-    {
-      "path": "web-v3.endpoint.case.list.response.schema.json",
-      "bytes": 92943,
-      "sha256": "79e6ad4fdc4714bb9cb8d26c5824a22f70889c4338bc7da775caf2a38b5cf1c0"
-    },
-    {
-      "path": "web-v3.endpoint.command.execute.response.schema.json",
-      "bytes": 95630,
-      "sha256": "32a6f3803e65c8b9214d6245ed7f9c5f8345eba930f2a81e9fa6d476b7f381f1"
-    },
-    {
-      "path": "web-v3.endpoint.command.prepare.response.schema.json",
-      "bytes": 94747,
-      "sha256": "2a9937d1a49b4a085685c2fb6c54f38f8c6bb0884fe6eacf28c5f4a72f10e1ef"
-    },
-    {
-      "path": "web-v3.endpoint.definition.response.schema.json",
-      "bytes": 92551,
-      "sha256": "4ff109c03d56f2b1e44d8856e3c04bf8531ceeeb3da0421a8f715784682bf08c"
-    },
-    {
-      "path": "web-v3.endpoint.lifecycle.apply.response.schema.json",
-      "bytes": 95137,
-      "sha256": "8523a321c14b2c6b1dff1036f8245ad105bb649a974c79bd936c324cd217bdd9"
-    },
-    {
-      "path": "web-v3.endpoint.lifecycle.approve.response.schema.json",
-      "bytes": 95143,
-      "sha256": "bcc45155e63e8082ef457178370f0807e4383a30f732359cff629f5d0fd8821c"
-    },
-    {
-      "path": "web-v3.endpoint.lifecycle.review.response.schema.json",
-      "bytes": 94542,
-      "sha256": "8b6045a894bfbde6566bb18cdda13f8b5b7b8e7b032c9a74ea5f1d348b795172"
-    },
-    {
-      "path": "web-v3.endpoint.operation.observe.response.schema.json",
-      "bytes": 93016,
-      "sha256": "122283ee4d2bf022b3abff3a0c285d2d4d390b7dd07d8471ee00c1879fa61486"
-    },
-    {
-      "path": "web-v3.endpoint.recovery.dismiss.response.schema.json",
-      "bytes": 94352,
-      "sha256": "88538bc7320a2531478841204ef26c9f7641221f932bc5319ebdfc01529293f8"
-    },
-    {
-      "path": "web-v3.endpoint.recovery.export.response.schema.json",
-      "bytes": 92820,
-      "sha256": "9cb9bbda4009ae5836d51bcbb7b98f525e48fee5bad42a4ac776afb4176adcfd"
-    },
-    {
-      "path": "web-v3.endpoint.recovery.importEnvelopePreview.response.schema.json",
-      "bytes": 92623,
-      "sha256": "9280dd0d88b25d6f336931b6af7659d9c205d0a53b2f141e779850f277bb55e2"
-    },
-    {
-      "path": "web-v3.endpoint.recovery.importEnvelopeRetain.response.schema.json",
-      "bytes": 93689,
-      "sha256": "f36934f9d6102d970b09e2d94f5d3a2e7978bd0d6bf7549464b562563a663326"
-    },
-    {
-      "path": "web-v3.endpoint.recovery.inspect.response.schema.json",
-      "bytes": 93022,
-      "sha256": "888dc8dbff5fba99aa6215c1124622b52adb0852788c94e0f5c65467a6ce3313"
-    },
-    {
-      "path": "web-v3.endpoint.recovery.list.response.schema.json",
-      "bytes": 92563,
-      "sha256": "e18df0d9312855e3a3a0a79bafde04b749179ac66caae9c4c105c12c403f9598"
-    },
-    {
-      "path": "web-v3.endpoint.recovery.resolve.response.schema.json",
-      "bytes": 95071,
-      "sha256": "a2152d9abc4a6883087401ee64d54b2e9be61e01ff419de8db8e1f83187b4238"
-    },
-    {
-      "path": "web-v3.endpoint.session.logout.response.schema.json",
-      "bytes": 92125,
-      "sha256": "31fd2f39d8f2e4bef2d91ebfb1090a506d7b5d023b77e2683240194d29419ab8"
-    },
-    {
-      "path": "web-v3.endpoint.session.response.schema.json",
-      "bytes": 92104,
-      "sha256": "f939dd98a0ca96e4a37e936166ecebee01c23d3f20789cf74693e91309f61bd5"
-    },
-    {
-      "path": "web-v3.endpoint.tombstone.approvePrune.response.schema.json",
-      "bytes": 94620,
-      "sha256": "143c340818a2936e0a78159c4f556d95d3d3d3d51d2981183432c2b868646d75"
-    },
-    {
-      "path": "web-v3.endpoint.tombstone.approveTerminal.response.schema.json",
-      "bytes": 94629,
-      "sha256": "9beb2c7fe1d96563bceffb98aca585a788774072c603211e64483b81988cfaeb"
-    },
-    {
-      "path": "web-v3.endpoint.tombstone.changeHold.response.schema.json",
-      "bytes": 94614,
-      "sha256": "b1581c691592ade2ffffa2dae428c4cf097dbe0e09a75ae5f5ec37c6732a61e8"
-    },
-    {
-      "path": "web-v3.endpoint.tombstone.review.response.schema.json",
-      "bytes": 96976,
-      "sha256": "b8cad2fce64dd11437385d3d850f2042d73dca7ea4919e33a37214d349eaca52"
-    },
-    {
-      "path": "web-v3.host-failure.schema.json",
-      "bytes": 8981,
-      "sha256": "2101d5849f37a990ebadbe11bf3b2c0469824e7ec4aee7e97edc5522a1401cb5"
-    },
-    {
-      "path": "web-v3.parsed-value-corpus.json",
-      "bytes": 2006476,
-      "sha256": "44e94ab9464afdec917fc7046a246c4051a6a8ff6349f20c0ecb639b397bf4e5"
-    },
-    {
-      "path": "web-v3.process-failure.schema.json",
-      "bytes": 2838,
-      "sha256": "1ba134e2802a03de577b21f04dc5e81defa71d6a3d1a0914b20332a3cd8d0206"
-    },
-    {
-      "path": "web-v3.product-metadata.ts",
-      "bytes": 24098,
-      "sha256": "00939c674e3bd87b6b05eb244c9ffcb967932cd484eee626f084944b43a46656"
-    },
-    {
-      "path": "web-v3.responses.schema.json",
-      "bytes": 163461,
-      "sha256": "d5db739ce89467513301f0a16a0a9609de3aede12fa6e5bebdf7d335d79d791a"
-    },
-    {
-      "path": "web-v3.types.core.ts",
-      "bytes": 8921,
-      "sha256": "00445cef6f65fea80d52744e8e83c56c687c2836e8c15e83d4f23bde2f808925"
-    },
-    {
-      "path": "web-v3.types.diagnostics.ts",
-      "bytes": 3850,
-      "sha256": "a676acb63a19e150199eb55350f92b2cce27a735cab207aeacafc8e597a6ef6e"
-    },
-    {
-      "path": "web-v3.types.recovery.ts",
       "bytes": 7917,
-      "sha256": "256e8305864e06344fa392b152fae7a878d0d28794aa2c80026195059fa4653b"
+      "sha256": "a537ccc7a1d39a7d80a2d4ffb2d4132c8bf50101c1c88d0716fceba89d3063cc"
     },
     {
-      "path": "web-v3.types.responses.authority.ts",
-      "bytes": 5912,
-      "sha256": "2414405dcd8735511ad81285503426316bfd93bcb8f6d8e35871677e07853d1a"
+      "path": "endpoint-catalog.ts",
+      "bytes": 1617,
+      "sha256": "2fda777b41acb80ac7dbc325a97b0b47d5aa9d4dc4f50414e7aba012d8ad4262"
     },
     {
-      "path": "web-v3.types.responses.command.ts",
-      "bytes": 3317,
-      "sha256": "42de360c6dee196ceff0d5386ebc6439906c1e13fc4e534d53f720fda70b1eeb"
+      "path": "endpoint-corpus.json",
+      "bytes": 90933,
+      "sha256": "55ece3093e38e8c8b40bf5f148b8c27f3a5a78fabea78b9413b3cf83202995c7"
     },
     {
-      "path": "web-v3.types.responses.lifecycle.ts",
-      "bytes": 9362,
-      "sha256": "5156965820ebe6e02e97f8e00971f47d0ba079f3a18d7cdb08e2843e86a538a0"
+      "path": "endpoint.authority.observe.request.schema.json",
+      "bytes": 529,
+      "sha256": "07c76a35e5010e4be6bfca6eef8b0230d82ae3a5339e8d057a9bed86ca63731e"
     },
     {
-      "path": "web-v3.types.responses.read.ts",
-      "bytes": 3130,
-      "sha256": "bd4db36545832e2084ba04f3245fc4e5df0e0119e8f7dd08fe13745ce0390b6f"
+      "path": "endpoint.authority.observe.response.schema.json",
+      "bytes": 60458,
+      "sha256": "0d94f0f09ed14a2e5f11864de39d819fa061052012d715d77b38beb9bacaf218"
     },
     {
-      "path": "web-v3.types.responses.recovery.ts",
-      "bytes": 5494,
-      "sha256": "f3267fdc175882ebd2d99ad3e03b777f7ed6a86b71e04030ffa723168c5e8867"
+      "path": "endpoint.authority.register.request.schema.json",
+      "bytes": 812,
+      "sha256": "e3238718ee1861bb90e076aa1a06af17b721c6fe0b0027f96c2c53839547c1be"
     },
     {
-      "path": "web-v3.types.responses.ts",
-      "bytes": 923,
-      "sha256": "d56db520c72d1257320ab259e9fe8023293c34965a8c87ee664e02f0c72b937c"
+      "path": "endpoint.authority.register.response.schema.json",
+      "bytes": 60865,
+      "sha256": "413569446926fb1a4933736e87fcf1f5bf7d4fce21a4ba8dbd486bcc0ef75860"
     },
     {
-      "path": "web-v3.types.semantic.ts",
-      "bytes": 11904,
-      "sha256": "e40374de647dfa11ae65abb3097d729a07304900d50db7186796010daf6386e1"
+      "path": "endpoint.authority.setEnabled.request.schema.json",
+      "bytes": 855,
+      "sha256": "1d7b9195c3522276980daf864d36eaa5ac1327deaf9cae54b9142f504c5cdc21"
     },
     {
-      "path": "web-v3.types.transport.ts",
-      "bytes": 6247,
-      "sha256": "cdc2829e873b8a5ad00434bea9be4b789ee90b4de7db785f3a776cf177f5af15"
+      "path": "endpoint.authority.setEnabled.response.schema.json",
+      "bytes": 60871,
+      "sha256": "3b9f3825f161e4b05f2678396d865d5878b255468611aadb9225dad4731f81d8"
     },
     {
-      "path": "web-v3.types.ts",
-      "bytes": 332,
-      "sha256": "1a15140090b621bd7bc4c172e1160b783941edce2c0480527a7042b80574527a"
+      "path": "endpoint.authority.setGrant.request.schema.json",
+      "bytes": 1703,
+      "sha256": "39441d5b1e39b0e8661ed706bd87e16163b35772d460be5e2f3e184a7a406ec2"
     },
     {
-      "path": "web-v3.validation.ts",
-      "bytes": 5067,
-      "sha256": "102ed14aa1fd4ab1d7b6a94c2e68545959cbb9e34b83c1986bb19dc891852fd8"
+      "path": "endpoint.authority.setGrant.response.schema.json",
+      "bytes": 60865,
+      "sha256": "bad5110f0a1820b7ea3d6996adb52722a8c71eb790cce974ca657b67d9560d1d"
     },
     {
-      "path": "web-v3.validators.NOTICE.txt",
-      "bytes": 5357,
-      "sha256": "ab7118245ffacfe5e8d01ccd5096d62daaf6e298f09191291dfd3635eacaaa60"
+      "path": "endpoint.case.get.request.schema.json",
+      "bytes": 831,
+      "sha256": "bbf2dc5363000bef6ad5c5ef82c6fabde48fdfbeb1a50c2476c955146393e304"
     },
     {
-      "path": "web-v3.validators.core.d.mts",
-      "bytes": 3185,
-      "sha256": "86643d7136e90f4d34c2f218d05ccb92d02f12fdc74d97c8ab855e45d1c684f1"
+      "path": "endpoint.case.get.response.schema.json",
+      "bytes": 61565,
+      "sha256": "e504812ba891eeb6900d4de85c905a0b1a455056cfa303f3bfcb1cbb19797a10"
     },
     {
-      "path": "web-v3.validators.core.mjs",
-      "bytes": 586575,
-      "sha256": "4bce8d01d449ee3facb00ce8663734879ccd1f0134608de0394a45956b50e002"
+      "path": "endpoint.case.history.request.schema.json",
+      "bytes": 986,
+      "sha256": "4de015700316e9ad47b0e7f450d361909a8dd74fcbec9218f72e4bee7fe56858"
     },
     {
-      "path": "web-v3.validators.discovery.d.mts",
-      "bytes": 489,
-      "sha256": "935a2b48c5c14d516ae22f9fd6313b2fa8f00e9edc32e67694b6d8c2ad996209"
+      "path": "endpoint.case.history.response.schema.json",
+      "bytes": 60151,
+      "sha256": "5422032b1098c203901709b3cdfd90b07db84eea5ae365a94f08a6e321c6a481"
     },
     {
-      "path": "web-v3.validators.discovery.mjs",
-      "bytes": 527156,
-      "sha256": "6c08b5b2e5bbe5b6b61fbbbc7dea777d510f3fc0ac1e19d95c10d70dcadf37f4"
+      "path": "endpoint.case.list.request.schema.json",
+      "bytes": 414,
+      "sha256": "086187ac4208dd23aa6f44e8e4d607c2283e5f7def06fb729e2e1be1308ec052"
     },
     {
-      "path": "web-v3.validators.host.d.mts",
-      "bytes": 453,
-      "sha256": "95e2ca33db38ae46bac70a6f9d66a18861faeb655edd848581356d678b13a281"
+      "path": "endpoint.case.list.response.schema.json",
+      "bytes": 62051,
+      "sha256": "9a97e34e4a9fb2f55da40a80ec1f7c056493c9bca1f13639c2461e79e6a3d8ec"
     },
     {
-      "path": "web-v3.validators.host.mjs",
-      "bytes": 72745,
-      "sha256": "d03993772581916622ad566fd643fef116f2858d91ce37b2c5ff9853024fbbc0"
+      "path": "endpoint.case.steward.request.schema.json",
+      "bytes": 4522,
+      "sha256": "1a99fed324f24271dde4bc599bbbf92a45dc291b38e7c6781e6c91a703ce17ca"
     },
     {
-      "path": "web-v3.validators.recovery.d.mts",
-      "bytes": 1231,
-      "sha256": "61d203904629f12acd68c575fef76389673d47625dc5a2918d84708149372620"
+      "path": "endpoint.case.steward.response.schema.json",
+      "bytes": 59944,
+      "sha256": "8b7b468157ac333589b3984cb36bae1e8614836146315514d4de3a71f62e1094"
     },
     {
-      "path": "web-v3.validators.recovery.mjs",
-      "bytes": 346602,
-      "sha256": "9d2c6c5f47a35600a744c2b268d75ba889a65fb627bb71d59a07a813a6130360"
+      "path": "endpoint.command.execute.request.schema.json",
+      "bytes": 5741,
+      "sha256": "218445acc00250a53561d06906b119d858f96e44312f01e706bea4e5f5b6e982"
+    },
+    {
+      "path": "endpoint.command.execute.response.schema.json",
+      "bytes": 59953,
+      "sha256": "4b8d997c944204d0da37b4ad68618fbf131696d88d990116eea92946f65f31b3"
+    },
+    {
+      "path": "endpoint.command.preview.request.schema.json",
+      "bytes": 5741,
+      "sha256": "20f4a7f2696ff3096b116cdaddfb75cd87d441b867f4622437ee367bd8104c5b"
+    },
+    {
+      "path": "endpoint.command.preview.response.schema.json",
+      "bytes": 59633,
+      "sha256": "eb42c3517ce8dc2698b5ec7abe53f65e38a7109630c81dfcb680dc8fec1c2239"
+    },
+    {
+      "path": "endpoint.definition.request.schema.json",
+      "bytes": 303,
+      "sha256": "e388dac69481f0098580cf0fbd17c6407f3d2af7158f53400b3f68d62cdea30d"
+    },
+    {
+      "path": "endpoint.definition.response.schema.json",
+      "bytes": 59659,
+      "sha256": "4b52dec658e5dae1642da49653d3a1ec966e224c53f99e25cab889087a35ad16"
+    },
+    {
+      "path": "endpoint.operation.observe.request.schema.json",
+      "bytes": 537,
+      "sha256": "eec576293d54f7d6de40656374162d062e1745abf3c550b6c7efa2e631c63a0b"
+    },
+    {
+      "path": "endpoint.operation.observe.response.schema.json",
+      "bytes": 59738,
+      "sha256": "a483fe4ba51a66cb7f56e78619a744cd3c231ac0aa05d1dc153743c4f3059a46"
+    },
+    {
+      "path": "endpoint.session.logout.request.schema.json",
+      "bytes": 311,
+      "sha256": "806a50dd358be48fdfc73fbf32d5d7893c02df6c92b1a596f59ce38f6b906ae7"
+    },
+    {
+      "path": "endpoint.session.logout.response.schema.json",
+      "bytes": 58817,
+      "sha256": "6b71eb99524732185a1bb1dc5448a9c218d2a780e4ece9a78f7aa2c01b2e2a19"
+    },
+    {
+      "path": "endpoint.session.request.schema.json",
+      "bytes": 297,
+      "sha256": "d86e5bef8bfb91db1a123a06d454a3f22c135cb899d5a32106ffc60b16f4439b"
+    },
+    {
+      "path": "endpoint.session.response.schema.json",
+      "bytes": 59115,
+      "sha256": "b24e03391492f74527d54871b15420206bbd2722ef5165174656fb7f5ededd7b"
+    },
+    {
+      "path": "frame-response.schema.json",
+      "bytes": 91407,
+      "sha256": "2269861684c26b1311daf05cee295d9beb60697874b63908398cee1f455ad570"
+    },
+    {
+      "path": "host-failure.schema.json",
+      "bytes": 8202,
+      "sha256": "313df5255c9346a64949795720eaf7622982af39574c96e938597da9edd8fac4"
+    },
+    {
+      "path": "invocation.schema.json",
+      "bytes": 22292,
+      "sha256": "76aa71a9fd2410710a058b79ca94a84aecce6460bec71025649c3e79c30e4c1b"
+    },
+    {
+      "path": "product-metadata.ts",
+      "bytes": 21733,
+      "sha256": "6d0cc13312556c74096c7a181404b9a67c90168ede3e884a6662d4923bf976cb"
+    },
+    {
+      "path": "responses.schema.json",
+      "bytes": 107168,
+      "sha256": "ab66706944c24af9205cfd0b060efc117a27a7e4c3b240e7e5fb51358d1487ca"
+    },
+    {
+      "path": "semantic-core.contract.json",
+      "bytes": 15816,
+      "sha256": "a2e2ee45a0904be7cc4fb935d2535b74d41ace48be07cbb19e60218ce995ebef"
+    },
+    {
+      "path": "semantic-core.schema.json",
+      "bytes": 40278,
+      "sha256": "59c3e29d9c1146114bc7e682ca0c7ba4f875b55d62acdda6e84e3478f957bf7c"
+    },
+    {
+      "path": "types.ts",
+      "bytes": 52467,
+      "sha256": "21d0c223b747dbef80d89db838f2dad4bf08f2e99734bf7e9f017a484d374b17"
+    },
+    {
+      "path": "validation.ts",
+      "bytes": 2794,
+      "sha256": "7d39e0e63e11bccf7f5905ab01e44a74b8ea9bb8bfa6cd660d9cde66ce3b616a"
+    },
+    {
+      "path": "validators.NOTICE.txt",
+      "bytes": 5367,
+      "sha256": "40834e34c17da5b3255e41aa741d5035d44aac71ae242b006a47b54165f2473c"
+    },
+    {
+      "path": "validators.authority.d.mts",
+      "bytes": 755,
+      "sha256": "5bea723b0f6abe566d5743c65e0897bef52196487449abcf24326975d1b88e1a"
+    },
+    {
+      "path": "validators.authority.mjs",
+      "bytes": 118352,
+      "sha256": "fad73d54fdf738e9b499de3b3feee6f294d11c71cb3cac88ffacfd892c9da772"
+    },
+    {
+      "path": "validators.core.d.mts",
+      "bytes": 1122,
+      "sha256": "48359a0f3963178c464fbfa882265941e132a2efb520f7ff2e83de8c64dcbacc"
+    },
+    {
+      "path": "validators.core.mjs",
+      "bytes": 222327,
+      "sha256": "449b4ca24fa5a6c84951579af0261f166a638c2fc0bc972caa49f51e31586a86"
+    },
+    {
+      "path": "validators.discovery.d.mts",
+      "bytes": 452,
+      "sha256": "0a53650becc84952163bb13bb7d39d465adbfc9e3d321e738d713b1f66bd68a4"
+    },
+    {
+      "path": "validators.discovery.mjs",
+      "bytes": 479278,
+      "sha256": "419e537068c15f7739ef8b75481260015fc00853cbe179fe4b0ad5ed68ed3e15"
+    },
+    {
+      "path": "validators.host.d.mts",
+      "bytes": 426,
+      "sha256": "39804894c78ad7cb48ce607e8af5677fe3dcf997204c83c12db67f5f5286fd5a"
+    },
+    {
+      "path": "validators.host.mjs",
+      "bytes": 70464,
+      "sha256": "e560dd2308e3b981c972a6164dc25c27d1bd88ee2e54bfc1671cdac86236f130"
     }
   ]
 }

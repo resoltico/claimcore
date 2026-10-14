@@ -1,76 +1,61 @@
-# ClaimCore Web frontend
+# ClaimCore browser
 
-This directory contains the React/TypeScript client served by `ClaimCore.Web`. It is a renderer for
-the generated Web-v3 contract; business validation, available commands, operation identity, and
-failure meaning remain in the F# Domain and Application projects.
+React and react-aria-components render the generated service contract. Domain and Application
+own validation, available commands and outcome meaning. The browser is an authenticated
+same-origin HTTPS client with a contract fingerprint header and cookie antiforgery token.
 
-## Source layout
+`src/api/service.ts` owns all browser networking and validates bounded strict JSON replies.
+`src/domain` and operation hooks preserve authored values, review identity and the exact
+serialized request. Preview is advisory. Confirmation executes that request; an unknown
+outcome or lost execution reply keeps one exact retry action while the page lives. A contract
+mismatch offers explicit reload. No request or claimant state is persisted in browser storage.
+Only language and display preferences are persisted.
 
-- `src/api/` owns same-origin HTTP transport and response validation.
-- `src/components/` contains reusable accessible controls and review surfaces.
-- `src/hooks/` coordinates session, query, operation, and recovery state.
-- `src/views/` contains the login, case, command, and recovery workflows.
-- `src/generated/` contains checked projections from the F# HTTP contract and must not be hand-edited.
-- `tests/` contains Vitest component and behavior tests; `e2e/` contains the published-host Playwright
-  lifecycle.
-- `scripts/` contains bounded contract, manifest, notice, SBOM, and test-report helpers.
+Views show case lists, live/voided/erased cases, accepted history, command review and operation
+observation. An erased case retains its reference and revision. Stewardship and authority
+management remain API/CLI operations. Display language, numeric/date formatting and Unicode
+warnings never rewrite authored or accepted values.
 
-## Toolchain and commands
+## Build and checks
 
-The exact Node and npm versions are declared by [`.node-version`](../.node-version) and
-[`package.json`](package.json). The package lock is authoritative for the installed graph.
+Node/npm versions are pinned by `.node-version` and `package.json`; dependencies by the npm lock.
+From the repository root:
 
-The `tsc` command is the native TypeScript 7 compiler and the only TypeScript installed; it types and
-builds ClaimCore. Linting is oxlint with type-aware rules on the same native toolchain
-(`oxlint-tsgolint`), run by `scripts/lint.mjs` once per TypeScript project (`scripts/lint-projects.mjs`)
-because type-aware rules read one program at a time. `oxc-parser` reads the generated recovery types
-for the localization vocabulary, since TypeScript 7 ships no JavaScript compiler API. Boundary rules
-that no built-in rule expresses live in `lint/claimcore-plugin.mjs`. Every lint, type, format and
-coverage exception is registered in [`config/lint-exceptions.json`](../config/lint-exceptions.json).
-Composite project references retain incremental
-state in ignored files, and Vitest uses isolated, machine-scaled file workers. The locked StrykerJS
-gate (its sandbox tsconfig rewrite is disabled because it needs a compiler API TypeScript 7 does not ship; Vitest needs no tsconfig) mutates the four operation modules (metadata, initial state, request freezing and the reducer), preference parsing/transitions, descriptor/identity presentation, and typed ICU message rendering and checks a 92% minimum against exact-source
-local evidence. It uses one test worker so static mutations do not compete for repeated whole-suite imports; test deadlines and mutation acceptance are unchanged. It is not F# or PostgreSQL mutation coverage.
+```sh
+npm --prefix web ci
+npm --prefix web run contract:generate
+npm --prefix web run localization:check
+npm --prefix web run typecheck
+npm --prefix web run lint
+npm --prefix web run lint:styles
+npm --prefix web run test:unit
+npm --prefix web audit --audit-level=low
+npm --prefix web run build
+```
 
-[`package.json`](package.json) defines the individual npm scripts. Their canonical ordered use,
-including formatting, typechecking, linting, dependency assurance, tests, and asset production, is in
-[Development](../docs/development.md#frontend-assurance). Do not create a second frontend build path:
-`npm run build` is the sole asset producer.
+`format:check` checks authored source. Function size and complexity remain enforced. Coverage
+is available through `test:coverage` and gates nothing. Networking and localization boundaries
+have positive and rejecting policy fixtures.
 
-## Generated contract and publish boundary
+Contract generation runs the F# generator, compiles strict standalone AJV validators, then
+checks every artifact's length/hash against `config/contracts.lock.json`. Generated files live
+in ignored `src/generated/contracts`; never edit them. `contract:lock` accepts an intentional
+change only after reviewing it with the owning F# change. A failed or interrupted generation
+must be rerun before consumers can pass lock verification.
 
-`npm run contract:generate` regenerates semantic, CLI-v4, and Web-v3 catalogs, exact endpoint response
-schemas, pure-codec corpora, and split TypeScript DTO modules from F#. A deterministic Node
-postprocess compiles the aggregate Web response graph into typed AJV standalone core and recovery
-validator groups, formats generated TypeScript, and binds the complete inventory in one manifest. The
-browser dynamically imports only the group required to validate a received endpoint response.
-The output lives in the ignored `src/generated/contracts/` and must match the committed
-`config/contracts.lock.json` (length and SHA-256 per artifact). `contract:verify` and `contract:check`
-verify an existing directory without regenerating. Use `contract:lock` only for an intentional contract
-change, then review the lock diff with its production codec and tests.
+English business metadata and diagnostics come from F#. The authored Latvian and Arabic
+catalogs must cover the same keys, parameter roles and rendered tokens. `localization:generate`
+derives all compiled catalogs and the English pseudolocale. Latvian and Arabic translations
+are machine-drafted and need native review.
 
-The Vite output under `dist/` is ignored. Asset production records a manifest bound to frontend
-source, the npm lock, generated contract, Node/npm versions, notices, and output bytes. The .NET Web
-publish target consumes only a matching manifest; an ordinary `dotnet build` neither runs npm nor
-silently accepts stale assets.
+`build` typechecks, produces `dist` with Vite and includes third-party notices for runtime
+packages and embedded validators. Ordinary .NET builds do not run npm. Publishing consumes
+built assets; the container build and published acceptance own the delivered source/build
+relationship. The three-engine Playwright suite targets a freshly started published service,
+not a development server. See [Development](../docs/development.md) for repository-wide verification.
 
-Browser operation and private runtime configuration belong in the [Web
-reference](../docs/web.md). The browser suite always targets published bytes and independently
-freshly initialized synthetic databases, never a Vite development server.
-
-## Interrupted contract generation
-
-Generation validates a complete sibling stage before promoting it. A writer reservation prevents
-concurrent generators and makes dev, typecheck and unit consumers refuse active or interrupted
-promotion. Ordinary failures restore prior output and the lock; interruption can leave recognizable
-`.contracts-stage-*`, backup and `.contracts-writer` entries under `web/src/generated/`.
-
-For an interruption, stop **all** contract generators and frontend consumers. Preserve the writer
-reservation (including an empty early reservation), stages, backups, generated output and current
-`config/contracts.lock.json` together before moving the abandoned reservation to a distinct saved
-location outside its reserved pathname. Review the intended lock against the committed revision:
-an interrupted intentional lock command may already have replaced the working lock. Restore that
-reviewed authoritative lock if needed, then run `npm --prefix web run contract:generate` to rebuild
-a coherent pair. A failed regeneration continues to refuse consumption. Only an independently
-intentional `contract:lock` may accept replacement bytes. Generation never takes over a reservation
-based on its age or a process ID.
+The Stylelint tooling graph pins the MIT-licensed `@dieub/braces-depth-guard@3.0.3-pn.2`
+derivative through a `braces` override. Its published runtime diff and nesting rejection were
+reviewed to address GHSA-vfj7-8cjw-p6xm, for which upstream has no patched release. This is a
+code replacement, not an audit exclusion; the audit remains at `low`. The dependency review
+and compatibility/rejection evidence are in the decision record.

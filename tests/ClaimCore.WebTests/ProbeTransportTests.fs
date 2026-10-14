@@ -83,6 +83,7 @@ let private refusesCertificateMismatch () =
             Expect.isTrue untrusted "System trust rejects an unadmitted synthetic root"
         })
 
+[<Tests>]
 let tests =
     testList
         "HTTPS probe transport"

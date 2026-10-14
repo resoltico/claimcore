@@ -1,23 +1,16 @@
-## Scope and impact
+## Change
 
-Describe the change, intentional breaks and preserved authority. Identify changes to architecture,
-security, contracts, workflow/gate policy, dependencies or release controls explicitly.
+Describe the concrete problem, resulting behavior, affected consumers and intentional breaks.
+Identify contract, architecture, authority, persistence, dependency and gate changes.
 
-## Design and QA
+## Design and evidence
 
-Link the design and separate QA record. Distinguish agent/source review from owner authorization
-(see `docs/owner-review.md`). Name any change to a contract (`config/contracts.lock.json`), to the test
-inventories (`tests/inventory/`) or to a workflow or gate, because those are what the owner reviews.
-Do not pre-check owner approval on the owner's behalf: neither CI nor a source review can grant it, and
-the owner decides on the current head/base before a manual merge.
+Link the governing design/decision record when needed. Explain corrections and their evidence.
+List commands actually run and their outcomes separately from source inspection. State failing
+or unrun checks and limits; include rejecting controls for guards.
 
-## Verification and handoff
+## Delivery
 
-Record the actual published head and link its qualifying run/attempt. State actual commands/results,
-CI status, draft/readiness, limitations and any live-setting activation still pending. Update this
-section after follow-up commits; do not leave a superseded head or a “pending” claim after verification.
-
-## Publication hygiene
-
-Identify the feature branch. Disclose temporary infrastructure and preparation commits, and confirm
-what was removed from the submitted tree. Do not conflate opening this PR with approval or merge.
+Give the exact head revision and qualifying CI run. State draft/readiness and any external
+coordination. Identify resources created for verification and their cleanup. Preserve unrelated
+work and existing installations. Green CI is not owner approval; the owner reviews and merges.

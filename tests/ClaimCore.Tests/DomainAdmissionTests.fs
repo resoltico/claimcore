@@ -56,4 +56,5 @@ let private payload =
                 ))
                 "Same admission ordering for parsed commands")
 
+[<Tests>]
 let tests = testList "domain accepted-state admission" [ snapshots; payload ]

@@ -6,7 +6,7 @@ import { CaseDetail } from "../src/views/CaseDetail";
 import { CaseList } from "../src/views/CaseList";
 import { BusinessValue } from "../src/components/BusinessValue";
 import { CopyValue } from "../src/components/CopyValue";
-import { definition, fields, response } from "./v3-ui.fixtures";
+import { definition, fields, response } from "./service-ui.fixtures";
 import { generatedWebValue } from "./contract-corpus.fixtures";
 
 const languages = ["en", "lv", "ar", "en-XA"] as const;
@@ -53,13 +53,21 @@ const historyReply = (value: string) => {
   return { ...history.outcome.data, entries };
 };
 const readReply = (url: string, value: string, missing: boolean) => {
-  if (url.endsWith("/list")) {
+  if (url.endsWith("/case.list")) {
     return response("case.list", "SUCCEEDED", {
-      items: [{ caseReference: value, status: "OPENED", revision: "1" }],
+      items: [
+        {
+          state: "LIVE",
+          disposition: "ACTIVE",
+          caseReference: value,
+          status: "OPENED",
+          revision: "1",
+        },
+      ],
       nextCursor: null,
     });
   }
-  if (url.endsWith("/history")) {
+  if (url.endsWith("/case.history")) {
     return response(
       "case.history",
       "SUCCEEDED",

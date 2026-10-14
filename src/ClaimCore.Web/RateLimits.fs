@@ -24,7 +24,7 @@ module internal RateLimits =
     let private busy context =
         task {
             HttpHeaders.noStore context
-            do! (WebWire.hostFailure WebHostFailure.Busy).ExecuteAsync(context)
+            do! (RouteSupport.hostFailure context HostFailure.RateLimited).ExecuteAsync(context)
         }
 
     let ingress (context: HttpContext) (next: RequestDelegate) : Task =

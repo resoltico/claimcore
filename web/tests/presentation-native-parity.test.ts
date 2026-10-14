@@ -1,72 +1,48 @@
 import { expect, it } from "vitest";
-import { webCases, isObject } from "./contract-corpus.fixtures";
-import { definition } from "./v3-ui.fixtures";
-import requirements from "../src/presentation/generated/diagnostic-parameters.json";
+import { definition } from "./service-ui.fixtures";
 import { renderKey } from "../src/presentation/messages";
 import { defaults } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
 const semantic = definition.definition;
 
-const nativeText = (value: unknown) => {
-  if (!isObject(value)) {
-    throw new Error("Missing native codec fixture.");
+import { readUnknown, isObject } from "./contract-corpus.fixtures";
+import requirements from "../src/presentation/generated/diagnostic-parameters.json";
+it("every F# diagnostic template agrees with default browser rendering", () => {
+  const originals = readUnknown("default-presentation.en.json");
+  if (!isObject(originals)) {
+    throw new Error("Native presentation absent.");
   }
-  const data = isObject(value["outcome"]) ? value["outcome"]["data"] : value;
-  if (!isObject(data) || typeof data["message"] !== "string" || !isObject(data["diagnostic"])) {
-    throw new Error("Missing native codec diagnostic.");
-  }
-  const { diagnostic } = data;
-  if (typeof diagnostic["id"] !== "string" || !isObject(diagnostic["parameters"])) {
-    throw new Error("Malformed native diagnostic fixture.");
-  }
-  const values = Object.fromEntries(
-    Object.entries(diagnostic["parameters"]).map(([key, parameter]) => {
-      if (typeof parameter !== "number") {
-        throw new Error("Diagnostic fixture contains nonnumeric parameters.");
-      }
-      return [key, String(parameter)];
-    }),
-  );
-  return { id: diagnostic["id"], message: data["message"], values };
-};
-
-it("matches every native English diagnostic literal under default presentation [CC-WEB-001]", () => {
-  // These IDs identify production-codec originals; translated-copy variants are deliberately valid.
-  const prefixes = ["valid-host-", "diagnostic-", "fault-", "recovery-diagnostic-"];
-  const seen = new Set<string>();
-  const samples = webCases();
-  for (const id of Object.keys(requirements)) {
-    const sample = samples.find(
-      (item) => item.valid && prefixes.some((prefix) => item.id === `${prefix}${id}`),
-    );
-    if (sample === undefined) {
-      throw new Error(`Native diagnostic fixture omitted ${id}.`);
+  const limits: Record<
+    string,
+    Record<string, { minimum?: number; maximum?: number }>
+  > = requirements;
+  const ids = Object.keys(limits);
+  expect(ids).toHaveLength(73);
+  for (const id of ids) {
+    const parts = originals[`diagnostic.${id}`];
+    if (!Array.isArray(parts)) {
+      throw new Error("Native template absent.");
     }
-    const actual = nativeText(sample.value);
-    expect(actual.id).toBe(id);
-    expect(renderKey(defaults, `diagnostic.${id}`, actual.values)).toBe(actual.message);
-    seen.add(id);
+    const values = Object.fromEntries(
+      Object.entries(limits[id]!).map(([key, rule]) => [key, String(rule.minimum ?? 0)]),
+    );
+    const expected = parts
+      .map((part: unknown) => {
+        if (!isObject(part)) {
+          throw new Error("Invalid native part.");
+        }
+        return typeof part["literal"] === "string" ? part["literal"] : values[String(part["hole"])];
+      })
+      .join("");
+    expect(renderKey(defaults, `diagnostic.${id}`, values), id).toBe(expected);
   }
-  expect(seen).toEqual(new Set(Object.keys(requirements)));
 });
-
-it("preserves independent English diagnostic knowledge and parameter examples", () => {
+it("preserves independent English diagnostics and parameter formatting", () => {
   expect(renderKey(defaults, "diagnostic.INPUT_TEXT_TOO_LONG", { maximumCharacters: "200" })).toBe(
     "The value must not exceed 200 Unicode characters.",
   );
-  expect(
-    renderKey(defaults, "diagnostic.INPUT_DECIMAL_FORMAT", {
-      maximumIntegerDigits: "18",
-      maximumFractionalDigits: "4",
-    }),
-  ).toBe(
-    "Use non-negative decimal text: up to 18 integer digits and 4 fractional digits; no sign or exponent.",
-  );
-  expect(renderKey(defaults, "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED")).toBe(
-    "Request processing completed but its response could not be delivered.",
-  );
-  expect(renderKey(defaults, "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN")).toBe(
-    "Commit completion was not confirmed.",
+  expect(renderKey(defaults, "diagnostic.HOST_COMPLETEDRESPONSEFAILED")).toBe(
+    "The completed response could not be delivered.",
   );
 });
 

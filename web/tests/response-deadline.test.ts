@@ -1,9 +1,7 @@
 import { ReadableStream } from "node:stream/web";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { withinResponseDeadline } from "../src/api/responseDeadline";
-import { isMutationUncertain, v3, type ApiResult } from "../src/api/v3";
-import { createDraft } from "../src/domain/metadata";
-import { operationId } from "./v3-ui.fixtures";
+import { service, type ApiResult } from "../src/api/service";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -34,30 +32,6 @@ it("bounds a stalled response and ignores a later successful result", async () =
   complete({ kind: "outcome", value: "late", status: 200 });
   await work;
   expect(await task).toBe(result);
-  expect(vi.getTimerCount()).toBe(0);
-});
-
-it("times out submission and witnessed export with transport abort while preserving mutation uncertainty", async () => {
-  const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockImplementation(
-    () =>
-      new Promise<Response>(() => {
-        /* Synthetic stalled transport. */
-      }),
-  );
-  const draft = createDraft(operationId, "SYNTHETIC", "1", "CLOSE", {});
-  const submission = v3.submit(draft, "token");
-  const exporting = v3.recoveryExport(operationId, "a".repeat(64), "token");
-  await vi.advanceTimersByTimeAsync(20_000);
-  expect(isMutationUncertain(await submission)).toBe(true);
-  expect(await exporting).toMatchObject({
-    kind: "deliveryFailure",
-    notice: { reason: "responseTimeout" },
-  });
-  expect(fetch).toHaveBeenCalledTimes(2);
-  for (const [, init] of fetch.mock.calls) {
-    expect(init?.signal?.aborted).toBe(true);
-  }
   expect(vi.getTimerCount()).toBe(0);
 });
 
@@ -123,25 +97,7 @@ it("cancels unread protocol-refused bodies without awaiting a hostile cancellati
       headers: { "Content-Type": "text/plain" },
     }),
   );
-  expect((await v3.definition()).kind).toBe("deliveryFailure");
+  expect((await service.definition("csrf")).kind).toBe("deliveryFailure");
   expect(refused).toHaveBeenCalledOnce();
-  const stalled = vi.fn(
-    () =>
-      new Promise<void>(() => {
-        /* Synthetic hostile cancellation. */
-      }),
-  );
-  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    new Response(new ReadableStream({ cancel: stalled }) as unknown as BodyInit, {
-      headers: {
-        "Content-Type": "application/vnd.claimcore.recovery+json",
-        "Content-Disposition": "attachment; filename=wrong.json",
-      },
-    }),
-  );
-  expect((await v3.recoveryExport(operationId, "a".repeat(64), "token")).kind).toBe(
-    "deliveryFailure",
-  );
-  expect(stalled).toHaveBeenCalledOnce();
   expect(vi.getTimerCount()).toBe(0);
 });

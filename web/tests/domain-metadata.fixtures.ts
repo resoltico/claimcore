@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import type { CaseView, SemanticDefinition } from "../src/api/v3";
+import type { CaseView, SemanticDefinition } from "../src/api/service";
 import {
   commandFor,
   correctionGroupName,
@@ -11,7 +11,7 @@ import {
   type DraftValues,
 } from "../src/domain/metadata";
 import { freezeRequest } from "../src/domain/operationRequest";
-import { caseFields, groupedCorrectionValues } from "./v3-foundation.fixtures";
+import { caseFields, groupedCorrectionValues } from "./service-foundation.fixtures";
 
 const replaceField = {
   fieldName: "claimantName",

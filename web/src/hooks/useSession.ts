@@ -1,4 +1,4 @@
-import { webV3WireContractFingerprint } from "../generated/contracts/web-v3.endpoint-catalog";
+import { wireContractFingerprint } from "../generated/contracts/endpoint-catalog";
 import { localNotice } from "../api/notices";
 import type { Notice } from "../api/notices";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -6,9 +6,9 @@ import {
   type ApiResult,
   resultNotice,
   type SessionSnapshot,
-  v3,
-  type WebV3Response,
-} from "../api/v3";
+  service,
+  type ServiceResponse,
+} from "../api/service";
 
 export type SessionState =
   | { kind: "loading"; epoch: number }
@@ -16,10 +16,10 @@ export type SessionState =
   | { kind: "authenticated"; token: string; epoch: number }
   | { kind: "failure"; message: Notice; epoch: number };
 
-type SessionResponse = WebV3Response<"session"> | WebV3Response<"session.logout">;
+type SessionResponse = ServiceResponse<"session"> | ServiceResponse<"session.logout">;
 
 const snapshot = (result: ApiResult<SessionResponse>): SessionSnapshot | null =>
-  result.kind === "outcome" && result.value.outcome.tag === "SNAPSHOT"
+  result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED"
     ? result.value.outcome.data
     : null;
 
@@ -31,7 +31,7 @@ const stateFor = (
   if (failed !== null || value === null) {
     return { kind: "failure", message: failed ?? localNotice("invalidSession"), epoch };
   }
-  if (value.webFingerprint !== webV3WireContractFingerprint) {
+  if (value.wireFingerprint !== wireContractFingerprint) {
     return { kind: "failure", message: localNotice("definitionMismatch"), epoch };
   }
   if (!value.authenticated) {
@@ -58,7 +58,7 @@ export const useSession = () => {
 
   const refresh = useCallback(async (): Promise<void> => {
     const requestId = ++requestSerial.current;
-    const result = await v3.session();
+    const result = await service.session();
     if (requestSerial.current !== requestId) {
       return;
     }
@@ -78,11 +78,14 @@ export const useSession = () => {
       return;
     }
     const requestId = ++requestSerial.current;
-    const result = await v3.logout(state.token);
+    const result = await service.logout(state.token);
     if (requestSerial.current !== requestId) {
       return;
     }
-    const value = snapshot(result);
+    const value =
+      result.kind === "outcome"
+        ? { authenticated: false, antiforgeryToken: null, wireFingerprint: wireContractFingerprint }
+        : null;
     // A successful logout response is an anonymous snapshot. No claimant-bearing state survives its epoch.
     setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch)));
   };

@@ -1,4 +1,4 @@
-name: ClaimCore verification
+name: CI
 
 on:
   push:
@@ -15,82 +15,154 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  TESTINGPLATFORM_TELEMETRY_OPTOUT: "1"
+  NO_COLOR: "1"
+
 jobs:
-  quality:
-    name: Source, dependency, and infrastructure quality
-    uses: ./.github/workflows/verify-quality.yml
+  lint:
+    name: Format, lint and workflow hygiene
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+      - run: dotnet restore ClaimCore.slnx --locked-mode
+      - run: dotnet tool restore
+      - run: dotnet fantomas --check src tests eng
+      - run: bash eng/Check-FSharpLint.sh
+      - run: npm --prefix web ci
+      - run: npm --prefix web run contract:generate
+      - run: npm --prefix web run format:check
+      - run: npm --prefix web run lint
+      - run: npm --prefix web run lint:styles
+      - run: shellcheck eng/*.sh deployment/*.sh
+      - name: actionlint
+        run: docker run --rm --label claimcore.workflow-check=actionlint -v "$PWD:/repo:ro" -w /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
+      - name: zizmor
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          persona: pedantic
+          version: 1.30.1
+          advanced-security: false
 
-  frontend:
-    name: Frontend gates
-    uses: ./.github/workflows/verify-frontend.yml
-
-  frontend-product:
-    name: Frontend product
-    uses: ./.github/workflows/verify-frontend-product.yml
-
-  suites:
-    name: Registered suites
-    uses: ./.github/workflows/verify-suites.yml
+  unit:
+    name: Build and unit tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+      - run: dotnet restore ClaimCore.slnx --locked-mode
+      - run: npm --prefix web ci
+      - run: npm --prefix web run contract:generate
+      - run: dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - name: Unit and property tests
+        run: >-
+          dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
+          --configuration Release --no-build --no-restore
+          --minimum-expected-tests=240 --zero-tests-policy=strict --timeout=30m
+          -- --settings="$PWD/eng/expecto.runsettings"
+      - name: Build the architecture suite without optimization
+        run: >-
+          dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
+          --configuration Debug --no-restore -p:Optimize=false
+      - name: Architecture tests
+        run: >-
+          dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
+          --configuration Debug --no-build --no-restore
+          --minimum-expected-tests=20 --zero-tests-policy=strict --timeout=15m
+          -- --settings="$PWD/eng/expecto.runsettings"
 
   integration:
-    name: PostgreSQL integration
-    uses: ./.github/workflows/verify-integration.yml
+    name: PostgreSQL and web host tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+      - run: dotnet restore ClaimCore.slnx --locked-mode
+      - run: npm --prefix web ci
+      - run: npm --prefix web run contract:generate
+      - run: dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - name: Ledger store on PostgreSQL
+        run: >-
+          dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
+          --configuration Release --no-build --no-restore
+          --minimum-expected-tests=70 --zero-tests-policy=strict --timeout=20m
+          -- --settings="$PWD/eng/expecto.runsettings"
+      - name: Web host, including the live identity provider fixture
+        run: >-
+          dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
+          --configuration Release --no-build --no-restore
+          --minimum-expected-tests=60 --zero-tests-policy=strict --timeout=20m
+          -- --settings="$PWD/eng/expecto.runsettings"
 
-  documentation:
-    name: Documentation assurance
-    uses: ./.github/workflows/verify-documentation.yml
-
-  publish:
-    name: Immutable published applications
-    needs: [frontend-product]
-    uses: ./.github/workflows/verify-publish.yml
+  frontend:
+    name: Frontend types, unit tests and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+      - run: dotnet restore ClaimCore.slnx --locked-mode
+      - run: npm --prefix web ci
+      - run: npm --prefix web audit --audit-level=low
+      - name: Generated contract matches its lock
+        run: npm --prefix web run contract:generate && npm --prefix web run contract:verify
+      - run: npm --prefix web run typecheck
+      - run: npm --prefix web run test:unit
+      - run: npm --prefix web run build
 
   acceptance:
-    name: Published CLI acceptance
-    needs: [publish]
-    uses: ./.github/workflows/verify-acceptance.yml
-
-  browser:
-    name: Published browser lifecycle
-    needs: [publish]
-    uses: ./.github/workflows/verify-browser.yml
-
-  coverage:
-    name: Merged .NET coverage
-    needs: [suites, integration, browser, acceptance]
-    uses: ./.github/workflows/verify-coverage.yml
-
-  deployment:
-    name: Container operation
-    needs: [publish]
-    uses: ./.github/workflows/verify-deployment.yml
-
+    name: Published service, CLI and browsers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+      - run: dotnet restore ClaimCore.slnx --locked-mode
+      - run: npm --prefix web ci
+      - run: npm --prefix web run contract:generate
+      - run: npm --prefix web run build
+      - run: dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - run: npm --prefix web exec -- playwright install --with-deps chromium firefox webkit
+      - name: Published service and clients, including three browser engines
+        run: >-
+          dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj
+          --configuration Release --no-build --no-restore
+          --minimum-expected-tests=10 --zero-tests-policy=strict --timeout=40m
+          -- --settings="$PWD/eng/expecto.runsettings"
   gate:
     name: Gate
     if: always()
-    needs:
-      - quality
-      - frontend
-      - frontend-product
-      - suites
-      - integration
-      - documentation
-      - publish
-      - acceptance
-      - browser
-      - coverage
-      - deployment
+    needs: [lint, unit, integration, frontend, acceptance]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      # Derived from `needs`, so a family added above is gated automatically. A second hand-written
-      # list here could fall out of step with `needs` and silently stop gating a whole family.
-      - name: Require every verification family
+      # Derived from `needs`, so a job added above is gated without a second list to keep in step.
+      - name: Require every job
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
           set -euo pipefail
-          echo "Verification family results: $RESULTS"
+          echo "Job results: $RESULTS"
           test -n "$RESULTS"
           for result in $RESULTS; do
             test "$result" = "success"

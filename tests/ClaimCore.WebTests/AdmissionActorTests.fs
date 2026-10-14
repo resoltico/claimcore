@@ -95,7 +95,6 @@ let private actorPostWith selectedAntiforgery request =
     Admission.actorPost
         configuration
         (WebBindings.create origin "127.0.0.1" origin.Port)
-        RequestBody.Json
         32
         selectedAntiforgery
         request
@@ -266,6 +265,7 @@ let private getShapeRefusals () =
 
         Expect.equal calls.Value 0 "Unsafe GET transport cannot reach authentication")
 
+[<Tests>]
 let tests =
     testList
         "Web actor admission after synthetic authentication"

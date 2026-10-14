@@ -92,6 +92,7 @@ let private concurrentRemoval () =
 
     membership store 0
 
+[<Tests>]
 let tests =
     testList
         "session sweep invariants"

@@ -43,7 +43,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   outputDir: privateOutput,
-  reporter: [["./scripts/playwright-reporter.mjs"]],
+  reporter: [["list"]],
   retries: 0,
   use: {
     baseURL,

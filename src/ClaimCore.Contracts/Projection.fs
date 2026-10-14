@@ -127,22 +127,16 @@ module internal ProjectionSchema =
                 Schema.property "meaning" (Schema.string None None (Some 1) (Some 4096)) true
             ]
 
-    let private command (fields: FieldDefinition list) (definition: CommandDefinition) =
-        CommandInputProjection.payload fields definition
-
     let commandDraft (semantic: SemanticCoreContract) =
-        let caseReference =
-            semantic.Fields |> List.find (fun field -> field.Name = "caseReference")
-
         Schema.objectOf
             false
             [
                 Schema.property "operationId" ScalarSchemas.uuid true
-                Schema.property "caseReference" (ScalarSchemas.scalar caseReference.Scalar) true
+                Schema.property "caseReference" ScalarSchemas.authoringText true
                 Schema.property "expectedRevision" ScalarSchemas.decimalText true
                 Schema.property
                     "command"
-                    (semantic.Commands |> List.map (command semantic.Fields) |> Schema.oneOf)
+                    (semantic.Commands |> List.map CommandInputProjection.payload |> Schema.oneOf)
                     true
             ]
 
@@ -150,7 +144,6 @@ module internal ProjectionSchema =
         [
             "rejectionDiagnostics", semantic.RejectionDiagnostics
             "faultDiagnostics", semantic.FaultDiagnostics
-            "recoveryDiagnostics", semantic.RecoveryDiagnostics
         ]
         |> List.map (fun (name, definitions) ->
             Schema.property
@@ -178,10 +171,7 @@ module internal ProjectionSchema =
                 "requestFingerprintVersion"
                 (integerConstant semantic.RequestFingerprintVersion)
                 true
-            Schema.property
-                "recoveryEnvelopeFormat"
-                (integerConstant semantic.RecoveryEnvelopeFormat)
-                true
+            Schema.property "ledgerEntryFormat" (integerConstant semantic.LedgerEntryFormat) true
             Schema.property "defaultPageSize" (integerConstant semantic.DefaultPageSize) true
             Schema.property "maximumPageSize" (integerConstant semantic.MaximumPageSize) true
             Schema.property "requestByteLimit" (integerConstant semantic.RequestByteLimit) true

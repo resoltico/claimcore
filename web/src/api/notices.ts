@@ -1,48 +1,17 @@
-import type {
-  Fault,
-  HostFailure,
-  RecoveryRejection,
-  Rejection,
-} from "../generated/contracts/web-v3.types";
-
-/** Inert presentation data, never an outcome, retry decision or locale preference. */
-export type Diagnostic =
-  | Fault["diagnostic"]
-  | Rejection["diagnostic"]
-  | RecoveryRejection["diagnostic"]
-  | HostFailure["diagnostic"];
+import type { Fault, HostFailure, Rejection } from "../generated/contracts/types";
+export type Diagnostic = Fault["diagnostic"] | Rejection["diagnostic"] | HostFailure["diagnostic"];
 export type LocalNoticeReason =
   | "responseTimeout"
   | "unreachable"
-  | "fileUnreadable"
-  | "exportInvalid"
   | "incomplete"
   | "cancelled"
-  | "cancelledBeforeAdmission"
-  | "cancelledBeforeAttempt"
   | "definitionMismatch"
   | "invalidSession"
   | "missingCsrf"
-  | "dismissed"
-  | "alreadyDismissed"
-  | "retained"
-  | "existing"
-  | "digestUnavailable"
-  | "exportStarted"
-  | "keptForRecovery";
+  | "outcomeUnknown";
 export type Notice =
   | { readonly kind: "local"; readonly reason: LocalNoticeReason }
   | { readonly kind: "diagnostic"; readonly diagnostic: Diagnostic }
   | { readonly kind: "invalidHttp"; readonly status: number }
-  | { readonly kind: "fileTooLarge"; readonly maximumBytes: number }
-  | { readonly kind: "accepted"; readonly operationId: string }
-  | {
-      readonly kind: "recovery";
-      readonly cause: Notice;
-      readonly direction: "inspectBeforeRetry" | "inspectBeforeAction";
-    };
+  | { readonly kind: "accepted"; readonly operationId: string };
 export const localNotice = (reason: LocalNoticeReason): Notice => ({ kind: "local", reason });
-export const recoveryNotice = (
-  cause: Notice,
-  direction: "inspectBeforeRetry" | "inspectBeforeAction",
-): Notice => ({ kind: "recovery", cause, direction });

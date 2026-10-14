@@ -1,98 +1,98 @@
 module ClaimCore.Cli.Program
 
 open System
-open System.IO
 open System.Text
 open System.Threading
+open System.Runtime.InteropServices
 open ClaimCore.Application
 open ClaimCore.Contracts
-open ClaimCore.Cli
 
 let private writeBytes (bytes: byte array) =
     let output = Console.OpenStandardOutput()
-    output.Write(bytes, 0, bytes.Length)
+    output.Write bytes
+
+    if bytes.Length = 0 || bytes[bytes.Length - 1] <> byte '\n' then
+        output.WriteByte(byte '\n')
+
     output.Flush()
 
-let private writeDiscovery (response: DiscoveryResponse) =
-    match response with
-    | DiscoveryResponse.Text text ->
-        Console.Out.WriteLine(text)
-        Console.Out.Flush()
-    | DiscoveryResponse.Json bytes -> writeBytes bytes
-
-let private writeProcessFailure reason =
-    try
-        let error = Console.OpenStandardError()
-        error.Write(CliProcessDiagnostics.encode reason CliDeliveryPhase.Idle false None)
-        error.Flush()
-    with _ ->
-        ()
-
 let private unsupported () =
-    writeProcessFailure CliProcessProblem.UnsupportedInvocation
+    Console.Error.WriteLine("Unsupported invocation. Run claimcore help.")
     64
 
-let private discovery arguments =
-    match arguments with
+let private writeDiscovery response =
+    match response with
+    | Some bytes ->
+        writeBytes bytes
+        0
+    | None -> unsupported ()
+
+let private discovery =
+    function
     | []
     | [ "help" ] ->
-        Discovery.help () |> writeDiscovery
-        0
-    | "help" :: _ ->
-        Discovery.help () |> writeDiscovery
+        Console.Out.WriteLine(Discovery.help ())
         0
     | [ "version" ] ->
         Console.Out.WriteLine(BuildIdentity.current.Version)
-        Console.Out.Flush()
         0
     | [ "version"; "--json" ] ->
         Discovery.versionJson () |> writeBytes
         0
-    | "describe" :: rest ->
-        match Discovery.describe rest with
-        | Ok response ->
-            writeDiscovery response
-            0
-        | Error _ -> unsupported ()
-    | "schema" :: rest ->
-        match Discovery.schema rest with
-        | Ok response ->
-            writeDiscovery response
-            0
-        | Error _ -> unsupported ()
+    | "describe" :: arguments -> Discovery.describe arguments |> writeDiscovery
+    | "schema" :: arguments -> Discovery.schema arguments |> writeDiscovery
     | _ -> unsupported ()
 
-let private dispatch (arguments: string list) =
-    match arguments with
-    | [ "call" ]
-    | [ "session" ] ->
-        use input = Console.OpenStandardInput()
-        use output = Console.OpenStandardOutput()
-        use errors = Console.OpenStandardError()
-        use processor = new RemoteFrameProcessor(input, output, errors)
+let private remote session =
+    use input = Console.OpenStandardInput()
+    use output = Console.OpenStandardOutput()
+    use errors = Console.OpenStandardError()
+    use processor = new RemoteFrameProcessor(input, output, errors)
+    let stop () = Environment.Exit(processor.Interrupt())
 
-        let interrupt =
-            ConsoleCancelEventHandler(fun _ event ->
-                event.Cancel <- true
-                Environment.Exit(processor.Interrupt()))
+    let interrupt =
+        ConsoleCancelEventHandler(fun _ event ->
+            event.Cancel <- true
+            stop ())
 
-        Console.CancelKeyPress.AddHandler(interrupt)
+    let registrations =
+        if OperatingSystem.IsWindows() then
+            []
+        else
+            [ PosixSignal.SIGINT; PosixSignal.SIGTERM ]
+            |> List.map (fun signal ->
+                PosixSignalRegistration.Create(
+                    signal,
+                    Action<PosixSignalContext>(fun context ->
+                        context.Cancel <- true
+                        stop ())
+                ))
 
-        try
-            if arguments = [ "call" ] then
-                processor.Call(CancellationToken.None)
-            else
-                processor.Session(CancellationToken.None)
-        finally
-            Console.CancelKeyPress.RemoveHandler(interrupt)
-    | _ -> discovery arguments
+    Console.CancelKeyPress.AddHandler interrupt
+
+    try
+        if session then
+            processor.Session CancellationToken.None
+        else
+            processor.Call CancellationToken.None
+    finally
+        Console.CancelKeyPress.RemoveHandler interrupt
+        registrations |> List.iter _.Dispose()
 
 [<EntryPoint>]
 let main argv =
     try
-        BuildIdentity.requireCompatibleAssembly typeof<CliEndpoint>.Assembly
+        BuildIdentity.requireCompatibleAssembly typeof<Endpoint>.Assembly
         Console.OutputEncoding <- UTF8Encoding(false)
-        dispatch (Array.toList argv)
+
+        match Array.toList argv with
+        | [ "call" ] -> remote false
+        | [ "session" ] -> remote true
+        | arguments -> discovery arguments
     with _ ->
-        writeProcessFailure CliProcessProblem.UnexpectedFailure
+        try
+            Console.Error.WriteLine("Unexpected failure before dispatch.")
+        with _ ->
+            ()
+
         70

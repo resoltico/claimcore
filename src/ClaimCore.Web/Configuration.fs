@@ -36,11 +36,6 @@ type WebConfiguration =
     {
         Binding: WebBinding
         ConnectionString: string
-        WitnessConnectionString: string
-        WitnessKeyRingPath: string
-        SuppressionKeyPath: string
-        RecoveryArtifactKeyPath: string
-        StateDirectory: string
         Certificate: X509Certificate2
         SessionIdle: TimeSpan
         SessionAbsolute: TimeSpan
@@ -89,18 +84,11 @@ module Configuration =
     let private minutes name fallback maximum =
         boundedInt name fallback maximum |> float |> TimeSpan.FromMinutes
 
-    let private stateDirectory () =
-        let path = required WebSetting.StateDirectory
-
-        match PrivateFileService.ensureDirectory path with
-        | Ok privatePath -> privatePath
-        | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.StateDirectoryRefused
-
     let private privateConnection setting refused empty =
         let path = required setting
 
         let value =
-            match PrivateFileService.readUtf8Text 8192 path with
+            match PrivateInputs.text 8192 path with
             | Ok text -> text.Trim()
             | Error _ -> WebStartupDiagnostics.refuse refused
 
@@ -129,7 +117,7 @@ module Configuration =
             let secretPath = requiredName WebSetting.OidcClientSecretFile
 
             let clientSecret =
-                match PrivateFileService.readUtf8Text 8192 secretPath with
+                match PrivateInputs.text 8192 secretPath with
                 | Ok value when not (String.IsNullOrWhiteSpace value) -> value.Trim()
                 | _ -> invalid ()
 
@@ -168,8 +156,6 @@ module Configuration =
                     configuration.Certificate.Dispose()
         }
 
-    let private privateKeyPath = WebPrivateKeyPaths.requireAbsolute required
-
     let private binding () =
         let configuredOrigin = origin ()
 
@@ -198,30 +184,10 @@ module Configuration =
                 WebStartupProblem.ConnectionFileRefused
                 WebStartupProblem.ConnectionFileEmpty
 
-        let configuredWitnessConnection =
-            privateConnection
-                WebSetting.WitnessConnectionFile
-                WebStartupProblem.WitnessConnectionFileRefused
-                WebStartupProblem.WitnessConnectionFileEmpty
-
-        let configuredState = stateDirectory ()
         let configuredAdmission = admission ()
         let configuredOidc = oidc ()
 
         try
-            let configuredWitnessKeyPath =
-                privateKeyPath WebSetting.WitnessKeyFile WebStartupProblem.WitnessKeyFileRefused
-
-            let configuredSuppressionKeyPath =
-                privateKeyPath
-                    WebSetting.SuppressionKeyFile
-                    WebStartupProblem.SuppressionKeyFileRefused
-
-            let configuredArtifactKeyPath =
-                privateKeyPath
-                    WebSetting.RecoveryArtifactKeyFile
-                    WebStartupProblem.RecoveryArtifactKeyFileRefused
-            // The Hosting key custodian opens and validates the private key-ring file.
             let configuredCertificate =
                 TlsCertificate.load
                     configuredEndpoint.Origin.IdnHost
@@ -230,11 +196,6 @@ module Configuration =
             {
                 Binding = configuredEndpoint
                 ConnectionString = configuredConnection
-                WitnessConnectionString = configuredWitnessConnection
-                WitnessKeyRingPath = configuredWitnessKeyPath
-                SuppressionKeyPath = configuredSuppressionKeyPath
-                RecoveryArtifactKeyPath = configuredArtifactKeyPath
-                StateDirectory = configuredState
                 Certificate = configuredCertificate
                 SessionIdle = sessionIdle
                 SessionAbsolute = sessionAbsolute

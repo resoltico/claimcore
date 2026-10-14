@@ -1,12 +1,7 @@
 import { parseSync } from "oxc-parser";
 
-const owners = new Set([
-  "PreparationSummary",
-  "PreparationDetails",
-  "RecoveryImportPreview",
-  "RecoveryDetails",
-]);
-const members = new Set(["authority", "settlement", "artifactKind", "tag"]);
+const owners = new Set(["Receipt"]);
+const members = new Set(["act", "disposition"]);
 /** @param {import("./tooling-types.mjs").JsonRecord} key */
 const memberName = (key) => (key["type"] === "Identifier" ? key["name"] : key["value"]);
 
@@ -46,11 +41,11 @@ const visit = (node, result) => {
   }
 };
 
-/** @param {string} recoveryTypes @param {Set<string>} result */
-const recoveryFamilies = (recoveryTypes, result) => {
-  const { program, errors } = parseSync("recovery.ts", recoveryTypes);
+/** @param {string} types @param {Set<string>} result */
+const renderedFamilies = (types, result) => {
+  const { program, errors } = parseSync("types.ts", types);
   if (errors.length > 0) {
-    throw new Error("The recovery type declarations could not be parsed.");
+    throw new Error("The rendered type declarations could not be parsed.");
   }
   for (const statement of program.body) {
     const declaration =
@@ -63,8 +58,8 @@ const recoveryFamilies = (recoveryTypes, result) => {
 
 // These are the generated type families actually rendered by this interface, not a parallel
 // business-state registry. Changes in their literal vocabulary require corresponding catalogs.
-/** @param {import("./tooling-types.mjs").JsonRecord} semantic @param {string} recoveryTypes */
-export const renderedTokens = (semantic, recoveryTypes) => {
+/** @param {import("./tooling-types.mjs").JsonRecord} semantic @param {string} types */
+export const renderedTokens = (semantic, types) => {
   const result = new Set();
   for (const field of semantic["fields"]) {
     if (field.scalar.kind === "CASE_STATUS") {
@@ -80,8 +75,9 @@ export const renderedTokens = (semantic, recoveryTypes) => {
       }
     }
   }
-  recoveryFamilies(recoveryTypes, result);
-  if (result.size < 10) {
+  renderedFamilies(types, result);
+  result.add("ERASED");
+  if (result.size < 7) {
     throw new Error("Rendered token families were not inspected.");
   }
   return [...result].sort();

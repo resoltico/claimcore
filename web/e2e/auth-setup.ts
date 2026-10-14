@@ -3,7 +3,6 @@ import { resolve } from "node:path";
 
 import { chromium, firefox, webkit } from "@playwright/test";
 import { login } from "./session-helpers";
-import { grantSyntheticCasework } from "./authority-setup";
 
 const required = (name: string): string => {
   const value = process.env[name];
@@ -38,7 +37,6 @@ export default async function setup(): Promise<void> {
     const page = await context.newPage();
     await page.goto(baseURL, { waitUntil: "commit" });
     await login(page);
-    await grantSyntheticCasework(page);
     await page.getByRole("heading", { name: "Cases" }).waitFor();
     const state = resolve(output, "authenticated-state.json");
     await context.storageState({ path: state });

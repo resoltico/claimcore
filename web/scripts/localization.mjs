@@ -42,11 +42,9 @@ for (const lang of languages) {
 }
 const generated = resolve(root, "src/generated/contracts");
 const semantic = JSON.parse(
-  await readFile(resolve(generated, "semantic-core-v1.contract.json"), "utf8"),
+  await readFile(resolve(generated, "semantic-core.contract.json"), "utf8"),
 );
-const host = JSON.parse(
-  await readFile(resolve(generated, "web-v3.host-failure.schema.json"), "utf8"),
-);
+const host = JSON.parse(await readFile(resolve(generated, "host-failure.schema.json"), "utf8"));
 Object.assign(
   catalogs["en"] ?? {},
   businessMessages(semantic),
@@ -57,8 +55,8 @@ for (const lang of languages) {
 }
 const requirements = diagnosticRequirements(semantic, host);
 validateCoverage(catalogs["en"] ?? {}, semantic, requirements);
-const recoveryTypes = await readFile(resolve(generated, "web-v3.types.recovery.ts"), "utf8");
-validateTokens(catalogs["en"] ?? {}, renderedTokens(semantic, recoveryTypes));
+const types = await readFile(resolve(generated, "types.ts"), "utf8");
+validateTokens(catalogs["en"] ?? {}, renderedTokens(semantic, types));
 await mkdir(output, { recursive: true });
 /** @type {Record<string, string>} */
 const expected = {};

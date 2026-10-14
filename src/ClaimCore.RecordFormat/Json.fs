@@ -61,6 +61,24 @@ module internal Json =
     let text path name element =
         required path name element |> stringValue (path + "." + name)
 
+    let guid path name element =
+        let value = text path name element
+
+        match Guid.TryParseExact(value, "D") with
+        | true, parsed when parsed <> Guid.Empty && parsed.ToString("D") = value -> parsed
+        | _ ->
+            reject
+                (path + "." + name)
+                "Use one non-empty UUID in canonical lowercase hyphenated form."
+
+    let boolean path name element =
+        let value = required path name element
+
+        match value.ValueKind with
+        | JsonValueKind.True -> true
+        | JsonValueKind.False -> false
+        | _ -> reject (path + "." + name) "Expected a JSON boolean."
+
     let integer path name element =
         let property = required path name element
 
@@ -138,6 +156,16 @@ module internal Json =
                     Message =
                         "Malformed JSON. Comments, trailing data, and invalid UTF-8 are not accepted."
                 }
+
+    let bounded maxBytes (bytes: byte array) read =
+        if obj.ReferenceEquals(bytes, null) || bytes.Length > maxBytes then
+            Error
+                {
+                    Field = "$"
+                    Message = "Missing record or record exceeds its byte limit."
+                }
+        else
+            parse bytes read
 
     let encode write =
         use stream = new MemoryStream()

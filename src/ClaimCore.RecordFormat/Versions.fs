@@ -1,6 +1,6 @@
 namespace ClaimCore.RecordFormat
 
-/// Independent compatibility revisions for wire requests and retained operation data.
+/// Independent byte-format identities for durable records.
 module RecordVersions =
     [<Literal>]
     let CanonicalCommandFormat = 3
@@ -10,3 +10,9 @@ module RecordVersions =
 
     [<Literal>]
     let Snapshot = 2
+
+    [<Literal>]
+    let LedgerEntry = 1
+
+    [<Literal>]
+    let CaseReferenceIdentity = 1

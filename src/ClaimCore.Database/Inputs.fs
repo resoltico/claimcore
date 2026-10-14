@@ -1,0 +1,103 @@
+namespace ClaimCore.Database
+
+open System
+open System.Globalization
+open System.Text
+open System.Text.Json
+open System.Security.Cryptography
+open ClaimCore.Application
+open ClaimCore.Postgres
+open ClaimCore.HostSecurity
+
+type Command =
+    | Initialize of string
+    | Migrate
+    | ProvisionOwner
+    | Verify of ExpectedPosition option
+    | Head
+    | Help
+    | Version
+
+module Inputs =
+    let private expected (text: string) =
+        let parts = text.Split(':')
+        let mutable sequence = 0L
+
+        if
+            parts.Length = 2
+            && Int64.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, &sequence)
+            && sequence >= 0L
+            && sequence.ToString(CultureInfo.InvariantCulture) = parts[0]
+            && parts[1].Length = 64
+            && parts[1]
+               |> Seq.forall (fun c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
+        then
+            Some
+                {
+                    Sequence = sequence
+                    EntryHash = Convert.FromHexString(parts[1])
+                }
+        else
+            None
+
+    let command =
+        function
+        | []
+        | [ "help" ] -> Some Help
+        | [ "version" ] -> Some Version
+        | [ "initialize"; zone ] -> Some(Initialize zone)
+        | [ "migrate" ] -> Some Migrate
+        | [ "provision-owner" ] -> Some ProvisionOwner
+        | [ "verify" ] -> Some(Verify None)
+        | [ "verify"; "--expect"; position ] -> expected position |> Option.map (Some >> Verify)
+        | [ "head" ] -> Some Head
+        | _ -> None
+
+    let private bytes setting maximum =
+        match Environment.GetEnvironmentVariable setting with
+        | null -> invalidOp "Required private input is absent."
+        | path ->
+            PrivateFile.read maximum path
+            |> Result.defaultWith (fun _ -> invalidOp "Private input was refused.")
+
+    let connection () =
+        let value = bytes "CLAIMCORE_ADMIN_CONNECTION_FILE" 16384
+
+        try
+            UTF8Encoding(false, true).GetString(value).Trim()
+        finally
+            CryptographicOperations.ZeroMemory value
+
+    let owner () =
+        let value = bytes "CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE" 8192
+
+        try
+            use document = JsonDocument.Parse(ReadOnlyMemory value)
+            let root = document.RootElement
+            let names = root.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
+
+            if names <> [ "eventId"; "issuer"; "subject" ] then
+                invalidOp "Owner input properties differ."
+
+            let text name =
+                root.GetProperty(name: string).GetString()
+                |> Option.ofObj
+                |> Option.defaultWith (fun () -> invalidOp "Owner value is absent.")
+
+            let eventText = text "eventId"
+            let mutable eventId = Guid.Empty
+
+            if
+                not (Guid.TryParseExact(eventText, "D", &eventId))
+                || eventId = Guid.Empty
+                || eventId.ToString("D") <> eventText
+            then
+                invalidOp "Owner event identifier is invalid."
+
+            let principal =
+                PrincipalKey.human (text "issuer") (text "subject")
+                |> Result.defaultWith (fun _ -> invalidOp "Owner principal is invalid.")
+
+            eventId, principal
+        finally
+            CryptographicOperations.ZeroMemory value

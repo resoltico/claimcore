@@ -131,11 +131,10 @@ module RejectionDiagnostics =
                 (DiagnosticParameters.MaximumPageSize maximum)
         | Rejection.InvalidCaseListCursor -> simple RejectionDiagnosticId.InvalidCaseListCursor
         | Rejection.InvalidHistoryCursor -> simple RejectionDiagnosticId.InvalidHistoryCursor
-        | Rejection.IdempotencyConflict -> simple RejectionDiagnosticId.IdempotencyConflict
-        | Rejection.OperationRevoked -> simple RejectionDiagnosticId.OperationRevoked
-        | Rejection.RecoveryAttemptLimitReached ->
-            simple RejectionDiagnosticId.RecoveryAttemptLimitReached
-        | Rejection.ResourceUnavailable -> simple RejectionDiagnosticId.ResourceUnavailable
+        | reason ->
+            Rejections.simplePolicies
+            |> List.find (fun (value, _, _) -> value = reason)
+            |> fun (_, _, identifier) -> simple identifier
 
     let identifier (diagnostic: RejectionDiagnostic) = diagnostic.Identifier
     let parameters (diagnostic: RejectionDiagnostic) = diagnostic.Parameters

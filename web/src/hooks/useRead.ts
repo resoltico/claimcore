@@ -1,7 +1,7 @@
 import type { Notice } from "../api/notices";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { resultNotice, type ApiResult, type EndpointOutcome } from "../api/v3";
+import { resultNotice, type ApiResult, type EndpointOutcome } from "../api/service";
 import { isDisclosureRefused } from "../api/outcomes";
 
 type ReadState<T> = { value: T | null; message: Notice | null; loading: boolean };
@@ -32,7 +32,6 @@ export const useRead = <R extends EndpointOutcome, T>(
     return () => {
       controller.abort();
     };
-    // lint-exception: LX-0016
     // oxlint-disable-next-line react/exhaustive-effect-dependencies
   }, [key, request, select]);
   return state;

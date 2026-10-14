@@ -7,7 +7,6 @@ open System.Text.Json
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
-open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.PropertyHarness
@@ -177,9 +176,13 @@ let private reordered (bytes: byte array) =
     buffer.WrittenSpan.ToArray()
 
 let private fingerprint request =
-    match Operation.prepare request with
-    | Ok operation -> Operation.fingerprint operation
-    | Error _ -> failtest "Generated request must be domain-valid."
+    Claim.validateRequest request
+    |> Result.defaultWith (fun _ -> failtest "Generated request must be domain-valid.")
+
+    request
+    |> RequestRecord.encode
+    |> LedgerEntry.requestDigest
+    |> Convert.ToHexStringLower
 
 let private identityChanges (request: CommandRequest) =
     let replacementId = Guid.Parse("20000000-0000-4000-8000-000000000099")
@@ -220,7 +223,7 @@ let private identityMatches request =
                               Decision = DecisionCorrection.Keep
                               Payment = PaymentCorrection.Keep
                           } ->
-        match Operation.prepare request with
+        match Claim.validateRequest request with
         | Error DomainError.CorrectionNoChanges -> true
         | _ -> false
     | _ ->
@@ -242,6 +245,7 @@ let private fingerprintProperty =
                 | Error _ -> false)
     }
 
+[<Tests>]
 let tests =
     testList
         "Hedgehog canonical records"

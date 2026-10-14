@@ -4,9 +4,9 @@ import { startOpen } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import {
   expectKeyboardContained,
-  confirmPrepared,
+  confirmReview,
   pauseJsonReply,
-  preparedFrom,
+  reviewFrom,
   selectFormat,
   selectLanguage,
   trackRequests,
@@ -17,7 +17,7 @@ const editorLanguage = async (page: Page) => {
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
     await expect(
-      page.getByRole("button", { name: ui(language, "ui.prepareExact"), exact: true }),
+      page.getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true }),
     ).toBeVisible();
     await expect(
       page.getByText(ui(language, "ui.unchangedUntilSubmit"), { exact: true }),
@@ -35,7 +35,7 @@ const reviewLanguage = async (page: Page) => {
       dialog.getByRole("button", { name: ui(language, "ui.submitExact"), exact: true }),
     ).toBeVisible();
     await expect(
-      dialog.getByRole("button", { name: ui(language, "ui.keepForRecovery"), exact: true }),
+      dialog.getByRole("button", { name: ui(language, "ui.returnToEdit"), exact: true }),
     ).toBeVisible();
     await expect(
       dialog.getByText(ui(language, "ui.reviewDescription"), { exact: true }),
@@ -80,7 +80,7 @@ test("preserves authored Unicode and invalid calendar text while localizing real
   await expect(name).toHaveValue("A\u0308 / العربية");
   await expect(date).toHaveValue("2026-02-30");
   expect(requests).toHaveLength(0);
-  const pending = await pauseJsonReply(page, "command.prepare");
+  const pending = await pauseJsonReply(page, "command.preview");
   try {
     await page.getByRole("button", { name: "Review changes" }).click();
     const captured = await pending.ready;
@@ -99,17 +99,17 @@ test("preserves authored Unicode and invalid calendar text while localizing real
   }
 });
 
-test("switches language and independent display format through native preparation without changing review consent", async ({
+test("switches language and independent display format during draft review without changing consent", async ({
   page,
 }) => {
   await openAuthenticated(page);
-  await startOpen(page, `LOCALE-PREPARE-${randomUUID()}`);
+  await startOpen(page, `LOCALE-REVIEW-${randomUUID()}`);
   const requests = trackRequests(page);
-  const pending = await pauseJsonReply(page, "command.prepare");
+  const pending = await pauseJsonReply(page, "command.preview");
   try {
     await page.getByRole("button", { name: "Review changes" }).click();
     const captured = await pending.ready;
-    const identity = preparedFrom(captured.reply);
+    const identity = reviewFrom(captured.reply, captured.bytes);
     await selectLanguage(page, "lv");
     await selectFormat(page, "ar-EG");
     await selectLanguage(page, "ar");
@@ -119,7 +119,7 @@ test("switches language and independent display format through native preparatio
     await expect(dialog).toBeVisible();
     const originalDialog = await dialog.elementHandle();
     const confirmation = dialog.getByRole("checkbox");
-    await confirmPrepared(page);
+    await confirmReview(page);
     await expectKeyboardContained(page, dialog);
     await reviewLanguage(page);
     await selectFormat(page, "lv-LV");
@@ -131,7 +131,7 @@ test("switches language and independent display format through native preparatio
     await expectAccessible(page);
     await selectLanguage(page, "en");
     await expect(confirmation).toBeChecked();
-    await page.getByRole("button", { name: "Back to editing; keep for Recovery" }).click();
+    await page.getByRole("button", { name: "Return to editing" }).click();
     await expect(page.getByRole("button", { name: "Review changes" })).toBeFocused();
   } finally {
     pending.release();
