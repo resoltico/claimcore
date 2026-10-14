@@ -51,7 +51,6 @@
     <PackageVersion Include="Microsoft.Testing.Platform.MSBuild" Version="2.4.1" />
     <PackageVersion Include="Microsoft.TestPlatform.ObjectModel" Version="18.10.1" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
-    <PackageVersion Include="NSec.Cryptography" Version="26.4.0" />
     <PackageVersion Include="OpenTelemetry" Version="1.19.1" />
     <PackageVersion Include="OpenTelemetry.Api" Version="1.19.1" />
     <PackageVersion Include="OpenTelemetry.Api.ProviderBuilderExtensions" Version="1.19.1" />

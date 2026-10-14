@@ -56,7 +56,7 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- des
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- schema invocation
 ```
 
-**Checkpoint:** both discovery commands exit successfully and the schema identifies CLI protocol version 4. This is a complete stopping point for database-free exploration. `call` and `session` are different: they require an authenticated HTTPS service, not a primary PostgreSQL connection string. See the [CLI reference](cli.md) for their exact generated frames and recovery rules.
+**Checkpoint:** both discovery commands exit successfully and the schema identifies CLI protocol version 4. This is a complete stopping point for database-free exploration. `call` and `session` are different: they require an authenticated HTTPS service, not a primary PostgreSQL connection string. See the [CLI reference](api.md) for their exact generated frames and recovery rules.
 
 ## 2. Run the isolated first-case qualification
 
@@ -74,9 +74,9 @@ The printed workspace path contains published binaries and a test-results direct
 
 ## What the fixture does not set up
 
-Use [Service operation](service.md) and its [public CA trust procedure](service.md#trust-the-public-local-ca) for the maintained Docker operating model, persistent local evaluation and configured application deployments. The disposable qualification above remains a test run; it is not the service lifecycle. The former single-primary development Compose layout has been removed; existing volumes are preserved and are not automatically adopted or converted.
+Use [Service operation](api.md) and its [public CA trust procedure](web.md) for the maintained Docker operating model, persistent local evaluation and configured application deployments. The disposable qualification above remains a test run; it is not the service lifecycle. The former single-primary development Compose layout has been removed; existing volumes are preserved and are not automatically adopted or converted.
 
-For an operator-managed installation, start with the ownership and custody boundaries in [Architecture](architecture.md), [Security and operations](operations.md), [Database](database.md), [Web](web.md), and [CLI](cli.md). Provision primary and witness independently, choose and store the installation's immutable canonical IANA business time zone, arrange private key custody and an OIDC issuer, and qualify backup freshness plus a restored primary/witness pair before considering real data. A green local fixture, a matching schema marker, or a successful `verify` alone does not prove that an older backup contains every accepted operation.
+For an operator-managed installation, start with the ownership and custody boundaries in [Architecture](architecture.md), [Security and operations](operations.md), [Database](database.md), [Web](web.md), and [CLI](api.md). Provision primary and witness independently, choose and store the installation's immutable canonical IANA business time zone, arrange private key custody and an OIDC issuer, and qualify backup freshness plus a restored primary/witness pair before considering real data. A green local fixture, a matching schema marker, or a successful `verify` alone does not prove that an older backup contains every accepted operation.
 
 ## When something fails
 
@@ -88,6 +88,6 @@ Stop at the first failed checkpoint. Inspect diagnostics locally; share only red
 | Docker or isolated PostgreSQL startup fails | Confirm the local engine and free resources; inspect the runner's exact-labelled containers and private logs. Do not prune host-wide resources or delete an existing volume. |
 | OIDC discovery, TLS, or login fails | Check the fixture's HTTPS issuer, certificate validity, loopback hostname, and current disposable client identity. Do not disable certificate or hostname validation globally. |
 | A private path is refused | Check physical absolute paths, ownership, `0600` files, `0700` directories, linked components, and extended ACLs. Do not recursively change home-directory permissions or pass administrator credentials to the CLI. |
-| An accepted-result response is lost or uncertain | Preserve the exact operation ID, request bytes, and digest. Observe and reconcile the same identity using the [recovery reference](cli.md#canonical-request-identity-and-recovery); do not manufacture a replacement operation or infer that commit failed. |
+| An accepted-result response is lost or uncertain | Preserve the exact operation ID, request bytes, and digest. Observe and reconcile the same identity using the [recovery reference](api.md); do not manufacture a replacement operation or infer that commit failed. |
 
 The runner's success is a repeatable development check, not a release publication. It does not tag, publish, migrate, or modify adopted data.

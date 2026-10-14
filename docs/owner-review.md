@@ -1,6 +1,6 @@
 # Owner review and merge authorization
 
-This document owns the sole-owner authorization boundary. [CI governance](ci-governance.md) owns
+This document owns the sole-owner authorization boundary. [CI governance](../CONTRIBUTING.md) owns
 workflow integrity and the settings procedure; [Development](development.md) owns verification.
 The policy is for a personal repository with default branch `main`. Organization ownership or a
 merge queue requires a separately reviewed policy, not an automatic extension of this one.
@@ -13,7 +13,7 @@ label or agent declaration establishes it, and GitHub's merge event (actor, time
 
 ## Native rules on `main`
 
-The required boundary uses two rulesets; the settings procedure in [CI governance](ci-governance.md) plans, applies
+The required boundary uses two rulesets; the settings procedure in [CI governance](../CONTRIBUTING.md) plans, applies
 and reads them back. These are required settings, not a statement that a source checkout has
 activated them; inspect native state with the read-only settings check before relying on enforcement.
 

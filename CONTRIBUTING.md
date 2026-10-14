@@ -1,77 +1,15 @@
 # Contributing
 
-ClaimCore favors explicit boundaries and executable evidence. Read the [domain
-contract](docs/domain.md) and [architecture](docs/architecture.md) before changing behavior.
+Read [Domain](docs/domain.md), [Architecture](docs/architecture.md) and
+[Development](docs/development.md) before changing behavior or verification.
 
-## Setup and verification
+Domain/Application own rules and authority, RecordFormat owns durable encodings, Contracts owns
+wire definitions, Postgres owns persistence and Hosting owns runtime composition. Keep affected
+consumers, locks, tests and documentation together. Add a migration rather than editing applied
+bytes. Tests use synthetic data and owned isolated fixtures; preserve existing installations and
+private state. Report executed commands separately from inspection, including failures and limits.
 
-Install the prerequisites and complete the locked first-checkout workflow in
-[Development](docs/development.md#first-checkout). That document is the sole owner of contributor
-build, test, lint, coverage, published-acceptance, and evidence commands. Run its
-[complete verification](docs/development.md#complete-verification) before claiming a change is ready.
-
-Docker is required by PostgreSQL and published-application tests. Required test projects run through
-`node eng/ci/suites/suite.mjs` on the native .NET 10 Microsoft Testing Platform, against the generated
-inventories in `tests/inventory/` (rewrite one with `node eng/ci/suites/inventory.mjs --write` in the
-same commit as the test change). Focused, pending, skipped, expected-failure, conditional, filtered,
-retried, or sharded required tests are policy failures.
-
-## Change rules
-
-- Preserve the thirteen-field contract unless the change explicitly revises product scope.
-- Put business decisions in Domain/Application, durable encoding in RecordFormat, wire schemas and
-  codecs in Contracts, persistence and schema-owner administration in Postgres, runtime composition
-  in Hosting, CLI-v4 framing and authenticated HTTPS delivery in CliProtocol, and process/HTTP presentation in Cli/Web.
-  `config/architecture.json` is the authority on which component may reference which.
-- Contracts owns every CLI-v4 and Web-v3 payload, including database-free discovery. A renderer
-  that composed wire JSON itself would fork the generated contract, so add the payload to Contracts
-  and select it from the adapter.
-- Add tests at the narrowest useful layer. Include PostgreSQL tests for SQL, schema changes,
-  transactions, connection admission, and stored representations.
-- Keep one checksum-bound fresh baseline. Refuse unsupported existing installations untouched;
-  qualify atomic creation, repeatability, rollback and refusal without an upgrade or conversion path.
-- Keep protocol, capability, Web contract, example, documentation, schema, and baseline projections
-  synchronized with behavior.
-- Keep contract headings and `[CC-…]` evidence leaves synchronized. A passing
-  tagged test does not substitute for semantic review of its assertions.
-- Declare every component edge, package, and `InternalsVisibleTo` grant in `config/architecture.json`, and
-  review changes to it against the actual module boundaries, compiled inspection, evaluated project
-  graph, and required report evidence; do not widen permitted edges merely to clear the gate.
-- Update each dependency in its owning manifest and commit reviewed lock-file changes.
-- Do not commit local connections, credentials, build output, test reports, container state, or real
-  case data.
-
-FSharpLint, oxlint, and Stylelint own product/test file-size, function-size, complexity, nesting, and
-specificity limits. A limit failure is a design prompt: split a real responsibility instead of
-adding wrappers or suppressing the rule.
-
-[`config/lint-exceptions.json`](config/lint-exceptions.json) is the sole authoritative registry of lint, type,
-format and coverage exceptions for every language. Do not add an inline or project-level bypass merely to clear a gate; the exact
-registry schema and non-suppressible rules are owned by [Repository
-quality](docs/development.md#repository-quality).
-
-## Pull-request evidence
-
-Describe the behavior changed, compatibility or schema impact, and the exact commands actually run.
-Do not report a configured or source-inspected check as executed. State unavailable prerequisites
-explicitly.
-
-Use only synthetic examples. Security-sensitive findings and data-bearing diagnostics follow
-[SECURITY.md](SECURITY.md), not a public issue or ordinary test attachment. General issue guidance is
-in [SUPPORT.md](SUPPORT.md).
-
-Publication and repository-policy changes follow [CI governance](docs/ci-governance.md). Use one
-feature branch and verify the actual PR head and current attempt; preserve a truthful handoff after
-follow-up commits. A green gate is necessary execution evidence, not an instruction to merge. Follow the
-separate [owner-review procedure](docs/owner-review.md) on exact current revisions; source review does
-not record approval and settings declarations are not active native enforcement.
-
-## Licensing contributions
-
-Intentional contributions submitted for inclusion in ClaimCore are provided under the [Mozilla Public License 2.0](LICENSE). Submit only work that you
-have the right to license under those terms. Contributors retain copyright; submission does not
-transfer ownership. Retain applicable third-party copyright, attribution and license notices,
-and identify externally sourced work and its terms in the PR.
-
-A contribution designated
-as excluded from the project's license cannot be incorporated without separately agreed terms.
+The owner reviews and merges changes. The required pull-request check is `Gate`; green CI is
+not owner approval. Contributors publish exact revisions and do not merge, approve, auto-merge,
+tag, release or change protections without explicit authorization. Version and published changelog
+entries are release-owned. Follow the engineering principles in [AGENTS.md](AGENTS.md).

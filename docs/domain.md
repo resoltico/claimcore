@@ -67,11 +67,10 @@ Ordinary editing of a closed case requires reopening it; `CORRECT_CASE` is the d
 described below. A paid date must be cleared before its decision can be withdrawn, and that unpaid decision must be withdrawn before registration facts can be amended.
 Clearing a record does not reverse a real transfer.
 
-`CORRECT_CASE` is intentionally different from `AMEND_REGISTRATION`: it preserves the historical
-meaning and eligibility of the older command, including pending historical requests. A correction
+`CORRECT_CASE` is intentionally different from `AMEND_REGISTRATION`: it preserves the eligibility of registration amendments. A correction
 always supplies all three tagged groups. Registration is `KEEP` or `REPLACE` with all seven inputs;
 decision is `KEEP`, `REPLACE` with its complete date/amount/currency tuple, or `CLEAR`; payment is
-`KEEP`, `REPLACE` with its date, or `CLEAR`. `KEEP` reads accepted state under the authoritative case
+`KEEP`, `REPLACE` with its date, or `CLEAR`. `KEEP` reads accepted state under the authoritative ledger
 lock, never a browser copy. A correction cannot be all-KEEP or make a no-op revision, add a missing
 decision or payment, change reference or status, or create an intermediate cleared snapshot.
 Clearing a paid decision requires clearing payment. Replacing a paid decision requires explicit
@@ -86,22 +85,19 @@ Execution revalidates the command against authoritative state, current authority
 authority; adapters do not add another action policy.
 
 <a id="cc-life-001"></a>
-### CC-LIFE-001 — Disposition, holds, and privacy transitions
+### CC-LIFE-001 — Case stewardship
 
-Business disposition and privacy state are separate technical authority, not fourteenth or fifteenth business fields. `VOID_DATA_ENTRY_ERROR` records an audited mistake without deleting the case, its reference, accepted commands, or payment assertion; ordinary case work is blocked while voided. Voiding a case with a recorded payment requires two distinct witnessed data-steward approvals. A privileged `REINSTATE_VOIDED` is another witnessed transition, not a rewrite of the void or a reversal of an external payment. A privacy erasure request is a different workflow and dominates reinstatement. Holds are independently recorded and block irreversible purge while active; at most 256 may be active on one case, and their review date may be no more than 366 days after recording.
+Disposition is separate from business status and payment facts. `VOID` requires a reason and
+blocks business commands while preserving every accepted snapshot. `REINSTATE` requires a
+reason and restores ordinary case work on a voided record. Reasons contain 1–200 Unicode
+scalars, with no surrounding whitespace, control, format or line/paragraph separator characters.
+Neither act reverses a payment or changes a business field.
 
-An erasure request immediately fences ordinary access and work. The next pending transition requires proof of the exact settled external witness fence; neither step deletes all copies or means that erasure has completed. A later owner-only live purge requires two distinct witnessed data-steward approvals, complete operation-denial coverage, no active hold, and a full current data audit. Managed backup, WAL, witness-payload, replica, snapshot, key, and export copies remain part of the privacy status until each known custodian has independently verified deletion or inaccessibility. While keyed reference/operation suppression evidence remains, the truthful status is `PAYLOAD_ERASED_SUPPRESSION_RETAINED`, not total personal-data erasure; `ERASURE_FINAL` additionally needs its explicit horizon and an independently evidenced old-writer and recovery-artifact fence. A missing or unknown copy never counts as deleted. The generic checkout lacks a reviewed publication root and cannot certify the final phase for real data.
-
-Fresh lifecycle and tombstone decisions use current primary UTC after authority/resource locks,
-including approval validity and UTC hold-review windows. A timestamp captured before lock contention
-cannot authorize a later decision. Expiry excludes the boundary instant for new approval authority;
-exact witnessed approval readback remains historical evidence after expiry and does not renew it.
-These technical UTC windows are separate from the installation calendar used for business dates.
-
-The decision date, payable amount, and payable currency are all present or all absent. A payment date
-requires a complete decision, a positive payable amount, and a date on or after the decision. Zero is
-a valid decision amount but cannot be marked paid. The payable amount and currency need not match the
-claim.
+`ERASE` removes the case's business payload and its whole history from the live database.
+It retains the case reference, revision and ledger metadata. One current human `DATA_STEWARD`
+can execute any stewardship act; a `CASE_EDITOR` cannot. Every accepted act advances one
+revision. Erasure is final: the reference cannot be opened again and erased operations cannot
+be replayed as retained requests. Its physical limits are in [Operations](operations.md).
 
 ## Scalars
 
@@ -122,29 +118,19 @@ claim.
   preserves authored Unicode, including joining and directional characters; it is not an identifier
   normalization or display-safety guarantee. Browser warnings expose suspicious code points without
   rewriting accepted data. Lifecycle reasons separately reject format and line/paragraph separator
-  characters. Historical snapshot restoration uses the business-text rules too.
+  characters. Retained snapshots use the business-text rules too.
 
-Canonical request identity deliberately retains authored amount spelling and exact reference text;
-read [CLI and protocol](cli.md#canonical-request-identity-and-recovery) before constructing retries.
+Canonical operation identity retains authored amount spelling and exact reference text.
+An uncertain retry preserves the original identity and bytes; see [API](api.md).
 
 ## Revisions and history
 
-Every newly accepted operation increments the case revision once. A command carries the revision it
-was prepared against; a fresh stale command is rejected. An exact replay of an accepted operation
-returns its retained receipt without another revision. An exact retained but unaccepted preparation
-made stale by a different commit directs the operator to Recovery without inventing a fresh review.
-An unaccepted operation may instead be durably revoked; its exact identity remains terminal even if
-the optional preparation is later pruned, while a different request under the same ID remains a
-privacy-safe conflict.
+Every newly accepted case operation advances one revision. A fresh request carries its expected
+revision; execution rechecks it against locked state. Exact accepted replay returns its original
+receipt without another entry or revision while the request remains available. Different content
+under a used identity is refused. Rejection records nothing.
 
-Revisions remain nonnegative signed 64-bit values below `Int64.MaxValue`; restored snapshots must be
-positive. A case at `Int64.MaxValue - 1` advertises no new command, and execution refuses another
-transition rather than overflowing or creating an unrepresentable terminal revision. Exact replay
-remains a read of the original accepted receipt.
-
-Current actor-bound views may advertise the authorized subset of state-derived commands. Receipts and history are snapshots and advertise
-no actions. Read the current case before preparing another change. Safe recovery from an uncertain
-result is defined in [CLI and protocol](cli.md#canonical-request-identity-and-recovery).
-
-Changing this contract requires coordinated domain, codec, CLI, Web contract, schema, baseline,
-documentation, and test changes. Do not extend the record through an adapter-only field.
+Revisions are nonnegative signed 64-bit values below `Int64.MaxValue`; snapshots are positive.
+At `Int64.MaxValue - 1`, another transition is refused rather than overflowing. Advertised
+commands are advice; receipts and history advertise no commands. Read current state before
+starting a different operation. Domain owns these rules, and adapters cannot add business fields.

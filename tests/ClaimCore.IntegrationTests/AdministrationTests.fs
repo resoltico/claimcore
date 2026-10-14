@@ -348,6 +348,6 @@ let tests =
                 "argument and delivery guards reject without weakening commit knowledge"
                 inputAndDeliveryGuards
             testCaseAsync
-                "all commands succeed refuse and repeat on a fresh owned installation"
+                "[CC-DB-001][CC-DB-002] all commands succeed refuse and repeat on a fresh owned installation"
                 (publishedCommands ())
         ]

@@ -14,4 +14,5 @@
   <Project Path="src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
   <Project Path="src/ClaimCore.Database/ClaimCore.Database.fsproj" />
   <Project Path="tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj" />
+  <Project Path="tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj" />
 </Solution>

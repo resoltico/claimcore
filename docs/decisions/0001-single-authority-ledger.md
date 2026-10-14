@@ -1270,6 +1270,7 @@ completion. Full local qualification passed13/13, failed0/skipped0,11m31.806s; c
 with the preceding sequential delivered-tree23m49.434s, this is measured browser-acceptance
 wall time, not mutation/fuzz campaign performance. No full campaigns were run.
 
+
 ### Browser acceptance scheduling and diagnostics
 
 Exact-head CI38524617783 rejected parallel engine qualification: Chromium229 passed,
@@ -1297,6 +1298,7 @@ claimed without a reproducing failure. CI qualification of this follow-up remain
 Process deviation: pushed WP12 commit a18d178 was amended to e08f332 and force-updated
 with an exact lease. The pack forbids rewriting pushed history; this was a mistake, not
 an authorized design correction. Subsequent repairs use new commits and preserve history.
+
 
 ### Fixture efficiency and discoverable controls
 
@@ -1335,3 +1337,64 @@ architecture additions are recorded separately and are not yet part of this fixt
 All nine commands in examples/README were additionally run literally via /bin/bash against a
 fresh owned published fixture; each printed exit0/stderr0/ACCEPTED, and both containers were
 removed. Original evaluation containers remain healthy/untouched.
+
+### Architecture and documentation frontier
+
+WP13 found one material graph mismatch: Database directly uses Application.PrincipalKey,
+LedgerPosition and AuthorityOutcome in its input validation and rendering. Temporarily
+removing that project reference produced FS0039 for Application/PrincipalKey in Inputs and
+Replies; restored the exact project file afterward. The manifest now records Database→
+Application. Moving or duplicating shared principal/outcome rules merely to hide this edge
+would add another semantic owner. No store, case-work runtime or client database peer is
+exposed, and G1–G11/non-goals are unchanged.
+
+The compiled architecture suite imports product/tooling and its compiled negative fixtures,
+plus actual framework method definitions. An initial predicate used C#-style member names
+where ArchUnitNET reports IL-style Type::Method signatures, and external member stubs could
+not populate the target set. Its controls failed rather than falsely qualifying coverage.
+Corrected imports and signatures without weakening positive evaluation. Referencer rules
+exclude a component's internal dependencies on its own types. All four rules reject compiled
+negative fixtures; clock, file, environment, randomness and network each have one. Missing
+and extra project edges, forbidden internals recipients and empty subject selection reject
+with project/rule names. Full Debug/no-optimization suite passed27/27,failed0/skipped0.
+
+The new documentation check initially found24 missing links plus unnamed retired contracts
+and a missing CLI heading (235/236 passed,1 failed). Two anchor findings were invalid: raw
+HTML anchor IDs are valid. Added AST-scoped HTML anchor recognition; missing-anchor controls
+still reject, and a code-fenced anchor does not count. To satisfy the commit frontier, moved
+needed owner-contract documents, boundary AGENTS text, contributor/engineering link fixes
+and deletion of three obsolete owner documents forward from WP14 into WP13. This is an
+ordering correction, not a lower documentation gate. Remaining cleanup, setup-as-written,
+commands and changelog stay in WP14. AGENTS engineering tail is byte-identical (SHA256
+b0f23ed8abfe47d8a48359499857a778474f2f131b395d49b9ede14420c3b54a).
+The complete native suite including documentation passed236/236,failed0/skipped0,7.856s.
+
+Pruned unused NSec and force-regenerated every lock, then locked restore passed. Remaining
+central versions are direct references or active CentralTransitive entries, documented in
+development. dotnet nuget why shows the apparently obsolete Azure chain is a real test SDK
+telemetry dependency; removal based on its name would not prune an unused package. Release
+solution build passed16 projects,0warnings/errors,21.30s; full Fantomas and FSharpLint passed.
+Interim measured CI floors236/27 let WP13 unit jobs execute; final WP15 measurement still
+owns the rounded floors and whole delivered-state gate.
+
+The first documentation implementation scanned whole source files for tokens. Challenge
+found comments/unused strings could masquerade as named tests. Replaced it with actual MTP
+list-only discovery from all solution test projects, Vitest JSON names and all three
+Playwright engine names; no fixture or test executes in these discovery children. Empty,
+mismatched counts, import/command failures, oversized output and unknown/unnamed tokens
+refuse. Markdig heading nodes distinguish actual contracts from fenced examples. Seven
+additional controls cover these failures. The first strict build found nullable HeadingBlock
+Inline access (FS3261); optional inline handling fixed it without ignoring compiler warnings.
+
+Final WP13 working tree builds Release and Debug architecture with0warnings/errors. Full
+native244/244,failed0/skipped0,12.529s; architecture28/28,failed0/skipped0,11.029s. Full
+PostgreSQL79/79(116.993s),Web67/67(60.187s),acceptance16/16(19m30.990s) passed. Shared
+visibility controls are included in all counts. Formatting/FSharpLint passed. Interim CI
+floors244/28 replace the earlier236/27; final rounding/clean-clone gates remain WP15.
+
+Exact-head follow-up CI38538904937 at7a844fa failed WebKit's generic child bound after
+roughly15m, whileChromium229(5.6m) andFirefox229(8.9m) passed. Native12/13 passed,exit2,
+33m38.242s. No bounded partial browser output survived the exception, so deadline is an
+inference and no failed assertion is identified. Drafts outside the repository improve
+failure evidence and replace repeated correction-case UI setup with real authenticated
+service writes; they are not yet implemented or claimed verified.

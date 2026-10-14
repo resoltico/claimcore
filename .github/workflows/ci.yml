@@ -71,7 +71,7 @@ jobs:
         run: >-
           dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
           --configuration Release --no-build --no-restore
-          --minimum-expected-tests=SET-IN-WP15 --zero-tests-policy=strict --timeout=30m
+          --minimum-expected-tests=244 --zero-tests-policy=strict --timeout=30m
           -- --settings="$PWD/eng/expecto.runsettings"
       - name: Build the architecture suite without optimization
         run: >-
@@ -81,7 +81,7 @@ jobs:
         run: >-
           dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
           --configuration Debug --no-build --no-restore
-          --minimum-expected-tests=SET-IN-WP15 --zero-tests-policy=strict --timeout=15m
+          --minimum-expected-tests=28 --zero-tests-policy=strict --timeout=15m
           -- --settings="$PWD/eng/expecto.runsettings"
 
   integration:

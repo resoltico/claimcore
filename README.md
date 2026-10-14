@@ -4,8 +4,8 @@
 
 Record claim facts, payment decisions and payment dates through a structured CLI or a browser interface. Both call one authenticated HTTPS service whose F#/.NET core owns validation, case transitions, authorization and recovery. A primary PostgreSQL store holds current case projections and accepted history; a separately credentialed PostgreSQL witness records authority evidence.
 
-[Get started](docs/getting-started.md) · [Operate the service](docs/service.md) · [Documentation](docs/README.md) ·
-[CLI reference](docs/cli.md) · [Architecture](docs/architecture.md) ·
+[Get started](docs/getting-started.md) · [Operate the service](docs/api.md) · [Documentation](docs/README.md) ·
+[CLI reference](docs/api.md) · [Architecture](docs/architecture.md) ·
 [Releases](https://github.com/resoltico/claimcore/releases)
 
 > **Source preview.** ClaimCore is pre-1.0 software for evaluation with synthetic data, not a
@@ -37,7 +37,7 @@ details, notes and attachments are outside the current record.
 The browser offers English, Latvian and Arabic, independent display formats and right-to-left
 layout. Expanded English is a layout-test pseudolocale. Language changes preserve drafts, prepared
 requests, confirmation and recovery state without changing the installation calendar or recorded
-currency. See [Browser presentation](docs/web.md#browser-presentation).
+currency. See [Browser presentation](docs/web.md).
 
 ## Try ClaimCore
 
@@ -63,7 +63,7 @@ discovery; private-file runtime operations fail closed there.
 
 **Fresh baseline, no in-place upgrade.** Unsupported existing installations and old recovery
 formats are refused, not converted or deleted. Preserve old databases and artifacts with their
-matching software. Read the [installation boundary](docs/database.md#fresh-installation-boundary)
+matching software. Read the [installation boundary](docs/database.md)
 before initializing a new target.
 
 ClaimCore uses individual OIDC identities and default-deny actor/case grants, but the service defaults to loopback and local two-cluster qualification does not prove independent-host resilience. Multi-tenancy and independent real-data deployment qualification are not supplied. Read [Security and operations](docs/operations.md) before considering real data.
@@ -81,7 +81,7 @@ ClaimCore uses individual OIDC identities and default-deny actor/case grants, bu
   from browser language and display formats. Amount display preserves decimal precision; authoring
   and canonical copying remain independent of presentation.
 
-Exact-request recovery is not a backup system. Restoring an older primary or witness backup can omit later authority; use independently retained checkpoints and a complete restored-pair audit before resuming case work. The included backup drill is synthetic, not a production restore certificate. See [Data and recovery](docs/operations.md#data-and-recovery).
+Exact-request recovery is not a backup system. Restoring an older primary or witness backup can omit later authority; use independently retained checkpoints and a complete restored-pair audit before resuming case work. The included backup drill is synthetic, not a production restore certificate. See [Data and recovery](docs/operations.md).
 
 ## Architecture and verification
 

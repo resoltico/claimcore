@@ -38,6 +38,11 @@
     <Compile Include="CliTransportTests.fs" />
     <Compile Include="CliReplyLossTests.fs" />
     <Compile Include="CliFrameTests.fs" />
+    <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
+    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
+    <Compile Include="DocumentationDiscovery.fs" />
+    <Compile Include="DocumentationChecks.fs" />
+    <Compile Include="DocumentationTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
@@ -51,5 +56,6 @@
   <ItemGroup>
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
     <PackageReference Include="Hedgehog" />
+    <PackageReference Include="Markdig" />
   </ItemGroup>
 </Project>
