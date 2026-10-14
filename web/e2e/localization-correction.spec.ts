@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { completeCommand } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
 import {
   pauseJsonReply,
@@ -18,8 +17,8 @@ import {
   type Modes,
 } from "./localization-correction-workflow";
 
-// This complete published workflow includes three accepted setup commits, language changes,
-// correction and authoritative readback; allow its instrumented host a whole-workflow budget.
+// Each independent case is accepted through the authenticated service before browser-authored
+// correction, language changes and authoritative readback.
 test.setTimeout(45_000);
 
 // Independent paid-case outcomes; all replacement values actually change their groups.
@@ -76,10 +75,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
   expect(requests).toHaveLength(0);
 };
 const paidInStatus = async (page: Page, reference: string, status: "OPENED" | "CLOSED") => {
-  await paidCase(page, reference);
-  if (status === "CLOSED") {
-    await completeCommand(page, "Close the case");
-  }
+  await paidCase(page, reference, status);
   const before = await currentCase(page, reference);
   expect(before.revision).toBe(status === "CLOSED" ? "4" : "3");
   expect(before.fields.status).toBe(status);

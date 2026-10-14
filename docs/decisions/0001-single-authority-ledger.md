@@ -1398,3 +1398,28 @@ roughly15m, whileChromium229(5.6m) andFirefox229(8.9m) passed. Native12/13 passe
 inference and no failed assertion is identified. Drafts outside the repository improve
 failure evidence and replace repeated correction-case UI setup with real authenticated
 service writes; they are not yet implemented or claimed verified.
+
+### Browser qualification setup and process failure evidence
+
+GitHub's completed WebKit child exceeded a bound without preserving output, so its category
+and final completed case were unknowable. BoundedProcess now retains at most the unchanged
+per-pipe allowance in a typed failure, distinguishes Deadline/Output/Delivery and records
+cleanup failure separately. Browser qualification saves those partial bytes privately and
+prints only engine/completion counts/category/cleanup flag. Synthetic deadline, both-output
+limits, broken delivery, nonzero completed exit, cleanup failures and malformed/duplicate
+progress controls all execute in one additional discovered test. No private payload or
+credential artifact is uploaded. Bounds remain15m and1MiB per browser pipe, and retries0.
+
+Each of108 correction scenarios still creates an independent case and performs every browser
+correction/localization/readback oracle. Its repeated setup now makes378 real authenticated
+service writes per engine instead of378 repeated UI review flows. Closed generated responses,
+operation/ref/action/revision/disposition, complete13fields and actor consistency are checked
+on every setup acceptance; no database shortcut or mock replaces the facade. Standalone
+business command/browser workflows continue covering setup UI. The existing correction loops
+and oracles were preserved. Two lint destructuring findings were fixed without suppression.
+
+Complete acceptance command withfloor17 and40m passed17/17,failed0/skipped0,15m59.759s;
+all3×229 browser cases and published CLI readback completed. The preceding16-test run was
+19m30.990s; this is an observed local difference, not a controlled speed benchmark or CI
+qualification. Release build0warnings/errors, core244/244(13.862s), types/lint/format and full
+FSharpLint passed. Exact-head GitHub verification remains required.

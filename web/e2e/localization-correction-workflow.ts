@@ -1,8 +1,10 @@
-import type { ServiceResponse } from "../src/api/types";
+import { randomUUID } from "node:crypto";
+import type { CaseFields, CommandDraft, Receipt, ServiceResponse } from "../src/api/types";
 import { expect, type Page } from "@playwright/test";
-import { completeCommand, openCase, startCommand } from "./case-workflow";
+import { startCommand } from "./case-workflow";
 import { browserRequest, sessionToken } from "./session-helpers";
 import { isResponse } from "../src/generated/contracts/validation";
+import { endpoints } from "../src/generated/contracts/endpoint-catalog";
 import { selectLanguage } from "./localization-support";
 import type { Language } from "../src/presentation/preferences";
 
@@ -11,14 +13,127 @@ export type Modes = Readonly<{
   decision: "KEEP" | "REPLACE" | "CLEAR";
   payment: "KEEP" | "REPLACE" | "CLEAR";
 }>;
-export const paidCase = async (page: Page, reference: string) => {
-  await openCase(page, reference);
-  await completeCommand(page, "Record payment decision", {
-    "Payment decision date": "2026-09-03",
-    "Amount to be paid": "300.25",
-    "Currency of amount to be paid": "EUR",
+type SeedStep = Readonly<{
+  command: CommandDraft["command"];
+  fields: CaseFields;
+}>;
+
+const setupRegistration = {
+  incidentDate: "2026-09-01",
+  incidentNotificationDate: "2026-09-02",
+  incidentCountry: "Latvia",
+  claimantName: "Synthetic claimant",
+  insurerName: "Synthetic insurer",
+  claimedAmount: "1200.50",
+  claimedCurrency: "EUR",
+};
+
+const setupDecision = {
+  paymentDecisionDate: "2026-09-03",
+  payableAmount: "300.25",
+  payableCurrency: "EUR",
+};
+
+const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep[] => {
+  const opened: CaseFields = {
+    ...setupRegistration,
+    claimedAmount: "1200.5",
+    caseReference: reference,
+    paymentDecisionDate: null,
+    payableAmount: null,
+    payableCurrency: null,
+    paymentDate: null,
+    status: "OPENED",
+  };
+  const decided: CaseFields = { ...opened, ...setupDecision };
+  const paid: CaseFields = { ...decided, paymentDate: "2026-09-05" };
+  const steps: SeedStep[] = [
+    { command: { kind: "OPEN", values: setupRegistration }, fields: opened },
+    { command: { kind: "DECIDE", values: setupDecision }, fields: decided },
+    {
+      command: {
+        kind: "RECORD_PAYMENT",
+        values: { paymentDate: "2026-09-05" },
+      },
+      fields: paid,
+    },
+  ];
+  if (status === "CLOSED") {
+    steps.push({
+      command: { kind: "CLOSE", values: {} },
+      fields: { ...paid, status: "CLOSED" },
+    });
+  }
+  return steps;
+};
+
+const acceptSetup = async (
+  page: Page,
+  token: string,
+  request: CommandDraft,
+  fields: CaseFields,
+): Promise<Receipt> => {
+  const endpoint = endpoints.find((item) => item.id === "command.execute");
+  if (endpoint === undefined) {
+    throw new Error("E2E_CORRECTION_SETUP_ENDPOINT_MISSING");
+  }
+  const reply = await browserRequest(page, endpoint.path, {
+    method: endpoint.method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": token,
+    },
+    body: JSON.stringify(request),
   });
-  await completeCommand(page, "Record actual payment", { "Payment date": "2026-09-05" });
+  expect(reply.status).toBe(200);
+  expect(reply.cacheControl).toContain("no-store");
+  if (!(await isResponse("command.execute", reply.payload))) {
+    throw new Error("E2E_CORRECTION_SETUP_RESPONSE_INVALID");
+  }
+  const { outcome } = reply.payload as ServiceResponse<"command.execute">;
+  if (outcome.tag !== "ACCEPTED") {
+    throw new Error(`E2E_CORRECTION_SETUP_${outcome.tag}`);
+  }
+  const receipt = outcome.data;
+  const revision = String(Number(request.expectedRevision) + 1);
+  expect(receipt.operationId).toBe(request.operationId);
+  expect(receipt.caseReference).toBe(request.caseReference);
+  expect(receipt.act).toBe(request.command.kind);
+  expect(receipt.revision).toBe(revision);
+  expect(receipt.disposition).toBe("ACTIVE");
+  expect(receipt.snapshot).toEqual({ revision, fields });
+  return receipt;
+};
+
+export const paidCase = async (page: Page, reference: string, status: "OPENED" | "CLOSED") => {
+  const token = await sessionToken(page);
+  let recordedBy: string | undefined;
+  let revision = "0";
+  for (const step of paidCaseSteps(reference, status)) {
+    const receipt = await acceptSetup(
+      page,
+      token,
+      {
+        operationId: randomUUID(),
+        caseReference: reference,
+        expectedRevision: revision,
+        command: step.command,
+      },
+      step.fields,
+    );
+    const { recordedBy: acceptedActor, revision: acceptedRevision } = receipt;
+    if (recordedBy !== undefined) {
+      expect(acceptedActor).toBe(recordedBy);
+    }
+    recordedBy = acceptedActor;
+    revision = acceptedRevision;
+  }
+  await page.getByLabel("Handler's case reference (exact)").fill(reference);
+  await page.getByRole("button", { name: "Find case", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+  await expect(
+    page.locator("section.case-fields").first().getByText(`Revision ${revision}`),
+  ).toBeVisible();
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: Language) => {
   await startCommand(page, "Correct case facts");

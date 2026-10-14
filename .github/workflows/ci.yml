@@ -147,7 +147,7 @@ jobs:
         run: >-
           dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj
           --configuration Release --no-build --no-restore
-          --minimum-expected-tests=16 --zero-tests-policy=strict --timeout=40m
+          --minimum-expected-tests=17 --zero-tests-policy=strict --timeout=40m
           -- --settings="$PWD/eng/expecto.runsettings"
   gate:
     name: Gate

@@ -21,7 +21,9 @@
     <Compile Include="RejectedDrafts.fs" />
     <Compile Include="PublishedTests.fs" />
     <Compile Include="BrowserReadback.fs" />
+    <Compile Include="BrowserProgress.fs" />
     <Compile Include="BrowserTests.fs" />
+    <Compile Include="ProcessFailureTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

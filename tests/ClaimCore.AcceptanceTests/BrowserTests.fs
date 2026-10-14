@@ -44,6 +44,20 @@ let private completionControls () =
             (229, "4.7m")
             "Complete report admitted, including terminal colour"
 
+let private runBrowser engine output start =
+    try
+        PublishedProcesses.run 900_000 start None
+    with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
+        FixtureFiles.write output "playwright.stdout" failure.StandardOutput |> ignore
+        FixtureFiles.write output "playwright.stderr" failure.StandardError |> ignore
+        let passed, failed = BrowserProgress.counts failure.StandardOutput
+
+        Console.WriteLine(
+            $"Published {engine}: observed completed rows passed={passed}, failed={failed}, cleanupFailed={failure.CleanupFailed}"
+        )
+
+        failtest ($"Browser process failure: {failure.Kind}; bounded private evidence retained.")
+
 let private qualifyEngine engine =
     task {
         use fixture = new PublishedFixture.Fixture()
@@ -81,7 +95,7 @@ let private qualifyEngine engine =
                 values
 
         start.WorkingDirectory <- Path.Combine(fixture.Root, "web")
-        let result = PublishedProcesses.run 900_000 start None
+        let result = runBrowser engine output start
         FixtureFiles.write output "playwright.stdout" result.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" result.StandardError |> ignore
 
