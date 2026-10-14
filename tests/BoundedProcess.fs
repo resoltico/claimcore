@@ -15,7 +15,7 @@ type BoundedProcessResult =
     }
 
 module BoundedProcess =
-    let private read maximum (stream: Stream) (deadline: CancellationTokenSource) =
+    let read maximum (stream: Stream) (deadline: CancellationTokenSource) =
         task {
             let buffer = Array.zeroCreate<byte>(maximum + 1)
             let mutable count = 0

@@ -4,7 +4,7 @@ import { isResponse } from "../src/generated/contracts/validation";
 import type { ServiceResponse } from "../src/api/types";
 import { progress } from "./session-helpers";
 
-export type PreparedIdentity = Readonly<{ operationId: string; requestSha256: string }>;
+export type ReviewIdentity = Readonly<{ operationId: string; requestSha256: string }>;
 
 const fill = async (page: Page, values: Readonly<Record<string, string>>): Promise<void> => {
   for (const [label, value] of Object.entries(values)) {
@@ -21,7 +21,7 @@ type SubmitOutcome = ServiceResponse<"command.execute">["outcome"];
 
 const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.tag;
 
-export const recordPrepared = async (page: Page): Promise<void> => {
+export const recordReviewed = async (page: Page): Promise<void> => {
   const confirmed = page.getByRole("checkbox", { name: "I confirm these changes.", exact: true });
   await progress("confirm-click-start");
   if ((await confirmed.count()) !== 1) {
@@ -84,7 +84,7 @@ export const startCommand = async (page: Page, label: string): Promise<void> => 
 export const prepare = async (
   page: Page,
   values: Readonly<Record<string, string>> = {},
-): Promise<PreparedIdentity> => {
+): Promise<ReviewIdentity> => {
   await fill(page, values);
   await progress("prepare-dispatch");
   const event = page.waitForResponse((response) => response.url().endsWith("/api/command.preview"));
@@ -121,12 +121,12 @@ export const prepare = async (
 };
 
 const submit = async (page: Page): Promise<void> => {
-  await recordPrepared(page);
+  await recordReviewed(page);
   await page.getByRole("button", { name: "Return to case" }).click();
   await progress("returned-to-case");
 };
 
-export const keepForRecovery = async (page: Page): Promise<void> => {
+export const returnToCase = async (page: Page): Promise<void> => {
   await page.getByRole("button", { name: "Return to editing" }).click();
   await page.getByRole("button", { name: "Back to case" }).click();
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
@@ -136,7 +136,7 @@ export const completeCommand = async (
   page: Page,
   label: string,
   values: Readonly<Record<string, string>> = {},
-): Promise<PreparedIdentity> => {
+): Promise<ReviewIdentity> => {
   await startCommand(page, label);
   const identity = await prepare(page, values);
   await submit(page);
@@ -144,7 +144,7 @@ export const completeCommand = async (
   return identity;
 };
 
-export const openCase = async (page: Page, caseReference: string): Promise<PreparedIdentity> => {
+export const openCase = async (page: Page, caseReference: string): Promise<ReviewIdentity> => {
   await startOpen(page, caseReference);
   const identity = await prepare(page);
   await submit(page);
@@ -154,7 +154,7 @@ export const openCase = async (page: Page, caseReference: string): Promise<Prepa
   return identity;
 };
 
-export const droppedSubmission = async (page: Page): Promise<PreparedIdentity> => {
+export const droppedSubmission = async (page: Page): Promise<ReviewIdentity> => {
   await startCommand(page, "Close the case");
   const identity = await prepare(page);
   let committed = false;

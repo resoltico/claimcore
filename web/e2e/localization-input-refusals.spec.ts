@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openCase, startOpen, startCommand } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
-import { confirmPrepared, pauseJsonReply, selectLanguage, ui } from "./localization-support";
+import { confirmReview, pauseJsonReply, selectLanguage, ui } from "./localization-support";
 
 for (const language of ["en", "lv", "ar"] as const) {
   test(`refuses localized authoring digits and currency alphabets in ${language} [CC-DOM-001]`, async ({
@@ -45,7 +45,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await page.getByRole("button", { name: "Review changes" }).click();
     await first.ready;
     first.release();
-    await confirmPrepared(page);
+    await confirmReview(page);
     await page.getByRole("button", { name: "Record changes" }).click();
     await page.getByRole("button", { name: "Return to case" }).click();
     await startCommand(page, "Correct case facts");

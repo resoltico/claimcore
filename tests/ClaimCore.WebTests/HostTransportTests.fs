@@ -14,10 +14,13 @@ open ClaimCore.WebTests.FacadeStub
 open ClaimCore.WebTests.TestServerFixture
 
 let private body name =
-    EndpointCatalog.tryFind name
-    |> Option.get
-    |> _.Request
-    |> SchemaSamples.document
+    if name = "command.preview" || name = "command.execute" then
+        Array.copy commandInput
+    else
+        EndpointCatalog.tryFind name
+        |> Option.get
+        |> _.Request
+        |> SchemaSamples.document
 
 let private parse bytes = JsonDocument.Parse(bytes: byte array)
 

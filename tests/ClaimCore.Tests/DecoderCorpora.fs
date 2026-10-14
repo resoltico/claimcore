@@ -13,8 +13,8 @@ let private maximumBytes = 4096
 let arbitraryBytes =
     Gen.array (Range.linear 0 maximumBytes) (Gen.byte (Range.constantBounded ()))
 
-/// Structure-aware mutation: a valid encoding with one byte flipped, removed, duplicated, or
-/// inserted is far more likely to reach a decoder's interior than uniform noise.
+/// Structure-aware mutation replaces, deletes or inserts one byte, or truncates a valid
+/// encoding, to reach decoder interiors that uniform noise rarely reaches.
 let mutated (valid: byte array) =
     if valid.Length = 0 then
         Gen.constant valid

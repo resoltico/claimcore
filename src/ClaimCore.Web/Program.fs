@@ -58,9 +58,9 @@ let private writeVersion () =
 
 let private assetDirectory () =
     let published = Path.Combine(AppContext.BaseDirectory, "wwwroot")
-    let manifest = Path.Combine(published, "claimcore-assets.manifest.json")
+    let index = Path.Combine(published, "index.html")
 
-    if Directory.Exists(published) && File.Exists(manifest) then
+    if Directory.Exists(published) && File.Exists(index) then
         published
     else
         WebStartupDiagnostics.refuse WebStartupProblem.AssetsMissing

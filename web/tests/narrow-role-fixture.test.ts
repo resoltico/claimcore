@@ -52,7 +52,7 @@ it("restores only the confirmed baseline grant when narrow setup fails [CC-AUTH-
     {
       role: "CASE_READER",
       active: true,
-      scope: { kind: "CASE", caseReference: fixture.reference },
+      scope: { type: "CASE", caseReference: fixture.reference },
     },
     { role: "DATA_STEWARD", active: true },
   ]);

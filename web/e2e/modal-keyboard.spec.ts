@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 import { prepare, startOpen } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
-test("contains keyboard focus and returns it after safely dismissing a prepared review", async ({
+test("contains keyboard focus and returns it after safely dismissing a advisory review", async ({
   page,
 }) => {
   await openAuthenticated(page);

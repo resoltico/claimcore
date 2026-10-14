@@ -4,7 +4,7 @@ import { completeCommand } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
 import {
   pauseJsonReply,
-  confirmPrepared,
+  confirmReview,
   selectLanguage,
   ui,
   trackRequests,
@@ -18,7 +18,7 @@ import {
   type Modes,
 } from "./localization-correction-workflow";
 
-// This complete published workflow includes three witnessed setup commits, language changes,
+// This complete published workflow includes three accepted setup commits, language changes,
 // correction and authoritative readback; allow its instrumented host a whole-workflow budget.
 test.setTimeout(45_000);
 
@@ -130,7 +130,7 @@ for (const status of ["OPENED", "CLOSED"] as const) {
         pending.release();
         if (refusal === null) {
           expect(captured.reply.outcome.tag).toBe("REVIEWED");
-          await confirmPrepared(page);
+          await confirmReview(page);
           const recorded = page.waitForResponse(
             (response) => new URL(response.url()).pathname === "/api/command.execute",
           );

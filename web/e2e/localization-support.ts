@@ -13,7 +13,7 @@ import ar from "../src/presentation/catalogs/ar.ui.json" with { type: "json" };
 import enPresentation from "../src/presentation/generated/en.json" with { type: "json" };
 import lvPresentation from "../src/presentation/generated/lv.json" with { type: "json" };
 import arPresentation from "../src/presentation/generated/ar.json" with { type: "json" };
-import type { PreparedIdentity } from "./case-workflow";
+import type { ReviewIdentity } from "./case-workflow";
 
 export const seedPresentation = async (
   page: Page,
@@ -61,16 +61,16 @@ export const trackRequests = (page: Page) => {
   const requests: string[] = [];
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
-    if (path.startsWith("/api/service/")) {
+    if (endpoints.some((endpoint) => endpoint.id !== "session" && endpoint.path === path)) {
       requests.push(`${request.method()} ${path}`);
     }
   });
   return requests;
 };
-export const preparedFrom = (
+export const reviewFrom = (
   value: ServiceResponse<"command.preview">,
   bytes: Buffer,
-): PreparedIdentity => {
+): ReviewIdentity => {
   if (value.outcome.tag !== "REVIEWED") {
     throw new Error("E2E_LOCALIZATION_PREPARATION_REFUSED");
   }
@@ -102,7 +102,6 @@ const deferred = <T>() => {
 type Captured<K extends EndpointId> = {
   reply: ServiceResponse<K>;
   bytes: Buffer;
-  sourceDigest: string | undefined;
 };
 export const pauseJsonReply = async <K extends EndpointId>(
   page: Page,
@@ -131,7 +130,6 @@ export const pauseJsonReply = async <K extends EndpointId>(
         ready.resolve({
           reply: payload as ServiceResponse<K>,
           bytes,
-          sourceDigest: route.request().headers()["x-claimcore-source-sha256"],
         });
         await released.promise;
         if (drop) {
@@ -224,7 +222,7 @@ export const expectKeyboardContained = async (page: Page, dialog: Locator): Prom
   }
 };
 
-export const confirmPrepared = async (page: Page): Promise<void> => {
+export const confirmReview = async (page: Page): Promise<void> => {
   const dialog = page.getByRole("dialog");
   const checkbox = dialog.getByRole("checkbox");
   await dialog

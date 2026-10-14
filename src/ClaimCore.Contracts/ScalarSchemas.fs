@@ -88,6 +88,9 @@ module internal ScalarSchemas =
             + ")$"
         )
 
+    // Drafts carry authored text. Domain binding owns field acceptance and diagnostics.
+    let authoringText = Schema.string None None None None
+
     let uuid =
         Schema.string
             (Some "uuid")

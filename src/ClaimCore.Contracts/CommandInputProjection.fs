@@ -70,14 +70,12 @@ module internal CommandInputProjection =
                         true
                 ]
 
-    let private values fieldByName fields =
+    let private values fields =
         fields
-        |> List.map (fun input ->
-            let field = Map.find input.FieldName fieldByName
-            Schema.property input.FieldName (ScalarSchemas.scalar field.Scalar) true)
+        |> List.map (fun input -> Schema.property input.FieldName ScalarSchemas.authoringText true)
         |> Schema.objectOf false
 
-    let private correctionGroupValue fieldByName (group: CorrectionGroupDefinition) =
+    let private correctionGroupValue (group: CorrectionGroupDefinition) =
         group.Actions
         |> List.map (fun action ->
             match action with
@@ -90,24 +88,21 @@ module internal CommandInputProjection =
                     false
                     [
                         Schema.property "mode" (text "REPLACE") true
-                        Schema.property "values" (values fieldByName group.ReplaceFields) true
+                        Schema.property "values" (values group.ReplaceFields) true
                     ])
         |> Schema.oneOf
 
-    let payload (fields: FieldDefinition list) (definition: CommandDefinition) =
-        let fieldByName = fields |> List.map (fun field -> field.Name, field) |> Map.ofList
+    let payload (definition: CommandDefinition) =
         let kind = Schema.property "kind" (text (CommandKinds.token definition.Kind)) true
 
         match definition.Inputs with
         | CommandInputShape.Fields inputs ->
-            Schema.objectOf
-                false
-                [ kind; Schema.property "values" (values fieldByName inputs) true ]
+            Schema.objectOf false [ kind; Schema.property "values" (values inputs) true ]
         | CommandInputShape.CorrectionGroups groups ->
             let groupedValues =
                 groups
                 |> List.map (fun group ->
-                    Schema.property group.Name (correctionGroupValue fieldByName group) true)
+                    Schema.property group.Name (correctionGroupValue group) true)
                 |> Schema.objectOf false
 
             Schema.objectOf false [ kind; Schema.property "groups" groupedValues true ]

@@ -41,8 +41,8 @@ ${fast} && { echo "fast gate passed (Docker-backed suites not run)"; exit 0; }
 tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj SET-IN-WP15
 tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj SET-IN-WP15
 npm --prefix web run build
-tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj SET-IN-WP15
-npm --prefix web run test:e2e
+# Published acceptance owns the fresh service and runs all three browser engines.
+tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 13
 
 platform="$(uname -s)"
 echo "complete gate passed on ${platform}"

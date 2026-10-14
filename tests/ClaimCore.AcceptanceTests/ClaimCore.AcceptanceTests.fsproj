@@ -3,23 +3,29 @@
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
-    <Compile Include="Configuration.fs" />
+    <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
+    <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="ProcessRunner.fs" />
-    <Compile Include="RemoteFixture.fs" />
-    <Compile Include="NativeOwnerGrantAcceptance.fs" />
-    <Compile Include="RemoteAuthAcceptance.fs" />
-    <Compile Include="RemoteProtocolWalkthroughTests.fs" />
-    <Compile Include="RemoteProtocolBoundaryTests.fs" />
-    <Compile Include="UnicodeAcceptanceTests.fs" />
-    <Compile Include="NativeRoleFixture.fs" />
-    <Compile Include="NativeRoleExportProof.fs" />
-    <Compile Include="NativeOwnerWorkspaceProof.fs" />
-    <Compile Include="NativeActorAccessProof.fs" />
-    <Compile Include="NarrowRoleAcceptanceTests.fs" />
-    <Compile Include="RemoteAcceptanceTests.fs" />
-    <Compile Include="Suite.fs" />
+    <Compile Include="FixtureFiles.fs" />
+    <Compile Include="IdentityRealm.fs" />
+    <Compile Include="IdentityServer.fs" />
+    <Compile Include="PublishedProcesses.fs" />
+    <Compile Include="RedirectControl.fs" />
+    <Compile Include="HttpsProxy.fs" />
+    <Compile Include="PublishedFixture.fs" />
+    <Compile Include="CliCalls.fs" />
+    <Compile Include="DifferentClient.fs" />
+    <Compile Include="PublishedAssets.fs" />
+    <Compile Include="RejectedDrafts.fs" />
+    <Compile Include="PublishedTests.fs" />
+    <Compile Include="BrowserReadback.fs" />
+    <Compile Include="BrowserTests.fs" />
   </ItemGroup>
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers" />
+    <PackageReference Include="Npgsql" />
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
   </ItemGroup>
 </Project>

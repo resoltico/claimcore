@@ -5,7 +5,6 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { prepare, startOpen } from "./case-workflow";
 import { expectAccessible, login, progress } from "./session-helpers";
-import { observeStartup } from "./startup-evidence";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -51,11 +50,9 @@ const openAccessibleLogin = async (page: Page): Promise<void> => {
   await progress("a11y-viewport-ready");
   await page.emulateMedia({ reducedMotion: "reduce", forcedColors: "active" });
   await progress("a11y-media-ready");
-  await observeStartup(page, async () => {
-    await page.goto("/", { waitUntil: "commit", timeout: 10_000 });
-    await progress("a11y-document-ready");
-    await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
-  });
+  await page.goto("/", { waitUntil: "commit", timeout: 10_000 });
+  await progress("a11y-document-ready");
+  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
 };
 
 test("keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports", async ({

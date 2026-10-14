@@ -142,23 +142,13 @@ jobs:
       - run: npm --prefix web run contract:generate
       - run: npm --prefix web run build
       - run: dotnet build ClaimCore.slnx --configuration Release --no-restore
-      - name: Published CLI against the published service
+      - run: npm --prefix web exec -- playwright install --with-deps chromium firefox webkit
+      - name: Published service and clients, including three browser engines
         run: >-
           dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj
           --configuration Release --no-build --no-restore
-          --minimum-expected-tests=SET-IN-WP15 --zero-tests-policy=strict --timeout=30m
+          --minimum-expected-tests=13 --zero-tests-policy=strict --timeout=30m
           -- --settings="$PWD/eng/expecto.runsettings"
-      - run: npm --prefix web exec -- playwright install --with-deps chromium firefox webkit
-      - name: Browser lifecycle and accessibility on three engines
-        run: npm --prefix web run test:e2e
-      - if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: browser-failure-report
-          path: web/playwright-report/
-          if-no-files-found: ignore
-          retention-days: 7
-
   gate:
     name: Gate
     if: always()

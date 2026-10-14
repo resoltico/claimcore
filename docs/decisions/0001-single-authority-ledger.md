@@ -1048,3 +1048,224 @@ Updated only its immutable action pin to v0.6.4 (cc914d7…), whose primary rele
 1.30.1. The tool version, pedantic persona, online audits and failure behavior are unchanged.
 Read the action/script and resolved the published tag before changing the pin. The prior
 wrapper failure is not audit success. Reference: https://github.com/zizmorcore/zizmor-action/releases/tag/v0.6.4.
+
+
+WP11 final-head CI run 38494615058 passed frontend, full lint (including zizmor), and
+PostgreSQL/Web integration. Remaining jobs stopped at planned minimum-count placeholders;
+Gate correctly failed. That is the WP11 boundary evidence, not final acceptance.
+
+### WP12 — Draft input and accepted-value schemas
+
+The real published Chromium run reached 130 passing specifications, then failed the retained
+invalid-calendar/localization case: authored `2026-02-30` could not yield its Domain rejection.
+The paused-response fixture reported an invalid native reply. Source inspection identified
+CommandInputProjection using ScalarSchemas.scalar (accepted-value constraints) for draft
+strings; EndpointCatalog refused those strings before ApiDispatch reached Drafts.bind.
+This also hid the existing amount/currency/text Domain refusals promised unchanged in the
+material service contract, and prevented the browser's native field diagnostic/focus path.
+
+The smallest correction separates authoring text from accepted values: exact draft field names,
+command/group tags, JSON string types, operation/revision identity, Unicode and transport size
+limits remain wire checks. Domain binding once decides business-field acceptance and emits the
+existing diagnostics. Accepted snapshots, receipts and semantic field definitions retain their
+strict scalar schemas. Top-level draft caseReference is authoring text too; lookup/authority
+identifiers keep their own bounds. No Domain acceptance rule, command or non-goal changes.
+The intentional schema/fingerprint lock change and native/AJV results must be reviewed and
+verified together. Regression controls must prove malformed shape still refuses and invalid
+business strings are rejected with no ledger append. The earlier failing runs are not passing
+evidence. This corrects an invalid draft guard rather than making a business guard optional.
+
+### WP12 — Published applications, deployment and browser evidence
+
+Replaced the retained external acceptance harness and its removed-contract families with one
+Testcontainers fixture implementation. Each qualification publishes Database, Web and Cli;
+creates labelled, tmpfs-backed PostgreSQL and Keycloak; invokes published initialization and
+owner provisioning; starts published HTTPS Web; and drives published CLI with real PKCE and
+client credentials. Browser qualifications use fresh instances of that same fixture per engine.
+Sharing a service between Chromium and Firefox originally carried the five-login/minute window
+into Firefox: its first login received actual RATE_LIMITED/429. Fresh engine fixtures isolate
+that state; neither the limit nor the rate-limit rejection specification changes.
+
+The initial browser run exposed obsolete redirect-oracle assumptions. Its followed-redirect
+control fetched the SPA fallback and attempted JSON parsing, and page.route does not intercept
+subsequent requests in a redirect chain. WebKit cannot fulfill an intercepted response with a redirect status. The fixture therefore
+places an HTTPS proxy in front of the published service. It first relays the original request
+to that service, then replaces one armed reply with an actual HTTPS redirect and counts
+original and destination requests. Every redirect status has a followed-redirect rejecting
+control. Proxy state is locked, its HttpClient has UseCookies=false, and cleanup disposes it.
+An initial shared HttpClient cookie jar was caught by the disabled-actor refusal test;
+disabling that jar preserves each incoming browser cookie rather than sharing identities.
+WebKit also aborts fetch when the service rejects an oversized upload early. The default-limit
+probe now uses the browser context request client directly against the private published
+HTTPS backend, with the same cookies, Origin and Host, and still requires actual
+413/BODY_TOO_LARGE. Ordinary browser admission checks and every redirect check retain their
+real browser boundary; no body limit or refusal assertion was weakened. Unknown execution checks
+retain and compare the actual preview and both execute bodies, and require the same original
+receipt/position after ALREADY_ACCEPTED. Contract mismatch changes the request header reaching
+the real service, requires 409/NOT_STARTED, and proves reload causes no draft replay.
+
+After the draft correction, four Web conformance tests used SchemaSamples as if schema-valid
+text necessarily described a valid business command. That assumption is false for authoring
+text. They now send an independently authored valid OPEN to exercise dispatch, outcome and
+caller-attribution checks. Their original required assertions remain. Native published
+regressions send impossible dates, non-ASCII amount/currency text, blank and oversized names
+through both preview and execute, require the existing Domain diagnostic, and compare the real
+administrative head before/after. Host shape, UUID/revision, Unicode and extra-member guards
+remain. Another ported browser tracker still watched an obsolete path prefix; it now uses the
+catalogue's actual paths, so missing activity cannot satisfy its no-repeat assertions.
+
+Deployment has exactly four source files. The build uses the pinned toolchain, locked restore
+and npm install, contract generation and frontend build, then publishes the three processes.
+Only web and administration are runtime targets. Fresh configuration generates a local CA,
+leaf certificates, passwords, connections, realm and stable owner-event input. It refuses
+existing paths and creates file permissions for each container user on Linux as well as macOS.
+PostgreSQL has no host port. Web is uid 1654, root filesystem read-only, only its read-only
+configuration mount, no tmpfs/writable mount, capabilities dropped and no new privileges.
+Published asset verification compares source-built, published and HTTPS-served bytes and
+requires ASSETSMISSING when the index is absent. No removed manifest engine is reintroduced.
+
+Manual execution evidence: a first default-port probe found 5443 occupied. The command did
+not stop before Compose; Docker refused 5444, leaving only a newly labelled partial stack.
+No original stack was connected to or changed. Removed that new stack and its two newly
+created volumes by exact project names. Added explicit local port arguments and validated
+fresh 7443/7444 configuration. ShellCheck found one masked uuid producer status and YAML
+rejected variable braces inside a flow sequence; corrected both, without changing guards.
+Existing path, relative path, port zero and a foreign POSTGRES_DB all reject before use.
+
+Fresh project claimcore-9c7ad9a4534908f2 reached healthy ready status. Temporarily trusted its
+new CA in the user certificate store, signed into a fresh Chrome task tab via Keycloak,
+granted the synthetic owner CASE_EDITOR through published CLI PKCE (APPLIED), entered a
+synthetic OPEN, reviewed and confirmed, saw Recorded change, then returned to the case list:
+COMPOSE-20261014, Open, revision 1. Captured only the list (no claimant facts) outside source.
+The browser used the existing Chrome profile; it was a new tab, not a new browser profile.
+This manual run preceded the draft-schema correction; deployment topology and valid OPEN
+behavior did not change in that correction. It is not claimed as a manual run of the final
+fingerprint. Final generated/published assets and valid/invalid case flows are qualified by
+the three-engine fixture on the delivered bytes.
+
+Actual read-only guard: touching /tmp in the running web container was refused. The same
+probe against a newly labelled writable instance of that exact image exited 1, detecting the
+negative control. Compose down left zero containers/network for the project and exactly its
+two named volumes. The initial temporary CA trust/certificate was removed by its exact file
+and fingerprint. A fresh final-build project claimcore-1fb6d9fa6474f30d also reached healthy
+ready status, and its published CLI owner grant returned APPLIED. Repeating the manual browser
+run was blocked by the OS certificate authorization dialog: computer use rejected
+com.apple.SecurityAgent for safety. Stopped the pending trust attempts, removed only that
+attempt's certificates from user/system stores by fingerprint, and verified the leaf is no
+longer trusted. No authorization policy was changed. The provided OS password was entered
+only into sudo's non-echoing stdin, never stored, put in argv, or emitted in reports.
+
+The complete published acceptance command before the final Unicode readback addition passed
+11 tests, zero failed or skipped, in 29m 12s. Browser completion requires all three engines
+to report at least 229 passed and no failed, skipped, interrupted or unrun tests; negative
+controls reject missing, empty, below-floor and skipped summaries. Each engine now also uses
+the published CLI to read its browser-authored supplementary Unicode values and operation
+receipt before disposing the fixture. The CI artifact upload referenced a removed report
+directory and uploaded nothing; it is removed. Private fixture logs and browser credentials
+stay in private temporary directories and are never uploaded as a report.
+
+Source review found the permission helper's sequential chown commands could hide a failure
+behind a later success. Its shell now uses set -eu. Running the exact helper sequence in a
+fresh labelled, read-only container without the configuration mount refused the first missing
+directory with exit 1; the container was removed. No existing directory was mounted or altered.
+
+WP12 verification executed independently of inspection: the complete native suite passed
+232/232 (13.450s), PostgreSQL 78/78 (137.310s), Web 66/66 (72.258s), and frontend 181/181
+(13.60s), with zero failures or skips. Commands were the native Microsoft Testing Platform
+dotnet test --project <suite> --configuration Release --no-build --no-restore
+--minimum-expected-tests=<232/78/66> --zero-tests-policy=strict --timeout=30m
+-- --settings="$PWD/eng/expecto.runsettings", and npm --prefix web run test:unit.
+Release solution build passed with zero warnings/errors after the final fixture changes.
+Full F# lint, the changed acceptance files' F# lint, Fantomas, frontend lint, TypeScript,
+Prettier, styles lint, actionlint and ShellCheck passed; npm audit reported 0 vulnerabilities.
+The subsequent acceptance results, including failures, are recorded below.
+
+### Mutation and property qualification audit
+
+The owner requested parallel disk-use and speed audits during WP12, with no full campaigns.
+Three agents inspected local entry points, historical source and GitHub metadata. Current
+branch CI and eng/verify.sh invoke no Stryker or standalone fuzz campaign. Decoder properties
+generate bounded inputs in memory: arbitrary bytes are at most 4,096 bytes, the fixed
+control-escape JSON shape is 12,008 UTF-8 bytes, and canonical seeds receive one replacement, deletion, insertion or truncation. Campaign corpus/sandbox persistent storage required is zero bytes. This is not a
+claim of a hard cap on dependency caches, build outputs, ordinary test reports or OS logs.
+Reducing those input shapes would remove parser coverage without saving persistent disk.
+
+The retained property harness still exposed Extended (5,000 versus 200 cases, stateful
+sequence bound 100 versus 20) and Recheck, which returned success without executing every
+non-target property. The latter invalidated complete-suite evidence. Removed both selection
+mechanisms and all property environment overrides, retained fixed 200 cases, sequence 20
+and identical deterministic seeds, and retained privacy-safe failure replay diagnostics.
+Negative controls reject an unregistered ID and a false property; positive controls count
+all 200 actual executions and compare independently repeated seeded samples. Removed six
+unused property IDs and an orphan MutationReport typedef. The unbuilt standalone fuzz
+project still referred to removed APIs; its record and frame/HTTP decoder properties already
+run in ClaimCore.Tests, so deleted the five obsolete tracked project files as the original
+WP2 disposition required. No property or supported decoder coverage was removed.
+
+Actual ordinary required native verification, not an extended campaign: dotnet build
+tests/ClaimCore.Tests/ClaimCore.Tests.fsproj --configuration Release --no-restore passed
+with zero warnings/errors; its complete native MTP suite passed 232/232, zero failed/skipped,
+in 5.429s. Changed harness files passed FSharpLint, Fantomas and diff checks; node --check
+web/scripts/tooling-types.mjs passed. No before/after wall-time improvement is inferred from
+these measurements. Removing Extended prevents an accidental 25-fold case-count increase;
+the required profile and its guarantees are unchanged.
+
+Read-only accounting found existing web/artifacts at 5.1 MiB, including 1.5 MiB Stryker
+reports and 1.1 MiB scratch. Existing state was preserved. GitHub nonexpired artifact
+metadata totals 7,422,609,940 bytes across 5,210 artifacts, with fuzz-named artifacts only
+721,750 bytes and extended-property artifacts 11,862,202 bytes. This does not establish
+that mutation caused the rest. Latest extended exploration took 3m32s inside a 4m05s run
+with a 1,020,525-byte artifact; latest main frontend gate took 13m04s, including 11m14s
+concurrent gates. Historical Stryker used concurrency 1; cleanup=always and timeouts were
+not disk byte caps. No campaigns, artifact deletions or settings changes were performed.
+
+Default main still has the old weekly and frontend workflows until the owner merges this
+PR. No GitHub runs were in progress when checked. The current PR head's inspected CI run
+38494615058 has zero artifacts and no campaign step. Disabling default-branch workflows or
+changing repository settings is outside the owner's authorization; branch removal is the
+prepared remediation.
+
+The Unicode-readback acceptance rerun failed (10/11, zero skipped, 11m17s): Chromium
+completed all 229 and its native readback, but Firefox stopped at test 30 after 29 passes
+when page.goto failed to resolve within the unchanged 45s case timeout. Retained sanitized
+startup evidence showed the document, scripts, stylesheet and authenticated Session response
+all finished with HTTP 200. The published service logged successful Session and case.list;
+there was no host exception. This is a repeated navigation failure, not a passing check.
+
+Playwright issue https://github.com/microsoft/playwright/issues/42183 reports a similar
+Firefox navigation-completion problem with fresh contexts and pre-navigation event listeners.
+That is a lead, not proof of the local cause. Removed the optional startup-evidence observer,
+which attached five listeners before navigation and added no required assertion. Both
+helpers still await the same goto and the same visible-heading/application-readiness checks;
+no timeout, retry, assertion or test count changes. Typecheck and the Release solution build
+passed (zero warnings/errors); the next complete acceptance run is pending.
+
+After recording Compose-down volume retention, explicitly removed only the four named
+volumes belonging to our completed projects claimcore-9c7ad9a4534908f2 and
+claimcore-1fb6d9fa6474f30d. Their exact Compose project labels matched, no project container
+remained, docker volume rm succeeded for all four, and both labelled volume listings were
+empty afterward. The original evaluation containers remain healthy and untouched.
+
+Final WP12 delivered-tree qualification: dotnet test --project
+tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj --configuration Release
+--no-build --no-restore --minimum-expected-tests=11 --zero-tests-policy=strict --timeout=30m
+-- --settings="$PWD/eng/expecto.runsettings" passed 11/11, failed0/skipped0, in23m49.434s.
+Its three engines each completed all229 browser cases and their published CLI Unicode
+readback. Browser retries remain0; no focused run qualified completion. The optional-listener
+removal did not prove an upstream root cause, but the full unchanged behavioral assertions
+passed on the simpler helper. Preserved both the preceding failed run and the passing log
+outside source. The final full Fantomas and Prettier checks passed; frontend lint passed
+all38 policy controls, zero failed/skipped.
+
+WP12 exact-head CI38518523659 failed acceptance: all three engines reported229 passed
+(Chromium5.3m, Firefox12.5m, WebKit12.9m), but the single sequential browser aggregate
+outlived the unchanged30m MTP budget. Cancellation left10/11 native tests counted and
+exit134 after33m35s. Lint, frontend and PostgreSQL/Web integration were green; Linux
+and macOS unit jobs rejected SET-IN-WP15 before execution. This was not a passing Gate.
+
+Separated the three engines into independent native test cases. Each retains its fresh
+fixture, every229-case specification, published CLI readback, zero retries,15m child
+budget and30m suite budget. The native minimum rises from11 to13 rather than weakening
+completion. Full local qualification passed13/13, failed0/skipped0,11m31.806s; compared
+with the preceding sequential delivered-tree23m49.434s, this is measured browser-acceptance
+wall time, not mutation/fuzz campaign performance. No full campaigns were run.

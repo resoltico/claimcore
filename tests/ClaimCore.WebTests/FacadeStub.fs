@@ -14,6 +14,29 @@ let position =
         EntryHash = String.replicate 64 "a"
     }
 
+// An independently authored valid OPEN exercises dispatch rather than only schema shape.
+let commandInput =
+    System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
+        {|
+            operationId = operationId.ToString("D")
+            caseReference = "WEB-001"
+            expectedRevision = "0"
+            command =
+                {|
+                    kind = "OPEN"
+                    values =
+                        {|
+                            incidentDate = "2026-08-01"
+                            incidentNotificationDate = "2026-08-03"
+                            incidentCountry = "Latvia"
+                            claimantName = "Synthetic claimant"
+                            insurerName = "Synthetic insurer"
+                            claimedAmount = "1.00"
+                            claimedCurrency = "EUR"
+                        |}
+                |}
+        |}
+
 let view reference =
     let request =
         {

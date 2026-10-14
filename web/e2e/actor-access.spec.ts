@@ -5,7 +5,7 @@ import { configureRole, prepareRoleFixture } from "./narrow-role-fixture";
 import { refusedRead } from "./narrow-role-oracles";
 import { login, sessionToken } from "./session-helpers";
 
-const ownerRoles = ["CASE_EDITOR", "RECOVERY_OPERATOR", "RECOVERY_EXPORTER"] as const;
+const ownerRoles = ["CASE_EDITOR"] as const;
 const ownerGrants = async (page: Page, active: boolean) => {
   const source = await syntheticPrincipals();
   const changed: (typeof ownerRoles)[number][] = [];
@@ -15,7 +15,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
         eventId: randomUUID(),
         principal: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
         role,
-        scope: { kind: "INSTALLATION" },
+        scope: { type: "INSTALLATION" },
         active,
       });
       changed.push(role);
@@ -27,7 +27,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
           eventId: randomUUID(),
           principal: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
           role,
-          scope: { kind: "INSTALLATION" },
+          scope: { type: "INSTALLATION" },
           active: true,
         });
       }

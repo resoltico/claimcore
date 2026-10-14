@@ -71,7 +71,7 @@ let private actorIdentity () =
         let! _ = host.Login()
         let! token = host.Token()
         let endpoint = EndpointCatalog.tryFind "command.execute" |> Option.get
-        let input = SchemaSamples.document endpoint.Request
+        let input = Array.copy commandInput
 
         for outcome, known in
             [

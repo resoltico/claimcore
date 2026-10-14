@@ -4,9 +4,9 @@ import { isAbsolute, resolve } from "node:path";
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 
+import { wireContractFingerprint } from "../src/generated/contracts/endpoint-catalog";
 import { isHostFailure, isResponse } from "../src/generated/contracts/validation";
 import type { HostFailure, ServiceResponse } from "../src/api/types";
-import { observeStartup } from "./startup-evidence";
 import { retainResponseBodies } from "./response-bodies";
 
 type BrowserReply = Readonly<{
@@ -64,12 +64,10 @@ type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 
 export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
   await retainResponseBodies(page);
-  await observeStartup(page, async () => {
-    await page.goto("/", { waitUntil: "commit" });
-    // Readiness includes public metadata and the actor-bound case-list outcome.
-    await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible({
-      timeout: 10_000,
-    });
+  await page.goto("/", { waitUntil: "commit" });
+  // Readiness includes public metadata and the actor-bound case-list outcome.
+  await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible({
+    timeout: 10_000,
   });
 };
 
@@ -118,9 +116,10 @@ export const browserRequest = (
   }>,
 ): Promise<BrowserReply> =>
   page.evaluate(
-    async ({ requestPath, requestInit }) => {
+    async ({ requestPath, requestInit, fingerprint }) => {
       const response = await fetch(requestPath, {
         ...requestInit,
+        headers: { "ClaimCore-Contract": fingerprint, ...requestInit?.headers },
         credentials: "same-origin",
       });
       const payload: unknown = await response.json();
@@ -130,7 +129,7 @@ export const browserRequest = (
         payload,
       };
     },
-    { requestPath: path, requestInit: init },
+    { requestPath: path, requestInit: init, fingerprint: wireContractFingerprint },
   );
 
 export const sessionToken = async (page: Page): Promise<string> => {

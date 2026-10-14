@@ -4,12 +4,12 @@
     {
       "path": "catalog.json",
       "bytes": 3561,
-      "sha256": "c3f6f9e3b11921c49ac78d4565904429706829e671a9f585489362d9836e119e"
+      "sha256": "d7d371a932fd01b080d72f6783a8f419571439d502d5f22201bd29087a534466"
     },
     {
       "path": "contracts-manifest.json",
       "bytes": 2132,
-      "sha256": "c382ae11a621f24843f121fdfdc15a590f334d3d2b4caceff9c72a3a69b4cdbb"
+      "sha256": "8df5868188d2d3311d56af132cc9e583b3d179ccc8f4855ed405c669e2d7c8e6"
     },
     {
       "path": "default-presentation.en.json",
@@ -19,12 +19,12 @@
     {
       "path": "endpoint-catalog.ts",
       "bytes": 1617,
-      "sha256": "eb0a6bfe04e743b8f628044bc26e6388ca7bb64d205fe43eabc46b333c304458"
+      "sha256": "2fda777b41acb80ac7dbc325a97b0b47d5aa9d4dc4f50414e7aba012d8ad4262"
     },
     {
       "path": "endpoint-corpus.json",
-      "bytes": 91173,
-      "sha256": "e456fe6ba56e7156eef28310836ac7f6ade9a81e392ab90a987920f19595c3da"
+      "bytes": 90933,
+      "sha256": "55ece3093e38e8c8b40bf5f148b8c27f3a5a78fabea78b9413b3cf83202995c7"
     },
     {
       "path": "endpoint.authority.observe.request.schema.json",
@@ -108,8 +108,8 @@
     },
     {
       "path": "endpoint.command.execute.request.schema.json",
-      "bytes": 16275,
-      "sha256": "664694c93597d4b6debdaf552d04d3421c5992f047d5a2b629d124a354ba11ba"
+      "bytes": 5741,
+      "sha256": "218445acc00250a53561d06906b119d858f96e44312f01e706bea4e5f5b6e982"
     },
     {
       "path": "endpoint.command.execute.response.schema.json",
@@ -118,8 +118,8 @@
     },
     {
       "path": "endpoint.command.preview.request.schema.json",
-      "bytes": 16275,
-      "sha256": "6d8c5a926a922cc78b60adb19d3929b73ea79b71883daef0ca29ee11fd1a7129"
+      "bytes": 5741,
+      "sha256": "20f4a7f2696ff3096b116cdaddfb75cd87d441b867f4622437ee367bd8104c5b"
     },
     {
       "path": "endpoint.command.preview.response.schema.json",
@@ -178,13 +178,13 @@
     },
     {
       "path": "invocation.schema.json",
-      "bytes": 43360,
-      "sha256": "6c8fb2100d8efb31aad4b197e1a80f084f981ba45753d85537f1ef1af872a780"
+      "bytes": 22292,
+      "sha256": "76aa71a9fd2410710a058b79ca94a84aecce6460bec71025649c3e79c30e4c1b"
     },
     {
       "path": "product-metadata.ts",
       "bytes": 21733,
-      "sha256": "497c8427cc9c551caba6a4227cd2128782a2cb144a437ad689c16dc4356e6dac"
+      "sha256": "6d0cc13312556c74096c7a181404b9a67c90168ede3e884a6662d4923bf976cb"
     },
     {
       "path": "responses.schema.json",

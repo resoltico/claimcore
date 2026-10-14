@@ -19,7 +19,7 @@
     "format:check": "prettier --check .",
     "test:unit": "npm run contract:verify && vitest run",
     "test:unit:watch": "npm run contract:verify && vitest",
-    "test:e2e": "playwright test",
+    "test:e2e": "dotnet test --project ../tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj --configuration Release --no-build --no-restore --minimum-expected-tests=13 --zero-tests-policy=strict --timeout=30m -- --settings=../eng/expecto.runsettings",
     "dead-code": "knip",
     "contract:generate": "node scripts/regenerate-contract.mjs",
     "contract:lock": "node scripts/regenerate-contract.mjs --write-lock",

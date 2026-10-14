@@ -4,9 +4,9 @@ import { startOpen } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import {
   expectKeyboardContained,
-  confirmPrepared,
+  confirmReview,
   pauseJsonReply,
-  preparedFrom,
+  reviewFrom,
   selectFormat,
   selectLanguage,
   trackRequests,
@@ -109,7 +109,7 @@ test("switches language and independent display format through native preparatio
   try {
     await page.getByRole("button", { name: "Review changes" }).click();
     const captured = await pending.ready;
-    const identity = preparedFrom(captured.reply, captured.bytes);
+    const identity = reviewFrom(captured.reply, captured.bytes);
     await selectLanguage(page, "lv");
     await selectFormat(page, "ar-EG");
     await selectLanguage(page, "ar");
@@ -119,7 +119,7 @@ test("switches language and independent display format through native preparatio
     await expect(dialog).toBeVisible();
     const originalDialog = await dialog.elementHandle();
     const confirmation = dialog.getByRole("checkbox");
-    await confirmPrepared(page);
+    await confirmReview(page);
     await expectKeyboardContained(page, dialog);
     await reviewLanguage(page);
     await selectFormat(page, "lv-LV");
@@ -131,7 +131,7 @@ test("switches language and independent display format through native preparatio
     await expectAccessible(page);
     await selectLanguage(page, "en");
     await expect(confirmation).toBeChecked();
-    await page.getByRole("button", { name: "Back to editing; keep for Recovery" }).click();
+    await page.getByRole("button", { name: "Return to editing" }).click();
     await expect(page.getByRole("button", { name: "Review changes" })).toBeFocused();
   } finally {
     pending.release();
