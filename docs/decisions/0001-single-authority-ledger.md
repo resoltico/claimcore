@@ -1423,3 +1423,44 @@ all3×229 browser cases and published CLI readback completed. The preceding16-te
 19m30.990s; this is an observed local difference, not a controlled speed benchmark or CI
 qualification. Release build0warnings/errors, core244/244(13.862s), types/lint/format and full
 FSharpLint passed. Exact-head GitHub verification remains required.
+
+### Current documentation and fresh browser setup
+
+WP14 leaves nine owner documents plus this record, removing34 design/QA records and the
+obsolete owner-review/contract-tests/releasing/diagnostics documents. README, security/support,
+contributor policy, browser guidance and templates describe one current authority. Unreleased
+was consolidated into the breaking outcome; every published changelog byte remains identical
+to base (SHA2562a0308a7996bb7ec4a8d69142182e7b9283bc407c21f97b9aaa4523f13f2f2e5).
+AGENTS engineering tail remains byte-identical SHA256b0f23ed8abfe47d8a48359499857a778474f2f131b395d49b9ede14420c3b54a.
+
+Followed getting-started from a new GitHub clone, selecting this review branch before restore:
+locked restore, npmci, contract generation, Releasebuild(0warnings/errors,38.92s), literal
+help/describe/schema and configuration/Compose commands succeeded. Created only project
+claimcore-91556cc4bfb35327, config /Users/erst/claimcore-first-run-config,ports7443/7444.
+Initializer exited0; Web restarted during issuer startup then reached healthy readiness.
+Fresh NSS profile imported only the generated CA, installed locked Firefox into that new
+configuration and opened HTTPS with certificate checks enabled. UI reported Verified by
+ClaimCore local evaluation CA; owner OIDC sign-in returned to ClaimCore/Cases. Owner-only
+resource refusal is expected until a case role is granted. No TLS interstitial was bypassed
+and no OS trust store changed. Screenshot and command logs remain outside source. Browser
+closed, Compose down left two namedvolumes as documented; exact project labels/no containers
+were checked before removing those two newly created volumes. Original stacks untouched.
+The tool's background process carrier terminated the first Firefox launch; reran foreground
+and documented that actual supported invocation. Browser emitted internal shutdown warnings
+but exited0 after the verified signed-in view; these are not claimed absent. Linux GUI/NSS
+walkthrough was not executed on this macOS host.
+
+Whole-tree review found three uncompiled unused helpers carrying removed types: old command
+executor and physical-cleanup support, plus RejectionExamples. Their remaining users had moved
+to ledger/owned fixtures and current schema-derived corpus/diagnostic tests; removed them rather
+than exclude them fromlint. Removed five unused report/SBOM typedefs and a stale generated-stage
+ignore rule. Generalized privateJSON exclusions to claimcore-*.json, preserving all previous
+protection; secret/password inputs are ignored too. Npgsql distribution-license text remains
+relevant to the shipped driver, even though frontend notice generation does not consume it.
+Shellcheck configuration is kept under the inventory's explicit shell-script condition.
+
+Final documentation/core check passed244/244,failed0/skipped0,8.306s. Frontend181/181(10.41s),
+localization catalogs, audit0vulnerabilities, build, formatting/FSharpLint and types/lint passed.
+Allnine literal example commands had already returned0/ACCEPTED against a fresh real fixture.
+Complete published acceptance17/17(15m59.759s) with all3×229cases passed on the runtime/CI changes;
+document cleanup changes no delivered runtime. Full clean-clone gate repetitions remain WP15.

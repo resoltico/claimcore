@@ -2,14 +2,14 @@
 
 Contracts owns one catalogue and fingerprint for fourteen endpoints. Session is GET; all
 others are POST to the literal /api/<endpoint> path. Requests carry the matching contract
-fingerprint. Missing or different fingerprints are refused before dispatch. Discovery is
-anonymous; case and authority work require an authenticated, actor-bound caller.
+fingerprint. Missing or different fingerprints are refused before dispatch. CLI discovery needs no credentials. Session bootstrap is anonymous; the other service
+operations require an authenticated, actor-bound caller.
 
 | Endpoint | Responsibility |
 | --- | --- |
 | session | Authentication state, fingerprint and antiforgery token |
 | session.logout | End the browser session |
-| definition | Public command/field presentation and runtime context |
+| definition | Command/field presentation and runtime context |
 | command.preview | Advisory business review |
 | command.execute | Execute one exact business request |
 | case.steward | Execute VOID, REINSTATE or ERASE |

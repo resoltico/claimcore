@@ -41,7 +41,7 @@
 **/*.secret
 **/*.password
 **/bootstrap-credential-*
-**/claimcore-recovery-*.json
+**/claimcore-*.json
 **/*.pfx
 **/*.p12
 **/*.pkcs12

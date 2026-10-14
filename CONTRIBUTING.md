@@ -13,3 +13,7 @@ The owner reviews and merges changes. The required pull-request check is `Gate`;
 not owner approval. Contributors publish exact revisions and do not merge, approve, auto-merge,
 tag, release or change protections without explicit authorization. Version and published changelog
 entries are release-owned. Follow the engineering principles in [AGENTS.md](AGENTS.md).
+
+Original code and contributions use [MPL-2.0](LICENSE). Redistributors of covered binaries
+or browser assets must provide corresponding covered source and tell recipients how to obtain
+it. Third-party licenses and notices remain distinct.

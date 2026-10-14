@@ -10,6 +10,6 @@ without installable application packages; questions and reports should identify 
 - For a vulnerability, suspected credential exposure, or any report requiring real claimant data,
   stop and follow the private process in [SECURITY.md](SECURITY.md).
 
-Public issues must not contain connection strings, credentials, request or recovery files, claimant
+Public issues must not contain connection strings, credentials, request files, claimant
 information, database extracts, private terminal captures, or unredacted logs. A maintainer may close
 a report that cannot be handled safely in public.

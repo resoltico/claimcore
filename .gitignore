@@ -14,7 +14,7 @@
 _netrc
 *.connection
 bootstrap-credential-*
-claimcore-recovery-*.json
+claimcore-*.json
 *.pfx
 *.p12
 *.pkcs12
@@ -85,5 +85,6 @@ Desktop.ini
 # Contract artifacts are generated from the F# projection; config/contracts.lock.json is what is reviewed.
 /web/src/generated/
 
-# Recognizable contract writer, stage and interrupted-promotion evidence.
-/web/src/generated/.contracts-*
+# Private credential inputs
+*.secret
+*.password

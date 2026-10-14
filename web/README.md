@@ -45,14 +45,14 @@ must be rerun before consumers can pass lock verification.
 
 English business metadata and diagnostics come from F#. The authored Latvian and Arabic
 catalogs must cover the same keys, parameter roles and rendered tokens. `localization:generate`
-derives all compiled catalogs and the English pseudolocale. New translations in this redesign
+derives all compiled catalogs and the English pseudolocale. Latvian and Arabic translations
 are machine-drafted and need native review.
 
 `build` typechecks, produces `dist` with Vite and includes third-party notices for runtime
 packages and embedded validators. Ordinary .NET builds do not run npm. Publishing consumes
 built assets; the container build and published acceptance own the delivered source/build
 relationship. The three-engine Playwright suite targets a freshly started published service,
-not a development server. See `docs/development.md` for repository-wide verification.
+not a development server. See [Development](../docs/development.md) for repository-wide verification.
 
 The Stylelint tooling graph pins the MIT-licensed `@dieub/braces-depth-guard@3.0.3-pn.2`
 derivative through a `braces` override. Its published runtime diff and nesting rejection were
