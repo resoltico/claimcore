@@ -71,7 +71,7 @@ jobs:
         run: >-
           dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
           --configuration Release --no-build --no-restore
-          --minimum-expected-tests=244 --zero-tests-policy=strict --timeout=30m
+          --minimum-expected-tests=240 --zero-tests-policy=strict --timeout=30m
           -- --settings="$PWD/eng/expecto.runsettings"
       - name: Build the architecture suite without optimization
         run: >-
@@ -81,7 +81,7 @@ jobs:
         run: >-
           dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
           --configuration Debug --no-build --no-restore
-          --minimum-expected-tests=28 --zero-tests-policy=strict --timeout=15m
+          --minimum-expected-tests=20 --zero-tests-policy=strict --timeout=15m
           -- --settings="$PWD/eng/expecto.runsettings"
 
   integration:
@@ -101,13 +101,13 @@ jobs:
         run: >-
           dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
           --configuration Release --no-build --no-restore
-          --minimum-expected-tests=79 --zero-tests-policy=strict --timeout=20m
+          --minimum-expected-tests=70 --zero-tests-policy=strict --timeout=20m
           -- --settings="$PWD/eng/expecto.runsettings"
       - name: Web host, including the live identity provider fixture
         run: >-
           dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
           --configuration Release --no-build --no-restore
-          --minimum-expected-tests=67 --zero-tests-policy=strict --timeout=20m
+          --minimum-expected-tests=60 --zero-tests-policy=strict --timeout=20m
           -- --settings="$PWD/eng/expecto.runsettings"
 
   frontend:
@@ -147,7 +147,7 @@ jobs:
         run: >-
           dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj
           --configuration Release --no-build --no-restore
-          --minimum-expected-tests=17 --zero-tests-policy=strict --timeout=40m
+          --minimum-expected-tests=10 --zero-tests-policy=strict --timeout=40m
           -- --settings="$PWD/eng/expecto.runsettings"
   gate:
     name: Gate

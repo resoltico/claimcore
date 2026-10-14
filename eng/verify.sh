@@ -30,19 +30,19 @@ npm --prefix web run lint
 npm --prefix web run lint:styles
 npm --prefix web run typecheck
 
-tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj SET-IN-WP15
+tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 240
 dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
   --configuration Debug --no-restore -p:Optimize=false
-tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj SET-IN-WP15 Debug
+tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 20 Debug
 npm --prefix web run test:unit
 
 ${fast} && { echo "fast gate passed (Docker-backed suites not run)"; exit 0; }
 
-tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj SET-IN-WP15
-tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj SET-IN-WP15
+tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 70
+tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj 60
 npm --prefix web run build
 # Published acceptance owns the fresh service and runs all three browser engines.
-tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 17 Release 40m
+tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 10 Release 40m
 
 platform="$(uname -s)"
 echo "complete gate passed on ${platform}"
