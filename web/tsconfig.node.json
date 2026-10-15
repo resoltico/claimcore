@@ -11,5 +11,5 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "scripts", "lint", "stylelint.config.mjs"]
+  "include": ["vite.config.ts", "playwright.config.ts", "scripts", "lint"]
 }

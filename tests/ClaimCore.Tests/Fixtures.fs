@@ -10,7 +10,7 @@ let registration =
     {
         IncidentDate = "2026-08-01"
         IncidentNotificationDate = "2026-08-03"
-        IncidentCountry = "Lithuania"
+        IncidentCountry = "LV"
         ClaimantName = "Example Claimant Ltd"
         InsurerName = "Example Alleged Insurer"
         ClaimedAmount = "1000.00"
@@ -24,12 +24,12 @@ let decision =
         PayableCurrency = "EUR"
     }
 
-let request version command =
+let request revision command =
     {
         OperationId = Guid.Parse("20000000-0000-4000-8000-000000000001")
         CaseReference = "UNIT-001"
-        ExpectedVersion = version
-        Command = command
+        ExpectedRevision = revision
+        Act = CaseAct.Business command
     }
 
 let accepted result =
@@ -38,18 +38,36 @@ let accepted result =
     | Error _ -> failtest "Expected acceptance."
 
 let opened () =
-    Claim.decide today (request 0L (Command.Open registration)) None |> accepted
+    Case.decide today (request 0L (BusinessCommand.Open registration)) None
+    |> accepted
 
 let apply command claim =
-    Claim.decide today (request (Claim.view claim).Version command) (Some claim)
+    Case.decide today (request (Case.snapshot claim).Revision command) (Some claim)
 
 let decided () =
-    opened () |> apply (Command.Decide decision) |> accepted
+    opened () |> apply (BusinessCommand.Decide decision) |> accepted
 
 let paid () =
-    decided () |> apply (Command.RecordPayment "2026-08-20") |> accepted
+    decided () |> apply (BusinessCommand.RecordPayment "2026-08-20") |> accepted
 
 let isInvalid result =
     match result with
-    | Error(DomainError.InvalidInput _) -> true
+    | Error(CaseRefusal.InvalidInput _) -> true
     | _ -> false
+
+let actRequest revision act =
+    { request revision BusinessCommand.Close with
+        Act = act
+    }
+
+let viewFields (snapshot: CaseSnapshot) =
+    match snapshot.View with
+    | CaseView.Live(fields, _) -> fields
+    | CaseView.Erased -> failtest "Expected retained business fields"
+
+let snapshot revision (fields: CaseFields) =
+    {
+        Reference = fields.CaseReference
+        Revision = revision
+        View = CaseView.Live(fields, Disposition.Active)
+    }

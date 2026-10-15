@@ -1,3 +1,4 @@
+import { CountryHint } from "./CountryHint";
 import { FieldError } from "react-aria-components/FieldError";
 import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
@@ -43,6 +44,7 @@ export const DescriptorField = ({
       <Text slot="description" className="field-description">
         <small>{p.fieldMeaning(field.name)}</small>
         <small>{p.hint(field)}</small>
+        {field.name === "incidentCountry" ? <CountryHint code={value} /> : null}
       </Text>
       {error === undefined ? null : <FieldError>{p.notice(error)}</FieldError>}
     </TextField>

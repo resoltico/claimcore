@@ -16,7 +16,6 @@ open Microsoft.AspNetCore.TestHost
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open ClaimCore.Web
-open ClaimCore.WebTests.FacadeStub
 open ClaimCore.WebTests.TestServerFixture
 
 let private configure
@@ -79,16 +78,24 @@ let private authenticationRoutes (application: WebApplication) configuration =
     )
     |> ignore
 
-type Host(configuration: OidcConfiguration, root: X509Certificate2) =
+type Host(configuration: OidcConfiguration, root: X509Certificate2, forActor, stage: string -> unit)
+    =
     let assets = Directory.CreateTempSubdirectory("claimcore-oidc-host-").FullName
 
     let builder =
+        stage "host builder"
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
 
     let idToken = ref None
     let sink = new StringWriter()
-    do configure configuration root idToken builder
-    let application = builder.Build()
+
+    do
+        stage "host services"
+        configure configuration root idToken builder
+
+    let application =
+        stage "host build"
+        builder.Build()
 
     do
         application.Use(
@@ -117,8 +124,10 @@ type Host(configuration: OidcConfiguration, root: X509Certificate2) =
                 Oidc = Some configuration
             }
 
-        HostRoutes.map assets web (fun _ -> Facade().ActorCore) application
+        stage "host routes"
+        HostRoutes.map assets web forActor application
         authenticationRoutes application configuration
+        stage "host start"
         application.StartAsync().GetAwaiter().GetResult()
 
     let client = application.GetTestClient()

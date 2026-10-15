@@ -1,6 +1,8 @@
 namespace ClaimCore.Application
 
 open System
+open ClaimCore.Domain
+open ClaimCore.RecordFormat
 
 /// Identity is the exact configured issuer plus its immutable subject or client ID.
 /// Email, display name, groups and a database login are deliberately absent.
@@ -13,7 +15,11 @@ type PrincipalKey =
 module PrincipalKey =
     let private issuer value =
         try
-            if String.IsNullOrWhiteSpace value || value.Length > 2048 then
+            if
+                String.IsNullOrWhiteSpace value
+                || value.Length > 2048
+                || not (UnicodeText.isPersisted value)
+            then
                 Error "ACTOR_ISSUER_INVALID"
             else
                 let parsed = Uri(value, UriKind.Absolute)
@@ -32,16 +38,12 @@ module PrincipalKey =
             Error "ACTOR_ISSUER_INVALID"
 
     let private identifier maximum value =
-        if not (String.IsNullOrWhiteSpace value) && value.Length <= maximum then
-            try
-                Text.UTF8Encoding(false, true).GetByteCount(value) |> ignore
-
-                if value.Contains('\u0000') then
-                    Error "ACTOR_IDENTITY_INVALID"
-                else
-                    Ok value
-            with :? Text.EncoderFallbackException ->
-                Error "ACTOR_IDENTITY_INVALID"
+        if
+            not (String.IsNullOrWhiteSpace value)
+            && value.Length <= maximum
+            && UnicodeText.isPersisted value
+        then
+            Ok value
         else
             Error "ACTOR_IDENTITY_INVALID"
 
@@ -61,6 +63,15 @@ module PrincipalKey =
         | HumanPrincipal(issuerValue, subject) -> "HUMAN", issuerValue, subject
         | ServicePrincipal(issuerValue, clientId) -> "SERVICE", issuerValue, clientId
 
+    let describe principal : RecordedPrincipal =
+        let kind, issuer, subject = storageParts principal
+
+        {
+            Kind = kind
+            Issuer = issuer
+            Subject = subject
+        }
+
     let internal fromStorage kind issuerValue stableValue =
         match kind with
         | "HUMAN" -> human issuerValue stableValue
@@ -76,24 +87,11 @@ module PrincipalKey =
 type Role =
     | Owner
     | CaseReader
-    | CaseEditor
+    | CaseRegistrar
+    | CaseHandler
+    | PaymentRecorder
     | DataSteward
     | Auditor
-
-module Roles =
-    let all =
-        [ Role.Owner; Role.CaseReader; Role.CaseEditor; Role.DataSteward; Role.Auditor ]
-
-    let token =
-        function
-        | Role.Owner -> "OWNER"
-        | Role.CaseReader -> "CASE_READER"
-        | Role.CaseEditor -> "CASE_EDITOR"
-        | Role.DataSteward -> "DATA_STEWARD"
-        | Role.Auditor -> "AUDITOR"
-
-    let tryParse value =
-        all |> List.tryFind (token >> (=) value)
 
 [<RequireQualifiedAccess>]
 type GrantScope =

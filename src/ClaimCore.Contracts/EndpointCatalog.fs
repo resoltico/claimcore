@@ -38,18 +38,15 @@ module EndpointCatalog =
         [
             "session", false
             "session.logout", false
-            "definition", false
+            "context", false
             "case.get", false
             "case.list", false
             "case.history", false
+            "case.preview", false
+            "case.execute", true
             "operation.observe", false
-            "command.preview", false
-            "command.execute", true
-            "case.steward", true
-            "authority.register", true
-            "authority.setGrant", true
-            "authority.setEnabled", true
-            "authority.observe", false
+            "authority.execute", true
+            "authority.list", false
         ]
         |> List.map endpoint
 
@@ -89,30 +86,56 @@ module EndpointCatalog =
             ))
             ValueSchemas.definitions
 
-    let private identity () =
-        all
-        |> List.map (fun e ->
-            e.Identifier
-            + "\n"
-            + e.Method
-            + "\n"
-            + e.Path
-            + "\n"
-            + string e.Mutates
-            + "\n"
-            + (schema e.Request |> CanonicalContract.text)
-            + (schema e.Response |> CanonicalContract.text))
-        |> String.concat ""
-        |> fun endpoints ->
-            endpoints
-            + (schema frameResponse |> CanonicalContract.text)
-            + (schema HostFailures.schema |> CanonicalContract.text)
+    let metadata () =
+        ContractJson.contract (fun writer ->
+            writer.WriteStartArray()
+
+            for endpoint in all do
+                writer.WriteStartObject()
+                writer.WriteString("id", endpoint.Identifier)
+                writer.WriteString("method", endpoint.Method)
+                writer.WriteString("path", endpoint.Path)
+                writer.WriteBoolean("mutates", endpoint.Mutates)
+
+                writer.WriteString(
+                    "requestSchema",
+                    "endpoint." + endpoint.Identifier + ".request.schema.json"
+                )
+
+                writer.WriteString(
+                    "responseSchema",
+                    "endpoint." + endpoint.Identifier + ".response.schema.json"
+                )
+
+                writer.WriteEndObject()
+
+            writer.WriteEndArray())
+
+    let identityInputs () =
+        [
+            "catalogue-metadata", metadata ()
+            "descriptors.json", ContractDescriptors.render ()
+            "default-presentation.en.json", DefaultPresentation.render ()
+        ]
+        @ (all
+           |> List.collect (fun endpoint ->
+               [
+                   "endpoint." + endpoint.Identifier + ".request.schema.json",
+                   schema endpoint.Request
+                   "endpoint." + endpoint.Identifier + ".response.schema.json",
+                   schema endpoint.Response
+               ]))
+        @ [
+            "responses.schema.json", schema responses
+            "invocation.schema.json", schema invocation
+            "frame-response.schema.json", schema frameResponse
+            "host-failure.schema.json", schema HostFailures.schema
+        ]
+        |> List.map (fun (name, value) -> name, CanonicalContract.bytes value)
 
     let fingerprint =
-        identity ()
-        |> Encoding.UTF8.GetBytes
-        |> SHA256.HashData
-        |> Convert.ToHexStringLower
+        identityInputs ()
+        |> ContractIdentity.fingerprint
         |> WireContractFingerprint.create
 
     let matches value =

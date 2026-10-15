@@ -12,13 +12,12 @@ const result = (reference: string): ApiResult<ListResponse> => ({
     outcome: {
       tag: "SUCCEEDED",
       data: {
-        availableCommands: [],
         items: [
           {
             state: "LIVE",
             disposition: "ACTIVE",
             caseReference: reference,
-            revision: "1",
+            revision: 1,
             status: "OPENED",
           },
         ],

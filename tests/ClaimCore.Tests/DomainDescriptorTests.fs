@@ -9,12 +9,18 @@ let private scalar name = (FieldDefinitions.forName name).Scalar
 let private expectText name maximum =
     match scalar name with
     | ScalarRule.Text constraints ->
-        Expect.equal constraints.MinimumCharacters 1 "Minimum characters"
-        Expect.equal constraints.MaximumCharacters maximum "Maximum characters"
-        Expect.isTrue constraints.RequiresNonBlank "Non-blank input"
-        Expect.isTrue constraints.RejectsSurroundingWhitespace "No surrounding whitespace"
-        Expect.isTrue constraints.RejectsControlCharacters "No control characters"
-        Expect.isTrue constraints.RequiresWellFormedUnicode "Well-formed Unicode"
+        Expect.equal constraints.Format.MinimumCharacters 1 "Permanent nonempty text"
+        Expect.isNone constraints.Format.Grammar "Business text has no admission grammar"
+
+        let policy =
+            constraints.Policy
+            |> Option.defaultWith (fun () -> failtest "Missing text admission policy")
+
+        Expect.equal policy.MaximumCharacters maximum "Policy character bound"
+        Expect.isTrue policy.RequiresNonBlank "Nonblank admission"
+        Expect.isTrue policy.RejectsSurroundingWhitespace "Surrounding whitespace admission"
+        Expect.isTrue policy.RejectsControlCharacters "Control character admission"
+        Expect.isTrue policy.RejectsFormattingCharacters "Explicit formatting character admission"
     | _ -> failtest (name + " must be a text scalar.")
 
 let private expectFields kind expected =
@@ -49,10 +55,17 @@ let private textAndDateRuleTests =
         "text and date scalar descriptors"
         [
             testCase "text descriptors own every text validation constraint" (fun () ->
-                expectText "incidentCountry" 100
                 expectText "claimantName" 200
                 expectText "insurerName" 200
-                expectText "caseReference" 80)
+
+                for name, expected in
+                    [ "incidentCountry", "[A-Z]{2}"; "caseReference", "[!-~]{1,80}" ] do
+                    let constraints = scalar name |> ScalarRules.textConstraints
+                    Expect.equal constraints.Format.Grammar (Some expected) "Permanent syntax"
+
+                    Expect.isNone
+                        constraints.Policy
+                        "Identifiers do not have grandfatherable syntax")
             testCase "date descriptors define exact Gregorian input range" (fun () ->
                 for name in
                     [
@@ -77,7 +90,12 @@ let private numericAndStatusRuleTests =
                 for name in [ "claimedAmount"; "payableAmount" ] do
                     match scalar name with
                     | ScalarRule.Amount rule ->
-                        Expect.equal rule.Text.MaximumCharacters 23 "Amount byte-safe text bound"
+                        Expect.equal
+                            rule.Text.Format.Grammar
+                            (Some rule.Grammar)
+                            "Amount syntax is permanent"
+
+                        Expect.isNone rule.Text.Policy "No admission-only amount syntax"
                         Expect.equal rule.Grammar "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?" "Grammar"
                         Expect.equal rule.MaximumIntegerDigits 18 "Whole-digit bound"
                         Expect.equal rule.MaximumFractionalDigits 4 "Fractional-digit bound"
@@ -86,7 +104,12 @@ let private numericAndStatusRuleTests =
                 for name in [ "claimedCurrency"; "payableCurrency" ] do
                     match scalar name with
                     | ScalarRule.Currency rule ->
-                        Expect.equal rule.Text.MaximumCharacters 3 "Currency text bound"
+                        Expect.equal
+                            rule.Text.Format.Grammar
+                            (Some rule.Grammar)
+                            "Currency syntax is permanent"
+
+                        Expect.isNone rule.Text.Policy "No admission-only currency syntax"
                         Expect.equal rule.Grammar "[A-Z]{3}" "Grammar"
                         Expect.equal rule.ExactCharacters 3 "Exact length"
                     | _ -> failtest (name + " must be a currency scalar."))
@@ -152,31 +175,31 @@ let private commandInventoryTest =
     testCase "all nine command definitions are the sole command inventory" (fun () ->
         Expect.equal
             (CommandDefinitions.all |> List.map (fun definition -> definition.Kind))
-            CommandKinds.all
+            CaseActKinds.business
             "Exact command order")
 
 let private commandPrefillTest =
     testCase "command inputs have exact ordered prefill sources" (fun () ->
-        expectFields CommandKind.Open (registrationFields |> List.map blank)
-        expectFields CommandKind.AmendRegistration (registrationFields |> List.map current)
+        expectFields CaseActKind.Open (registrationFields |> List.map blank)
+        expectFields CaseActKind.AmendRegistration (registrationFields |> List.map current)
 
         expectFields
-            CommandKind.Decide
+            CaseActKind.Decide
             [
                 current "paymentDecisionDate"
                 current "payableAmount"
                 current "payableCurrency"
             ]
 
-        expectFields CommandKind.WithdrawDecision []
-        expectFields CommandKind.RecordPayment [ blank "paymentDate" ]
-        expectFields CommandKind.ClearPayment []
-        expectFields CommandKind.Close []
-        expectFields CommandKind.Reopen [])
+        expectFields CaseActKind.WithdrawDecision []
+        expectFields CaseActKind.RecordPayment [ blank "paymentDate" ]
+        expectFields CaseActKind.ClearPayment []
+        expectFields CaseActKind.Close []
+        expectFields CaseActKind.Reopen [])
 
 let private correctionGroupMetadataTest =
     testCase "CORRECT_CASE describes required tagged groups and replacement fields" (fun () ->
-        let definition = CommandDefinitions.forKind CommandKind.CorrectCase
+        let definition = CommandDefinitions.forKind CaseActKind.CorrectCase
 
         match definition.Inputs with
         | CommandInputShape.Fields _ -> failtest "CORRECT_CASE requires grouped inputs."
@@ -213,50 +236,6 @@ let private commandInputTests =
             derivedFieldsAreNotCommandInputsTest
         ]
 
-let private ruleInventoryTests =
-    testList
-        "stable executable-rule inventory"
-        [
-            testCase "cross-field and transition rules have unique stable identifiers" (fun () ->
-                let identifiers = DomainRules.all |> List.map (fun rule -> rule.Identifier)
-
-                let expected =
-                    [
-                        "IMMUTABLE_CASE_REFERENCE"
-                        "EVENT_DATE_ORDER"
-                        "EVENT_DATE_NOT_FUTURE"
-                        "DECISION_TUPLE_COMPLETE"
-                        "PAYMENT_REQUIRES_POSITIVE_DECISION"
-                        "OPEN_REQUIRES_ABSENT_CASE"
-                        "OPEN_REQUIRES_ZERO_EXPECTED_REVISION"
-                        "MUTATION_REQUIRES_CURRENT_CASE"
-                        "EXPECTED_REVISION_REVALIDATED"
-                        "CLOSED_CASE_REOPEN_FIRST"
-                        "AMENDMENT_REQUIRES_UNDECIDED_CASE"
-                        "CORRECTION_REQUIRES_EXISTING_FACT"
-                        "CORRECTION_IS_ATOMIC"
-                        "PAID_DECISION_REQUIRES_PAYMENT_REAFFIRMATION"
-                        "DECISION_REQUIRES_UNPAID_CASE"
-                        "WITHDRAWAL_REQUIRES_UNPAID_DECISION"
-                        "PAYMENT_REQUIRES_UNPAID_DECISION"
-                        "CLEAR_PAYMENT_REQUIRES_RECORDED_PAYMENT"
-                        "CLOSE_REQUIRES_OPEN_CASE"
-                        "REOPEN_REQUIRES_CLOSED_CASE"
-                    ]
-
-                Expect.equal identifiers expected "Exact rule inventory"
-
-                Expect.contains
-                    (DomainRules.all |> List.map (fun rule -> rule.Category))
-                    DomainRuleCategory.CrossField
-                    "Cross-field rules"
-
-                Expect.contains
-                    (DomainRules.all |> List.map (fun rule -> rule.Category))
-                    DomainRuleCategory.Transition
-                    "Transition rules")
-        ]
-
 [<Tests>]
 let tests =
     testList
@@ -266,5 +245,4 @@ let tests =
             numericAndStatusRuleTests
             scalarOwnershipTests
             commandInputTests
-            ruleInventoryTests
         ]

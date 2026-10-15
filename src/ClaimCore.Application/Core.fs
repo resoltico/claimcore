@@ -10,109 +10,154 @@ module internal Core =
     let private digest bytes =
         LedgerEntry.requestDigest bytes |> Convert.ToHexStringLower
 
-    let private caseFailure operationId bytes =
+    let private mutationResult =
+        function
+        | LedgerWriteResult.Refused error -> ExecuteOutcome.Rejected error
+        | LedgerWriteResult.Failed fault -> ExecuteOutcome.Failed fault
+        | LedgerWriteResult.Appended receipt -> ExecuteOutcome.Accepted receipt
+        | LedgerWriteResult.Replayed receipt -> ExecuteOutcome.AlreadyAccepted receipt
+
+    let private mutationFailure operationId bytes =
         function
         | StoreFailure.Cancelled -> ExecuteOutcome.Cancelled
         | StoreFailure.CommitOutcomeUnknown ->
             ExecuteOutcome.OutcomeUnknown(operationId, digest bytes)
         | failure -> ExecuteOutcome.Failed(Queries.fault failure)
 
-    let private caseResult =
-        function
-        | CaseWriteResult.Refused error -> ExecuteOutcome.Rejected error
-        | CaseWriteResult.Failed fault -> ExecuteOutcome.Failed fault
-        | CaseWriteResult.Appended entry ->
-            LedgerEntries.receipt (LedgerEntries.stored entry)
-            |> Result.map ExecuteOutcome.Accepted
-            |> Result.defaultWith ExecuteOutcome.Failed
-        | CaseWriteResult.Replayed entry ->
-            LedgerEntries.receipt entry
-            |> Result.map ExecuteOutcome.AlreadyAccepted
-            |> Result.defaultWith ExecuteOutcome.Failed
-
-    let private protectCase decide view =
+    let private protect decide view =
         try
             decide view
         with :? ArgumentException ->
-            CaseDecision.Fail CoreFault.StoreIntegrityError
+            LedgerDecision.Fail CoreFault.StoreIntegrityError
 
-    let private writeCase
+    let private caseWrite
         (store: ILedgerStore)
+        installationId
+        calendar
         principal
-        operationId
-        reference
-        bytes
-        decide
+        (request: CaseRequest)
         (ct: CancellationToken)
-        : Task<ExecuteOutcome> =
+        =
         task {
             if ct.IsCancellationRequested then
                 return ExecuteOutcome.Cancelled
             else
-                let! result =
-                    store.WriteCase(principal, operationId, reference, protectCase decide, ct)
+                match Case.validateRequest request with
+                | Error error -> return ExecuteOutcome.Rejected(Rejection.Case error)
+                | Ok() ->
+                    let decide =
+                        CaseDecisions.execute installationId calendar principal request |> protect
 
-                return
-                    result
-                    |> Result.map caseResult
-                    |> Result.defaultWith (caseFailure operationId bytes)
+                    let! result =
+                        store.WriteCase(
+                            principal,
+                            request.OperationId,
+                            request.CaseReference,
+                            decide,
+                            ct
+                        )
+
+                    return
+                        result
+                        |> Result.map mutationResult
+                        |> Result.defaultWith (
+                            mutationFailure request.OperationId (RequestRecord.encode request)
+                        )
         }
 
-    let private reviewContext (calendar: IBusinessCalendar) instant =
-        {
-            ProductVersion = BuildIdentity.current.Version
-            EffectiveBusinessDate = calendar.DateAt instant
-            TimeZoneId = calendar.TimeZoneId
+    let private authorityWrite
+        (store: ILedgerStore)
+        installationId
+        principal
+        (request: AuthorityRequest)
+        (ct: CancellationToken)
+        =
+        task {
+            if ct.IsCancellationRequested then
+                return ExecuteOutcome.Cancelled
+            else
+                match AuthorityRequests.validate request with
+                | Error error -> return ExecuteOutcome.Rejected error
+                | Ok() ->
+                    let decide =
+                        AuthorityDecisions.execute installationId principal request |> protect
+
+                    let! result =
+                        store.WriteAuthority(
+                            principal,
+                            request.OperationId,
+                            request.Target,
+                            AuthorityRequests.targetCase request,
+                            decide,
+                            ct
+                        )
+
+                    let bytes = AuthorityRequests.toRecord request |> AuthorityRecord.encode
+
+                    return
+                        result
+                        |> Result.map mutationResult
+                        |> Result.defaultWith (mutationFailure request.OperationId bytes)
         }
 
-    let private advisory calendar instant before proposed =
-        let previous =
-            before
-            |> Option.map (
-                Claim.view >> fun view -> FieldDefinitions.values view.Fields |> Map.ofList
-            )
-            |> Option.defaultValue Map.empty
+    let private businessFields =
+        function
+        | None -> Map.empty
+        | Some { View = CaseView.Live(fields, _) } -> FieldDefinitions.values fields |> Map.ofList
+        | Some { View = CaseView.Erased } -> Map.empty
 
-        let snapshot = Claim.view proposed
-        let next = FieldDefinitions.values snapshot.Fields |> Map.ofList
+    let private changes act before after =
+        match act with
+        | CaseAct.Stewardship _ -> []
+        | CaseAct.Business _ ->
+            let previous = businessFields before
+            let next = businessFields (Some after)
 
-        let changes =
             FieldDefinitions.all
             |> List.choose (fun field ->
-                let a = previous |> Map.tryFind field.Name |> Option.flatten
-                let b = next |> Map.tryFind field.Name |> Option.flatten
+                let before = Map.tryFind field.Name previous |> Option.flatten
+                let after = Map.tryFind field.Name next |> Option.flatten
 
-                if a = b then
+                if before = after then
                     None
                 else
                     Some
                         {
                             FieldName = field.Name
-                            Before = a
-                            After = b
+                            Before = before
+                            After = after
                         })
 
+    let private advisory (calendar: IBusinessCalendar) instant act before after =
+        let before = before |> Option.map Case.snapshot
+        let after = Case.snapshot after
+
         {
-            Before = before |> Option.map Claim.view
-            Proposed = snapshot
-            Changes = changes
-            Context = reviewContext calendar instant
-            IsAdvisory = true
+            Before = before
+            Proposed = after
+            Changes = changes act before after
+            Context =
+                {
+                    ProductVersion = BuildIdentity.current.Version
+                    EffectiveBusinessDate = calendar.DateAt instant
+                    TimeZoneId = calendar.TimeZoneId
+                }
         }
 
     let private preview
         (store: ILedgerStore)
+        installationId
         calendar
         principal
-        (request: CommandRequest)
+        (request: CaseRequest)
         (ct: CancellationToken)
-        : Task<PreviewOutcome> =
+        =
         task {
             if ct.IsCancellationRequested then
                 return PreviewOutcome.Cancelled
             else
-                match Claim.validateRequest request with
-                | Error error -> return PreviewOutcome.Rejected(Rejection.Domain error)
+                match Case.validateRequest request with
+                | Error error -> return PreviewOutcome.Rejected(Rejection.Case error)
                 | Ok() ->
                     let! result =
                         store.ReadCase(
@@ -126,202 +171,61 @@ module internal Core =
                     | Error StoreFailure.Cancelled -> return PreviewOutcome.Cancelled
                     | Error error -> return PreviewOutcome.Failed(Queries.fault error)
                     | Ok view ->
-                        match CaseDecisions.review calendar principal request view with
-                        | CaseReviewDecision.Refuse error -> return PreviewOutcome.Rejected error
-                        | CaseReviewDecision.Fail error -> return PreviewOutcome.Failed error
-                        | CaseReviewDecision.Replay entry ->
-                            return
-                                LedgerEntries.receipt entry
-                                |> Result.map PreviewOutcome.AlreadyAccepted
-                                |> Result.defaultWith PreviewOutcome.Failed
-                        | CaseReviewDecision.Proposed(before, after) ->
-                            return
+                        return
+                            match
+                                CaseDecisions.review installationId calendar principal request view
+                            with
+                            | CaseReviewDecision.Refuse error -> PreviewOutcome.Rejected error
+                            | CaseReviewDecision.Fail error -> PreviewOutcome.Failed error
+                            | CaseReviewDecision.Replay receipt ->
+                                PreviewOutcome.AlreadyAccepted receipt
+                            | CaseReviewDecision.Proposed(before, after) ->
                                 PreviewOutcome.Reviewed(
-                                    advisory calendar view.ObservedAt before after,
+                                    advisory calendar view.ObservedAt request.Act before after,
                                     digest (RequestRecord.encode request)
                                 )
         }
 
-    let private authorityResult replay (entry: StoredEntry) =
-        match entry.Scope with
-        | StoredScope.Authority target ->
-            let position = LedgerEntries.position entry.Sequence entry.EntryHash
-
-            if replay then
-                AuthorityOutcome.AlreadyApplied(entry.OperationId, position, target)
-            else
-                AuthorityOutcome.Applied(entry.OperationId, position, target)
-        | _ -> AuthorityOutcome.Failed CoreFault.StoreIntegrityError
-
-    let private authority
-        (store: ILedgerStore)
-        installationId
-        principal
-        eventId
-        target
-        action
-        (ct: CancellationToken)
-        : Task<AuthorityOutcome> =
-        task {
-            if ct.IsCancellationRequested then
-                return AuthorityOutcome.Cancelled
-            elif eventId = Guid.Empty then
-                return
-                    AuthorityOutcome.Rejected(
-                        Rejection.Domain(
-                            DomainError.InvalidInput(
-                                InputTarget.OperationId,
-                                InputViolation.Command CommandViolation.EmptyOperationId
-                            )
-                        )
-                    )
-            else
-                let reference =
-                    match action with
-                    | AuthorityAction.Grant(_, GrantTarget.CaseReference value, _) -> Some value
-                    | _ -> None
-
-                let valid =
-                    reference |> Option.map Claim.validateReference |> Option.defaultValue (Ok())
-
-                match valid with
-                | Error error -> return AuthorityOutcome.Rejected(Rejection.Domain error)
-                | Ok() ->
-                    let decide view =
-                        try
-                            AuthorityDecisions.decide
-                                installationId
-                                principal
-                                eventId
-                                target
-                                action
-                                view
-                        with :? ArgumentException ->
-                            AuthorityDecision.Fail CoreFault.StoreIntegrityError
-
-                    let! result =
-                        store.WriteAuthority(principal, eventId, target, reference, decide, ct)
-
-                    return
-                        match result with
-                        | Error StoreFailure.Cancelled -> AuthorityOutcome.Cancelled
-                        | Error StoreFailure.CommitOutcomeUnknown ->
-                            AuthorityOutcome.OutcomeUnknown eventId
-                        | Error error -> AuthorityOutcome.Failed(Queries.fault error)
-                        | Ok(AuthorityWriteResult.Refused reason) ->
-                            AuthorityOutcome.Rejected reason
-                        | Ok(AuthorityWriteResult.Failed fault) -> AuthorityOutcome.Failed fault
-                        | Ok(AuthorityWriteResult.Appended entry) ->
-                            authorityResult false (LedgerEntries.stored entry)
-                        | Ok(AuthorityWriteResult.Replayed entry) -> authorityResult true entry
-        }
-
-    let private observeAuthority
-        (store: ILedgerStore)
-        principal
-        eventId
-        (ct: CancellationToken)
-        : Task<AuthorityOutcome> =
-        task {
-            let! read = store.ReadOperation(principal, eventId, ct)
-
-            return
-                match read with
-                | Error StoreFailure.Cancelled -> AuthorityOutcome.Cancelled
-                | Error error -> AuthorityOutcome.Failed(Queries.fault error)
-                | Ok(actor, Some entry, _) when
-                    (match entry.Scope with
-                     | StoredScope.Authority _ -> true
-                     | _ -> false)
-                    && ActorAuthorization.can
-                        principal
-                        actor
-                        Capability.ManageAuthority
-                        ResourceScope.Installation
-                    ->
-                    authorityResult true entry
-                | _ -> AuthorityOutcome.Rejected Rejection.ResourceUnavailable
-        }
-
-    let private management store installationId principal =
-        { new IAuthorityManagement with
-            member _.RegisterActor(id, target, ct) =
-                authority store installationId principal id target AuthorityAction.Register ct
-
-            member _.SetEnabled(id, target, enabled, ct) =
-                authority
-                    store
-                    installationId
-                    principal
-                    id
-                    target
-                    (AuthorityAction.Enable enabled)
-                    ct
-
-            member _.SetGrant(id, target, role, scope, active, ct) =
-                authority
-                    store
-                    installationId
-                    principal
-                    id
-                    target
-                    (AuthorityAction.Grant(role, scope, active))
-                    ct
-
-            member _.Observe(id, ct) = observeAuthority store principal id ct
-        }
-
-    /// Only the composition root and store tests can supply storage or a calendar.
+    /// Hosting owns the single ephemeral key for the runtime; every facade shares its bytes.
     let create
         installationId
         (store: ILedgerStore)
         (calendar: IBusinessCalendar)
+        (cursorKey: byte array)
         principal
         : IActorClaimsCore =
+        if
+            installationId = Guid.Empty
+            || obj.ReferenceEquals(cursorKey, null)
+            || cursorKey.Length <> 32
+        then
+            invalidArg (nameof cursorKey) "Use an admitted installation and a 32-byte cursor key."
 
         { new IActorClaimsCore with
-            member _.Definition ct =
-                Queries.definition store calendar principal ct
+            member _.Context ct =
+                Queries.context store calendar principal ct
 
             member _.Preview(request, ct) =
-                preview store calendar principal request ct
+                preview store installationId calendar principal request ct
 
             member _.Execute(request, ct) =
-                match Claim.validateRequest request with
-                | Error error -> Task.FromResult(ExecuteOutcome.Rejected(Rejection.Domain error))
-                | Ok() ->
-                    writeCase
-                        store
-                        principal
-                        request.OperationId
-                        request.CaseReference
-                        (RequestRecord.encode request)
-                        (CaseDecisions.command installationId calendar principal request)
-                        ct
+                caseWrite store installationId calendar principal request ct
 
-            member _.Steward(request, ct) =
-                match Stewardship.validateRequest request with
-                | Error(StewardshipError.InvalidRequest error) ->
-                    Task.FromResult(ExecuteOutcome.Rejected(Rejection.Domain error))
-                | Error _ -> Task.FromResult(ExecuteOutcome.Rejected Rejection.InvalidReason)
-                | Ok() ->
-                    writeCase
-                        store
-                        principal
-                        request.OperationId
-                        request.CaseReference
-                        (StewardshipRecord.encode request)
-                        (CaseDecisions.steward installationId calendar principal request)
-                        ct
+            member _.ExecuteAuthority(request, ct) =
+                authorityWrite store installationId principal request ct
 
             member _.Get(reference, ct) =
-                Queries.get store principal reference ct
+                Queries.get store installationId principal reference ct
 
-            member _.List(request, ct) = Queries.list store principal request ct
+            member _.List(request, ct) =
+                Queries.list store installationId cursorKey principal request ct
 
             member _.History(request, ct) =
-                Queries.history store principal request ct
+                Queries.history store installationId cursorKey principal request ct
 
-            member _.ObserveOperation(id, ct) = Queries.observe store principal id ct
-            member _.Authority = management store installationId principal
+            member _.Observe(id, ct) =
+                Queries.observe store installationId principal id ct
+
+            member _.ListActors(request, ct) =
+                Queries.actors store installationId cursorKey principal request ct
         }

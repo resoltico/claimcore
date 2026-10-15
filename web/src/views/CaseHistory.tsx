@@ -1,28 +1,22 @@
 import { useCallback, useState } from "react";
 import { Button } from "react-aria-components/Button";
-import type { FieldDescriptor, HistoryEntry, Receipt, ServiceResponse } from "../api/service";
+import type { FieldDescriptor, HistoryEntry, CaseReceipt, ServiceResponse } from "../api/service";
 import { service } from "../api/service";
 import { useRetryablePage } from "../hooks/useRead";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-import { CaseFieldsView } from "../components/CaseFieldsView";
+import { ReceiptFields } from "../components/ReceiptFields";
 
-const historyPage = (response: ServiceResponse<"case.history">) => {
-  const { outcome } = response;
-  if (outcome.tag !== "SUCCEEDED") {
-    return null;
-  }
-  if (outcome.data.tag === "NOT_FOUND") {
-    return { items: [], nextCursor: null };
-  }
-  return { items: outcome.data.entries, nextCursor: outcome.data.nextCursor };
-};
+const historyPage = (response: ServiceResponse<"case.history">) =>
+  response.outcome.tag === "SUCCEEDED"
+    ? { items: response.outcome.data.entries, nextCursor: response.outcome.data.nextCursor }
+    : null;
 
 const HistoryReceipt = ({
   receipt,
   fields,
 }: {
-  receipt: Receipt;
+  receipt: CaseReceipt;
   fields: ReadonlyArray<FieldDescriptor>;
 }) => {
   const p = usePresentation();
@@ -42,15 +36,11 @@ const HistoryReceipt = ({
           state: p.text("ui.accepted"),
         })}
       </p>
-      {receipt.snapshot === null ? (
-        <p>{p.text("ui.lifecycleErased")}</p>
-      ) : (
-        <CaseFieldsView
-          caseView={receipt.snapshot}
-          fields={fields}
-          context={p.text("ui.historyContext", { operationId: receipt.operationId })}
-        />
-      )}
+      <ReceiptFields
+        receipt={receipt}
+        fields={fields}
+        context={p.text("ui.historyContext", { operationId: receipt.operationId })}
+      />
     </details>
   );
 };

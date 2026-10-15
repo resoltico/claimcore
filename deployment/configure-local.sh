@@ -47,14 +47,14 @@ web_secret="$(openssl rand -hex 32)"
 service_secret="$(openssl rand -hex 32)"
 owner_login="$(openssl rand -hex 32)"
 owner_subject="$(uuid)"
-event_id="$(uuid)"
+owner_operation_id="$(uuid)"
 printf '%s' "${owner_password}" >"${configuration}/postgres/owner.password"
 printf '%s' "${runtime_password}" >"${configuration}/postgres/runtime.password"
 printf '%s' "${web_secret}" >"${configuration}/web/client.secret"
 printf '%s\n' "${owner_login}" >"${configuration}/owner-login.password"
 printf '%s\n' "Host=postgres;Database=claimcore;Username=claimcore_owner;Password=${owner_password};SSL Mode=VerifyFull;Root Certificate=/etc/claimcore/ca.pem" >"${configuration}/administration/owner.connection"
 printf '%s\n' "Host=postgres;Database=claimcore;Username=claimcore_runtime;Password=${runtime_password};SSL Mode=VerifyFull;Root Certificate=/etc/claimcore/runtime/ca.pem" >"${configuration}/web/runtime.connection"
-printf '{"eventId":"%s","issuer":"https://identity.localhost:%s/realms/claimcore","subject":"%s"}\n' "${event_id}" "${identity_port}" "${owner_subject}" >"${configuration}/administration/owner.principal"
+printf '{"operationId":"%s","issuer":"https://identity.localhost:%s/realms/claimcore","subject":"%s"}\n' "${owner_operation_id}" "${identity_port}" "${owner_subject}" >"${configuration}/administration/owner.principal"
 cp "${configuration}/ca.pem" "${configuration}/web/ca.pem"
 cp "${configuration}/ca.pem" "${configuration}/administration/ca.pem"
 cat >"${configuration}/identity/realm/claimcore.json" <<JSON
@@ -75,7 +75,6 @@ CLAIMCORE_OIDC_ISSUER=https://identity.localhost:${identity_port}/realms/claimco
 CLAIMCORE_OIDC_CLIENT_ID=claimcore-web
 CLAIMCORE_OIDC_CLIENT_SECRET_FILE=/etc/claimcore/runtime/client.secret
 CLAIMCORE_OIDC_API_AUDIENCE=claimcore-api
-CLAIMCORE_OIDC_SERVICE_CLIENT_ID=claimcore-service
 CLAIMCORE_OIDC_CLI_CLIENT_ID=claimcore-cli
 CLAIMCORE_OIDC_CA_CERT_FILE=/etc/claimcore/runtime/ca.pem
 ENV

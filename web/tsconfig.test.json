@@ -8,5 +8,5 @@
     "types": ["node", "vite/client", "vitest/globals"],
     "resolveJsonModule": true
   },
-  "include": ["src", "tests", "e2e"]
+  "include": ["src", "tests", "e2e", "../contracts/*.ts"]
 }

@@ -7,6 +7,11 @@ on:
   pull_request:
   merge_group:
   workflow_dispatch:
+    inputs:
+      full_browser_qualification:
+        description: Run every browser specification on Chromium, Firefox and WebKit.
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
@@ -22,8 +27,43 @@ env:
   NO_COLOR: "1"
 
 jobs:
+  configuration:
+    name: Derive qualified database and Node inputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      postgresql: ${{ steps.inputs.outputs.postgresql }}
+      node_image: ${{ steps.inputs.outputs.node_image }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: inputs
+        name: Read authoritative image declarations
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, pathlib, re
+          baseline = json.loads(pathlib.Path("db/postgresql-baseline.json").read_text())
+          entries = baseline["supportedMajors"]
+          majors = [entry["major"] for entry in entries]
+          if not majors or len(set(majors)) != len(majors):
+              raise ValueError("PostgreSQL baseline needs distinct listed majors")
+          for entry in entries:
+              image = re.fullmatch(r"postgres:([1-9][0-9]*)\.([0-9]+)@sha256:[0-9a-f]{64}", entry["containerImage"])
+              if (type(entry["major"]) is not int or entry["major"] < 1
+                  or type(entry["minimumMinor"]) is not int or entry["minimumMinor"] < 0
+                  or not image or int(image[1]) != entry["major"] or int(image[2]) < entry["minimumMinor"]):
+                  raise ValueError("PostgreSQL image must match its listed major/minimum minor")
+          images = re.findall(r"^FROM (node:[^\s]+@sha256:[0-9a-f]{64}) AS node$", pathlib.Path("deployment/Dockerfile").read_text(), re.M)
+          if len(images) != 1:
+              raise ValueError("Expected one pinned Node stage in deployment/Dockerfile")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("postgresql=" + json.dumps({"major": majors}, separators=(",", ":")) + "\n")
+              output.write("node_image=" + images[0] + "\n")
+          PYTHON
+
   lint:
-    name: Format, lint and workflow hygiene
+    name: Native format, lint and workflow hygiene
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -31,18 +71,9 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-      - run: dotnet restore ClaimCore.slnx --locked-mode
-      - run: dotnet tool restore
-      - run: dotnet fantomas --check src tests eng
-      - run: bash eng/Check-FSharpLint.sh
-      - run: npm --prefix web ci
-      - run: npm --prefix web run contract:generate
-      - run: npm --prefix web run format:check
-      - run: npm --prefix web run lint
-      - run: npm --prefix web run lint:styles
-      - run: shellcheck eng/*.sh deployment/*.sh
-      - name: actionlint
-        run: docker run --rm --label claimcore.workflow-check=actionlint -v "$PWD:/repo:ro" -w /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
+        with:
+          node: "false"
+      - run: bash eng/verify.sh lint workflows
       - name: zizmor
         uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
         with:
@@ -51,9 +82,9 @@ jobs:
           advanced-security: false
 
   unit:
-    name: Build and unit tests (${{ matrix.os }})
+    name: Native unit and architecture tests (${{ matrix.os }})
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.os }}
@@ -63,29 +94,18 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-      - run: dotnet restore ClaimCore.slnx --locked-mode
-      - run: npm --prefix web ci
-      - run: npm --prefix web run contract:generate
-      - run: dotnet build ClaimCore.slnx --configuration Release --no-restore
-      - name: Unit and property tests
-        run: >-
-          dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
-          --configuration Release --no-build --no-restore
-          --minimum-expected-tests=240 --zero-tests-policy=strict --timeout=30m
-          -- --settings="$PWD/eng/expecto.runsettings"
-      - name: Build the architecture suite without optimization
-        run: >-
-          dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-          --configuration Debug --no-restore -p:Optimize=false
-      - name: Architecture tests
-        run: >-
-          dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-          --configuration Debug --no-build --no-restore
-          --minimum-expected-tests=20 --zero-tests-policy=strict --timeout=15m
-          -- --settings="$PWD/eng/expecto.runsettings"
+        with:
+          node: "false"
+      - run: bash eng/verify.sh unit
 
   integration:
-    name: PostgreSQL and web host tests
+    name: PostgreSQL ${{ matrix.major }} and web host tests
+    needs: [configuration, lint, unit, frontend]
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJSON(needs.configuration.outputs.postgresql) }}
+    env:
+      CLAIMCORE_TEST_POSTGRES_MAJOR: ${{ matrix.major }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -93,70 +113,74 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-      - run: dotnet restore ClaimCore.slnx --locked-mode
-      - run: npm --prefix web ci
-      - run: npm --prefix web run contract:generate
-      - run: dotnet build ClaimCore.slnx --configuration Release --no-restore
-      - name: Ledger store on PostgreSQL
-        run: >-
-          dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
-          --configuration Release --no-build --no-restore
-          --minimum-expected-tests=70 --zero-tests-policy=strict --timeout=20m
-          -- --settings="$PWD/eng/expecto.runsettings"
-      - name: Web host, including the live identity provider fixture
-        run: >-
-          dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
-          --configuration Release --no-build --no-restore
-          --minimum-expected-tests=60 --zero-tests-policy=strict --timeout=20m
-          -- --settings="$PWD/eng/expecto.runsettings"
+        with:
+          node: "false"
+      - run: bash eng/verify.sh integration
 
   frontend:
-    name: Frontend types, unit tests and build
+    name: Frontend checks (SDK-free Node container)
+    needs: [configuration]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-      - run: dotnet restore ClaimCore.slnx --locked-mode
-      - run: npm --prefix web ci
-      - run: npm --prefix web audit --audit-level=low
-      - name: Generated contract matches its lock
-        run: npm --prefix web run contract:generate && npm --prefix web run contract:verify
-      - run: npm --prefix web run typecheck
-      - run: npm --prefix web run test:unit
-      - run: npm --prefix web run build
+      - name: Run frontend in the deployment Node image
+        env:
+          NODE_IMAGE: ${{ needs.configuration.outputs.node_image }}
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" \
+            --env CI=true --env NO_COLOR=1 --env HOME=/tmp/claimcore-home \
+            --env NPM_CONFIG_CACHE=/tmp/claimcore-npm-cache \
+            --volume "$PWD:/workspace" --workdir /workspace "${NODE_IMAGE}" \
+            bash -euo pipefail -c '
+              mkdir -p "${HOME}"
+              if command -v dotnet >/dev/null 2>&1; then
+                echo "Frontend boundary refuses an executable dotnet SDK/runtime." >&2
+                exit 1
+              fi
+              test "$(node --version)" = "v$(tr -d "\r\n" < .node-version)"
+              npm install --global --prefix /tmp/claimcore-npm "npm@$(node -p "require(\"./web/package.json\").engines.npm")"
+              export PATH="/tmp/claimcore-npm/bin:${PATH}"
+              test "$(npm --version)" = "$(node -p "require(\"./web/package.json\").engines.npm")"
+              bash eng/verify.sh frontend
+            '
 
   acceptance:
-    name: Published service, CLI and browsers
+    name: Published clients (${{ matrix.engine }}, ${{ matrix.scope }})
+    needs: [lint, unit, frontend]
+    strategy:
+      fail-fast: true
+      matrix:
+        engine: ${{ fromJSON((github.event_name == 'push' || inputs.full_browser_qualification) && '["chromium","firefox","webkit"]' || '["chromium"]') }}
+        scope: ${{ fromJSON((github.event_name == 'push' || inputs.full_browser_qualification) && '["complete"]' || '["smoke"]') }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-      - run: dotnet restore ClaimCore.slnx --locked-mode
-      - run: npm --prefix web ci
-      - run: npm --prefix web run contract:generate
-      - run: npm --prefix web run build
-      - run: dotnet build ClaimCore.slnx --configuration Release --no-restore
-      - run: npm --prefix web exec -- playwright install --with-deps chromium firefox webkit
-      - name: Published service and clients, including three browser engines
-        run: >-
-          dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj
-          --configuration Release --no-build --no-restore
-          --minimum-expected-tests=10 --zero-tests-policy=strict --timeout=40m
-          -- --settings="$PWD/eng/expecto.runsettings"
+      - name: Published service and clients
+        env:
+          CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ matrix.engine }}
+          CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: ${{ matrix.scope }}
+        run: bash eng/verify.sh browsers acceptance
+      - name: Report coverage scope
+        env:
+          BROWSER_ENGINE: ${{ matrix.engine }}
+          BROWSER_SCOPE: ${{ matrix.scope }}
+        run: |
+          printf 'Browser coverage: %s / %s. Smoke is not complete qualification.\n' "${BROWSER_ENGINE}" "${BROWSER_SCOPE}" >> "${GITHUB_STEP_SUMMARY}"
+
   gate:
     name: Gate
     if: always()
-    needs: [lint, unit, integration, frontend, acceptance]
+    needs: [configuration, lint, unit, integration, frontend, acceptance]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      # Derived from `needs`, so a job added above is gated without a second list to keep in step.
       - name: Require every job
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}

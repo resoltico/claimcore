@@ -45,7 +45,7 @@ test("bounds repeated published login admission and recovers after its window", 
     }
     const response = result.value;
     if (response.status() === 429) {
-      await expectHostFailure(
+      expectHostFailure(
         {
           status: 429,
           cacheControl: response.headers()["cache-control"] ?? null,

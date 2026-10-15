@@ -18,5 +18,16 @@
   "token.RECORD_PAYMENT": "Record actual payment",
   "token.CLEAR_PAYMENT": "Correct an erroneous payment record",
   "token.CLOSE": "Close the case",
-  "token.REOPEN": "Reopen the case"
+  "token.REOPEN": "Reopen the case",
+  "token.OWNER": "Owner",
+  "token.CASE_READER": "Case reader",
+  "token.CASE_REGISTRAR": "Case registrar",
+  "token.CASE_HANDLER": "Case handler",
+  "token.PAYMENT_RECORDER": "Payment recorder",
+  "token.DATA_STEWARD": "Data steward",
+  "token.AUDITOR": "Auditor",
+  "token.PROVISION_OWNER": "Provision owner",
+  "token.REGISTER_ACTOR": "Register actor",
+  "token.SET_ENABLED": "Set actor enabled state",
+  "token.SET_GRANT": "Set grant"
 }

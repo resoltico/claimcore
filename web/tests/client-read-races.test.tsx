@@ -4,12 +4,12 @@ import { useOperationObservation } from "../src/hooks/useOperationObservation";
 import { useSession } from "../src/hooks/useSession";
 
 import { deferredResponse } from "./presentation-state.fixtures";
-import { operationId, response } from "./service-ui.fixtures";
+import { operationId, response, unavailable } from "./service-ui.fixtures";
 
 import { generatedWebValue } from "./contract-corpus.fixtures";
-const accepted = generatedWebValue("command.execute");
+const accepted = generatedWebValue("case.execute");
 if (accepted.outcome.tag !== "ACCEPTED") {
-  throw new Error("Receipt fixture absent.");
+  throw new Error("CaseReceipt fixture absent.");
 }
 const receipt = accepted.outcome.data;
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
@@ -18,12 +18,7 @@ it("coalesces observation and discards an older receipt after changing the opera
   const first = deferredResponse();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockReturnValueOnce(first.promise);
-  fetch.mockResolvedValueOnce(
-    response("operation.observe", "SUCCEEDED", {
-      tag: "NOT_FOUND",
-      operationId: "00000000-0000-4000-8000-000000000099",
-    }),
-  );
+  fetch.mockResolvedValueOnce(response("operation.observe", "REJECTED", unavailable));
   const { result } = renderHook(() => useOperationObservation("token", operationId));
   let old: Promise<void> = Promise.resolve();
   act(() => {
@@ -38,13 +33,19 @@ it("coalesces observation and discards an older receipt after changing the opera
   await act(async () => {
     await result.current.observe();
   });
-  expect(result.current.notObserved).toBe(true);
+  expect(result.current.message).toEqual({
+    kind: "diagnostic",
+    diagnostic: unavailable.diagnostic,
+  });
   await act(async () => {
-    first.resolve(response("operation.observe", "SUCCEEDED", { tag: "FOUND", receipt }));
+    first.resolve(response("operation.observe", "SUCCEEDED", receipt));
     await old;
   });
   expect(result.current.receipt).toBeNull();
-  expect(result.current.notObserved).toBe(true);
+  expect(result.current.message).toEqual({
+    kind: "diagnostic",
+    diagnostic: unavailable.diagnostic,
+  });
 });
 
 it("aborts observation on unmount without delivering a late receipt", async () => {
@@ -58,7 +59,7 @@ it("aborts observation on unmount without delivering a late receipt", async () =
   });
   unmount();
   expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
-  pending.resolve(response("operation.observe", "SUCCEEDED", { tag: "FOUND", receipt }));
+  pending.resolve(response("operation.observe", "SUCCEEDED", receipt));
   await task;
   expect(result.current.receipt).toBeNull();
 });

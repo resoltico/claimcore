@@ -12,7 +12,11 @@
     <Compile Include="Ledger/WriteOperations.fs" />
     <Compile Include="Reads/ReadOperations.fs" />
     <Compile Include="Ledger/LedgerStore.fs" />
+    <Compile Include="Verification/VerificationTypes.fs" />
     <Compile Include="Verification/AuthorityFold.fs" />
+    <Compile Include="Verification/VerificationPayload.fs" />
+    <Compile Include="Verification/CaseFold.fs" />
+    <Compile Include="Verification/ProjectionVerification.fs" />
     <Compile Include="Verification/Verification.fs" />
     <Compile Include="Runtime.fs" />
   </ItemGroup>

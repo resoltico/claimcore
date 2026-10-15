@@ -1,0 +1,93 @@
+{
+  "wireFingerprint": "6c34a27d2c4edd28cebaab0b8e9ee3650615289d662ed7b20ee00afb69f1ff19",
+  "endpoints": [
+    {
+      "id": "session",
+      "method": "GET",
+      "path": "/api/session",
+      "mutates": false,
+      "requestSchema": "endpoint.session.request.schema.json",
+      "responseSchema": "endpoint.session.response.schema.json"
+    },
+    {
+      "id": "session.logout",
+      "method": "POST",
+      "path": "/api/session.logout",
+      "mutates": false,
+      "requestSchema": "endpoint.session.logout.request.schema.json",
+      "responseSchema": "endpoint.session.logout.response.schema.json"
+    },
+    {
+      "id": "context",
+      "method": "POST",
+      "path": "/api/context",
+      "mutates": false,
+      "requestSchema": "endpoint.context.request.schema.json",
+      "responseSchema": "endpoint.context.response.schema.json"
+    },
+    {
+      "id": "case.get",
+      "method": "POST",
+      "path": "/api/case.get",
+      "mutates": false,
+      "requestSchema": "endpoint.case.get.request.schema.json",
+      "responseSchema": "endpoint.case.get.response.schema.json"
+    },
+    {
+      "id": "case.list",
+      "method": "POST",
+      "path": "/api/case.list",
+      "mutates": false,
+      "requestSchema": "endpoint.case.list.request.schema.json",
+      "responseSchema": "endpoint.case.list.response.schema.json"
+    },
+    {
+      "id": "case.history",
+      "method": "POST",
+      "path": "/api/case.history",
+      "mutates": false,
+      "requestSchema": "endpoint.case.history.request.schema.json",
+      "responseSchema": "endpoint.case.history.response.schema.json"
+    },
+    {
+      "id": "case.preview",
+      "method": "POST",
+      "path": "/api/case.preview",
+      "mutates": false,
+      "requestSchema": "endpoint.case.preview.request.schema.json",
+      "responseSchema": "endpoint.case.preview.response.schema.json"
+    },
+    {
+      "id": "case.execute",
+      "method": "POST",
+      "path": "/api/case.execute",
+      "mutates": true,
+      "requestSchema": "endpoint.case.execute.request.schema.json",
+      "responseSchema": "endpoint.case.execute.response.schema.json"
+    },
+    {
+      "id": "operation.observe",
+      "method": "POST",
+      "path": "/api/operation.observe",
+      "mutates": false,
+      "requestSchema": "endpoint.operation.observe.request.schema.json",
+      "responseSchema": "endpoint.operation.observe.response.schema.json"
+    },
+    {
+      "id": "authority.execute",
+      "method": "POST",
+      "path": "/api/authority.execute",
+      "mutates": true,
+      "requestSchema": "endpoint.authority.execute.request.schema.json",
+      "responseSchema": "endpoint.authority.execute.response.schema.json"
+    },
+    {
+      "id": "authority.list",
+      "method": "POST",
+      "path": "/api/authority.list",
+      "mutates": false,
+      "requestSchema": "endpoint.authority.list.request.schema.json",
+      "responseSchema": "endpoint.authority.list.response.schema.json"
+    }
+  ]
+}

@@ -1,13 +1,14 @@
+import { productMetadata } from "@contracts/product-metadata";
 import type {
   CaseFields,
-  CaseView,
+  CurrentCase,
   CommandDescriptor,
   CommandDraft,
   CommandInputShape,
   CommandInputDescriptor,
   CorrectionGroupDescriptor,
   FieldDescriptor,
-  SemanticDefinition,
+  Descriptors,
 } from "../api/service";
 
 type FlatDraftValues = Record<string, string>;
@@ -17,6 +18,9 @@ type CorrectionGroupValues = { mode: CorrectionMode; values: FlatDraftValues };
 export type CorrectionDraftValues = Record<CorrectionGroupName, CorrectionGroupValues>;
 export type DraftValues = FlatDraftValues | CorrectionDraftValues;
 export type CommandKind = CommandDescriptor["kind"];
+
+export const isBusinessCommand = (value: string): value is CommandKind =>
+  productMetadata.descriptors.commands.some((command) => command.kind === value);
 
 const correctionGroupNames: ReadonlyArray<CorrectionGroupName> = [
   "registration",
@@ -37,7 +41,7 @@ export const correctionGroupName = (value: string): CorrectionGroupName => {
 export const isCorrectionValues = (values: DraftValues): values is CorrectionDraftValues =>
   "registration" in values && "decision" in values && "payment" in values;
 
-const requiredField = (definition: SemanticDefinition, name: string): FieldDescriptor => {
+const requiredField = (definition: Descriptors, name: string): FieldDescriptor => {
   const field = definition.fields.find((candidate) => candidate.name === name);
   if (field === undefined) {
     throw new Error(`The core definition did not describe ${name}.`);
@@ -53,10 +57,7 @@ const currentValue = (fields: CaseFields | undefined, input: CommandInputDescrip
   return value ?? "";
 };
 
-export const commandFor = (
-  definition: SemanticDefinition,
-  kind: CommandKind,
-): CommandDescriptor => {
+export const commandFor = (definition: Descriptors, kind: CommandKind): CommandDescriptor => {
   const command = definition.commands.find((candidate) => candidate.kind === kind);
   if (command === undefined) {
     throw new Error(`The core definition did not describe ${kind}.`);
@@ -68,7 +69,7 @@ const flatInputs = (shape: CommandInputShape): ReadonlyArray<CommandInputDescrip
   shape.kind === "FIELDS" ? shape.fields : [];
 
 export const commandInputs = (
-  definition: SemanticDefinition,
+  definition: Descriptors,
   kind: CommandKind,
 ): { input: CommandInputDescriptor; field: FieldDescriptor }[] =>
   flatInputs(commandFor(definition, kind).inputs).map((input) => ({
@@ -77,7 +78,7 @@ export const commandInputs = (
   }));
 
 export const correctionGroups = (
-  definition: SemanticDefinition,
+  definition: Descriptors,
   kind: CommandKind,
 ): ReadonlyArray<{ group: CorrectionGroupDescriptor; fields: ReadonlyArray<FieldDescriptor> }> => {
   const shape = commandFor(definition, kind).inputs;
@@ -96,14 +97,14 @@ const correctionValues = (entries: [string, CorrectionGroupValues][]): Correctio
   Object.fromEntries(entries) as CorrectionDraftValues;
 
 export const prefilledValues = (
-  definition: SemanticDefinition,
+  definition: Descriptors,
   kind: CommandKind,
-  current: CaseView | null,
+  current: CurrentCase | null,
 ): DraftValues => {
   const shape = commandFor(definition, kind).inputs;
   if (shape.kind === "FIELDS") {
     return Object.fromEntries(
-      shape.fields.map((input) => [input.fieldName, currentValue(current?.fields, input)]),
+      shape.fields.map((input) => [input.fieldName, currentValue(current?.state.fields, input)]),
     );
   }
   return correctionValues(
@@ -114,7 +115,7 @@ export const prefilledValues = (
         values: Object.fromEntries(
           group.replaceFields.map((input) => [
             input.fieldName,
-            currentValue(current?.fields, input),
+            currentValue(current?.state.fields, input),
           ]),
         ),
       },
@@ -169,41 +170,58 @@ const paymentGroup = (value: CorrectionGroupValues) => {
   };
 };
 
+const correctionAct = (values: DraftValues) => {
+  if (!isCorrectionValues(values)) {
+    throw new Error("CORRECT_CASE requires grouped values.");
+  }
+  return {
+    kind: "CORRECT_CASE" as const,
+    groups: {
+      registration: registrationGroup(values.registration),
+      decision: decisionGroup(values.decision),
+      payment: paymentGroup(values.payment),
+    },
+  };
+};
+
 export const createDraft = (
   operationId: string,
   caseReference: string,
-  expectedRevision: string,
+  expectedRevision: number,
   command: CommandKind,
   values: DraftValues,
 ): CommandDraft => {
   if (command === "CORRECT_CASE") {
-    if (!isCorrectionValues(values)) {
-      throw new Error("CORRECT_CASE requires grouped values.");
-    }
-    return {
-      operationId,
-      caseReference,
-      expectedRevision,
-      command: {
-        kind: "CORRECT_CASE",
-        groups: {
-          registration: registrationGroup(values.registration),
-          decision: decisionGroup(values.decision),
-          payment: paymentGroup(values.payment),
-        },
-      },
-    };
+    return { operationId, caseReference, expectedRevision, act: correctionAct(values) };
   }
   if (isCorrectionValues(values)) {
     throw new Error(`${command} requires flat values.`);
   }
-  return {
-    operationId,
-    caseReference,
-    expectedRevision,
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-    command: { kind: command, values: { ...values } } as CommandDraft["command"],
-  };
+  const common = { operationId, caseReference, expectedRevision };
+  switch (command) {
+    case "OPEN":
+    case "AMEND_REGISTRATION": {
+      const group = registrationGroup({ mode: "REPLACE", values });
+      if (group.mode !== "REPLACE") {
+        throw new Error("Registration requires replacement values.");
+      }
+      return { ...common, act: { kind: command, values: group.values } };
+    }
+    case "DECIDE": {
+      const group = decisionGroup({ mode: "REPLACE", values });
+      if (group.mode !== "REPLACE") {
+        throw new Error("Decision requires replacement values.");
+      }
+      return { ...common, act: { kind: command, values: group.values } };
+    }
+    case "RECORD_PAYMENT":
+      return {
+        ...common,
+        act: { kind: command, values: { paymentDate: values["paymentDate"] ?? "" } },
+      };
+    default:
+      return { ...common, act: { kind: command } };
+  }
 };
 
 const flatValuesChanged = (values: FlatDraftValues, baseline: FlatDraftValues): boolean =>

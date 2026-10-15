@@ -18,5 +18,16 @@
   "token.RECORD_PAYMENT": "تسجيل الدفع الفعلي",
   "token.CLEAR_PAYMENT": "تصحيح سجل دفع خاطئ",
   "token.CLOSE": "إغلاق الملف",
-  "token.REOPEN": "إعادة فتح الملف"
+  "token.REOPEN": "إعادة فتح الملف",
+  "token.OWNER": "المالك",
+  "token.CASE_READER": "قارئ الحالات",
+  "token.CASE_REGISTRAR": "مسجل الحالات",
+  "token.CASE_HANDLER": "معالج الحالات",
+  "token.PAYMENT_RECORDER": "مسجل المدفوعات",
+  "token.DATA_STEWARD": "مشرف البيانات",
+  "token.AUDITOR": "المدقق",
+  "token.PROVISION_OWNER": "تعيين المالك الأول",
+  "token.REGISTER_ACTOR": "تسجيل جهة",
+  "token.SET_ENABLED": "تعيين حالة تفعيل الجهة",
+  "token.SET_GRANT": "تعيين الصلاحية"
 }

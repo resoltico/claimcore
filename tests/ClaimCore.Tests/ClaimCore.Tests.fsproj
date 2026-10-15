@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
+    <Compile Include="PostgresBaselineTests.fs" />
     <Compile Include="PropertyHarness.fs" />
     <Compile Include="PropertyHarnessTests.fs" />
     <Compile Include="Fixtures.fs" />
@@ -10,6 +12,7 @@
     <Compile Include="TransitionOracle.fs" />
     <Compile Include="TransitionPropertyTests.fs" />
     <Compile Include="DomainTests.fs" />
+    <Compile Include="CaseModelTests.fs" />
     <Compile Include="CaseCorrectionTests.fs" />
     <Compile Include="BusinessDateTests.fs" />
     <Compile Include="DomainAdmissionTests.fs" />
@@ -18,7 +21,10 @@
     <Compile Include="AvailabilityTests.fs" />
     <Compile Include="DomainDescriptorTests.fs" />
     <Compile Include="StewardshipTests.fs" />
+    <Compile Include="CanonicalJsonTests.fs" />
     <Compile Include="CanonicalRecordTests.fs" />
+    <Compile Include="RecordBoundaryTests.fs" />
+    <Compile Include="CursorRecordTests.fs" />
     <Compile Include="RecordPropertyTests.fs" />
     <Compile Include="DecoderCorpora.fs" />
     <Compile Include="OperationRecordTests.fs" />
@@ -27,10 +33,17 @@
     <Compile Include="PrivateFileTests.fs" />
     <Compile Include="MemoryLedgerStore.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
+    <Compile Include="ApplicationFixtures.fs" />
     <Compile Include="HostingTests.fs" />
+    <Compile Include="AuthorizationPolicyTests.fs" />
+    <Compile Include="CursorTests.fs" />
     <Compile Include="ApplicationTests.fs" />
+    <Compile Include="AuthorityTests.fs" />
+    <Compile Include="DisclosureTests.fs" />
+    <Compile Include="PaginationTests.fs" />
     <Compile Include="ContractTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
+    <Compile Include="ContractSnapshotTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
     <Compile Include="RemoteTlsTests.fs" />
     <Compile Include="TokenLifetimeTests.fs" />
@@ -40,11 +53,12 @@
     <Compile Include="CliFrameTests.fs" />
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
-    <Compile Include="DocumentationDiscovery.fs" />
+    <Compile Include="VerificationStageTests.fs" />
     <Compile Include="DocumentationChecks.fs" />
     <Compile Include="DocumentationTests.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />

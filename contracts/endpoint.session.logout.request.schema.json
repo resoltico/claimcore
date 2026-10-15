@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claimcore.local/contracts/endpoint.session.logout.request.schema.json",
+  "title": "ClaimCore endpoint.session.logout.request.schema.json",
+  "$defs": {
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    }
+  },
+  "$ref": "#/$defs/root"
+}

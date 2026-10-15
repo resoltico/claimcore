@@ -22,22 +22,15 @@ module Execution =
                 do! administration.Migrate(CancellationToken.None)
                 return Replies.tag "MIGRATED" 0
             | ProvisionOwner ->
-                let event, principal = Inputs.owner ()
+                let operationId, principal = Inputs.owner ()
 
                 let! result =
-                    administration.ProvisionOwner(event, principal, CancellationToken.None)
+                    administration.ProvisionOwner(operationId, principal, CancellationToken.None)
 
                 return Replies.authority result
             | Verify expected ->
-                let! head = administration.Verify(expected, CancellationToken.None)
-
-                return
-                    Replies.encode
-                        {|
-                            tag = "VERIFIED"
-                            position = Replies.position head
-                        |},
-                    0
+                let! result = administration.Verify(expected, CancellationToken.None)
+                return Replies.verification result
             | Head ->
                 let! head = administration.Head(CancellationToken.None)
 

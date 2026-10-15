@@ -5,23 +5,23 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private chronology field =
-    DomainError.InvalidInput(field, InputViolation.Date DateViolation.ChronologicalOrder)
+    CaseRefusal.InvalidInput(field, InputViolation.Date DateViolation.ChronologicalOrder)
 
 let private snapshots =
     testCase "[CC-DOM-001] restoration refuses invalid paid and chronological states" (fun () ->
-        let original = paid () |> Claim.view
+        let original = paid () |> Case.snapshot
 
         let variants =
             [
-                { original.Fields with
+                { (viewFields original) with
                     PayableAmount = Some "0"
                 },
-                DomainError.ZeroDecisionCannotBePaid
-                { original.Fields with
+                CaseRefusal.ZeroDecisionCannotBePaid
+                { (viewFields original) with
                     PaymentDecisionDate = Some "2026-08-02"
                 },
                 chronology InputTarget.PaymentDecisionDate
-                { original.Fields with
+                { (viewFields original) with
                     PaymentDate = Some "2026-08-14"
                 },
                 chronology InputTarget.PaymentDate
@@ -29,7 +29,7 @@ let private snapshots =
 
         for fields, refusal in variants do
             Expect.equal
-                (Claim.restore { original with Fields = fields } |> Result.map ignore)
+                (Case.ofAccepted (snapshot original.Revision fields) |> Result.map ignore)
                 (Error refusal)
                 "No invalid opaque Claim")
 
@@ -38,18 +38,18 @@ let private payload =
         "[CC-DOM-002] malformed payload admission precedes stale revision and eligibility"
         (fun () ->
             let malformed =
-                Command.Decide
+                BusinessCommand.Decide
                     { decision with
                         PaymentDecisionDate = "not-a-date"
                     }
 
             let rejected =
-                Claim.decide today (request 0L malformed) (Some(paid ())) |> Result.map ignore
+                Case.decide today (request 0L malformed) (Some(paid ())) |> Result.map ignore
 
             Expect.equal
                 rejected
                 (Error(
-                    DomainError.InvalidInput(
+                    CaseRefusal.InvalidInput(
                         InputTarget.PaymentDecisionDate,
                         InputViolation.Date DateViolation.CalendarDateRequired
                     )

@@ -12,6 +12,7 @@ let names =
             "onlyTheseMayReferenceHosting"
             "freeOfClockFileEnvironmentRandomnessAndNetwork"
             "onlyTheseMayUseTimeZoneInfo"
+            "recordFormatAvoidsFrameworkSerialization"
         ]
 
 let private fileTypes =
@@ -80,6 +81,15 @@ let rule name (subjects: IObjectProvider<IType>) =
         :> IArchRule
     | "onlyTheseMayUseTimeZoneInfo" ->
         clauses.NotDependOnAny(Types().That().HaveFullName("System.TimeZoneInfo")) :> IArchRule
+    | "recordFormatAvoidsFrameworkSerialization" ->
+        clauses.NotDependOnAny(
+            Types()
+                .That()
+                .HaveFullName("System.Text.Json.Utf8JsonWriter")
+                .Or()
+                .HaveFullName("System.Text.Json.JsonSerializer")
+        )
+        :> IArchRule
     | "freeOfClockFileEnvironmentRandomnessAndNetwork" ->
         clauses.NotCallAny(forbiddenCalls) :> IArchRule
     | _ -> invalidArg "name" ("Unknown architecture rule " + name)

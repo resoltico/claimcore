@@ -1,9 +1,9 @@
 import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useState } from "react";
-import type { CurrentCase, PublicDefinition, Receipt } from "../api/service";
+import type { CurrentCase, ProductMetadata, CaseReceipt } from "../api/service";
 import type { CommandKind } from "../domain/metadata";
-import { productMetadata } from "../generated/contracts/product-metadata";
+import { productMetadata } from "@contracts/product-metadata";
 import { CaseDetail } from "./CaseDetail";
 import { CaseList } from "./CaseList";
 import { OperationEditor } from "./OperationEditor";
@@ -17,7 +17,7 @@ const Header = ({
   locked,
   onLogout,
 }: {
-  definition: PublicDefinition;
+  definition: ProductMetadata;
   locked: boolean;
   onLogout: () => Promise<void>;
 }) => {
@@ -26,11 +26,10 @@ const Header = ({
     <header>
       <div>
         <p className="eyebrow">{p.text("ui.registerLabel")}</p>
-        <h1>{definition.definition.application}</h1>
+        <h1>ClaimCore</h1>
         <details>
           <summary>{p.text("ui.technicalDetails")}</summary>
           <p>{p.text("ui.productVersion", { version: definition.productVersion })}</p>
-          <p>{p.text("ui.semanticIdentity", { digest: definition.semanticFingerprint })}</p>
           <p>{p.text("ui.webIdentity", { digest: definition.wireFingerprint })}</p>
         </details>
       </div>
@@ -71,7 +70,7 @@ const DashboardNav = ({
 
 type ContentProps = {
   token: string;
-  definition: PublicDefinition;
+  definition: ProductMetadata;
   active: string;
   operation: OperationTarget | null;
   selectedReference: string | null;
@@ -79,7 +78,7 @@ type ContentProps = {
   setOperation: (value: OperationTarget | null) => void;
   setSelectedReference: (value: string | null) => void;
   setLocked: (value: boolean) => void;
-  committed: (receipt: Receipt) => void;
+  committed: (receipt: CaseReceipt) => void;
 };
 
 type PaneProps = Pick<
@@ -111,7 +110,7 @@ const CasesPane = ({
       token={token}
       caseReference={selectedReference}
       reloadSignal={refresh}
-      definition={definition.definition}
+      definition={definition.descriptors}
       onBack={() => {
         setSelectedReference(null);
       }}
@@ -169,7 +168,7 @@ const useDashboardNavigation = () => {
       setSelectedReference(null);
     }
   };
-  const committed = (receipt: Receipt): void => {
+  const committed = (receipt: CaseReceipt): void => {
     setOperation(null);
     setSelectedReference(receipt.caseReference);
     setRefresh((value) => value + 1);

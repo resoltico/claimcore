@@ -37,12 +37,8 @@ module ContractArtifacts =
             schema "responses.schema.json" EndpointCatalog.responses
             schema "host-failure.schema.json" HostFailures.schema
             {
-                Name = "semantic-core.schema.json"
-                Bytes = ContractDiscovery.semanticSchema () |> CanonicalContract.bytes
-            }
-            {
-                Name = "semantic-core.contract.json"
-                Bytes = ContractDiscovery.semantic () |> CanonicalContract.bytes
+                Name = "descriptors.json"
+                Bytes = ContractDiscovery.descriptors () |> CanonicalContract.bytes
             }
             {
                 Name = "catalog.json"
@@ -61,17 +57,3 @@ module ContractArtifacts =
                 Bytes = Corpus.bytes ()
             }
         ]
-
-    let manifest artifacts =
-        let files = JsonArray()
-        artifacts |> List.iter (fun value -> files.Add(JsonValue.Create value.Name))
-        let result = JsonObject()
-        result.Add("generator", JsonValue.Create "ClaimCore.Contracts")
-
-        result.Add(
-            "wireFingerprint",
-            JsonValue.Create(WireContractFingerprint.value EndpointCatalog.fingerprint)
-        )
-
-        result.Add("files", files)
-        result.ToJsonString() + "\n" |> Encoding.UTF8.GetBytes

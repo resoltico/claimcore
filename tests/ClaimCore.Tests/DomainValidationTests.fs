@@ -4,6 +4,9 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
+let private availableActs record =
+    Case.eligibleActs record |> List.map CaseActKinds.token
+
 let private chronologyTests =
     testList
         "chronology"
@@ -12,7 +15,7 @@ let private chronologyTests =
                 Expect.isTrue
                     (opened ()
                      |> apply (
-                         Command.Decide
+                         BusinessCommand.Decide
                              { decision with
                                  PaymentDecisionDate = "2026-08-02"
                              }
@@ -21,11 +24,11 @@ let private chronologyTests =
                     "Chronology")
             testCase "payment before decision is rejected" (fun () ->
                 Expect.isTrue
-                    (decided () |> apply (Command.RecordPayment "2026-08-14") |> isInvalid)
+                    (decided () |> apply (BusinessCommand.RecordPayment "2026-08-14") |> isInvalid)
                     "Chronology")
             testCase "future payment is rejected" (fun () ->
                 Expect.isTrue
-                    (decided () |> apply (Command.RecordPayment "2026-09-08") |> isInvalid)
+                    (decided () |> apply (BusinessCommand.RecordPayment "2026-09-08") |> isInvalid)
                     "No future payment recorded as done")
         ]
 
@@ -34,24 +37,23 @@ let private restorationTests =
         "restoration integrity"
         [
             testCase "restore cannot invent a decision for payment" (fun () ->
-                let original = Claim.view (opened ())
+                let original = Case.snapshot (opened ())
 
                 let invalid =
-                    { original with
-                        Fields =
-                            { original.Fields with
-                                PaymentDate = Some "2026-08-20"
-                            }
-                    }
+                    snapshot
+                        original.Revision
+                        { (viewFields original) with
+                            PaymentDate = Some "2026-08-20"
+                        }
 
-                let result = Claim.restore invalid |> Result.map Claim.view
-                Expect.isTrue (result = Error DomainError.DecisionRequired) "Corruption")
+                let result = Case.ofAccepted invalid |> Result.map Case.snapshot
+                Expect.isTrue (result = Error CaseRefusal.DecisionRequired) "Corruption")
             testCase "all six incomplete decision tuples are rejected on restoration" (fun () ->
-                let original = Claim.view (opened ())
+                let original = Case.snapshot (opened ())
 
                 for mask in 1..6 do
                     let fields =
-                        { original.Fields with
+                        { (viewFields original) with
                             PaymentDecisionDate =
                                 if mask &&& 1 <> 0 then Some "2026-08-15" else None
                             PayableAmount = if mask &&& 2 <> 0 then Some "750" else None
@@ -59,30 +61,37 @@ let private restorationTests =
                         }
 
                     Expect.isError
-                        (Claim.restore { original with Fields = fields })
+                        (Case.ofAccepted (snapshot original.Revision fields))
                         "An entire tuple, never a partial tuple")
-            testCase "revision ceiling rejects terminal snapshots and prevents overflow" (fun () ->
-                let original = Claim.view (opened ())
+            testCase
+                "safe-integer terminal snapshots remain readable and refuse a successor"
+                (fun () ->
+                    let original = Case.snapshot (opened ())
 
-                let penultimate =
-                    { original with
-                        Version = System.Int64.MaxValue - 1L
-                    }
+                    let terminal =
+                        { original with
+                            Revision = Revision.Maximum
+                        }
 
-                let terminal =
-                    { original with
-                        Version = System.Int64.MaxValue
-                    }
+                    let current = Case.ofAccepted terminal |> accepted
+                    Expect.isEmpty (availableActs current) "No successor can be represented"
 
-                Expect.isError (Claim.restore terminal) "Terminal revision is not accepted state"
+                    Expect.isTrue
+                        ((Case.decide
+                            today
+                            (request Revision.Maximum BusinessCommand.Close)
+                            (Some current)
+                          |> Result.map Case.snapshot)
+                            =
+                            Error CaseRefusal.RevisionExhausted)
+                        "Terminal state refuses without arithmetic"
 
-                let current = Claim.restore penultimate |> accepted
-                Expect.isEmpty (Claim.availableCommands current) "No unrepresentable next action"
-
-                Expect.isTrue
-                    (Claim.decide today (request penultimate.Version Command.Close) (Some current)
-                     |> isInvalid)
-                    "A transition cannot reach Int64.MaxValue")
+                    Expect.isError
+                        (Case.ofAccepted
+                            { original with
+                                Revision = Revision.Maximum + 1L
+                            })
+                        "Beyond safe range")
         ]
 
 let private precisionAndRoundTripTests =
@@ -97,20 +106,24 @@ let private precisionAndRoundTripTests =
                         ClaimedAmount = maximum
                     }
 
-                let claim = Claim.decide today (request 0L (Command.Open facts)) None |> accepted
-                Expect.isTrue ((Claim.view claim).Fields.ClaimedAmount = maximum) "No rounding")
+                let claim =
+                    Case.decide today (request 0L (BusinessCommand.Open facts)) None |> accepted
+
+                Expect.isTrue
+                    ((Case.snapshot claim |> viewFields).ClaimedAmount = maximum)
+                    "No rounding")
             testCase "all supported state views rehydrate" (fun () ->
                 for state in
                     [
                         opened ()
                         decided ()
                         paid ()
-                        opened () |> apply Command.Close |> accepted
+                        opened () |> apply BusinessCommand.Close |> accepted
                     ] do
-                    let view = Claim.view state
+                    let view = Case.snapshot state
 
                     Expect.isTrue
-                        ((Claim.restore view |> accepted |> Claim.view) = view)
+                        ((Case.ofAccepted view |> accepted |> Case.snapshot) = view)
                         "Round trip")
         ]
 
@@ -141,7 +154,8 @@ let private decimalGrammarTests =
                         }
 
                     Expect.isTrue
-                        (Claim.decide today (request 0L (Command.Open facts)) None |> isInvalid)
+                        (Case.decide today (request 0L (BusinessCommand.Open facts)) None
+                         |> isInvalid)
                         "Exact decimal grammar")
         ]
 
@@ -158,7 +172,8 @@ let private dateGrammarTests =
                         }
 
                     Expect.isTrue
-                        (Claim.decide today (request 0L (Command.Open facts)) None |> isInvalid)
+                        (Case.decide today (request 0L (BusinessCommand.Open facts)) None
+                         |> isInvalid)
                         "Calendar grammar")
         ]
 
@@ -174,23 +189,30 @@ let private currencyGrammarTests =
                         }
 
                     Expect.isTrue
-                        (Claim.decide today (request 0L (Command.Open facts)) None |> isInvalid)
+                        (Case.decide today (request 0L (BusinessCommand.Open facts)) None
+                         |> isInvalid)
                         "Currency grammar")
         ]
 
 let private authoredUnicodeRoundTrip () =
-    for value in [ "نام\u200Cخانوادگی"; "اسم\u200D"; "A\u202E"; "A\u2028B" ] do
+    for value in [ "نام\u200Cخانوادگی"; "اسم\u200D"; "e\u0301"; "A\uFE0F" ] do
         let facts =
             { registration with
                 ClaimantName = value
             }
 
-        let claim = Claim.decide today (request 0L (Command.Open facts)) None |> accepted
-        let snapshot = Claim.view claim
-        Expect.equal snapshot.Fields.ClaimantName value "Authored scalar content remains exact."
+        let claim =
+            Case.decide today (request 0L (BusinessCommand.Open facts)) None |> accepted
+
+        let snapshot = Case.snapshot claim
 
         Expect.equal
-            (Claim.restore snapshot |> Result.map Claim.view)
+            (viewFields snapshot).ClaimantName
+            value
+            "Authored scalar content remains exact."
+
+        Expect.equal
+            (Case.ofAccepted snapshot |> Result.map Case.snapshot)
             (Ok snapshot)
             "Historical restoration preserves the same text contract."
 
@@ -200,7 +222,7 @@ let tests =
         "domain validation"
         [
             testCase
-                "[CC-DOM-001] business Unicode preserves joining and authored display controls through restoration"
+                "[CC-DOM-001] business Unicode preserves joining and authored orthographic selectors through restoration"
                 authoredUnicodeRoundTrip
             chronologyTests
             restorationTests

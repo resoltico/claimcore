@@ -8,11 +8,34 @@ Case fields and payment dates are operator assertions; ClaimCore transfers no mo
 
 ## Erasure limits
 
-ERASE clears payload, payload_nonce and request_sha256 on every ledger entry of the case,
+ERASE clears payload and payload_nonce on every ledger entry of the case,
 removes business projections, and retains reference, revision and ledger metadata. It cannot
 reach old row versions, WAL, replicas, logs, exports or backups. Retained references may still
 identify a person. Operators own retention, physical disposal and privacy decisions outside
 this live-database act. VOID preserves all history and is not erasure.
+
+The append-only guard permits only case payload clearing; it is an integrity guard, not protection
+against a hostile trusted owner. A schema owner can clear payload without recording ERASE under
+that exception; verification detects missing payload without an accepted erasure. Runtime erasure
+requires an accepted ERASE and removes its case’s complete live payload history atomically.
+
+## Access review and sessions
+
+Use `authority.list` with installation OWNER or AUDITOR for current actors and grants. Registration
+records both executor and target; for REGISTER_ACTOR they differ. Scope grants deliberately, keep
+at least one enabled human installation owner, and revoke ClaimCore grants independently of IdP
+membership. Service principals cannot receive OWNER or DATA_STEWARD. Bearer service identity comes
+from the admitted client ID; the CLI’s PKCE principal uses the human subject.
+
+Before registering a SERVICE principal, restrict its confidential IdP client to client credentials
+and disable interactive/user grant paths. The human CLI client is public authorization-code/PKCE,
+with service accounts disabled. Put the API audience in access tokens only, never ID tokens.
+`azp`/`client_id` classification does not establish the grant type; operators must maintain these
+flow restrictions as described in [Web admission](web.md#cc-web-001).
+
+Browser sessions and list cursors are ephemeral. A runtime restart invalidates cursor signatures;
+expired or changed-grant cursors must be restarted. The browser retains no pending request across
+reload. Preserve exact uncertain requests through the caller’s process; never replace their ID.
 
 ## Backups and restore
 

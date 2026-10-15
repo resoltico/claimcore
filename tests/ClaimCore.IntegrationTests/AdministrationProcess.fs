@@ -27,7 +27,7 @@ let private start arguments =
 
     config
 
-let private execute (config: ProcessStartInfo) =
+let execute (config: ProcessStartInfo) =
     task {
         use child =
             Process.Start(config)

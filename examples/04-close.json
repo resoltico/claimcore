@@ -1,12 +1,11 @@
 {
-  "endpoint": "command.execute",
+  "endpoint": "case.execute",
   "input": {
     "operationId": "10000000-0000-4000-8000-000000000004",
     "caseReference": "DEMO-0001",
-    "expectedRevision": "3",
-    "command": {
-      "kind": "CLOSE",
-      "values": {}
+    "expectedRevision": 3,
+    "act": {
+      "kind": "CLOSE"
     }
   }
 }

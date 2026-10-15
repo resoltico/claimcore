@@ -19,22 +19,7 @@ const inventory = JSON.parse(
 const fallbacks = new Map([
   ["client-only@0.0.1", resolve(webDirectory, "node_modules/react/LICENSE")],
 ]);
-const validatorNotice = readFileSync(
-  resolve(webDirectory, "src/generated/contracts/validators.NOTICE.txt"),
-  "utf8",
-).trim();
-const embeddedPackages = new Set(
-  Array.from(validatorNotice.matchAll(/^Package: (.+)@[^@\n]+$/gmu), (match) => match[1]),
-);
-if (embeddedPackages.size === 0) {
-  throw new Error("The generated standalone-validator package inventory is missing.");
-}
-
-/** @param {string} identity */
-const packageName = (identity) => identity.slice(0, identity.lastIndexOf("@"));
-
 const dependencies = Object.entries(inventory)
-  .filter(([name]) => !embeddedPackages.has(packageName(name)))
   .sort(([left], [right]) => left.localeCompare(right))
   .map(([name, metadata]) => {
     const licenseFile = metadata.licenseFile ?? fallbacks.get(name);
@@ -69,8 +54,5 @@ const header = [
   "ClaimCore licensing and source availability are described separately in LICENSE.txt.",
   "",
 ].join("\n");
-writeFileSync(
-  resolve(webDirectory, "dist/THIRD-PARTY-NOTICES.txt"),
-  `${header}\n${notice}\n\n${"-".repeat(80)}\n\n${validatorNotice}\n`,
-);
+writeFileSync(resolve(webDirectory, "dist/THIRD-PARTY-NOTICES.txt"), `${header}\n${notice}\n`);
 copyFileSync(resolve(webDirectory, "../LICENSE"), resolve(webDirectory, "dist/LICENSE.txt"));

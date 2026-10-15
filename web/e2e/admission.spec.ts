@@ -1,4 +1,4 @@
-import { wireContractFingerprint } from "../src/generated/contracts/endpoint-catalog";
+import { wireContractFingerprint } from "@contracts/endpoint-catalog";
 import { expect, test, type Page } from "@playwright/test";
 
 import { browserRequest, expectHostFailure, login, sessionToken } from "./session-helpers";
@@ -7,7 +7,7 @@ test.use({ storageState: { cookies: [], origins: [] } });
 
 const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Promise<void> => {
   const listPath = "/api/case.list";
-  await expectHostFailure(
+  expectHostFailure(
     await browserRequest(page, listPath, {
       method: "POST",
       headers: { "Content-Type": "text/plain", "X-ClaimCore-Antiforgery": token },
@@ -33,7 +33,7 @@ const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Pro
     data: "x".repeat(16 * 1024 * 1024 + 1),
     maxRedirects: 0,
   });
-  await expectHostFailure(
+  expectHostFailure(
     {
       status: oversized.status(),
       cacheControl: oversized.headers()["cache-control"] ?? null,
@@ -42,7 +42,7 @@ const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Pro
     413,
     "BODY_TOO_LARGE",
   );
-  await expectHostFailure(
+  expectHostFailure(
     await browserRequest(page, listPath, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": token },
@@ -57,8 +57,8 @@ test("rejects absent routes and malformed published Web service admission before
   page,
 }) => {
   await page.goto("/", { waitUntil: "commit" });
-  await expectHostFailure(await browserRequest(page, "/api/not-present"), 404, "ENDPOINT_MISSING");
-  await expectHostFailure(
+  expectHostFailure(await browserRequest(page, "/api/not-present"), 404, "ENDPOINT_MISSING");
+  expectHostFailure(
     await browserRequest(page, "/api/case.list", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -69,7 +69,7 @@ test("rejects absent routes and malformed published Web service admission before
   );
   await login(page);
   const token = await sessionToken(page);
-  await expectHostFailure(
+  expectHostFailure(
     await browserRequest(page, "/api/case.list", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

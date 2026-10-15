@@ -21,7 +21,7 @@ module internal StateValidation =
                     do! Validation.onOrBefore InputTarget.PaymentDate decision.Date paid
 
                     if decision.Payable.Value = 0M then
-                        return! Error DomainError.ZeroDecisionCannotBePaid
+                        return! Error CaseRefusal.ZeroDecisionCannotBePaid
         }
 
     let newlyAssertedDates today (before: Validation.Facts) prior (after: Validation.Facts) next =

@@ -27,7 +27,6 @@ type OidcConfiguration =
         ClientId: string
         ClientSecret: string
         ApiAudience: string
-        ServiceClientId: string
         CliClientId: string
     }
 
@@ -74,8 +73,8 @@ module Configuration =
             MaximumJsonBytes =
                 boundedInt
                     WebSetting.JsonLimit
-                    SemanticContract.current.RequestByteLimit
-                    SemanticContract.current.RequestByteLimit
+                    ServiceLimits.RequestByteLimit
+                    ServiceLimits.RequestByteLimit
             CorePermitLimit = boundedInt WebSetting.CorePermits 4 4
             CoreQueueLimit = boundedInt WebSetting.CoreQueue 16 16
             LoginPermitLimit = boundedInt WebSetting.LoginPermits 5 5
@@ -123,10 +122,9 @@ module Configuration =
 
             let clientId = requiredName WebSetting.OidcClientId
             let audience = requiredName WebSetting.OidcApiAudience
-            let serviceClient = requiredName WebSetting.OidcServiceClientId
             let cliClient = requiredName WebSetting.OidcCliClientId
 
-            if [ clientId; audience; serviceClient; cliClient ] |> Set.ofList |> Set.count <> 4 then
+            if [ clientId; audience; cliClient ] |> Set.ofList |> Set.count <> 3 then
                 invalid ()
 
             let trustRoot =
@@ -142,7 +140,6 @@ module Configuration =
                     ClientId = clientId
                     ClientSecret = clientSecret
                     ApiAudience = audience
-                    ServiceClientId = serviceClient
                     CliClientId = cliClient
                 }
 

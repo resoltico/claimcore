@@ -24,6 +24,7 @@ let private model =
                         typeof<ClockCall>.Assembly
                         typeof<Guid>.Assembly
                         typeof<System.Net.Http.HttpClient>.Assembly
+                        typeof<System.Text.Json.JsonSerializer>.Assembly
                     |]
             )
             .Build())
@@ -87,7 +88,7 @@ let private graphTests =
                         "ClaimCore.Domain"
                         (Types().That().HaveFullName("AbsentArchitectureSubject")))
                 "ClaimCore.Domain onlyTheseMayUseTimeZoneInfo")
-        testCase "the four named rules cannot silently disappear" (fun () ->
+        testCase "the named rules cannot silently disappear" (fun () ->
             Expect.equal
                 (contract.Value.Rules.Keys |> Set.ofSeq)
                 ApiRules.names
@@ -103,7 +104,10 @@ let private positiveRules =
 
             for project in contract.Value.Projects.Keys do
                 let applies =
-                    if name = "freeOfClockFileEnvironmentRandomnessAndNetwork" then
+                    if
+                        name = "freeOfClockFileEnvironmentRandomnessAndNetwork"
+                        || name = "recordFormatAvoidsFrameworkSerialization"
+                    then
                         Set.contains project selected
                     elif
                         name = "onlyTheseMayReferencePostgres" && project = "ClaimCore.Postgres"
@@ -128,6 +132,8 @@ let private negativeRules =
         "onlyTheseMayReferencePostgres", typeof<PostgresReference>
         "onlyTheseMayReferenceHosting", typeof<HostingReference>
         "onlyTheseMayUseTimeZoneInfo", typeof<TimeZoneCall>
+        "recordFormatAvoidsFrameworkSerialization", typeof<JsonSerializerCall>
+        "recordFormatAvoidsFrameworkSerialization", typeof<JsonWriterCall>
         "freeOfClockFileEnvironmentRandomnessAndNetwork", typeof<ClockCall>
         "freeOfClockFileEnvironmentRandomnessAndNetwork", typeof<FileCall>
         "freeOfClockFileEnvironmentRandomnessAndNetwork", typeof<EnvironmentCall>
@@ -136,13 +142,14 @@ let private negativeRules =
     ]
     |> List.map (fun (name, fixture) ->
         testCase ("compiled negative " + fixture.Name) (fun () ->
+            let subjects = Types().That().HaveFullName(fixture.FullName |> nonNull)
+
+            Expect.isFalse
+                (subjects.GetObjects model.Value |> Seq.isEmpty)
+                "Compiled negative fixture is present"
+
             reject
-                (fun () ->
-                    ApiRules.check
-                        model.Value
-                        name
-                        "ClaimCore.Domain"
-                        (Types().That().HaveFullName(fixture.FullName |> nonNull)))
+                (fun () -> ApiRules.check model.Value name "ClaimCore.Domain" subjects)
                 ("ClaimCore.Domain " + name)))
 
 [<Tests>]

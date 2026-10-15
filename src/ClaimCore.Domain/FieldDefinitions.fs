@@ -14,12 +14,30 @@ type FieldDefinition =
 module FieldDefinitions =
     let private text maximumCharacters =
         {
-            MinimumCharacters = 1
-            MaximumCharacters = maximumCharacters
-            RequiresNonBlank = true
-            RejectsSurroundingWhitespace = true
-            RejectsControlCharacters = true
-            RequiresWellFormedUnicode = true
+            Format =
+                {
+                    MinimumCharacters = 1
+                    Grammar = None
+                }
+            Policy =
+                Some
+                    {
+                        MaximumCharacters = maximumCharacters
+                        RequiresNonBlank = true
+                        RejectsSurroundingWhitespace = true
+                        RejectsControlCharacters = true
+                        RejectsFormattingCharacters = true
+                    }
+        }
+
+    let private token grammar =
+        {
+            Format =
+                {
+                    MinimumCharacters = 1
+                    Grammar = Some grammar
+                }
+            Policy = None
         }
 
     let private calendarDate =
@@ -40,10 +58,13 @@ module FieldDefinitions =
         let fractional =
             maximumFractionalDigits.ToString(System.Globalization.CultureInfo.InvariantCulture)
 
+        let grammar =
+            "(0|[1-9][0-9]{0," + integerTail + "})(\\.[0-9]{1," + fractional + "})?"
+
         ScalarRule.Amount
             {
-                Text = text (maximumIntegerDigits + 1 + maximumFractionalDigits)
-                Grammar = "(0|[1-9][0-9]{0," + integerTail + "})(\\.[0-9]{1," + fractional + "})?"
+                Text = token grammar
+                Grammar = grammar
                 MaximumIntegerDigits = maximumIntegerDigits
                 MaximumFractionalDigits = maximumFractionalDigits
             }
@@ -54,10 +75,12 @@ module FieldDefinitions =
         let characters =
             exactCharacters.ToString(System.Globalization.CultureInfo.InvariantCulture)
 
+        let grammar = "[A-Z]{" + characters + "}"
+
         ScalarRule.Currency
             {
-                Text = text exactCharacters
-                Grammar = "[A-Z]{" + characters + "}"
+                Text = token grammar
+                Grammar = grammar
                 ExactCharacters = exactCharacters
             }
 
@@ -92,9 +115,9 @@ module FieldDefinitions =
             field
                 "incidentCountry"
                 "IncidentCountry"
-                "Country of incident"
-                "Country where the incident occurred; recorded as entered without inferring applicable law."
-                (ScalarRule.Text(text 100))
+                "Country of incident (ISO alpha-2 code)"
+                "Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international."
+                (ScalarRule.Text(token "[A-Z]{2}"))
                 false
         ]
 
@@ -136,8 +159,8 @@ module FieldDefinitions =
                 "caseReference"
                 "CaseReference"
                 "Handler's case reference"
-                "Reference assigned by the claims handler operating this register, not an insurer reference. Unique, immutable and case-sensitive within one installation."
-                (ScalarRule.Text(text 80))
+                "Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained."
+                (ScalarRule.Text(token "[!-~]{1,80}"))
                 false
         ]
 
@@ -193,7 +216,11 @@ module FieldDefinitions =
         |> Option.defaultWith (fun () -> invalidArg "name" "The field is not declared.")
 
     /// The scalar definition is the single source for Domain validation and semantic discovery.
-    let scalar name = (forName name).Scalar
+    let scalar name =
+        if name = "reason" then
+            ScalarRule.Text(text 200)
+        else
+            (forName name).Scalar
 
     /// Core-owned scalar projection in the same order as the thirteen-field definition.
     /// Values stay exact text; adapters choose layout, not interpretation or calculations.

@@ -7,72 +7,13 @@ open ClaimCore.Domain
 module internal CommandInputProjection =
     let private text value = Schema.constant (TextConstant value)
 
-    let private exactArray (values: Schema list) = Schema.tuple values
-
-    let field (input: FieldInputDefinition) =
-        match input.Prefill with
-        | PrefillSource.Blank ->
-            Schema.objectOf
-                false
-                [
-                    Schema.property "fieldName" (text input.FieldName) true
-                    Schema.property "prefill" (text "BLANK") true
-                ]
-        | PrefillSource.CurrentField current ->
-            Schema.objectOf
-                false
-                [
-                    Schema.property "fieldName" (text input.FieldName) true
-                    Schema.property "prefill" (text "CURRENT_FIELD") true
-                    Schema.property "currentField" (text current) true
-                ]
-
-    let private action action =
-        match action with
-        | CorrectionGroupAction.Keep -> "KEEP"
-        | CorrectionGroupAction.Replace -> "REPLACE"
-        | CorrectionGroupAction.Clear -> "CLEAR"
-
-    let private correctionGroupDefinition (group: CorrectionGroupDefinition) =
-        Schema.objectOf
-            false
-            [
-                Schema.property "name" (text group.Name) true
-                Schema.property "label" (Schema.string None None (Some 1) (Some 4096)) true
-                Schema.property "meaning" (Schema.string None None (Some 1) (Some 4096)) true
-                Schema.property
-                    "actions"
-                    (group.Actions |> List.map (action >> text) |> exactArray)
-                    true
-                Schema.property
-                    "replaceFields"
-                    (group.ReplaceFields |> List.map field |> exactArray)
-                    true
-            ]
-
-    let definition =
-        function
-        | CommandInputShape.Fields fields ->
-            Schema.objectOf
-                false
-                [
-                    Schema.property "kind" (text "FIELDS") true
-                    Schema.property "fields" (fields |> List.map field |> exactArray) true
-                ]
-        | CommandInputShape.CorrectionGroups groups ->
-            Schema.objectOf
-                false
-                [
-                    Schema.property "kind" (text "CORRECTION_GROUPS") true
-                    Schema.property
-                        "groups"
-                        (groups |> List.map correctionGroupDefinition |> exactArray)
-                        true
-                ]
-
     let private values fields =
         fields
-        |> List.map (fun input -> Schema.property input.FieldName ScalarSchemas.authoringText true)
+        |> List.map (fun input ->
+            Schema.property
+                input.FieldName
+                (FieldDefinitions.scalar input.FieldName |> ScalarSchemas.scalar)
+                true)
         |> Schema.objectOf false
 
     let private correctionGroupValue (group: CorrectionGroupDefinition) =
@@ -93,11 +34,14 @@ module internal CommandInputProjection =
         |> Schema.oneOf
 
     let payload (definition: CommandDefinition) =
-        let kind = Schema.property "kind" (text (CommandKinds.token definition.Kind)) true
+        let kind = Schema.property "kind" (text (CaseActKinds.token definition.Kind)) true
 
         match definition.Inputs with
         | CommandInputShape.Fields inputs ->
-            Schema.objectOf false [ kind; Schema.property "values" (values inputs) true ]
+            if inputs.IsEmpty then
+                Schema.objectOf false [ kind ]
+            else
+                Schema.objectOf false [ kind; Schema.property "values" (values inputs) true ]
         | CommandInputShape.CorrectionGroups groups ->
             let groupedValues =
                 groups

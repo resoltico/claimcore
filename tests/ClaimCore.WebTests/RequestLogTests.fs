@@ -70,7 +70,7 @@ let private actorIdentity () =
         use host = new Host(true)
         let! _ = host.Login()
         let! token = host.Token()
-        let endpoint = EndpointCatalog.tryFind "command.execute" |> Option.get
+        let endpoint = EndpointCatalog.tryFind "case.execute" |> Option.get
         let input = Array.copy commandInput
 
         for outcome, known in

@@ -3,12 +3,12 @@ import { usePresentation } from "../presentation/context";
 import type { Notice } from "../api/notices";
 import { Button } from "react-aria-components/Button";
 import { useCallback } from "react";
-import type { CurrentCase, SemanticDefinition, ServiceResponse } from "../api/service";
-import { service } from "../api/service";
+import type { CurrentCase, Descriptors, ServiceResponse } from "../api/service";
+import { isCurrentCase, service } from "../api/service";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { ReferenceSummary } from "../components/ReferenceSummary";
 import { CopyValue } from "../components/CopyValue";
-import { type CommandKind } from "../domain/metadata";
+import { isBusinessCommand, type CommandKind } from "../domain/metadata";
 import { useRead } from "../hooks/useRead";
 import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
@@ -17,7 +17,7 @@ type CaseDetailProps = {
   token: string;
   caseReference: string;
   reloadSignal: number;
-  definition: SemanticDefinition;
+  definition: Descriptors;
   onBack: () => void;
   onCommand: (current: CurrentCase, command: CommandKind) => void;
 };
@@ -30,7 +30,7 @@ const AvailableCommands = ({
   onCommand,
 }: {
   current: CurrentCase;
-  definition: SemanticDefinition;
+  definition: Descriptors;
   onCommand: (command: CommandKind) => void;
 }) => {
   const p = usePresentation();
@@ -38,7 +38,7 @@ const AvailableCommands = ({
     <section aria-labelledby="commands-title">
       <h2 id="commands-title">{p.text("ui.availableCommands")}</h2>
       <div className="actions">
-        {current.availableCommands.map((command) => (
+        {current.state.availableActs.filter(isBusinessCommand).map((command) => (
           <Button
             key={command}
             onPress={() => {
@@ -57,15 +57,7 @@ const AvailableCommands = ({
   );
 };
 
-const CurrentFeedback = ({
-  message,
-  loading,
-  missing,
-}: {
-  message: Notice | null;
-  loading: boolean;
-  missing: boolean;
-}) => {
+const CurrentFeedback = ({ message, loading }: { message: Notice | null; loading: boolean }) => {
   const p = usePresentation();
   return (
     <>
@@ -75,7 +67,6 @@ const CurrentFeedback = ({
         </p>
       )}
       {loading ? <p role="status">{p.text("ui.loadingCurrentCase")}</p> : null}
-      {missing ? <p role="status">{p.text("ui.caseNotFound")}</p> : null}
     </>
   );
 };
@@ -86,14 +77,15 @@ const CurrentPresentation = ({
   onCommand,
 }: {
   current: CurrentCase;
-  definition: SemanticDefinition;
+  definition: Descriptors;
   onCommand: (current: CurrentCase, command: CommandKind) => void;
 }) => {
   const p = usePresentation();
   return (
     <>
       <CaseFieldsView
-        caseView={current.case}
+        values={current.state.fields}
+        revision={current.revision}
         fields={definition.fields}
         context={p.text("ui.currentCase")}
       />
@@ -141,21 +133,17 @@ export const CaseDetail = ({
     [caseReference, token],
   );
   const current = useRead(get, caseLookup, `${caseReference}:${reloadSignal}`);
-  const state = current.value?.tag === "FOUND" ? current.value.current : null;
-  const lookup = state?.state === "LIVE" ? state : null;
+  const state = current.value;
+  const lookup = state !== null && isCurrentCase(state) ? state : null;
   return (
     <section aria-labelledby="case-detail-title">
       <CaseHeader caseReference={caseReference} onBack={onBack} />
-      <CurrentFeedback
-        message={current.message}
-        loading={current.loading}
-        missing={current.value?.tag === "NOT_FOUND"}
-      />
+      <CurrentFeedback message={current.message} loading={current.loading} />
       {lookup === null ? null : (
         <CurrentPresentation current={lookup} definition={definition} onCommand={onCommand} />
       )}
       {state === null ? null : <LifecycleStatus value={state} />}
-      {state?.state === "ERASED" ? (
+      {state?.state.tag === "ERASED" ? (
         <p role="status">
           {state.caseReference} · {state.revision}
         </p>

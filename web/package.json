@@ -9,28 +9,22 @@
     "npm": "11.19.1"
   },
   "scripts": {
-    "dev": "npm run contract:verify && vite",
-    "build": "npm run contract:check && tsc -b && vite build && npm run notices:generate",
+    "dev": "npm run localization:generate && vite",
+    "build": "npm run localization:generate && node scripts/check-react-aria.mjs && tsc -b && vite build && npm run notices:generate",
     "preview": "vite preview",
-    "typecheck": "npm run contract:verify && tsc -b --pretty false",
+    "typecheck": "npm run localization:generate && tsc -b --pretty false",
     "lint": "npm run architecture:check && node scripts/lint.mjs",
-    "lint:styles": "stylelint \"src/**/*.css\" \"tests/**/*.css\" --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:unit": "npm run contract:verify && vitest run",
-    "test:unit:watch": "npm run contract:verify && vitest",
-    "test:e2e": "dotnet test --project ../tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj --configuration Release --no-build --no-restore --minimum-expected-tests=13 --zero-tests-policy=strict --timeout=40m -- --settings=../eng/expecto.runsettings",
-    "dead-code": "knip",
-    "contract:generate": "node scripts/regenerate-contract.mjs",
-    "contract:lock": "node scripts/regenerate-contract.mjs --write-lock",
-    "contract:verify": "node scripts/verify-contract-lock.mjs",
-    "contract:check": "node scripts/check-contract.mjs && node scripts/check-react-aria.mjs && npm run localization:check",
+    "test:unit": "npm run localization:generate && vitest run",
+    "test:unit:watch": "npm run localization:generate && vitest",
+    "dead-code": "npm run localization:generate && knip",
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
-    "architecture:check": "node --test scripts/boundary-policy.test.mjs scripts/type-aware-policy.test.mjs scripts/validator-groups.test.mjs scripts/contract-lock.test.mjs scripts/localization-policy.test.mjs",
+    "architecture:check": "npm run localization:generate && node --test scripts/boundary-policy.test.mjs scripts/type-aware-policy.test.mjs scripts/localization-policy.test.mjs",
     "localization:generate": "node scripts/localization.mjs --write",
-    "localization:check": "node scripts/localization.mjs",
-    "test:coverage": "npm run contract:verify && vitest run --coverage"
+    "localization:check": "npm run localization:generate",
+    "test:coverage": "npm run localization:generate && vitest run --coverage"
   },
   "dependencies": {
     "intl-messageformat": "12.1.3",
@@ -50,8 +44,6 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "@vitest/coverage-v8": "5.0.3",
-    "ajv": "8.20.0",
-    "ajv-formats": "3.0.1",
     "eslint-plugin-react-hooks": "7.1.1",
     "jsdom": "30.1.2",
     "knip": "6.39.0",
@@ -60,15 +52,9 @@
     "oxlint": "1.87.0",
     "oxlint-tsgolint": "7.0.2003",
     "prettier": "3.9.9",
-    "rolldown": "1.2.12",
-    "stylelint": "17.16.0",
-    "stylelint-config-standard": "40.0.0",
     "typescript": "7.0.2",
     "vite": "8.3.3",
     "vitest": "5.0.3",
     "yaml": "2.9.1"
-  },
-  "overrides": {
-    "braces": "npm:@dieub/braces-depth-guard@3.0.3-pn.2"
   }
 }

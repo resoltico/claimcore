@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="Versions.fs" />
+    <Compile Include="CanonicalJson.fs" />
     <Compile Include="Json.fs" />
+    <Compile Include="CursorRecord.fs" />
     <Compile Include="RequestRecord.fs" />
     <Compile Include="CaseRecord.fs" />
-    <Compile Include="StewardshipRecord.fs" />
     <Compile Include="AuthorityRecord.fs" />
     <Compile Include="CaseReferenceId.fs" />
     <Compile Include="LedgerEntry.fs" />

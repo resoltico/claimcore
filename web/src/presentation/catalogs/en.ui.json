@@ -116,7 +116,6 @@
   "ui.discardAndLeave": "Discard and leave",
   "ui.technicalDetails": "Technical details for support",
   "ui.productVersion": "Product version: {version}",
-  "ui.semanticIdentity": "Semantic contract: {digest}",
   "ui.webIdentity": "Wire contract: {digest}",
   "ui.fieldHelp": "Meaning and exact copy",
   "ui.historyDetail": "History detail",
@@ -131,5 +130,12 @@
   "ui.lifecycleErased": "Erased — only the case reference and revision remain.",
   "ui.reviewDescription": "Review the proposed values and confirm this exact operation.",
   "ui.languageDescription": "Language changes display text and keeps the current draft and review.",
-  "ui.leaveDraftDescription": "Discard this draft and leave the editor?"
+  "ui.leaveDraftDescription": "Discard this draft and leave the editor?",
+  "ui.referenceHint": "Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained.",
+  "ui.countryHint": "Use two uppercase letters. ZZ means unknown or international.",
+  "ui.countryName": "{code}: {name}",
+  "ui.countryUnassigned": "No country name is available for {code}. Check the intended code.",
+  "ui.countryUnknown": "Unknown or international",
+  "ui.snapshotWithheld": "The recorded fields are withheld under your current access rights.",
+  "ui.authorityReceipt": "Authority act {act} for actor {actor}."
 }

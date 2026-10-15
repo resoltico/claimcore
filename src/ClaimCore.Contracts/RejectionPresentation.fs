@@ -52,12 +52,11 @@ module RejectionPresentation =
     let private command =
         [
             RejectionDiagnosticId.EmptyOperationId, "Use a non-empty UUID."
-            RejectionDiagnosticId.ExpectedVersionOutOfRange,
-            "Use a non-negative revision below Int64.MaxValue."
-            RejectionDiagnosticId.StoredVersionOutOfRange,
-            "Stored revisions must be positive and below Int64.MaxValue."
-            RejectionDiagnosticId.RevisionExhausted,
-            "The case revision cannot advance below Int64.MaxValue."
+            RejectionDiagnosticId.ExpectedRevisionOutOfRange,
+            "Use an integer revision from 0 through 9007199254740991."
+            RejectionDiagnosticId.StoredRevisionOutOfRange,
+            "Stored revisions must be integers from 1 through 9007199254740991."
+            RejectionDiagnosticId.RevisionExhausted, "The case has reached its final revision."
             RejectionDiagnosticId.CaseReferenceMismatch,
             "The loaded case does not match this command."
             RejectionDiagnosticId.StateTransitionMismatch,
@@ -87,13 +86,13 @@ module RejectionPresentation =
         [
             RejectionDiagnosticId.CaseNotFound, "The case reference was not found."
             RejectionDiagnosticId.CaseAlreadyExists, "The case reference already exists."
-            RejectionDiagnosticId.VersionConflict,
+            RejectionDiagnosticId.RevisionConflict,
             "Read the current case before making a changed request."
             RejectionDiagnosticId.CaseClosed,
             "This action cannot change a closed case. Use "
-            + action CommandKind.CorrectCase
+            + action CaseActKind.CorrectCase
             + " for factual corrections while keeping its status, or "
-            + action CommandKind.Reopen
+            + action CaseActKind.Reopen
             + " when you intend to resume ordinary case work."
             RejectionDiagnosticId.AlreadyClosed, "The case is already closed."
             RejectionDiagnosticId.AlreadyOpened, "The case is already open."
@@ -102,9 +101,9 @@ module RejectionPresentation =
     let private progress =
         [
             RejectionDiagnosticId.AmendmentRequiresUndecided,
-            action CommandKind.AmendRegistration
+            action CaseActKind.AmendRegistration
             + " requires an undecided case. Use "
-            + action CommandKind.CorrectCase
+            + action CaseActKind.CorrectCase
             + " to correct recorded registration while keeping its decision."
             RejectionDiagnosticId.CorrectionNoChanges,
             "Choose at least one factual correction that changes the current case."
@@ -114,32 +113,37 @@ module RejectionPresentation =
             RejectionDiagnosticId.PaymentAlreadyRecorded, "ClaimCore records one full payment."
             RejectionDiagnosticId.PaymentNotRecorded, "There is no payment record to clear."
             RejectionDiagnosticId.DecisionAlreadyPaid,
-            action CommandKind.Decide
+            action CaseActKind.Decide
             + " and "
-            + action CommandKind.WithdrawDecision
+            + action CaseActKind.WithdrawDecision
             + " cannot change a paid decision. Use "
-            + action CommandKind.CorrectCase
+            + action CaseActKind.CorrectCase
             + " for a factual correction, with explicit payment reaffirmation or clearing when replacing a paid decision."
             RejectionDiagnosticId.ZeroDecisionCannotBePaid, "A zero decision is not a payment."
         ]
 
     let private operation =
         [
-            RejectionDiagnosticId.InvalidCaseListCursor,
+            RejectionDiagnosticId.InvalidCursor,
             "Use one current opaque case-list cursor returned by ClaimCore."
-            RejectionDiagnosticId.InvalidHistoryCursor,
-            "Use one opaque history cursor returned by ClaimCore."
             RejectionDiagnosticId.IdempotencyConflict,
             "This operation ID belongs to different command content. Do not reuse it."
             RejectionDiagnosticId.CaseVoided, "This case is voided."
             RejectionDiagnosticId.CaseErased, "This case has been erased."
-            RejectionDiagnosticId.InvalidReason, "Supply a valid reason of at most 200 characters."
             RejectionDiagnosticId.AlreadyVoided, "This case is already voided."
             RejectionDiagnosticId.NotVoided, "This case is not voided."
             RejectionDiagnosticId.LastOwner, "At least one enabled human owner is required."
             RejectionDiagnosticId.ActorAlreadyRegistered, "This principal is already registered."
             RejectionDiagnosticId.ActorUnknown, "This principal is not registered."
             RejectionDiagnosticId.HumanPrincipalRequired, "This role requires a human principal."
+            RejectionDiagnosticId.FormattingCharacter,
+            "Formatting characters are not accepted in a new assertion."
+            RejectionDiagnosticId.ReferenceFormat,
+            "Use 1 to 80 printable non-space ASCII characters."
+            RejectionDiagnosticId.CountryFormat,
+            "Use two uppercase ASCII letters for the country code."
+            RejectionDiagnosticId.ActNotPermitted, "This act is not permitted."
+            RejectionDiagnosticId.LedgerExhausted, "The ledger has reached its final sequence."
             RejectionDiagnosticId.ResourceUnavailable, "The requested resource is unavailable."
         ]
 

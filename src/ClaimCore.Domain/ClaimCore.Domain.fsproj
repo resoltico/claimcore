@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="UnicodeText.fs" />
     <Compile Include="InputProblems.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="Vocabulary.fs" />
@@ -8,13 +9,13 @@
     <Compile Include="FieldDefinitions.fs" />
     <Compile Include="CommandDefinitions.fs" />
     <Compile Include="Validation.fs" />
+    <Compile Include="CaseReference.fs" />
     <Compile Include="Eligibility.fs" />
     <Compile Include="ValidatedCommands.fs" />
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />
     <Compile Include="RequestValidation.fs" />
-    <Compile Include="Stewardship.fs" />
-    <Compile Include="Claim.fsi" />
-    <Compile Include="Claim.fs" />
+    <Compile Include="Case.fsi" />
+    <Compile Include="Case.fs" />
   </ItemGroup>
 </Project>

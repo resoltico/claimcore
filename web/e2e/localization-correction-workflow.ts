@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import type { CaseFields, CommandDraft, Receipt, ServiceResponse } from "../src/api/types";
+import type { CaseFields, CommandDraft, CaseReceipt } from "../src/api/types";
 import { expect, type Page } from "@playwright/test";
 import { startCommand } from "./case-workflow";
 import { browserRequest, sessionToken } from "./session-helpers";
-import { isResponse } from "../src/generated/contracts/validation";
-import { endpoints } from "../src/generated/contracts/endpoint-catalog";
+import { isResponse } from "../src/api/responseGuards";
+import { endpoints } from "@contracts/endpoint-catalog";
 import { selectLanguage } from "./localization-support";
 import type { Language } from "../src/presentation/preferences";
 
@@ -14,14 +14,14 @@ export type Modes = Readonly<{
   payment: "KEEP" | "REPLACE" | "CLEAR";
 }>;
 type SeedStep = Readonly<{
-  command: CommandDraft["command"];
+  act: CommandDraft["act"];
   fields: CaseFields;
 }>;
 
 const setupRegistration = {
   incidentDate: "2026-09-01",
   incidentNotificationDate: "2026-09-02",
-  incidentCountry: "Latvia",
+  incidentCountry: "LV",
   claimantName: "Synthetic claimant",
   insurerName: "Synthetic insurer",
   claimedAmount: "1200.50",
@@ -48,10 +48,10 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
   const decided: CaseFields = { ...opened, ...setupDecision };
   const paid: CaseFields = { ...decided, paymentDate: "2026-09-05" };
   const steps: SeedStep[] = [
-    { command: { kind: "OPEN", values: setupRegistration }, fields: opened },
-    { command: { kind: "DECIDE", values: setupDecision }, fields: decided },
+    { act: { kind: "OPEN", values: setupRegistration }, fields: opened },
+    { act: { kind: "DECIDE", values: setupDecision }, fields: decided },
     {
-      command: {
+      act: {
         kind: "RECORD_PAYMENT",
         values: { paymentDate: "2026-09-05" },
       },
@@ -60,7 +60,7 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
   ];
   if (status === "CLOSED") {
     steps.push({
-      command: { kind: "CLOSE", values: {} },
+      act: { kind: "CLOSE" },
       fields: { ...paid, status: "CLOSED" },
     });
   }
@@ -72,8 +72,8 @@ const acceptSetup = async (
   token: string,
   request: CommandDraft,
   fields: CaseFields,
-): Promise<Receipt> => {
-  const endpoint = endpoints.find((item) => item.id === "command.execute");
+): Promise<CaseReceipt> => {
+  const endpoint = endpoints.find((item) => item.id === "case.execute");
   if (endpoint === undefined) {
     throw new Error("E2E_CORRECTION_SETUP_ENDPOINT_MISSING");
   }
@@ -87,28 +87,30 @@ const acceptSetup = async (
   });
   expect(reply.status).toBe(200);
   expect(reply.cacheControl).toContain("no-store");
-  if (!(await isResponse("command.execute", reply.payload))) {
+  if (!isResponse("case.execute", reply.payload)) {
     throw new Error("E2E_CORRECTION_SETUP_RESPONSE_INVALID");
   }
-  const { outcome } = reply.payload as ServiceResponse<"command.execute">;
+  const { outcome } = reply.payload;
   if (outcome.tag !== "ACCEPTED") {
     throw new Error(`E2E_CORRECTION_SETUP_${outcome.tag}`);
   }
   const receipt = outcome.data;
-  const revision = String(Number(request.expectedRevision) + 1);
+  const revision = request.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
   expect(receipt.caseReference).toBe(request.caseReference);
-  expect(receipt.act).toBe(request.command.kind);
+  expect(receipt.act).toBe(request.act.kind);
   expect(receipt.revision).toBe(revision);
-  expect(receipt.disposition).toBe("ACTIVE");
-  expect(receipt.snapshot).toEqual({ revision, fields });
+  expect(receipt.snapshot).toEqual({
+    tag: "DISCLOSED",
+    state: { tag: "LIVE", disposition: "ACTIVE", fields },
+  });
   return receipt;
 };
 
 export const paidCase = async (page: Page, reference: string, status: "OPENED" | "CLOSED") => {
   const token = await sessionToken(page);
   let recordedBy: string | undefined;
-  let revision = "0";
+  let revision = 0;
   for (const step of paidCaseSteps(reference, status)) {
     const receipt = await acceptSetup(
       page,
@@ -117,7 +119,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
         operationId: randomUUID(),
         caseReference: reference,
         expectedRevision: revision,
-        command: step.command,
+        act: step.act,
       },
       step.fields,
     );
@@ -167,18 +169,14 @@ export const currentCase = async (page: Page, caseReference: string) => {
     },
     body: JSON.stringify({ caseReference }),
   });
-  if (!(await isResponse("case.get", result.payload))) {
+  if (!isResponse("case.get", result.payload)) {
     throw new Error("E2E_CORRECTION_CASE_READBACK_INVALID");
   }
-  const payload = result.payload as ServiceResponse<"case.get">;
-  if (
-    payload.outcome.tag !== "SUCCEEDED" ||
-    payload.outcome.data.tag !== "FOUND" ||
-    payload.outcome.data.current.state !== "LIVE"
-  ) {
+  const { payload } = result;
+  if (payload.outcome.tag !== "SUCCEEDED" || payload.outcome.data.state.tag !== "LIVE") {
     throw new Error("E2E_CORRECTION_CASE_MISSING");
   }
-  return payload.outcome.data.current.case;
+  return { revision: payload.outcome.data.revision, fields: payload.outcome.data.state.fields };
 };
 export const history = async (page: Page, caseReference: string) => {
   const result = await browserRequest(page, "/api/case.history", {
@@ -189,11 +187,11 @@ export const history = async (page: Page, caseReference: string) => {
     },
     body: JSON.stringify({ caseReference, limit: 50, detail: "FULL" }),
   });
-  if (!(await isResponse("case.history", result.payload))) {
+  if (!isResponse("case.history", result.payload)) {
     throw new Error("E2E_CORRECTION_HISTORY_READBACK_INVALID");
   }
-  const payload = result.payload as ServiceResponse<"case.history">;
-  if (payload.outcome.tag !== "SUCCEEDED" || payload.outcome.data.tag !== "FOUND") {
+  const { payload } = result;
+  if (payload.outcome.tag !== "SUCCEEDED") {
     throw new Error("E2E_CORRECTION_HISTORY_MISSING");
   }
   return payload.outcome.data.entries;
@@ -204,7 +202,7 @@ export const expectResultFields = (
   modes: Modes,
 ) => {
   expect(after).toEqual({
-    revision: String(Number(before.revision) + 1),
+    revision: before.revision + 1,
     fields: {
       ...before.fields,
       ...(modes.registration === "REPLACE"

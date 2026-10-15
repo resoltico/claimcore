@@ -4,12 +4,6 @@ open ClaimCore.Domain.ResultFlow
 
 /// Correction choices are parsed once; KEEP takes typed accepted state under the caller's lock.
 module internal CaseCorrections =
-    let private requireChange (correction: CaseCorrection) =
-        match correction.Registration, correction.Decision, correction.Payment with
-        | RegistrationCorrection.Keep, DecisionCorrection.Keep, PaymentCorrection.Keep ->
-            Error DomainError.CorrectionNoChanges
-        | _ -> Ok()
-
     let private registrationInput =
         function
         | RegistrationCorrection.Keep -> Ok ValidatedRegistrationCorrection.Keep
@@ -34,7 +28,6 @@ module internal CaseCorrections =
 
     let parse (correction: CaseCorrection) =
         result {
-            do! requireChange correction
             let! registration = registrationInput correction.Registration
             let! decision = decisionInput correction.Decision
             let! payment = paymentInput correction.Payment
@@ -52,7 +45,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | ValidatedDecisionCorrection.Keep, _ -> Ok current
-        | _, None -> Error DomainError.CorrectionRequiresExistingValue
+        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
         | ValidatedDecisionCorrection.Replace replacement, Some _ -> Ok(Some replacement)
         | ValidatedDecisionCorrection.Clear, Some _ -> Ok None
 
@@ -61,7 +54,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | ValidatedPaymentCorrection.Keep, _ -> Ok current
-        | _, None -> Error DomainError.CorrectionRequiresExistingValue
+        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
         | ValidatedPaymentCorrection.Replace replacement, Some _ -> Ok(Some replacement)
         | ValidatedPaymentCorrection.Clear, Some _ -> Ok None
 
@@ -94,7 +87,7 @@ module internal CaseCorrections =
             let! nextProgress = PaymentProgress.fromGroups nextDecision nextPayment
 
             if nextFacts = facts && nextProgress = progress then
-                return! Error DomainError.CorrectionNoChanges
+                return! Error CaseRefusal.CorrectionNoChanges
             else
                 return nextFacts, nextProgress
         }

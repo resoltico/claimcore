@@ -1,10 +1,12 @@
 import { writeFile } from "node:fs/promises";
 
-import { expect, type Page, type Locator } from "@playwright/test";
-import type { EndpointId } from "../src/generated/contracts/endpoint-catalog";
-import { endpoints } from "../src/generated/contracts/endpoint-catalog";
+import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
+import type { EndpointId } from "@contracts/endpoint-catalog";
+import { endpoints } from "@contracts/endpoint-catalog";
 import type { ServiceResponse } from "../src/api/types";
-import { isResponse } from "../src/generated/contracts/validation";
+import type { HostFailure } from "@contracts/types";
+import { strictJsonBytes } from "../src/api/responseBytes";
+import { isHostFailure, isResponse } from "../src/api/responseGuards";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
@@ -68,7 +70,7 @@ export const trackRequests = (page: Page) => {
   return requests;
 };
 export const reviewFrom = (
-  value: ServiceResponse<"command.preview">,
+  value: ServiceResponse<"case.preview">,
   bytes: Buffer,
 ): ReviewIdentity => {
   if (value.outcome.tag !== "REVIEWED") {
@@ -99,38 +101,50 @@ const deferred = <T>() => {
   });
   return { promise, resolve, reject };
 };
-type Captured<K extends EndpointId> = {
-  reply: ServiceResponse<K>;
-  bytes: Buffer;
+type Captured<T> = { reply: T; bytes: Buffer };
+const replyCategory = (endpoint: EndpointId, status: number, payload: unknown): string => {
+  if (isHostFailure(payload, status)) {
+    return `HOST_${payload.code}_${payload.executionPhase ?? "UNSPECIFIED"}`;
+  }
+  return isResponse(endpoint, payload) ? payload.outcome.tag : "UNRECOGNIZED";
 };
-export const pauseJsonReply = async <K extends EndpointId>(
+const readReply = async (response: APIResponse): Promise<unknown> => {
+  if (
+    response.headers()["content-type"]?.split(";", 1)[0]?.trim().toLowerCase() !==
+    "application/json"
+  ) {
+    throw new Error("Unsupported response media type.");
+  }
+  return strictJsonBytes(await response.body());
+};
+const pauseReply = async <T>(
   page: Page,
-  endpoint: K,
-  drop = false,
+  endpoint: EndpointId,
+  admit: (value: unknown, status: number) => T,
+  drop: boolean,
 ) => {
   const path = endpoints.find((entry) => entry.id === endpoint)?.path;
   if (path === undefined) {
     throw new Error("E2E_LOCALIZATION_ENDPOINT_MISSING");
   }
-  const ready = deferred<Captured<K>>();
+  const ready = deferred<Captured<T>>();
   const released = deferred<void>();
   await page.route(
     `**${path}`,
     async (route) => {
+      let category = "TRANSPORT";
       try {
-        const response = await route.fetch();
-        const payload: unknown = await response.json();
-        if (response.status() !== 200 || !(await isResponse(endpoint, payload))) {
-          throw new Error("E2E_LOCALIZATION_NATIVE_REPLY_INVALID");
-        }
+        const response = await route.fetch({ maxRedirects: 0 });
+        const status = response.status();
+        category = `STATUS_${status}_INVALID_JSON`;
+        const payload = await readReply(response);
+        category = `STATUS_${status}_${replyCategory(endpoint, status, payload)}`;
+        const reply = admit(payload, status);
         const bytes = route.request().postDataBuffer();
         if (bytes === null) {
-          throw new Error("E2E_LOCALIZATION_REQUEST_BYTES_MISSING");
+          throw new Error("Missing request bytes.");
         }
-        ready.resolve({
-          reply: payload as ServiceResponse<K>,
-          bytes,
-        });
+        ready.resolve({ reply, bytes });
         await released.promise;
         if (drop) {
           await route.abort("connectionfailed");
@@ -138,7 +152,7 @@ export const pauseJsonReply = async <K extends EndpointId>(
           await route.fulfill({ response });
         }
       } catch {
-        ready.reject(new Error("E2E_LOCALIZATION_PAUSED_REQUEST_FAILED"));
+        ready.reject(new Error(`E2E_LOCALIZATION_PAUSED_REQUEST_FAILED_${category}`));
       }
     },
     { times: 1 },
@@ -149,6 +163,42 @@ export const pauseJsonReply = async <K extends EndpointId>(
       released.resolve();
     },
   };
+};
+export const pauseJsonReply = <K extends EndpointId>(page: Page, endpoint: K, drop = false) =>
+  pauseReply(
+    page,
+    endpoint,
+    (payload, status): ServiceResponse<K> => {
+      if (status !== 200 || !isResponse(endpoint, payload)) {
+        throw new Error("Expected a typed endpoint reply.");
+      }
+      return payload;
+    },
+    drop,
+  );
+export const pauseHostReply = (page: Page, endpoint: EndpointId, expectedStatus: number) =>
+  pauseReply(
+    page,
+    endpoint,
+    (payload, status): HostFailure => {
+      if (status !== expectedStatus || !isHostFailure(payload, status)) {
+        throw new Error("Expected a checked host failure.");
+      }
+      return payload;
+    },
+    false,
+  );
+
+export const inputRefusalText = {
+  en: "The input does not satisfy the endpoint contract.",
+  lv: "Ievade neatbilst galapunkta līgumam.",
+  ar: "المدخلات لا تطابق عقد نقطة النهاية.",
+} as const;
+export const expectInputRefusal = (reply: HostFailure): void => {
+  expect(reply.status).toBe(400);
+  expect(reply.code).toBe("INPUT_INVALID");
+  expect(reply.executionPhase).toBe("NOT_STARTED");
+  expect(reply.diagnostic.id).toBe("HOST_INPUTINVALID");
 };
 const collectLayoutMetrics = () => {
   const { clientWidth } = document.documentElement;

@@ -3,20 +3,20 @@ import type {
   CommandDescriptor,
   CorrectionGroupDescriptor,
   CurrentCase,
-  PublicDefinition,
+  ProductMetadata,
   FieldDescriptor,
-  Receipt,
+  CaseReceipt,
 } from "../../api/service";
 import type { OperationAction, OperationState } from "../../domain/operationReducer";
 import type { CommandKind } from "../../domain/metadata";
 
 export type OperationEditorProps = {
   token: string;
-  definition: PublicDefinition;
+  definition: ProductMetadata;
   current: CurrentCase | null;
   initialCommand: CommandKind;
   onClose: () => void;
-  onCommitted: (receipt: Receipt) => void;
+  onCommitted: (receipt: CaseReceipt) => void;
   onMutationLockChange: (locked: boolean) => void;
 };
 
@@ -41,7 +41,7 @@ export type EditorMetadata = {
   locked: boolean;
   canPreview: boolean;
   dirty: boolean;
-  receipt: Receipt | null;
+  receipt: CaseReceipt | null;
 };
 
 export type EditorActions = {

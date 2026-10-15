@@ -12,10 +12,10 @@ open AdministrationProcess
 let private tag (value: JsonElement) =
     value.GetProperty("tag").GetString() |> Option.ofObj |> Option.get
 
-let private owner event subject =
+let private owner operationId subject =
     JsonSerializer.Serialize
         {|
-            eventId = event
+            operationId = operationId
             issuer = "https://issuer.example/"
             subject = subject
         |}
@@ -94,9 +94,9 @@ let private provision binary connection principal =
 
         File.WriteAllText(principal, original)
         let! first = invoke binary connection principal [ "provision-owner" ] 0
-        Expect.equal (tag first) "APPLIED" "First human owner"
+        Expect.equal (tag first) "ACCEPTED" "First human owner"
         let! repeated = invoke binary connection principal [ "provision-owner" ] 0
-        Expect.equal (tag repeated) "ALREADY_APPLIED" "Exact repeat"
+        Expect.equal (tag repeated) "ALREADY_ACCEPTED" "Exact repeat"
 
         Expect.equal
             (first.GetProperty("position").GetRawText())
@@ -118,7 +118,10 @@ let private checkpoints binary connection principal =
         let position = head.GetProperty("position")
 
         let expected =
-            (position.GetProperty("sequence").GetString() |> nonNull)
+            (position
+                .GetProperty("sequence")
+                .GetInt64()
+                .ToString(Globalization.CultureInfo.InvariantCulture))
             + ":"
             + (position.GetProperty("hash").GetString() |> nonNull)
 
@@ -138,11 +141,46 @@ let private checkpoints binary connection principal =
             [
                 "01:" + String.replicate 64 "0"
                 "-1:" + String.replicate 64 "0"
-                "1:" + String.replicate 64 "0"
                 "1:NOT_A_HASH"
             ] do
             let! _ = invoke binary connection principal [ "verify"; "--expect"; changed ] 2
             ()
+    }
+
+let private divergence binary connection principal (database: NpgsqlConnection) =
+    task {
+        let! _ =
+            DatabaseSession.execute
+                database
+                "UPDATE claimcore.ledger_head SET entry_hash=decode(repeat('ab',32),'hex')"
+                [||]
+                CancellationToken.None
+
+        let! result = invoke binary connection principal [ "verify" ] 5
+        Expect.equal (tag result) "DIVERGED" "Divergence has its own public tag and exit"
+        Expect.equal (result.GetProperty("finding").GetString() |> nonNull) "HEAD" "Exact finding"
+
+        Expect.equal
+            (result.GetProperty("sequence").ValueKind)
+            JsonValueKind.Null
+            "Head divergence has no attributed ledger entry"
+
+        let! _ =
+            DatabaseSession.execute
+                database
+                "UPDATE claimcore.ledger_head SET entry_hash=(SELECT entry_hash FROM claimcore.ledger ORDER BY sequence DESC LIMIT 1)"
+                [||]
+                CancellationToken.None
+
+        let! _ =
+            invoke
+                binary
+                connection
+                principal
+                [ "verify"; "--expect"; "1:" + String.replicate 64 "0" ]
+                5
+
+        return ()
     }
 
 let private connectionGuards
@@ -285,6 +323,7 @@ let private publishedCommands () =
             do! initialize binary connectionFile principalFile |> Async.AwaitTask
             do! provision binary connectionFile principalFile |> Async.AwaitTask
             do! checkpoints binary connectionFile principalFile |> Async.AwaitTask
+            do! divergence binary connectionFile principalFile connection |> Async.AwaitTask
             do! connectionGuards binary directory principalFile database |> Async.AwaitTask
             do! lostCommit binary directory principalFile database connection |> Async.AwaitTask
 
@@ -309,6 +348,7 @@ let private inputAndDeliveryGuards () =
             [ "verify"; "--expect"; "1:" + String.replicate 64 "A" ]
             [ "initialize" ]
             [ "head"; "extra" ]
+            [ "verify"; "--expect"; "9007199254740992:" + String.replicate 64 "0" ]
         ] do
         Expect.isNone (ClaimCore.Database.Inputs.command arguments) "Exact arguments are refused"
 

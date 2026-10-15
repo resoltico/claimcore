@@ -7,10 +7,14 @@ import { type CurrentCase } from "../src/api/service";
 import { generatedResponse } from "./contract-corpus.fixtures";
 
 const current: CurrentCase = {
-  state: "LIVE",
-  disposition: "ACTIVE",
-  case: { fields, revision: "1" },
-  availableCommands: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"],
+  caseReference: fields.caseReference,
+  revision: 1,
+  state: {
+    tag: "LIVE",
+    fields,
+    disposition: "ACTIVE",
+    availableActs: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"],
+  },
 };
 const expectAuthoringDisabled = () => {
   const controls = document.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
@@ -28,7 +32,7 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
   const committed = vi.fn();
   vi.mocked(globalThis.fetch)
     .mockImplementationOnce(() => Promise.resolve(previewReply()))
-    .mockResolvedValueOnce(generatedResponse("command.execute"));
+    .mockResolvedValueOnce(generatedResponse("case.execute"));
   render(editor({ current, initialCommand: "CLOSE", onCommitted: committed }));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));

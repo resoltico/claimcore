@@ -8,17 +8,17 @@ import { preferenceKey } from "../src/presentation/preferences";
 
 const paidCase: CurrentCase = {
   ...current,
-  case: {
-    ...current.case,
+  state: {
+    ...current.state,
+    availableActs: ["CORRECT_CASE"],
     fields: {
-      ...current.case.fields,
+      ...current.state.fields,
       paymentDecisionDate: "2026-09-03",
       payableAmount: "1",
       payableCurrency: "EUR",
       paymentDate: "2026-09-04",
     },
   },
-  availableCommands: ["CORRECT_CASE"],
 };
 
 it.each(["en", "lv", "ar"])(
@@ -64,7 +64,7 @@ it.each(["en", "lv", "ar"])(
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledOnce();
     });
-    expect(draftAt(0).command).toMatchObject({
+    expect(draftAt(0).act).toMatchObject({
       kind: "CORRECT_CASE",
       groups: {
         registration: { mode: "REPLACE", values: { claimedAmount: "1.0000" } },
@@ -81,8 +81,7 @@ it("associates payment acknowledgement with the generated mode control [CC-DOM-0
     "fetch",
     vi.fn().mockImplementation(() =>
       Promise.resolve(
-        response("command.preview", "REJECTED", {
-          code: "INVALID_INPUT",
+        response("case.preview", "REJECTED", {
           field: "payment",
           actualRevision: null,
           recommendedAction: "CORRECT_INPUT",

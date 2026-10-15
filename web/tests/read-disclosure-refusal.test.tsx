@@ -15,13 +15,12 @@ const initial: ApiResult<ListResponse> = {
     outcome: {
       tag: "SUCCEEDED",
       data: {
-        availableCommands: [],
         items: [
           {
             state: "LIVE",
             disposition: "ACTIVE",
             caseReference: "SYNTHETIC-PRIVATE",
-            revision: "1",
+            revision: 1,
             status: "OPENED",
           },
         ],
@@ -42,7 +41,6 @@ const unavailable: ApiResult<ListResponse> = {
     outcome: {
       tag: "REJECTED",
       data: {
-        code: "RESOURCE_UNAVAILABLE",
         message: "Translated text is not the policy",
         diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
         field: null,

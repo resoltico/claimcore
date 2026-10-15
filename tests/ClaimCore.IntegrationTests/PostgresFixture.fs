@@ -1,8 +1,6 @@
 module ClaimCore.IntegrationTests.PostgresFixture
 
 open System
-open System.IO
-open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
@@ -11,13 +9,28 @@ open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreContractTests
 
-let private image () =
-    let root = ClaimCore.TestSupport.RepositoryRoot.find ()
 
-    use document =
-        JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "db/postgresql-baseline.json")))
+type private SetupStage =
+    | ContainerReadiness
+    | OwnerConnection
+    | RuntimeRole
+    | SchemaInitialization
+    | RuntimeAdmission
 
-    document.RootElement.GetProperty("containerImage").GetString() |> nonNull
+let private failureCategory (error: exn) =
+    match error with
+    | :? PostgresException -> "POSTGRES"
+    | :? NpgsqlException as failure ->
+        match failure.InnerException with
+        | :? TimeoutException -> "NPGSQL_TIMEOUT"
+        | :? Net.Sockets.SocketException -> "NPGSQL_SOCKET"
+        | _ -> "NPGSQL"
+    | :? TimeoutException -> "TIMEOUT"
+    | :? OperationCanceledException -> "CANCELLATION"
+    | :? Net.Sockets.SocketException -> "SOCKET"
+    | :? IO.IOException -> "IO"
+    | :? ArgumentException -> "ARGUMENT"
+    | _ -> "OTHER"
 
 let private owner =
     PrincipalKey.human "https://issuer.example/" "synthetic-owner"
@@ -42,26 +55,62 @@ type internal Database =
 
 let private container () =
     let value =
-        (new PostgreSqlBuilder(image ()))
+        (new PostgreSqlBuilder(ClaimCore.TestSupport.PostgresBaseline.image ()))
             .WithLabel("claimcore.test", "ledger-store")
             .WithLabel("claimcore.test-run", Guid.NewGuid().ToString("D"))
             .WithTmpfsMount("/var/lib/postgresql")
+            .WithWaitStrategy(ClaimCore.TestSupport.PostgresReadiness.strategy ())
             .Build()
 
     value
 
 let internal empty () = container ()
 
+let private admittedDatabase
+    (container: PostgreSqlContainer)
+    sources
+    ownerSource
+    runtime
+    installationId
+    =
+    let dispose () =
+        for source: NpgsqlDataSource in sources do
+            source.Dispose()
+
+        container.DisposeAsync().AsTask().GetAwaiter().GetResult()
+
+    let fixture =
+        {
+            Store = LedgerStore(runtime, installationId, Transactions.timeouts) :> ILedgerStore
+            InstallationId = installationId
+            Owner = owner
+            Calendar = calendar
+            Dispose = dispose
+        }
+
+    {
+        Container = container
+        OwnerSource = ownerSource
+        RuntimeSource = runtime
+        Fixture = fixture
+    }
+
 let internal create () =
     task {
         let container = container ()
         let mutable sources: NpgsqlDataSource list = []
+        let mutable stage = SetupStage.ContainerReadiness
+        let mutable ownedId = "CREATED_EVENT_NOT_OBSERVED"
+        container.Created.AddHandler(EventHandler(fun _ _ -> ownedId <- container.Id))
 
         try
             do! container.StartAsync()
+            stage <- SetupStage.OwnerConnection
             let ownerSource = NpgsqlDataSource.Create(container.GetConnectionString())
             sources <- [ ownerSource ]
             use! connection = ownerSource.OpenConnectionAsync()
+
+            stage <- SetupStage.RuntimeRole
 
             let! _ =
                 DatabaseSession.execute
@@ -70,9 +119,12 @@ let internal create () =
                     [||]
                     CancellationToken.None
 
+            stage <- SetupStage.SchemaInitialization
+
             let! installationId =
                 SchemaAdministration.initialize ownerSource "Etc/UTC" CancellationToken.None
 
+            stage <- SetupStage.RuntimeAdmission
             let settings = NpgsqlConnectionStringBuilder(container.GetConnectionString())
             settings.Username <- "claimcore_runtime"
             settings.Password <- "synthetic-only"
@@ -83,30 +135,19 @@ let internal create () =
             if admitted.InstallationId <> installationId then
                 invalidOp "Admission changed identity."
 
-            let dispose () =
-                for source in sources do
-                    source.Dispose()
-
-                container.DisposeAsync().AsTask().GetAwaiter().GetResult()
-
-            let fixture =
-                {
-                    Store =
-                        LedgerStore(runtime, installationId, Transactions.timeouts) :> ILedgerStore
-                    InstallationId = installationId
-                    Owner = owner
-                    Calendar = calendar
-                    Dispose = dispose
-                }
-
-            return
-                {
-                    Container = container
-                    OwnerSource = ownerSource
-                    RuntimeSource = runtime
-                    Fixture = fixture
-                }
+            return admittedDatabase container sources ownerSource runtime installationId
         with error ->
+            // A broken diagnostic sink must not bypass owned cleanup or replace setup failure.
+            try
+                printfn
+                    "Owned PostgreSQL setup failed: container=%s stage=%A category=%s"
+                    ownedId
+                    stage
+                    (failureCategory error)
+            with
+            | :? IO.IOException
+            | :? ObjectDisposedException -> ()
+
             for source in sources do
                 source.Dispose()
 

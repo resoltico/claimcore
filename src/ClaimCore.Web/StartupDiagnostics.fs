@@ -15,7 +15,6 @@ type WebSetting =
     | OidcClientSecretFile
     | OidcApiAudience
     | OidcCliClientId
-    | OidcServiceClientId
     | JsonLimit
     | CorePermits
     | CoreQueue
@@ -38,7 +37,6 @@ module WebSettings =
             WebSetting.OidcClientSecretFile, "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
             WebSetting.OidcApiAudience, "CLAIMCORE_OIDC_API_AUDIENCE"
             WebSetting.OidcCliClientId, "CLAIMCORE_OIDC_CLI_CLIENT_ID"
-            WebSetting.OidcServiceClientId, "CLAIMCORE_OIDC_SERVICE_CLIENT_ID"
             WebSetting.JsonLimit, "CLAIMCORE_WEB_MAX_JSON_BYTES"
             WebSetting.CorePermits, "CLAIMCORE_WEB_CORE_PERMITS"
             WebSetting.CoreQueue, "CLAIMCORE_WEB_CORE_QUEUE"
@@ -59,7 +57,6 @@ module WebSettings =
             WebSetting.OidcClientSecretFile
             WebSetting.OidcApiAudience
             WebSetting.OidcCliClientId
-            WebSetting.OidcServiceClientId
         ]
 
     let optional =
@@ -83,7 +80,7 @@ type WebStartupProblem =
     | AssetsMissing
     | UnsupportedInvocation
     | UnexpectedFailure
-    | RuntimeOpen of ClaimCore.Hosting.RuntimeOpenFault
+    | RuntimeOpen of ClaimCore.Application.RuntimeOpenFault
 
 exception WebStartupException of WebStartupProblem
 

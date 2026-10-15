@@ -20,19 +20,36 @@ type internal Fixture =
 let internal id n =
     Guid.Parse(sprintf "80000000-0000-4000-8000-%012d" n)
 
-let internal request n reference version command : CommandRequest =
+let internal cursorKey = [| 0uy .. 31uy |]
+
+let internal request n reference revision command : CaseRequest =
     {
         OperationId = id n
         CaseReference = reference
-        ExpectedVersion = version
-        Command = command
+        ExpectedRevision = revision
+        Act = CaseAct.Business command
+    }
+
+let internal actRequest n reference revision act : CaseRequest =
+    {
+        OperationId = id n
+        CaseReference = reference
+        ExpectedRevision = revision
+        Act = act
+    }
+
+let internal authorityRequest operationId target act : AuthorityRequest =
+    {
+        OperationId = operationId
+        Target = target
+        Act = act
     }
 
 let internal registration: RegistrationInput =
     {
         IncidentDate = "2026-08-01"
         IncidentNotificationDate = "2026-08-03"
-        IncidentCountry = "Lithuania"
+        IncidentCountry = "LV"
         ClaimantName = "Synthetic Party"
         InsurerName = "Synthetic Insurer"
         ClaimedAmount = "1000.00"
@@ -44,13 +61,23 @@ let internal accepted =
     | ExecuteOutcome.Accepted receipt -> receipt
     | _ -> failtest "Expected accepted operation."
 
-let internal applied =
-    function
-    | AuthorityOutcome.Applied _ -> ()
-    | _ -> failtest "Expected applied authority event."
+let internal acceptedAuthority outcome =
+    match accepted outcome with
+    | { Scope = ReceiptScope.Authority _ } -> ()
+    | _ -> failtest "Expected accepted authority operation."
+
+let internal caseReceipt (receipt: OperationReceipt) =
+    match receipt.Scope with
+    | ReceiptScope.Case value -> value
+    | _ -> failtest "Expected case receipt."
+
+let internal disclosedFields receipt =
+    match (caseReceipt receipt).Snapshot with
+    | SnapshotDisclosure.Disclosed(CaseView.Live(fields, _)) -> fields
+    | _ -> failtest "Expected disclosed live fields."
 
 let internal core fixture principal =
-    Core.create fixture.InstallationId fixture.Store fixture.Calendar principal
+    Core.create fixture.InstallationId fixture.Store fixture.Calendar cursorKey principal
 
 let internal bootstrap fixture =
     task {
@@ -60,37 +87,33 @@ let internal bootstrap fixture =
                 id 1,
                 fixture.Owner,
                 None,
-                AuthorityDecisions.decide
-                    fixture.InstallationId
-                    fixture.Owner
-                    (id 1)
-                    fixture.Owner
-                    AuthorityAction.ProvisionOwner,
+                AuthorityDecisions.provision fixture.InstallationId (id 1) fixture.Owner,
                 CancellationToken.None
             )
 
         match result with
-        | Ok(AuthorityWriteResult.Appended _) -> ()
+        | Ok(LedgerWriteResult.Appended _) -> ()
         | _ -> failtest "Initial owner must be accepted."
 
         return core fixture fixture.Owner
     }
 
-let internal editor fixture =
+let internal grant (actor: IActorClaimsCore) operationId target role scope active =
+    actor.ExecuteAuthority(
+        authorityRequest operationId target (AuthorityAct.SetGrant(role, scope, active)),
+        CancellationToken.None
+    )
+
+let internal caseWorker fixture =
     task {
         let! owner = bootstrap fixture
 
-        let! grant =
-            owner.Authority.SetGrant(
-                id 2,
-                fixture.Owner,
-                Role.CaseEditor,
-                GrantTarget.Installation,
-                true,
-                CancellationToken.None
-            )
+        for operationId, role in [ id 2, Role.CaseHandler; id 900000, Role.PaymentRecorder ] do
+            let! outcome =
+                grant owner operationId fixture.Owner role GrantTarget.Installation true
 
-        applied grant
+            acceptedAuthority outcome
+
         return owner
     }
 
@@ -104,6 +127,33 @@ let private withFixture factory run =
             fixture.Dispose()
     }
 
+let private storedPage result =
+    result
+    |> Result.defaultWith (fun _ -> failtest "Store read failed")
+    |> Result.defaultWith (fun _ -> failtest "Store selection refused")
+
+let private history fixture reference after limit =
+    fixture.Store.ReadHistory(
+        fixture.Owner,
+        reference,
+        (fun _ -> Ok after),
+        limit,
+        CancellationToken.None
+    )
+
+let private listCases fixture visibility after limit =
+    fixture.Store.ListCases(
+        fixture.Owner,
+        (fun _ ->
+            Ok
+                {
+                    Visibility = visibility
+                    AfterReference = after
+                }),
+        limit,
+        CancellationToken.None
+    )
+
 let private genesis fixture =
     task {
         let mutable calls = 0
@@ -111,18 +161,9 @@ let private genesis fixture =
         let decide (view: AuthorityLockedView) =
             calls <- calls + 1
             Expect.equal view.Head.Sequence 0L "Genesis head"
-
-            Expect.equal view.Head.EntryHash (Array.zeroCreate 32) "Zero previous hash"
-
+            Expect.isTrue (view.Head.EntryHash = Array.zeroCreate 32) "Zero previous hash"
             Expect.isNone view.Actor "No actor before provisioning"
-
-            AuthorityDecisions.decide
-                fixture.InstallationId
-                fixture.Owner
-                (id 1)
-                fixture.Owner
-                AuthorityAction.ProvisionOwner
-                view
+            AuthorityDecisions.provision fixture.InstallationId (id 1) fixture.Owner view
 
         let! result =
             fixture.Store.WriteAuthority(
@@ -135,7 +176,8 @@ let private genesis fixture =
             )
 
         match result with
-        | Ok(AuthorityWriteResult.Appended entry) -> Expect.equal entry.Sequence 1L "First sequence"
+        | Ok(LedgerWriteResult.Appended receipt) ->
+            Expect.equal receipt.Position.Sequence 1L "First sequence"
         | _ -> failtest "Expected append"
 
         Expect.equal calls 1 "One decision"
@@ -146,68 +188,68 @@ let private genesis fixture =
             Expect.equal
                 actor.Grants
                 [
-                    {
+                    ({
                         Role = Role.Owner
                         Scope = GrantScope.Installation
                     }
+                    : ActorGrant)
                 ]
-                "Explicit initial grant"
+                "Only the owner role is provisioned"
         | _ -> failtest "Missing owner projection"
 
         let! entry = fixture.Store.ReadOperation(fixture.Owner, id 1, CancellationToken.None)
 
         match entry with
-        | Ok(_, Some entry, _) -> Expect.equal entry.Sequence 1L "Readable acceptance"
+        | Ok { Entry = Some entry } -> Expect.equal entry.Sequence 1L "Readable acceptance"
         | _ -> failtest "Missing accepted entry"
     }
 
 let private replayAndRefusal fixture =
     task {
-        let! actor = editor fixture
-        let original = request 10 "CONTRACT-001" 0L (Command.Open registration)
+        let! actor = caseWorker fixture
+        let original = request 10 "CONTRACT-001" 0L (BusinessCommand.Open registration)
         let! result = actor.Execute(original, CancellationToken.None)
         let receipt = accepted result
 
-        Expect.equal receipt.Position.Sequence 3L "One link after each authority event"
+        Expect.equal
+            receipt.Position.Sequence
+            4L
+            "One entry per authority operation and case operation"
 
         let! replay = actor.Execute(original, CancellationToken.None)
-
-        match replay with
-        | ExecuteOutcome.AlreadyAccepted value -> Expect.equal value receipt "Original receipt"
-        | _ -> failtest "Exact replay missing"
+        Expect.equal replay (ExecuteOutcome.AlreadyAccepted receipt) "Original receipt"
 
         let! stale =
-            actor.Execute(request 11 "CONTRACT-001" 0L Command.Close, CancellationToken.None)
+            actor.Execute(
+                request 11 "CONTRACT-001" 0L BusinessCommand.Close,
+                CancellationToken.None
+            )
 
         Expect.equal
             stale
-            (ExecuteOutcome.Rejected(Rejection.Domain(DomainError.VersionConflict 1L)))
+            (ExecuteOutcome.Rejected(Rejection.Case(CaseRefusal.RevisionConflict 1L)))
             "No stale acceptance"
 
         let! view =
             fixture.Store.ReadCase(fixture.Owner, None, "CONTRACT-001", CancellationToken.None)
 
         match view with
-        | Ok {
-                 Case = Some {
-                                 State = StoredCaseState.Live(snapshot, _)
-                             }
-             } -> Expect.equal (Some snapshot) receipt.Snapshot "Projection and receipt agree"
+        | Ok { Case = Some record } ->
+            Expect.equal
+                (caseReceipt receipt).Snapshot
+                (SnapshotDisclosure.Disclosed record.Snapshot.View)
+                "Projection and receipt agree"
         | _ -> failtest "Missing case"
 
-        let! history =
-            fixture.Store.ReadHistory(fixture.Owner, "CONTRACT-001", 0L, 50, CancellationToken.None)
-
-        match history with
-        | Ok page -> Expect.equal page.Entries.Length 1 "Replay/refusal append nothing"
-        | _ -> failtest "Missing history"
+        let! rows = history fixture "CONTRACT-001" 0L 50
+        Expect.equal (storedPage rows).Entries.Length 1 "Replay/refusal append nothing"
     }
 
 let private lockedView fixture =
     task {
-        let! actor = editor fixture
-        let openRequest = request 10 "CONTRACT-001" 0L (Command.Open registration)
-        let! opened = actor.Execute(openRequest, CancellationToken.None)
+        let! actor = caseWorker fixture
+        let original = request 10 "CONTRACT-001" 0L (BusinessCommand.Open registration)
+        let! opened = actor.Execute(original, CancellationToken.None)
         let first = accepted opened
         let mutable calls = 0
 
@@ -220,26 +262,34 @@ let private lockedView fixture =
                 first.Position.EntryHash
                 "Previous accepted link"
 
-            Expect.equal (view.Case |> Option.map _.Revision) (Some 1L) "Current case"
+            Expect.equal
+                (view.Case |> Option.map (fun record -> record.Snapshot.Revision))
+                (Some 1L)
+                "Current case"
 
             Expect.equal
                 (view.ExistingOperation |> Option.map _.OperationId)
-                (Some openRequest.OperationId)
-                "Existing operation under the same view"
+                (Some original.OperationId)
+                "Existing identity in the same view"
 
-            CaseDecision.Replay(Option.get view.ExistingOperation)
+            CaseDecisions.execute
+                fixture.InstallationId
+                fixture.Calendar
+                fixture.Owner
+                original
+                view
 
         let! result =
             fixture.Store.WriteCase(
                 fixture.Owner,
-                openRequest.OperationId,
-                openRequest.CaseReference,
+                original.OperationId,
+                original.CaseReference,
                 decide,
                 CancellationToken.None
             )
 
         match result with
-        | Ok(CaseWriteResult.Replayed _) -> ()
+        | Ok(LedgerWriteResult.Replayed receipt) -> Expect.equal receipt first "Locked replay"
         | _ -> failtest "Expected replay"
 
         Expect.equal calls 1 "Callback called once"
@@ -247,133 +297,125 @@ let private lockedView fixture =
 
 let private caseUpdate fixture =
     task {
-        let! actor = editor fixture
+        let! actor = caseWorker fixture
 
         let! opened =
             actor.Execute(
-                request 10 "CONTRACT-001" 0L (Command.Open registration),
+                request 10 "CONTRACT-001" 0L (BusinessCommand.Open registration),
                 CancellationToken.None
             )
 
         accepted opened |> ignore
 
         let! closed =
-            actor.Execute(request 11 "CONTRACT-001" 1L Command.Close, CancellationToken.None)
+            actor.Execute(
+                request 11 "CONTRACT-001" 1L BusinessCommand.Close,
+                CancellationToken.None
+            )
 
         let receipt = accepted closed
-        Expect.equal receipt.Revision 2L "One revision"
-
-        Expect.equal
-            (receipt.Snapshot |> Option.map (fun value -> value.Fields.Status))
-            (Some CaseStatus.Closed)
-            "Closure stored"
-
-        let! history =
-            fixture.Store.ReadHistory(fixture.Owner, "CONTRACT-001", 0L, 1, CancellationToken.None)
-
-        match history with
-        | Ok page ->
-            Expect.equal page.Entries.Length 1 "Bounded page"
-            Expect.equal page.NextAfterRevision (Some 1L) "Continuation"
-        | _ -> failtest "Missing history"
+        Expect.equal (caseReceipt receipt).Revision 2L "One revision"
+        Expect.equal (disclosedFields receipt).Status CaseStatus.Closed "Closure stored"
+        let! rows = history fixture "CONTRACT-001" 0L 1
+        let page = storedPage rows
+        Expect.equal page.Entries.Length 1 "Bounded page"
+        Expect.equal page.NextAfterRevision (Some 1L) "Continuation"
 
         let! operation =
             fixture.Store.ReadOperation(fixture.Owner, id 11, CancellationToken.None)
 
         match operation with
-        | Ok(_, Some entry, Some case) ->
+        | Ok {
+                 Entry = Some entry
+                 Case = Some record
+             } ->
             Expect.equal entry.Sequence receipt.Position.Sequence "Operation position"
-
-            Expect.equal case.Revision 2L "Current projection"
+            Expect.equal record.Snapshot.Revision 2L "Current projection"
         | _ -> failtest "Missing accepted update"
     }
 
 let private erasureReadback fixture (actor: IActorClaimsCore) =
     task {
-        let! history =
-            fixture.Store.ReadHistory(fixture.Owner, "CONTRACT-001", 0L, 50, CancellationToken.None)
+        let! rows = history fixture "CONTRACT-001" 0L 50
+        let page = storedPage rows
 
-        match history with
-        | Ok {
-                 Case = Some { State = StoredCaseState.Erased }
-                 Entries = entries
-             } ->
-            Expect.equal entries.Length 2 "Full accepted metadata remains"
-
-            Expect.isTrue
-                (entries
-                 |> List.forall (fun entry -> entry.Payload.IsNone && entry.RequestSha256.IsNone))
-                "All erasable entry data removed"
+        match page.Case with
+        | Some {
+                   Snapshot = { View = CaseView.Erased }
+               } -> ()
         | _ -> failtest "Missing erased projection"
+
+        Expect.equal page.Entries.Length 2 "Full accepted metadata remains"
+
+        Expect.isTrue
+            (page.Entries
+             |> List.forall (fun entry ->
+                 entry.Payload.IsNone
+                 && entry.PayloadNonce.IsNone
+                 && entry.PayloadCommitment.Length = 32))
+            "Only erasable columns are cleared"
 
         let! other =
             fixture.Store.ReadCase(fixture.Owner, None, "CONTRACT-002", CancellationToken.None)
 
         match other with
         | Ok {
-                 Case = Some { State = StoredCaseState.Live _ }
+                 Case = Some {
+                                 Snapshot = { View = CaseView.Live _ }
+                             }
              } -> ()
-        | _ -> failtest "Other case was changed"
+        | _ -> failtest "Other case changed"
 
         let! replay =
             actor.Execute(
-                request 10 "CONTRACT-001" 0L (Command.Open registration),
+                request 10 "CONTRACT-001" 0L (BusinessCommand.Open registration),
                 CancellationToken.None
             )
 
         Expect.equal
             replay
             (ExecuteOutcome.Rejected Rejection.ResourceUnavailable)
-            "Erased replay unavailable"
+            "Erased requests cannot replay"
 
         let! reopen =
             actor.Execute(
-                request 13 "CONTRACT-001" 0L (Command.Open registration),
+                request 13 "contract-001" 0L (BusinessCommand.Open registration),
                 CancellationToken.None
             )
 
         Expect.equal
             reopen
-            (ExecuteOutcome.Rejected Rejection.CaseErased)
-            "Reference remains reserved"
+            (ExecuteOutcome.Rejected(Rejection.Case CaseRefusal.CaseErased))
+            "Folded reference remains reserved"
     }
 
 let private caseErasure fixture =
     task {
-        let! actor = editor fixture
+        let! actor = caseWorker fixture
 
-        let! grant =
-            actor.Authority.SetGrant(
-                id 3,
-                fixture.Owner,
-                Role.DataSteward,
-                GrantTarget.Installation,
-                true,
-                CancellationToken.None
-            )
+        let! granted =
+            grant actor (id 3) fixture.Owner Role.DataSteward GrantTarget.Installation true
 
-        applied grant
+        acceptedAuthority granted
 
         for n, reference in [ 10, "CONTRACT-001"; 11, "CONTRACT-002" ] do
             let! opened =
                 actor.Execute(
-                    request n reference 0L (Command.Open registration),
+                    request n reference 0L (BusinessCommand.Open registration),
                     CancellationToken.None
                 )
 
             accepted opened |> ignore
 
-        let erase: StewardshipRequest =
-            {
-                OperationId = id 12
-                CaseReference = "CONTRACT-001"
-                ExpectedVersion = 1L
-                Action = StewardshipAction.Erase
-            }
+        let erase =
+            actRequest 12 "CONTRACT-001" 1L (CaseAct.Stewardship StewardshipAct.Erase)
 
-        let! result = actor.Steward(erase, CancellationToken.None)
+        let! result = actor.Execute(erase, CancellationToken.None)
 
-        Expect.isNone (accepted result).Snapshot "Erasure receipt contains no snapshot"
+        Expect.equal
+            (accepted result |> caseReceipt).Snapshot
+            SnapshotDisclosure.Erased
+            "Erasure is distinct from withholding"
 
         do! erasureReadback fixture actor
     }
@@ -385,85 +427,59 @@ let private existingCaseId fixture reference =
 
         return
             match result with
-            | Ok { Case = Some case } -> case.CaseId
+            | Ok { Case = Some record } -> record.CaseId
             | _ -> failtest "Expected existing case identity"
     }
 
 let private caseVisibility fixture =
     task {
-        let! actor = editor fixture
+        let! actor = caseWorker fixture
 
         for n, reference in [ 10, "C"; 11, "A"; 12, "B" ] do
             let! result =
                 actor.Execute(
-                    request n reference 0L (Command.Open registration),
+                    request n reference 0L (BusinessCommand.Open registration),
                     CancellationToken.None
                 )
 
             accepted result |> ignore
 
-        let! page =
-            fixture.Store.ListCases(
-                fixture.Owner,
-                (fun _ -> Some CaseVisibility.Every),
-                None,
-                2,
-                CancellationToken.None
-            )
+        let! first = listCases fixture CaseVisibility.Every None 2
+        let first = storedPage first
 
-        match page with
-        | Ok(Some page) ->
-            Expect.equal (page.Items |> List.map _.Reference) [ "A"; "B" ] "UTF-8 byte page"
+        Expect.equal
+            (first.Items |> List.map (fun record -> record.Snapshot.Reference))
+            [ "A"; "B" ]
+            "Reference-key order"
 
-            Expect.equal page.NextAfterReference (Some "B") "Last visible key"
-        | _ -> failtest "Missing page"
-
+        Expect.equal first.NextAfterReference (Some "B") "Last visible key"
         let! caseId = existingCaseId fixture "C"
+        let! only = listCases fixture (CaseVisibility.Only [ caseId ]) None 1
 
-        let! only =
-            fixture.Store.ListCases(
-                fixture.Owner,
-                (fun _ -> Some(CaseVisibility.Only [ caseId ])),
-                None,
-                1,
-                CancellationToken.None
-            )
+        Expect.equal
+            ((storedPage only).Items |> List.map (fun record -> record.Snapshot.Reference))
+            [ "C" ]
+            "Visibility precedes limit"
 
-        match only with
-        | Ok(Some page) ->
-            Expect.equal (page.Items |> List.map _.Reference) [ "C" ] "Visibility precedes limit"
-        | _ -> failtest "Missing scoped page"
+        let! next = listCases fixture CaseVisibility.Every (Some "B") 2
 
-        let! next =
-            fixture.Store.ListCases(
-                fixture.Owner,
-                (fun _ -> Some CaseVisibility.Every),
-                Some "B",
-                2,
-                CancellationToken.None
-            )
-
-        match next with
-        | Ok(Some page) -> Expect.equal (page.Items |> List.map _.Reference) [ "C" ] "Continuation"
-        | _ -> failtest "Missing next page"
+        Expect.equal
+            ((storedPage next).Items |> List.map (fun record -> record.Snapshot.Reference))
+            [ "C" ]
+            "Continuation"
     }
 
 let private registerReader (owner: IActorClaimsCore) target =
     task {
-        let! registered = owner.Authority.RegisterActor(id 2, target, CancellationToken.None)
-        applied registered
-
-        let! added =
-            owner.Authority.SetGrant(
-                id 3,
-                target,
-                Role.CaseReader,
-                GrantTarget.Installation,
-                true,
+        let! registered =
+            owner.ExecuteAuthority(
+                authorityRequest (id 2) target AuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 
-        applied added
+        acceptedAuthority registered
+        let! added = grant owner (id 3) target Role.CaseReader GrantTarget.Installation true
+        acceptedAuthority added
     }
 
 let private authorityChanges fixture =
@@ -479,35 +495,32 @@ let private authorityChanges fixture =
 
         match read with
         | Ok { Actor = Some actor } ->
-            Expect.equal actor.ActorId (id 2) "Stable registration identity"
+            Expect.equal actor.ActorId (id 2) "Registration identity"
 
             Expect.equal
                 actor.Grants
                 [
-                    {
+                    ({
                         Role = Role.CaseReader
                         Scope = GrantScope.Installation
                     }
+                    : ActorGrant)
                 ]
                 "Added grant"
         | _ -> failtest "Missing actor"
 
         let! removed =
-            owner.Authority.SetGrant(
-                id 4,
-                target,
-                Role.CaseReader,
-                GrantTarget.Installation,
-                false,
+            grant owner (id 4) target Role.CaseReader GrantTarget.Installation false
+
+        acceptedAuthority removed
+
+        let! disabled =
+            owner.ExecuteAuthority(
+                authorityRequest (id 5) target (AuthorityAct.SetEnabled false),
                 CancellationToken.None
             )
 
-        applied removed
-
-        let! disabled =
-            owner.Authority.SetEnabled(id 5, target, false, CancellationToken.None)
-
-        applied disabled
+        acceptedAuthority disabled
         let! read = fixture.Store.ReadActor(target, CancellationToken.None)
 
         match read with
@@ -517,57 +530,34 @@ let private authorityChanges fixture =
         | _ -> failtest "Missing actor"
     }
 
-let private scalarOrdering fixture =
+let private foldedOrdering fixture =
     task {
-        let! actor = editor fixture
-        let expected = [ "REF-\uFFFD"; "REF-\U00010000" ]
+        let! actor = caseWorker fixture
 
-        for index, reference in List.indexed expected do
-            let! outcome =
+        for n, reference in [ 20, "Ref-b"; 21, "ref-A"; 22, "REF-C" ] do
+            let! result =
                 actor.Execute(
-                    request (20 + index) reference 0L (Command.Open registration),
+                    request n reference 0L (BusinessCommand.Open registration),
                     CancellationToken.None
                 )
 
-            accepted outcome |> ignore
+            accepted result |> ignore
 
-        let! first =
-            fixture.Store.ListCases(
-                fixture.Owner,
-                (fun _ -> Some CaseVisibility.Every),
-                None,
-                1,
-                CancellationToken.None
-            )
-
-        let first =
-            first
-            |> Result.defaultWith (fun _ -> failtest "List failed")
-            |> Option.defaultWith (fun () -> failtest "List unavailable")
+        let! first = listCases fixture CaseVisibility.Every None 1
+        let first = storedPage first
 
         Expect.equal
-            (first.Items |> List.map _.Reference)
-            [ expected[0] ]
-            "C collation orders Unicode scalar values"
+            (first.Items |> List.map (fun record -> record.Snapshot.Reference))
+            [ "ref-A" ]
+            "Authored spelling with ASCII-key order"
 
-        let! second =
-            fixture.Store.ListCases(
-                fixture.Owner,
-                (fun _ -> Some CaseVisibility.Every),
-                first.NextAfterReference,
-                1,
-                CancellationToken.None
-            )
-
-        let second =
-            second
-            |> Result.defaultWith (fun _ -> failtest "List failed")
-            |> Option.defaultWith (fun () -> failtest "List unavailable")
+        Expect.equal first.NextAfterReference (Some "REF-A") "Continuation is folded"
+        let! second = listCases fixture CaseVisibility.Every first.NextAfterReference 1
 
         Expect.equal
-            (second.Items |> List.map _.Reference)
-            [ expected[1] ]
-            "Continuation uses the same ordering"
+            ((storedPage second).Items |> List.map (fun record -> record.Snapshot.Reference))
+            [ "Ref-b" ]
+            "Continuation uses the same order"
     }
 
 let internal tests factory =
@@ -593,8 +583,8 @@ let internal tests factory =
                 "visibility ordering and keyset limits are applied before paging"
                 (withFixture factory caseVisibility)
             testCaseAsync
-                "Unicode scalar ordering and keyset continuation agree"
-                (withFixture factory scalarOrdering)
+                "ASCII reference folding and keyset continuation agree"
+                (withFixture factory foldedOrdering)
             testCaseAsync
                 "authority changes and reads agree within snapshots"
                 (withFixture factory authorityChanges)

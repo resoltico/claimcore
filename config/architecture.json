@@ -11,7 +11,8 @@
     ],
     "ClaimCore.Contracts": [
       "ClaimCore.Application",
-      "ClaimCore.Domain"
+      "ClaimCore.Domain",
+      "ClaimCore.RecordFormat"
     ],
     "ClaimCore.HostSecurity": [],
     "ClaimCore.Postgres": [
@@ -65,6 +66,9 @@
       "ClaimCore.Hosting",
       "ClaimCore.Database",
       "ClaimCore.Postgres"
+    ],
+    "recordFormatAvoidsFrameworkSerialization": [
+      "ClaimCore.RecordFormat"
     ]
   }
 }

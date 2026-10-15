@@ -1,7 +1,6 @@
 namespace ClaimCore.RecordFormat
 
 open System
-open System.IO
 open System.Text
 open System.Text.Json
 open ClaimCore.Domain
@@ -17,11 +16,16 @@ module internal Json =
     let private decodedText path read =
         try
             let value: string = read ()
-            UTF8Encoding(false, true).GetByteCount(value) |> ignore
+
+            if not (UnicodeText.isPersisted value) then
+                reject path "Persisted text requires valid Unicode without NUL or noncharacters."
+
             value
         with
         | :? InvalidOperationException
         | :? EncoderFallbackException -> reject path "Malformed Unicode is not accepted."
+
+    let persistedString path value = decodedText path (fun () -> value)
 
     let properties path expected (element: JsonElement) =
         if element.ValueKind <> JsonValueKind.Object then
@@ -86,11 +90,11 @@ module internal Json =
             reject (path + "." + name) "Expected an integer JSON number."
 
         match property.TryGetInt64() with
-        | true, value -> value
-        | _ ->
-            reject
-                (path + "." + name)
-                "Expected a signed 64-bit integer without fraction or exponent."
+        | true, value when
+            value >= -CanonicalJson.MaximumInteger && value <= CanonicalJson.MaximumInteger
+            ->
+            value
+        | _ -> reject (path + "." + name) "Expected a safe integer without fraction or exponent."
 
     let optionalString path name element =
         let property = required path name element
@@ -167,35 +171,30 @@ module internal Json =
         else
             parse bytes read
 
-    let encode write =
-        use stream = new MemoryStream()
-        use writer = new Utf8JsonWriter(stream)
-        write writer
-        writer.Flush()
-        stream.ToArray()
+    let dispatch decoders root =
+        let format = integer "$" "format" root
 
-    let writeRegistrationValue (writer: Utf8JsonWriter) (registration: RegistrationInput) =
-        writer.WriteStartObject()
-        writer.WriteString("incidentDate", registration.IncidentDate)
-        writer.WriteString("incidentNotificationDate", registration.IncidentNotificationDate)
-        writer.WriteString("incidentCountry", registration.IncidentCountry)
-        writer.WriteString("claimantName", registration.ClaimantName)
-        writer.WriteString("insurerName", registration.InsurerName)
-        writer.WriteString("claimedAmount", registration.ClaimedAmount)
-        writer.WriteString("claimedCurrency", registration.ClaimedCurrency)
-        writer.WriteEndObject()
+        match decoders |> List.tryFind (fst >> (=) format) with
+        | Some(_, read) -> read root
+        | None -> reject "$.format" "Unsupported record format."
 
-    let writeRegistration (writer: Utf8JsonWriter) (registration: RegistrationInput) =
-        writer.WritePropertyName("registration")
-        writeRegistrationValue writer registration
+    let registrationValue (registration: RegistrationInput) =
+        CanonicalValue.Object
+            [
+                "incidentDate", CanonicalValue.String registration.IncidentDate
+                "incidentNotificationDate",
+                CanonicalValue.String registration.IncidentNotificationDate
+                "incidentCountry", CanonicalValue.String registration.IncidentCountry
+                "claimantName", CanonicalValue.String registration.ClaimantName
+                "insurerName", CanonicalValue.String registration.InsurerName
+                "claimedAmount", CanonicalValue.String registration.ClaimedAmount
+                "claimedCurrency", CanonicalValue.String registration.ClaimedCurrency
+            ]
 
-    let writeDecisionValue (writer: Utf8JsonWriter) (decision: DecisionInput) =
-        writer.WriteStartObject()
-        writer.WriteString("paymentDecisionDate", decision.PaymentDecisionDate)
-        writer.WriteString("payableAmount", decision.PayableAmount)
-        writer.WriteString("payableCurrency", decision.PayableCurrency)
-        writer.WriteEndObject()
-
-    let writeDecision (writer: Utf8JsonWriter) (decision: DecisionInput) =
-        writer.WritePropertyName("decision")
-        writeDecisionValue writer decision
+    let decisionValue (decision: DecisionInput) =
+        CanonicalValue.Object
+            [
+                "paymentDecisionDate", CanonicalValue.String decision.PaymentDecisionDate
+                "payableAmount", CanonicalValue.String decision.PayableAmount
+                "payableCurrency", CanonicalValue.String decision.PayableCurrency
+            ]

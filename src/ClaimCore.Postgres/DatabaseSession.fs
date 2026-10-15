@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Globalization
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
@@ -59,6 +60,43 @@ module internal DatabaseSession =
 
     let instant index row =
         DateTimeOffset(value<DateTime> index row)
+
+    // Explicit era and UTC formatting avoids server DateStyle and Npgsql infinity conversions.
+    let dateExpression column =
+        $"CASE WHEN {column} IS NULL THEN NULL WHEN NOT isfinite({column}) THEN 'invalid' ELSE to_char({column}, 'YYYY-MM-DD AD') END"
+
+    let instantExpression column =
+        $"CASE WHEN NOT isfinite({column}) THEN 'invalid' ELSE to_char({column} AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\" AD') END"
+
+    let calendarDate index row =
+        let text = value<string> index row
+
+        match
+            DateOnly.TryParseExact(
+                text,
+                "yyyy-MM-dd 'AD'",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None
+            )
+        with
+        | true, parsed when parsed.ToString("yyyy-MM-dd 'AD'", CultureInfo.InvariantCulture) = text ->
+            parsed
+        | _ -> invalidOp "Invalid stored calendar date."
+
+    let recordedInstant index row =
+        let text = value<string> index row
+        let format = "yyyy-MM-dd'T'HH:mm:ss.ffffff'Z' 'AD'"
+
+        match
+            DateTimeOffset.TryParseExact(
+                text,
+                format,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal ||| DateTimeStyles.AdjustToUniversal
+            )
+        with
+        | true, parsed when parsed.ToString(format, CultureInfo.InvariantCulture) = text -> parsed
+        | _ -> invalidOp "Invalid stored ledger instant."
 
     let transaction (source: NpgsqlDataSource) isolation token action =
         task {

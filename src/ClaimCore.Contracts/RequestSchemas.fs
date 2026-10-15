@@ -1,5 +1,6 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.Domain
 open ClaimCore.Application
 open WireSchema
 
@@ -17,74 +18,81 @@ module internal RequestSchemas =
     let scope =
         Schema.oneOf
             [
-                objectOf [ property "type" (token "INSTALLATION") ]
-                objectOf [ property "type" (token "CASE"); property "caseReference" reference ]
+                objectOf [ property "kind" (token "INSTALLATION") ]
+                objectOf [ property "kind" (token "CASE"); property "caseReference" reference ]
             ]
-
-    let event = property "eventId" uuid
-    let target = property "principal" principal
 
     let page =
         [
-            optional "cursor" text
-            property
-                "limit"
-                (Schema.integer (Some 1L) (Some(int64 SemanticContract.current.MaximumPageSize)))
+            optional "cursor" (Schema.string None None (Some 1) (Some 512))
+            property "limit" (Schema.integer (Some 1L) (Some(int64 ServiceLimits.MaximumPageSize)))
         ]
 
-    let steward =
-        let common =
+    let private stewardship =
+        [ "VOID"; "REINSTATE"; "ERASE" ]
+        |> List.map (fun kind ->
+            objectOf (
+                [ property "kind" (token kind) ]
+                @ (if kind = "ERASE" then
+                       []
+                   else
+                       [
+                           property
+                               "reason"
+                               (FieldDefinitions.scalar "reason" |> ScalarSchemas.scalar)
+                       ])
+            ))
+
+    let caseRequest =
+        objectOf
             [
                 property "operationId" uuid
                 property "caseReference" reference
                 property "expectedRevision" revision
+                property
+                    "act"
+                    (Schema.oneOf (
+                        (CommandDefinitions.all |> List.map CommandInputProjection.payload)
+                        @ stewardship
+                    ))
             ]
 
-        [ "VOID"; "REINSTATE"; "ERASE" ]
-        |> List.map (fun action ->
-            common
-            @ [ property "action" (token action) ]
-            @ (if action = "ERASE" then
-                   []
-               else
-                   [ property "reason" (Schema.string None None (Some 1) (Some 200)) ])
-            |> objectOf)
-        |> Schema.oneOf
+    let authorityRequest =
+        let act =
+            [
+                objectOf [ property "kind" (token "REGISTER_ACTOR") ]
+                objectOf
+                    [ property "kind" (token "SET_ENABLED"); property "enabled" Schema.boolean ]
+                objectOf
+                    [
+                        property "kind" (token "SET_GRANT")
+                        property "role" (Roles.all |> List.map Roles.token |> enumeration)
+                        property "scope" scope
+                        property "active" Schema.boolean
+                    ]
+            ]
+            |> Schema.oneOf
 
-    let private schemas =
-        [
-            "session", (empty)
-            "session.logout", (empty)
-            "definition", (empty)
-            "command.preview", (ProjectionSchema.commandDraft SemanticContract.current)
-            "command.execute", (ProjectionSchema.commandDraft SemanticContract.current)
-            "case.get", (objectOf [ property "caseReference" reference ])
-            "case.list", (objectOf page)
-            "case.history",
-            (objectOf (
+        objectOf [ property "operationId" uuid; property "target" principal; property "act" act ]
+
+    let forEndpoint =
+        function
+        | "session"
+        | "session.logout"
+        | "context" -> empty
+        | "case.preview"
+        | "case.execute" -> caseRequest
+        | "authority.execute" -> authorityRequest
+        | "case.get" -> objectOf [ property "caseReference" reference ]
+        | "case.list"
+        | "authority.list" -> objectOf page
+        | "case.history" ->
+            objectOf (
                 [
                     property "caseReference" reference
                     property "detail" (enumeration [ "SUMMARY"; "FULL" ])
                 ]
                 @ page
-            ))
-            "operation.observe", (objectOf [ property "operationId" uuid ])
-            "case.steward", (steward)
-            "authority.register", (objectOf [ event; target ])
-            "authority.setGrant",
-            (objectOf
-                [
-                    event
-                    target
-                    property "role" (Roles.all |> List.map Roles.token |> enumeration)
-                    property "scope" scope
-                    property "active" Schema.boolean
-                ])
-            "authority.setEnabled", (objectOf [ event; target; property "enabled" Schema.boolean ])
-            "authority.observe", (objectOf [ event ])
-        ]
-        |> Map.ofList
-
-    let forEndpoint identifier =
-        Map.tryFind identifier schemas
-        |> Option.defaultWith (fun () -> invalidArg "endpoint" "Unknown endpoint.")
+            )
+        | "operation.observe" -> objectOf [ property "operationId" uuid ]
+        | _ -> invalidArg "endpoint" "Unknown endpoint."

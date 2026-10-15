@@ -98,12 +98,28 @@ module PrincipalIdentity =
         | Some subject -> human issuer subject
         | None -> Error "OIDC_SUBJECT_INVALID"
 
-    let fromAccessToken issuer cliClient serviceClient principal =
+    let private optionalClaim name (identity: ClaimsIdentity) =
+        match
+            identity.Claims
+            |> Seq.filter (fun claim -> String.Equals(claim.Type, name, StringComparison.Ordinal))
+            |> Seq.toList
+        with
+        | [] -> Ok None
+        | [ claim ] when nonBlank claim.Value -> Ok(Some claim.Value)
+        | _ -> Error "OIDC_CLAIM_AMBIGUOUS"
+
+    let private clientIdentity identity =
+        match optionalClaim "azp" identity, optionalClaim "client_id" identity with
+        | Ok(Some first), Ok(Some second) when first = second -> Ok first
+        | Ok(Some value), Ok None
+        | Ok None, Ok(Some value) -> Ok value
+        | _ -> Error "OIDC_CLIENT_INVALID"
+
+    let fromAccessToken issuer cliClient principal =
         match authenticatedIdentity principal with
         | None -> Error "OIDC_PRINCIPAL_UNAUTHENTICATED"
         | Some identity ->
-            match singleClaim "azp" identity, singleClaim "sub" identity with
-            | Some client, Some subject when client = cliClient -> human issuer subject
-            | Some client, Some subject when client = serviceClient && nonBlank subject ->
-                service issuer client
-            | _ -> Error "OIDC_CLIENT_UNKNOWN"
+            match clientIdentity identity, optionalClaim "sub" identity with
+            | Ok client, Ok(Some subject) when client = cliClient -> human issuer subject
+            | Ok client, Ok _ when client <> cliClient -> service issuer client
+            | _ -> Error "OIDC_PRINCIPAL_INVALID"

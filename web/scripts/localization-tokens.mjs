@@ -1,6 +1,6 @@
 import { parseSync } from "oxc-parser";
 
-const owners = new Set(["Receipt"]);
+const owners = new Set(["CaseReceipt", "AuthorityReceipt", "CaseView"]);
 const members = new Set(["act", "disposition"]);
 /** @param {import("./tooling-types.mjs").JsonRecord} key */
 const memberName = (key) => (key["type"] === "Identifier" ? key["name"] : key["value"]);
@@ -58,17 +58,17 @@ const renderedFamilies = (types, result) => {
 
 // These are the generated type families actually rendered by this interface, not a parallel
 // business-state registry. Changes in their literal vocabulary require corresponding catalogs.
-/** @param {import("./tooling-types.mjs").JsonRecord} semantic @param {string} types */
-export const renderedTokens = (semantic, types) => {
+/** @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {string} types */
+export const renderedTokens = (descriptors, types) => {
   const result = new Set();
-  for (const field of semantic["fields"]) {
+  for (const field of descriptors["fields"]) {
     if (field.scalar.kind === "CASE_STATUS") {
       for (const value of field.scalar.allowedValues) {
         result.add(value);
       }
     }
   }
-  for (const command of semantic["commands"]) {
+  for (const command of descriptors["commands"]) {
     for (const group of command.inputs.groups ?? []) {
       for (const action of group.actions) {
         result.add(action);
@@ -76,6 +76,9 @@ export const renderedTokens = (semantic, types) => {
     }
   }
   renderedFamilies(types, result);
+  for (const entry of descriptors["roles"]) {
+    result.add(entry.role);
+  }
   result.add("ERASED");
   if (result.size < 7) {
     throw new Error("Rendered token families were not inspected.");

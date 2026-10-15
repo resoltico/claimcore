@@ -24,11 +24,11 @@ let private deliveryKnowledge () =
     Expect.equal (delivery.Interrupt()) 130 "Before dispatch cancellation"
     let mutation = FrameDelivery(output, errors)
     mutation.BeginFrame()
-    mutation.BeforeDispatch(frame "case.steward")
+    mutation.BeforeDispatch(frame "case.execute")
     Expect.equal (mutation.Interrupt()) 4 "Cancellation after mutation dispatch"
     let completed = FrameDelivery(output, errors)
     completed.BeginFrame()
-    completed.BeforeDispatch(frame "case.steward")
+    completed.BeforeDispatch(frame "case.execute")
     completed.Write(CliReply.protocol "INVALID_RESPONSE")
     completed.BeginFrame()
 
@@ -40,7 +40,7 @@ let private deliveryKnowledge () =
     use broken = new BrokenOutput()
     let lost = FrameDelivery(broken, errors)
     lost.BeginFrame()
-    lost.BeforeDispatch(frame "authority.setEnabled")
+    lost.BeforeDispatch(frame "authority.execute")
 
     try
         lost.Write(CliReply.local ClientFailure.Unavailable)
@@ -120,7 +120,7 @@ let private sessionLines () =
         Expect.isOk (Frames.decode (bytes line)) "Every response is a valid frame"
 
 let private uncertainSession () =
-    let first = Frames.bytes (frame "authority.register") |> Encoding.UTF8.GetString
+    let first = Frames.bytes (frame "authority.execute") |> Encoding.UTF8.GetString
     let next = Frames.bytes (frame "case.get") |> Encoding.UTF8.GetString
     use input = new MemoryStream(bytes (first + "\n" + next + "\n"))
     use output = new MemoryStream()
@@ -167,7 +167,7 @@ let private offlineDiscovery () =
         [
             [ "invocation" ]
             [ "response" ]
-            [ "authority.register"; "request" ]
+            [ "authority.execute"; "request" ]
             [ "host-failure" ]
         ] do
         Expect.isSome (Discovery.schema args) "Offline schemas"
@@ -175,11 +175,51 @@ let private offlineDiscovery () =
     Expect.isNone (Discovery.describe [ "unsupported.synthetic" ]) "Unsupported selector refused"
     Expect.isNone (Discovery.schema [ "unsupported.synthetic" ]) "Unknown schema refused"
 
+let private exampleFrames () =
+    let root = ClaimCore.TestSupport.RepositoryRoot.find ()
+
+    let files =
+        Directory.GetFiles(Path.Combine(root, "examples"), "*.json") |> Array.sort
+
+    Expect.equal files.Length 9 "Every published example frame is reached"
+    let mutable current = None
+
+    for index, path in Array.indexed files do
+        let invocation = Frames.parse (File.ReadAllBytes path) |> Fixtures.accepted
+
+        Expect.equal
+            (Frames.endpoint invocation).Identifier
+            "case.execute"
+            "Business and stewardship share execution"
+
+        let request =
+            match Frames.input invocation with
+            | ServiceInput.Case request -> request
+            | _ -> failtest "Example must be a case request"
+
+        let next =
+            ClaimCore.Domain.Case.decide (DateOnly(2026, 10, 15)) request current
+            |> Fixtures.accepted
+
+        Expect.equal
+            (ClaimCore.Domain.Case.snapshot next).Revision
+            (int64 (index + 1))
+            "Example revision sequence"
+
+        current <- Some next
+
+    let final = current |> Option.get |> ClaimCore.Domain.Case.snapshot
+    Expect.equal final.Reference "DEMO-0001" "Original reference retained"
+    Expect.equal final.View ClaimCore.Domain.CaseView.Erased "Examples end with explicit erasure"
+
 [<Tests>]
 let tests =
     testList
         "CLI frame delivery"
         [
+            testCase
+                "all published example frames admit and follow the Domain lifecycle"
+                exampleFrames
             testCase
                 "cancellation and stdout loss preserve current frame knowledge"
                 deliveryKnowledge

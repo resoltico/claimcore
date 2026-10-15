@@ -18,12 +18,12 @@ it("readonly preview can be repeated with its unchanged exact draft after lost o
   expect(vi.mocked(fetch).mock.calls[1]?.[1]?.body).toBe(vi.mocked(fetch).mock.calls[0]?.[1]?.body);
 });
 it("already accepted preview returns its recorded receipt without another execution", async () => {
-  const value = generatedWebValue("command.execute");
+  const value = generatedWebValue("case.execute");
   if (value.outcome.tag !== "ACCEPTED") {
     throw new Error("Accepted fixture required.");
   }
   vi.mocked(fetch).mockResolvedValueOnce(
-    response("command.preview", "ALREADY_ACCEPTED", value.outcome.data),
+    response("case.preview", "ALREADY_ACCEPTED", value.outcome.data),
   );
   render(editor());
   await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));

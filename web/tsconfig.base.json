@@ -16,6 +16,9 @@
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noPropertyAccessFromIndexSignature": true
+    "noPropertyAccessFromIndexSignature": true,
+    "paths": {
+      "@contracts/*": ["../contracts/*"]
+    }
   }
 }

@@ -19,43 +19,29 @@ warnings never rewrite authored or accepted values.
 ## Build and checks
 
 Node/npm versions are pinned by `.node-version` and `package.json`; dependencies by the npm lock.
-From the repository root:
+From the repository root, run `npm --prefix web ci`, then `npm --prefix web run build`.
+`bash eng/verify.sh frontend` runs formatting, lint, types, unit tests, Knip, audit, licenses,
+build and notices using Node only. See [Development](../docs/development.md) for named stages.
 
-```sh
-npm --prefix web ci
-npm --prefix web run contract:generate
-npm --prefix web run localization:check
-npm --prefix web run typecheck
-npm --prefix web run lint
-npm --prefix web run lint:styles
-npm --prefix web run test:unit
-npm --prefix web audit --audit-level=low
-npm --prefix web run build
-```
+Contracts are tracked in `contracts/`. The F# generator owns their bytes; native freshness tests
+check exact inventory and content. No web command invokes .NET. Required consumed-response guards
+and strict JSON parsing preserve delivery uncertainty without embedding a full schema validator.
 
-`format:check` checks authored source. Function size and complexity remain enforced. Coverage
-is available through `test:coverage` and gates nothing. Networking and localization boundaries
-have positive and rejecting policy fixtures.
+English metadata and diagnostics come from tracked F# outputs. Authored Latvian and Arabic
+catalogues cover matching keys/parameters/tokens; both are machine-drafted and need native review.
+Every direct consumer generates ignored localizations first. Pseudolocalization runs at runtime;
+there is no tracked pseudolocale or compiled catalogue. Display language and formatting never
+rewrite authored business values or country codes.
 
-Contract generation runs the F# generator, compiles strict standalone AJV validators, then
-checks every artifact's length/hash against `config/contracts.lock.json`. Generated files live
-in ignored `src/generated/contracts`; never edit them. `contract:lock` accepts an intentional
-change only after reviewing it with the owning F# change. A failed or interrupted generation
-must be rerun before consumers can pass lock verification.
+`build` typechecks, produces `dist` and generates independent notices from the locked production
+graph. Ordinary .NET builds do not run npm. Publishing consumes assets; the Node container stage
+builds them before SDK publication. Source formatting and type-aware lint retain size/complexity
+limits and networking/localization negative controls. Coverage is optional and gates nothing.
+CSS verification covers formatting and browser layout/accessibility; there is no separate CSS
+semantic linter.
 
-English business metadata and diagnostics come from F#. The authored Latvian and Arabic
-catalogs must cover the same keys, parameter roles and rendered tokens. `localization:generate`
-derives all compiled catalogs and the English pseudolocale. Latvian and Arabic translations
-are machine-drafted and need native review.
-
-`build` typechecks, produces `dist` with Vite and includes third-party notices for runtime
-packages and embedded validators. Ordinary .NET builds do not run npm. Publishing consumes
-built assets; the container build and published acceptance own the delivered source/build
-relationship. The three-engine Playwright suite targets a freshly started published service,
-not a development server. See [Development](../docs/development.md) for repository-wide verification.
-
-The Stylelint tooling graph pins the MIT-licensed `@dieub/braces-depth-guard@3.0.3-pn.2`
-derivative through a `braces` override. Its published runtime diff and nesting rejection were
-reviewed to address GHSA-vfj7-8cjw-p6xm, for which upstream has no patched release. This is a
-code replacement, not an audit exclusion; the audit remains at `low`. The dependency review
-and compatibility/rejection evidence are in the decision record.
+Serialization and real browser acceptance cover correction combinations, localized validation,
+consent and exact retries. Each fixture has one worker and zero retries because grants/relay
+state are shared. CI isolates engines across jobs; complete qualification runs all specifications
+on Chromium, Firefox and WebKit. See [Development](../docs/development.md) for local sequencing
+and the explicitly partial PR smoke selection.

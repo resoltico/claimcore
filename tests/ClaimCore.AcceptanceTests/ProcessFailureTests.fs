@@ -96,9 +96,40 @@ let private progressControls () =
             (0, 0)
             "Unrecognized or partial lines cannot inflate progress"
 
+let private locationControls () =
+    let row =
+        "  ✘  29 [chromium] › e2e/localization-editor.spec.ts:58:1 › private payload/title (30.0s)"
+
+    let locations value =
+        Encoding.UTF8.GetBytes(value: string) |> BrowserProgress.failedLocations
+
+    Expect.equal
+        (locations row)
+        [ "localization-editor.spec.ts:58" ]
+        "Only a code location is retained"
+
+    for changed in
+        [
+            "private payload " + row
+            row.Replace("e2e/localization-editor.spec.ts:58:1", "/private/credential.json:58:1")
+            row.Replace("e2e/localization-editor.spec.ts:58:1", "e2e/../private.spec.ts:58:1")
+            row.Replace(":58:1", ":0:1")
+            row.Replace(":58:1", ":58:0")
+            row.Replace("[chromium]", "[private-title]")
+        ] do
+        Expect.isEmpty (locations changed) "Private or malformed locations are omitted"
+
+    Expect.equal
+        (locations (
+            row.Replace("private payload/title", "https://private.invalid/token?secret=value")
+        ))
+        [ "localization-editor.spec.ts:58" ]
+        "Even reporter titles containing private details are never exposed"
+
 let private controls () =
     cleanupControls ()
     progressControls ()
+    locationControls ()
 
     let deadline =
         failure Deadline "printf synthetic-out; printf synthetic-err >&2; sleep 2" None 64 250

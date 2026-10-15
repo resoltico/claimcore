@@ -7,6 +7,7 @@ import {
   correctionGroups,
   isCorrectionGroupName,
   isDirty,
+  isBusinessCommand,
   prefilledValues,
   type CommandKind,
 } from "../../domain/metadata";
@@ -21,14 +22,14 @@ import type {
 import { isLocked, nextOperationId } from "../../views/operation/editorSupport";
 
 const initialValues = (props: OperationEditorProps) =>
-  prefilledValues(props.definition.definition, props.initialCommand, props.current?.case ?? null);
+  prefilledValues(props.definition.descriptors, props.initialCommand, props.current ?? null);
 
 const createInitialOperation = (props: OperationEditorProps) =>
   initialOperation(
     nextOperationId(),
     props.initialCommand,
     initialValues(props),
-    props.current?.case.fields.caseReference ?? "",
+    props.current?.caseReference ?? "",
   );
 
 const useEditorState = (props: OperationEditorProps): EditorState => {
@@ -95,7 +96,7 @@ const changeActions = (
     state.dispatch({
       type: "CHANGE_COMMAND",
       command,
-      values: prefilledValues(props.definition.definition, command, props.current?.case ?? null),
+      values: prefilledValues(props.definition.descriptors, command, props.current ?? null),
       nextOperationId: nextOperationId(),
     });
     state.setPendingDiscard(null);
@@ -146,30 +147,28 @@ const useEditorActions = (props: OperationEditorProps, state: EditorState): Edit
 };
 
 const metadata = (props: OperationEditorProps, state: EditorState): EditorMetadata => {
-  const command = commandFor(props.definition.definition, state.state.command);
-  const fields = commandInputs(props.definition.definition, state.state.command);
-  const groups = correctionGroups(props.definition.definition, state.state.command);
-  const referenceField = props.definition.definition.fields.find(
+  const command = commandFor(props.definition.descriptors, state.state.command);
+  const fields = commandInputs(props.definition.descriptors, state.state.command);
+  const groups = correctionGroups(props.definition.descriptors, state.state.command);
+  const referenceField = props.definition.descriptors.fields.find(
     (field) => field.name === "caseReference",
   );
-  const currentReference = props.current?.case.fields.caseReference ?? "";
+  const currentReference = props.current?.caseReference ?? "";
   return {
     command,
     fields,
     groups,
     referenceField,
-    available: props.current?.availableCommands ?? [props.initialCommand],
+    available: props.current?.state.availableActs.filter(isBusinessCommand) ?? [
+      props.initialCommand,
+    ],
     locked: isLocked(state.state.delivery),
     canPreview: editable(state.state),
     dirty:
       state.state.caseReference !== currentReference ||
       isDirty(
         state.state.values,
-        prefilledValues(
-          props.definition.definition,
-          state.state.command,
-          props.current?.case ?? null,
-        ),
+        prefilledValues(props.definition.descriptors, state.state.command, props.current ?? null),
       ),
     receipt: state.state.delivery === "ACCEPTED" ? state.state.receipt : null,
   };

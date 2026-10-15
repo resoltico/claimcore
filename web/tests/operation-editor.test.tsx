@@ -15,38 +15,44 @@ const reviewAndConfirm = async () => {
 it("reviews before execution and sends the exact reviewed request", async () => {
   vi.mocked(fetch)
     .mockImplementationOnce(() => Promise.resolve(previewReply()))
-    .mockResolvedValueOnce(generatedResponse("command.execute"));
+    .mockResolvedValueOnce(generatedResponse("case.execute"));
   const committed = vi.fn();
   render(editor({ onCommitted: committed }));
   const user = await reviewAndConfirm();
   expect(await screen.findByRole("heading", { name: "Recorded change" })).toBeVisible();
-  expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe("/api/command.preview");
-  expect(vi.mocked(fetch).mock.calls[1]?.[0]).toBe("/api/command.execute");
+  expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe("/api/case.preview");
+  expect(vi.mocked(fetch).mock.calls[1]?.[0]).toBe("/api/case.execute");
   expect(vi.mocked(fetch).mock.calls[0]?.[1]?.body).toBe(vi.mocked(fetch).mock.calls[1]?.[1]?.body);
   await user.click(screen.getByRole("button", { name: "Return to case" }));
   expect(committed).toHaveBeenCalledOnce();
 });
-it.each(["lost", "unknown"] as const)("%s execution keeps one exact retry action", async (mode) => {
-  vi.mocked(fetch).mockImplementationOnce(() => Promise.resolve(previewReply()));
-  if (mode === "lost") {
-    vi.mocked(fetch).mockRejectedValueOnce(new Error("Synthetic loss"));
-  } else {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      response("command.execute", "OUTCOME_UNKNOWN", { operationId, requestSha256: digest }),
-    );
-  }
-  vi.mocked(fetch).mockResolvedValueOnce(generatedResponse("command.execute"));
-  const locked = vi.fn();
-  render(editor({ onMutationLockChange: locked }));
-  const user = await reviewAndConfirm();
-  expect(await screen.findByRole("button", { name: "Retry the same operation" })).toBeVisible();
-  expect(screen.getByRole("alert")).toHaveTextContent("unknown");
-  expect(locked).toHaveBeenCalledWith(true);
-  const before = vi.mocked(fetch).mock.calls[1]?.[1]?.body;
-  await user.click(screen.getByRole("button", { name: "Retry the same operation" }));
-  await screen.findByRole("heading", { name: "Recorded change" });
-  expect(vi.mocked(fetch).mock.calls[2]?.[1]?.body).toBe(before);
-});
+it.each(["lost", "unknown", "malformed"] as const)(
+  "%s execution keeps one exact retry action",
+  async (mode) => {
+    vi.mocked(fetch).mockImplementationOnce(() => Promise.resolve(previewReply()));
+    if (mode === "lost") {
+      vi.mocked(fetch).mockRejectedValueOnce(new Error("Synthetic loss"));
+    } else if (mode === "unknown") {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        response("case.execute", "OUTCOME_UNKNOWN", { operationId, requestSha256: digest }),
+      );
+    }
+    if (mode === "malformed") {
+      vi.mocked(fetch).mockResolvedValueOnce(response("case.execute", "ACCEPTED", { operationId }));
+    }
+    vi.mocked(fetch).mockResolvedValueOnce(generatedResponse("case.execute"));
+    const locked = vi.fn();
+    render(editor({ onMutationLockChange: locked }));
+    const user = await reviewAndConfirm();
+    expect(await screen.findByRole("button", { name: "Retry the same operation" })).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent("unknown");
+    expect(locked).toHaveBeenCalledWith(true);
+    const before = vi.mocked(fetch).mock.calls[1]?.[1]?.body;
+    await user.click(screen.getByRole("button", { name: "Retry the same operation" }));
+    await screen.findByRole("heading", { name: "Recorded change" });
+    expect(vi.mocked(fetch).mock.calls[2]?.[1]?.body).toBe(before);
+  },
+);
 it("readonly preview failure stays editable and cannot submit", async () => {
   vi.mocked(fetch).mockRejectedValueOnce(new Error("Synthetic failure"));
   render(editor());
@@ -57,8 +63,7 @@ it("readonly preview failure stays editable and cannot submit", async () => {
 });
 it("an invalid input rejection focuses and labels the exact authoring field", async () => {
   vi.mocked(fetch).mockResolvedValueOnce(
-    response("command.preview", "REJECTED", {
-      code: "INVALID_INPUT",
+    response("case.preview", "REJECTED", {
       message: "PRIVATE_CANARY",
       diagnostic: { id: "INPUT_TEXT_REQUIRED", parameters: {} },
       field: "caseReference",

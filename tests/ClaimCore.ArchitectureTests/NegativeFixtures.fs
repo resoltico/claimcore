@@ -27,3 +27,14 @@ type NetworkCall =
 type TimeZoneCall =
     static member Read() =
         TimeZoneInfo.FindSystemTimeZoneById("Etc/UTC")
+
+type JsonSerializerCall =
+    static member Write() =
+        System.Text.Json.JsonSerializer.Serialize("control")
+
+type JsonWriterCall =
+    static member Write() =
+        let buffer = System.Buffers.ArrayBufferWriter<byte>()
+        use writer = new System.Text.Json.Utf8JsonWriter(buffer)
+        writer.WriteNullValue()
+        writer.Flush()

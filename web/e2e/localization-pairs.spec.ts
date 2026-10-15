@@ -8,8 +8,8 @@ import {
   openLabel,
 } from "./localization-support";
 import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
-import { endpoints } from "../src/generated/contracts/endpoint-catalog";
-import { isResponse } from "../src/generated/contracts/validation";
+import { endpoints } from "@contracts/endpoint-catalog";
+import { isResponse } from "../src/api/responseGuards";
 import type { ServiceResponse } from "../src/api/types";
 import type { Language } from "../src/presentation/preferences";
 
@@ -31,7 +31,7 @@ const openPairPage = async (page: Page, source: Language, authenticated: boolean
     .then(async (reply) => {
       expect(reply.status()).toBe(200);
       const payload: unknown = await reply.json();
-      expect(await isResponse("case.list", payload)).toBe(true);
+      expect(isResponse("case.list", payload)).toBe(true);
       expect((payload as ServiceResponse<"case.list">).outcome.tag).toBe("SUCCEEDED");
     });
   await Promise.all([

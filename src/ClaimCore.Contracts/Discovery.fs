@@ -4,35 +4,22 @@ open System.Text
 open WireJson
 
 module ContractDiscovery =
-    let semanticSchema () =
-        ProjectionSchema.definitionDocument ClaimCore.Application.SemanticContract.current
-        |> EndpointCatalog.schema
-
-    let semantic () =
-        ContractJson.semanticContract ClaimCore.Application.SemanticContract.current
+    let descriptors () = ContractDescriptors.render ()
 
     let catalogue () =
         obj
             [
                 "wireFingerprint", text (WireContractFingerprint.value EndpointCatalog.fingerprint)
                 "endpoints",
-                (EndpointCatalog.all
-                 |> List.map (fun e ->
-                     obj
-                         [
-                             "id", text e.Identifier
-                             "method", text e.Method
-                             "path", text e.Path
-                             "mutates", boolean e.Mutates
-                             "requestSchema",
-                             text ("endpoint." + e.Identifier + ".request.schema.json")
-                             "responseSchema",
-                             text ("endpoint." + e.Identifier + ".response.schema.json")
-                             "responseDefinition", text e.Identifier
-                         ])
-                 |> array)
+                System.Text.Json.Nodes.JsonNode.Parse(
+                    CanonicalContract.bytes (EndpointCatalog.metadata ())
+                )
+                |> nonNull
             ]
-        |> fun value -> value.ToJsonString() + "\n" |> Encoding.UTF8.GetBytes
+        |> fun value ->
+            value.ToJsonString(System.Text.Json.JsonSerializerOptions(WriteIndented = true))
+            + "\n"
+            |> Encoding.UTF8.GetBytes
 
     let schema name =
         match name with
@@ -40,8 +27,6 @@ module ContractDiscovery =
         | "response" -> Some EndpointCatalog.frameResponse
         | "responses" -> Some EndpointCatalog.responses
         | "host-failure" -> Some HostFailures.schema
-        | "semantic-core" ->
-            Some(ProjectionSchema.definitionDocument ClaimCore.Application.SemanticContract.current)
         | other ->
             EndpointCatalog.all
             |> List.tryPick (fun e ->
@@ -89,6 +74,36 @@ module ContractDiscovery =
              ])
         + "\n"
 
+    let private guardMetadataTypeScript () =
+        let json value =
+            System.Text.Json.JsonSerializer.Serialize value
+
+        let policies =
+            HostFailures.all
+            |> List.map (fun reason ->
+                {|
+                    code = HostFailures.code reason
+                    status = HostFailures.status reason
+                    executionPhase = HostFailures.phase reason
+                    diagnosticId = HostFailures.diagnosticId reason
+                |})
+
+        "export const hostFailurePolicies = "
+        + json policies
+        + " as const;\n"
+        + "export const caseActNames = "
+        + json (
+            ClaimCore.Domain.CaseActKinds.all
+            |> List.map ClaimCore.Domain.CaseActKinds.token
+        )
+        + " as const;\n"
+        + "export const authorityActNames = "
+        + json (
+            ClaimCore.RecordFormat.RecordedAuthorityActs.all
+            |> List.map ClaimCore.RecordFormat.RecordedAuthorityActs.token
+        )
+        + " as const;\n"
+
     let endpointTypeScript () =
         let endpoints =
             EndpointCatalog.all
@@ -110,53 +125,23 @@ module ContractDiscovery =
         + ";\nexport const endpoints = ["
         + String.concat "," endpoints
         + "] as const;\nexport type EndpointId = (typeof endpoints)[number][\"id\"];\nexport const isEndpointId = (value: string): value is EndpointId => endpoints.some(endpoint => endpoint.id === value);\n"
+        + guardMetadataTypeScript ()
 
     let presentation () =
-        [
-            yield!
-                ClaimCore.Application.RejectionDiagnosticIds.all
-                |> List.map (fun (reason, id) ->
-                    "diagnostic." + id,
-                    (RejectionPresentation.template reason
-                     |> List.map (function
-                         | DiagnosticTextPart.Literal value -> Map.ofList [ "literal", value ]
-                         | DiagnosticTextPart.Hole hole ->
-                             Map.ofList [ "hole", RejectionPresentation.holeName hole ])))
-            yield!
-                ClaimCore.Application.CoreFaults.all
-                |> List.map (fun (reason, id) ->
-                    "diagnostic." + id,
-                    [ Map.ofList [ "literal", CoreFaultPresentation.render reason ] ])
-            yield!
-                HostFailures.all
-                |> List.map (fun reason ->
-                    "diagnostic." + HostFailures.diagnosticId reason,
-                    [ Map.ofList [ "literal", HostFailures.render reason ] ])
-        ]
-        |> Map.ofList
-        |> System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
+        DefaultPresentation.render () |> CanonicalContract.bytes
 
     let productMetadataTypeScript () =
-        let quote value =
-            System.Text.Json.JsonSerializer.Serialize(value: string)
+        let quote (value: string) =
+            System.Text.Json.JsonSerializer.Serialize value
 
-        let definition = semantic () |> CanonicalContract.text |> _.TrimEnd()
+        let descriptors = descriptors () |> CanonicalContract.text |> _.TrimEnd()
         let version = ClaimCore.Application.BuildIdentity.current.Version |> quote
-
-        let semanticFingerprint =
-            ClaimCore.Application.SemanticContract.fingerprint
-                ClaimCore.Application.SemanticContract.current
-            |> ClaimCore.Application.SemanticCoreFingerprint.value
-            |> quote
-
         let fingerprint = WireContractFingerprint.value EndpointCatalog.fingerprint |> quote
 
-        "/* Generated from ClaimCore.Contracts. Do not edit. */\nimport type { SemanticDefinition } from \"./types\";\nexport const productMetadata = { definition: "
-        + definition
+        "/* Generated from ClaimCore.Contracts. Do not edit. */\nexport const productMetadata = { descriptors: "
+        + descriptors
         + ", productVersion: "
         + version
-        + ", semanticFingerprint: "
-        + semanticFingerprint
         + ", wireFingerprint: "
         + fingerprint
-        + " } as const satisfies {definition: SemanticDefinition; productVersion: string; semanticFingerprint: string; wireFingerprint: string};\n"
+        + " } as const;\n"

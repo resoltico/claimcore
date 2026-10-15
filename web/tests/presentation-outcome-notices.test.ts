@@ -1,10 +1,9 @@
 import { it, expect } from "vitest";
 import { resultNotice } from "../src/api/service";
 import { createPresenter } from "../src/presentation/presenter";
-import type { Fault } from "../src/generated/contracts/types";
+import type { Fault } from "@contracts/types";
 it("diagnostics remain typed and never expose server prose", () => {
   const fault: Fault = {
-    code: "STORE_UNAVAILABLE",
     diagnostic: { id: "CORE_STORE_UNAVAILABLE", parameters: {} },
     message: "PRIVATE_PROVIDER_CANARY",
     recommendedAction: "RETRY_SAFE",

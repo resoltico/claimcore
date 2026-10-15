@@ -153,7 +153,7 @@ it("refuses reference message parts with missing, wrong-role or foreign holes [C
   const reference = { exact: "Synthetic reference" };
   expect(renderIsolatedValue(preferences, "ui.reviewTarget", {}, reference)).toEqual(fallback);
   expect(
-    renderIsolatedValue(preferences, "ui.reviewTarget", { reference: 1, revision: "1" }, reference),
+    renderIsolatedValue(preferences, "ui.reviewTarget", { reference: 1, revision: 1 }, reference),
   ).toEqual(fallback);
   expect(
     renderIsolatedValue(

@@ -10,24 +10,24 @@ open ClaimCore.RecordFormat
 
 let private operationId = Guid.Parse "20000000-0000-4000-8000-000000000001"
 
-let private steward action : StewardshipRequest =
+let private steward action : CaseRequest =
     {
         OperationId = operationId
         CaseReference = "UNIT-001"
-        ExpectedVersion = 7L
-        Action = action
+        ExpectedRevision = 7L
+        Act = CaseAct.Stewardship action
     }
 
 let private authority action : AuthorityRequestRecord =
     {
-        EventId = operationId
+        OperationId = operationId
         Target =
             {
                 Kind = "HUMAN"
                 Issuer = "https://issuer.example/"
                 Subject = "synthetic-owner"
             }
-        Action = action
+        Act = action
     }
 
 let private stewardshipProperty =
@@ -37,13 +37,13 @@ let private stewardshipProperty =
         let! action =
             Gen.item
                 [
-                    StewardshipAction.Void reason
-                    StewardshipAction.Reinstate reason
-                    StewardshipAction.Erase
+                    StewardshipAct.Void reason
+                    StewardshipAct.Reinstate reason
+                    StewardshipAct.Erase
                 ]
 
         let request = steward action
-        return StewardshipRecord.decode 65536 (StewardshipRecord.encode request) = Ok request
+        return RequestRecord.decode 65536 (RequestRecord.encode request) = Ok request
     }
 
 let private authorityProperty =
@@ -55,14 +55,23 @@ let private authorityProperty =
                 [ RecordedGrantScope.Installation; RecordedGrantScope.CaseReference "UNIT-001" ]
 
         let! role =
-            Gen.item [ "OWNER"; "CASE_READER"; "CASE_EDITOR"; "DATA_STEWARD"; "AUDITOR" ]
+            Gen.item
+                [
+                    "OWNER"
+                    "CASE_READER"
+                    "CASE_REGISTRAR"
+                    "CASE_HANDLER"
+                    "PAYMENT_RECORDER"
+                    "DATA_STEWARD"
+                    "AUDITOR"
+                ]
 
         let! action =
             Gen.item
                 [
-                    RecordedAuthorityAction.RegisterActor
-                    RecordedAuthorityAction.SetGrant(role, scope, active)
-                    RecordedAuthorityAction.SetEnabled active
+                    RecordedAuthorityAct.RegisterActor
+                    RecordedAuthorityAct.SetGrant(role, scope, active)
+                    RecordedAuthorityAct.SetEnabled active
                 ]
 
         let request = authority action
@@ -79,15 +88,12 @@ let private total decode bytes =
 let private decoderProperty =
     let seeds =
         [
-            Fixtures.request 0L (Command.Open Fixtures.registration) |> RequestRecord.encode
-            Fixtures.opened () |> Claim.view |> CaseRecord.encodeSnapshot
-            steward (StewardshipAction.Void "Reason") |> StewardshipRecord.encode
+            Fixtures.request 0L (BusinessCommand.Open Fixtures.registration)
+            |> RequestRecord.encode
+            Fixtures.opened () |> Case.snapshot |> CaseRecord.encodeSnapshot
+            steward (StewardshipAct.Void "Reason") |> RequestRecord.encode
             authority (
-                RecordedAuthorityAction.SetGrant(
-                    "CASE_EDITOR",
-                    RecordedGrantScope.Installation,
-                    true
-                )
+                RecordedAuthorityAct.SetGrant("CASE_HANDLER", RecordedGrantScope.Installation, true)
             )
             |> AuthorityRecord.encode
             LedgerEntry.encodePayload
@@ -106,24 +112,23 @@ let private decoderProperty =
         return
             total (RequestRecord.decode 65536) bytes
             && total CaseRecord.decodeSnapshot bytes
-            && total (StewardshipRecord.decode 65536) bytes
+            && total (RequestRecord.decodeWire 65536) bytes
             && total (AuthorityRecord.decode 65536) bytes
+            && total (AuthorityRecord.decodeWire 65536) bytes
             && total (LedgerEntry.decodePayload 65536) bytes
     }
 
 let private strictRecords () =
     let canonical =
-        steward StewardshipAction.Erase
-        |> StewardshipRecord.encode
-        |> Encoding.UTF8.GetString
+        steward StewardshipAct.Erase |> RequestRecord.encode |> Encoding.UTF8.GetString
 
     let variants =
         [
-            canonical.Replace("\"type\":\"ERASE\"", "\"type\":\"ERASE\",\"reason\":\"forbidden\"")
-            canonical.Replace("\"type\":\"ERASE\"", "\"type\":\"UNKNOWN\"")
+            canonical.Replace("\"kind\":\"ERASE\"", "\"kind\":\"ERASE\",\"reason\":\"forbidden\"")
+            canonical.Replace("\"kind\":\"ERASE\"", "\"kind\":\"UNKNOWN\"")
             canonical.Replace(
-                "\"expectedVersion\":7",
-                "\"expectedVersion\":7,\"expectedVersion\":7"
+                "\"expectedRevision\":7",
+                "\"expectedRevision\":7,\"expectedRevision\":7"
             )
             canonical.Replace("\"caseReference\":\"UNIT-001\"", "\"caseReference\":null")
             canonical.Replace("\"caseReference\":\"UNIT-001\"", "\"caseReference\":\"\\ud800\"")
@@ -133,11 +138,15 @@ let private strictRecords () =
         ]
 
     for bytes in variants |> List.map Encoding.UTF8.GetBytes do
-        Expect.isError (StewardshipRecord.decode 65536 bytes) "Invalid record is refused"
+        Expect.isFalse
+            (bytes = Encoding.UTF8.GetBytes canonical)
+            "Negative control changes the record"
+
+        Expect.isError (RequestRecord.decode 65536 bytes) "Invalid record is refused"
 
     let grant =
         authority (
-            RecordedAuthorityAction.SetGrant("CASE_EDITOR", RecordedGrantScope.Installation, true)
+            RecordedAuthorityAct.SetGrant("CASE_HANDLER", RecordedGrantScope.Installation, true)
         )
 
     let encoded = AuthorityRecord.encode grant |> Encoding.UTF8.GetString
@@ -145,11 +154,13 @@ let private strictRecords () =
     for candidate in
         [
             encoded.Replace("\"active\":true", "\"active\":\"true\"")
-            encoded.Replace("\"type\":\"INSTALLATION\"", "\"type\":\"UNKNOWN\"")
-            encoded.Replace("\"type\":\"SET_GRANT\"", "\"type\":\"UNKNOWN\"")
-            encoded.Replace("\"role\":\"CASE_EDITOR\",", "")
+            encoded.Replace("\"kind\":\"INSTALLATION\"", "\"kind\":\"UNKNOWN\"")
+            encoded.Replace("\"kind\":\"SET_GRANT\"", "\"kind\":\"UNKNOWN\"")
+            encoded.Replace("\"role\":\"CASE_HANDLER\",", "")
             encoded.Replace("\"kind\":\"HUMAN\"", "\"kind\":\"HUMAN\",\"extra\":true")
         ] do
+        Expect.notEqual candidate encoded "Negative control changes the authority record"
+
         Expect.isError
             (AuthorityRecord.decode 65536 (Encoding.UTF8.GetBytes candidate))
             "Strict authority shape"
@@ -161,20 +172,20 @@ let tests =
         [
             testCase "stewardship encoding has fixed independent bytes" (fun () ->
                 let expected =
-                    "{\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":7,\"action\":{\"type\":\"ERASE\"}}"
+                    "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"format\":4,\"operationId\":\"20000000-0000-4000-8000-000000000001\"}"
 
                 Expect.equal
-                    (steward StewardshipAction.Erase
-                     |> StewardshipRecord.encode
+                    (steward StewardshipAct.Erase
+                     |> RequestRecord.encode
                      |> Encoding.UTF8.GetString)
                     expected
                     "Canonical field order")
             testCase "authority encoding has fixed independent bytes" (fun () ->
                 let expected =
-                    "{\"eventId\":\"20000000-0000-4000-8000-000000000001\",\"target\":{\"kind\":\"HUMAN\",\"issuer\":\"https://issuer.example/\",\"subject\":\"synthetic-owner\"},\"action\":{\"type\":\"REGISTER_ACTOR\"}}"
+                    "{\"act\":{\"kind\":\"REGISTER_ACTOR\"},\"format\":2,\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"target\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}}"
 
                 Expect.equal
-                    (authority RecordedAuthorityAction.RegisterActor
+                    (authority RecordedAuthorityAct.RegisterActor
                      |> AuthorityRecord.encode
                      |> Encoding.UTF8.GetString)
                     expected
@@ -185,18 +196,16 @@ let tests =
                 PropertyHarness.run "CC-PROP-AUTHORITY-RECORD-001" authorityProperty)
             testCase "strict record decoders reject hostile shapes" strictRecords
             testCase "record limits and malformed bytes are refused" (fun () ->
-                let encoded = steward StewardshipAction.Erase |> StewardshipRecord.encode
+                let encoded = steward StewardshipAct.Erase |> RequestRecord.encode
 
                 Expect.isError
-                    (StewardshipRecord.decode (encoded.Length - 1) encoded)
+                    (RequestRecord.decode (encoded.Length - 1) encoded)
                     "Over byte limit"
 
-                Expect.isOk (StewardshipRecord.decode encoded.Length encoded) "Exact byte limit"
+                Expect.isOk (RequestRecord.decode encoded.Length encoded) "Exact byte limit"
 
                 for bytes in [ [| 0xFFuy |]; [||]; Unchecked.defaultof<byte array> ] do
-                    Expect.isError
-                        (StewardshipRecord.decode 65536 bytes)
-                        "Typed stewardship refusal"
+                    Expect.isError (RequestRecord.decode 65536 bytes) "Typed stewardship refusal"
 
                     Expect.isError (AuthorityRecord.decode 65536 bytes) "Typed authority refusal")
             testCase

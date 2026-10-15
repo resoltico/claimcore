@@ -5,7 +5,7 @@ import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
 import type { RefObject } from "react";
-import type { CurrentCase, PublicDefinition } from "../../api/service";
+import type { CurrentCase, ProductMetadata } from "../../api/service";
 import { DescriptorField } from "../../components/DescriptorField";
 import {
   correctionGroupName,
@@ -15,7 +15,7 @@ import {
 import type { OperationEditorModel } from "./editorTypes";
 
 type OperationFormProps = {
-  definition: PublicDefinition;
+  definition: ProductMetadata;
   current: CurrentCase | null;
   model: OperationEditorModel;
   onClose: () => void;

@@ -60,68 +60,26 @@ let private canonicalWireRestrictionRemains () =
         (verifies canonical "2026-10-05T03:00:00Z")
         "A format-valid value cannot bypass stricter schema constraints"
 
-let private requiredText (value: JsonElement) =
-    value.GetString()
-    |> Option.ofObj
-    |> Option.defaultWith (fun () -> failtest "The projected scalar corpus requires text.")
-
-let private referenceUnicodeParity () =
-    let contract =
-        EndpointCatalog.tryFind "case.get"
-        |> Option.map (fun endpoint -> EndpointCatalog.schema endpoint.Request)
-        |> Option.defaultWith (fun () -> failtest "Projected case input is required.")
-        |> CanonicalContract.text
-
-    use schema = JsonDocument.Parse(contract)
-
-    let resolve (value: JsonElement) =
-        match value.TryGetProperty("$ref") with
-        | true, reference ->
-            let name = requiredText reference
-            schema.RootElement.GetProperty("$defs").GetProperty(name.Substring("#/$defs/".Length))
-        | _ -> value
-
-    let constraints =
-        (resolve schema.RootElement).GetProperty("properties").GetProperty("caseReference")
-        |> resolve
-
-    let pattern = requiredText (constraints.GetProperty("pattern"))
-    let maximum = constraints.GetProperty("maxLength").GetInt32()
-    let minimum = constraints.GetProperty("minLength").GetInt32()
-
-    let high = string (char 0xd800)
-    let low = string (char 0xdc00)
-
-    let accepted =
-        [ "🙂"; String.replicate 80 "🙂"; "a\u200db"; "a\u202eb"; "\ufeffa"; "e\u0301" ]
-
-    let refused =
+let private referenceParity () =
+    for expected, values in
         [
-            high
-            low
-            low + high
-            high + high
-            high + "a" + low
-            String.replicate 81 "🙂"
-            "\u0085a"
-            "a\u3000"
-            "a\u0000b"
-            ""
-        ]
-
-    for expected, values in [ true, accepted; false, refused ] do
+            true, [ "Demo-1"; String.replicate 80 "A"; "!~<>\"" ]
+            false, [ ""; "a b"; "é"; String.replicate 81 "A"; "a\u0000b"; "a\n" ]
+        ] do
         for value in values do
-            let native =
-                System.Text.RegularExpressions.Regex.IsMatch(value, pattern)
-                && (value.EnumerateRunes() |> Seq.length) <= maximum
-                && (value.EnumerateRunes() |> Seq.length) >= minimum
-
-            Expect.equal native expected "Independent Unicode/length oracle"
+            let json =
+                JsonSerializer.Serialize {| caseReference = value |}
+                |> System.Text.Encoding.UTF8.GetBytes
 
             Expect.equal
-                (ClaimCore.Domain.Claim.validateReference value |> Result.isOk)
+                (EndpointCatalog.admitRequest "case.get" json |> Result.isOk)
                 expected
-                "Domain accepts the same exact text"
+                "Wire format"
+
+            Expect.equal
+                (ClaimCore.Domain.CaseReference.validate value |> Result.isOk)
+                expected
+                "Domain format"
 
 [<Tests>]
 let tests =
@@ -129,8 +87,8 @@ let tests =
         "schema scalar formats"
         [
             testCase
-                "[CC-DOM-001] projected reference guard preserves Unicode scalar semantics"
-                referenceUnicodeParity
+                "[CC-DOM-001] projected reference guard preserves printable ASCII identity"
+                referenceParity
             testCase
                 "date-time refuses implicit calendar and local-zone inputs"
                 rejectsIncompleteTimestamps

@@ -4,7 +4,7 @@ import { applyAuthority, syntheticPrincipals } from "./authority-setup";
 import { openCase } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
 
-export type NarrowRole = "CASE_READER" | "CASE_EDITOR" | "DATA_STEWARD";
+export type NarrowRole = "CASE_READER" | "CASE_HANDLER" | "DATA_STEWARD";
 export type RoleFixture = Awaited<ReturnType<typeof prepareRoleFixture>>;
 
 export const prepareRoleFixture = async (page: Page) => {
@@ -15,7 +15,11 @@ export const prepareRoleFixture = async (page: Page) => {
   await page.getByRole("button", { name: "Cases", exact: true }).click();
   await openCase(page, reference);
   const inventory = await syntheticPrincipals();
-  const principal = { kind: "HUMAN", issuer: inventory.issuer, subject: inventory.stewardSubject };
+  const principal = {
+    kind: "HUMAN",
+    issuer: inventory.issuer,
+    subject: inventory.stewardSubject,
+  } as const;
   return { reference, unrelated, principal };
 };
 
@@ -26,12 +30,15 @@ const setGrant = (
   scoped: boolean,
   active: boolean,
 ) =>
-  applyAuthority(page, "authority.setGrant", {
-    eventId: randomUUID(),
-    principal: fixture.principal,
-    role,
-    scope: scoped ? { type: "CASE", caseReference: fixture.reference } : { type: "INSTALLATION" },
-    active,
+  applyAuthority(page, {
+    operationId: randomUUID(),
+    target: fixture.principal,
+    act: {
+      kind: "SET_GRANT",
+      role,
+      scope: scoped ? { kind: "CASE", caseReference: fixture.reference } : { kind: "INSTALLATION" },
+      active,
+    },
   });
 
 export const configureRole = async (

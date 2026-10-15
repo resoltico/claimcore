@@ -1,170 +1,45 @@
 namespace ClaimCore.Contracts
 
-open System
-open System.Globalization
 open ClaimCore.Domain
 
-[<RequireQualifiedAccess>]
+/// Wire validation projects permanent format only. Admission policy is a descriptor hint.
 module internal ScalarSchemas =
-    let private boundedDecimalPattern (maximum: int64) =
-        let digits = maximum.ToString(CultureInfo.InvariantCulture)
-        let shorter = "0|[1-9][0-9]{0," + string (digits.Length - 2) + "}"
-
-        let sameLength =
-            [
-                for index in 0 .. digits.Length - 1 do
-                    let lower = if index = 0 then 1 else 0
-                    let upper = int digits[index] - int '0' - 1
-
-                    if lower <= upper then
-                        let digit = if lower = upper then string lower else $"[{lower}-{upper}]"
-
-                        let remaining = digits.Length - index - 1
-
-                        let suffix = if remaining = 0 then "" else $"[0-9]{{{remaining}}}"
-
-                        yield digits.Substring(0, index) + digit + suffix
-
-                yield digits
-            ]
-
-        "^(?:" + String.concat "|" (shorter :: sameLength) + ")(?![\\s\\S])"
-
-    let decimalText =
-        let maximum = Int64.MaxValue - 1L
-
-        Schema.string
-            None
-            (Some(boundedDecimalPattern maximum))
-            (Some 1)
-            (Some(maximum.ToString(CultureInfo.InvariantCulture).Length))
-
-    let positiveInt64Text =
-        Schema.string
-            None
-            (Some((boundedDecimalPattern Int64.MaxValue).Replace("^(?:", "^(?!0$)(?:")))
-            (Some 1)
-            (Some 19)
-
-    // These explicit ranges match Char.IsWhiteSpace/String.Trim for the supported Unicode scalar
-    // values. C0/C1 controls and lone UTF-16 surrogates are separate Domain constraints.
-    let private whitespace =
-        "\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000"
-
-    let private textGuards (constraints: ScalarTextConstraints) =
-        [
-            if constraints.RequiresNonBlank then
-                ("(?![" + whitespace + "]*$)", InputViolation.Text TextViolation.NonBlankRequired)
-
-            if constraints.RequiresWellFormedUnicode then
-                ("(?=(?:[^\\ud800-\\udfff]|[\\ud800-\\udbff][\\udc00-\\udfff])*$)",
-                 InputViolation.Text TextViolation.MalformedUnicode)
-
-            if constraints.RejectsSurroundingWhitespace then
-                ("(?![" + whitespace + "])(?![\\s\\S]*[" + whitespace + "]$)",
-                 InputViolation.Text TextViolation.SurroundingWhitespace)
-
-            if constraints.RejectsControlCharacters then
-                ("(?![\\s\\S]*[\\u0000-\\u001f\\u007f-\\u009f])",
-                 InputViolation.Text TextViolation.ControlCharacters)
-
-
-        ]
-
-    let private textPattern (constraints: ScalarTextConstraints) =
-        let guards = textGuards constraints |> List.map fst
-
-        if guards.IsEmpty then
-            None
-        else
-            Some("^" + String.concat "" guards + "[\\s\\S]*$")
-
-    let private grammarPattern (constraints: ScalarTextConstraints) grammar =
-        Some(
-            "^"
-            + String.concat "" (textGuards constraints |> List.map fst)
-            + "(?:"
-            + grammar
-            + ")$"
-        )
-
-    // Drafts carry authored text. Domain binding owns field acceptance and diagnostics.
-    let authoringText = Schema.string None None None None
+    let revision = Schema.integer (Some 0L) (Some SafeInteger.Maximum)
+    let positive = Schema.integer (Some 1L) (Some SafeInteger.Maximum)
 
     let uuid =
         Schema.string
             (Some "uuid")
             (Some
-                "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+                "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])")
             (Some 36)
             (Some 36)
 
-    let private text (constraints: ScalarTextConstraints) =
+    let private pattern grammar =
+        Some("^(?:" + grammar + ")(?![\\s\\S])")
+
+    let private text (rule: ScalarTextConstraints) =
         Schema.string
             None
-            (textPattern constraints)
-            (Some constraints.MinimumCharacters)
-            (Some constraints.MaximumCharacters)
+            (rule.Format.Grammar |> Option.bind pattern)
+            (Some rule.Format.MinimumCharacters)
+            None
 
-    let private project (value: ScalarRule) =
-        match value with
-        | ScalarRule.CalendarDate rule ->
-            if
-                rule.ExactFormat <> "yyyy-MM-dd"
-                || rule.Minimum <> DateOnly.MinValue
-                || rule.Maximum <> DateOnly.MaxValue
-            then
-                invalidOp "The calendar-date schema does not project the Domain's declared rule."
+    let scalar rule =
+        let schema =
+            match rule with
+            | ScalarRule.Text value -> text value
+            | ScalarRule.Amount value -> text value.Text
+            | ScalarRule.Currency value -> text value.Text
+            | ScalarRule.CalendarDate _ ->
+                Schema.string
+                    (Some "date")
+                    (pattern "(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}")
+                    (Some 10)
+                    (Some 10)
+            | ScalarRule.CaseStatus value ->
+                value.AllowedValues
+                |> List.map (CaseStatuses.token >> TextConstant)
+                |> Schema.enumeration
 
-            Schema.string
-                (Some "date")
-                (Some "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}$")
-                (Some 10)
-                (Some 10)
-        | ScalarRule.Text constraints -> text constraints
-        | ScalarRule.Amount rule ->
-            Schema.string
-                None
-                (grammarPattern rule.Text rule.Grammar)
-                (Some rule.Text.MinimumCharacters)
-                (Some rule.Text.MaximumCharacters)
-        | ScalarRule.Currency rule ->
-            Schema.string
-                None
-                (grammarPattern rule.Text rule.Grammar)
-                (Some rule.Text.MinimumCharacters)
-                (Some rule.Text.MaximumCharacters)
-        | ScalarRule.CaseStatus rule ->
-            rule.AllowedValues
-            |> List.map (CaseStatuses.token >> TextConstant)
-            |> Schema.enumeration
-
-    let private guardedText constraints =
-        textGuards constraints
-        |> List.map (fun (pattern, violation) -> "^" + pattern + "[\\s\\S]*$", violation)
-
-    let scalar value =
-        let guards =
-            match value with
-            | ScalarRule.Text rule -> guardedText rule
-            | ScalarRule.Amount rule ->
-                guardedText rule.Text
-                @ [
-                    "^(?:" + rule.Grammar + ")$",
-                    InputViolation.Amount(
-                        AmountViolation.DecimalFormat(
-                            rule.MaximumIntegerDigits,
-                            rule.MaximumFractionalDigits
-                        )
-                    )
-                ]
-            | ScalarRule.Currency rule ->
-                guardedText rule.Text
-                @ [
-                    "^(?:" + rule.Grammar + ")$",
-                    InputViolation.Amount AmountViolation.CurrencyFormat
-                ]
-            | ScalarRule.CalendarDate _
-            | ScalarRule.CaseStatus _ -> []
-
-        project value |> Schema.scalarDiagnostics value guards
+        Schema.scalarDiagnostics rule [] schema

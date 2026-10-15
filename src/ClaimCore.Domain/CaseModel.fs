@@ -78,7 +78,7 @@ type CaseCorrection =
 
 /// Commands only maintain the requested fields. No correction-note or other business field is added.
 [<RequireQualifiedAccess>]
-type Command =
+type BusinessCommand =
     | Open of registration: RegistrationInput
     | AmendRegistration of registration: RegistrationInput
     | CorrectCase of correction: CaseCorrection
@@ -91,7 +91,7 @@ type Command =
 
 /// Closed operation vocabulary; names and payload kinds belong to the core, not a renderer.
 [<RequireQualifiedAccess>]
-type CommandKind =
+type CaseActKind =
     | Open
     | AmendRegistration
     | CorrectCase
@@ -101,25 +101,68 @@ type CommandKind =
     | ClearPayment
     | Close
     | Reopen
+    | Void
+    | Reinstate
+    | Erase
 
-/// OperationId and ExpectedVersion are technical replay/concurrency controls, not claims entries.
-type CommandRequest =
+/// Stewardship changes the case record without asserting business facts.
+[<RequireQualifiedAccess>]
+type Disposition =
+    | Active
+    | Voided
+
+[<RequireQualifiedAccess>]
+type StewardshipAct =
+    | Void of reason: string
+    | Reinstate of reason: string
+    | Erase
+
+[<RequireQualifiedAccess>]
+type CaseAct =
+    | Business of BusinessCommand
+    | Stewardship of StewardshipAct
+
+/// Caller-authored content remains exact even when its target compares case-insensitively.
+type CaseRequest =
     {
         OperationId: Guid
         CaseReference: string
-        ExpectedVersion: int64
-        Command: Command
+        ExpectedRevision: int64
+        Act: CaseAct
     }
 
-/// Separate technical revision from the renderable business record.
-type CaseView = { Fields: CaseFields; Version: int64 }
+[<RequireQualifiedAccess>]
+type CaseView =
+    | Live of fields: CaseFields * disposition: Disposition
+    | Erased
+
+type CaseSnapshot =
+    {
+        Reference: string
+        Revision: int64
+        View: CaseView
+    }
+
+/// Exact integer range shared by Domain revisions and interoperable JSON records.
+module SafeInteger =
+    [<Literal>]
+    let Maximum = 9007199254740991L
+
+module Revision =
+    [<Literal>]
+    let Maximum = SafeInteger.Maximum
 
 [<RequireQualifiedAccess>]
-type DomainError =
+type CaseRefusal =
     | InvalidInput of field: InputTarget * violation: InputViolation
     | NotFound
     | AlreadyExists
-    | VersionConflict of actualVersion: int64
+    | RevisionConflict of actualRevision: int64
+    | RevisionExhausted
+    | CaseErased
+    | CaseVoided
+    | AlreadyVoided
+    | NotVoided
     | ClosedCase
     | AmendmentRequiresUndecided
     | CorrectionNoChanges

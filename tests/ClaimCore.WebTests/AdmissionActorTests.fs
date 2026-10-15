@@ -20,7 +20,6 @@ let private configuration =
         ClientId = "claimcore-web"
         ClientSecret = "synthetic-client-secret"
         ApiAudience = "claimcore-api"
-        ServiceClientId = "claimcore-service"
         CliClientId = "claimcore-cli"
     }
 
@@ -134,7 +133,7 @@ let private bearerRefusals () =
     for result in
         [
             AuthenticateResult.Fail("synthetic authentication failure")
-            servicePrincipal "unregistered-client" "person-1"
+            authenticated [ Claim("azp", ""); Claim("sub", "person-1") ]
             authenticated [ Claim("azp", "claimcore-cli") ]
         ] do
         withAuthentication result (fun provider calls ->

@@ -151,10 +151,10 @@ export const validateCatalog = (source, translated, language) => {
     }
   }
 };
-/** @param {import("./tooling-types.mjs").JsonRecord} semantic @param {import("./tooling-types.mjs").JsonRecord} hostSchema @returns {Record<string, Record<string, unknown>>} */
-export const diagnosticRequirements = (semantic, hostSchema) => {
+/** @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {import("./tooling-types.mjs").JsonRecord} hostSchema @returns {Record<string, Record<string, unknown>>} */
+export const diagnosticRequirements = (descriptors, hostSchema) => {
   const result = Object.fromEntries(
-    [semantic["rejectionDiagnostics"], semantic["faultDiagnostics"]]
+    [descriptors["rejectionDiagnostics"], descriptors["faultDiagnostics"]]
       .flat()
       .map((d) => [
         d.id,
@@ -199,16 +199,16 @@ const assertDiagnosticShape = (message, args, id) => {
     throw new Error(`Diagnostic parameters differ: ${id}`);
   }
 };
-/** @param {Record<string, Message>} catalog @param {import("./tooling-types.mjs").JsonRecord} semantic @param {Record<string, Record<string, unknown>>} requirements */
-export const validateCoverage = (catalog, semantic, requirements) => {
+/** @param {Record<string, Message>} catalog @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {Record<string, Record<string, unknown>>} requirements */
+export const validateCoverage = (catalog, descriptors, requirements) => {
   /** @type {string[]} */
   const keys = [];
-  for (const field of semantic["fields"]) {
+  for (const field of descriptors["fields"]) {
     for (const s of ["label", "meaning"]) {
       keys.push(`field.${field.name}.${s}`);
     }
   }
-  for (const c of semantic["commands"]) {
+  for (const c of descriptors["commands"]) {
     for (const s of ["label", "meaning"]) {
       keys.push(`command.${c.kind}.${s}`);
     }

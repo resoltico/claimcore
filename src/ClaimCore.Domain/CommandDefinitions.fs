@@ -3,7 +3,7 @@ namespace ClaimCore.Domain
 /// Semantic operation descriptions, not widgets or client-owned transition rules.
 type CommandDefinition =
     {
-        Kind: CommandKind
+        Kind: CaseActKind
         Label: string
         Meaning: string
         Inputs: CommandInputShape
@@ -90,12 +90,12 @@ module CommandDefinitions =
     let private registrationDefinitions =
         [
             definition
-                CommandKind.Open
+                CaseActKind.Open
                 "Open a case"
                 "Register the incident, claimant, insurer and amount claimed."
                 (registrationFields |> List.map blank |> fields)
             definition
-                CommandKind.AmendRegistration
+                CaseActKind.AmendRegistration
                 "Amend registration"
                 "Replace the initial facts. The handler's case reference remains unchanged."
                 (registrationFields |> List.map current |> fields)
@@ -103,7 +103,7 @@ module CommandDefinitions =
 
     let private correctionDefinition =
         definition
-            CommandKind.CorrectCase
+            CaseActKind.CorrectCase
             "Correct case facts"
             "Correct recorded details on a case with a decision, payment or closed status. All changes are recorded together. Clearing a payment date does not refund money."
             correctionGroups
@@ -111,7 +111,7 @@ module CommandDefinitions =
     let private paymentAndStatusDefinitions =
         [
             definition
-                CommandKind.Decide
+                CaseActKind.Decide
                 "Record payment decision"
                 "Record or replace the decided amount and currency. This does not send money."
                 (fields
@@ -121,27 +121,27 @@ module CommandDefinitions =
                         current "payableCurrency"
                     ])
             definition
-                CommandKind.WithdrawDecision
+                CaseActKind.WithdrawDecision
                 "Withdraw payment decision"
                 "Clear the unpaid decision while preserving its history."
                 (fields [])
             definition
-                CommandKind.RecordPayment
+                CaseActKind.RecordPayment
                 "Record actual payment"
                 "Record the date the full decided amount was actually paid. This does not execute or verify a transfer."
                 (fields [ blank "paymentDate" ])
             definition
-                CommandKind.ClearPayment
+                CaseActKind.ClearPayment
                 "Correct an erroneous payment record"
                 "Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains."
                 (fields [])
             definition
-                CommandKind.Close
+                CaseActKind.Close
                 "Close the case"
                 "Close the case. Closing does not mean that payment was made."
                 (fields [])
             definition
-                CommandKind.Reopen
+                CaseActKind.Reopen
                 "Reopen the case"
                 "Reopen the case, preserving its details and history."
                 (fields [])

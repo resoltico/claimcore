@@ -100,22 +100,41 @@ const CaseHeading = ({ mayOpen, onOpen }: { mayOpen: boolean; onOpen: () => void
   );
 };
 
-export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
-  const p = usePresentation();
-  const [lookup, setLookup] = useState("");
+const useCaseList = (token: string) => {
+  const [mayOpen, setMayOpen] = useState(false);
   const request = useCallback(
-    (cursor: string | null, signal: AbortSignal) => service.list(cursor, 50, token, signal),
+    async (cursor: string | null, signal: AbortSignal) => {
+      const [page, context] = await Promise.all([
+        service.list(cursor, 50, token, signal),
+        service.context(token, signal),
+      ]);
+      if (!signal.aborted) {
+        setMayOpen(
+          context.kind === "outcome" &&
+            context.value.outcome.tag === "SUCCEEDED" &&
+            context.value.outcome.data.capabilities.includes("REGISTER"),
+        );
+      }
+      return page;
+    },
     [token],
   );
-  const { items, cursor, message, loading, load, page } = useRetryablePage<
+  const { items, cursor, message, loading, load } = useRetryablePage<
     ServiceResponse<"case.list">,
     CaseSummary,
     NonNullable<ReturnType<typeof casePage>>
   >(request, casePage);
 
+  return { items, cursor, message, loading, load, mayOpen };
+};
+
+export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
+  const p = usePresentation();
+  const [lookup, setLookup] = useState("");
+  const { items, cursor, message, loading, load, mayOpen } = useCaseList(token);
   return (
     <section aria-labelledby="case-list-title">
-      <CaseHeading mayOpen={page?.availableCommands.length === 1} onOpen={onOpen} />
+      <CaseHeading mayOpen={mayOpen} onOpen={onOpen} />
       <LookupForm
         lookup={lookup}
         loading={loading}

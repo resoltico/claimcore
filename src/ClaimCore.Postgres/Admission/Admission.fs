@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open System.Net
 open Npgsql
+open ClaimCore.Application
 
 /// Immutable installation configuration read by runtime admission.
 type Installation =
@@ -10,17 +11,6 @@ type Installation =
         InstallationId: Guid
         BusinessTimeZone: string
     }
-
-[<RequireQualifiedAccess>]
-type RuntimeOpenFault =
-    | InvalidTransport
-    | UnsupportedServer
-    | UnsafeRole
-    | SchemaMismatch
-    | InstallationInvalid
-    | HeadMismatch
-    | Unavailable
-    | Cancelled
 
 exception internal AdmissionRefusal of RuntimeOpenFault
 
@@ -35,8 +25,8 @@ module internal Admission =
             if settings.SslMode <> SslMode.VerifyFull then
                 raise (AdmissionRefusal RuntimeOpenFault.InvalidTransport)
 
-    let internal serverMajor value =
-        if value <> ServerSupport.major then
+    let internal serverVersion value =
+        if not (ServerSupport.supports value) then
             raise (AdmissionRefusal RuntimeOpenFault.UnsupportedServer)
 
     let private role connection token =
@@ -120,7 +110,7 @@ module internal Admission =
             return!
                 DatabaseSession.read source token (fun connection ->
                     task {
-                        serverMajor connection.PostgreSqlVersion.Major
+                        serverVersion connection.PostgreSqlVersion
 
                         do! role connection token
                         let! count = Migrations.history connection Migrations.scripts token

@@ -97,7 +97,7 @@ it("cancels unread protocol-refused bodies without awaiting a hostile cancellati
       headers: { "Content-Type": "text/plain" },
     }),
   );
-  expect((await service.definition("csrf")).kind).toBe("deliveryFailure");
+  expect((await service.context("csrf")).kind).toBe("deliveryFailure");
   expect(refused).toHaveBeenCalledOnce();
   expect(vi.getTimerCount()).toBe(0);
 });

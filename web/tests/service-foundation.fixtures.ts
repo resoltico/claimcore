@@ -3,7 +3,7 @@ import type { Review, CaseFields } from "../src/api/service";
 export const caseFields: CaseFields = {
   incidentDate: "2026-09-01",
   incidentNotificationDate: "2026-09-02",
-  incidentCountry: "Latvia",
+  incidentCountry: "LV",
   claimantName: "Synthetic claimant",
   insurerName: "Synthetic insurer",
   claimedAmount: "12.34",
@@ -22,7 +22,7 @@ export const groupedCorrectionValues = {
     values: {
       incidentDate: "2026-09-01",
       incidentNotificationDate: "2026-09-02",
-      incidentCountry: "Latvia",
+      incidentCountry: "LV",
       claimantName: "Synthetic A",
       insurerName: "Synthetic insurer",
       claimedAmount: "12.34",
@@ -33,15 +33,17 @@ export const groupedCorrectionValues = {
   payment: { mode: "KEEP" as const, values: {} },
 };
 
-export { productMetadata as product } from "../src/generated/contracts/product-metadata";
-import { productMetadata } from "../src/generated/contracts/product-metadata";
-export const { definition } = productMetadata;
+import { productMetadata } from "@contracts/product-metadata";
+export const definition = productMetadata.descriptors;
 export const operationId = "10000000-0000-4000-8000-000000000001";
 export const digest = "a".repeat(64);
 export const review: Review = {
   before: null,
-  proposed: { revision: "1", fields: caseFields },
+  after: {
+    caseReference: caseFields.caseReference,
+    revision: 1,
+    state: { tag: "LIVE", disposition: "ACTIVE", fields: caseFields },
+  },
   changes: [],
-  context: { productVersion: "0.1.0", effectiveBusinessDate: "2026-09-09", timeZoneId: "Etc/UTC" },
-  advisory: true,
+  context: { productVersion: "0.1.0", businessDate: "2026-09-09", timeZone: "Etc/UTC" },
 };

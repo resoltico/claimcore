@@ -22,7 +22,7 @@ module internal PaymentProgress =
     let fromGroups decision payment =
         match decision, payment with
         | None, None -> Ok PaymentProgress.Undecided
-        | None, Some _ -> Error DomainError.DecisionRequired
+        | None, Some _ -> Error CaseRefusal.DecisionRequired
         | Some value, None -> Ok(PaymentProgress.Decided value)
         | Some value, Some date -> Ok(PaymentProgress.Paid(value, date))
 
@@ -30,53 +30,55 @@ module internal Eligibility =
     let private amendment progress =
         match progress with
         | PaymentProgress.Undecided -> Ok()
-        | _ -> Error DomainError.AmendmentRequiresUndecided
+        | _ -> Error CaseRefusal.AmendmentRequiresUndecided
 
     let private decision progress =
         match progress with
-        | PaymentProgress.Paid _ -> Error DomainError.DecisionAlreadyPaid
+        | PaymentProgress.Paid _ -> Error CaseRefusal.DecisionAlreadyPaid
         | _ -> Ok()
 
     let private withdrawal progress =
         match progress with
-        | PaymentProgress.Undecided -> Error DomainError.DecisionRequired
-        | PaymentProgress.Paid _ -> Error DomainError.DecisionAlreadyPaid
+        | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
+        | PaymentProgress.Paid _ -> Error CaseRefusal.DecisionAlreadyPaid
         | PaymentProgress.Decided _ -> Ok()
 
     let private payment progress =
         match progress with
-        | PaymentProgress.Undecided -> Error DomainError.DecisionRequired
-        | PaymentProgress.Paid _ -> Error DomainError.PaymentAlreadyRecorded
+        | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
+        | PaymentProgress.Paid _ -> Error CaseRefusal.PaymentAlreadyRecorded
         | PaymentProgress.Decided value when value.Payable.Value = 0M ->
-            Error DomainError.ZeroDecisionCannotBePaid
+            Error CaseRefusal.ZeroDecisionCannotBePaid
         | PaymentProgress.Decided _ -> Ok()
 
     let private clearPayment progress =
         match progress with
         | PaymentProgress.Paid _ -> Ok()
-        | _ -> Error DomainError.PaymentNotRecorded
+        | _ -> Error CaseRefusal.PaymentNotRecorded
+
+    let private correction progress =
+        match progress with
+        | PaymentProgress.Undecided -> Error CaseRefusal.CorrectionRequiresExistingValue
+        | _ -> Ok()
 
     let private opened kind progress =
         match kind with
-        | CommandKind.Open -> Error DomainError.AlreadyExists
-        | CommandKind.Reopen -> Error DomainError.AlreadyOpened
-        | CommandKind.Close -> Ok()
-        | CommandKind.AmendRegistration -> amendment progress
-        | CommandKind.CorrectCase ->
-            match progress with
-            | PaymentProgress.Undecided -> Error DomainError.CorrectionRequiresExistingValue
-            | PaymentProgress.Decided _
-            | PaymentProgress.Paid _ -> Ok()
-        | CommandKind.Decide -> decision progress
-        | CommandKind.WithdrawDecision -> withdrawal progress
-        | CommandKind.RecordPayment -> payment progress
-        | CommandKind.ClearPayment -> clearPayment progress
+        | CaseActKind.Open -> Error CaseRefusal.AlreadyExists
+        | CaseActKind.Reopen -> Error CaseRefusal.AlreadyOpened
+        | CaseActKind.Close -> Ok()
+        | CaseActKind.AmendRegistration -> amendment progress
+        | CaseActKind.CorrectCase -> correction progress
+        | CaseActKind.Decide -> decision progress
+        | CaseActKind.WithdrawDecision -> withdrawal progress
+        | CaseActKind.RecordPayment -> payment progress
+        | CaseActKind.ClearPayment -> clearPayment progress
+        | _ -> Validation.invalidAct InputTarget.Act ActViolation.StateTransitionMismatch
 
     let check kind status progress =
         match status, kind with
-        | CaseStatus.Closed, CommandKind.Open -> Error DomainError.AlreadyExists
-        | CaseStatus.Closed, CommandKind.Reopen -> Ok()
-        | CaseStatus.Closed, CommandKind.Close -> Error DomainError.AlreadyClosed
-        | CaseStatus.Closed, CommandKind.CorrectCase -> Ok()
-        | CaseStatus.Closed, _ -> Error DomainError.ClosedCase
+        | CaseStatus.Closed, CaseActKind.Open -> Error CaseRefusal.AlreadyExists
+        | CaseStatus.Closed, CaseActKind.Reopen -> Ok()
+        | CaseStatus.Closed, CaseActKind.Close -> Error CaseRefusal.AlreadyClosed
+        | CaseStatus.Closed, CaseActKind.CorrectCase -> Ok()
+        | CaseStatus.Closed, _ -> Error CaseRefusal.ClosedCase
         | CaseStatus.Opened, _ -> opened kind progress

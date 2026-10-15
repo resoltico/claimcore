@@ -1,8 +1,9 @@
+import type { RequestByEndpoint } from "@contracts/types";
 import { readFile } from "node:fs/promises";
 import { type Page } from "@playwright/test";
 
-import { isResponse } from "../src/generated/contracts/validation";
-import { endpoints } from "../src/generated/contracts/endpoint-catalog";
+import { isResponse } from "../src/api/responseGuards";
+import { endpoints } from "@contracts/endpoint-catalog";
 import { browserRequest, progress, sessionToken } from "./session-helpers";
 
 type Principals = Readonly<{
@@ -42,69 +43,32 @@ export const syntheticPrincipals = async (): Promise<Principals> => {
   return source as Principals;
 };
 
-type ManagementEndpoint =
-  "authority.register" | "authority.setGrant" | "authority.setEnabled" | "authority.observe";
-
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const pathFor = (endpoint: ManagementEndpoint): string => {
-  const descriptor = endpoints.find((item) => item.id === endpoint);
-  if (descriptor === undefined) {
+export const applyAuthority = async (page: Page, body: RequestByEndpoint["authority.execute"]) => {
+  const endpoint = endpoints.find((entry) => entry.id === "authority.execute");
+  if (endpoint === undefined) {
     throw new Error("Synthetic authority endpoint is missing.");
   }
-  return descriptor.path;
-};
-
-const call = async (page: Page, endpoint: ManagementEndpoint, body: object) => {
-  const token = await sessionToken(page);
-  const reply = await browserRequest(page, pathFor(endpoint), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-ClaimCore-Antiforgery": token,
-    },
-    body: JSON.stringify(body),
-  });
-  const { payload } = reply;
-  if (reply.status !== 200 || !(await isResponse(endpoint, payload))) {
-    await progress(`authority-wire-${endpoint.replace(".", "-")}-${reply.status}`);
-    throw new Error(`Synthetic authority ${endpoint} wire response is invalid.`);
-  }
-  if (
-    !isObject(payload) ||
-    !isObject(payload["outcome"]) ||
-    typeof payload["outcome"]["tag"] !== "string"
-  ) {
-    await progress(`authority-outcome-malformed-${endpoint.replace(".", "-")}`);
-    throw new Error("Synthetic authority outcome is malformed.");
-  }
-  await progress(
-    `authority-${endpoint.replace(".", "-")}-${payload["outcome"]["tag"].toLowerCase()}`,
-  );
-  return payload["outcome"]["tag"];
-};
-
-export const applyAuthority = async (
-  page: Page,
-  endpoint: Exclude<ManagementEndpoint, "authority.observe">,
-  body: Readonly<Record<string, unknown>> & { eventId: string },
-) => {
-  const tag = await call(page, endpoint, body);
-  if (tag === "APPLIED" || tag === "ALREADY_APPLIED") {
-    return;
-  }
-  if (tag !== "OUTCOME_UNKNOWN") {
-    throw new Error("Synthetic authority action was refused.");
-  }
+  const bytes = JSON.stringify(body);
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const observed = await call(page, "authority.observe", { eventId: body.eventId });
-    if (observed === "APPLIED") {
+    const reply = await browserRequest(page, endpoint.path, {
+      method: endpoint.method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-ClaimCore-Antiforgery": await sessionToken(page),
+      },
+      body: bytes,
+    });
+    if (reply.status !== 200 || !isResponse("authority.execute", reply.payload)) {
+      throw new Error("Synthetic authority response is invalid.");
+    }
+    const { outcome } = reply.payload;
+    await progress(`authority-execute-${outcome.tag.toLowerCase()}`);
+    if (outcome.tag === "ACCEPTED" || outcome.tag === "ALREADY_ACCEPTED") {
       return;
     }
-    if (observed !== "OUTCOME_UNKNOWN") {
-      break;
+    if (outcome.tag !== "OUTCOME_UNKNOWN") {
+      throw new Error("Synthetic authority action was refused.");
     }
   }
-  throw new Error("Synthetic authority completion remains unconfirmed.");
+  throw new Error("Synthetic authority completion remains unconfirmed; original request retained.");
 };

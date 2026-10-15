@@ -60,7 +60,6 @@ let private qualify (server: IdentityServer.Identity) (stage: string -> unit) to
                 ClientId = text "webClientId"
                 ClientSecret = text "webClientSecret"
                 ApiAudience = text "apiAudience"
-                ServiceClientId = text "serviceClientId"
                 CliClientId = text "publicClientId"
             }
 
@@ -71,7 +70,10 @@ let private qualify (server: IdentityServer.Identity) (stage: string -> unit) to
         use identity = new HttpClient(handler, Timeout = TimeSpan.FromSeconds 30.)
         stage "issuer metadata"
         do! OidcStartup.verify identity configuration token
-        use host = new OidcHostFixture.Host(configuration, server.Root)
+        stage "create Application fixture"
+        use! core = OidcCoreFixture.create configuration.Issuer.AbsoluteUri
+        stage "construct authenticated host"
+        use host = new OidcHostFixture.Host(configuration, server.Root, core.Actor, stage)
         stage "PKCE browser"
 
         let! cookies = login host.Client identity credentials.RootElement stage
@@ -90,6 +92,17 @@ let private qualify (server: IdentityServer.Identity) (stage: string -> unit) to
         do! qualifyRotation server.Issuer identity host.Client credentials.RootElement
     }
 
+let private failureCategory (error: exn) =
+    match error with
+    | WebStartupException problem ->
+        System.Text.Encoding.UTF8.GetString(WebStartupDiagnostics.encode problem)
+    | :? HttpRequestException as failure -> "HTTP_" + string failure.HttpRequestError
+    | :? OperationCanceledException -> "CANCELLATION"
+    | :? AssertException -> "ASSERTION"
+    | :? InvalidOperationException -> "INVALID_OPERATION"
+    | :? System.IO.IOException -> "IO"
+    | _ -> "OTHER"
+
 let private liveIdentity () =
     task {
         let mutable stage = "create owned fixture"
@@ -101,6 +114,14 @@ let private liveIdentity () =
             do! server.Start deadline.Token
             do! qualify server (fun value -> stage <- value) deadline.Token
         with error ->
+            let inner =
+                error.InnerException
+                |> Option.ofObj
+                |> Option.map failureCategory
+                |> Option.defaultValue "NONE"
+
+            printfn "Synthetic fixture failure category: %s; inner=%s" (failureCategory error) inner
+
             match error with
             | CredentialDispatchMismatch(bearer, current, mixed) ->
                 printfn

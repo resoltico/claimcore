@@ -2,7 +2,7 @@ import { localNotice } from "../src/api/notices";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { isEndpointId } from "../src/generated/contracts/endpoint-catalog";
+import { isEndpointId } from "@contracts/endpoint-catalog";
 import { CopyValue } from "../src/components/CopyValue";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
 import { DescriptorField } from "../src/components/DescriptorField";
@@ -37,7 +37,7 @@ it("associates optional field errors and supports password text input", () => {
         error="Required"
       />
       <DescriptorField
-        field={definition.definition.fields[0]}
+        field={definition.descriptors.fields[0]}
         value="CASE-1"
         error={localNotice("unreachable")}
         onChange={onChange}
@@ -60,7 +60,7 @@ it("renders ordinary text input without an error and forwards edits", async () =
 });
 
 it("keeps generated endpoint inventory callable and presents suspicious Unicode defensively", () => {
-  expect(isEndpointId("command.preview")).toBe(true);
+  expect(isEndpointId("case.preview")).toBe(true);
   expect(isEndpointId("nope")).toBe(false);
   expect(hasSuspiciousCharacters("plain")).toBe(false);
   expect(hasSuspiciousCharacters("a\u202Eb")).toBe(true);
@@ -77,11 +77,9 @@ it("keeps generated endpoint inventory callable and presents suspicious Unicode 
 it("renders absent and suspicious accepted values without changing the recorded text", () => {
   render(
     <CaseFieldsView
-      caseView={{
-        fields: { ...fields, caseReference: "A\u202E", paymentDate: null },
-        revision: "1",
-      }}
-      fields={definition.definition.fields}
+      values={{ ...fields, caseReference: "A\u202E", paymentDate: null }}
+      revision={1}
+      fields={definition.descriptors.fields}
       context="synthetic current case"
     />,
   );
@@ -90,17 +88,19 @@ it("renders absent and suspicious accepted values without changing the recorded 
 });
 
 it("gives simultaneous current and historical case fields distinct heading IDs", () => {
-  const snapshot = { fields, revision: "1" };
+  const snapshot = { fields, revision: 1 };
   render(
     <>
       <CaseFieldsView
-        caseView={snapshot}
-        fields={definition.definition.fields}
+        values={snapshot.fields}
+        revision={snapshot.revision}
+        fields={definition.descriptors.fields}
         context="first snapshot"
       />
       <CaseFieldsView
-        caseView={snapshot}
-        fields={definition.definition.fields}
+        values={snapshot.fields}
+        revision={snapshot.revision}
+        fields={definition.descriptors.fields}
         context="second snapshot"
       />
     </>,

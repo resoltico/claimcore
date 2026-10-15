@@ -29,5 +29,9 @@ Read [Operations](docs/operations.md). The project supplies no multi-tenancy or 
 qualification. The repository promises no security fixes for historical revisions;
 identify the affected revision and reproduce against maintained source where possible.
 
+Format invariants preserve retained history independently of current admission policy. Current
+snapshot disclosure needs case read; superseded snapshots need full history. Current actor grants
+and the result come from the same locked/read context, including accepted replay.
+
 PostgreSQL image identity is pinned in `db/postgresql-baseline.json`; ClaimCore ships no
 database image. Dependency and image updates require review and verification.

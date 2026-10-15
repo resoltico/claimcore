@@ -13,26 +13,20 @@ it("detaches replacement group values so later authoring cannot change a frozen 
       values: { claimantName: "Before", claimedAmount: "1.0000" },
     },
   };
-  const draft = createDraft(firstId, "CASE-1", "3", "CORRECT_CASE", authored);
+  const draft = createDraft(firstId, "CASE-1", 3, "CORRECT_CASE", authored);
   const frozen = freezeRequest(draft);
-  if (
-    draft.command.kind !== "CORRECT_CASE" ||
-    draft.command.groups.registration.mode !== "REPLACE"
-  ) {
+  if (draft.act.kind !== "CORRECT_CASE" || draft.act.groups.registration.mode !== "REPLACE") {
     throw new Error("Missing authored correction fixture.");
   }
-  Object.assign(draft.command.groups.registration.values, {
+  Object.assign(draft.act.groups.registration.values, {
     claimantName: "After",
     claimedAmount: "2",
   });
-  if (
-    frozen.command.kind !== "CORRECT_CASE" ||
-    frozen.command.groups.registration.mode !== "REPLACE"
-  ) {
+  if (frozen.act.kind !== "CORRECT_CASE" || frozen.act.groups.registration.mode !== "REPLACE") {
     throw new Error("Missing correction fixture.");
   }
-  expect(frozen.command.groups.registration.values.claimantName).toBe("Before");
-  expect(frozen.command.groups.registration.values.claimedAmount).toBe("1.0000");
+  expect(frozen.act.groups.registration.values.claimantName).toBe("Before");
+  expect(frozen.act.groups.registration.values.claimedAmount).toBe("1.0000");
 });
 it("forks exposed correction identities when their group modes change after definite refusal", () => {
   const initial = initialOperation(firstId, "CORRECT_CASE", groupedCorrectionValues, "CASE-1");

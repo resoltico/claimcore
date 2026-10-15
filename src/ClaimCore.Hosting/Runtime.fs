@@ -1,20 +1,10 @@
 namespace ClaimCore.Hosting
 
 open System
+open System.Security.Cryptography
 open System.Threading.Tasks
 open System.Threading
 open ClaimCore.Application
-
-[<RequireQualifiedAccess>]
-type RuntimeOpenFault =
-    | InvalidTransport
-    | UnsupportedServer
-    | UnsafeRole
-    | SchemaMismatch
-    | InstallationInvalid
-    | HeadMismatch
-    | Unavailable
-    | Cancelled
 
 /// A case-work host receives actor-bound operations and a bounded shutdown operation.
 type IRuntime =
@@ -26,6 +16,7 @@ type IRuntime =
 
 type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBusinessCalendar) =
     let gate = AdmissionGate(fun () -> storage.Dispose())
+    let cursorKey = RandomNumberGenerator.GetBytes 32
 
     interface IRuntime with
         member _.Actor principal =
@@ -33,6 +24,7 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
                 storage.Installation.InstallationId
                 (ClaimCore.Postgres.Runtime.store storage)
                 calendar
+                cursorKey
                 principal
             |> ActorFacade.bind gate
 
@@ -51,26 +43,13 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
         member _.Dispose() = gate.Stop() |> ignore
 
 module Runtime =
-    let internal fault =
-        function
-        | ClaimCore.Postgres.RuntimeOpenFault.InvalidTransport -> RuntimeOpenFault.InvalidTransport
-        | ClaimCore.Postgres.RuntimeOpenFault.UnsupportedServer ->
-            RuntimeOpenFault.UnsupportedServer
-        | ClaimCore.Postgres.RuntimeOpenFault.UnsafeRole -> RuntimeOpenFault.UnsafeRole
-        | ClaimCore.Postgres.RuntimeOpenFault.SchemaMismatch -> RuntimeOpenFault.SchemaMismatch
-        | ClaimCore.Postgres.RuntimeOpenFault.InstallationInvalid ->
-            RuntimeOpenFault.InstallationInvalid
-        | ClaimCore.Postgres.RuntimeOpenFault.HeadMismatch -> RuntimeOpenFault.HeadMismatch
-        | ClaimCore.Postgres.RuntimeOpenFault.Unavailable -> RuntimeOpenFault.Unavailable
-        | ClaimCore.Postgres.RuntimeOpenFault.Cancelled -> RuntimeOpenFault.Cancelled
-
     let openConnection connectionString cancellationToken =
         task {
             let! opened =
                 ClaimCore.Postgres.Runtime.openConnection connectionString cancellationToken
 
             match opened with
-            | Error error -> return Error(fault error)
+            | Error error -> return Error error
             | Ok storage ->
                 try
                     return

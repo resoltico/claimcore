@@ -1,0 +1,412 @@
+{
+  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [
+    {
+      "literal": "The requested resource is unavailable."
+    }
+  ],
+  "diagnostic.ACTOR_ALREADY_REGISTERED": [
+    {
+      "literal": "This principal is already registered."
+    }
+  ],
+  "diagnostic.ACTOR_UNKNOWN": [
+    {
+      "literal": "This principal is not registered."
+    }
+  ],
+  "diagnostic.ACT_NOT_PERMITTED": [
+    {
+      "literal": "This act is not permitted."
+    }
+  ],
+  "diagnostic.ALREADY_VOIDED": [
+    {
+      "literal": "This case is already voided."
+    }
+  ],
+  "diagnostic.CASE_ALREADY_CLOSED": [
+    {
+      "literal": "The case is already closed."
+    }
+  ],
+  "diagnostic.CASE_ALREADY_EXISTS": [
+    {
+      "literal": "The case reference already exists."
+    }
+  ],
+  "diagnostic.CASE_ALREADY_OPENED": [
+    {
+      "literal": "The case is already open."
+    }
+  ],
+  "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
+    {
+      "literal": "\u201CAmend registration\u201D requires an undecided case. Use \u201CCorrect case facts\u201D to correct recorded registration while keeping its decision."
+    }
+  ],
+  "diagnostic.CASE_CLOSED": [
+    {
+      "literal": "This action cannot change a closed case. Use \u201CCorrect case facts\u201D for factual corrections while keeping its status, or \u201CReopen the case\u201D when you intend to resume ordinary case work."
+    }
+  ],
+  "diagnostic.CASE_DECISION_ALREADY_PAID": [
+    {
+      "literal": "\u201CRecord payment decision\u201D and \u201CWithdraw payment decision\u201D cannot change a paid decision. Use \u201CCorrect case facts\u201D for a factual correction, with explicit payment reaffirmation or clearing when replacing a paid decision."
+    }
+  ],
+  "diagnostic.CASE_DECISION_REQUIRED": [
+    {
+      "literal": "Record a payment decision first."
+    }
+  ],
+  "diagnostic.CASE_ERASED": [
+    {
+      "literal": "This case has been erased."
+    }
+  ],
+  "diagnostic.CASE_NOT_FOUND": [
+    {
+      "literal": "The case reference was not found."
+    }
+  ],
+  "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
+    {
+      "literal": "ClaimCore records one full payment."
+    }
+  ],
+  "diagnostic.CASE_PAYMENT_NOT_RECORDED": [
+    {
+      "literal": "There is no payment record to clear."
+    }
+  ],
+  "diagnostic.CASE_REVISION_CONFLICT": [
+    {
+      "literal": "Read the current case before making a changed request."
+    }
+  ],
+  "diagnostic.CASE_VOIDED": [
+    {
+      "literal": "This case is voided."
+    }
+  ],
+  "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
+    {
+      "literal": "A zero decision is not a payment."
+    }
+  ],
+  "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
+    {
+      "literal": "Use an integer revision from 0 through 9007199254740991."
+    }
+  ],
+  "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
+    {
+      "literal": "Supply all three tagged correction groups."
+    }
+  ],
+  "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [
+    {
+      "literal": "Use a non-empty UUID."
+    }
+  ],
+  "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
+    {
+      "literal": "Stored operation content is inconsistent. Stop and investigate."
+    }
+  ],
+  "diagnostic.CORE_SCHEMA_MISMATCH": [
+    {
+      "literal": "The schema differs from this build. Run migrate or use a matching build."
+    }
+  ],
+  "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
+    {
+      "literal": "Stored data failed verification. Stop and run verify."
+    }
+  ],
+  "diagnostic.CORE_STORE_UNAVAILABLE": [
+    {
+      "literal": "The store is unavailable. Retry."
+    }
+  ],
+  "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
+    {
+      "literal": "Decision date, payable amount and payable currency must be present together or all absent."
+    }
+  ],
+  "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
+    {
+      "literal": "A correction can only replace or clear a value already recorded on this case."
+    }
+  ],
+  "diagnostic.CORRECTION_NO_CHANGES": [
+    {
+      "literal": "Choose at least one factual correction that changes the current case."
+    }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": [
+    {
+      "literal": "Replacing a paid decision requires explicit payment reaffirmation or clearing the payment record."
+    }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
+    {
+      "literal": "Clearing a paid decision requires clearing the payment record."
+    }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_DECISION_REQUIRED": [
+    {
+      "literal": "A payment record requires a complete payment decision."
+    }
+  ],
+  "diagnostic.CORRECTION_REGISTRATION_CLEAR_FORBIDDEN": [
+    {
+      "literal": "Registration cannot be cleared."
+    }
+  ],
+  "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
+    {
+      "literal": "Use REPLACE with every declared field."
+    }
+  ],
+  "diagnostic.HOST_ANTIFORGERYREJECTED": [
+    {
+      "literal": "Request verification was refused."
+    }
+  ],
+  "diagnostic.HOST_BEFOREDISPATCHFAILED": [
+    {
+      "literal": "Processing failed before dispatch."
+    }
+  ],
+  "diagnostic.HOST_BODYTOOLARGE": [
+    {
+      "literal": "Request body is too large."
+    }
+  ],
+  "diagnostic.HOST_COMPLETEDRESPONSEFAILED": [
+    {
+      "literal": "The completed response could not be delivered."
+    }
+  ],
+  "diagnostic.HOST_CONNECTIONREJECTED": [
+    {
+      "literal": "Connection was refused."
+    }
+  ],
+  "diagnostic.HOST_CONTRACTMISMATCH": [
+    {
+      "literal": "The client contract differs. Reload or use a matching client."
+    }
+  ],
+  "diagnostic.HOST_DISPATCHUNCONFIRMED": [
+    {
+      "literal": "Preserve the exact request and replay it."
+    }
+  ],
+  "diagnostic.HOST_ENDPOINTMISSING": [
+    {
+      "literal": "Endpoint was not found."
+    }
+  ],
+  "diagnostic.HOST_INPUTINVALID": [
+    {
+      "literal": "The input does not satisfy the endpoint contract."
+    }
+  ],
+  "diagnostic.HOST_MEDIATYPEREJECTED": [
+    {
+      "literal": "Use the endpoint media type."
+    }
+  ],
+  "diagnostic.HOST_METHODREJECTED": [
+    {
+      "literal": "The method is unsupported."
+    }
+  ],
+  "diagnostic.HOST_ORIGINREJECTED": [
+    {
+      "literal": "Origin was refused."
+    }
+  ],
+  "diagnostic.HOST_RATELIMITED": [
+    {
+      "literal": "Request admission is busy."
+    }
+  ],
+  "diagnostic.HOST_SESSIONFORBIDDEN": [
+    {
+      "literal": "Session access was refused."
+    }
+  ],
+  "diagnostic.HOST_SESSIONREJECTED": [
+    {
+      "literal": "Authentication was refused."
+    }
+  ],
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": [
+    {
+      "literal": "This role requires a human principal."
+    }
+  ],
+  "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
+    {
+      "literal": "The decimal amount cannot be represented exactly."
+    }
+  ],
+  "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
+    {
+      "literal": "Use one valid calendar date in YYYY-MM-DD format."
+    }
+  ],
+  "diagnostic.INPUT_CASE_REFERENCE_FORMAT": [
+    {
+      "literal": "Use 1 to 80 printable non-space ASCII characters."
+    }
+  ],
+  "diagnostic.INPUT_CONTROL_CHARACTERS": [
+    {
+      "literal": "Control characters are not accepted."
+    }
+  ],
+  "diagnostic.INPUT_COUNTRY_FORMAT": [
+    {
+      "literal": "Use two uppercase ASCII letters for the country code."
+    }
+  ],
+  "diagnostic.INPUT_CURRENCY_FORMAT": [
+    {
+      "literal": "Use three uppercase ASCII letters (A\u2013Z) for the currency identifier."
+    }
+  ],
+  "diagnostic.INPUT_DATE_ORDER": [
+    {
+      "literal": "The dates are in an invalid chronological order."
+    }
+  ],
+  "diagnostic.INPUT_DECIMAL_FORMAT": [
+    {
+      "literal": "Use non-negative decimal text: up to "
+    },
+    {
+      "hole": "maximumIntegerDigits"
+    },
+    {
+      "literal": " integer digits and "
+    },
+    {
+      "hole": "maximumFractionalDigits"
+    },
+    {
+      "literal": " fractional digits; no sign or exponent."
+    }
+  ],
+  "diagnostic.INPUT_EXACT_FIELDS_REQUIRED": [
+    {
+      "literal": "Supply each declared command input exactly once, with no extra fields."
+    }
+  ],
+  "diagnostic.INPUT_FUTURE_DATE": [
+    {
+      "literal": "A future date cannot record an event that has already occurred."
+    }
+  ],
+  "diagnostic.INPUT_MALFORMED_UNICODE": [
+    {
+      "literal": "Malformed Unicode is not accepted."
+    }
+  ],
+  "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
+    {
+      "literal": "Leading or trailing whitespace is not accepted."
+    }
+  ],
+  "diagnostic.INPUT_TEXT_REQUIRED": [
+    {
+      "literal": "A non-blank value is required."
+    }
+  ],
+  "diagnostic.INPUT_TEXT_TOO_LONG": [
+    {
+      "literal": "The value must not exceed "
+    },
+    {
+      "hole": "maximumCharacters"
+    },
+    {
+      "literal": " Unicode characters."
+    }
+  ],
+  "diagnostic.INPUT_TEXT_TOO_SHORT": [
+    {
+      "literal": "The value must contain at least "
+    },
+    {
+      "hole": "minimumCharacters"
+    },
+    {
+      "literal": " Unicode characters."
+    }
+  ],
+  "diagnostic.LAST_OWNER": [
+    {
+      "literal": "At least one enabled human owner is required."
+    }
+  ],
+  "diagnostic.LEDGER_SEQUENCE_EXHAUSTED": [
+    {
+      "literal": "The ledger has reached its final sequence."
+    }
+  ],
+  "diagnostic.NOT_VOIDED": [
+    {
+      "literal": "This case is not voided."
+    }
+  ],
+  "diagnostic.OPERATION_CONTENT_CONFLICT": [
+    {
+      "literal": "This operation ID belongs to different command content. Do not reuse it."
+    }
+  ],
+  "diagnostic.QUERY_CURSOR_INVALID": [
+    {
+      "literal": "Use one current opaque case-list cursor returned by ClaimCore."
+    }
+  ],
+  "diagnostic.QUERY_PAGE_LIMIT_RANGE": [
+    {
+      "literal": "Use a value from 1 through "
+    },
+    {
+      "hole": "maximumPageSize"
+    },
+    {
+      "literal": "."
+    }
+  ],
+  "diagnostic.REVISION_EXHAUSTED": [
+    {
+      "literal": "The case has reached its final revision."
+    }
+  ],
+  "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
+    {
+      "literal": "The loaded case does not match this command."
+    }
+  ],
+  "diagnostic.STATE_STORED_REVISION_RANGE": [
+    {
+      "literal": "Stored revisions must be integers from 1 through 9007199254740991."
+    }
+  ],
+  "diagnostic.STATE_TRANSITION_MISMATCH": [
+    {
+      "literal": "The state guard and payment transition disagree."
+    }
+  ],
+  "diagnostic.TEXT_FORMATTING_CHARACTER": [
+    {
+      "literal": "Formatting characters are not accepted in a new assertion."
+    }
+  ]
+}

@@ -20,6 +20,8 @@
 !web/**
 !config
 !config/**
+!contracts
+!contracts/**
 !db
 !db/**
 !deployment
@@ -106,7 +108,8 @@
 **/blob-report
 **/playwright/.auth
 **/playwright/.cache
-**/web/src/generated/contracts
+**/web/src/generated
+**/web/src/presentation/generated
 
 # Reviewed credential-free policies required by the locked npm producers.
 !web/.npmrc

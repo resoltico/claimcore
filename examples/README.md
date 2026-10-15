@@ -6,7 +6,7 @@ The CLI is an authenticated HTTPS client. It receives no database connection fil
 Configure `CLAIMCORE_SERVICE_URL`, `CLAIMCORE_OIDC_ISSUER`, `CLAIMCORE_OIDC_CLIENT_ID`
 and `CLAIMCORE_CLI_AUTH_MODE` as described by `ClaimCore.Cli help`. For automation, supply
 its owner-private client-secret file. Local HTTPS also needs the explicit CLI service and
-OIDC trust-root files. The selected actor needs an installation `CASE_EDITOR` grant.
+OIDC trust-root files. The selected actor needs installation `CASE_HANDLER` and `PAYMENT_RECORDER` grants.
 An installation `OWNER` grants authority; that role alone does not grant case work.
 
 From the repository root, execute the six business frames, in order:
@@ -35,7 +35,7 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- cal
 ```
 
 Erasure retains the case reference and revision 9. Every historical snapshot for that
-case is absent; ledger metadata remains. This does not delete backups or copies elsewhere.
+case is erased from the live database; ledger metadata remains. This does not delete backups or copies elsewhere.
 Fixed example identities deliberately support exact replay in one fresh installation.
 Do not change their request bytes to retry an uncertain operation.
 

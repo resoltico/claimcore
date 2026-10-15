@@ -45,7 +45,7 @@ it("preserves authored content, DOM selection and operation identity across lang
   expect(date).toHaveAttribute("type", "text");
   expect(globalThis.fetch).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  expect(draftAt(0).command).toMatchObject({
+  expect(draftAt(0).act).toMatchObject({
     values: { claimantName: name.value, incidentDate: "2026-02-30" },
   });
   pending.reject(new Error("synthetic"));
@@ -85,7 +85,7 @@ it("does not rebase a frozen request after language switching and an external re
   await screen.findByRole("alert");
   const initialBody = fetch.mock.calls[0]?.[1]?.body;
   await user.selectOptions(languageControl(), "ar");
-  view.rerender(editor({ current: { ...current, case: { ...current.case, revision: "99" } } }));
+  view.rerender(editor({ current: { ...current, revision: 99 } }));
   await user.selectOptions(languageControl(), "en");
   fetch.mockRejectedValueOnce(new Error("lost-again"));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
@@ -93,7 +93,7 @@ it("does not rebase a frozen request after language switching and an external re
     expect(fetch).toHaveBeenCalledTimes(2);
   });
   expect(fetch.mock.calls[1]?.[1]?.body).toBe(initialBody);
-  expect(draftAt(1).expectedRevision).toBe("1");
+  expect(draftAt(1).expectedRevision).toBe(1);
 });
 
 it("localizes late validation by diagnostic identity and focuses the unchanged authoring field", async () => {
@@ -105,8 +105,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.selectOptions(languageControl(), "lv");
   pending.resolve(
-    response("command.preview", "REJECTED", {
-      code: "INVALID_INPUT",
+    response("case.preview", "REJECTED", {
       message: "UNTRUSTED_ENGLISH_CANARY",
       field: "claimantName",
       actualRevision: null,

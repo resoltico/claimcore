@@ -3,7 +3,7 @@ import { definition } from "./service-ui.fixtures";
 import { renderKey } from "../src/presentation/messages";
 import { defaults } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
-const semantic = definition.definition;
+const { descriptors } = definition;
 
 import { readUnknown, isObject } from "./contract-corpus.fixtures";
 import requirements from "../src/presentation/generated/diagnostic-parameters.json";
@@ -17,7 +17,7 @@ it("every F# diagnostic template agrees with default browser rendering", () => {
     Record<string, { minimum?: number; maximum?: number }>
   > = requirements;
   const ids = Object.keys(limits);
-  expect(ids).toHaveLength(73);
+  expect(ids).toHaveLength(76);
   for (const id of ids) {
     const parts = originals[`diagnostic.${id}`];
     if (!Array.isArray(parts)) {
@@ -46,13 +46,13 @@ it("preserves independent English diagnostics and parameter formatting", () => {
   );
 });
 
-it("derives shared browser business meaning directly from semantic discovery", () => {
+it("derives shared browser business meaning directly from static descriptors", () => {
   const p = createPresenter(defaults);
-  for (const field of semantic.fields) {
+  for (const field of descriptors.fields) {
     expect(p.fieldLabel(field.name)).toBe(field.label);
     expect(p.fieldMeaning(field.name)).toBe(field.meaning);
   }
-  for (const command of semantic.commands) {
+  for (const command of descriptors.commands) {
     expect(p.commandLabel(command.kind)).toBe(command.label);
     expect(p.commandMeaning(command.kind)).toBe(command.meaning);
     if (command.inputs.kind === "CORRECTION_GROUPS") {

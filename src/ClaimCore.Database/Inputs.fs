@@ -32,11 +32,16 @@ module Inputs =
             && parts[1]
                |> Seq.forall (fun c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
         then
-            Some
+            let position: ExpectedPosition =
                 {
                     Sequence = sequence
                     EntryHash = Convert.FromHexString(parts[1])
                 }
+
+            if ExpectedPositions.isValid position then
+                Some position
+            else
+                None
         else
             None
 
@@ -68,36 +73,39 @@ module Inputs =
         finally
             CryptographicOperations.ZeroMemory value
 
+    let decodeOwner (value: byte array) =
+        use document = JsonDocument.Parse(ReadOnlyMemory value)
+        let root = document.RootElement
+        let names = root.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
+
+        if names <> [ "issuer"; "operationId"; "subject" ] then
+            invalidOp "Owner input properties differ."
+
+        let text name =
+            root.GetProperty(name: string).GetString()
+            |> Option.ofObj
+            |> Option.defaultWith (fun () -> invalidOp "Owner value is absent.")
+
+        let operationText = text "operationId"
+        let mutable operationId = Guid.Empty
+
+        if
+            not (Guid.TryParseExact(operationText, "D", &operationId))
+            || operationId = Guid.Empty
+            || operationId.ToString("D") <> operationText
+        then
+            invalidOp "Owner operation identifier is invalid."
+
+        let principal =
+            PrincipalKey.human (text "issuer") (text "subject")
+            |> Result.defaultWith (fun _ -> invalidOp "Owner principal is invalid.")
+
+        operationId, principal
+
     let owner () =
         let value = bytes "CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE" 8192
 
         try
-            use document = JsonDocument.Parse(ReadOnlyMemory value)
-            let root = document.RootElement
-            let names = root.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
-
-            if names <> [ "eventId"; "issuer"; "subject" ] then
-                invalidOp "Owner input properties differ."
-
-            let text name =
-                root.GetProperty(name: string).GetString()
-                |> Option.ofObj
-                |> Option.defaultWith (fun () -> invalidOp "Owner value is absent.")
-
-            let eventText = text "eventId"
-            let mutable eventId = Guid.Empty
-
-            if
-                not (Guid.TryParseExact(eventText, "D", &eventId))
-                || eventId = Guid.Empty
-                || eventId.ToString("D") <> eventText
-            then
-                invalidOp "Owner event identifier is invalid."
-
-            let principal =
-                PrincipalKey.human (text "issuer") (text "subject")
-                |> Result.defaultWith (fun _ -> invalidOp "Owner principal is invalid.")
-
-            eventId, principal
+            decodeOwner value
         finally
             CryptographicOperations.ZeroMemory value

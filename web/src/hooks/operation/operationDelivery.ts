@@ -16,7 +16,7 @@ export const sendPreview = async (
     createDraft(
       state.state.operationId,
       state.state.caseReference,
-      props.current?.case.revision ?? "0",
+      props.current?.revision ?? 0,
       state.state.command,
       state.state.values,
     );

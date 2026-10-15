@@ -27,6 +27,58 @@ let private connectionString (database: PostgresFixture.Database) =
     settings.Password <- "synthetic-only"
     settings.ConnectionString
 
+let private runtimeCursors (database: PostgresFixture.Database) =
+    task {
+        let! owner = caseWorker database.Fixture
+
+        for n, reference in [ 10, "CURSOR-A"; 11, "CURSOR-B" ] do
+            let! result =
+                owner.Execute(
+                    request n reference 0L (ClaimCore.Domain.BusinessCommand.Open registration),
+                    token
+                )
+
+            accepted result |> ignore
+
+        let! first =
+            ClaimCore.Hosting.Runtime.openConnection (connectionString database) token
+
+        use first = first |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+
+        let! page =
+            (first.Actor database.Fixture.Owner).List({ AfterCursor = None; Limit = 1 }, token)
+
+        let cursor =
+            match page with
+            | ClaimCore.Application.QueryOutcome.Succeeded page -> page.NextCursor
+            | _ -> failtest "Missing page"
+
+        Expect.isSome cursor "A page is available"
+
+        let! same =
+            (first.Actor database.Fixture.Owner).List({ AfterCursor = cursor; Limit = 2 }, token)
+
+        match same with
+        | ClaimCore.Application.QueryOutcome.Succeeded page ->
+            Expect.equal page.Items.Length 1 "Every facade shares its runtime key"
+        | _ -> failtest "Facade changed the signing key"
+
+        let! second =
+            ClaimCore.Hosting.Runtime.openConnection (connectionString database) token
+
+        use second =
+            second |> Result.defaultWith (fun _ -> failtest "Second runtime refused")
+
+        let! rejected =
+            (second.Actor database.Fixture.Owner).List({ AfterCursor = cursor; Limit = 2 }, token)
+
+        Expect.equal
+            rejected
+            (ClaimCore.Application.QueryOutcome.Rejected
+                ClaimCore.Application.Rejection.InvalidCursor)
+            "Another runtime lifetime has a different ephemeral key"
+    }
+
 [<Tests>]
 let tests =
     testSequenced
@@ -85,7 +137,7 @@ let tests =
                 "admitted runtime binds principal and closes admission on shutdown"
                 (run (fun database ->
                     task {
-                        let! _ = editor database.Fixture
+                        let! _ = caseWorker database.Fixture
 
                         let! opened =
                             ClaimCore.Hosting.Runtime.openConnection
@@ -104,14 +156,14 @@ let tests =
                                     30
                                     "synthetic-hosting"
                                     0L
-                                    (ClaimCore.Domain.Command.Open registration),
+                                    (ClaimCore.Domain.BusinessCommand.Open registration),
                                 token
                             )
 
                         accepted result |> ignore
                         let! closed = runtime.Shutdown(TimeSpan.FromSeconds 1.)
                         Expect.equal closed ShutdownOutcome.Drained "Shutdown"
-                        let! after = actor.Definition token
+                        let! after = actor.Context token
 
                         Expect.equal
                             after
@@ -123,31 +175,31 @@ let tests =
                 [
                     "absent schema",
                     "DROP SCHEMA claimcore CASCADE",
-                    ClaimCore.Hosting.RuntimeOpenFault.SchemaMismatch
+                    ClaimCore.Application.RuntimeOpenFault.SchemaMismatch
                     "behind",
                     "DELETE FROM claimcore.schema_migrations",
-                    ClaimCore.Hosting.RuntimeOpenFault.SchemaMismatch
+                    ClaimCore.Application.RuntimeOpenFault.SchemaMismatch
                     "ahead",
                     "INSERT INTO claimcore.schema_migrations VALUES(2,'extra',decode(repeat('00',32),'hex'),clock_timestamp())",
-                    ClaimCore.Hosting.RuntimeOpenFault.SchemaMismatch
+                    ClaimCore.Application.RuntimeOpenFault.SchemaMismatch
                     "foreign",
                     "DROP SCHEMA claimcore CASCADE;CREATE SCHEMA claimcore;GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime",
-                    ClaimCore.Hosting.RuntimeOpenFault.SchemaMismatch
+                    ClaimCore.Application.RuntimeOpenFault.SchemaMismatch
                     "superuser",
                     "ALTER ROLE claimcore_runtime SUPERUSER",
-                    ClaimCore.Hosting.RuntimeOpenFault.UnsafeRole
+                    ClaimCore.Application.RuntimeOpenFault.UnsafeRole
                     "owner",
                     "ALTER SCHEMA claimcore OWNER TO claimcore_runtime",
-                    ClaimCore.Hosting.RuntimeOpenFault.UnsafeRole
+                    ClaimCore.Application.RuntimeOpenFault.UnsafeRole
                     "missing installation",
                     "DELETE FROM claimcore.installation",
-                    ClaimCore.Hosting.RuntimeOpenFault.InstallationInvalid
+                    ClaimCore.Application.RuntimeOpenFault.InstallationInvalid
                     "zone",
                     "UPDATE claimcore.installation SET business_time_zone='Invalid/Zone'",
-                    ClaimCore.Hosting.RuntimeOpenFault.InstallationInvalid
+                    ClaimCore.Application.RuntimeOpenFault.InstallationInvalid
                     "head",
                     "UPDATE claimcore.ledger_head SET sequence=1",
-                    ClaimCore.Hosting.RuntimeOpenFault.HeadMismatch
+                    ClaimCore.Application.RuntimeOpenFault.HeadMismatch
                 ] do
                 testCaseAsync
                     ($"typed runtime open refusal: {name}")
@@ -178,7 +230,7 @@ let tests =
 
                     Expect.equal
                         (opened |> Result.map (fun runtime -> runtime.Dispose()))
-                        (Error ClaimCore.Hosting.RuntimeOpenFault.InvalidTransport)
+                        (Error ClaimCore.Application.RuntimeOpenFault.InvalidTransport)
                         "Transport refused without connecting"
 
                     use cancelled = new CancellationTokenSource()
@@ -190,14 +242,14 @@ let tests =
 
                     Expect.equal
                         (result |> Result.map (fun runtime -> runtime.Dispose()))
-                        (Error ClaimCore.Hosting.RuntimeOpenFault.Cancelled)
+                        (Error ClaimCore.Application.RuntimeOpenFault.Cancelled)
                         "Cancellation surfaced"
                 })
             testCaseAsync
                 "expired drain bound preserves a real admitted transaction"
                 (run (fun database ->
                     task {
-                        let! _ = editor database.Fixture
+                        let! _ = caseWorker database.Fixture
 
                         let! opened =
                             ClaimCore.Hosting.Runtime.openConnection
@@ -218,7 +270,7 @@ let tests =
                                         40
                                         "synthetic-drain"
                                         0L
-                                        (ClaimCore.Domain.Command.Open registration),
+                                        (ClaimCore.Domain.BusinessCommand.Open registration),
                                     token
                                 )
 
@@ -248,25 +300,27 @@ let tests =
                         let! verified = Verification.verify database.OwnerSource None token
 
                         Expect.equal
-                            verified.Sequence
-                            3L
+                            (VerificationSupport.position verified).Sequence
+                            4L
                             "Admitted transaction still committed exactly once"
                     }))
-            testCase "unsupported server metadata maps to the typed host refusal" (fun () ->
-                Admission.serverMajor ServerSupport.major
+            testCase "unsupported major and minor metadata have the shared runtime fault" (fun () ->
+                Admission.serverVersion (System.Version(18, 6))
 
-                for major in [ ServerSupport.major - 1; ServerSupport.major + 1 ] do
-                    let mutable refused = false
+                for version in
+                    [ System.Version(18, 5); System.Version(17, 9); System.Version(19, 0) ] do
+                    let mutable result = None
 
                     try
-                        Admission.serverMajor major
+                        Admission.serverVersion version
                     with AdmissionRefusal fault ->
-                        refused <- true
+                        result <- Some fault
 
-                        Expect.equal
-                            (ClaimCore.Hosting.Runtime.fault fault)
-                            ClaimCore.Hosting.RuntimeOpenFault.UnsupportedServer
-                            "Same admission guard and host mapping"
-
-                    Expect.isTrue refused "Unsupported major rejected")
+                    Expect.equal
+                        result
+                        (Some ClaimCore.Application.RuntimeOpenFault.UnsupportedServer)
+                        "One admission vocabulary")
+            testCaseAsync
+                "cursor keys are shared across actor facades and separate across runtime lifetimes"
+                (run runtimeCursors)
         ]

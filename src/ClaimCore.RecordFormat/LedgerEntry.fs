@@ -6,29 +6,29 @@ open System.Security.Cryptography
 open System.Text
 open ClaimCore.Domain
 
-[<RequireQualifiedAccess>]
-type LedgerAct =
-    | Command of CommandKind
-    | Stewardship of StewardshipKind
-
 type CaseEntryMetadata =
     {
         CaseId: Guid
         Revision: int64
-        Act: LedgerAct
+        Act: CaseActKind
         BusinessDate: DateOnly
-        RuleRevision: uint16
+    }
+
+type AuthorityEntryMetadata =
+    {
+        TargetActorId: Guid
+        Act: RecordedAuthorityKind
     }
 
 [<RequireQualifiedAccess>]
 type LedgerScope =
     | Case of CaseEntryMetadata
-    | Authority
+    | Authority of AuthorityEntryMetadata
 
 type LedgerMetadata =
     {
         InstallationId: Guid
-        Sequence: uint64
+        Sequence: int64
         PreviousHash: byte array
         OperationId: Guid
         ActorId: Guid
@@ -64,25 +64,31 @@ module LedgerEntry =
         BinaryPrimitives.WriteUInt32BigEndian(Span bytes, value)
         bytes
 
-    let private u16 value =
-        let bytes = Array.zeroCreate<byte> 2
-        BinaryPrimitives.WriteUInt16BigEndian(Span bytes, value)
-        bytes
+    let private caseActCodes =
+        Map.ofList
+            [
+                CaseActKind.Open, 1uy
+                CaseActKind.AmendRegistration, 2uy
+                CaseActKind.CorrectCase, 3uy
+                CaseActKind.Decide, 4uy
+                CaseActKind.WithdrawDecision, 5uy
+                CaseActKind.RecordPayment, 6uy
+                CaseActKind.ClearPayment, 7uy
+                CaseActKind.Close, 8uy
+                CaseActKind.Reopen, 9uy
+                CaseActKind.Void, 10uy
+                CaseActKind.Reinstate, 11uy
+                CaseActKind.Erase, 12uy
+            ]
 
-    let actCode =
+    let actCode act = caseActCodes[act]
+
+    let private authorityCode =
         function
-        | LedgerAct.Command CommandKind.Open -> 1uy
-        | LedgerAct.Command CommandKind.AmendRegistration -> 2uy
-        | LedgerAct.Command CommandKind.CorrectCase -> 3uy
-        | LedgerAct.Command CommandKind.Decide -> 4uy
-        | LedgerAct.Command CommandKind.WithdrawDecision -> 5uy
-        | LedgerAct.Command CommandKind.RecordPayment -> 6uy
-        | LedgerAct.Command CommandKind.ClearPayment -> 7uy
-        | LedgerAct.Command CommandKind.Close -> 8uy
-        | LedgerAct.Command CommandKind.Reopen -> 9uy
-        | LedgerAct.Stewardship StewardshipKind.Void -> 10uy
-        | LedgerAct.Stewardship StewardshipKind.Reinstate -> 11uy
-        | LedgerAct.Stewardship StewardshipKind.Erase -> 12uy
+        | RecordedAuthorityKind.ProvisionOwner -> 32uy
+        | RecordedAuthorityKind.RegisterActor -> 33uy
+        | RecordedAuthorityKind.SetGrant -> 34uy
+        | RecordedAuthorityKind.SetEnabled -> 35uy
 
     let encodePayload (payload: LedgerPayload) =
         Array.concat
@@ -135,24 +141,22 @@ module LedgerEntry =
 
     let private scopeBytes =
         function
-        | LedgerScope.Authority -> 2uy, Guid.Empty, 0L, 0uy, 0, 0us
+        | LedgerScope.Authority scope ->
+            if scope.TargetActorId = Guid.Empty then
+                invalidArg (nameof scope) "Invalid authority subject."
+
+            2uy, authorityCode scope.Act, scope.TargetActorId, 0L, 0
         | LedgerScope.Case scope ->
             if
                 scope.CaseId = Guid.Empty
                 || scope.Revision < 1L
-                || scope.Revision >= Int64.MaxValue
-                || scope.RuleRevision = 0us
+                || scope.Revision > Revision.Maximum
             then
                 invalidArg (nameof scope) "Invalid case ledger metadata."
 
-            1uy,
-            scope.CaseId,
-            scope.Revision,
-            actCode scope.Act,
-            scope.BusinessDate.DayNumber,
-            scope.RuleRevision
+            1uy, actCode scope.Act, scope.CaseId, scope.Revision, scope.BusinessDate.DayNumber
 
-    /// Exactly 185 bytes. Payload, nonce and request digest are deliberately absent.
+    /// Exactly 183 bytes. Only the salted payload commitment covers erasable business content.
     let preimage (metadata: LedgerMetadata) =
         requireHash "previousHash" metadata.PreviousHash
         requireHash "payloadCommitment" metadata.PayloadCommitment
@@ -161,32 +165,31 @@ module LedgerEntry =
             metadata.InstallationId = Guid.Empty
             || metadata.OperationId = Guid.Empty
             || metadata.ActorId = Guid.Empty
-            || metadata.Sequence = 0UL
+            || metadata.Sequence < 1L
+            || metadata.Sequence > Revision.Maximum
         then
-            invalidArg (nameof metadata) "Ledger identity and sequence must be non-empty."
+            invalidArg (nameof metadata) "Invalid ledger identity or sequence."
 
         let ticks = metadata.RecordedAt.UtcTicks - DateTimeOffset.UnixEpoch.UtcTicks
 
         if ticks % 10L <> 0L then
-            invalidArg (nameof metadata) "The recorded instant must have microsecond precision."
+            invalidArg (nameof metadata) "Use microsecond precision."
 
-        let kind, caseId, revision, act, date, rules = scopeBytes metadata.Scope
+        let scope, act, subject, revision, date = scopeBytes metadata.Scope
 
         Array.concat
             [
-                Encoding.ASCII.GetBytes $"claimcore/ledger-entry/{RecordVersions.LedgerEntry}\n"
+                Encoding.ASCII.GetBytes "claimcore/ledger-entry/2\n"
                 metadata.InstallationId.ToByteArray(bigEndian = true)
-                u64 metadata.Sequence
+                u64 (uint64 metadata.Sequence)
                 metadata.PreviousHash
-                [| kind |]
+                [| scope; act |]
                 metadata.OperationId.ToByteArray(bigEndian = true)
                 metadata.ActorId.ToByteArray(bigEndian = true)
                 i64 (ticks / 10L)
-                caseId.ToByteArray(bigEndian = true)
+                subject.ToByteArray(bigEndian = true)
                 i64 revision
-                [| act |]
                 i32 date
-                u16 rules
                 metadata.PayloadCommitment
             ]
 

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { Dashboard } from "../src/views/Dashboard";
-import { response } from "./service-ui.fixtures";
+import { context, response } from "./service-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
@@ -23,7 +23,9 @@ it("renders public product metadata while an authorized case read is pending", a
 it("locks navigation and logout while a reviewed mutation is dispatched", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }));
+  fetch
+    .mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }))
+    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
   fetch.mockReturnValueOnce(
     new Promise<Response>(() => {
       /* never settles */

@@ -1,10 +1,28 @@
 namespace ClaimCore.Application
 
 open System
+open System.Security.Cryptography
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
+[<RequireQualifiedAccess>]
+type internal EntryContent =
+    | Case of request: CaseRequest * snapshot: CaseSnapshot option
+    | Authority of AuthorityRequestRecord
+    | ErasedCase
+
+type internal ValidatedEntry =
+    private
+        {
+            InstallationId: Guid
+            Entry: StoredEntry
+            Content: EntryContent
+        }
+
 module internal LedgerEntries =
+    let private width expected (bytes: byte array) =
+        not (obj.ReferenceEquals(bytes, null)) && bytes.Length = expected
+
     let position sequence (hash: byte array) : LedgerPosition =
         {
             Sequence = sequence
@@ -19,26 +37,22 @@ module internal LedgerEntries =
             ActorId = entry.ActorId
             RecordedAt = entry.RecordedAt
             Scope = entry.Scope
-            RequestSha256 = Some entry.RequestSha256
+            PayloadCommitment = entry.PayloadCommitment
+            PayloadNonce = Some entry.PayloadNonce
             Payload = Some entry.Payload
         }
 
     let private metadataScope =
         function
-        | StoredScope.Authority _ -> LedgerScope.Authority
+        | StoredScope.Authority(target, act) ->
+            LedgerScope.Authority { TargetActorId = target; Act = act }
         | StoredScope.Case(id, revision, act, date) ->
-            let encodedAct =
-                match act with
-                | AcceptedAct.Command kind -> LedgerAct.Command kind
-                | AcceptedAct.Stewardship kind -> LedgerAct.Stewardship kind
-
             LedgerScope.Case
                 {
                     CaseId = id
                     Revision = revision
-                    Act = encodedAct
+                    Act = act
                     BusinessDate = date
-                    RuleRevision = uint16 DomainRules.version
                 }
 
     let create
@@ -52,8 +66,8 @@ module internal LedgerEntries =
         request
         snapshot
         : EntryDraft =
-        if head.Sequence < 0L || head.Sequence = Int64.MaxValue then
-            invalidArg (nameof head) "Invalid ledger head."
+        if head.Sequence < 0L || head.Sequence >= Revision.Maximum then
+            invalidArg (nameof head) "Ledger head cannot advance."
 
         let payload =
             LedgerEntry.encodePayload
@@ -62,12 +76,16 @@ module internal LedgerEntries =
                     Snapshot = snapshot
                 }
 
+        if payload.Length > 262144 then
+            invalidArg (nameof request) "Ledger payload exceeds its format bound."
+
         let commitment = LedgerEntry.commitment nonce payload
+        let sequence = head.Sequence + 1L
 
         let metadata =
             {
                 InstallationId = installationId
-                Sequence = uint64 (head.Sequence + 1L)
+                Sequence = sequence
                 PreviousHash = head.EntryHash
                 OperationId = operationId
                 ActorId = actorId
@@ -77,127 +95,278 @@ module internal LedgerEntries =
             }
 
         {
-            Sequence = head.Sequence + 1L
+            Sequence = sequence
             PreviousHash = Array.copy head.EntryHash
             EntryHash = LedgerEntry.hash metadata
             OperationId = operationId
             ActorId = actorId
             RecordedAt = instant
             Scope = scope
-            RuleRevision =
-                (match scope with
-                 | StoredScope.Case _ -> Some DomainRules.version
-                 | _ -> None)
             PayloadCommitment = commitment
             PayloadNonce = Array.copy nonce
             Payload = payload
-            RequestSha256 = LedgerEntry.requestDigest request
         }
 
+    /// The existing salted commitment protects ordinary reads and replay before content is interpreted.
     let payload (entry: StoredEntry) =
-        match entry.Payload, entry.RequestSha256 with
-        | Some bytes, Some digest ->
+        match entry.Payload, entry.PayloadNonce with
+        | Some bytes, Some nonce when width 32 nonce && width 32 entry.PayloadCommitment ->
             match LedgerEntry.decodePayload 262144 bytes with
-            | Ok value when LedgerEntry.requestDigest value.Request = digest -> Ok value
-            | Ok _ -> Error CoreFault.OperationContentConflict
             | Error _ -> Error CoreFault.StoreIntegrityError
+            | Ok value ->
+                if
+                    CryptographicOperations.FixedTimeEquals(
+                        LedgerEntry.commitment nonce bytes,
+                        entry.PayloadCommitment
+                    )
+                then
+                    Ok value
+                else
+                    Error CoreFault.OperationContentConflict
         | _ -> Error CoreFault.StoreIntegrityError
 
-    let canObserve principal actor scope =
-        match scope with
+    let canObserve principal actor =
+        function
         | StoredScope.Case(id, _, _, _) ->
-            ActorAuthorization.can
-                principal
-                actor
-                Capability.ObserveOperation
-                (ResourceScope.Case id)
+            ActorAuthorization.can principal actor Capability.ReadHistory (ResourceScope.Case id)
         | StoredScope.Authority _ ->
             ActorAuthorization.can
                 principal
                 actor
-                Capability.ManageAuthority
+                Capability.ReadAuthority
                 ResourceScope.Installation
 
-    let private requestIdentity act bytes =
-        match act with
-        | AcceptedAct.Command _ ->
-            RequestRecord.decode 65536 bytes
-            |> Result.map (fun request ->
-                request.CaseReference,
-                request.OperationId,
-                request.ExpectedVersion,
-                AcceptedAct.Command(Commands.kind request.Command))
-        | AcceptedAct.Stewardship _ ->
-            StewardshipRecord.decode 65536 bytes
-            |> Result.map (fun request ->
-                request.CaseReference,
-                request.OperationId,
-                request.ExpectedVersion,
-                AcceptedAct.Stewardship(Stewardship.kind request.Action))
+    let private validMetadata (entry: StoredEntry) =
+        let scope =
+            match entry.Scope with
+            | StoredScope.Case(id, revision, act, _) ->
+                id <> Guid.Empty
+                && revision >= 1L
+                && revision <= Revision.Maximum
+                && ((revision = 1L) = (act = CaseActKind.Open))
+            | StoredScope.Authority(id, _) -> id <> Guid.Empty
 
-    let private snapshot act reference revision bytes =
-        if act = AcceptedAct.Stewardship StewardshipKind.Erase then
-            if Array.isEmpty bytes then
-                Ok None
+        entry.Sequence >= 1L
+        && entry.Sequence <= Revision.Maximum
+        && width 32 entry.EntryHash
+        && width 32 entry.PayloadCommitment
+        && entry.OperationId <> Guid.Empty
+        && entry.ActorId <> Guid.Empty
+        && entry.RecordedAt.UtcTicks % 10L = 0L
+        && scope
+
+    let private caseContent
+        installationId
+        (entry: StoredEntry)
+        id
+        revision
+        act
+        (data: LedgerPayload)
+        =
+        match RequestRecord.decode ServiceLimits.RequestByteLimit data.Request with
+        | Ok request when
+            request.OperationId = entry.OperationId
+            && request.ExpectedRevision = revision - 1L
+            && CaseActs.kind request.Act = act
+            && CaseReferenceId.encode installationId request.CaseReference = id
+            ->
+            if act = CaseActKind.Erase then
+                if Array.isEmpty data.Snapshot then
+                    Ok(EntryContent.Case(request, None))
+                else
+                    Error CoreFault.StoreIntegrityError
+            else
+                match ClaimCore.RecordFormat.CaseRecord.decodeSnapshot data.Snapshot with
+                | Ok snapshot when
+                    snapshot.Revision = revision
+                    && CaseReference.key snapshot.Reference =
+                        CaseReference.key request.CaseReference
+                    ->
+                    Ok(EntryContent.Case(request, Some snapshot))
+                | _ -> Error CoreFault.StoreIntegrityError
+        | _ -> Error CoreFault.StoreIntegrityError
+
+    let private authorityContent (entry: StoredEntry) target act (data: LedgerPayload) =
+        match AuthorityRecord.decode ServiceLimits.RequestByteLimit data.Request with
+        | Ok request when
+            request.OperationId = entry.OperationId
+            && RecordedAuthorityActs.kind request.Act = act
+            && AuthorityRequests.validRecord request
+            && Array.isEmpty data.Snapshot
+            ->
+            let identity =
+                match act with
+                | RecordedAuthorityKind.ProvisionOwner ->
+                    target = entry.OperationId && entry.ActorId = target && entry.Sequence = 1L
+                | RecordedAuthorityKind.RegisterActor ->
+                    target = entry.OperationId && entry.ActorId <> target
+                | _ -> true
+
+            if identity then
+                Ok(EntryContent.Authority request)
             else
                 Error CoreFault.StoreIntegrityError
-        else
-            match ClaimCore.RecordFormat.CaseRecord.decodeSnapshot bytes with
-            | Ok view when
-                view.Version = revision
-                && view.Fields.CaseReference = reference
-                && (Claim.restore view |> Result.isOk)
-                ->
-                Ok(Some view)
-            | _ -> Error CoreFault.StoreIntegrityError
+        | _ -> Error CoreFault.StoreIntegrityError
 
-    let receipt (entry: StoredEntry) =
-        match entry.Scope, payload entry with
-        | StoredScope.Case(_, revision, act, _), Ok data ->
-            match requestIdentity act data.Request with
-            | Ok(reference, id, expected, decodedAct) when
-                id = entry.OperationId && expected = revision - 1L && decodedAct = act
-                ->
-                snapshot act reference revision data.Snapshot
-                |> Result.map (fun view ->
+    let validate installationId (entry: StoredEntry) =
+        if installationId = Guid.Empty || not (validMetadata entry) then
+            Error CoreFault.StoreIntegrityError
+        else
+            let content =
+                match entry.Scope, entry.Payload, entry.PayloadNonce with
+                | StoredScope.Case _, None, None -> Ok EntryContent.ErasedCase
+                | _ ->
+                    payload entry
+                    |> Result.bind (fun data ->
+                        match entry.Scope with
+                        | StoredScope.Case(id, revision, act, _) ->
+                            caseContent installationId entry id revision act data
+                        | StoredScope.Authority(target, act) ->
+                            authorityContent entry target act data)
+
+            content
+            |> Result.map (fun content ->
+                {
+                    InstallationId = installationId
+                    Entry = entry
+                    Content = content
+                })
+
+    let internal identityBytes validated =
+        match validated.Content with
+        | EntryContent.Case(request, _) -> Some(RequestRecord.encode request)
+        | EntryContent.Authority request -> Some(AuthorityRecord.encode request)
+        | EntryContent.ErasedCase -> None
+
+    /// The same snapshot-disclosure policy shapes append, replay, preview, observation and history.
+    let private disclosure principal actor id currentRevision revision snapshot =
+        if
+            ActorAuthorization.can
+                principal
+                actor
+                Capability.ReadHistoryFull
+                (ResourceScope.Case id)
+            || (currentRevision = revision
+                && ActorAuthorization.can
+                    principal
+                    actor
+                    Capability.ReadCase
+                    (ResourceScope.Case id))
+        then
+            SnapshotDisclosure.Disclosed snapshot
+        else
+            SnapshotDisclosure.Withheld
+
+    let private caseReceipt
+        installationId
+        principal
+        actor
+        (current: StoredCase option)
+        id
+        revision
+        act
+        content
+        =
+        match current with
+        | None -> Error CoreFault.StoreIntegrityError
+        | Some record when
+            record.CaseId <> id
+            || record.Snapshot.Revision < revision
+            || (Case.ofAccepted record.Snapshot |> Result.isError)
+            ->
+            Error CoreFault.StoreIntegrityError
+        | Some record when CaseReferenceId.encode installationId record.Snapshot.Reference <> id ->
+            Error CoreFault.StoreIntegrityError
+        | Some record ->
+            let shown =
+                match record.Snapshot.View, content with
+                | CaseView.Erased, EntryContent.ErasedCase -> Ok SnapshotDisclosure.Erased
+                | CaseView.Erased, EntryContent.Case(_, None) when act = CaseActKind.Erase ->
+                    Ok SnapshotDisclosure.Erased
+                | CaseView.Live _, EntryContent.Case(_, Some snapshot) when
+                    snapshot.Reference = record.Snapshot.Reference
+                    ->
+                    Ok(
+                        disclosure
+                            principal
+                            actor
+                            id
+                            record.Snapshot.Revision
+                            revision
+                            snapshot.View
+                    )
+                | _ -> Error CoreFault.StoreIntegrityError
+
+            shown
+            |> Result.map (fun snapshot ->
+                ReceiptScope.Case
                     {
-                        OperationId = id
-                        Position = position entry.Sequence entry.EntryHash
-                        CaseReference = reference
+                        Reference = record.Snapshot.Reference
                         Revision = revision
                         Act = act
-                        Snapshot = view
-                        Disposition =
-                            (match act with
-                             | AcceptedAct.Stewardship StewardshipKind.Erase -> None
-                             | AcceptedAct.Stewardship StewardshipKind.Void ->
-                                 Some CaseDisposition.Voided
-                             | _ -> Some CaseDisposition.Active)
-                        RecordedAt = entry.RecordedAt
-                        RecordedBy = entry.ActorId
+                        Snapshot = snapshot
                     })
+
+    let receipt principal actor current (validated: ValidatedEntry) =
+        let entry = validated.Entry
+
+        let scope =
+            match entry.Scope, validated.Content with
+            | StoredScope.Case(id, revision, act, _), content ->
+                caseReceipt validated.InstallationId principal actor current id revision act content
+            | StoredScope.Authority(target, act), EntryContent.Authority _ ->
+                Ok(ReceiptScope.Authority { TargetActorId = target; Act = act })
             | _ -> Error CoreFault.StoreIntegrityError
-        | _, Error fault -> Error fault
+
+        scope
+        |> Result.map (fun scope ->
+            {
+                OperationId = entry.OperationId
+                Position = position entry.Sequence entry.EntryHash
+                Scope = scope
+                RecordedAt = entry.RecordedAt
+                RecordedBy = entry.ActorId
+            })
+
+    let summary (current: StoredCase) (entry: StoredEntry) =
+        match entry.Scope with
+        | StoredScope.Case(id, revision, act, _) when
+            validMetadata entry
+            && id = current.CaseId
+            && revision <= current.Snapshot.Revision
+            ->
+            Ok
+                {
+                    OperationId = entry.OperationId
+                    Position = position entry.Sequence entry.EntryHash
+                    Revision = revision
+                    Act = act
+                    RecordedAt = entry.RecordedAt
+                    RecordedBy = entry.ActorId
+                }
         | _ -> Error CoreFault.StoreIntegrityError
+
 
 [<RequireQualifiedAccess>]
 type internal IdentityDecision =
     | Fresh
-    | Replay of StoredEntry
+    | Replay of ValidatedEntry
     | Refuse of Rejection
     | Fail of CoreFault
 
 module internal OperationIdentity =
-    let decide principal actor bytes (existing: StoredEntry option) =
+    let decide installationId principal actor operationId bytes (existing: StoredEntry option) =
         match existing with
         | None -> IdentityDecision.Fresh
-        | Some entry when
-            not (LedgerEntries.canObserve principal actor entry.Scope)
-            || entry.Payload.IsNone
-            ->
+        | Some entry when not (LedgerEntries.canObserve principal actor entry.Scope) ->
             IdentityDecision.Refuse Rejection.ResourceUnavailable
+        | Some entry when entry.OperationId <> operationId ->
+            IdentityDecision.Fail CoreFault.StoreIntegrityError
         | Some entry ->
-            match LedgerEntries.payload entry with
+            match LedgerEntries.validate installationId entry with
             | Error fault -> IdentityDecision.Fail fault
-            | Ok payload when payload.Request = bytes -> IdentityDecision.Replay entry
-            | Ok _ -> IdentityDecision.Refuse Rejection.IdempotencyConflict
+            | Ok validated ->
+                match LedgerEntries.identityBytes validated with
+                | None -> IdentityDecision.Refuse Rejection.ResourceUnavailable
+                | Some accepted when accepted = bytes -> IdentityDecision.Replay validated
+                | Some _ -> IdentityDecision.Refuse Rejection.IdempotencyConflict

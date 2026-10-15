@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect } from "@playwright/test";
 import { test } from "./redirect-response";
 import { openCase, startCommand, reviewDraft } from "./case-workflow";
-import { isResponse } from "../src/generated/contracts/validation";
+import { isResponse } from "../src/api/responseGuards";
 import type { ServiceResponse } from "../src/api/types";
 import { openAuthenticated } from "./session-helpers";
 
@@ -15,7 +15,7 @@ for (const status of [301, 302, 303, 307, 308]) {
     await openCase(page, `REDIRECT-${randomUUID()}`);
     await startCommand(page, "Close the case");
     await reviewDraft(page);
-    await redirectResponse.arm("/api/command.execute", status);
+    await redirectResponse.arm("/api/case.execute", status);
     await page.getByText("I confirm these changes.", { exact: true }).click();
     await page.getByRole("button", { name: "Record changes" }).click();
     await expect(page.getByRole("alert")).toContainText("unknown");
@@ -23,8 +23,8 @@ for (const status of [301, 302, 303, 307, 308]) {
     expect(evidence.originals).toBe(1);
     expect(evidence.destinations).toBe(0);
     const payload = evidence.reply;
-    expect(await isResponse("command.execute", payload)).toBe(true);
-    const { outcome } = payload as ServiceResponse<"command.execute">;
+    expect(isResponse("case.execute", payload)).toBe(true);
+    const { outcome } = payload as ServiceResponse<"case.execute">;
     expect(outcome.tag === "ACCEPTED" || outcome.tag === "ALREADY_ACCEPTED").toBe(true);
     await expect(
       page.getByRole("button", { name: "Retry the same operation", exact: true }),

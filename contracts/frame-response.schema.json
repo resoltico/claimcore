@@ -1,0 +1,3255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claimcore.local/contracts/frame-response.schema.json",
+  "title": "ClaimCore frame-response.schema.json",
+  "$defs": {
+    "root": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "session"
+            },
+            "outcome": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "SUCCEEDED"
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "authenticated": {
+                      "type": "boolean"
+                    },
+                    "wireFingerprint": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$",
+                      "minLength": 64,
+                      "maxLength": 64
+                    },
+                    "antiforgeryToken": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "authenticated",
+                    "wireFingerprint",
+                    "antiforgeryToken"
+                  ]
+                }
+              },
+              "required": [
+                "tag",
+                "data"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "session.logout"
+            },
+            "outcome": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "SUCCEEDED"
+                },
+                "data": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "tag",
+                "data"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "context"
+            },
+            "outcome": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "SUCCEEDED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/ActorContext"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "REJECTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Rejection"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "FAILED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Fault"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "CANCELLED"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "case.get"
+            },
+            "outcome": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "SUCCEEDED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/CaseView"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "REJECTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Rejection"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "FAILED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Fault"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "CANCELLED"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "case.list"
+            },
+            "outcome": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "SUCCEEDED"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "state": {
+                                    "const": "LIVE"
+                                  },
+                                  "caseReference": {
+                                    "type": "string",
+                                    "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                                    "minLength": 1
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "status": {
+                                    "enum": [
+                                      "OPENED",
+                                      "CLOSED"
+                                    ]
+                                  },
+                                  "disposition": {
+                                    "enum": [
+                                      "ACTIVE",
+                                      "VOIDED"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "state",
+                                  "caseReference",
+                                  "revision",
+                                  "status",
+                                  "disposition"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "state": {
+                                    "const": "ERASED"
+                                  },
+                                  "caseReference": {
+                                    "type": "string",
+                                    "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                                    "minLength": 1
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "state",
+                                  "caseReference",
+                                  "revision"
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        "nextCursor": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "items",
+                        "nextCursor"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "REJECTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Rejection"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "FAILED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Fault"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "CANCELLED"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "case.history"
+            },
+            "outcome": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "SUCCEEDED"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "entries": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/HistoryEntry"
+                          }
+                        },
+                        "nextCursor": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "entries",
+                        "nextCursor"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "REJECTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Rejection"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "FAILED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Fault"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "CANCELLED"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "case.preview"
+            },
+            "outcome": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "REVIEWED"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "review": {
+                          "$ref": "#/$defs/Review"
+                        },
+                        "requestSha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$",
+                          "minLength": 64,
+                          "maxLength": 64
+                        }
+                      },
+                      "required": [
+                        "review",
+                        "requestSha256"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "ALREADY_ACCEPTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/CaseReceipt"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "REJECTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Rejection"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "FAILED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Fault"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "CANCELLED"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "case.execute"
+            },
+            "outcome": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "ACCEPTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/CaseReceipt"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "ALREADY_ACCEPTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/CaseReceipt"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "OUTCOME_UNKNOWN"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "operationId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                          "minLength": 36,
+                          "maxLength": 36
+                        },
+                        "requestSha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$",
+                          "minLength": 64,
+                          "maxLength": 64
+                        }
+                      },
+                      "required": [
+                        "operationId",
+                        "requestSha256"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "REJECTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Rejection"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "FAILED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Fault"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "CANCELLED"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "operation.observe"
+            },
+            "outcome": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "SUCCEEDED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Receipt"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "REJECTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Rejection"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "FAILED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Fault"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "CANCELLED"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "authority.execute"
+            },
+            "outcome": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "ACCEPTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/AuthorityReceipt"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "ALREADY_ACCEPTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/AuthorityReceipt"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "OUTCOME_UNKNOWN"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "operationId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                          "minLength": 36,
+                          "maxLength": 36
+                        },
+                        "requestSha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$",
+                          "minLength": 64,
+                          "maxLength": 64
+                        }
+                      },
+                      "required": [
+                        "operationId",
+                        "requestSha256"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "REJECTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Rejection"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "FAILED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Fault"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "CANCELLED"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "result"
+            },
+            "endpoint": {
+              "const": "authority.list"
+            },
+            "outcome": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "SUCCEEDED"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActorReview"
+                          }
+                        },
+                        "nextCursor": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "items",
+                        "nextCursor"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "REJECTED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Rejection"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "FAILED"
+                    },
+                    "data": {
+                      "$ref": "#/$defs/Fault"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "CANCELLED"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "data"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "session"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "session.logout"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "context"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "case.get"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "case.list"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "case.history"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "case.preview"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "case.execute"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "operation.observe"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "authority.execute"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "serviceFailure"
+            },
+            "endpoint": {
+              "const": "authority.list"
+            },
+            "failure": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "CONTRACT_MISMATCH",
+                    "CONNECTION_REJECTED",
+                    "ORIGIN_REJECTED",
+                    "MEDIA_TYPE_REJECTED",
+                    "BODY_TOO_LARGE",
+                    "SESSION_REJECTED",
+                    "SESSION_FORBIDDEN",
+                    "METHOD_REJECTED",
+                    "ANTIFORGERY_REJECTED",
+                    "ENDPOINT_MISSING",
+                    "RATE_LIMITED",
+                    "INPUT_INVALID",
+                    "INTERNAL",
+                    "RESPONSE_FAILED"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "endpoint",
+            "failure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "localFailure"
+            },
+            "code": {
+              "enum": [
+                "CLI_CONFIGURATION_INVALID",
+                "CLI_AUTHENTICATION_FAILED",
+                "CLI_SERVICE_UNAVAILABLE",
+                "CLI_CANCELLED",
+                "CLI_INTERNAL"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "code"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "protocolFailure"
+            },
+            "code": {
+              "enum": [
+                "INVALID_FRAME",
+                "INVALID_RESPONSE",
+                "CONTRACT_MISMATCH"
+              ]
+            },
+            "diagnosticId": {
+              "const": "PROTOCOL_INVALID_ENVELOPE"
+            },
+            "path": {
+              "type": "string",
+              "pattern": "^/(?:input|outcome|endpoint)?$",
+              "minLength": 1,
+              "maxLength": 9
+            }
+          },
+          "required": [
+            "kind",
+            "code",
+            "diagnosticId",
+            "path"
+          ]
+        }
+      ]
+    },
+    "CaseFields": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "incidentDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "incidentNotificationDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "incidentCountry": {
+          "type": "string",
+          "pattern": "^(?:[A-Z]{2})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "claimantName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "insurerName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claimedAmount": {
+          "type": "string",
+          "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+          "minLength": 1
+        },
+        "claimedCurrency": {
+          "type": "string",
+          "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "caseReference": {
+          "type": "string",
+          "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "paymentDecisionDate": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+              "minLength": 10,
+              "maxLength": 10
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payableAmount": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payableCurrency": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "paymentDate": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+              "minLength": 10,
+              "maxLength": 10
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "OPENED",
+            "CLOSED"
+          ]
+        }
+      },
+      "required": [
+        "incidentDate",
+        "incidentNotificationDate",
+        "incidentCountry",
+        "claimantName",
+        "insurerName",
+        "claimedAmount",
+        "claimedCurrency",
+        "caseReference",
+        "paymentDecisionDate",
+        "payableAmount",
+        "payableCurrency",
+        "paymentDate",
+        "status"
+      ]
+    },
+    "CaseView": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "caseReference": {
+          "type": "string",
+          "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "state": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "LIVE"
+                },
+                "disposition": {
+                  "enum": [
+                    "ACTIVE",
+                    "VOIDED"
+                  ]
+                },
+                "fields": {
+                  "$ref": "#/$defs/CaseFields"
+                },
+                "availableActs": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "OPEN",
+                      "AMEND_REGISTRATION",
+                      "CORRECT_CASE",
+                      "DECIDE",
+                      "WITHDRAW_DECISION",
+                      "RECORD_PAYMENT",
+                      "CLEAR_PAYMENT",
+                      "CLOSE",
+                      "REOPEN",
+                      "VOID",
+                      "REINSTATE",
+                      "ERASE"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "tag",
+                "disposition",
+                "fields",
+                "availableActs"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "ERASED"
+                }
+              },
+              "required": [
+                "tag"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "caseReference",
+        "revision",
+        "state"
+      ]
+    },
+    "CaseSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "caseReference": {
+          "type": "string",
+          "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "state": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "LIVE"
+                },
+                "disposition": {
+                  "enum": [
+                    "ACTIVE",
+                    "VOIDED"
+                  ]
+                },
+                "fields": {
+                  "$ref": "#/$defs/CaseFields"
+                }
+              },
+              "required": [
+                "tag",
+                "disposition",
+                "fields"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "ERASED"
+                }
+              },
+              "required": [
+                "tag"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "caseReference",
+        "revision",
+        "state"
+      ]
+    },
+    "Position": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "entryHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "sequence",
+        "entryHash"
+      ]
+    },
+    "CaseReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "recordedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\\u002B00:00$",
+          "minLength": 33,
+          "maxLength": 33
+        },
+        "recordedBy": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "scope": {
+          "const": "CASE"
+        },
+        "caseReference": {
+          "type": "string",
+          "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "act": {
+          "enum": [
+            "OPEN",
+            "AMEND_REGISTRATION",
+            "CORRECT_CASE",
+            "DECIDE",
+            "WITHDRAW_DECISION",
+            "RECORD_PAYMENT",
+            "CLEAR_PAYMENT",
+            "CLOSE",
+            "REOPEN",
+            "VOID",
+            "REINSTATE",
+            "ERASE"
+          ]
+        },
+        "snapshot": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "DISCLOSED"
+                },
+                "state": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "LIVE"
+                    },
+                    "disposition": {
+                      "enum": [
+                        "ACTIVE",
+                        "VOIDED"
+                      ]
+                    },
+                    "fields": {
+                      "$ref": "#/$defs/CaseFields"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "disposition",
+                    "fields"
+                  ]
+                }
+              },
+              "required": [
+                "tag",
+                "state"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "WITHHELD"
+                }
+              },
+              "required": [
+                "tag"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "ERASED"
+                }
+              },
+              "required": [
+                "tag"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "operationId",
+        "position",
+        "recordedAt",
+        "recordedBy",
+        "scope",
+        "caseReference",
+        "revision",
+        "act",
+        "snapshot"
+      ]
+    },
+    "AuthorityReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "recordedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\\u002B00:00$",
+          "minLength": 33,
+          "maxLength": 33
+        },
+        "recordedBy": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "scope": {
+          "const": "AUTHORITY"
+        },
+        "targetActorId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "act": {
+          "enum": [
+            "PROVISION_OWNER",
+            "REGISTER_ACTOR",
+            "SET_GRANT",
+            "SET_ENABLED"
+          ]
+        }
+      },
+      "required": [
+        "operationId",
+        "position",
+        "recordedAt",
+        "recordedBy",
+        "scope",
+        "targetActorId",
+        "act"
+      ]
+    },
+    "Receipt": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "position": {
+              "$ref": "#/$defs/Position"
+            },
+            "recordedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\\u002B00:00$",
+              "minLength": 33,
+              "maxLength": 33
+            },
+            "recordedBy": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "scope": {
+              "const": "CASE"
+            },
+            "caseReference": {
+              "type": "string",
+              "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "act": {
+              "enum": [
+                "OPEN",
+                "AMEND_REGISTRATION",
+                "CORRECT_CASE",
+                "DECIDE",
+                "WITHDRAW_DECISION",
+                "RECORD_PAYMENT",
+                "CLEAR_PAYMENT",
+                "CLOSE",
+                "REOPEN",
+                "VOID",
+                "REINSTATE",
+                "ERASE"
+              ]
+            },
+            "snapshot": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "DISCLOSED"
+                    },
+                    "state": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "tag": {
+                          "const": "LIVE"
+                        },
+                        "disposition": {
+                          "enum": [
+                            "ACTIVE",
+                            "VOIDED"
+                          ]
+                        },
+                        "fields": {
+                          "$ref": "#/$defs/CaseFields"
+                        }
+                      },
+                      "required": [
+                        "tag",
+                        "disposition",
+                        "fields"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "state"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "WITHHELD"
+                    }
+                  },
+                  "required": [
+                    "tag"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "ERASED"
+                    }
+                  },
+                  "required": [
+                    "tag"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "operationId",
+            "position",
+            "recordedAt",
+            "recordedBy",
+            "scope",
+            "caseReference",
+            "revision",
+            "act",
+            "snapshot"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "position": {
+              "$ref": "#/$defs/Position"
+            },
+            "recordedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\\u002B00:00$",
+              "minLength": 33,
+              "maxLength": 33
+            },
+            "recordedBy": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "scope": {
+              "const": "AUTHORITY"
+            },
+            "targetActorId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "act": {
+              "enum": [
+                "PROVISION_OWNER",
+                "REGISTER_ACTOR",
+                "SET_GRANT",
+                "SET_ENABLED"
+              ]
+            }
+          },
+          "required": [
+            "operationId",
+            "position",
+            "recordedAt",
+            "recordedBy",
+            "scope",
+            "targetActorId",
+            "act"
+          ]
+        }
+      ]
+    },
+    "ChangeSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "act": {
+          "enum": [
+            "OPEN",
+            "AMEND_REGISTRATION",
+            "CORRECT_CASE",
+            "DECIDE",
+            "WITHDRAW_DECISION",
+            "RECORD_PAYMENT",
+            "CLEAR_PAYMENT",
+            "CLOSE",
+            "REOPEN",
+            "VOID",
+            "REINSTATE",
+            "ERASE"
+          ]
+        },
+        "recordedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\\u002B00:00$",
+          "minLength": 33,
+          "maxLength": 33
+        },
+        "recordedBy": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        }
+      },
+      "required": [
+        "operationId",
+        "position",
+        "revision",
+        "act",
+        "recordedAt",
+        "recordedBy"
+      ]
+    },
+    "HistoryEntry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tag": {
+              "const": "SUMMARY"
+            },
+            "change": {
+              "$ref": "#/$defs/ChangeSummary"
+            }
+          },
+          "required": [
+            "tag",
+            "change"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tag": {
+              "const": "FULL"
+            },
+            "receipt": {
+              "$ref": "#/$defs/CaseReceipt"
+            }
+          },
+          "required": [
+            "tag",
+            "receipt"
+          ]
+        }
+      ]
+    },
+    "Review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "before": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "state": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "tag": {
+                          "const": "LIVE"
+                        },
+                        "disposition": {
+                          "enum": [
+                            "ACTIVE",
+                            "VOIDED"
+                          ]
+                        },
+                        "fields": {
+                          "$ref": "#/$defs/CaseFields"
+                        }
+                      },
+                      "required": [
+                        "tag",
+                        "disposition",
+                        "fields"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "tag": {
+                          "const": "ERASED"
+                        }
+                      },
+                      "required": [
+                        "tag"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "caseReference",
+                "revision",
+                "state"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "after": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "caseReference": {
+              "type": "string",
+              "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "state": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "LIVE"
+                    },
+                    "disposition": {
+                      "enum": [
+                        "ACTIVE",
+                        "VOIDED"
+                      ]
+                    },
+                    "fields": {
+                      "$ref": "#/$defs/CaseFields"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "disposition",
+                    "fields"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "ERASED"
+                    }
+                  },
+                  "required": [
+                    "tag"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "caseReference",
+            "revision",
+            "state"
+          ]
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "field": {
+                "enum": [
+                  "incidentDate",
+                  "incidentNotificationDate",
+                  "incidentCountry",
+                  "claimantName",
+                  "insurerName",
+                  "claimedAmount",
+                  "claimedCurrency",
+                  "caseReference",
+                  "paymentDecisionDate",
+                  "payableAmount",
+                  "payableCurrency",
+                  "paymentDate",
+                  "status"
+                ]
+              },
+              "before": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "after": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "field",
+              "before",
+              "after"
+            ]
+          }
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "productVersion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "businessDate": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+              "minLength": 10,
+              "maxLength": 10
+            },
+            "timeZone": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "productVersion",
+            "businessDate",
+            "timeZone"
+          ]
+        }
+      },
+      "required": [
+        "before",
+        "after",
+        "changes",
+        "context"
+      ]
+    },
+    "Rejection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "diagnostic": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "INPUT_TEXT_REQUIRED",
+                    "INPUT_MALFORMED_UNICODE",
+                    "INPUT_SURROUNDING_WHITESPACE",
+                    "INPUT_CONTROL_CHARACTERS",
+                    "TEXT_FORMATTING_CHARACTER",
+                    "INPUT_CASE_REFERENCE_FORMAT",
+                    "INPUT_COUNTRY_FORMAT",
+                    "INPUT_CALENDAR_DATE_REQUIRED",
+                    "INPUT_DATE_ORDER",
+                    "INPUT_FUTURE_DATE",
+                    "INPUT_CURRENCY_FORMAT",
+                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
+                    "COMMAND_OPERATION_ID_REQUIRED",
+                    "COMMAND_EXPECTED_REVISION_RANGE",
+                    "STATE_STORED_REVISION_RANGE",
+                    "REVISION_EXHAUSTED",
+                    "STATE_CASE_REFERENCE_MISMATCH",
+                    "STATE_TRANSITION_MISMATCH",
+                    "INPUT_EXACT_FIELDS_REQUIRED",
+                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
+                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
+                    "CORRECTION_PAYMENT_CLEAR_REQUIRED",
+                    "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
+                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
+                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
+                    "CASE_NOT_FOUND",
+                    "CASE_ALREADY_EXISTS",
+                    "CASE_REVISION_CONFLICT",
+                    "CASE_CLOSED",
+                    "CASE_ALREADY_CLOSED",
+                    "CASE_ALREADY_OPENED",
+                    "CASE_AMENDMENT_REQUIRES_UNDECIDED",
+                    "CORRECTION_NO_CHANGES",
+                    "CORRECTION_EXISTING_VALUE_REQUIRED",
+                    "CASE_DECISION_REQUIRED",
+                    "CASE_PAYMENT_ALREADY_RECORDED",
+                    "CASE_PAYMENT_NOT_RECORDED",
+                    "CASE_DECISION_ALREADY_PAID",
+                    "CASE_ZERO_DECISION_CANNOT_BE_PAID",
+                    "QUERY_CURSOR_INVALID",
+                    "ACT_NOT_PERMITTED",
+                    "LEDGER_SEQUENCE_EXHAUSTED",
+                    "OPERATION_CONTENT_CONFLICT",
+                    "ACCESS_RESOURCE_UNAVAILABLE",
+                    "CASE_VOIDED",
+                    "CASE_ERASED",
+                    "ALREADY_VOIDED",
+                    "NOT_VOIDED",
+                    "LAST_OWNER",
+                    "ACTOR_ALREADY_REGISTERED",
+                    "ACTOR_UNKNOWN",
+                    "HUMAN_PRINCIPAL_REQUIRED"
+                  ]
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "INPUT_TEXT_TOO_SHORT"
+                  ]
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "minimumCharacters": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "minimumCharacters"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "INPUT_TEXT_TOO_LONG"
+                  ]
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "maximumCharacters": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "maximumCharacters"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "INPUT_DECIMAL_FORMAT"
+                  ]
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "maximumIntegerDigits": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "maximumFractionalDigits": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "maximumIntegerDigits",
+                    "maximumFractionalDigits"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "QUERY_PAGE_LIMIT_RANGE"
+                  ]
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "maximumPageSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "maximumPageSize"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            }
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field": {
+          "oneOf": [
+            {
+              "enum": [
+                "incidentDate",
+                "incidentNotificationDate",
+                "incidentCountry",
+                "claimantName",
+                "insurerName",
+                "claimedAmount",
+                "claimedCurrency",
+                "caseReference",
+                "paymentDecisionDate",
+                "payableAmount",
+                "payableCurrency",
+                "paymentDate",
+                "status",
+                "operationId",
+                "expectedRevision",
+                "revision",
+                "act",
+                "fields",
+                "registration",
+                "decision",
+                "payment",
+                "reason",
+                "limit",
+                "cursor"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actualRevision": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommendedAction": {
+          "enum": [
+            "CORRECT_INPUT",
+            "READ_CURRENT",
+            "STOP_AND_INVESTIGATE",
+            "NONE_REQUIRED"
+          ]
+        }
+      },
+      "required": [
+        "diagnostic",
+        "message",
+        "field",
+        "actualRevision",
+        "recommendedAction"
+      ]
+    },
+    "Fault": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_STORE_UNAVAILABLE"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "RETRY_SAFE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_STORE_INTEGRITY_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_SCHEMA_MISMATCH"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_OPERATION_CONTENT_CONFLICT"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        }
+      ]
+    },
+    "RuntimeContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "productVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "businessDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "timeZone": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "productVersion",
+        "businessDate",
+        "timeZone"
+      ]
+    },
+    "ActorContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "productVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "businessDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "timeZone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "MANAGE_AUTHORITY",
+              "READ_AUTHORITY",
+              "READ_CASE",
+              "READ_HISTORY",
+              "REGISTER",
+              "READ_HISTORY_FULL",
+              "DECIDE",
+              "CLOSE",
+              "RECORD_PAYMENT",
+              "STEWARD"
+            ]
+          }
+        }
+      },
+      "required": [
+        "productVersion",
+        "businessDate",
+        "timeZone",
+        "capabilities"
+      ]
+    },
+    "ActorReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "actorId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "principal": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "HUMAN",
+                "SERVICE"
+              ]
+            },
+            "issuer": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://",
+              "minLength": 1
+            },
+            "subject": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "issuer",
+            "subject"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "role": {
+                "enum": [
+                  "OWNER",
+                  "CASE_READER",
+                  "CASE_REGISTRAR",
+                  "CASE_HANDLER",
+                  "PAYMENT_RECORDER",
+                  "DATA_STEWARD",
+                  "AUDITOR"
+                ]
+              },
+              "scope": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "INSTALLATION"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "CASE"
+                      },
+                      "caseReference": {
+                        "type": "string",
+                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "caseReference"
+                    ]
+                  }
+                ]
+              }
+            },
+            "required": [
+              "role",
+              "scope"
+            ]
+          }
+        }
+      },
+      "required": [
+        "actorId",
+        "principal",
+        "enabled",
+        "grants"
+      ]
+    }
+  },
+  "$ref": "#/$defs/root"
+}

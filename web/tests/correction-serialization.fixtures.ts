@@ -1,0 +1,111 @@
+// Literal wire oracles are independent of draft encoding and descriptor helpers.
+export const correctionSerializations = [
+  [
+    "KEEP",
+    "KEEP",
+    "KEEP",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"KEEP"},"decision":{"mode":"KEEP"},"payment":{"mode":"KEEP"}}}}',
+  ],
+  [
+    "KEEP",
+    "KEEP",
+    "REPLACE",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"KEEP"},"decision":{"mode":"KEEP"},"payment":{"mode":"REPLACE","values":{"paymentDate":"2026-09-04"}}}}}',
+  ],
+  [
+    "KEEP",
+    "KEEP",
+    "CLEAR",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"KEEP"},"decision":{"mode":"KEEP"},"payment":{"mode":"CLEAR"}}}}',
+  ],
+  [
+    "KEEP",
+    "REPLACE",
+    "KEEP",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"KEEP"},"decision":{"mode":"REPLACE","values":{"paymentDecisionDate":"2026-09-03","payableAmount":"2.0000","payableCurrency":"EUR"}},"payment":{"mode":"KEEP"}}}}',
+  ],
+  [
+    "KEEP",
+    "REPLACE",
+    "REPLACE",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"KEEP"},"decision":{"mode":"REPLACE","values":{"paymentDecisionDate":"2026-09-03","payableAmount":"2.0000","payableCurrency":"EUR"}},"payment":{"mode":"REPLACE","values":{"paymentDate":"2026-09-04"}}}}}',
+  ],
+  [
+    "KEEP",
+    "REPLACE",
+    "CLEAR",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"KEEP"},"decision":{"mode":"REPLACE","values":{"paymentDecisionDate":"2026-09-03","payableAmount":"2.0000","payableCurrency":"EUR"}},"payment":{"mode":"CLEAR"}}}}',
+  ],
+  [
+    "KEEP",
+    "CLEAR",
+    "KEEP",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"KEEP"},"decision":{"mode":"CLEAR"},"payment":{"mode":"KEEP"}}}}',
+  ],
+  [
+    "KEEP",
+    "CLEAR",
+    "REPLACE",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"KEEP"},"decision":{"mode":"CLEAR"},"payment":{"mode":"REPLACE","values":{"paymentDate":"2026-09-04"}}}}}',
+  ],
+  [
+    "KEEP",
+    "CLEAR",
+    "CLEAR",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"KEEP"},"decision":{"mode":"CLEAR"},"payment":{"mode":"CLEAR"}}}}',
+  ],
+  [
+    "REPLACE",
+    "KEEP",
+    "KEEP",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"LV","claimantName":"Synthetic replacement","insurerName":"Synthetic insurer","claimedAmount":"1.0000","claimedCurrency":"EUR"}},"decision":{"mode":"KEEP"},"payment":{"mode":"KEEP"}}}}',
+  ],
+  [
+    "REPLACE",
+    "KEEP",
+    "REPLACE",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"LV","claimantName":"Synthetic replacement","insurerName":"Synthetic insurer","claimedAmount":"1.0000","claimedCurrency":"EUR"}},"decision":{"mode":"KEEP"},"payment":{"mode":"REPLACE","values":{"paymentDate":"2026-09-04"}}}}}',
+  ],
+  [
+    "REPLACE",
+    "KEEP",
+    "CLEAR",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"LV","claimantName":"Synthetic replacement","insurerName":"Synthetic insurer","claimedAmount":"1.0000","claimedCurrency":"EUR"}},"decision":{"mode":"KEEP"},"payment":{"mode":"CLEAR"}}}}',
+  ],
+  [
+    "REPLACE",
+    "REPLACE",
+    "KEEP",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"LV","claimantName":"Synthetic replacement","insurerName":"Synthetic insurer","claimedAmount":"1.0000","claimedCurrency":"EUR"}},"decision":{"mode":"REPLACE","values":{"paymentDecisionDate":"2026-09-03","payableAmount":"2.0000","payableCurrency":"EUR"}},"payment":{"mode":"KEEP"}}}}',
+  ],
+  [
+    "REPLACE",
+    "REPLACE",
+    "REPLACE",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"LV","claimantName":"Synthetic replacement","insurerName":"Synthetic insurer","claimedAmount":"1.0000","claimedCurrency":"EUR"}},"decision":{"mode":"REPLACE","values":{"paymentDecisionDate":"2026-09-03","payableAmount":"2.0000","payableCurrency":"EUR"}},"payment":{"mode":"REPLACE","values":{"paymentDate":"2026-09-04"}}}}}',
+  ],
+  [
+    "REPLACE",
+    "REPLACE",
+    "CLEAR",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"LV","claimantName":"Synthetic replacement","insurerName":"Synthetic insurer","claimedAmount":"1.0000","claimedCurrency":"EUR"}},"decision":{"mode":"REPLACE","values":{"paymentDecisionDate":"2026-09-03","payableAmount":"2.0000","payableCurrency":"EUR"}},"payment":{"mode":"CLEAR"}}}}',
+  ],
+  [
+    "REPLACE",
+    "CLEAR",
+    "KEEP",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"LV","claimantName":"Synthetic replacement","insurerName":"Synthetic insurer","claimedAmount":"1.0000","claimedCurrency":"EUR"}},"decision":{"mode":"CLEAR"},"payment":{"mode":"KEEP"}}}}',
+  ],
+  [
+    "REPLACE",
+    "CLEAR",
+    "REPLACE",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"LV","claimantName":"Synthetic replacement","insurerName":"Synthetic insurer","claimedAmount":"1.0000","claimedCurrency":"EUR"}},"decision":{"mode":"CLEAR"},"payment":{"mode":"REPLACE","values":{"paymentDate":"2026-09-04"}}}}}',
+  ],
+  [
+    "REPLACE",
+    "CLEAR",
+    "CLEAR",
+    '{"operationId":"00000000-0000-4000-8000-000000000001","caseReference":"CASE-SERIALIZATION","expectedRevision":4,"act":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"LV","claimantName":"Synthetic replacement","insurerName":"Synthetic insurer","claimedAmount":"1.0000","claimedCurrency":"EUR"}},"decision":{"mode":"CLEAR"},"payment":{"mode":"CLEAR"}}}}',
+  ],
+] as const;

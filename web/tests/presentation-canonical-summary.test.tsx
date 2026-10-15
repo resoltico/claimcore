@@ -20,22 +20,20 @@ it.each(["en", "lv", "ar"])(
     );
     render(
       <CaseFieldsView
-        caseView={{
-          fields: {
-            ...fields,
-            claimedAmount: "999999999999999999.0100",
-            claimantName: "A\u0308 العربية\u200D",
-          },
-          revision: "9223372036854775806",
+        values={{
+          ...fields,
+          claimedAmount: "999999999999999999.0100",
+          claimantName: "A\u0308 العربية\u200D",
         }}
-        fields={definition.definition.fields}
+        revision={9007199254740991}
+        fields={definition.descriptors.fields}
         context="synthetic"
       />,
     );
     await user.click(screen.getAllByRole("button")[0]!);
     const value: unknown = copy.mock.calls[0]?.[0];
     expect(typeof value).toBe("string");
-    expect(value).toContain("9223372036854775806");
+    expect(value).toContain("9007199254740991");
     expect(value).toContain("999999999999999999.0100");
     expect(value).toContain("2026-09-01");
     expect(value).toContain("A\u0308 العربية\u200D");

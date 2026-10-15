@@ -43,11 +43,17 @@ const correctionTargetGroup = (name: string): string | null => {
   return Object.hasOwn(targets, name) ? targets[name]! : null;
 };
 const hint = (preferences: Preferences, field: FieldDescriptor): string => {
+  if (field.name === "caseReference") {
+    return translate(preferences, "ui.referenceHint");
+  }
+  if (field.name === "incidentCountry") {
+    return translate(preferences, "ui.countryHint");
+  }
   const s = field.scalar;
   switch (s.kind) {
     case "TEXT":
       return translate(preferences, "ui.textHint", {
-        maximum: exactInteger(String(s.maximumCharacters), preferences.displayLocale),
+        maximum: exactInteger(String(s.policy?.maximumCharacters ?? ""), preferences.displayLocale),
       });
     case "CALENDAR_DATE":
       return translate(preferences, "ui.dateHint");

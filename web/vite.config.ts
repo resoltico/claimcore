@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { availableParallelism } from "node:os";
 import react from "@vitejs/plugin-react";
 import type { UserConfig } from "vite";
@@ -11,6 +12,7 @@ export default {
   plugins: [react()],
   resolve: {
     alias: [
+      { find: "@contracts", replacement: fileURLToPath(new URL("../contracts", import.meta.url)) },
       {
         find: /^@formatjs\/icu-messageformat-parser$/u,
         replacement: "@formatjs/icu-messageformat-parser/no-parser.js",

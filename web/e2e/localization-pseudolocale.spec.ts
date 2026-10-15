@@ -19,7 +19,7 @@ const startPseudo = async (page: Page) => {
     caseReference: `PSEUDO-${randomUUID()}`,
     incidentDate: "2026-09-01",
     incidentNotificationDate: "2026-09-02",
-    incidentCountry: "Latvia",
+    incidentCountry: "LV",
     claimantName: "A\u0308 العربية\u200D",
     insurerName: "Synthetic insurer",
     claimedAmount: "1.0000",
@@ -28,7 +28,7 @@ const startPseudo = async (page: Page) => {
   for (const [name, value] of Object.entries(values)) {
     await page.locator(`input[name="${name}"]`).fill(value);
   }
-  const pending = await pauseJsonReply(page, "command.preview");
+  const pending = await pauseJsonReply(page, "case.preview");
   await page.locator('.operation-editor button[type="submit"]').click();
   const captured = await pending.ready;
   const identity = reviewFrom(captured.reply, captured.bytes);

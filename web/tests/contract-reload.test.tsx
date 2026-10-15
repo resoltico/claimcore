@@ -18,5 +18,9 @@ it("contract mismatch offers explicit reload and never automatically redispatche
   );
   render(<CaseList token="csrf" onSelect={vi.fn()} onOpen={vi.fn()} />);
   expect(await screen.findByRole("button", { name: "Reload page" })).toBeVisible();
-  expect(fetch).toHaveBeenCalledOnce();
+  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual([
+    "/api/case.list",
+    "/api/context",
+  ]);
 });

@@ -50,10 +50,19 @@ module Corpus =
         |> List.concat
 
     let private referenceCases () =
-        let accepted =
-            [ "🙂"; String.replicate 80 "🙂"; "a\u200db"; "a\u202eb"; "\ufeffa"; "e\u0301" ]
+        let accepted = [ "Demo-001"; String.replicate 80 "A"; "!~<>\"" ]
 
-        let refused = [ String.replicate 81 "🙂"; "\u0085a"; "a\u3000"; "a\u0000b"; "" ]
+        let refused =
+            [
+                "🙂"
+                "a\u200db"
+                "a b"
+                String.replicate 81 "🙂"
+                "\u0085a"
+                "a\u3000"
+                "a\u0000b"
+                ""
+            ]
 
         [ true, accepted; false, refused ]
         |> List.collect (fun (valid, values) ->

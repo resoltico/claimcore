@@ -1,15 +1,17 @@
 module ClaimCore.Tests.AvailabilityTests
 
-open System
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
+let private availableActs record =
+    Case.eligibleActs record |> List.map CaseActKinds.token
+
 let private candidates =
     [
-        Command.Open registration
-        Command.AmendRegistration registration
-        Command.CorrectCase
+        BusinessCommand.Open registration
+        BusinessCommand.AmendRegistration registration
+        BusinessCommand.CorrectCase
             {
                 Registration =
                     RegistrationCorrection.Replace
@@ -19,19 +21,19 @@ let private candidates =
                 Decision = DecisionCorrection.Keep
                 Payment = PaymentCorrection.Keep
             }
-        Command.Decide decision
-        Command.WithdrawDecision
-        Command.RecordPayment "2026-08-20"
-        Command.ClearPayment
-        Command.Close
-        Command.Reopen
+        BusinessCommand.Decide decision
+        BusinessCommand.WithdrawDecision
+        BusinessCommand.RecordPayment "2026-08-20"
+        BusinessCommand.ClearPayment
+        BusinessCommand.Close
+        BusinessCommand.Reopen
     ]
 
 let private stateActions =
     testCase "[CC-DOM-002] each state advertises and enforces the specified command set" (fun () ->
         let zero =
             opened ()
-            |> apply (Command.Decide { decision with PayableAmount = "0" })
+            |> apply (BusinessCommand.Decide { decision with PayableAmount = "0" })
             |> accepted
 
         let cases =
@@ -44,11 +46,11 @@ let private stateActions =
             ]
 
         for (state, expected) in cases do
-            let actions = Claim.availableCommands state |> Set.ofList
+            let actions = availableActs state |> Set.ofList
 
             Expect.equal
                 actions
-                (Set.ofList expected)
+                (Set.ofList (expected @ [ "VOID"; "ERASE" ]))
                 "Advertised actions match the domain contract"
 
             candidates
@@ -57,14 +59,14 @@ let private stateActions =
 
                 Expect.equal
                     (Result.isOk result)
-                    (Set.contains (Commands.name command) actions)
+                    (Set.contains (BusinessCommands.name command) actions)
                     "No separately invented UI state machine")
 
-            let closed = apply Command.Close state |> accepted
+            let closed = apply BusinessCommand.Close state |> accepted
 
             Expect.equal
-                (Claim.availableCommands closed)
-                [ "CORRECT_CASE"; "REOPEN" ]
+                (availableActs closed)
+                [ "CORRECT_CASE"; "REOPEN"; "VOID"; "ERASE" ]
                 "Closed cases can correct facts or reopen")
 
 let private edgeActions =
@@ -72,24 +74,24 @@ let private edgeActions =
         "availability edge conditions"
         [
             testCase "no action is advertised at the exhausted revision" (fun () ->
-                let state = Claim.view (opened ())
+                let state = Case.snapshot (opened ())
 
                 let exhausted =
-                    Claim.restore
+                    Case.ofAccepted
                         { state with
-                            Version = Int64.MaxValue - 1L
+                            Revision = Revision.Maximum
                         }
                     |> accepted
 
                 Expect.isEmpty
-                    (Claim.availableCommands exhausted)
+                    (availableActs exhausted)
                     "No action can produce an unrepresentable next revision")
             testCase "availability does not substitute for payload validation" (fun () ->
                 let state = opened ()
-                Expect.contains (Claim.availableCommands state) "DECIDE" "State eligibility"
+                Expect.contains (availableActs state) "DECIDE" "State eligibility"
 
                 let invalid =
-                    Command.Decide
+                    BusinessCommand.Decide
                         { decision with
                             PaymentDecisionDate = "2027-01-01"
                         }

@@ -5,10 +5,9 @@ import { useOperationEditor } from "../src/hooks/operation/useOperationEditor";
 import { definition, fields, digest, response, runtime } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
-  state: "LIVE",
-  disposition: "ACTIVE",
-  case: { fields, revision: "1" },
-  availableCommands: ["CLOSE"],
+  caseReference: fields.caseReference,
+  revision: 1,
+  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
 };
 
 it("coalesces duplicate digest activation while retention is pending", async () => {
@@ -37,15 +36,9 @@ it("coalesces duplicate digest activation while retention is pending", async () 
   expect(fetch).toHaveBeenCalledOnce();
   await act(async () => {
     finish?.(
-      response("command.preview", "REVIEWED", {
+      response("case.preview", "REVIEWED", {
         requestSha256: digest,
-        review: {
-          before: current.case,
-          proposed: current.case,
-          changes: [],
-          context: runtime,
-          advisory: true,
-        },
+        review: { before: current, after: current, changes: [], context: runtime },
       }),
     );
     await first;

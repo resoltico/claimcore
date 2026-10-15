@@ -136,7 +136,7 @@ let private openRuntime (configuration: WebConfiguration) (ct: CancellationToken
 
         match opened with
         | Ok value -> return value
-        | Error ClaimCore.Hosting.RuntimeOpenFault.Cancelled when ct.IsCancellationRequested ->
+        | Error ClaimCore.Application.RuntimeOpenFault.Cancelled when ct.IsCancellationRequested ->
             return raise (OperationCanceledException(ct))
         | Error reason -> return WebStartupDiagnostics.refuse (WebStartupProblem.RuntimeOpen reason)
     }

@@ -3,9 +3,9 @@ import { Button } from "react-aria-components/Button";
 import { useEffect, useRef } from "react";
 import type { Notice } from "../../api/notices";
 import { NoticeView } from "../../presentation/Message";
-import type { PublicDefinition, Receipt } from "../../api/service";
+import type { ProductMetadata, CaseReceipt } from "../../api/service";
 import { AccessibleModal } from "../../components/AccessibleModal";
-import { CaseFieldsView } from "../../components/CaseFieldsView";
+import { ReceiptFields } from "../../components/ReceiptFields";
 import type { OperationEditorModel } from "./editorTypes";
 
 type CommandChangeProps = { model: OperationEditorModel; onClose: () => void };
@@ -47,10 +47,10 @@ export const CommandChangeDialog = ({ model, onClose }: CommandChangeProps) => {
 };
 
 type AcceptedOperationProps = {
-  definition: PublicDefinition;
-  receipt: Receipt;
+  definition: ProductMetadata;
+  receipt: CaseReceipt;
   message: Notice | null;
-  onCommitted: (receipt: Receipt) => void;
+  onCommitted: (receipt: CaseReceipt) => void;
 };
 
 export const AcceptedOperation = ({
@@ -75,15 +75,11 @@ export const AcceptedOperation = ({
         {p.text("ui.acceptedOperation")}
       </h2>
       <p>{p.text("ui.operationAccepted", { operationId: receipt.operationId })}</p>
-      {receipt.snapshot === null ? (
-        <p>{p.text("ui.lifecycleErased")}</p>
-      ) : (
-        <CaseFieldsView
-          caseView={receipt.snapshot}
-          fields={definition.definition.fields}
-          context={p.text("ui.acceptedContext", { operationId: receipt.operationId })}
-        />
-      )}
+      <ReceiptFields
+        receipt={receipt}
+        fields={definition.descriptors.fields}
+        context={p.text("ui.acceptedContext", { operationId: receipt.operationId })}
+      />
       <Button
         onPress={() => {
           onCommitted(receipt);

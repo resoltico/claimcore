@@ -1,39 +1,53 @@
 namespace ClaimCore.RecordFormat
 
-open System.Text.Json
 open ClaimCore.Domain
 
 module CaseRecord =
-    let private optionalText (writer: Utf8JsonWriter) (name: string) (value: string option) =
-        match value with
-        | Some text -> writer.WriteString(name, text)
-        | None -> writer.WriteNull(name)
+    let private optionalText =
+        function
+        | Some text -> CanonicalValue.String text
+        | None -> CanonicalValue.Null
 
-    /// This object contains exactly the thirteen requested entries; no workflow/audit metadata.
-    let writeFields (writer: Utf8JsonWriter) (fields: CaseFields) =
-        writer.WriteStartObject()
-        writer.WriteString("incidentDate", fields.IncidentDate)
-        writer.WriteString("incidentNotificationDate", fields.IncidentNotificationDate)
-        writer.WriteString("incidentCountry", fields.IncidentCountry)
-        writer.WriteString("claimantName", fields.ClaimantName)
-        writer.WriteString("insurerName", fields.InsurerName)
-        writer.WriteString("claimedAmount", fields.ClaimedAmount)
-        writer.WriteString("claimedCurrency", fields.ClaimedCurrency)
-        writer.WriteString("caseReference", fields.CaseReference)
-        optionalText writer "paymentDecisionDate" fields.PaymentDecisionDate
-        optionalText writer "payableAmount" fields.PayableAmount
-        optionalText writer "payableCurrency" fields.PayableCurrency
-        optionalText writer "paymentDate" fields.PaymentDate
-        writer.WriteString("status", CaseStatuses.token fields.Status)
-        writer.WriteEndObject()
+    /// Exactly the thirteen business fields; technical state remains outside the object.
+    let fieldsValue (fields: CaseFields) =
+        CanonicalValue.Object
+            [
+                "incidentDate", CanonicalValue.String fields.IncidentDate
+                "incidentNotificationDate", CanonicalValue.String fields.IncidentNotificationDate
+                "incidentCountry", CanonicalValue.String fields.IncidentCountry
+                "claimantName", CanonicalValue.String fields.ClaimantName
+                "insurerName", CanonicalValue.String fields.InsurerName
+                "claimedAmount", CanonicalValue.String fields.ClaimedAmount
+                "claimedCurrency", CanonicalValue.String fields.ClaimedCurrency
+                "caseReference", CanonicalValue.String fields.CaseReference
+                "paymentDecisionDate", optionalText fields.PaymentDecisionDate
+                "payableAmount", optionalText fields.PayableAmount
+                "payableCurrency", optionalText fields.PayableCurrency
+                "paymentDate", optionalText fields.PaymentDate
+                "status", CanonicalValue.String(CaseStatuses.token fields.Status)
+            ]
 
-    let encodeSnapshot (snapshot: CaseView) =
-        Json.encode (fun writer ->
-            writer.WriteStartObject()
-            writer.WritePropertyName("fields")
-            writeFields writer snapshot.Fields
-            writer.WriteNumber("version", snapshot.Version)
-            writer.WriteEndObject())
+    let encodeSnapshot (snapshot: CaseSnapshot) =
+        match Case.ofAccepted snapshot with
+        | Error _ -> invalidArg (nameof snapshot) "Invalid accepted case format."
+        | Ok _ ->
+            match snapshot.View with
+            | CaseView.Erased -> Array.empty
+            | CaseView.Live(fields, disposition) ->
+                CanonicalValue.Object
+                    [
+                        "format", CanonicalValue.Integer(int64 RecordVersions.Snapshot)
+                        "revision", CanonicalValue.Integer snapshot.Revision
+                        "disposition",
+                        CanonicalValue.String(
+                            if disposition = Disposition.Active then
+                                "ACTIVE"
+                            else
+                                "VOIDED"
+                        )
+                        "fields", fieldsValue fields
+                    ]
+                |> CanonicalJson.encode
 
     let private readFields root : CaseFields =
         let path = "$.fields"
@@ -78,12 +92,26 @@ module CaseRecord =
             Status = status
         }
 
-    /// Strict snapshot-format-2 decoding of the thirteen fields and their revision.
-    let decodeSnapshot bytes =
-        Json.parse bytes (fun root ->
-            Json.properties "$" [ "fields"; "version" ] root
+    let private readFormat3 root =
+        Json.properties "$" [ "format"; "fields"; "revision"; "disposition" ] root
+        let fields = Json.required "$" "fields" root |> readFields
 
+        let disposition =
+            match Json.text "$" "disposition" root with
+            | "ACTIVE" -> Disposition.Active
+            | "VOIDED" -> Disposition.Voided
+            | _ -> Json.reject "$.disposition" "Unknown persisted disposition."
+
+        let snapshot =
             {
-                Fields = Json.required "$" "fields" root |> readFields
-                Version = Json.integer "$" "version" root
-            })
+                Reference = fields.CaseReference
+                Revision = Json.integer "$" "revision" root
+                View = CaseView.Live(fields, disposition)
+            }
+
+        match Case.ofAccepted snapshot with
+        | Ok _ -> snapshot
+        | Error _ -> Json.reject "$.fields" "Invalid accepted case format."
+
+    let decodeSnapshot bytes =
+        Json.bounded 262144 bytes (Json.dispatch [ 3L, readFormat3 ])

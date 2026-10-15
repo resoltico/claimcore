@@ -7,7 +7,7 @@ import { generatedWebValue } from "./contract-corpus.fixtures";
 
 const historyVariants = () => {
   const source = generatedWebValue("case.history").outcome;
-  if (source.tag !== "SUCCEEDED" || source.data.tag !== "FOUND") {
+  if (source.tag !== "SUCCEEDED") {
     throw new Error("Synthetic history is missing.");
   }
   const summary = source.data.entries.find((entry) => entry.tag === "SUMMARY");
@@ -30,7 +30,6 @@ it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY a
     }
     return Promise.resolve(
       response("case.history", "SUCCEEDED", {
-        tag: "FOUND",
         entries: [input.detail === "FULL" ? full : summary],
         nextCursor: null,
       }),
@@ -39,7 +38,7 @@ it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY a
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(
-    <CaseHistory token="token" caseReference="CASE-1" fields={definition.definition.fields} />,
+    <CaseHistory token="token" caseReference="CASE-1" fields={definition.descriptors.fields} />,
   );
   await waitFor(() => {
     expect(view.container.querySelectorAll(".history-list li")).toHaveLength(1);

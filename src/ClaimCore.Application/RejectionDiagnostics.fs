@@ -41,6 +41,9 @@ module RejectionDiagnostics =
                 RejectionDiagnosticId.TextTooLong
                 (DiagnosticParameters.MaximumCharacters maximum)
         | TextViolation.ControlCharacters -> simple RejectionDiagnosticId.ControlCharacters
+        | TextViolation.FormattingCharacter -> simple RejectionDiagnosticId.FormattingCharacter
+        | TextViolation.ReferenceFormat -> simple RejectionDiagnosticId.ReferenceFormat
+        | TextViolation.CountryFormat -> simple RejectionDiagnosticId.CountryFormat
 
     let private date =
         function
@@ -59,18 +62,16 @@ module RejectionDiagnostics =
 
     let private command =
         function
-        | CommandViolation.EmptyOperationId -> simple RejectionDiagnosticId.EmptyOperationId
-        | CommandViolation.ExpectedVersionOutOfRange ->
-            simple RejectionDiagnosticId.ExpectedVersionOutOfRange
-        | CommandViolation.StoredVersionOutOfRange ->
-            simple RejectionDiagnosticId.StoredVersionOutOfRange
-        | CommandViolation.RevisionExhausted -> simple RejectionDiagnosticId.RevisionExhausted
-        | CommandViolation.CaseReferenceMismatch ->
-            simple RejectionDiagnosticId.CaseReferenceMismatch
-        | CommandViolation.StateTransitionMismatch ->
+        | ActViolation.EmptyOperationId -> simple RejectionDiagnosticId.EmptyOperationId
+        | ActViolation.ExpectedRevisionOutOfRange ->
+            simple RejectionDiagnosticId.ExpectedRevisionOutOfRange
+        | ActViolation.StoredRevisionOutOfRange ->
+            simple RejectionDiagnosticId.StoredRevisionOutOfRange
+        | ActViolation.CaseReferenceMismatch -> simple RejectionDiagnosticId.CaseReferenceMismatch
+        | ActViolation.StateTransitionMismatch ->
             simple RejectionDiagnosticId.StateTransitionMismatch
-        | CommandViolation.ExactInputsRequired -> simple RejectionDiagnosticId.ExactInputsRequired
-        | CommandViolation.GroupedCorrectionRequired ->
+        | ActViolation.ExactInputsRequired -> simple RejectionDiagnosticId.ExactInputsRequired
+        | ActViolation.GroupedCorrectionRequired ->
             simple RejectionDiagnosticId.GroupedCorrectionRequired
 
     let private correction =
@@ -93,48 +94,55 @@ module RejectionDiagnostics =
         | InputViolation.Text value -> text value
         | InputViolation.Date value -> date value
         | InputViolation.Amount value -> amount value
-        | InputViolation.Command value -> command value
+        | InputViolation.Act value -> command value
         | InputViolation.Correction value -> correction value
 
     let private progress =
         function
-        | DomainError.AmendmentRequiresUndecided ->
+        | CaseRefusal.AmendmentRequiresUndecided ->
             simple RejectionDiagnosticId.AmendmentRequiresUndecided
-        | DomainError.CorrectionNoChanges -> simple RejectionDiagnosticId.CorrectionNoChanges
-        | DomainError.CorrectionRequiresExistingValue ->
+        | CaseRefusal.CorrectionNoChanges -> simple RejectionDiagnosticId.CorrectionNoChanges
+        | CaseRefusal.CorrectionRequiresExistingValue ->
             simple RejectionDiagnosticId.CorrectionRequiresExistingValue
-        | DomainError.DecisionRequired -> simple RejectionDiagnosticId.DecisionRequired
-        | DomainError.PaymentAlreadyRecorded -> simple RejectionDiagnosticId.PaymentAlreadyRecorded
-        | DomainError.PaymentNotRecorded -> simple RejectionDiagnosticId.PaymentNotRecorded
-        | DomainError.DecisionAlreadyPaid -> simple RejectionDiagnosticId.DecisionAlreadyPaid
-        | DomainError.ZeroDecisionCannotBePaid ->
+        | CaseRefusal.DecisionRequired -> simple RejectionDiagnosticId.DecisionRequired
+        | CaseRefusal.PaymentAlreadyRecorded -> simple RejectionDiagnosticId.PaymentAlreadyRecorded
+        | CaseRefusal.PaymentNotRecorded -> simple RejectionDiagnosticId.PaymentNotRecorded
+        | CaseRefusal.DecisionAlreadyPaid -> simple RejectionDiagnosticId.DecisionAlreadyPaid
+        | CaseRefusal.ZeroDecisionCannotBePaid ->
             simple RejectionDiagnosticId.ZeroDecisionCannotBePaid
         | _ -> invalidArg "error" "Expected a progress refusal."
 
+    let private lifecycle =
+        function
+        | CaseRefusal.CaseVoided -> simple RejectionDiagnosticId.CaseVoided
+        | CaseRefusal.CaseErased -> simple RejectionDiagnosticId.CaseErased
+        | CaseRefusal.AlreadyVoided -> simple RejectionDiagnosticId.AlreadyVoided
+        | CaseRefusal.NotVoided -> simple RejectionDiagnosticId.NotVoided
+        | CaseRefusal.RevisionExhausted -> simple RejectionDiagnosticId.RevisionExhausted
+        | value -> progress value
+
     let private domain =
         function
-        | DomainError.InvalidInput(_, value) -> input value
-        | DomainError.NotFound -> simple RejectionDiagnosticId.CaseNotFound
-        | DomainError.AlreadyExists -> simple RejectionDiagnosticId.CaseAlreadyExists
-        | DomainError.VersionConflict _ -> simple RejectionDiagnosticId.VersionConflict
-        | DomainError.ClosedCase -> simple RejectionDiagnosticId.CaseClosed
-        | DomainError.AlreadyClosed -> simple RejectionDiagnosticId.AlreadyClosed
-        | DomainError.AlreadyOpened -> simple RejectionDiagnosticId.AlreadyOpened
-        | value -> progress value
+        | CaseRefusal.InvalidInput(_, value) -> input value
+        | CaseRefusal.NotFound -> simple RejectionDiagnosticId.CaseNotFound
+        | CaseRefusal.AlreadyExists -> simple RejectionDiagnosticId.CaseAlreadyExists
+        | CaseRefusal.RevisionConflict _ -> simple RejectionDiagnosticId.RevisionConflict
+        | CaseRefusal.ClosedCase -> simple RejectionDiagnosticId.CaseClosed
+        | CaseRefusal.AlreadyClosed -> simple RejectionDiagnosticId.AlreadyClosed
+        | CaseRefusal.AlreadyOpened -> simple RejectionDiagnosticId.AlreadyOpened
+        | value -> lifecycle value
 
     let describe =
         function
-        | Rejection.Domain value -> domain value
+        | Rejection.Case value -> domain value
         | Rejection.PageLimitOutOfRange maximum ->
             create
                 RejectionDiagnosticId.PageLimitOutOfRange
                 (DiagnosticParameters.MaximumPageSize maximum)
-        | Rejection.InvalidCaseListCursor -> simple RejectionDiagnosticId.InvalidCaseListCursor
-        | Rejection.InvalidHistoryCursor -> simple RejectionDiagnosticId.InvalidHistoryCursor
         | reason ->
             Rejections.simplePolicies
-            |> List.find (fun (value, _, _) -> value = reason)
-            |> fun (_, _, identifier) -> simple identifier
+            |> List.find (fun (value, _) -> value = reason)
+            |> fun (_, identifier) -> simple identifier
 
     let identifier (diagnostic: RejectionDiagnostic) = diagnostic.Identifier
     let parameters (diagnostic: RejectionDiagnostic) = diagnostic.Parameters

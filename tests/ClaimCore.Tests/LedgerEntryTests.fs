@@ -18,29 +18,26 @@ let private text (element: JsonElement) (name: string) =
     |> Option.defaultWith (fun () -> failtest "Missing vector text")
 
 let private scope (vector: JsonElement) =
-    if text vector "kind" = "AUTHORITY" then
+    if text vector "scope" = "AUTHORITY" then
         LedgerScope.Authority
+            {
+                TargetActorId = Guid.Parse(text vector "subjectId")
+                Act = RecordedAuthorityKind.SetGrant
+            }
     else
-        let act =
-            match text vector "commandKind" with
-            | "OPEN" -> LedgerAct.Command CommandKind.Open
-            | "ERASE" -> LedgerAct.Stewardship StewardshipKind.Erase
-            | _ -> failtest "Unexpected vector act"
-
         LedgerScope.Case
             {
-                CaseId = Guid.Parse(text vector "caseId")
+                CaseId = Guid.Parse(text vector "subjectId")
                 Revision = vector.GetProperty("caseRevision").GetInt64()
-                Act = act
+                Act = CaseActKind.Open
                 BusinessDate =
                     DateOnly.Parse(text vector "businessDate", CultureInfo.InvariantCulture)
-                RuleRevision = vector.GetProperty("ruleRevision").GetUInt16()
             }
 
 let private metadata vector : LedgerMetadata =
     {
         InstallationId = Guid.Parse(text vector "installationId")
-        Sequence = vector.GetProperty("sequence").GetUInt64()
+        Sequence = vector.GetProperty("sequence").GetInt64()
         PreviousHash = Convert.FromHexString(text vector "previousHash")
         OperationId = Guid.Parse(text vector "operationId")
         ActorId = Guid.Parse(text vector "actorId")
@@ -49,26 +46,53 @@ let private metadata vector : LedgerMetadata =
         PayloadCommitment = Convert.FromHexString(text vector "payloadCommitment")
     }
 
+let private caseMetadata (entry: LedgerMetadata) =
+    match entry.Scope with
+    | LedgerScope.Case value -> value
+    | _ -> failtest "Case seed required"
+
+// These independent encoding vectors are not provisioned authority histories.
 let private withVectors action =
     use document =
         JsonDocument.Parse(
             File.ReadAllBytes(
-                Path.Combine(RepositoryRoot.find (), "tests/fixtures/ledger-entry-vectors.json")
+                Path.Combine(RepositoryRoot.find (), "tests/fixtures/record-format-vectors.json")
             )
         )
 
-    action (document.RootElement.GetProperty("vectors").EnumerateArray() |> Seq.toList)
+    action (
+        document.RootElement.GetProperty("ledgerEntries").GetProperty("vectors").EnumerateArray()
+        |> Seq.toList
+    )
+
+let private expectedPayload vector =
+    let path =
+        Path.Combine(RepositoryRoot.find (), "tests/fixtures/record-format-vectors.json")
+
+    use document = JsonDocument.Parse(File.ReadAllBytes path)
+    let root = document.RootElement
+
+    if text vector "scope" = "CASE" then
+        {
+            Request =
+                text (root.GetProperty("caseRequests")[0]) "canonicalUtf8"
+                |> Encoding.UTF8.GetBytes
+            Snapshot = text (root.GetProperty "snapshot") "canonicalUtf8" |> Encoding.UTF8.GetBytes
+        }
+    else
+        {
+            Request =
+                text (root.GetProperty "authorityRecord") "canonicalUtf8"
+                |> Encoding.UTF8.GetBytes
+            Snapshot = Array.empty
+        }
 
 let private vectors () =
     withVectors (fun vectors ->
-        Expect.equal vectors.Length 3 "All independent vectors"
+        Expect.equal vectors.Length 2 "All independent vectors"
 
         for vector in vectors do
-            let payload =
-                {
-                    Request = Encoding.UTF8.GetBytes(text vector "requestUtf8")
-                    Snapshot = Encoding.UTF8.GetBytes(text vector "snapshotUtf8")
-                }
+            let payload = expectedPayload vector
 
             let encoded = LedgerEntry.encodePayload payload
             let nonce = Convert.FromHexString(text vector "payloadNonce")
@@ -89,7 +113,7 @@ let private vectors () =
             Expect.equal
                 (Convert.ToHexStringLower(LedgerEntry.preimage entry))
                 (text vector "preimage")
-                "All 185 fixed bytes"
+                "All 183 fixed bytes"
 
             Expect.equal
                 (Convert.ToHexStringLower(LedgerEntry.hash entry))
@@ -105,17 +129,14 @@ let private allMetadataFields () =
     withVectors (fun vectors ->
         let entry = metadata vectors.Head
 
-        let case =
-            match entry.Scope with
-            | LedgerScope.Case value -> value
-            | _ -> failtest "Case seed required"
+        let case = caseMetadata entry
 
         let otherId = Guid.Parse "40000000-0000-4000-8000-000000000004"
 
         let changes =
             [
                 { entry with InstallationId = otherId }
-                { entry with Sequence = 2UL }
+                { entry with Sequence = 2L }
                 { entry with
                     PreviousHash = changedHash entry.PreviousHash
                 }
@@ -128,7 +149,12 @@ let private allMetadataFields () =
                     PayloadCommitment = changedHash entry.PayloadCommitment
                 }
                 { entry with
-                    Scope = LedgerScope.Authority
+                    Scope =
+                        LedgerScope.Authority
+                            {
+                                TargetActorId = otherId
+                                Act = RecordedAuthorityKind.SetGrant
+                            }
                 }
             ]
 
@@ -136,13 +162,10 @@ let private allMetadataFields () =
             [
                 { case with CaseId = otherId }
                 { case with Revision = 2L }
-                { case with
-                    Act = LedgerAct.Command CommandKind.Close
-                }
+                { case with Act = CaseActKind.Close }
                 { case with
                     BusinessDate = case.BusinessDate.AddDays 1
                 }
-                { case with RuleRevision = 3us }
             ]
 
         let original = LedgerEntry.hash entry
@@ -174,7 +197,7 @@ let private framingProperty =
 
 let private hashProperty =
     property {
-        let! sequence = Gen.uint64 (Range.constant 1UL UInt64.MaxValue)
+        let! sequence = Gen.int64 (Range.constant 1L Revision.Maximum)
         let! index = Gen.int32 (Range.constant 0 31)
 
         return
@@ -199,64 +222,106 @@ let tests =
     testList
         "ledger entry format"
         [
-            testCase "all three independent ledger vectors reproduce every byte" vectors
+            testCase "both independent ledger vectors reproduce every byte" vectors
             testCase "each fixed metadata field affects the hash" allMetadataFields
             testCase "act codes have an independent append-only expectation" (fun () ->
-                let commands =
-                    [
-                        CommandKind.Open
-                        CommandKind.AmendRegistration
-                        CommandKind.CorrectCase
-                        CommandKind.Decide
-                        CommandKind.WithdrawDecision
-                        CommandKind.RecordPayment
-                        CommandKind.ClearPayment
-                        CommandKind.Close
-                        CommandKind.Reopen
-                    ]
-
                 let acts =
-                    List.map LedgerAct.Command commands
-                    @ List.map
-                        LedgerAct.Stewardship
-                        [ StewardshipKind.Void; StewardshipKind.Reinstate; StewardshipKind.Erase ]
+                    [
+                        CaseActKind.Open
+                        CaseActKind.AmendRegistration
+                        CaseActKind.CorrectCase
+                        CaseActKind.Decide
+                        CaseActKind.WithdrawDecision
+                        CaseActKind.RecordPayment
+                        CaseActKind.ClearPayment
+                        CaseActKind.Close
+                        CaseActKind.Reopen
+                        CaseActKind.Void
+                        CaseActKind.Reinstate
+                        CaseActKind.Erase
+                    ]
 
                 Expect.equal
                     (List.map LedgerEntry.actCode acts)
                     [ 1uy .. 12uy ]
                     "Durable act codes")
+            testCase "all authority act codes and subjects are hash-bound" (fun () ->
+                withVectors (fun vectors ->
+                    let entry = metadata vectors[1]
+
+                    for kind, expected in
+                        [
+                            RecordedAuthorityKind.ProvisionOwner, 32uy
+                            RecordedAuthorityKind.RegisterActor, 33uy
+                            RecordedAuthorityKind.SetGrant, 34uy
+                            RecordedAuthorityKind.SetEnabled, 35uy
+                        ] do
+                        let scope =
+                            {
+                                TargetActorId = entry.ActorId
+                                Act = kind
+                            }
+
+                        let candidate =
+                            { entry with
+                                Scope = LedgerScope.Authority scope
+                            }
+
+                        Expect.equal
+                            ((LedgerEntry.preimage candidate)[82])
+                            expected
+                            "Independent authority code"
+
+                        let changed =
+                            { candidate with
+                                Scope =
+                                    LedgerScope.Authority
+                                        { scope with
+                                            TargetActorId = entry.OperationId
+                                        }
+                            }
+
+                        Expect.isTrue
+                            (LedgerEntry.hash changed <> LedgerEntry.hash candidate)
+                            "Target actor is hash-bound"
+
+                    let invalid =
+                        { entry with
+                            Scope =
+                                LedgerScope.Authority
+                                    {
+                                        TargetActorId = Guid.Empty
+                                        Act = RecordedAuthorityKind.SetGrant
+                                    }
+                        }
+
+                    Expect.throwsT<ArgumentException>
+                        (fun () -> LedgerEntry.hash invalid |> ignore)
+                        "Subject required"))
             testCase "payload framing round trips arbitrary bytes" (fun () ->
                 PropertyHarness.run "CC-PROP-LEDGER-PAYLOAD-001" framingProperty)
             testCase "commitment changes affect hashes across the sequence range" (fun () ->
                 PropertyHarness.run "CC-PROP-LEDGER-HASH-001" hashProperty)
-            testCase
-                "erasure leaves recomputation independent of payload nonce and request digest"
-                (fun () ->
-                    withVectors (fun vectors ->
-                        for vector in vectors do
-                            let entry = metadata vector
-                            let hash = LedgerEntry.hash entry
-                            let payload = text vector "payload" |> Convert.FromHexString
-                            let nonce = text vector "payloadNonce" |> Convert.FromHexString
+            testCase "erasure leaves recomputation independent of payload and nonce" (fun () ->
+                withVectors (fun vectors ->
+                    for vector in vectors do
+                        let entry = metadata vector
+                        let hash = LedgerEntry.hash entry
+                        let payload = text vector "payload" |> Convert.FromHexString
+                        let nonce = text vector "payloadNonce" |> Convert.FromHexString
 
-                            let digest =
-                                text vector "requestUtf8"
-                                |> Encoding.UTF8.GetBytes
-                                |> LedgerEntry.requestDigest
+                        Array.Clear payload
+                        Array.Clear nonce
 
-                            Array.Clear payload
-                            Array.Clear nonce
-                            Array.Clear digest
+                        Expect.equal
+                            (LedgerEntry.hash entry)
+                            hash
+                            "Only retained metadata is required"
 
-                            Expect.equal
-                                (LedgerEntry.hash entry)
-                                hash
-                                "Only retained metadata is required"
-
-                            Expect.equal
-                                (Convert.ToHexStringLower hash)
-                                (text vector "entryHash")
-                                "Independent retained position"))
+                        Expect.equal
+                            (Convert.ToHexStringLower hash)
+                            (text vector "entryHash")
+                            "Independent retained position"))
             testCase "framing rejects truncation trailing bytes overflow and limits" (fun () ->
                 let valid =
                     LedgerEntry.encodePayload
@@ -291,11 +356,21 @@ let tests =
                                     InstallationId = Guid.Empty
                                 }
                                 { entry with ActorId = Guid.Empty }
-                                { entry with Sequence = 0UL }
+                                { entry with Sequence = 0L }
+                                { entry with Sequence = -1L }
+                                { entry with
+                                    Sequence = Revision.Maximum + 1L
+                                }
                                 { entry with
                                     RecordedAt = entry.RecordedAt.AddTicks 1L
                                 }
                             ]
+
+                        for sequence in [ 1L; Revision.Maximum - 1L; Revision.Maximum ] do
+                            Expect.equal
+                                (LedgerEntry.hash { entry with Sequence = sequence }).Length
+                                32
+                                "Safe boundary is representable"
 
                         for invalid in cases do
                             Expect.throwsT<ArgumentException>
@@ -305,32 +380,29 @@ let tests =
                         Expect.throwsT<ArgumentException>
                             (fun () -> LedgerEntry.commitment [||] [||] |> ignore)
                             "Nonce width refused"))
-            testCase
-                "case metadata guards reject invalid identifiers revisions and rule revisions"
-                (fun () ->
-                    withVectors (fun vectors ->
-                        let entry = metadata vectors.Head
+            testCase "case metadata guards reject invalid identifiers and revisions" (fun () ->
+                withVectors (fun vectors ->
+                    let entry = metadata vectors.Head
 
-                        let case =
-                            match entry.Scope with
-                            | LedgerScope.Case value -> value
-                            | _ -> failtest "Case seed required"
+                    let case = caseMetadata entry
 
-                        for invalid in
-                            [
-                                { case with CaseId = Guid.Empty }
-                                { case with Revision = 0L }
-                                { case with Revision = Int64.MaxValue }
-                                { case with RuleRevision = 0us }
-                            ] do
-                            Expect.throwsT<ArgumentException>
-                                (fun () ->
-                                    LedgerEntry.hash
-                                        { entry with
-                                            Scope = LedgerScope.Case invalid
-                                        }
-                                    |> ignore)
-                                "Invalid case metadata refused"))
+                    for invalid in
+                        [
+                            { case with CaseId = Guid.Empty }
+                            { case with Revision = 0L }
+                            { case with Revision = Int64.MaxValue }
+                            { case with
+                                Revision = Revision.Maximum + 1L
+                            }
+                        ] do
+                        Expect.throwsT<ArgumentException>
+                            (fun () ->
+                                LedgerEntry.hash
+                                    { entry with
+                                        Scope = LedgerScope.Case invalid
+                                    }
+                                |> ignore)
+                            "Invalid case metadata refused"))
             testCase "the signed instant is UTC and retains pre-epoch microseconds" (fun () ->
                 withVectors (fun vectors ->
                     let entry = metadata vectors.Head
@@ -343,7 +415,7 @@ let tests =
                     let bytes = LedgerEntry.preimage beforeEpoch
 
                     Expect.equal
-                        (Convert.ToHexStringLower bytes[114..121])
+                        (Convert.ToHexStringLower bytes[115..122])
                         "ffffffffffffffff"
                         "Signed microsecond minus one"
 
@@ -372,10 +444,7 @@ let tests =
                     withVectors (fun vectors ->
                         let entry = metadata vectors.Head
 
-                        let case =
-                            match entry.Scope with
-                            | LedgerScope.Case value -> value
-                            | _ -> failtest "Case seed required"
+                        let case = caseMetadata entry
 
                         let caseBytes =
                             LedgerEntry.preimage
@@ -390,7 +459,12 @@ let tests =
                         let authorityBytes =
                             LedgerEntry.preimage
                                 { entry with
-                                    Scope = LedgerScope.Authority
+                                    Scope =
+                                        LedgerScope.Authority
+                                            {
+                                                TargetActorId = entry.ActorId
+                                                Act = RecordedAuthorityKind.SetGrant
+                                            }
                                 }
 
                         Expect.equal caseBytes[81] 1uy "Case kind"

@@ -12,8 +12,8 @@ open ClaimCore.Tests.PropertyHarness
 type private Sample = { Raw: string; Accepted: bool }
 
 let private restoreWith transform =
-    let fields = opened () |> Claim.view |> (fun view -> transform view.Fields)
-    Claim.restore { Fields = fields; Version = 1L }
+    let fields = opened () |> Case.snapshot |> (fun view -> transform (viewFields view))
+    Case.ofAccepted (snapshot 1L fields)
 
 let private validDate =
     Gen.int32 (Range.constant DateOnly.MinValue.DayNumber DateOnly.MaxValue.DayNumber)
@@ -52,7 +52,7 @@ let private dateProperty =
         return
             match result, sample.Accepted with
             | Ok claim, true ->
-                let fields = (Claim.view claim).Fields
+                let fields = (Case.snapshot claim |> viewFields)
                 fields.IncidentDate = sample.Raw && fields.IncidentNotificationDate = sample.Raw
             | Error _, false -> true
             | _ -> false
@@ -105,11 +105,15 @@ let private amountProperty =
     property {
         let! sample = Gen.frequency [ 3, validAmount; 2, invalidAmount ]
 
-        let result =
-            restoreWith (fun fields ->
-                { fields with
-                    ClaimedAmount = sample.Raw
-                })
+        let candidate =
+            request
+                0L
+                (BusinessCommand.Open
+                    { registration with
+                        ClaimedAmount = sample.Raw
+                    })
+
+        let result = Case.decide today candidate None
 
         return Result.isOk result = sample.Accepted
     }
@@ -151,52 +155,49 @@ let private textTargets = [ Reference; Country; Claimant; Insurer ]
 let private textLimit =
     function
     | Reference -> 80
-    | Country -> 100
+    | Country -> 2
     | Claimant
     | Insurer -> 200
 
 let private validateText target value =
-    let baseRequest = request 0L (Command.Open registration)
-
-    let candidate =
+    let facts =
         match target with
-        | Reference ->
-            { baseRequest with
-                CaseReference = value
-            }
         | Country ->
-            { baseRequest with
-                Command =
-                    Command.Open
-                        { registration with
-                            IncidentCountry = value
-                        }
+            { registration with
+                IncidentCountry = value
             }
         | Claimant ->
-            { baseRequest with
-                Command =
-                    Command.Open
-                        { registration with
-                            ClaimantName = value
-                        }
+            { registration with
+                ClaimantName = value
             }
         | Insurer ->
-            { baseRequest with
-                Command =
-                    Command.Open
-                        { registration with
-                            InsurerName = value
-                        }
+            { registration with
+                InsurerName = value
             }
+        | Reference -> registration
 
-    Claim.validateRequest candidate
+    let candidate = request 0L (BusinessCommand.Open facts)
+
+    let candidate =
+        if target = Reference then
+            { candidate with CaseReference = value }
+        else
+            candidate
+
+    Case.decide today candidate None |> Result.map ignore
 
 let private validText =
     gen {
         let! target = Gen.item textTargets
         let! length = Gen.int32 (Range.constant 1 (textLimit target))
         let! supplementary = Gen.bool
-        let value = String.replicate length (if supplementary then "😀" else "x")
+
+        let value =
+            match target with
+            | Country -> "LV"
+            | Reference -> String.replicate length "x"
+            | _ -> String.replicate length (if supplementary then "😀" else "x")
+
         return target, { Raw = value; Accepted = true }
     }
 
@@ -246,16 +247,16 @@ let tests =
                         "prefix\u0080suffix"
                         String([| char 0xD800 |])
                         String([| char 0xDFFF |])
-                        String.replicate 81 "😀"
+                        String.replicate 201 "😀"
                     ]
 
                 Expect.isOk
-                    (validateText Reference (String.replicate 80 "😀"))
+                    (validateText Claimant (String.replicate 200 "😀"))
                     "Supplementary Unicode length is counted in scalar values"
 
                 invalidValues
                 |> List.iter (fun value ->
-                    Expect.isError (validateText Reference value) "Exact Domain text boundary")
+                    Expect.isError (validateText Claimant value) "Exact Domain text boundary")
 
                 run "CC-PROP-TEXT-001" textProperty)
         ]

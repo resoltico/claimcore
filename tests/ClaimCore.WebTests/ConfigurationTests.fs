@@ -81,7 +81,6 @@ let private catalogue () =
                 "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
                 "CLAIMCORE_OIDC_API_AUDIENCE"
                 "CLAIMCORE_OIDC_CLI_CLIENT_ID"
-                "CLAIMCORE_OIDC_SERVICE_CLIENT_ID"
                 "CLAIMCORE_OIDC_CA_CERT_FILE"
                 "CLAIMCORE_WEB_PROBE_CA_CERT_FILE"
             ]
@@ -89,9 +88,9 @@ let private catalogue () =
     Expect.equal
         (WebSettings.all |> List.map WebSettings.token |> Set.ofList)
         expected
-        "Exactly nineteen names"
+        "Exactly eighteen names"
 
-    Expect.equal WebSettings.all.Length 19 "No duplicate registry entries"
+    Expect.equal WebSettings.all.Length 18 "No duplicate registry entries"
 
 let private limits () =
     configured (fun _ _ ->
@@ -124,7 +123,7 @@ let tests =
     testList
         "host configuration"
         [
-            testCase "the service setting registry has exactly nineteen names" catalogue
+            testCase "the service setting registry has exactly eighteen names" catalogue
             testCase "defaults are bounded and out-of-range settings are refused" limits
             testCase "the connection input is owner-private and strict UTF-8" privateConnection
         ]

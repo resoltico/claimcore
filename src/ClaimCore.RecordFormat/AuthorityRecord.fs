@@ -1,9 +1,9 @@
 namespace ClaimCore.RecordFormat
 
 open System
-open System.Text.Json
+open ClaimCore.Domain
 
-/// Format data only. Application admits principal kinds, identities, roles and grant scopes.
+/// Primitive format values; Application owns principal admission and the role matrix.
 type RecordedPrincipal =
     {
         Kind: string
@@ -17,7 +17,14 @@ type RecordedGrantScope =
     | CaseReference of string
 
 [<RequireQualifiedAccess>]
-type RecordedAuthorityAction =
+type RecordedAuthorityKind =
+    | ProvisionOwner
+    | RegisterActor
+    | SetGrant
+    | SetEnabled
+
+[<RequireQualifiedAccess>]
+type RecordedAuthorityAct =
     | RegisterActor
     | ProvisionOwner
     | SetGrant of role: string * scope: RecordedGrantScope * active: bool
@@ -25,101 +32,174 @@ type RecordedAuthorityAction =
 
 type AuthorityRequestRecord =
     {
-        EventId: Guid
+        OperationId: Guid
         Target: RecordedPrincipal
-        Action: RecordedAuthorityAction
+        Act: RecordedAuthorityAct
     }
 
-/// Canonical authority payload within ledger entry format 1; it grants no authority by itself.
+module RecordedAuthorityActs =
+    let kind =
+        function
+        | RecordedAuthorityAct.ProvisionOwner -> RecordedAuthorityKind.ProvisionOwner
+        | RecordedAuthorityAct.RegisterActor -> RecordedAuthorityKind.RegisterActor
+        | RecordedAuthorityAct.SetGrant _ -> RecordedAuthorityKind.SetGrant
+        | RecordedAuthorityAct.SetEnabled _ -> RecordedAuthorityKind.SetEnabled
+
+    let private tokens =
+        [
+            RecordedAuthorityKind.ProvisionOwner, "PROVISION_OWNER"
+            RecordedAuthorityKind.RegisterActor, "REGISTER_ACTOR"
+            RecordedAuthorityKind.SetGrant, "SET_GRANT"
+            RecordedAuthorityKind.SetEnabled, "SET_ENABLED"
+        ]
+
+    let all = tokens |> List.map fst
+
+    let token kind =
+        tokens |> List.find (fst >> (=) kind) |> snd
+
+    let tryKind value =
+        tokens |> List.tryFind (snd >> (=) value) |> Option.map fst
+
 module AuthorityRecord =
     let private scope root =
-        let path = "$.action.scope"
+        let path = "$.act.scope"
 
-        match Json.text path "type" root with
+        match Json.text path "kind" root with
         | "INSTALLATION" ->
-            Json.properties path [ "type" ] root
+            Json.properties path [ "kind" ] root
             RecordedGrantScope.Installation
         | "CASE" ->
-            Json.properties path [ "type"; "caseReference" ] root
-            RecordedGrantScope.CaseReference(Json.text path "caseReference" root)
-        | _ -> Json.reject (path + ".type") "Unknown grant scope shape."
+            Json.properties path [ "kind"; "caseReference" ] root
+            let reference = Json.text path "caseReference" root
 
-    let private action root =
-        let path = "$.action"
+            match CaseReference.validate reference with
+            | Ok() -> RecordedGrantScope.CaseReference reference
+            | Error _ -> Json.reject (path + ".caseReference") "Invalid case reference."
+        | _ -> Json.reject (path + ".kind") "Unknown grant scope."
 
-        match Json.text path "type" root with
-        | "PROVISION_OWNER" ->
-            Json.properties path [ "type" ] root
-            RecordedAuthorityAction.ProvisionOwner
+    let private act allowProvision root =
+        let path = "$.act"
+
+        match Json.text path "kind" root with
+        | "PROVISION_OWNER" when allowProvision ->
+            Json.properties path [ "kind" ] root
+            RecordedAuthorityAct.ProvisionOwner
         | "REGISTER_ACTOR" ->
-            Json.properties path [ "type" ] root
-            RecordedAuthorityAction.RegisterActor
+            Json.properties path [ "kind" ] root
+            RecordedAuthorityAct.RegisterActor
         | "SET_GRANT" ->
-            Json.properties path [ "type"; "role"; "scope"; "active" ] root
+            Json.properties path [ "kind"; "role"; "scope"; "active" ] root
 
-            RecordedAuthorityAction.SetGrant(
+            RecordedAuthorityAct.SetGrant(
                 Json.text path "role" root,
                 Json.required path "scope" root |> scope,
                 Json.boolean path "active" root
             )
         | "SET_ENABLED" ->
-            Json.properties path [ "type"; "enabled" ] root
-            RecordedAuthorityAction.SetEnabled(Json.boolean path "enabled" root)
-        | _ -> Json.reject (path + ".type") "Unknown authority action."
+            Json.properties path [ "kind"; "enabled" ] root
+            RecordedAuthorityAct.SetEnabled(Json.boolean path "enabled" root)
+        | _ -> Json.reject (path + ".kind") "Unknown authority act."
+
+    let private read durable root =
+        let members = [ "operationId"; "target"; "act" ]
+        Json.properties "$" (if durable then "format" :: members else members) root
+        let target = Json.required "$" "target" root
+        Json.properties "$.target" [ "kind"; "issuer"; "subject" ] target
+        let kind = Json.text "$.target" "kind" target
+
+        if kind <> "HUMAN" && kind <> "SERVICE" then
+            Json.reject "$.target.kind" "Unknown principal kind."
+
+        {
+            OperationId = Json.guid "$" "operationId" root
+            Target =
+                {
+                    Kind = kind
+                    Issuer = Json.text "$.target" "issuer" target
+                    Subject = Json.text "$.target" "subject" target
+                }
+            Act = Json.required "$" "act" root |> act durable
+        }
 
     let decode maxBytes bytes =
-        Json.bounded maxBytes bytes (fun root ->
-            Json.properties "$" [ "eventId"; "target"; "action" ] root
-            let target = Json.required "$" "target" root
-            Json.properties "$.target" [ "kind"; "issuer"; "subject" ] target
+        Json.bounded maxBytes bytes (Json.dispatch [ 2L, read true ])
 
-            {
-                EventId = Json.guid "$" "eventId" root
-                Target =
-                    {
-                        Kind = Json.text "$.target" "kind" target
-                        Issuer = Json.text "$.target" "issuer" target
-                        Subject = Json.text "$.target" "subject" target
-                    }
-                Action = Json.required "$" "action" root |> action
-            })
+    let decodeWire maxBytes bytes =
+        Json.bounded maxBytes bytes (read false)
 
-    let private writeScope (writer: Utf8JsonWriter) scope =
-        writer.WriteStartObject("scope")
-
-        match scope with
-        | RecordedGrantScope.Installation -> writer.WriteString("type", "INSTALLATION")
+    let private scopeValue =
+        function
+        | RecordedGrantScope.Installation ->
+            CanonicalValue.Object [ "kind", CanonicalValue.String "INSTALLATION" ]
         | RecordedGrantScope.CaseReference reference ->
-            writer.WriteString("type", "CASE")
-            writer.WriteString("caseReference", reference)
+            match CaseReference.validate reference with
+            | Error _ -> invalidArg (nameof reference) "Invalid case reference."
+            | Ok() ->
+                CanonicalValue.Object
+                    [
+                        "kind", CanonicalValue.String "CASE"
+                        "caseReference", CanonicalValue.String reference
+                    ]
 
-        writer.WriteEndObject()
+    let private actValue act =
+        let members =
+            match act with
+            | RecordedAuthorityAct.ProvisionOwner
+            | RecordedAuthorityAct.RegisterActor -> []
+            | RecordedAuthorityAct.SetGrant(role, scope, active) ->
+                [
+                    "role", CanonicalValue.String(Json.persistedString "$.act.role" role)
+                    "scope", scopeValue scope
+                    "active", CanonicalValue.Boolean active
+                ]
+            | RecordedAuthorityAct.SetEnabled enabled ->
+                [ "enabled", CanonicalValue.Boolean enabled ]
 
-    let private writeAction (writer: Utf8JsonWriter) action =
-        writer.WriteStartObject("action")
+        let kind = RecordedAuthorityActs.kind act |> RecordedAuthorityActs.token
+        CanonicalValue.Object(("kind", CanonicalValue.String kind) :: members)
 
-        match action with
-        | RecordedAuthorityAction.ProvisionOwner -> writer.WriteString("type", "PROVISION_OWNER")
-        | RecordedAuthorityAction.RegisterActor -> writer.WriteString("type", "REGISTER_ACTOR")
-        | RecordedAuthorityAction.SetGrant(role, scope, active) ->
-            writer.WriteString("type", "SET_GRANT")
-            writer.WriteString("role", role)
-            writeScope writer scope
-            writer.WriteBoolean("active", active)
-        | RecordedAuthorityAction.SetEnabled enabled ->
-            writer.WriteString("type", "SET_ENABLED")
-            writer.WriteBoolean("enabled", enabled)
+    let private value durable (request: AuthorityRequestRecord) =
+        if request.OperationId = Guid.Empty then
+            invalidArg (nameof request) "Use a nonempty operation ID."
 
-        writer.WriteEndObject()
+        if not durable && request.Act = RecordedAuthorityAct.ProvisionOwner then
+            invalidArg (nameof request) "Provisioning is owner administration."
 
-    let encode (request: AuthorityRequestRecord) =
-        Json.encode (fun writer ->
-            writer.WriteStartObject()
-            writer.WriteString("eventId", request.EventId)
-            writer.WriteStartObject("target")
-            writer.WriteString("kind", request.Target.Kind)
-            writer.WriteString("issuer", request.Target.Issuer)
-            writer.WriteString("subject", request.Target.Subject)
-            writer.WriteEndObject()
-            writeAction writer request.Action
-            writer.WriteEndObject())
+        if request.Target.Kind <> "HUMAN" && request.Target.Kind <> "SERVICE" then
+            invalidArg (nameof request) "Unknown principal kind."
+
+        let target =
+            CanonicalValue.Object
+                [
+                    "kind",
+                    CanonicalValue.String(Json.persistedString "$.target.kind" request.Target.Kind)
+                    "issuer",
+                    CanonicalValue.String(
+                        Json.persistedString "$.target.issuer" request.Target.Issuer
+                    )
+                    "subject",
+                    CanonicalValue.String(
+                        Json.persistedString "$.target.subject" request.Target.Subject
+                    )
+                ]
+
+        let members =
+            [
+                "operationId", CanonicalValue.String(request.OperationId.ToString("D"))
+                "target", target
+                "act", actValue request.Act
+            ]
+
+        CanonicalValue.Object(
+            if durable then
+                ("format", CanonicalValue.Integer(int64 RecordVersions.Authority)) :: members
+            else
+                members
+        )
+
+    let encode request =
+        value true request |> CanonicalJson.encode
+
+    let encodeWire request =
+        value false request |> CanonicalJson.encode

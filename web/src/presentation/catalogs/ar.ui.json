@@ -117,7 +117,6 @@
   "ui.discardAndLeave": "تجاهل ومغادرة",
   "ui.technicalDetails": "تفاصيل تقنية للدعم",
   "ui.productVersion": "إصدار المنتج: {version}",
-  "ui.semanticIdentity": "العقد الدلالي: {digest}",
   "ui.webIdentity": "عقد الاتصال: {digest}",
   "ui.fieldHelp": "المعنى والنسخ الدقيق",
   "ui.historyDetail": "تفاصيل السجل",
@@ -131,5 +130,12 @@
   "ui.reloadContract": "إعادة تحميل الصفحة",
   "ui.lifecycleErased": "تم المحو — لم يبقَ سوى مرجع الملف ورقم المراجعة.",
   "ui.languageDescription": "تغيّر اللغة النص المعروض مع الاحتفاظ بالمسودة والمراجعة الحاليتين.",
-  "ui.leaveDraftDescription": "هل تريد تجاهل هذه المسودة ومغادرة المحرر؟"
+  "ui.leaveDraftDescription": "هل تريد تجاهل هذه المسودة ومغادرة المحرر؟",
+  "ui.referenceHint": "استخدم من 1 إلى 80 محرف ASCII قابل للطباعة دون مسافات. لا يغير اختلاف حالة الأحرف هوية الحالة، وتُحفظ الكتابة الأصلية.",
+  "ui.countryHint": "استخدم حرفين كبيرين. يعني ZZ موقعًا غير معروف أو دوليًا.",
+  "ui.countryName": "{code}: {name}",
+  "ui.countryUnassigned": "لا يتوفر اسم بلد للرمز {code}. تحقق من الرمز المقصود.",
+  "ui.countryUnknown": "غير معروف أو دولي",
+  "ui.snapshotWithheld": "حُجبت الحقول المسجلة وفق صلاحيات وصولك الحالية.",
+  "ui.authorityReceipt": "إجراء الصلاحيات {act} للجهة {actor}."
 }

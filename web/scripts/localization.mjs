@@ -7,7 +7,6 @@ import {
   addDomain,
   diagnosticRequirements,
   messageShape,
-  pseudolocalize,
   readCatalog,
   validateCatalog,
   validateCoverage,
@@ -40,23 +39,21 @@ for (const lang of languages) {
   }
   catalogs[lang] = catalog;
 }
-const generated = resolve(root, "src/generated/contracts");
-const semantic = JSON.parse(
-  await readFile(resolve(generated, "semantic-core.contract.json"), "utf8"),
-);
+const generated = resolve(root, "../contracts");
+const descriptors = JSON.parse(await readFile(resolve(generated, "descriptors.json"), "utf8"));
 const host = JSON.parse(await readFile(resolve(generated, "host-failure.schema.json"), "utf8"));
 Object.assign(
   catalogs["en"] ?? {},
-  businessMessages(semantic),
+  businessMessages(descriptors),
   readCatalog(await readFile(resolve(generated, "default-presentation.en.json"), "utf8")),
 );
 for (const lang of languages) {
   validateCatalog(catalogs["en"] ?? {}, catalogs[lang] ?? {}, lang);
 }
-const requirements = diagnosticRequirements(semantic, host);
-validateCoverage(catalogs["en"] ?? {}, semantic, requirements);
+const requirements = diagnosticRequirements(descriptors, host);
+validateCoverage(catalogs["en"] ?? {}, descriptors, requirements);
 const types = await readFile(resolve(generated, "types.ts"), "utf8");
-validateTokens(catalogs["en"] ?? {}, renderedTokens(semantic, types));
+validateTokens(catalogs["en"] ?? {}, renderedTokens(descriptors, types));
 await mkdir(output, { recursive: true });
 /** @type {Record<string, string>} */
 const expected = {};
@@ -74,13 +71,6 @@ for (const [lang, catalog] of Object.entries(catalogs)) {
   }
   expected[`${lang}.json`] = `${JSON.stringify(compiled)}\n`;
 }
-const pseudo = Object.fromEntries(
-  Object.entries(JSON.parse(expected["en.json"] ?? "{}")).map(([k, ast]) => [
-    k,
-    [{ type: 0, value: "⟦" }, ...pseudolocalize(ast), { type: 0, value: "⟧" }],
-  ]),
-);
-expected["en-XA.json"] = `${JSON.stringify(pseudo)}\n`;
 expected["diagnostic-parameters.json"] = `${JSON.stringify(requirements, null, 2)}\n`;
 for (const domain of domains) {
   const entries = Object.entries(args).filter(([k]) => k.startsWith(`${domain}.`));
@@ -99,15 +89,18 @@ for (const domain of domains) {
       )
       .join("\n")}\n};\n`;
 }
-expected["correction-targets.json"] = `${JSON.stringify(correctionTargets(semantic))}\n`;
+expected["correction-targets.json"] = `${JSON.stringify(correctionTargets(descriptors))}\n`;
 expected["arguments.json"] = `${JSON.stringify(args)}\n`;
 const prettierOptions = await resolveConfig(resolve(root, "package.json"));
 for (const [file, raw] of Object.entries(expected)) {
   const text = await format(raw, { ...prettierOptions, filepath: file });
   const path = resolve(output, file);
+  const existing = await readFile(path, "utf8").catch(() => null);
   if (generate) {
-    await writeFile(path, text);
-  } else if ((await readFile(path, "utf8").catch(() => null)) !== text) {
+    if (existing !== text) {
+      await writeFile(path, text);
+    }
+  } else if (existing !== text) {
     throw new Error(`Localization generated file drift: ${file}`);
   }
 }
@@ -116,5 +109,5 @@ if (extras.length) {
   throw new Error("Unexpected generated localization file.");
 }
 process.stdout.write(
-  `Localization validated: ${Object.keys(args).length} keys, ${Object.keys(requirements).length} diagnostic identities, three real languages and one pseudolocale.\n`,
+  `Localization validated: ${Object.keys(args).length} keys, ${Object.keys(requirements).length} diagnostic identities, three real languages and runtime pseudolocalization.\n`,
 );

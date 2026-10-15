@@ -54,6 +54,15 @@ module internal Transactions =
             | _ -> return invalidOp "Ledger head is absent."
         }
 
+    let private dataFailure (error: exn) =
+        match error with
+        | :? InvalidOperationException
+        | :? ArgumentException
+        | :? InvalidCastException
+        | :? FormatException
+        | :? OverflowException -> StoreFailure.Integrity
+        | _ -> StoreFailure.Unavailable
+
     let failure commitStarted (error: exn) =
         match error with
         | :? PostgresException as error when commitStarted && DatabaseSession.commitUncertain error ->
@@ -72,9 +81,7 @@ module internal Transactions =
         | :? OperationCanceledException when commitStarted -> StoreFailure.CommitOutcomeUnknown
         | :? TimeoutException when commitStarted -> StoreFailure.CommitOutcomeUnknown
         | :? OperationCanceledException -> StoreFailure.Cancelled
-        | :? InvalidOperationException
-        | :? ArgumentException -> StoreFailure.Integrity
-        | _ -> StoreFailure.Unavailable
+        | error -> dataFailure error
 
     /// The commit marker is set only after all projection work and the final pre-commit cancellation check.
     let write source settings (token: CancellationToken) action =

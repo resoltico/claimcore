@@ -16,8 +16,8 @@ type RejectionDiagnosticId =
     | CurrencyFormat
     | AmountNotRepresentable
     | EmptyOperationId
-    | ExpectedVersionOutOfRange
-    | StoredVersionOutOfRange
+    | ExpectedRevisionOutOfRange
+    | StoredRevisionOutOfRange
     | RevisionExhausted
     | CaseReferenceMismatch
     | StateTransitionMismatch
@@ -31,7 +31,7 @@ type RejectionDiagnosticId =
     | RegistrationCannotBeCleared
     | CaseNotFound
     | CaseAlreadyExists
-    | VersionConflict
+    | RevisionConflict
     | CaseClosed
     | AlreadyClosed
     | AlreadyOpened
@@ -44,19 +44,22 @@ type RejectionDiagnosticId =
     | DecisionAlreadyPaid
     | ZeroDecisionCannotBePaid
     | PageLimitOutOfRange
-    | InvalidCaseListCursor
-    | InvalidHistoryCursor
+    | InvalidCursor
     | IdempotencyConflict
     | ResourceUnavailable
     | CaseVoided
     | CaseErased
-    | InvalidReason
     | AlreadyVoided
     | NotVoided
     | LastOwner
     | ActorAlreadyRegistered
     | ActorUnknown
     | HumanPrincipalRequired
+    | FormattingCharacter
+    | ReferenceFormat
+    | CountryFormat
+    | ActNotPermitted
+    | LedgerExhausted
 
 /// Safe metadata only: these are constraint limits, not submitted data or arbitrary string values.
 type DiagnosticParameterDefinition =
@@ -81,6 +84,9 @@ module RejectionDiagnosticIds =
             RejectionDiagnosticId.TextTooShort, "INPUT_TEXT_TOO_SHORT"
             RejectionDiagnosticId.TextTooLong, "INPUT_TEXT_TOO_LONG"
             RejectionDiagnosticId.ControlCharacters, "INPUT_CONTROL_CHARACTERS"
+            RejectionDiagnosticId.FormattingCharacter, "TEXT_FORMATTING_CHARACTER"
+            RejectionDiagnosticId.ReferenceFormat, "INPUT_CASE_REFERENCE_FORMAT"
+            RejectionDiagnosticId.CountryFormat, "INPUT_COUNTRY_FORMAT"
         ]
 
     let private scalar =
@@ -96,9 +102,9 @@ module RejectionDiagnosticIds =
     let private command =
         [
             RejectionDiagnosticId.EmptyOperationId, "COMMAND_OPERATION_ID_REQUIRED"
-            RejectionDiagnosticId.ExpectedVersionOutOfRange, "COMMAND_EXPECTED_REVISION_RANGE"
-            RejectionDiagnosticId.StoredVersionOutOfRange, "STATE_STORED_REVISION_RANGE"
-            RejectionDiagnosticId.RevisionExhausted, "STATE_REVISION_EXHAUSTED"
+            RejectionDiagnosticId.ExpectedRevisionOutOfRange, "COMMAND_EXPECTED_REVISION_RANGE"
+            RejectionDiagnosticId.StoredRevisionOutOfRange, "STATE_STORED_REVISION_RANGE"
+            RejectionDiagnosticId.RevisionExhausted, "REVISION_EXHAUSTED"
             RejectionDiagnosticId.CaseReferenceMismatch, "STATE_CASE_REFERENCE_MISMATCH"
             RejectionDiagnosticId.StateTransitionMismatch, "STATE_TRANSITION_MISMATCH"
             RejectionDiagnosticId.ExactInputsRequired, "INPUT_EXACT_FIELDS_REQUIRED"
@@ -122,7 +128,7 @@ module RejectionDiagnosticIds =
         [
             RejectionDiagnosticId.CaseNotFound, "CASE_NOT_FOUND"
             RejectionDiagnosticId.CaseAlreadyExists, "CASE_ALREADY_EXISTS"
-            RejectionDiagnosticId.VersionConflict, "CASE_REVISION_CONFLICT"
+            RejectionDiagnosticId.RevisionConflict, "CASE_REVISION_CONFLICT"
             RejectionDiagnosticId.CaseClosed, "CASE_CLOSED"
             RejectionDiagnosticId.AlreadyClosed, "CASE_ALREADY_CLOSED"
             RejectionDiagnosticId.AlreadyOpened, "CASE_ALREADY_OPENED"
@@ -144,13 +150,13 @@ module RejectionDiagnosticIds =
     let private operation =
         [
             RejectionDiagnosticId.PageLimitOutOfRange, "QUERY_PAGE_LIMIT_RANGE"
-            RejectionDiagnosticId.InvalidCaseListCursor, "QUERY_CASE_LIST_CURSOR_INVALID"
-            RejectionDiagnosticId.InvalidHistoryCursor, "QUERY_HISTORY_CURSOR_INVALID"
+            RejectionDiagnosticId.InvalidCursor, "QUERY_CURSOR_INVALID"
+            RejectionDiagnosticId.ActNotPermitted, "ACT_NOT_PERMITTED"
+            RejectionDiagnosticId.LedgerExhausted, "LEDGER_SEQUENCE_EXHAUSTED"
             RejectionDiagnosticId.IdempotencyConflict, "OPERATION_CONTENT_CONFLICT"
             RejectionDiagnosticId.ResourceUnavailable, "ACCESS_RESOURCE_UNAVAILABLE"
             RejectionDiagnosticId.CaseVoided, "CASE_VOIDED"
             RejectionDiagnosticId.CaseErased, "CASE_ERASED"
-            RejectionDiagnosticId.InvalidReason, "INVALID_REASON"
             RejectionDiagnosticId.AlreadyVoided, "ALREADY_VOIDED"
             RejectionDiagnosticId.NotVoided, "NOT_VOIDED"
             RejectionDiagnosticId.LastOwner, "LAST_OWNER"

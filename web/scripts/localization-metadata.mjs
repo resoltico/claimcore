@@ -1,5 +1,5 @@
-/** @param {import("./tooling-types.mjs").JsonRecord} semantic @returns {Record<string, import("./localization-policy.mjs").Message> } */
-export const businessMessages = (semantic) => {
+/** @param {import("./tooling-types.mjs").JsonRecord} descriptors @returns {Record<string, import("./localization-policy.mjs").Message> } */
+export const businessMessages = (descriptors) => {
   /** @type {Record<string, import("./localization-policy.mjs").Message> } */
   const result = {};
   /** @param {string} owner @param {string} name @param {{label: string, meaning: string}} descriptor */
@@ -12,10 +12,10 @@ export const businessMessages = (semantic) => {
       result[key] = [{ literal: descriptor[part] }];
     }
   };
-  for (const field of semantic["fields"]) {
+  for (const field of descriptors["fields"]) {
     add("field", field.name, field);
   }
-  for (const command of semantic["commands"]) {
+  for (const command of descriptors["commands"]) {
     add("command", command.kind, command);
     for (const group of command.inputs.groups ?? []) {
       add("group", group.name, group);
@@ -24,11 +24,11 @@ export const businessMessages = (semantic) => {
   return result;
 };
 
-/** @param {import("./tooling-types.mjs").JsonRecord} semantic @returns {Record<string, string>} */
-export const correctionTargets = (semantic) => {
+/** @param {import("./tooling-types.mjs").JsonRecord} descriptors @returns {Record<string, string>} */
+export const correctionTargets = (descriptors) => {
   /** @type {Record<string, string>} */
   const result = {};
-  for (const command of semantic["commands"]) {
+  for (const command of descriptors["commands"]) {
     for (const group of command.inputs.groups ?? []) {
       const target = `${group.name}.action`;
       if (Object.hasOwn(result, target)) {
