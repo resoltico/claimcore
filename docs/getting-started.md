@@ -12,12 +12,13 @@ Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, the .NET
 [`.node-version`](../.node-version) and [`web/package.json`](../web/package.json).
 Use your intended local Docker engine. Downloads require network access. No C compiler is needed.
 
-Clone into a new directory, then restore and build the source:
+Choose a new absolute checkout location, then restore and build the source. The example uses
+`$HOME/claimcore-first-run`; use the same chosen path in both terminals if you select another location:
 
 ```sh
-cd "$HOME"
-git clone https://github.com/resoltico/claimcore.git claimcore-first-run
-cd claimcore-first-run
+claimcore_source="$HOME/claimcore-first-run"
+git clone https://github.com/resoltico/claimcore.git "$claimcore_source"
+cd "$claimcore_source"
 dotnet restore ClaimCore.slnx --locked-mode
 npm --prefix web ci
 npm --prefix web run build
@@ -90,7 +91,8 @@ browser trust alone is insufficient. Use the generated public CA, never its priv
 client secret:
 
 ```sh
-cd "$HOME/claimcore-first-run"
+claimcore_source="$HOME/claimcore-first-run"
+cd "$claimcore_source"
 claimcore_config="$HOME/claimcore-first-run-config"
 export CLAIMCORE_SERVICE_URL="https://localhost:7443/"
 export CLAIMCORE_OIDC_ISSUER="https://identity.localhost:7444/realms/claimcore"
