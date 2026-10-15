@@ -158,6 +158,69 @@ let private matrix =
                     (actual = Set.ofList expected)
                     "Independent advertisement expectation")
 
+let private allKeep =
+    CaseAct.Business(
+        BusinessCommand.CorrectCase
+            {
+                Registration = RegistrationCorrection.Keep
+                Decision = DecisionCorrection.Keep
+                Payment = PaymentCorrection.Keep
+            }
+    )
+
+let private allKeepStates =
+    [
+        "absent", None, 0L, CaseRefusal.NotFound
+        "erased", Some(retained 1L CaseView.Erased), 1L, CaseRefusal.CaseErased
+        "stale",
+        Some(retained 1L (live CaseStatus.Opened true false)),
+        0L,
+        CaseRefusal.RevisionConflict 1L
+        "voided",
+        Some(retained 1L (CaseView.Live(fields CaseStatus.Opened true false, Disposition.Voided))),
+        1L,
+        CaseRefusal.CaseVoided
+        "terminal",
+        Some(retained Revision.Maximum (live CaseStatus.Opened true false)),
+        Revision.Maximum,
+        CaseRefusal.RevisionExhausted
+        "ineligible",
+        Some(retained 1L (live CaseStatus.Opened false false)),
+        1L,
+        CaseRefusal.CorrectionRequiresExistingValue
+        "eligible",
+        Some(retained 1L (live CaseStatus.Opened true false)),
+        1L,
+        CaseRefusal.CorrectionNoChanges
+        "closed",
+        Some(retained 1L (live CaseStatus.Closed false false)),
+        1L,
+        CaseRefusal.CorrectionNoChanges
+    ]
+
+let private allKeepPrecedence =
+    testCase "all-KEEP correction preserves authoritative refusal order" (fun () ->
+        for name, current, revision, refusal in allKeepStates do
+            Expect.equal
+                (Case.decide today (request revision allKeep) current)
+                (Error refusal)
+                name
+
+        let mismatch =
+            { request 1L allKeep with
+                CaseReference = "OTHER"
+            }
+
+        Expect.equal
+            (Case.decide today mismatch (Some(retained 1L (live CaseStatus.Opened true false))))
+            (Error(
+                CaseRefusal.InvalidInput(
+                    InputTarget.CaseReference,
+                    InputViolation.Act ActViolation.CaseReferenceMismatch
+                )
+            ))
+            "Reference identity precedes correction semantics")
+
 let private grandfathering =
     testCase
         "retained nonconforming text renders and reaffirms while changed assertions refuse"
@@ -364,4 +427,13 @@ let private unicode =
 
 [<Tests>]
 let tests =
-    testList "unified case record" [ matrix; grandfathering; revisionBounds; identifiers; unicode ]
+    testList
+        "unified case record"
+        [
+            matrix
+            allKeepPrecedence
+            grandfathering
+            revisionBounds
+            identifiers
+            unicode
+        ]

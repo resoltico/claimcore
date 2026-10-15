@@ -288,12 +288,6 @@ module Case =
         result {
             do! validateRequest request
 
-            do!
-                match request.Act with
-                | CaseAct.Business(BusinessCommand.CorrectCase correction) ->
-                    CaseCorrections.requireChange correction
-                | _ -> Ok()
-
             match current with
             | None -> return! create today request
             | Some record -> return! existing today request record

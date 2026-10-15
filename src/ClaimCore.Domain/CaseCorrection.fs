@@ -4,12 +4,6 @@ open ClaimCore.Domain.ResultFlow
 
 /// Correction choices are parsed once; KEEP takes typed accepted state under the caller's lock.
 module internal CaseCorrections =
-    let requireChange (correction: CaseCorrection) =
-        match correction.Registration, correction.Decision, correction.Payment with
-        | RegistrationCorrection.Keep, DecisionCorrection.Keep, PaymentCorrection.Keep ->
-            Error CaseRefusal.CorrectionNoChanges
-        | _ -> Ok()
-
     let private registrationInput =
         function
         | RegistrationCorrection.Keep -> Ok ValidatedRegistrationCorrection.Keep

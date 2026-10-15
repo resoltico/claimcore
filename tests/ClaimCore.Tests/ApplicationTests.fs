@@ -61,6 +61,54 @@ let private replayAndSpelling (store: MemoryLedgerStore.Store) (fixture: Fixture
         Expect.equal store.Entries.Length 4 "Replay and refusal append nothing"
     }
 
+let private rawOpening =
+    """{"operationId":"80000000-0000-4000-8000-000000000010","caseReference":"UNIT-001","expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"LV","claimantName":"Synthetic Party","insurerName":"Synthetic Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}"""
+
+let private respelledOpening =
+    """{
+      "act": {
+        "values": {
+          "claimedCurrency": "EUR", "claimedAmount": "1000.00",
+          "insurerName": "Synthetic Insurer", "clai\u006dantName": "Synthetic\u0020Party",
+          "incidentCountry": "L\u0056", "incidentNotificationDate": "2026-08-03",
+          "incidentDate": "2026-08-01"
+        },
+        "kind": "OPEN"
+      },
+      "expectedRevision": 0, "caseReference": "\u0055NIT-001",
+      "operationId": "80000000-0000-4000-8000-000000000010"
+    }"""
+
+let private decodeWire (text: string) =
+    RequestRecord.decodeWire 131072 (Text.Encoding.UTF8.GetBytes text)
+    |> Result.defaultWith (fun _ -> failtest "Synthetic raw request must decode")
+
+let private rawWireReplay (store: MemoryLedgerStore.Store) (fixture: Fixture) =
+    task {
+        let! actor = caseWorker fixture
+        let before = store.Entries.Length
+        let! first = actor.Execute(decodeWire rawOpening, CancellationToken.None)
+        let receipt = accepted first
+        Expect.equal receipt.RecordedBy (id 1) "Original executor attribution"
+        Expect.equal receipt.RecordedAt instant "Original database instant"
+        Expect.notEqual rawOpening respelledOpening "Different raw JSON spellings"
+        store.Instant <- instant.AddMinutes 1.0
+        let! replay = actor.Execute(decodeWire respelledOpening, CancellationToken.None)
+        Expect.equal replay (ExecuteOutcome.AlreadyAccepted receipt) "Original entire receipt"
+
+        let changed =
+            respelledOpening.Replace("1000.00", "1000.0", StringComparison.Ordinal)
+
+        let! conflict = actor.Execute(decodeWire changed, CancellationToken.None)
+
+        Expect.equal
+            conflict
+            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+            "Authored amount text is content despite equal decimal value"
+
+        Expect.equal store.Entries.Length (before + 1) "Only original acceptance appended"
+    }
+
 let private malformed (store: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let actor = core fixture owner
@@ -569,6 +617,9 @@ let tests =
     testList
         "Application case decisions"
         [
+            testCaseAsync
+                "raw wire re-spelling replays the original accepted receipt and attribution"
+                (run rawWireReplay)
             testCaseAsync
                 "[CC-APP-002] replay is stable and authored amount and reference spelling conflict"
                 (run replayAndSpelling)
