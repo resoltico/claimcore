@@ -19,7 +19,9 @@ type Fixture
 
 let create issuer =
     task {
-        let store = new ClaimCore.Tests.MemoryLedgerStore.Store(DateTimeOffset.UtcNow)
+        // Synthetic business time follows registration dates and has ledger microsecond precision.
+        let instant = DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero)
+        let store = new ClaimCore.Tests.MemoryLedgerStore.Store(instant)
 
         try
             let fixture: ClaimCore.TestSupport.StoreContractTests.Fixture =
