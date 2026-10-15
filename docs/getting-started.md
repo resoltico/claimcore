@@ -19,7 +19,7 @@ git clone https://github.com/resoltico/claimcore.git claimcore-first-run
 cd claimcore-first-run
 dotnet restore ClaimCore.slnx --locked-mode
 npm --prefix web ci
-npm --prefix web run contract:generate
+npm --prefix web run build
 dotnet build ClaimCore.slnx --configuration Release --no-restore
 ```
 
@@ -80,8 +80,11 @@ Cases view. An owner administers authority; owner status alone grants no case vi
 The resource-unavailable message is expected until a case role is granted.
 
 The owner can administer authority. To use case commands, grant that human a scoped
-`CASE_EDITOR` role through the authenticated authority API or CLI. The first-run checkpoint
-here is a signed-in browser, not implicit editing permission.
+`CASE_HANDLER` role through the authenticated authority API or CLI. Add `PAYMENT_RECORDER` when this person also records or clears payments. Use `authority.list`
+to obtain the actor principal, then `authority.execute` with an operation ID, that `target`, and
+`act: {kind: "SET_GRANT", role: "CASE_HANDLER", scope: {kind: "INSTALLATION"}, active: true}`.
+Submit through the authenticated owner CLI; inspect `describe authority.execute` for the exact
+schema. The first-run checkpoint is a signed-in browser with explicit case grants.
 
 ## Stop and retain data
 

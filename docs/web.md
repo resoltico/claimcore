@@ -1,16 +1,17 @@
 # Browser and HTTPS host
 
 Web authenticates OIDC authorization-code PKCE sessions and bearer clients, binds their
-principal to IActorClaimsCore, and renders typed outcomes. Domain/Application own decisions.
+principal to the actor-bound core, and renders typed outcomes. Domain/Application own decisions.
 The browser calls the generated contract using cookie credentials, antiforgery and its
 fingerprint. It has no database credentials or durable operation store.
 
 <a id="cc-web-001"></a>
+
 ### CC-WEB-001 — HTTPS admission and typed outcomes
 
 Web requires the configured HTTPS origin, admitted OIDC issuer/audience and matching contract.
 Cookie mutations require antiforgery; bearer delivery is separately authenticated. Method,
-media type, duplicate/extra members, UTF-8, depth32 and body16MiB guards reject before the
+media type, duplicate/extra members, UTF-8, depth 32 and body 16 MiB guards reject before the
 core factory. API requests do not follow redirects. Failed dispatch cannot invent a Domain
 outcome. Durable execution continues despite an abandoned HTTP caller; loss of confirmation
 is uncertain. Request logs contain only endpoint, outcome, status, durationMs, actorId and
@@ -26,3 +27,14 @@ Current views distinguish live, voided and erased records. Erased views expose o
 revision and state; history exposes metadata without snapshots. Command advertisements are
 advice. The service locks and revalidates execution. English, Latvian, Arabic and a seeded
 pseudolocale are exercised by tests; Latvian/Arabic text still needs native-language review.
+
+Bearer tokens require an admitted issuer/audience and `JWT` or `at+jwt` type. The CLI client is
+human and requires `sub`. Other verified clients identify services by client ID; matching single
+`azp`/`client_id` values or their single-claim fallback are accepted. Duplicate, blank or conflicting
+client identities are refused. IdP verification does not register or grant a ClaimCore actor.
+
+The browser consumes tracked contract types/descriptors and validates strict bounded JSON plus
+required endpoint/outcome shapes. It has no AJV schema engine. Missing or unusable mutation receipt
+data remains uncertain and preserves the original retry identity/content. WITHHELD snapshots show
+metadata without fields; ERASED is distinct. Country display hints use localized names where known,
+accept syntactically valid unassigned codes, and explain `ZZ` without imposing membership policy.

@@ -5,6 +5,7 @@ no database credentials. Domain owns business and stewardship decisions; Applica
 identity, authorization and outcomes; the store executes pure decisions against locked state.
 
 <a id="cc-arch-001"></a>
+
 ### CC-ARCH-001 — Component graph and compiled boundaries
 
 [The architecture manifest](../config/architecture.json) owns direct project references in both
@@ -15,8 +16,8 @@ TimeZoneInfo belongs only to Hosting, Database and Postgres. Compiled negative f
 each rule rejects a forbidden dependency or call. Internals grants name a permitted referencer
 or an actual test project. Test projects reference only product or tooling projects.
 
-RecordFormat owns canonical commands, snapshots, stewardship, authority actions and ledger
-metadata encoding. Contracts owns the fourteen-endpoint catalogue, request/response schemas,
+RecordFormat owns RFC 8785 canonical request/snapshot/authority JSON and the fixed-width ledger
+metadata preimage. Durable format numbers change with bytes; released decoders remain supported. Contracts owns the eleven-endpoint catalogue, request/response schemas,
 strict codecs, fingerprint and generated client types. HostSecurity admits private files.
 Postgres owns transactions, projection persistence, schema administration and verification.
 Hosting owns case-work composition and runtime lifetime. Web binds authenticated principals;
@@ -25,6 +26,7 @@ Database references Application to validate principals and render shared ledger/
 so it does not duplicate their definitions. ContractGenerator derives artifacts from Contracts.
 
 <a id="cc-run-001"></a>
+
 ### CC-RUN-001 — Runtime admission and shutdown
 
 A runtime lease keeps admitted work alive. Shutdown closes admission, drains admitted leases
@@ -33,17 +35,46 @@ cancel an already admitted durable mutation. Readiness is bounded installation/s
 not a claim of ledger freshness or an operator approval.
 
 <a id="cc-auth-001"></a>
+
 ### CC-AUTH-001 — Actor-bound authorization and disclosure
 
-ClaimCore's five roles and nine capabilities are defined once in Application. Grants are
+ClaimCore's seven roles and ten capabilities are defined once in
+[Application’s capability table](../src/ClaimCore.Application/AuthorizationPolicy.fs). Grants are
 installation-wide or case-scoped, default-deny, and checked under the write lock or in the
 read snapshot. Identity-provider membership and a database role grant no case authority.
 Only humans receive OWNER or DATA_STEWARD; at least one enabled human installation owner
 must remain. OWNER is authority administration and does not by itself grant case work.
 Absent, inaccessible and erased-beyond-view cases or operations have the same public refusal.
-Cursors are opaque, principal/grant/query-bound, short-lived and checked against current grants.
+Cursors carry a bounded HMAC-authenticated envelope. One ephemeral Hosting runtime key is shared
+by its actor facades; restart invalidates it. The envelope binds installation, principal, actor ID
+and enabled state, all sorted/deduplicated grants, endpoint, normalized query/resource/detail/order
+and continuation. Page size is excluded so callers may change limits. MAC verification precedes
+position use; the same REPEATABLE READ snapshot supplies authority and database time. Validity is
+issued ≤ database now < expiry, with a 15-minute lifetime. Tokens confer no rights.
+
+| Preset             | Capabilities                                                    |
+| ------------------ | --------------------------------------------------------------- |
+| `OWNER`            | ManageAuthority, ReadAuthority                                  |
+| `CASE_READER`      | ReadCase, ReadHistory                                           |
+| `CASE_REGISTRAR`   | ReadCase, ReadHistory, Register                                 |
+| `CASE_HANDLER`     | ReadCase, ReadHistory, ReadHistoryFull, Register, Decide, Close |
+| `PAYMENT_RECORDER` | ReadCase, ReadHistory, RecordPayment                            |
+| `DATA_STEWARD`     | ReadCase, ReadHistory, Steward                                  |
+| `AUDITOR`          | ReadCase, ReadHistory, ReadHistoryFull, ReadAuthority           |
+
+Register covers OPEN/amend and registration correction; Decide covers decide/withdraw and decision
+correction; RecordPayment covers payment/clear and payment correction; Close covers close/reopen.
+Correction checks every requested REPLACE/CLEAR group, including unchanged reaffirmations.
+Installation ReadAuthority is required for authority listing and observation; case grants do not
+supply it. Human-only grants are enforced on their target as well as their executor.
+
+A receipt contains attribution ActorId and metadata; its snapshot is DISCLOSED, WITHHELD or ERASED.
+A current snapshot requires ReadCase; a superseded one requires ReadHistoryFull. Execute, replay,
+preview-ALREADY_ACCEPTED, observation and history apply that rule in their locked/read context;
+there is no post-commit authority fetch. Authorize before revealing identity replay or conflict.
 
 <a id="cc-app-001"></a>
+
 ### CC-APP-001 — Rejection changes no accepted state
 
 A rejection appends nothing and changes no projection. Writers first lock the singleton ledger
@@ -51,6 +82,7 @@ head, then read authority, operation identity and case state in the same READ CO
 transaction. The captured database instant and stored zone determine the business date.
 
 <a id="cc-app-002"></a>
+
 ### CC-APP-002 — Exact replay and commit uncertainty
 
 Every accepted case operation and authority change appends exactly one ledger entry in the
@@ -58,3 +90,8 @@ transaction updating its projections. Exact replay returns the original accepted
 different content under the same ID is refused. OUTCOME_UNKNOWN means a commit confirmation
 was lost. It does not prove rejection and never permits rebasing or replacement identity.
 Erased request content is unavailable. Reads use one REPEATABLE READ snapshot.
+
+Verification folds permanent record and authority invariants, compares projections and checks
+chain/commitments. It does not replay today’s capability matrix or admission rules against history.
+[Database](database.md) owns findings and operator exit codes. Normal read/replay checks the retained
+nonce and framed payload commitment before using stored identity or returning receipts.

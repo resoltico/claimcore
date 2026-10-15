@@ -8,6 +8,7 @@
 - [Database](database.md): owner inputs, initialization, migrations and verification.
 - [Operations](operations.md): trust, erasure limits, checkpoints and restore obligations.
 - [Development](development.md): toolchain, gate and change workflow.
-- [Decision record](decisions/0001-single-authority-ledger.md): rationale and implementation evidence.
+- [Single authority decision](decisions/0001-single-authority-ledger.md): rationale and trust.
+- [Canonical records and presets](decisions/0002-canonical-records-and-presets.md): formats, roles and owner choices.
 
 [Contributing](../CONTRIBUTING.md) owns contributor policy; the owner reviews and merges.
