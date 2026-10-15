@@ -38,15 +38,12 @@ let private copySource (fixture: PublishedFixture.Fixture) =
 let private differentIdentity directory =
     let catalog = Path.Combine(directory, "src/ClaimCore.Contracts/EndpointCatalog.fs")
     let text = File.ReadAllText catalog
-    let marker = "        identity ()\n        |> Encoding.UTF8.GetBytes"
-    Expect.isTrue (text.Contains marker) "Mismatch fixture reaches compiled fingerprint producer"
+    let marker = "writer.WriteString(\"id\", endpoint.Identifier)"
+    Expect.isTrue (text.Contains marker) "Mismatch fixture reaches compiled catalogue metadata"
 
     File.WriteAllText(
         catalog,
-        text.Replace(
-            marker,
-            "        identity () + \"\\nsynthetic-contract-difference\"\n        |> Encoding.UTF8.GetBytes"
-        )
+        text.Replace(marker, "writer.WriteString(\"id\", endpoint.Identifier + \"-synthetic\")")
     )
 
 let qualify (fixture: PublishedFixture.Fixture) =

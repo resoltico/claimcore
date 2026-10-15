@@ -25,8 +25,8 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         let receipt = run fixture fixture.Environment bytes 0 |> require "ACCEPTED"
 
         Expect.equal
-            (receipt.GetProperty("revision").GetString())
-            (string (index + 1))
+            (receipt.GetProperty("revision").GetInt64())
+            (int64 (index + 1))
             "Example revision"
 
         let replay = run fixture fixture.Environment bytes 0 |> require "ALREADY_ACCEPTED"
@@ -37,16 +37,68 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         automation fixture "case.get" {| caseReference = "DEMO-0001" |} 0
         |> require "SUCCEEDED"
 
-    let view = current.GetProperty("current").GetProperty("case")
-    Expect.equal (view.GetProperty("revision").GetString()) "6" "Six commands"
-    Expect.equal (view.GetProperty("fields").GetProperty("status").GetString()) "OPENED" "Reopened"
+    let view = current
+    Expect.equal (view.GetProperty("revision").GetInt64()) 6L "Six commands"
 
     Expect.equal
-        (view.GetProperty("fields").GetProperty("paymentDate").ValueKind)
+        (view.GetProperty("state").GetProperty("fields").GetProperty("status").GetString())
+        "OPENED"
+        "Reopened"
+
+    Expect.equal
+        (view.GetProperty("state").GetProperty("fields").GetProperty("paymentDate").ValueKind)
         JsonValueKind.Null
         "Clear payment date"
 
     position
+
+let private erasedHistory fixture =
+    let history =
+        automation
+            fixture
+            "case.history"
+            {|
+                caseReference = "DEMO-0001"
+                detail = "FULL"
+                limit = 50
+            |}
+            0
+        |> require "SUCCEEDED"
+
+    let entries = history.GetProperty("entries")
+    Expect.equal (entries.GetArrayLength()) 9 "All nine accepted acts retain metadata"
+
+    for entry in entries.EnumerateArray() do
+        Expect.equal
+            (entry.GetProperty("tag").GetString())
+            "FULL"
+            "Requested receipt detail remains explicit"
+
+        let receipt = entry.GetProperty("receipt")
+        let snapshot = receipt.GetProperty("snapshot")
+        Expect.equal (snapshot.GetProperty("tag").GetString()) "ERASED" "Business payload is erased"
+
+        Expect.equal
+            (snapshot.EnumerateObject() |> Seq.length)
+            1
+            "No historical payload retained in receipt"
+
+        let names = receipt.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
+
+        Expect.equal
+            names
+            [
+                "act"
+                "caseReference"
+                "operationId"
+                "position"
+                "recordedAt"
+                "recordedBy"
+                "revision"
+                "scope"
+                "snapshot"
+            ]
+            "Receipt retains identity and ledger metadata"
 
 let private stewardship (fixture: PublishedFixture.Fixture) =
     let source =
@@ -72,45 +124,23 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
         automation fixture "case.get" {| caseReference = "DEMO-0001" |} 0
         |> require "SUCCEEDED"
 
-    let tombstone = erased.GetProperty("current")
-    Expect.equal (tombstone.GetProperty("state").GetString()) "ERASED" "Erased state"
+    let tombstone = erased
+
+    Expect.equal
+        (tombstone.GetProperty("state").GetProperty("tag").GetString())
+        "ERASED"
+        "Erased state"
+
     Expect.equal (tombstone.EnumerateObject() |> Seq.length) 3 "Reference, revision, state only"
 
-    let history =
-        automation
-            fixture
-            "case.history"
-            {|
-                caseReference = "DEMO-0001"
-                detail = "FULL"
-                limit = 50
-            |}
-            0
-        |> require "SUCCEEDED"
-
-    let entries = history.GetProperty("entries")
-    Expect.equal (entries.GetArrayLength()) 9 "All nine accepted acts retain metadata"
-
-    for entry in entries.EnumerateArray() do
-        Expect.equal
-            (entry.GetProperty("tag").GetString())
-            "SUMMARY"
-            "Erased history exposes metadata only"
-
-        let names =
-            entry.GetProperty("change").EnumerateObject()
-            |> Seq.map _.Name
-            |> Seq.sort
-            |> Seq.toList
-
-        Expect.equal
-            names
-            [ "act"; "operationId"; "position"; "recordedAt"; "recordedBy"; "revision" ]
-            "No payload in erased history"
+    erasedHistory fixture
 
 let private verify (fixture: PublishedFixture.Fixture) (position: JsonElement) =
     let expected =
-        (position.GetProperty("sequence").GetString() |> nonNull)
+        (position
+            .GetProperty("sequence")
+            .GetInt64()
+            .ToString(Globalization.CultureInfo.InvariantCulture))
         + ":"
         + (position.GetProperty("entryHash").GetString() |> nonNull)
 
@@ -125,7 +155,7 @@ let private verify (fixture: PublishedFixture.Fixture) (position: JsonElement) =
                 "999999:0000000000000000000000000000000000000000000000000000000000000000"
             ]
 
-    Expect.equal rejected.ExitCode 2 "Wrong checkpoint is refused"
+    Expect.equal rejected.ExitCode 5 "Wrong checkpoint is verification divergence"
 
 let private inputBoundaries fixture =
     let malformed =
@@ -162,22 +192,22 @@ let private inputBoundaries fixture =
         "Forged PKCE state refuses"
 
 let private supplementary fixture =
-    let reference = Guid.NewGuid().ToString("N") + String.replicate 48 "🙂"
+    let reference = Guid.NewGuid().ToString("N") + "-unicode"
     let name = String.replicate 200 "🙂"
 
     let input =
         {|
             operationId = id ()
             caseReference = reference
-            expectedRevision = "0"
-            command =
+            expectedRevision = 0L
+            act =
                 {|
                     kind = "OPEN"
                     values =
                         {|
                             incidentDate = "2026-08-01"
                             incidentNotificationDate = "2026-08-03"
-                            incidentCountry = String.replicate 100 "🙂"
+                            incidentCountry = "LT"
                             claimantName = name
                             insurerName = name
                             claimedAmount = "1.0000"
@@ -186,24 +216,21 @@ let private supplementary fixture =
                 |}
         |}
 
-    automation fixture "command.preview" input 0 |> require "REVIEWED" |> ignore
-    let receipt = automation fixture "command.execute" input 0 |> require "ACCEPTED"
+    automation fixture "case.preview" input 0 |> require "REVIEWED" |> ignore
+    let receipt = automation fixture "case.execute" input 0 |> require "ACCEPTED"
 
     let observed =
         automation fixture "operation.observe" {| operationId = input.operationId |} 0
         |> require "SUCCEEDED"
 
-    Expect.equal
-        (observed.GetProperty("receipt").GetRawText())
-        (receipt.GetRawText())
-        "Supplementary exact observation"
+    Expect.equal (observed.GetRawText()) (receipt.GetRawText()) "Supplementary exact observation"
 
-    let replay =
-        automation fixture "command.execute" input 0 |> require "ALREADY_ACCEPTED"
+    let replay = automation fixture "case.execute" input 0 |> require "ALREADY_ACCEPTED"
 
     Expect.equal
         (replay
             .GetProperty("snapshot")
+            .GetProperty("state")
             .GetProperty("fields")
             .GetProperty("claimantName")
             .GetString())

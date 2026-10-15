@@ -17,16 +17,15 @@ let qualify fixture output =
     let current =
         automation fixture "case.get" {| caseReference = reference |} 0
         |> require "SUCCEEDED"
-        |> fun value -> value.GetProperty("current").GetProperty("case")
 
-    Expect.equal (current.GetProperty("revision").GetString()) "1" "One browser acceptance"
-    let fields = current.GetProperty("fields")
+    Expect.equal (current.GetProperty("revision").GetInt64()) 1L "One browser acceptance"
+    let fields = current.GetProperty("state").GetProperty("fields")
 
     for field, expected in
         [
             "claimantName", String.replicate 200 "🙂"
             "insurerName", String.replicate 200 "🙂"
-            "incidentCountry", String.replicate 100 "🙂"
+            "incidentCountry", "LT"
         ] do
         Expect.equal
             (fields.GetProperty(field).GetString())
@@ -36,12 +35,11 @@ let qualify fixture output =
     let receipt =
         automation fixture "operation.observe" {| operationId = operationId |} 0
         |> require "SUCCEEDED"
-        |> fun value -> value.GetProperty("receipt")
 
     Expect.equal (receipt.GetProperty("caseReference").GetString()) reference "Exact reference"
     Expect.equal (receipt.GetProperty("operationId").GetString()) operationId "Browser operation"
 
     Expect.equal
-        (receipt.GetProperty("snapshot").GetRawText())
-        (current.GetRawText())
+        (receipt.GetProperty("snapshot").GetProperty("state").GetProperty("fields").GetRawText())
+        (fields.GetRawText())
         "Same snapshot"

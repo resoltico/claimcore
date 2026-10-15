@@ -79,17 +79,21 @@ let principal (fixture: PublishedFixture.Fixture) kind subject =
         subject = subject
     |}
 
-let installation = {| ``type`` = "INSTALLATION" |}
+let installation = {| kind = "INSTALLATION" |}
 
 let private grantFrame target role =
     frame
-        "authority.setGrant"
+        "authority.execute"
         {|
-            eventId = id ()
-            principal = target
-            role = role
-            scope = installation
-            active = true
+            operationId = id ()
+            target = target
+            act =
+                {|
+                    kind = "SET_GRANT"
+                    role = role
+                    scope = installation
+                    active = true
+                |}
         |}
 
 let grant fixture target role =
@@ -98,36 +102,34 @@ let grant fixture target role =
         (interactiveEnvironment fixture "synthetic-owner" "valid")
         (grantFrame target role)
         0
-    |> require "APPLIED"
+    |> require "ACCEPTED"
     |> ignore
 
 let private setupFrames fixture =
     let registrations =
         [
-            "SERVICE", "service", "CASE_EDITOR"
-            "HUMAN", IdentityRealm.stewardSubject, "DATA_STEWARD"
-            "HUMAN", IdentityRealm.readerSubject, "CASE_READER"
-            "HUMAN", IdentityRealm.editorSubject, "CASE_EDITOR"
+            "SERVICE", "service", [ "CASE_HANDLER"; "PAYMENT_RECORDER" ]
+            "HUMAN", IdentityRealm.stewardSubject, [ "DATA_STEWARD" ]
+            "HUMAN", IdentityRealm.readerSubject, [ "CASE_READER" ]
+            "HUMAN", IdentityRealm.editorSubject, [ "CASE_HANDLER"; "PAYMENT_RECORDER" ]
         ]
-        |> List.collect (fun (kind, subject, role) ->
+        |> List.collect (fun (kind, subject, roles) ->
             let target = principal fixture kind subject
 
-            [
-                frame
-                    "authority.register"
-                    {|
-                        eventId = id ()
-                        principal = target
-                    |}
-                grantFrame target role
-            ])
+            frame
+                "authority.execute"
+                {|
+                    operationId = id ()
+                    target = target
+                    act = {| kind = "REGISTER_ACTOR" |}
+                |}
+            :: (roles |> List.map (grantFrame target)))
 
     registrations
-    @ [
-        grantFrame (principal fixture "HUMAN" IdentityRealm.ownerSubject) "CASE_EDITOR"
-    ]
+    @ ([ "CASE_HANDLER"; "PAYMENT_RECORDER" ]
+       |> List.map (grantFrame (principal fixture "HUMAN" IdentityRealm.ownerSubject)))
 
-let internal requireAppliedReplies expected (result: ProcessRunner.Result) =
+let internal requireAcceptedReplies expected (result: ProcessRunner.Result) =
     Expect.equal result.ExitCode 0 "Published CLI session exit"
     Expect.equal result.StandardError.Length 0 "No private diagnostics"
     let lines = UTF8Encoding(false, true).GetString(result.StandardOutput).Split('\n')
@@ -136,7 +138,7 @@ let internal requireAppliedReplies expected (result: ProcessRunner.Result) =
 
     for line in lines[.. lines.Length - 2] do
         use document = JsonDocument.Parse(line)
-        document.RootElement |> require "APPLIED" |> ignore
+        document.RootElement |> require "ACCEPTED" |> ignore
 
 let setup fixture =
     let frames = setupFrames fixture
@@ -149,4 +151,4 @@ let setup fixture =
     let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
 
     ProcessRunner.dotnet 90_000 fixture.Cli [ "session" ] environment (Some source)
-    |> requireAppliedReplies frames.Length
+    |> requireAcceptedReplies frames.Length

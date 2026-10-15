@@ -1,10 +1,12 @@
 {
-  "endpoint": "case.steward",
+  "endpoint": "case.execute",
   "input": {
     "operationId": "10000000-0000-4000-8000-000000000008",
     "caseReference": "DEMO-0001",
-    "expectedRevision": "7",
-    "action": "REINSTATE",
-    "reason": "Synthetic correction checked"
+    "expectedRevision": 7,
+    "act": {
+      "kind": "REINSTATE",
+      "reason": "Synthetic correction checked"
+    }
   }
 }

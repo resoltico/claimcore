@@ -1,10 +1,10 @@
 {
-  "endpoint": "command.execute",
+  "endpoint": "case.execute",
   "input": {
     "operationId": "10000000-0000-4000-8000-000000000002",
     "caseReference": "DEMO-0001",
-    "expectedRevision": "1",
-    "command": {
+    "expectedRevision": 1,
+    "act": {
       "kind": "DECIDE",
       "values": {
         "paymentDecisionDate": "2026-08-15",

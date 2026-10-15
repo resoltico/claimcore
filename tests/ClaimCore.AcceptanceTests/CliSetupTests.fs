@@ -9,7 +9,7 @@ let tests =
     testCase
         "published authority setup refuses incomplete or unconfirmed session replies"
         (fun () ->
-            let applied = "{\"outcome\":{\"tag\":\"APPLIED\",\"data\":{}}}\n"
+            let accepted = "{\"outcome\":{\"tag\":\"ACCEPTED\",\"data\":{}}}\n"
             let refused = "{\"outcome\":{\"tag\":\"REJECTED\",\"data\":{}}}\n"
 
             let result exitCode (output: string) (errors: string) : ProcessRunner.Result =
@@ -19,19 +19,19 @@ let tests =
                     StandardError = Encoding.UTF8.GetBytes(errors)
                 }
 
-            requireAppliedReplies 2 (result 0 (applied + applied) "")
+            requireAcceptedReplies 2 (result 0 (accepted + accepted) "")
 
             for incomplete in
                 [
                     result 0 "" ""
-                    result 0 applied ""
-                    result 0 (applied + applied + applied) ""
-                    result 0 (applied + "\n" + applied) ""
-                    result 0 (applied.TrimEnd('\n') + applied) ""
-                    result 0 (refused + applied) ""
-                    result 3 (applied + applied) ""
-                    result 0 (applied + applied) "synthetic diagnostic"
+                    result 0 accepted ""
+                    result 0 (accepted + accepted + accepted) ""
+                    result 0 (accepted + "\n" + accepted) ""
+                    result 0 (accepted.TrimEnd('\n') + accepted) ""
+                    result 0 (refused + accepted) ""
+                    result 3 (accepted + accepted) ""
+                    result 0 (accepted + accepted) "synthetic diagnostic"
                 ] do
                 Expect.throws
-                    (fun () -> requireAppliedReplies 2 incomplete)
+                    (fun () -> requireAcceptedReplies 2 incomplete)
                     "An incomplete or unconfirmed setup cannot qualify")

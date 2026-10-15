@@ -18,7 +18,6 @@ let private resultExits () =
             [
                 "ACCEPTED", 0
                 "ALREADY_ACCEPTED", 0
-                "ALREADY_APPLIED", 0
                 "REJECTED", 2
                 "FAILED", 3
                 "OUTCOME_UNKNOWN", 4
@@ -106,7 +105,7 @@ let private failurePhases () =
                 "Phase and durable mutation determine uncertainty"
 
 let private invalidReplies () =
-    for endpoint in [ "case.get"; "case.steward"; "authority.register"; "command.execute" ] do
+    for endpoint in [ "case.get"; "case.execute"; "authority.execute" ] do
         for body in
             [
                 bytes "{}"
@@ -178,7 +177,7 @@ let private localExits () =
     Expect.equal (child.StandardOutput.ReadToEnd()) "" "Unsupported invocation has no result"
 
 let private responseBounds () =
-    for endpoint in [ "case.get"; "authority.setGrant" ] do
+    for endpoint in [ "case.get"; "authority.execute" ] do
         let invocation = frame endpoint
         let mutates = (Frames.endpoint invocation).Mutates
 
@@ -218,7 +217,7 @@ let private dispatchGuards () =
     Expect.isError (HostFailures.decode forged) "A phase cannot be detached from its diagnostic"
 
     let code, _, _ =
-        call (Frames.bytes (frame "authority.setGrant")) (fun _ dispatched _ ->
+        call (Frames.bytes (frame "authority.execute")) (fun _ dispatched _ ->
             dispatched ()
             raise (InvalidOperationException "synthetic-after-dispatch"))
 
@@ -233,7 +232,7 @@ let private dispatchGuards () =
         RemoteServiceCall.send
             client
             (Uri "https://localhost/")
-            (frame "authority.setGrant")
+            (frame "authority.execute")
             (System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "synthetic-token"))
             (fun () -> dispatched <- true)
             cancelled.Token
