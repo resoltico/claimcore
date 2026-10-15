@@ -12,7 +12,7 @@ test("records supplementary scalar boundaries through Web for published native r
   const reference = `UNICODE-${randomUUID()}`;
   await startOpen(page, reference);
   const name = "🙂".repeat(200);
-  await page.getByLabel("Country of incident", { exact: true }).fill("LT");
+  await page.getByLabel("Country of incident (ISO alpha-2 code)", { exact: true }).fill("LT");
   await page.getByLabel("Claimant name", { exact: true }).fill(name);
   await page.getByLabel("Responsible insurer", { exact: true }).fill(name);
   const identity = await reviewDraft(page);

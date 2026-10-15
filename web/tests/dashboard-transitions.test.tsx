@@ -118,7 +118,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   fill(/Handler's case reference/u, "CASE-1");
   fill(/^Incident date/u, "2026-09-01");
   fill(/Incident notification date/u, "2026-09-02");
-  fill(/Country of incident/u, "Latvia");
+  fill(/Country of incident/u, "LV");
   fill(/Claimant name/u, "Synthetic claimant");
   fill(/Responsible insurer/u, "Synthetic insurer");
   fill(/Amount claimed/u, "12.34");

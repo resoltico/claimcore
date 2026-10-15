@@ -67,7 +67,7 @@ export const startOpen = async (page: Page, caseReference: string): Promise<void
   await fill(page, {
     "Incident date": "2026-09-01",
     "Incident notification date (FNOL)": "2026-09-02",
-    "Country of incident": "LV",
+    "Country of incident (ISO alpha-2 code)": "LV",
     "Claimant name": "Synthetic claimant",
     "Responsible insurer": "Synthetic insurer",
     "Amount claimed": "1200.50",
