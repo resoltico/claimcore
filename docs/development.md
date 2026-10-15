@@ -43,8 +43,18 @@ CI dispatch with `full_browser_qualification` enabled run all specifications in 
 three-engine matrix. A failed engine cancels sibling jobs; `Gate` requires every scheduled job
 to succeed. Thus a green PR `Gate` proves its advertised smoke scope, not full browser coverage.
 Complete qualification remains separate evidence required for delivery and source releases.
-The frontend CI job sets up Node only, and native jobs set up .NET only. The container build
-likewise builds frontend assets in a Node stage and publishes applications in an SDK stage.
+The frontend CI job executes inside the pinned Node image derived from the deployment Dockerfile,
+with a writable temporary home. It refuses an executable `dotnet` before running frontend checks;
+the hosted runner's preinstalled SDK is outside that container. Native jobs set up .NET only.
+The container build likewise builds frontend assets in a Node stage and publishes applications
+in an SDK stage.
+
+The integration CI matrix derives every major from `db/postgresql-baseline.json` and passes it
+as `CLAIMCORE_TEST_POSTGRES_MAJOR`. Both integration and published acceptance fixtures select
+that exact listed major and pinned image. Unset selects the first listed entry for deterministic
+local use; blank, malformed and unlisted overrides are refused before resources are created.
+The selector does not qualify a new major: adding support still requires actual execution and
+reviewed evidence for that entry.
 
 Browser workers remain serial within each fixture because tests change shared actor grants and
 redirect state. Parallelism comes from isolated engine runners. Retries are disabled. Failures

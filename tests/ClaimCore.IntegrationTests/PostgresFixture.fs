@@ -1,8 +1,6 @@
 module ClaimCore.IntegrationTests.PostgresFixture
 
 open System
-open System.IO
-open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
@@ -11,16 +9,6 @@ open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreContractTests
 
-let private image () =
-    let root = ClaimCore.TestSupport.RepositoryRoot.find ()
-
-    use document =
-        JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "db/postgresql-baseline.json")))
-
-    let baseline =
-        document.RootElement.GetProperty("supportedMajors").EnumerateArray() |> Seq.head
-
-    baseline.GetProperty("containerImage").GetString() |> nonNull
 
 let private owner =
     PrincipalKey.human "https://issuer.example/" "synthetic-owner"
@@ -45,7 +33,7 @@ type internal Database =
 
 let private container () =
     let value =
-        (new PostgreSqlBuilder(image ()))
+        (new PostgreSqlBuilder(ClaimCore.TestSupport.PostgresBaseline.image ()))
             .WithLabel("claimcore.test", "ledger-store")
             .WithLabel("claimcore.test-run", Guid.NewGuid().ToString("D"))
             .WithTmpfsMount("/var/lib/postgresql")

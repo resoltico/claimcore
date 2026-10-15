@@ -27,6 +27,41 @@ env:
   NO_COLOR: "1"
 
 jobs:
+  configuration:
+    name: Derive qualified database and Node inputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      postgresql: ${{ steps.inputs.outputs.postgresql }}
+      node_image: ${{ steps.inputs.outputs.node_image }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: inputs
+        name: Read authoritative image declarations
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, pathlib, re
+          baseline = json.loads(pathlib.Path("db/postgresql-baseline.json").read_text())
+          entries = baseline["supportedMajors"]
+          majors = [entry["major"] for entry in entries]
+          if not majors or len(set(majors)) != len(majors):
+              raise ValueError("PostgreSQL baseline needs distinct listed majors")
+          for entry in entries:
+              image = re.fullmatch(r"postgres:([1-9][0-9]*)\.([0-9]+)@sha256:[0-9a-f]{64}", entry["containerImage"])
+              if (type(entry["major"]) is not int or entry["major"] < 1
+                  or type(entry["minimumMinor"]) is not int or entry["minimumMinor"] < 0
+                  or not image or int(image[1]) != entry["major"] or int(image[2]) < entry["minimumMinor"]):
+                  raise ValueError("PostgreSQL image must match its listed major/minimum minor")
+          images = re.findall(r"^FROM (node:[^\s]+@sha256:[0-9a-f]{64}) AS node$", pathlib.Path("deployment/Dockerfile").read_text(), re.M)
+          if len(images) != 1:
+              raise ValueError("Expected one pinned Node stage in deployment/Dockerfile")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("postgresql=" + json.dumps({"major": majors}, separators=(",", ":")) + "\n")
+              output.write("node_image=" + images[0] + "\n")
+          PYTHON
+
   lint:
     name: Native format, lint and workflow hygiene
     runs-on: ubuntu-24.04
@@ -64,8 +99,13 @@ jobs:
       - run: bash eng/verify.sh unit
 
   integration:
-    name: PostgreSQL and web host tests
-    needs: [lint, unit, frontend]
+    name: PostgreSQL ${{ matrix.major }} and web host tests
+    needs: [configuration, lint, unit, frontend]
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJSON(needs.configuration.outputs.postgresql) }}
+    env:
+      CLAIMCORE_TEST_POSTGRES_MAJOR: ${{ matrix.major }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -78,17 +118,34 @@ jobs:
       - run: bash eng/verify.sh integration
 
   frontend:
-    name: Frontend checks (Node only)
+    name: Frontend checks (SDK-free Node container)
+    needs: [configuration]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-        with:
-          dotnet: "false"
-      - run: bash eng/verify.sh frontend
+      - name: Run frontend in the deployment Node image
+        env:
+          NODE_IMAGE: ${{ needs.configuration.outputs.node_image }}
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" \
+            --env CI=true --env NO_COLOR=1 --env HOME=/tmp/claimcore-home \
+            --env NPM_CONFIG_CACHE=/tmp/claimcore-npm-cache \
+            --volume "$PWD:/workspace" --workdir /workspace "${NODE_IMAGE}" \
+            bash -euo pipefail -c '
+              mkdir -p "${HOME}"
+              if command -v dotnet >/dev/null 2>&1; then
+                echo "Frontend boundary refuses an executable dotnet SDK/runtime." >&2
+                exit 1
+              fi
+              test "$(node --version)" = "v$(tr -d "\r\n" < .node-version)"
+              npm install --global --prefix /tmp/claimcore-npm "npm@$(node -p "require(\"./web/package.json\").engines.npm")"
+              export PATH="/tmp/claimcore-npm/bin:${PATH}"
+              test "$(npm --version)" = "$(node -p "require(\"./web/package.json\").engines.npm")"
+              bash eng/verify.sh frontend
+            '
 
   acceptance:
     name: Published clients (${{ matrix.engine }}, ${{ matrix.scope }})
@@ -120,7 +177,7 @@ jobs:
   gate:
     name: Gate
     if: always()
-    needs: [lint, unit, integration, frontend, acceptance]
+    needs: [configuration, lint, unit, integration, frontend, acceptance]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

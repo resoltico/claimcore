@@ -13,17 +13,7 @@ open Npgsql
 open Testcontainers.PostgreSql
 open Expecto
 
-let private database runId =
-    let root = ClaimCore.TestSupport.RepositoryRoot.find ()
-
-    use document =
-        JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "db/postgresql-baseline.json")))
-
-    let baseline =
-        document.RootElement.GetProperty("supportedMajors").EnumerateArray() |> Seq.head
-
-    let image = baseline.GetProperty("containerImage").GetString() |> nonNull
-
+let private database (image: string) runId =
     (new PostgreSqlBuilder(image))
         .WithName("claimcore-acceptance-db-" + runId)
         .WithLabel("claimcore.test", "acceptance")
@@ -141,10 +131,11 @@ let private initialize
     }
 
 type Fixture() =
+    let postgresImage = ClaimCore.TestSupport.PostgresBaseline.image ()
     let ownedDirectory = FixtureCleanup.OwnedDirectory()
     let directory = ownedDirectory.Path
     let root = ClaimCore.TestSupport.RepositoryRoot.find ()
-    let postgres = database (Guid.NewGuid().ToString("N"))
+    let postgres = database postgresImage (Guid.NewGuid().ToString("N"))
     let origin = "https://localhost:" + string (FixtureFiles.port ())
     let backend = "https://localhost:" + string (FixtureFiles.port ())
     let identity = new IdentityServer.Identity(origin)
