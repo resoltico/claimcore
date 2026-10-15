@@ -117,7 +117,6 @@
   "ui.discardAndLeave": "Atmest un aiziet",
   "ui.technicalDetails": "Tehniskā informācija atbalstam",
   "ui.productVersion": "Produkta versija: {version}",
-  "ui.semanticIdentity": "Semantiskais līgums: {digest}",
   "ui.webIdentity": "Saziņas līgums: {digest}",
   "ui.fieldHelp": "Nozīme un precīza kopēšana",
   "ui.historyDetail": "Vēstures detalizācija",
@@ -131,5 +130,12 @@
   "ui.reloadContract": "Pārlādēt lapu",
   "ui.lifecycleErased": "Dzēsta — saglabāta tikai lietas atsauce un revīzija.",
   "ui.languageDescription": "Valoda maina attēloto tekstu un saglabā pašreizējo melnrakstu un pārskatījumu.",
-  "ui.leaveDraftDescription": "Vai atmest šo melnrakstu un aizvērt redaktoru?"
+  "ui.leaveDraftDescription": "Vai atmest šo melnrakstu un aizvērt redaktoru?",
+  "ui.referenceHint": "Izmantojiet no 1 līdz 80 drukājamām ASCII rakstzīmēm bez atstarpēm. Lielo un mazo burtu atšķirība nemaina lietas identitāti; sākotnējā rakstība tiek saglabāta.",
+  "ui.countryHint": "Izmantojiet divus lielos burtus. ZZ nozīmē nezināmu vai starptautisku vietu.",
+  "ui.countryName": "{code}: {name}",
+  "ui.countryUnassigned": "Kodam {code} nav pieejams valsts nosaukums. Pārbaudiet paredzēto kodu.",
+  "ui.countryUnknown": "Nezināms vai starptautisks",
+  "ui.snapshotWithheld": "Reģistrētie lauki nav atklāti atbilstoši jūsu pašreizējām piekļuves tiesībām.",
+  "ui.authorityReceipt": "Pilnvaru darbība {act} identitātei {actor}."
 }

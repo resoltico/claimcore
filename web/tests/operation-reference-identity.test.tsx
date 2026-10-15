@@ -8,28 +8,30 @@ import { previewForRequest } from "./preview-request.fixtures";
 import { definition, fields, digest, response, runtime } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
-  state: "LIVE",
-  disposition: "ACTIVE",
-  case: { fields, revision: "1" },
-  availableCommands: ["CLOSE"],
+  caseReference: fields.caseReference,
+  revision: 1,
+  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
 };
 
 const prepared = () =>
-  response("command.preview", "REVIEWED", {
+  response("case.preview", "REVIEWED", {
     requestSha256: digest,
     review: {
-      before: current.case,
-      proposed: { fields, revision: "2" },
+      before: current,
+      after: {
+        caseReference: fields.caseReference,
+        revision: 2,
+        state: { tag: "LIVE", disposition: "ACTIVE", fields },
+      },
       changes: [],
       context: runtime,
-      advisory: true,
     },
   });
 
 type SentDraft = {
   operationId: string;
   caseReference: string;
-  command: { values: Record<string, string> };
+  act: { kind: string; values?: Record<string, string> };
 };
 
 const sentDraft = (body: unknown): SentDraft => {
@@ -46,7 +48,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   const fetch = vi.mocked(globalThis.fetch);
   fetch
     .mockImplementationOnce(previewForRequest(prepared()))
-    .mockResolvedValueOnce(generatedResponse("command.execute"));
+    .mockResolvedValueOnce(generatedResponse("case.execute"));
   const committed = vi.fn();
   render(
     <OperationEditor
@@ -68,5 +70,5 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);
   expect(draft.caseReference).toBe(fields.caseReference);
-  expect(draft.command.values).not.toHaveProperty("caseReference");
+  expect(draft.act).toEqual({ kind: "CLOSE" });
 });

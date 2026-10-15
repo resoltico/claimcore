@@ -1,10 +1,10 @@
-import { wireContractFingerprint } from "../src/generated/contracts/endpoint-catalog";
-export { productMetadata as definition } from "../src/generated/contracts/product-metadata";
+import { wireContractFingerprint } from "@contracts/endpoint-catalog";
+export { productMetadata as definition } from "@contracts/product-metadata";
 export { caseFields as fields, operationId, digest, review } from "./service-foundation.fixtures";
 export const runtime = {
   productVersion: "0.8.0",
-  effectiveBusinessDate: "2026-09-09",
-  timeZoneId: "Etc/UTC",
+  businessDate: "2026-09-09",
+  timeZone: "Etc/UTC",
 };
 const fixtureData = (endpoint: string, data: unknown): unknown => {
   if (endpoint === "session.logout") {
@@ -16,9 +16,6 @@ const fixtureData = (endpoint: string, data: unknown): unknown => {
       ...(typeof data === "object" && data !== null ? data : {}),
     };
   }
-  if (endpoint === "case.list" && typeof data === "object" && data !== null) {
-    return { availableCommands: ["OPEN"], ...data };
-  }
   return data;
 };
 export const response = (endpoint: string, tag: string, data: unknown, status = 200): Response =>
@@ -26,3 +23,13 @@ export const response = (endpoint: string, tag: string, data: unknown, status = 
     status,
     headers: { "content-type": "application/json" },
   });
+
+export const context = { ...runtime, capabilities: ["REGISTER"] };
+
+export const unavailable = {
+  diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
+  message: "Synthetic unavailable resource",
+  field: null,
+  actualRevision: null,
+  recommendedAction: "NONE_REQUIRED",
+} as const;

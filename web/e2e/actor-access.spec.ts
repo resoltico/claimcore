@@ -5,30 +5,26 @@ import { configureRole, prepareRoleFixture } from "./narrow-role-fixture";
 import { refusedRead } from "./narrow-role-oracles";
 import { login, sessionToken } from "./session-helpers";
 
-const ownerRoles = ["CASE_EDITOR"] as const;
+const ownerRoles = ["CASE_HANDLER", "PAYMENT_RECORDER"] as const;
 const ownerGrants = async (page: Page, active: boolean) => {
   const source = await syntheticPrincipals();
   const changed: (typeof ownerRoles)[number][] = [];
   try {
     for (const role of ownerRoles) {
-      await applyAuthority(page, "authority.setGrant", {
-        eventId: randomUUID(),
-        principal: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
-        role,
-        scope: { type: "INSTALLATION" },
-        active,
+      await applyAuthority(page, {
+        operationId: randomUUID(),
+        target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
+        act: { kind: "SET_GRANT", role, scope: { kind: "INSTALLATION" }, active },
       });
       changed.push(role);
     }
   } catch (error) {
     if (!active) {
       for (const role of changed.reverse()) {
-        await applyAuthority(page, "authority.setGrant", {
-          eventId: randomUUID(),
-          principal: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
-          role,
-          scope: { type: "INSTALLATION" },
-          active: true,
+        await applyAuthority(page, {
+          operationId: randomUUID(),
+          target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
+          act: { kind: "SET_GRANT", role, scope: { kind: "INSTALLATION" }, active: true },
         });
       }
     }
@@ -66,10 +62,10 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
     ignoreHTTPSErrors: true,
   });
   const enable = (enabled: boolean) =>
-    applyAuthority(page, "authority.setEnabled", {
-      eventId: randomUUID(),
-      principal: fixture.principal,
-      enabled,
+    applyAuthority(page, {
+      operationId: randomUUID(),
+      target: fixture.principal,
+      act: { kind: "SET_ENABLED", enabled },
     });
   let disabledConfirmed = false;
   try {

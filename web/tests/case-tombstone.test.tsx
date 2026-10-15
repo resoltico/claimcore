@@ -7,19 +7,20 @@ it("erased cases retain their exact reference and revision but expose no facts o
   vi.mocked(fetch)
     .mockResolvedValueOnce(
       response("case.get", "SUCCEEDED", {
-        tag: "FOUND",
-        current: { state: "ERASED", caseReference: "ERASED-1", revision: "4" },
+        state: { tag: "ERASED" },
+        caseReference: "ERASED-1",
+        revision: 4,
       }),
     )
     .mockResolvedValueOnce(
-      response("case.history", "SUCCEEDED", { tag: "FOUND", entries: [], nextCursor: null }),
+      response("case.history", "SUCCEEDED", { entries: [], nextCursor: null }),
     );
   render(
     <CaseDetail
       token="csrf"
       caseReference="ERASED-1"
       reloadSignal={0}
-      definition={definition.definition}
+      definition={definition.descriptors}
       onBack={vi.fn()}
       onCommand={vi.fn()}
     />,

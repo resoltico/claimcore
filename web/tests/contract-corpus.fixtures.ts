@@ -1,10 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import Ajv2020, { type AnySchema, type ValidateFunction } from "ajv/dist/2020.js";
-import addFormats from "ajv-formats";
-import { endpoints, type EndpointId } from "../src/generated/contracts/endpoint-catalog";
+import type { EndpointId } from "@contracts/endpoint-catalog";
 import type { ServiceResponse } from "../src/api/types";
-const directory = resolve(import.meta.dirname, "../src/generated/contracts");
+const directory = resolve(import.meta.dirname, "../../contracts");
 export const readUnknown = (file: string): unknown =>
   JSON.parse(readFileSync(resolve(directory, file), "utf8"));
 export const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -15,14 +13,6 @@ export type CorpusCase = {
   direction: "request" | "response";
   valid: boolean;
   value: unknown;
-};
-export const endpointInventory = endpoints.map((e) => e.id);
-export const requiredWebEndpoint = (name: string): EndpointId => {
-  const found = endpoints.find((e) => e.id === name);
-  if (found === undefined) {
-    throw new Error("Missing endpoint.");
-  }
-  return found.id;
 };
 export const corpusCases = (): CorpusCase[] => {
   const raw = readUnknown("endpoint-corpus.json");
@@ -39,14 +29,10 @@ export const generatedWebValue = <K extends EndpointId>(endpoint: K): ServiceRes
     throw new Error("Positive response absent.");
   }
   const value = structuredClone(sample.value) as ServiceResponse<K>;
-  if (
-    value.endpoint === "case.history" &&
-    value.outcome.tag === "SUCCEEDED" &&
-    value.outcome.data.tag === "FOUND"
-  ) {
-    const accepted = generatedWebValue("command.execute");
+  if (value.endpoint === "case.history" && value.outcome.tag === "SUCCEEDED") {
+    const accepted = generatedWebValue("case.execute");
     if (accepted.outcome.tag !== "ACCEPTED") {
-      throw new Error("Receipt fixture absent.");
+      throw new Error("CaseReceipt fixture absent.");
     }
     return {
       ...value,
@@ -79,17 +65,6 @@ export const generatedResponse = (endpoint: EndpointId, status = 200): Response 
     status,
     headers: { "content-type": "application/json" },
   });
-export const schemaValidator = (file: string): ValidateFunction => {
-  const compiler = new Ajv2020({
-    strict: true,
-    coerceTypes: false,
-    removeAdditional: false,
-    useDefaults: false,
-  });
-  addFormats(compiler);
-  return compiler.compile(readUnknown(file) as AnySchema);
-};
-
 export const hostCases = () => [
   {
     id: "input-invalid",

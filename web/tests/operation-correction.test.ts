@@ -10,11 +10,11 @@ it("encodes every correction action explicitly and refuses an invalid registrati
     decision: { mode: "REPLACE" as const, values: {} },
     payment: { mode: "REPLACE" as const, values: {} },
   };
-  const request = createDraft(operationId, "CASE-SYNTHETIC", "1", "CORRECT_CASE", values);
-  if (request.command.kind !== "CORRECT_CASE") {
+  const request = createDraft(operationId, "CASE-SYNTHETIC", 1, "CORRECT_CASE", values);
+  if (request.act.kind !== "CORRECT_CASE") {
     throw new Error("Expected a correction request.");
   }
-  expect(request.command.groups).toEqual({
+  expect(request.act.groups).toEqual({
     registration: { mode: "KEEP" },
     decision: {
       mode: "REPLACE",
@@ -23,7 +23,7 @@ it("encodes every correction action explicitly and refuses an invalid registrati
     payment: { mode: "REPLACE", values: { paymentDate: "" } },
   });
   expect(() =>
-    createDraft(operationId, "CASE-SYNTHETIC", "1", "CORRECT_CASE", {
+    createDraft(operationId, "CASE-SYNTHETIC", 1, "CORRECT_CASE", {
       ...values,
       registration: { mode: "CLEAR", values: {} },
     }),
@@ -38,11 +38,11 @@ it("rejects impossible local draft shapes and keeps absent current correction va
   expect(() => {
     Reflect.apply(commandInputs, undefined, [{ ...definition, fields: [] }, "OPEN"]);
   }).toThrow("did not describe");
-  expect(() => createDraft(operationId, "CASE-SYNTHETIC", "1", "CORRECT_CASE", {})).toThrow(
+  expect(() => createDraft(operationId, "CASE-SYNTHETIC", 1, "CORRECT_CASE", {})).toThrow(
     "CORRECT_CASE requires grouped values.",
   );
   expect(() =>
-    createDraft(operationId, "CASE-SYNTHETIC", "1", "OPEN", {
+    createDraft(operationId, "CASE-SYNTHETIC", 1, "OPEN", {
       registration: { mode: "KEEP", values: {} },
       decision: { mode: "KEEP", values: {} },
       payment: { mode: "KEEP", values: {} },
@@ -51,7 +51,7 @@ it("rejects impossible local draft shapes and keeps absent current correction va
 });
 
 it("retains authored replacement values for every grouped correction field", () => {
-  const request = createDraft(operationId, "CASE-SYNTHETIC", "1", "CORRECT_CASE", {
+  const request = createDraft(operationId, "CASE-SYNTHETIC", 1, "CORRECT_CASE", {
     registration: {
       mode: "REPLACE",
       values: {
@@ -70,14 +70,14 @@ it("retains authored replacement values for every grouped correction field", () 
     },
     payment: { mode: "REPLACE", values: { paymentDate: "2026-09-04" } },
   });
-  if (request.command.kind !== "CORRECT_CASE") {
+  if (request.act.kind !== "CORRECT_CASE") {
     throw new Error("Expected a correction request.");
   }
-  expect(request.command.groups.decision).toEqual({
+  expect(request.act.groups.decision).toEqual({
     mode: "REPLACE",
     values: { paymentDecisionDate: "2026-09-03", payableAmount: "2.00", payableCurrency: "EUR" },
   });
-  expect(request.command.groups.payment).toEqual({
+  expect(request.act.groups.payment).toEqual({
     mode: "REPLACE",
     values: { paymentDate: "2026-09-04" },
   });

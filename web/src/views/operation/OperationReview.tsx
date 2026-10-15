@@ -18,12 +18,12 @@ const ReviewValues = ({
   return (
     <dl className="review-values">
       {review.changes.map((change) => (
-        <div key={change.fieldName}>
-          <dt>{p.fieldLabel(change.fieldName)}</dt>
+        <div key={change.field}>
+          <dt>{p.fieldLabel(change.field)}</dt>
           <dd>
             <BusinessValue
               value={change.before}
-              field={fields.find((field) => field.name === change.fieldName)!}
+              field={fields.find((field) => field.name === change.field)!}
               context="ui.before"
             />
             <span className="review-arrow" aria-hidden="true">
@@ -32,7 +32,7 @@ const ReviewValues = ({
             </span>
             <BusinessValue
               value={change.after}
-              field={fields.find((field) => field.name === change.fieldName)!}
+              field={fields.find((field) => field.name === change.field)!}
               context="ui.after"
             />
           </dd>

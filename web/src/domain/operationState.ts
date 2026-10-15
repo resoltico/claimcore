@@ -1,5 +1,5 @@
 import type { Notice } from "../api/notices";
-import type { Review, CommandDraft, Receipt } from "../api/service";
+import type { Review, CommandDraft, CaseReceipt } from "../api/service";
 import type { CommandKind, CorrectionGroupName, CorrectionMode, DraftValues } from "./metadata";
 
 export type DeliveryState =
@@ -19,7 +19,7 @@ export type OperationState = {
   requestSha256: string | null;
   requestBytes: string | null;
   review: Review | null;
-  receipt: Receipt | null;
+  receipt: CaseReceipt | null;
   message: Notice | null;
   fieldError: { name: string; message: Notice } | null;
   exposedRequest: CommandDraft | null;
@@ -46,7 +46,7 @@ export type OperationAction =
   | { type: "REVIEWED"; requestId: number; requestSha256: string; review: Review }
   | { type: "DEFINITELY_REJECTED"; requestId: number; message: Notice; field: string | null }
   | { type: "SUBMITTING"; requestId: number }
-  | { type: "ACCEPTED"; requestId: number; receipt: Receipt; message?: Notice | null }
+  | { type: "ACCEPTED"; requestId: number; receipt: CaseReceipt; message?: Notice | null }
   | { type: "OUTCOME_UNKNOWN"; requestId: number; message: Notice }
   | { type: "RETURN_TO_EDIT" }
   | { type: "RESET_MESSAGE" };

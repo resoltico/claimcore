@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import type { CaseView, SemanticDefinition } from "../src/api/service";
+import type { CurrentCase, Descriptors } from "../src/api/service";
 import {
   commandFor,
   correctionGroupName,
@@ -31,8 +31,12 @@ const definition = {
       },
     },
   ],
-} as unknown as SemanticDefinition;
-const current = { fields: caseFields, revision: "1" } as unknown as CaseView;
+} as unknown as Descriptors;
+const current: CurrentCase = {
+  caseReference: caseFields.caseReference,
+  revision: 1,
+  state: { tag: "LIVE", disposition: "ACTIVE", fields: caseFields, availableActs: [] },
+};
 const keep = { mode: "KEEP" as const, values: {} };
 const emptyRegistration = {
   incidentDate: "",
@@ -102,31 +106,31 @@ const expectDirtiness = () => {
 };
 
 const expectFrozenRequests = () => {
-  const flat = createDraft("op", "CASE-1", "1", "OPEN", { claimantName: "A" });
+  const flat = createDraft("op", "CASE-1", 1, "OPEN", { claimantName: "A" });
   const frozenFlat = freezeRequest(flat);
   expect(frozenFlat).toEqual(flat);
-  expect(frozenFlat.command).not.toBe(flat.command);
-  const grouped = createDraft("op", "CASE-1", "1", "CORRECT_CASE", groupedCorrectionValues);
+  expect(frozenFlat.act).not.toBe(flat.act);
+  const grouped = createDraft("op", "CASE-1", 1, "CORRECT_CASE", groupedCorrectionValues);
   const frozen = freezeRequest(grouped);
-  if (frozen.command.kind !== "CORRECT_CASE" || grouped.command.kind !== "CORRECT_CASE") {
+  if (frozen.act.kind !== "CORRECT_CASE" || grouped.act.kind !== "CORRECT_CASE") {
     throw new Error("Expected grouped correction requests.");
   }
   expect(frozen).toEqual(grouped);
-  expect(frozen.command.groups.registration).not.toBe(grouped.command.groups.registration);
-  expect(frozen.command.groups.decision).toEqual({ mode: "KEEP" });
-  expect(frozen.command.groups.decision).not.toBe(grouped.command.groups.decision);
+  expect(frozen.act.groups.registration).not.toBe(grouped.act.groups.registration);
+  expect(frozen.act.groups.decision).toEqual({ mode: "KEEP" });
+  expect(frozen.act.groups.decision).not.toBe(grouped.act.groups.decision);
 };
 
 const expectRegistrationDefaults = () => {
-  const draft = createDraft("op", "CASE-1", "1", "CORRECT_CASE", {
+  const draft = createDraft("op", "CASE-1", 1, "CORRECT_CASE", {
     registration: { mode: "REPLACE", values: {} },
     decision: keep,
     payment: keep,
   });
-  if (draft.command.kind !== "CORRECT_CASE") {
+  if (draft.act.kind !== "CORRECT_CASE") {
     throw new Error("Expected a grouped correction request.");
   }
-  expect(draft.command.groups.registration).toEqual({ mode: "REPLACE", values: emptyRegistration });
+  expect(draft.act.groups.registration).toEqual({ mode: "REPLACE", values: emptyRegistration });
 };
 
 /** Metadata helpers and request freezing must behave exactly, not merely plausibly. */

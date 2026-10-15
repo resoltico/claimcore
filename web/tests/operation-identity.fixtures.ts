@@ -18,7 +18,7 @@ export const begin = (state: OperationState, requestId: number) =>
     requestId,
     draft:
       state.exposedRequest ??
-      createDraft(state.operationId, state.caseReference, "0", state.command, state.values),
+      createDraft(state.operationId, state.caseReference, 0, state.command, state.values),
   });
 export const refused = (state: OperationState, requestId: number) =>
   operationReducer(state, {

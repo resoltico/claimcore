@@ -9,8 +9,8 @@ import { definition, fields, digest, response, runtime } from "./service-ui.fixt
 type SentDraft = {
   operationId: string;
   caseReference: string;
-  expectedRevision: string;
-  command: { kind: string; values: Record<string, string> };
+  expectedRevision: number;
+  act: { kind: string; values: Record<string, string> };
 };
 
 const sentDraft = (call: number): SentDraft => {
@@ -34,20 +34,22 @@ const editor = (current: CurrentCase | null, initialCommand: "OPEN" | "CLOSE" | 
 );
 
 const preparedResponse = () =>
-  response("command.preview", "REVIEWED", {
+  response("case.preview", "REVIEWED", {
     requestSha256: digest,
     review: {
       before: null,
-      proposed: { fields, revision: "1" },
+      after: {
+        caseReference: fields.caseReference,
+        revision: 1,
+        state: { tag: "LIVE", disposition: "ACTIVE", fields },
+      },
       changes: [],
       context: runtime,
-      advisory: true,
     },
   });
 
 const refusedResponse = () =>
-  response("command.execute", "REJECTED", {
-    code: "IDEMPOTENCY_CONFLICT",
+  response("case.execute", "REJECTED", {
     diagnostic: { id: "OPERATION_CONTENT_CONFLICT", parameters: {} },
     message: "Synthetic conflict",
     field: null,
@@ -56,7 +58,6 @@ const refusedResponse = () =>
   });
 
 const validationRefusal: Rejection = {
-  code: "INVALID_INPUT",
   message: "Synthetic validation refusal.",
   diagnostic: { id: "INPUT_TEXT_REQUIRED", parameters: {} },
   field: "claimantName",
@@ -65,16 +66,14 @@ const validationRefusal: Rejection = {
 };
 
 const staleRefusal: Rejection = {
-  code: "VERSION_CONFLICT",
   message: "Synthetic stale revision.",
   diagnostic: { id: "CASE_REVISION_CONFLICT", parameters: {} },
   field: null,
-  actualRevision: "2",
+  actualRevision: 2,
   recommendedAction: "READ_CURRENT",
 };
 
-const rejectedResponse = (rejection: Rejection) =>
-  response("command.preview", "REJECTED", rejection);
+const rejectedResponse = (rejection: Rejection) => response("case.preview", "REJECTED", rejection);
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
@@ -96,17 +95,16 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("A non-blank value is required.");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
-  expect(sentDraft(0).command.values["claimantName"]).toBe("");
-  expect(sentDraft(2).command.values["claimantName"]).toBe("Synthetic B");
+  expect(sentDraft(0).act.values["claimantName"]).toBe("");
+  expect(sentDraft(2).act.values["claimantName"]).toBe("Synthetic B");
 });
 
 it("retries the frozen request after delivery loss despite a changed current revision", async () => {
   const user = userEvent.setup();
   const current: CurrentCase = {
-    state: "LIVE",
-    disposition: "ACTIVE",
-    case: { fields, revision: "1" },
-    availableCommands: ["CLOSE"],
+    caseReference: fields.caseReference,
+    revision: 1,
+    state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
   };
   vi.mocked(globalThis.fetch)
     .mockRejectedValueOnce(new Error("Synthetic delivery loss"))
@@ -114,22 +112,29 @@ it("retries the frozen request after delivery loss despite a changed current rev
   const view = render(editor(current, "CLOSE"));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByText(/could not be reached/u);
-  view.rerender(editor({ ...current, case: { ...current.case, revision: "2" } }, "CLOSE"));
+  view.rerender(editor({ ...current, revision: 2 }, "CLOSE"));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2);
   });
   expect(sentDraft(1)).toEqual(sentDraft(0));
-  expect(sentDraft(1).expectedRevision).toBe("1");
+  expect(sentDraft(1).expectedRevision).toBe(1);
   expect(
     await screen.findByText("Read the current case before making a changed request."),
   ).toBeVisible();
 });
 
 const paidCase: CurrentCase = {
-  state: "LIVE",
-  disposition: "ACTIVE",
-  case: {
+  caseReference: {
+    ...fields,
+    paymentDecisionDate: "2026-09-03",
+    payableAmount: "9.99",
+    payableCurrency: "EUR",
+    paymentDate: "2026-09-04",
+  }.caseReference,
+  revision: 1,
+  state: {
+    tag: "LIVE",
     fields: {
       ...fields,
       paymentDecisionDate: "2026-09-03",
@@ -137,9 +142,9 @@ const paidCase: CurrentCase = {
       payableCurrency: "EUR",
       paymentDate: "2026-09-04",
     },
-    revision: "1",
+    disposition: "ACTIVE",
+    availableActs: ["CORRECT_CASE"],
   },
-  availableCommands: ["CORRECT_CASE"],
 };
 
 it("sends an explicit grouped correction and preserves all non-replaced groups", async () => {
@@ -161,7 +166,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
     throw new Error("Expected a grouped correction request body.");
   }
   const draft = JSON.parse(body) as {
-    command: {
+    act: {
       kind: string;
       groups: {
         registration: { mode: string; values: { claimantName: string } };
@@ -170,7 +175,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
       };
     };
   };
-  expect(draft.command).toMatchObject({
+  expect(draft.act).toMatchObject({
     kind: "CORRECT_CASE",
     groups: {
       registration: { mode: "REPLACE", values: { claimantName: "Corrected claimant" } },

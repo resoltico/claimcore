@@ -11,10 +11,10 @@ describe("operation outcomes", () => {
     }
   });
   it("accepts success and replay receipts only", () => {
-    const result = generatedWebValue("command.execute");
+    const result = generatedWebValue("case.execute");
     expect(acceptedReceipt(result)).not.toBeNull();
     expect(
-      acceptedReceipt({ endpoint: "command.execute", outcome: { tag: "CANCELLED", data: null } }),
+      acceptedReceipt({ endpoint: "case.execute", outcome: { tag: "CANCELLED", data: null } }),
     ).toBeNull();
   });
 });

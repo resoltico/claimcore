@@ -72,3 +72,27 @@ it("uses the full JSON allowance independently of content length", async () => {
     responseBytes(new Response("{}".padEnd(limit + 1, " ")), limit, new AbortController().signal),
   ).rejects.toThrow();
 });
+
+it("rejects duplicate decoded member names and enforces the exact nesting allowance", () => {
+  const decode = (text: string) => strictJsonBytes(new TextEncoder().encode(text));
+  expect(() => decode('{"a":1,"\\u0061":2}')).toThrow("Duplicate");
+  expect(() => decode(`${"[".repeat(32)}0${"]".repeat(32)}`)).not.toThrow();
+  expect(() => decode(`${"[".repeat(33)}0${"]".repeat(33)}`)).toThrow("depth");
+  expect(decode('{"quoted":"[{\\\"a\\\":1}]","other":{"a":2}}')).toEqual({
+    quoted: '[{"a":1}]',
+    other: { a: 2 },
+  });
+});
+
+it("rejects permanent Unicode format defects in values and member names", () => {
+  for (const scalar of ["\u0000", "\ud800", "\udfff", "\ufdd0", "\ufffe", "\u{10ffff}"]) {
+    for (const value of [{ name: scalar }, { [scalar]: "value" }]) {
+      expect(() => strictJsonBytes(new TextEncoder().encode(JSON.stringify(value)))).toThrow();
+    }
+  }
+});
+
+it("keeps retained text outside current admission policy unchanged during wire parsing", () => {
+  const value = { claimantName: "🙂".repeat(201), insurerName: "a\u202eb" };
+  expect(strictJsonBytes(new TextEncoder().encode(JSON.stringify(value)))).toEqual(value);
+});

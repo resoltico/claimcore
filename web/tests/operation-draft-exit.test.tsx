@@ -7,10 +7,14 @@ import { definition, fields } from "./service-ui.fixtures";
 import { previewReply } from "./presentation-state.fixtures";
 
 const current: CurrentCase = {
-  state: "LIVE",
-  disposition: "ACTIVE",
-  case: { fields, revision: "1" },
-  availableCommands: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"],
+  caseReference: fields.caseReference,
+  revision: 1,
+  state: {
+    tag: "LIVE",
+    fields,
+    disposition: "ACTIVE",
+    availableActs: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"],
+  },
 };
 const open = (command: "AMEND_REGISTRATION" | "CORRECT_CASE" = "AMEND_REGISTRATION") => {
   const close = vi.fn();

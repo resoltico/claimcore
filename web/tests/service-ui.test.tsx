@@ -8,19 +8,26 @@ import { DescriptorField } from "../src/components/DescriptorField";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
-import { definition, fields, operationId, digest, runtime, response } from "./service-ui.fixtures";
+import {
+  context,
+  definition,
+  fields,
+  operationId,
+  digest,
+  runtime,
+  response,
+} from "./service-ui.fixtures";
 
 const current: CurrentCase = {
-  state: "LIVE",
-  disposition: "ACTIVE",
-  case: { fields, revision: "1" },
-  availableCommands: ["CLOSE"],
+  caseReference: fields.caseReference,
+  revision: 1,
+  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
 };
 
 describe("metadata-driven descriptor rendering", () => {
   it("renders descriptor labels and all supplied field values without client-side normalization", () => {
     const changed = vi.fn();
-    const incident = definition.definition.fields.find((field) => field.name === "incidentDate");
+    const incident = definition.descriptors.fields.find((field) => field.name === "incidentDate");
     if (incident === undefined) {
       throw new Error("Incident descriptor is required.");
     }
@@ -28,8 +35,9 @@ describe("metadata-driven descriptor rendering", () => {
       <>
         <DescriptorField field={incident} value="2026-09-01" onChange={changed} />
         <CaseFieldsView
-          caseView={{ fields, revision: "1" }}
-          fields={definition.definition.fields}
+          values={fields}
+          revision={1}
+          fields={definition.descriptors.fields}
           context="synthetic current case"
         />
       </>,
@@ -49,19 +57,26 @@ const acceptsOperation = async (): Promise<void> => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockImplementationOnce(
     previewForRequest(
-      response("command.preview", "REVIEWED", {
+      response("case.preview", "REVIEWED", {
         requestSha256: digest,
         review: {
-          before: { fields, revision: "1" },
-          proposed: { fields, revision: "2" },
+          before: {
+            caseReference: fields.caseReference,
+            revision: 1,
+            state: { tag: "LIVE", disposition: "ACTIVE", fields },
+          },
+          after: {
+            caseReference: fields.caseReference,
+            revision: 2,
+            state: { tag: "LIVE", disposition: "ACTIVE", fields },
+          },
           changes: [],
           context: runtime,
-          advisory: true,
         },
       }),
     ),
   );
-  fetch.mockResolvedValueOnce(generatedResponse("command.execute"));
+  fetch.mockResolvedValueOnce(generatedResponse("case.execute"));
   const committed = vi.fn();
   render(
     <OperationEditor
@@ -112,9 +127,9 @@ describe("service session lifecycle", () => {
         antiforgeryToken: "authenticated",
       }),
     );
-    fetch.mockResolvedValueOnce(
-      response("case.list", "SUCCEEDED", { items: [], nextCursor: null }),
-    );
+    fetch
+      .mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }))
+      .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
     fetch.mockResolvedValueOnce(
       response("session.logout", "SUCCEEDED", {
         authenticated: false,

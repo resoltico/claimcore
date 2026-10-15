@@ -28,7 +28,7 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed;
   };
-  const field = (name: string) => definition.definition.fields.find((item) => item.name === name)!;
+  const field = (name: string) => definition.descriptors.fields.find((item) => item.name === name)!;
   for (let index = 0; index < 500; index += 1) {
     const whole =
       String(1 + (next() % 9)) +
@@ -44,7 +44,7 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
       claimedAmount: `${whole}.${fraction}`,
       incidentDate: `${year}-${month}-${day}`,
     };
-    const frozen = freezeRequest(createDraft(operationId, reference, "0", "OPEN", values));
+    const frozen = freezeRequest(createDraft(operationId, reference, 0, "OPEN", values));
     const bytes = JSON.stringify(frozen);
     for (const choice of [index % 12, (index + 5) % 12]) {
       const language = (["en", "lv", "ar", "en-XA"] as const)[choice % 4]!;
@@ -59,6 +59,6 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
       expect(p.fieldValue(reference, field("caseReference"))).toBe(reference);
     }
     expect(JSON.stringify(frozen)).toBe(bytes);
-    expect(createDraft(operationId, reference, "0", "OPEN", values)).toEqual(frozen);
+    expect(createDraft(operationId, reference, 0, "OPEN", values)).toEqual(frozen);
   }
 });

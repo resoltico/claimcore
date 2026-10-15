@@ -64,7 +64,7 @@ it("late responses and illegal transitions cannot replace the current operation"
     operationReducer(working, { type: "REVIEWED", requestId: 1, requestSha256: digest, review }),
   ).toBe(working);
   expect(operationReducer(initial(), { type: "SUBMITTING", requestId: 1 })).toEqual(initial());
-  const foreign = createDraft(secondId, "different", "0", "OPEN", {});
+  const foreign = createDraft(secondId, "different", 0, "OPEN", {});
   const fresh = initial();
   expect(operationReducer(fresh, { type: "PREVIEWING", requestId: 3, draft: foreign })).toBe(fresh);
   expectGuardedTransitionsInert(fresh);
@@ -83,7 +83,7 @@ it("freezes all correction groups before exposure and forks after changed correc
     nextOperationId: secondId,
   });
   expect(next.operationId).toBe(secondId);
-  expect(working.exposedRequest?.command).toMatchObject({
+  expect(working.exposedRequest?.act).toMatchObject({
     groups: { registration: { mode: "REPLACE", values: { claimantName: "Synthetic A" } } },
   });
 });

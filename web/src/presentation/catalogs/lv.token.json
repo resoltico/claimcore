@@ -18,5 +18,16 @@
   "token.RECORD_PAYMENT": "Reģistrēt faktisko maksājumu",
   "token.CLEAR_PAYMENT": "Labot kļūdainu maksājuma ierakstu",
   "token.CLOSE": "Slēgt lietu",
-  "token.REOPEN": "Atvērt lietu atkārtoti"
+  "token.REOPEN": "Atvērt lietu atkārtoti",
+  "token.OWNER": "Īpašnieks",
+  "token.CASE_READER": "Lietu lasītājs",
+  "token.CASE_REGISTRAR": "Lietu reģistrētājs",
+  "token.CASE_HANDLER": "Lietu administrators",
+  "token.PAYMENT_RECORDER": "Maksājumu reģistrētājs",
+  "token.DATA_STEWARD": "Datu pārzinis",
+  "token.AUDITOR": "Auditors",
+  "token.PROVISION_OWNER": "Iestatīt sākotnējo īpašnieku",
+  "token.REGISTER_ACTOR": "Reģistrēt identitāti",
+  "token.SET_ENABLED": "Iestatīt identitātes aktivitāti",
+  "token.SET_GRANT": "Iestatīt pilnvaru"
 }

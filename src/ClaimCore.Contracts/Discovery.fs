@@ -74,6 +74,36 @@ module ContractDiscovery =
              ])
         + "\n"
 
+    let private guardMetadataTypeScript () =
+        let json value =
+            System.Text.Json.JsonSerializer.Serialize value
+
+        let policies =
+            HostFailures.all
+            |> List.map (fun reason ->
+                {|
+                    code = HostFailures.code reason
+                    status = HostFailures.status reason
+                    executionPhase = HostFailures.phase reason
+                    diagnosticId = HostFailures.diagnosticId reason
+                |})
+
+        "export const hostFailurePolicies = "
+        + json policies
+        + " as const;\n"
+        + "export const caseActNames = "
+        + json (
+            ClaimCore.Domain.CaseActKinds.all
+            |> List.map ClaimCore.Domain.CaseActKinds.token
+        )
+        + " as const;\n"
+        + "export const authorityActNames = "
+        + json (
+            ClaimCore.RecordFormat.RecordedAuthorityActs.all
+            |> List.map ClaimCore.RecordFormat.RecordedAuthorityActs.token
+        )
+        + " as const;\n"
+
     let endpointTypeScript () =
         let endpoints =
             EndpointCatalog.all
@@ -95,6 +125,7 @@ module ContractDiscovery =
         + ";\nexport const endpoints = ["
         + String.concat "," endpoints
         + "] as const;\nexport type EndpointId = (typeof endpoints)[number][\"id\"];\nexport const isEndpointId = (value: string): value is EndpointId => endpoints.some(endpoint => endpoint.id === value);\n"
+        + guardMetadataTypeScript ()
 
     let presentation () =
         DefaultPresentation.render () |> CanonicalContract.bytes

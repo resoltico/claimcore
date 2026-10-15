@@ -5,7 +5,7 @@ it("cancellation is translated and distinct from missing information", () => {
   const notice = resultNotice({
     kind: "outcome",
     status: 200,
-    value: { endpoint: "command.execute", outcome: { tag: "CANCELLED", data: null } },
+    value: { endpoint: "case.execute", outcome: { tag: "CANCELLED", data: null } },
   });
   expect(notice).toEqual({ kind: "local", reason: "cancelled" });
   for (const language of ["en", "lv", "ar"] as const) {

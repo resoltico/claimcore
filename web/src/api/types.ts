@@ -2,25 +2,23 @@ import type {
   HostFailure,
   RequestByEndpoint,
   ResponseByEndpoint,
-  SemanticDefinition,
-} from "../generated/contracts/types";
+  CaseView,
+} from "@contracts/types";
+import type { productMetadata } from "@contracts/product-metadata";
 import type { Notice } from "./notices";
 export type {
-  HostFailure,
   CaseFields,
   CaseView,
-  Receipt,
+  CaseReceipt,
   HistoryEntry,
   Review,
   Rejection,
-  Fault,
-  SemanticDefinition,
-} from "../generated/contracts/types";
-export type ServiceResponse<K extends keyof ResponseByEndpoint> = ResponseByEndpoint[K];
-export type EndpointOutcome = ResponseByEndpoint[keyof ResponseByEndpoint];
-export type CommandDraft = RequestByEndpoint["command.execute"];
-export type FieldDescriptor = SemanticDefinition["fields"][number];
-export type CommandDescriptor = SemanticDefinition["commands"][number];
+} from "@contracts/types";
+export type { Receipt as OperationReceipt } from "@contracts/types";
+export type Descriptors = typeof productMetadata.descriptors;
+export type ProductMetadata = typeof productMetadata;
+export type FieldDescriptor = Descriptors["fields"][number];
+export type CommandDescriptor = Descriptors["commands"][number];
 export type CommandInputShape = CommandDescriptor["inputs"];
 export type CommandInputDescriptor =
   | Extract<CommandInputShape, { kind: "FIELDS" }>["fields"][number]
@@ -29,21 +27,25 @@ export type CorrectionGroupDescriptor = Extract<
   CommandInputShape,
   { kind: "CORRECTION_GROUPS" }
 >["groups"][number];
+export type CommandDraft = Omit<RequestByEndpoint["case.execute"], "act"> & {
+  readonly act: Extract<
+    RequestByEndpoint["case.execute"]["act"],
+    { kind: CommandDescriptor["kind"] }
+  >;
+};
+export type ServiceResponse<K extends keyof ResponseByEndpoint> = ResponseByEndpoint[K];
+export type EndpointOutcome = ResponseByEndpoint[keyof ResponseByEndpoint];
 type Success<K extends keyof ResponseByEndpoint> = Extract<
   ResponseByEndpoint[K]["outcome"],
   { tag: "SUCCEEDED" }
 >["data"];
-export type CaseLookup = Success<"case.get">;
-export type CaseState = Extract<CaseLookup, { tag: "FOUND" }>["current"];
-export type CurrentCase = Extract<CaseState, { state: "LIVE" }>;
+export type CaseState = CaseView;
+export type CurrentCase = Omit<CaseView, "state"> & {
+  readonly state: Extract<CaseView["state"], { tag: "LIVE" }>;
+};
+export const isCurrentCase = (value: CaseView): value is CurrentCase => value.state.tag === "LIVE";
 export type CaseSummary = Success<"case.list">["items"][number];
 export type SessionSnapshot = Success<"session">;
-export type PublicDefinition = Readonly<{
-  definition: SemanticDefinition;
-  productVersion: string;
-  semanticFingerprint: string;
-  wireFingerprint: string;
-}>;
 export type ApiResult<T> =
   | { readonly kind: "outcome"; readonly value: T; readonly status: number }
   | { readonly kind: "hostFailure"; readonly failure: HostFailure; readonly status: number }

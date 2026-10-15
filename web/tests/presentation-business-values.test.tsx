@@ -10,7 +10,7 @@ it("formats review values by descriptor with independent date and amount expecta
     preferenceKey,
     JSON.stringify({ version: 1, language: "en", displayLocale: "lv-LV" }),
   );
-  const field = (name: string) => definition.definition.fields.find((item) => item.name === name)!;
+  const field = (name: string) => definition.descriptors.fields.find((item) => item.name === name)!;
   render(
     <>
       <BusinessValue
@@ -30,7 +30,7 @@ it("formats review values by descriptor with independent date and amount expecta
 });
 
 it("isolates and warns about permitted business Unicode without normalizing or executing markup", () => {
-  const field = definition.definition.fields.find((item) => item.name === "claimantName")!;
+  const field = definition.descriptors.fields.find((item) => item.name === "claimantName")!;
   const value = "A\u0308 <script> العربية\u200D\u202E";
   render(
     <>

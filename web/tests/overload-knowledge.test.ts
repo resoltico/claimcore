@@ -20,7 +20,7 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
 it("classifies verified overload as not started and refuses the old ambiguous busy body", async () => {
   const fetch = vi.mocked(globalThis.fetch);
-  const draft = createDraft(operationId, "SYNTHETIC", "1", "CLOSE", {});
+  const draft = createDraft(operationId, "SYNTHETIC", 1, "CLOSE", {});
   fetch.mockResolvedValueOnce(overloaded("NOT_STARTED"));
   const refused = await service.execute(JSON.stringify(draft), "token");
   expect(refused).toMatchObject({ kind: "hostFailure", status: 429 });

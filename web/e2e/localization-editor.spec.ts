@@ -80,7 +80,7 @@ test("preserves authored Unicode and invalid calendar text while localizing real
   await expect(name).toHaveValue("A\u0308 / العربية");
   await expect(date).toHaveValue("2026-02-30");
   expect(requests).toHaveLength(0);
-  const pending = await pauseJsonReply(page, "command.preview");
+  const pending = await pauseJsonReply(page, "case.preview");
   try {
     await page.getByRole("button", { name: "Review changes" }).click();
     const captured = await pending.ready;
@@ -105,7 +105,7 @@ test("switches language and independent display format during draft review witho
   await openAuthenticated(page);
   await startOpen(page, `LOCALE-REVIEW-${randomUUID()}`);
   const requests = trackRequests(page);
-  const pending = await pauseJsonReply(page, "command.preview");
+  const pending = await pauseJsonReply(page, "case.preview");
   try {
     await page.getByRole("button", { name: "Review changes" }).click();
     const captured = await pending.ready;

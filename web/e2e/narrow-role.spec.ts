@@ -18,16 +18,16 @@ const findCase = async (page: Page, reference: string) => {
   await page.getByRole("button", { name: "Find case", exact: true }).click();
 };
 
-const expectDefinitionAccess = async (page: Page, role: NarrowRole | null) => {
+const expectContextAccess = async (page: Page) => {
   const token = await sessionToken(page);
-  const definition = await browserRequest(page, "/api/definition", {
+  const definition = await browserRequest(page, "/api/context", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": token },
     body: "{}",
   });
   expect(definition.status).toBe(200);
   expect(definition.payload).toMatchObject({
-    outcome: { tag: role === null ? "REJECTED" : "SUCCEEDED" },
+    outcome: { tag: "SUCCEEDED" },
   });
   expect(token.length).toBeGreaterThan(0);
 };
@@ -39,7 +39,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   await expect(page.locator(".history-list li")).toHaveCount(1);
   await expect(page.locator(".history-list details")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^Close the case:/u })).toHaveCount(
-    role === "CASE_EDITOR" ? 1 : 0,
+    role === "CASE_HANDLER" ? 1 : 0,
   );
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
     await refusedRead(page, "case.history", () =>
@@ -60,7 +60,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
 const cases: ReadonlyArray<readonly [string, NarrowRole | null, boolean]> = [
   ["installation reader", "CASE_READER", false],
   ["case reader", "CASE_READER", true],
-  ["case editor", "CASE_EDITOR", true],
+  ["case handler", "CASE_HANDLER", true],
   ["steward", "DATA_STEWARD", false],
   ["enabled actor without grants", null, false],
 ];
@@ -103,8 +103,8 @@ for (const [name, role, scoped] of cases) {
     const narrow = await context.newPage();
     await test.step("Open narrow actor session", () =>
       openAuthenticated(narrow, "Cases", "narrow-authenticated-state.json"));
-    await test.step("Check definition access", () => expectDefinitionAccess(narrow, role));
-    if (role === "CASE_READER" || role === "CASE_EDITOR" || role === "DATA_STEWARD") {
+    await test.step("Check enabled actor context", () => expectContextAccess(narrow));
+    if (role === "CASE_READER" || role === "CASE_HANDLER" || role === "DATA_STEWARD") {
       await test.step("Read current case and enforce history scope", () =>
         readCase(narrow, fixture, role, scoped));
     } else {

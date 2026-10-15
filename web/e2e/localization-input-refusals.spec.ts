@@ -18,7 +18,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       ["claimedCurrency", "ĀBC", "INPUT_CURRENCY_FORMAT"],
     ]) {
       await page.locator(`input[name="${name}"]`).fill(value!);
-      const pending = await pauseJsonReply(page, "command.preview");
+      const pending = await pauseJsonReply(page, "case.preview");
       await page
         .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
         .click();
@@ -41,7 +41,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await openCase(page, `MISSING-${randomUUID()}`);
     await startCommand(page, "Close the case");
     // Close through the existing native workflow, then try to correct an absent decision.
-    const first = await pauseJsonReply(page, "command.preview");
+    const first = await pauseJsonReply(page, "case.preview");
     await page.getByRole("button", { name: "Review changes" }).click();
     await first.ready;
     first.release();
@@ -51,7 +51,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await startCommand(page, "Correct case facts");
     await selectLanguage(page, language);
     await page.locator("#correction-decision-mode").selectOption("CLEAR");
-    const pending = await pauseJsonReply(page, "command.preview");
+    const pending = await pauseJsonReply(page, "case.preview");
     await page
       .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
       .click();

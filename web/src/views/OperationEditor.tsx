@@ -95,7 +95,7 @@ const OperationEditorLayout = ({
         }}
         previewButtonRef={previewButtonRef}
       />
-      <OperationReview model={model} fields={props.definition.definition.fields} />
+      <OperationReview model={model} fields={props.definition.descriptors.fields} />
       <CommandChangeDialog model={model} onClose={props.onClose} />
     </section>
   );

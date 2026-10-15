@@ -2,15 +2,15 @@ import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../src/api/service";
 import { commandFor, commandInputs, prefilledValues, createDraft } from "../src/domain/metadata";
 import { fields, definition } from "./service-ui.fixtures";
-import { endpoints, wireContractFingerprint } from "../src/generated/contracts/endpoint-catalog";
+import { endpoints, wireContractFingerprint } from "@contracts/endpoint-catalog";
 import { generatedResponse } from "./contract-corpus.fixtures";
 describe("core command metadata", () => {
   it("describes all nine commands and registration inputs", () => {
-    expect(definition.definition.fields).toHaveLength(13);
-    expect(definition.definition.commands).toHaveLength(9);
-    expect(commandFor(definition.definition, "OPEN").kind).toBe("OPEN");
+    expect(definition.descriptors.fields).toHaveLength(13);
+    expect(definition.descriptors.commands).toHaveLength(9);
+    expect(commandFor(definition.descriptors, "OPEN").kind).toBe("OPEN");
     expect(
-      commandInputs(definition.definition, "AMEND_REGISTRATION").map((x) => x.field.name),
+      commandInputs(definition.descriptors, "AMEND_REGISTRATION").map((x) => x.field.name),
     ).toEqual([
       "incidentDate",
       "incidentNotificationDate",
@@ -21,13 +21,17 @@ describe("core command metadata", () => {
       "claimedCurrency",
     ]);
     expect(
-      prefilledValues(definition.definition, "AMEND_REGISTRATION", { fields, revision: "1" }),
+      prefilledValues(definition.descriptors, "AMEND_REGISTRATION", {
+        caseReference: fields.caseReference,
+        revision: 1,
+        state: { tag: "LIVE", disposition: "ACTIVE", fields, availableActs: [] },
+      }),
     ).toMatchObject({ claimantName: fields.claimantName });
-    expect(createDraft("id", "reference", "1", "CLOSE", {})).toEqual({
+    expect(createDraft("id", "reference", 1, "CLOSE", {})).toEqual({
       operationId: "id",
       caseReference: "reference",
-      expectedRevision: "1",
-      command: { kind: "CLOSE", values: {} },
+      expectedRevision: 1,
+      act: { kind: "CLOSE" },
     });
   });
 });
@@ -44,12 +48,18 @@ describe("catalogue-bound requests", () => {
       "X-ClaimCore-Antiforgery": "csrf",
     });
   });
-  it("rejects wrong endpoints extra fields and non-JSON replies", async () => {
+  it("rejects wrong endpoints missing consumed fields and non-JSON replies", async () => {
     const valid = (await generatedResponse("case.list").json()) as object;
     for (const response of [
-      new Response(JSON.stringify({ ...valid, unexpected: true }), {
-        headers: { "content-type": "application/json" },
-      }),
+      new Response(
+        JSON.stringify({
+          ...valid,
+          outcome: { tag: "SUCCEEDED", data: { items: null, nextCursor: null } },
+        }),
+        {
+          headers: { "content-type": "application/json" },
+        },
+      ),
       generatedResponse("case.get"),
       new Response(JSON.stringify(valid), { headers: { "content-type": "application/jsonp" } }),
     ]) {

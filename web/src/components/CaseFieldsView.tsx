@@ -1,12 +1,13 @@
 import { useId } from "react";
-import type { CaseFields, CaseView, FieldDescriptor } from "../api/service";
+import type { CaseFields, FieldDescriptor } from "../api/service";
 import { BusinessValue } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
 import type { Presentation } from "../presentation/context";
 import { CopyValue } from "./CopyValue";
 
 type CaseFieldsViewProps = {
-  caseView: CaseView;
+  values: CaseFields;
+  revision: number;
   fields: ReadonlyArray<FieldDescriptor>;
   context: string;
 };
@@ -14,31 +15,32 @@ const valueFor = (fields: CaseFields, name: keyof CaseFields): string | null =>
   fields[name] ?? null;
 const acceptedSummary = (
   p: Presentation,
-  caseView: CaseView,
+  values: CaseFields,
+  revision: number,
   fields: ReadonlyArray<FieldDescriptor>,
 ): string =>
   [
-    `${p.text("ui.revisionLabel")}: ${caseView.revision}`,
+    `${p.text("ui.revisionLabel")}: ${revision}`,
     ...fields.map(
-      (field) => `${p.fieldLabel(field.name)}: ${valueFor(caseView.fields, field.name) ?? "null"}`,
+      (field) => `${p.fieldLabel(field.name)}: ${valueFor(values, field.name) ?? "null"}`,
     ),
   ].join("\n");
-export const CaseFieldsView = ({ caseView, fields, context }: CaseFieldsViewProps) => {
+export const CaseFieldsView = ({ values, revision, fields, context }: CaseFieldsViewProps) => {
   const p = usePresentation();
   const headingId = useId();
   return (
     <section aria-labelledby={headingId} className="case-fields">
       <div className="section-heading">
         <h2 id={headingId}>{context}</h2>
-        <span>{p.text("ui.revision", { revision: p.integer(caseView.revision) })}</span>
+        <span>{p.text("ui.revision", { revision: p.integer(revision) })}</span>
         <CopyValue
           label={p.text("ui.acceptedSummary")}
-          value={acceptedSummary(p, caseView, fields)}
+          value={acceptedSummary(p, values, revision, fields)}
         />
       </div>
       <dl>
         {fields.map((field) => {
-          const value = valueFor(caseView.fields, field.name);
+          const value = valueFor(values, field.name);
           return (
             <div key={field.name} className="field-row" data-field-name={field.name}>
               <dt>{p.fieldLabel(field.name)}</dt>

@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 
-import { isResponse } from "../src/generated/contracts/validation";
+import { isResponse } from "../src/api/responseGuards";
 import type { ServiceResponse } from "../src/api/types";
 import { progress } from "./session-helpers";
 
@@ -17,7 +17,7 @@ const fill = async (page: Page, values: Readonly<Record<string, string>>): Promi
   }
 };
 
-type SubmitOutcome = ServiceResponse<"command.execute">["outcome"];
+type SubmitOutcome = ServiceResponse<"case.execute">["outcome"];
 
 const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.tag;
 
@@ -38,7 +38,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   }
   await progress("confirm-checked");
   const responseEvent = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/command.execute",
+    (response) => new URL(response.url()).pathname === "/api/case.execute",
     { timeout: 10_000 },
   );
   await progress("submit-dispatch");
@@ -48,10 +48,10 @@ export const recordReviewed = async (page: Page): Promise<void> => {
     throw new Error("E2E_SUBMIT_HTTP_FAILURE");
   }
   const payload: unknown = await response.json();
-  if (!(await isResponse("command.execute", payload))) {
+  if (!isResponse("case.execute", payload)) {
     throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
   }
-  const { outcome } = payload as ServiceResponse<"command.execute">;
+  const { outcome } = payload;
   if (outcome.tag !== "ALREADY_ACCEPTED" && outcome.tag !== "ACCEPTED") {
     throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
@@ -67,7 +67,7 @@ export const startOpen = async (page: Page, caseReference: string): Promise<void
   await fill(page, {
     "Incident date": "2026-09-01",
     "Incident notification date (FNOL)": "2026-09-02",
-    "Country of incident": "Latvia",
+    "Country of incident": "LV",
     "Claimant name": "Synthetic claimant",
     "Responsible insurer": "Synthetic insurer",
     "Amount claimed": "1200.50",
@@ -87,14 +87,14 @@ export const reviewDraft = async (
 ): Promise<ReviewIdentity> => {
   await fill(page, values);
   await progress("preview-dispatch");
-  const event = page.waitForResponse((response) => response.url().endsWith("/api/command.preview"));
+  const event = page.waitForResponse((response) => response.url().endsWith("/api/case.preview"));
   await page.getByRole("button", { name: "Review changes" }).click();
   const response = await event;
   const payload: unknown = await response.json();
-  if (response.status() !== 200 || !(await isResponse("command.preview", payload))) {
+  if (response.status() !== 200 || !isResponse("case.preview", payload)) {
     throw new Error("E2E_PREVIEW_PROTOCOL_FAILURE");
   }
-  const { outcome } = payload as ServiceResponse<"command.preview">;
+  const { outcome } = payload;
   if (outcome.tag !== "REVIEWED") {
     throw new Error("E2E_REVIEW_UNAVAILABLE");
   }
@@ -126,12 +126,6 @@ const submit = async (page: Page): Promise<void> => {
   await progress("returned-to-case");
 };
 
-export const returnToCase = async (page: Page): Promise<void> => {
-  await page.getByRole("button", { name: "Return to editing" }).click();
-  await page.getByRole("button", { name: "Back to case" }).click();
-  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
-};
-
 export const completeCommand = async (
   page: Page,
   label: string,
@@ -151,27 +145,5 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await progress("open-detail");
   await expect(page.locator("section.case-fields").first().locator("dl > div")).toHaveCount(13);
-  return identity;
-};
-
-export const droppedSubmission = async (page: Page): Promise<ReviewIdentity> => {
-  await startCommand(page, "Close the case");
-  const identity = await reviewDraft(page);
-  let committed = false;
-  await page.route("**/api/command.execute", async (route) => {
-    const response = await route.fetch();
-    committed = response.status() === 200;
-    await route.abort("connectionfailed");
-  });
-  const confirmed = page.getByRole("checkbox", { name: "I confirm these changes.", exact: true });
-  await progress("drop-confirm-click-start");
-  await page.getByText("I confirm these changes.", { exact: true }).click();
-  await progress("drop-confirm-clicked");
-  await expect(confirmed).toBeChecked();
-  await progress("drop-confirm-checked");
-  await page.getByRole("button", { name: "Record changes" }).click();
-  await expect(page.getByRole("alert")).toContainText("unknown");
-  await page.unroute("**/api/command.execute");
-  expect(committed).toBe(true);
   return identity;
 };

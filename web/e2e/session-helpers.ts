@@ -4,9 +4,8 @@ import { isAbsolute, resolve } from "node:path";
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 
-import { wireContractFingerprint } from "../src/generated/contracts/endpoint-catalog";
-import { isHostFailure, isResponse } from "../src/generated/contracts/validation";
-import type { HostFailure, ServiceResponse } from "../src/api/types";
+import { wireContractFingerprint } from "@contracts/endpoint-catalog";
+import { isHostFailure, isResponse } from "../src/api/responseGuards";
 import { retainResponseBodies } from "./response-bodies";
 
 type BrowserReply = Readonly<{
@@ -22,15 +21,18 @@ export const progress = async (stage: string): Promise<void> => {
   }
 };
 
-const oidcCredentialsFile = process.env["CLAIMCORE_TEST_OIDC_CREDENTIALS"];
-if (oidcCredentialsFile === undefined) {
-  throw new Error("Synthetic OIDC credentials were not configured.");
-}
+const credentialsPath = (): string => {
+  const path = process.env["CLAIMCORE_TEST_OIDC_CREDENTIALS"];
+  if (path === undefined) {
+    throw new Error("Synthetic OIDC credentials were not configured.");
+  }
+  return path;
+};
 
 const syntheticCredentials = async (
   username?: string,
 ): Promise<{ username: string; password: string }> => {
-  const source: unknown = JSON.parse(await readFile(oidcCredentialsFile, "utf8"));
+  const source: unknown = JSON.parse(await readFile(credentialsPath(), "utf8"));
   if (typeof source !== "object" || source === null || !("users" in source)) {
     throw new Error("Synthetic OIDC user inventory is invalid.");
   }
@@ -134,29 +136,25 @@ export const browserRequest = (
 
 export const sessionToken = async (page: Page): Promise<string> => {
   const reply = await browserRequest(page, "/api/session");
-  if (!(await isResponse("session", reply.payload))) {
+  if (!isResponse("session", reply.payload)) {
     throw new Error("Invalid session response.");
   }
-  const snapshot = (reply.payload as ServiceResponse<"session">).outcome.data;
+  const snapshot = reply.payload.outcome.data;
   if (reply.status !== 200 || snapshot.antiforgeryToken === null) {
     throw new Error("Session response did not provide an antiforgery token.");
   }
   return snapshot.antiforgeryToken;
 };
 
-export const expectHostFailure = async (
-  reply: BrowserReply,
-  status: number,
-  code: string,
-): Promise<void> => {
+export const expectHostFailure = (reply: BrowserReply, status: number, code: string): void => {
   expect(reply.status).toBe(status);
   expect(reply.cacheControl).toContain("no-store");
-  const valid = await isHostFailure(reply.payload, reply.status);
+  const valid = isHostFailure(reply.payload, reply.status);
   expect(valid).toBe(true);
   if (!valid) {
     throw new Error("Invalid host-failure response.");
   }
-  expect((reply.payload as HostFailure).code).toBe(code);
+  expect(reply.payload.code).toBe(code);
 };
 
 const awaitOidcReturn = async (
@@ -257,8 +255,8 @@ export const logout = async (page: Page): Promise<void> => {
   await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   const reply = await browserRequest(page, "/api/session");
-  if (!(await isResponse("session", reply.payload))) {
+  if (!isResponse("session", reply.payload)) {
     throw new Error("Invalid logout response.");
   }
-  expect((reply.payload as ServiceResponse<"session">).outcome.data.authenticated).toBe(false);
+  expect(reply.payload.outcome.data.authenticated).toBe(false);
 };

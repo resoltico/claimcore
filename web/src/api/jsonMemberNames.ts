@@ -10,14 +10,21 @@ const stringEnd = (text: string, start: number): number => {
   return text.length;
 };
 
+const enter = (scopes: (Set<string> | null)[], value: Set<string> | null): void => {
+  scopes.push(value);
+  if (scopes.length > 32) {
+    throw new Error("JSON depth exceeds its allowance.");
+  }
+};
+
 export const requireUniqueJsonMembers = (text: string): void => {
   const scopes: (Set<string> | null)[] = [];
   for (let at = 0; at < text.length; at += 1) {
     const character = text[at];
     if (character === "{") {
-      scopes.push(new Set());
+      enter(scopes, new Set());
     } else if (character === "[") {
-      scopes.push(null);
+      enter(scopes, null);
     } else if (character === "}" || character === "]") {
       scopes.pop();
     } else if (character === '"') {

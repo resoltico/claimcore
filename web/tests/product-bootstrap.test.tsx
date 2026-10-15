@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { useSession } from "../src/hooks/useSession";
-import { productMetadata } from "../src/generated/contracts/product-metadata";
+import { productMetadata } from "@contracts/product-metadata";
 import { response } from "./service-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
@@ -17,12 +17,11 @@ it("admits matching public session metadata without protected definition access 
   expect(globalThis.fetch).toHaveBeenCalledOnce();
   expect(vi.mocked(globalThis.fetch).mock.calls[0]?.[0]).toBe("/api/session");
   expect(Object.keys(productMetadata).sort()).toEqual([
-    "definition",
+    "descriptors",
     "productVersion",
-    "semanticFingerprint",
     "wireFingerprint",
   ]);
-  expect(productMetadata.definition.fields).toHaveLength(13);
+  expect(productMetadata.descriptors.fields).toHaveLength(13);
   expect(productMetadata.productVersion).not.toBe("");
 });
 

@@ -7,10 +7,9 @@ import { OperationEditor } from "../src/views/OperationEditor";
 import { definition, fields, digest, response, runtime } from "./service-ui.fixtures";
 
 export const current: CurrentCase = {
-  state: "LIVE",
-  disposition: "ACTIVE",
-  case: { fields, revision: "1" },
-  availableCommands: ["CLOSE"],
+  caseReference: fields.caseReference,
+  revision: 1,
+  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
 };
 export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>> = {}) => (
   <>
@@ -37,14 +36,21 @@ export const draftAt = (index: number): CommandDraft => {
 };
 export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
-  return response("command.preview", "REVIEWED", {
+  return response("case.preview", "REVIEWED", {
     requestSha256: digest,
     review: {
-      before: { fields, revision: draft.expectedRevision },
-      proposed: { fields: { ...fields, status: "CLOSED" }, revision: "2" },
-      changes: [{ fieldName: "status", before: "OPENED", after: "CLOSED" }],
+      before: {
+        caseReference: fields.caseReference,
+        revision: draft.expectedRevision,
+        state: { tag: "LIVE", disposition: "ACTIVE", fields },
+      },
+      after: {
+        caseReference: { ...fields, status: "CLOSED" }.caseReference,
+        revision: 2,
+        state: { tag: "LIVE", disposition: "ACTIVE", fields: { ...fields, status: "CLOSED" } },
+      },
+      changes: [{ field: "status", before: "OPENED", after: "CLOSED" }],
       context: runtime,
-      advisory: true,
     },
   });
 };

@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import { selectLanguage, trackRequests, ui } from "./localization-support";
-import { endpoints } from "../src/generated/contracts/endpoint-catalog";
+import { endpoints } from "@contracts/endpoint-catalog";
 
 test("associates malformed operation lookup guidance and prevents empty case lookup [CC-WEB-001]", async ({
   page,

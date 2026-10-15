@@ -6,7 +6,7 @@ import { CaseDetail } from "../src/views/CaseDetail";
 import { CaseList } from "../src/views/CaseList";
 import { BusinessValue } from "../src/components/BusinessValue";
 import { CopyValue } from "../src/components/CopyValue";
-import { definition, fields, response } from "./service-ui.fixtures";
+import { definition, fields, response, context, unavailable } from "./service-ui.fixtures";
 import { generatedWebValue } from "./contract-corpus.fixtures";
 
 const languages = ["en", "lv", "ar", "en-XA"] as const;
@@ -34,7 +34,7 @@ const preferences = (language: (typeof languages)[number]) => {
 
 const historyReply = (value: string) => {
   const history = generatedWebValue("case.history");
-  if (history.outcome.tag !== "SUCCEEDED" || history.outcome.data.tag !== "FOUND") {
+  if (history.outcome.tag !== "SUCCEEDED") {
     throw new Error("Expected generated history fixture.");
   }
   const full = history.outcome.data.entries.find((entry) => entry.tag === "FULL");
@@ -46,13 +46,23 @@ const historyReply = (value: string) => {
       tag: "FULL" as const,
       receipt: {
         ...full.receipt,
-        snapshot: { ...full.receipt.snapshot, fields: { ...fields, caseReference: value } },
+        snapshot: {
+          tag: "DISCLOSED",
+          state: {
+            tag: "LIVE",
+            disposition: "ACTIVE",
+            fields: { ...fields, caseReference: value },
+          },
+        },
       },
     },
   ];
   return { ...history.outcome.data, entries };
 };
 const readReply = (url: string, value: string, missing: boolean) => {
+  if (url.endsWith("/context")) {
+    return response("context", "SUCCEEDED", context);
+  }
   if (url.endsWith("/case.list")) {
     return response("case.list", "SUCCEEDED", {
       items: [
@@ -61,7 +71,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
           disposition: "ACTIVE",
           caseReference: value,
           status: "OPENED",
-          revision: "1",
+          revision: 1,
         },
       ],
       nextCursor: null,
@@ -70,23 +80,23 @@ const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/case.history")) {
     return response(
       "case.history",
-      "SUCCEEDED",
-      missing ? { tag: "NOT_FOUND", caseReference: value } : historyReply(value),
+      missing ? "REJECTED" : "SUCCEEDED",
+      missing ? unavailable : historyReply(value),
     );
-  }
-  if (url.endsWith("/review")) {
-    return response("lifecycle.review", "RESOURCE_UNAVAILABLE", null);
   }
   return response(
     "case.get",
-    "SUCCEEDED",
+    missing ? "REJECTED" : "SUCCEEDED",
     missing
-      ? { tag: "NOT_FOUND" }
+      ? unavailable
       : {
-          tag: "FOUND",
-          current: {
-            case: { fields: { ...fields, caseReference: value }, revision: "1" },
-            availableCommands: [],
+          caseReference: value,
+          revision: 1,
+          state: {
+            tag: "LIVE",
+            disposition: "ACTIVE",
+            fields: { ...fields, caseReference: value },
+            availableActs: [],
           },
         },
   );
@@ -101,7 +111,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
       token="token"
       caseReference={value}
       reloadSignal={0}
-      definition={definition.definition}
+      definition={definition.descriptors}
       onBack={vi.fn()}
       onCommand={vi.fn()}
     />,
@@ -115,7 +125,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
     const directStatus = view.container.querySelectorAll(
       'section[aria-labelledby="case-detail-title"] > p[role="status"]',
     );
-    expect(directStatus).toHaveLength(missing ? 1 : 0);
+    expect(directStatus).toHaveLength(missing ? 0 : 1);
     if (missing) {
       expect(view.container.querySelector(".case-fields")).toBeNull();
     } else {
@@ -161,7 +171,7 @@ it.each(languages)(
     const writeText = vi.fn().mockRejectedValue(new Error("unavailable"));
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
     const { value, points } = values[0]!;
-    const field = definition.definition.fields.find((item) => item.name === "claimantName")!;
+    const field = definition.descriptors.fields.find((item) => item.name === "claimantName")!;
     const view = render(
       <>
         <BusinessValue value={value} field={field} context="ui.after" />

@@ -1,31 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import type { Notice } from "../api/notices";
-import { resultNotice, service, type Receipt } from "../api/service";
-
-const observation = (result: Awaited<ReturnType<typeof service.observe>>) => {
-  const found =
-    result.kind === "outcome" &&
-    result.value.outcome.tag === "SUCCEEDED" &&
-    result.value.outcome.data.tag === "FOUND"
-      ? result.value.outcome.data.receipt
-      : null;
-  const missing =
-    result.kind === "outcome" &&
-    result.value.outcome.tag === "SUCCEEDED" &&
-    result.value.outcome.data.tag === "NOT_FOUND";
-  return { found, missing };
-};
+import { resultNotice, service, type OperationReceipt } from "../api/service";
 
 type ObservationFeedback = {
-  receipt: Receipt | null;
+  receipt: OperationReceipt | null;
   message: Notice | null;
-  notObserved: boolean;
   loading: boolean;
 };
 const emptyFeedback: ObservationFeedback = {
   receipt: null,
   message: null,
-  notObserved: false,
   loading: false,
 };
 
@@ -57,12 +41,14 @@ export const useOperationObservation = (token: string, initialOperationId = "") 
       return;
     }
     controller.current = null;
-    const { found, missing } = observation(result);
+    const found =
+      result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED"
+        ? result.value.outcome.data
+        : null;
     setFeedback({
       receipt: found,
-      notObserved: missing,
       loading: false,
-      message: found === null && !missing ? resultNotice(result) : null,
+      message: found === null ? resultNotice(result) : null,
     });
   };
   return {

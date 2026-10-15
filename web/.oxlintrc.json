@@ -14,7 +14,6 @@
   "env": {
     "es2024": true
   },
-  "ignorePatterns": ["src/generated/contracts/validators.*.mjs"],
   "rules": {
     "no-console": "error",
     "no-duplicate-imports": [

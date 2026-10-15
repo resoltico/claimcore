@@ -5,19 +5,18 @@ import type { CurrentCase } from "../src/api/service";
 import { Dashboard } from "../src/views/Dashboard";
 
 import { previewForRequest } from "./preview-request.fixtures";
-import { fields, digest, response, runtime } from "./service-ui.fixtures";
+import { context, fields, digest, response, runtime } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
-  state: "LIVE",
-  disposition: "ACTIVE",
-  case: { fields, revision: "1" },
-  availableCommands: ["CLOSE"],
+  caseReference: fields.caseReference,
+  revision: 1,
+  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
 };
 
 import { generatedWebValue } from "./contract-corpus.fixtures";
-const accepted = generatedWebValue("command.execute");
+const accepted = generatedWebValue("case.execute");
 if (accepted.outcome.tag !== "ACCEPTED") {
-  throw new Error("Receipt fixture absent.");
+  throw new Error("CaseReceipt fixture absent.");
 }
 const receipt = accepted.outcome.data;
 const renderDashboard = () =>
@@ -26,37 +25,39 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
 const queueDefinitionAndList = () => {
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      items: [
-        {
-          state: "LIVE",
-          disposition: "ACTIVE",
-          caseReference: "CASE-1",
-          revision: "1",
-          status: "OPENED",
-        },
-      ],
-      nextCursor: null,
-    }),
-  );
+  fetch
+    .mockResolvedValueOnce(
+      response("case.list", "SUCCEEDED", {
+        items: [
+          {
+            state: "LIVE",
+            disposition: "ACTIVE",
+            caseReference: "CASE-1",
+            revision: 1,
+            status: "OPENED",
+          },
+        ],
+        nextCursor: null,
+      }),
+    )
+    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
 };
 
 const queueDetail = () => {
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", { tag: "FOUND", current }));
+  fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
   fetch.mockResolvedValueOnce(
-    response("case.history", "SUCCEEDED", { tag: "FOUND", entries: [], nextCursor: null }),
+    response("case.history", "SUCCEEDED", { entries: [], nextCursor: null }),
   );
 };
 
 const queueAcceptedOpen = (): void => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
-    response("command.execute", "ACCEPTED", {
+    response("case.execute", "ACCEPTED", {
       ...receipt,
       caseReference: fields.caseReference,
-      snapshot: { fields, revision: "1" },
+      snapshot: { tag: "DISCLOSED", state: { tag: "LIVE", disposition: "ACTIVE", fields } },
     }),
   );
 };
@@ -66,7 +67,6 @@ it("returns from a selected case through Dashboard's detail-back transition", as
   queueDefinitionAndList();
   queueDetail();
   renderDashboard();
-  // Cold on-demand schema loading is not a one-second UI latency contract.
   await user.click(await screen.findByRole("button", { name: "CASE-1" }, { timeout: 5_000 }));
   expect(await screen.findByRole("heading", { name: "Case detail" })).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Back to cases" }));
@@ -93,14 +93,17 @@ it("returns an accepted open operation to Dashboard through its committed transi
   queueDefinitionAndList();
   fetch.mockImplementationOnce(
     previewForRequest(
-      response("command.preview", "REVIEWED", {
+      response("case.preview", "REVIEWED", {
         requestSha256: digest,
         review: {
           before: null,
-          proposed: { fields, revision: "1" },
+          after: {
+            caseReference: fields.caseReference,
+            revision: 1,
+            state: { tag: "LIVE", disposition: "ACTIVE", fields },
+          },
           changes: [],
           context: runtime,
-          advisory: true,
         },
       }),
     ),

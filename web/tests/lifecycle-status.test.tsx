@@ -6,10 +6,9 @@ it("renders active voided and erased states from the accepted case view", () => 
   const { rerender } = render(
     <LifecycleStatus
       value={{
-        state: "LIVE",
-        disposition: "ACTIVE",
-        case: { fields, revision: "1" },
-        availableCommands: [],
+        caseReference: fields.caseReference,
+        revision: 1,
+        state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: [] },
       }}
     />,
   );
@@ -17,14 +16,15 @@ it("renders active voided and erased states from the accepted case view", () => 
   rerender(
     <LifecycleStatus
       value={{
-        state: "LIVE",
-        disposition: "VOIDED",
-        case: { fields, revision: "2" },
-        availableCommands: [],
+        caseReference: fields.caseReference,
+        revision: 2,
+        state: { tag: "LIVE", fields, disposition: "VOIDED", availableActs: [] },
       }}
     />,
   );
   expect(screen.getByRole("status")).toHaveTextContent("Voided");
-  rerender(<LifecycleStatus value={{ state: "ERASED", caseReference: "CASE-1", revision: "3" }} />);
+  rerender(
+    <LifecycleStatus value={{ state: { tag: "ERASED" }, caseReference: "CASE-1", revision: 3 }} />,
+  );
   expect(screen.getByRole("status")).toHaveTextContent("Erased");
 });

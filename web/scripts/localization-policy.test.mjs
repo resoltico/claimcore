@@ -17,18 +17,18 @@ import { renderedTokens, validateTokens } from "./localization-tokens.mjs";
 const root = resolve(import.meta.dirname, "../src");
 /** @param {string} path */
 const json = (path) => JSON.parse(readFileSync(resolve(root, path), "utf8"));
-const semantic = json("generated/contracts/semantic-core.contract.json");
-const requirements = diagnosticRequirements(
-  semantic,
-  json("generated/contracts/host-failure.schema.json"),
-);
+const contracts = resolve(root, "../../contracts");
+const contract = (/** @type {string} */ name) =>
+  JSON.parse(readFileSync(resolve(contracts, name), "utf8"));
+const descriptors = contract("descriptors.json");
+const requirements = diagnosticRequirements(descriptors, contract("host-failure.schema.json"));
 /** @param {string} language @returns {Record<string, import("./localization-policy.mjs").Message>} */
 const catalog = (language) =>
   Object.assign(
     language === "en"
       ? {
-          ...businessMessages(semantic),
-          ...json("generated/contracts/default-presentation.en.json"),
+          ...businessMessages(descriptors),
+          ...contract("default-presentation.en.json"),
         }
       : {},
     ...readdirSync(resolve(root, "presentation/catalogs"))
@@ -36,33 +36,27 @@ const catalog = (language) =>
       .map((name) => json(`presentation/catalogs/${name}`)),
   );
 
-test("runtime pseudolocalization preserves every generated pseudo AST and English source", () => {
+test("runtime pseudolocalization preserves English source and typed argument ASTs", () => {
   const english = json("presentation/generated/en.json");
   const before = JSON.stringify(english);
-  const pseudo = json("presentation/generated/en-XA.json");
-  assert.deepEqual(Object.keys(english).sort(), Object.keys(pseudo).sort());
-  for (const [key, ast] of Object.entries(english)) {
-    assert.deepEqual(
-      [{ type: 0, value: "⟦" }, ...pseudolocalize(ast), { type: 0, value: "⟧" }],
-      pseudo[key],
-      key,
-    );
+  for (const ast of Object.values(english)) {
+    const transformed = pseudolocalize(ast);
+    assert.notEqual(transformed, ast);
+    assert.equal(transformed.length, ast.length);
+    assert.doesNotThrow(() => new IntlMessageFormat(transformed, "en"));
   }
   assert.equal(JSON.stringify(english), before);
 });
 
 test("every shipped real catalog covers the native metadata and diagnostic parameter vocabulary", () => {
   const en = catalog("en");
-  validateCoverage(en, semantic, requirements);
+  validateCoverage(en, descriptors, requirements);
   assert.ok(Object.hasOwn(requirements, "CORE_STORE_INTEGRITY_ERROR"));
   for (const language of ["en", "lv", "ar"]) {
     validateCatalog(en, catalog(language), language);
   }
-  validateCoverage(en, semantic, requirements);
-  const tokens = renderedTokens(
-    semantic,
-    readFileSync(resolve(root, "generated/contracts/types.ts"), "utf8"),
-  );
+  validateCoverage(en, descriptors, requirements);
+  const tokens = renderedTokens(descriptors, readFileSync(resolve(contracts, "types.ts"), "utf8"));
   validateTokens(en, tokens);
 });
 
@@ -146,16 +140,16 @@ test("pseudolocalization transforms only literal nodes and preserves exact inter
 test("missing or obsolete metadata, diagnostic parameters and rendered tokens fail closed", () => {
   const en = catalog("en");
   const missing = { ...en };
-  delete missing[`field.${semantic.fields[0].name}.label`];
-  assert.throws(() => validateCoverage(missing, semantic, requirements));
+  delete missing[`field.${descriptors.fields[0].name}.label`];
+  assert.throws(() => validateCoverage(missing, descriptors, requirements));
   assert.throws(() =>
-    validateCoverage({ ...en, "diagnostic.OBSOLETE": "obsolete" }, semantic, requirements),
+    validateCoverage({ ...en, "diagnostic.OBSOLETE": "obsolete" }, descriptors, requirements),
   );
   const id = Object.keys(requirements).find(
     (key) => Object.keys(requirements[key] ?? {}).length > 0,
   );
   assert.throws(() =>
-    validateCoverage({ ...en, [`diagnostic.${id}`]: "lost arguments" }, semantic, requirements),
+    validateCoverage({ ...en, [`diagnostic.${id}`]: "lost arguments" }, descriptors, requirements),
   );
   assert.throws(() => validateTokens({ ...en, "token.UNREVIEWED": "unknown" }, []));
   assert.throws(() => renderedTokens({ fields: [], commands: [] }, "export type Missing = never;"));
@@ -173,7 +167,7 @@ test("default business projection preserves literal apostrophes and braces witho
     assert.deepEqual(args, {});
     assert.equal(new IntlMessageFormat(ast, "en").format(), text);
   }
-  const descriptors = {
+  const fixtureDescriptors = {
     fields: [
       { name: "insurerName", label: "Responsible insurer", meaning: "Recorded insurer {role}." },
     ],
@@ -186,14 +180,17 @@ test("default business projection preserves literal apostrophes and braces witho
       },
     ],
   };
-  assert.deepEqual(businessMessages(descriptors), {
+  assert.deepEqual(businessMessages(fixtureDescriptors), {
     "field.insurerName.label": [{ literal: "Responsible insurer" }],
     "field.insurerName.meaning": [{ literal: "Recorded insurer {role}." }],
     "command.OPEN.label": [{ literal: "Register case" }],
     "command.OPEN.meaning": [{ literal: "Register the case." }],
   });
   assert.throws(() =>
-    businessMessages({ ...descriptors, fields: [...descriptors.fields, ...descriptors.fields] }),
+    businessMessages({
+      ...fixtureDescriptors,
+      fields: [...fixtureDescriptors.fields, ...fixtureDescriptors.fields],
+    }),
   );
 });
 

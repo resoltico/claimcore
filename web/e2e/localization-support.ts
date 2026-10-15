@@ -1,10 +1,10 @@
 import { writeFile } from "node:fs/promises";
 
 import { expect, type Page, type Locator } from "@playwright/test";
-import type { EndpointId } from "../src/generated/contracts/endpoint-catalog";
-import { endpoints } from "../src/generated/contracts/endpoint-catalog";
+import type { EndpointId } from "@contracts/endpoint-catalog";
+import { endpoints } from "@contracts/endpoint-catalog";
 import type { ServiceResponse } from "../src/api/types";
-import { isResponse } from "../src/generated/contracts/validation";
+import { isResponse } from "../src/api/responseGuards";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
@@ -68,7 +68,7 @@ export const trackRequests = (page: Page) => {
   return requests;
 };
 export const reviewFrom = (
-  value: ServiceResponse<"command.preview">,
+  value: ServiceResponse<"case.preview">,
   bytes: Buffer,
 ): ReviewIdentity => {
   if (value.outcome.tag !== "REVIEWED") {
@@ -120,7 +120,7 @@ export const pauseJsonReply = async <K extends EndpointId>(
       try {
         const response = await route.fetch();
         const payload: unknown = await response.json();
-        if (response.status() !== 200 || !(await isResponse(endpoint, payload))) {
+        if (response.status() !== 200 || !isResponse(endpoint, payload)) {
           throw new Error("E2E_LOCALIZATION_NATIVE_REPLY_INVALID");
         }
         const bytes = route.request().postDataBuffer();
@@ -128,7 +128,7 @@ export const pauseJsonReply = async <K extends EndpointId>(
           throw new Error("E2E_LOCALIZATION_REQUEST_BYTES_MISSING");
         }
         ready.resolve({
-          reply: payload as ServiceResponse<K>,
+          reply: payload,
           bytes,
         });
         await released.promise;

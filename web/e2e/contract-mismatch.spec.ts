@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { startOpen } from "./case-workflow";
-import { wireContractFingerprint } from "../src/generated/contracts/endpoint-catalog";
+import { wireContractFingerprint } from "@contracts/endpoint-catalog";
 
 test("a real contract refusal prompts reload without replaying the draft [CC-WEB-001]", async ({
   page,
@@ -12,11 +12,11 @@ test("a real contract refusal prompts reload without replaying the draft [CC-WEB
   let previews = 0;
   let executions = 0;
   page.on("request", (request) => {
-    if (request.url().endsWith("/api/command.execute")) {
+    if (request.url().endsWith("/api/case.execute")) {
       executions += 1;
     }
   });
-  await page.route("**/api/command.preview", async (route) => {
+  await page.route("**/api/case.preview", async (route) => {
     previews += 1;
     const headers = { ...route.request().headers(), "claimcore-contract": "0".repeat(64) };
     expect(headers["claimcore-contract"]).not.toBe(wireContractFingerprint);

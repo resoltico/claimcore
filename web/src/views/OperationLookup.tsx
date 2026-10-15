@@ -8,13 +8,13 @@ import { Form } from "react-aria-components/Form";
 import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { TextField } from "react-aria-components/TextField";
-import type { PublicDefinition, Receipt } from "../api/service";
+import type { ProductMetadata, OperationReceipt } from "../api/service";
 import { useOperationObservation } from "../hooks/useOperationObservation";
-import { CaseFieldsView } from "../components/CaseFieldsView";
+import { ReceiptFields } from "../components/ReceiptFields";
 
 type OperationLookupProps = {
   token: string;
-  definition: PublicDefinition;
+  definition: ProductMetadata;
   initialOperationId?: string;
 };
 
@@ -22,8 +22,8 @@ const ReceiptView = ({
   receipt,
   definition,
 }: {
-  receipt: Receipt;
-  definition: PublicDefinition;
+  receipt: OperationReceipt;
+  definition: ProductMetadata;
 }) => {
   const p = usePresentation();
   return (
@@ -35,12 +35,17 @@ const ReceiptView = ({
           actor: receipt.recordedBy,
         })}
       </p>
-      {receipt.snapshot === null ? (
-        <p>{p.text("ui.lifecycleErased")}</p>
+      {receipt.scope === "AUTHORITY" ? (
+        <p>
+          {p.text("ui.authorityReceipt", {
+            act: p.actLabel(receipt.act),
+            actor: receipt.targetActorId,
+          })}
+        </p>
       ) : (
-        <CaseFieldsView
-          caseView={receipt.snapshot}
-          fields={definition.definition.fields}
+        <ReceiptFields
+          receipt={receipt}
+          fields={definition.descriptors.fields}
           context={p.text("ui.observedContext", { operationId: receipt.operationId })}
         />
       )}
@@ -48,25 +53,12 @@ const ReceiptView = ({
   );
 };
 
-const ObservationFeedback = ({
-  message,
-  notObserved,
-}: {
-  message: Notice | null;
-  notObserved: boolean;
-}) => {
-  const p = usePresentation();
-  return (
-    <>
-      {message === null ? null : (
-        <p className="error" role="alert">
-          <NoticeView value={message} />
-        </p>
-      )}
-      {notObserved ? <p role="status">{p.text("ui.operationNotObserved")}</p> : null}
-    </>
+const ObservationFeedback = ({ message }: { message: Notice | null }) =>
+  message === null ? null : (
+    <p className="error" role="alert">
+      <NoticeView value={message} />
+    </p>
   );
-};
 
 export const OperationLookup = ({
   token,
@@ -74,7 +66,7 @@ export const OperationLookup = ({
   initialOperationId,
 }: OperationLookupProps) => {
   const p = usePresentation();
-  const { operationId, setOperationId, receipt, message, notObserved, loading, observe } =
+  const { operationId, setOperationId, receipt, message, loading, observe } =
     useOperationObservation(token, initialOperationId);
   const invalid = message?.kind === "diagnostic" && message.diagnostic.id === "HOST_INPUTINVALID";
   const input = useRef<HTMLInputElement>(null);
@@ -106,7 +98,7 @@ export const OperationLookup = ({
           {loading ? p.text("ui.lookingUp") : p.text("ui.observeOperation")}
         </Button>
       </Form>
-      <ObservationFeedback message={message} notObserved={notObserved} />
+      <ObservationFeedback message={message} />
       {receipt === null ? null : <ReceiptView receipt={receipt} definition={definition} />}
     </section>
   );

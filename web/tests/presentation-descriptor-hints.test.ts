@@ -6,8 +6,10 @@ import { definition } from "./service-ui.fixtures";
 it("gives exact scalar syntax and limits from each descriptor rather than an absent hint", () => {
   const p = createPresenter(defaults);
   const hint = (name: string) =>
-    p.hint(definition.definition.fields.find((field) => field.name === name)!);
-  expect(hint("caseReference")).toBe("Up to 80 characters.");
+    p.hint(definition.descriptors.fields.find((field) => field.name === name)!);
+  expect(hint("caseReference")).toBe(
+    "Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained.",
+  );
   expect(hint("claimantName")).toBe("Up to 200 characters.");
   expect(hint("incidentDate")).toBe(
     "Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06.",

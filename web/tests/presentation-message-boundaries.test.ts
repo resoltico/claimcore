@@ -6,14 +6,18 @@ import {
 } from "@formatjs/icu-messageformat-parser";
 import { renderKey, renderIsolatedValue } from "../src/presentation/messages";
 import { pseudolocalize } from "../src/presentation/pseudolocalization.mjs";
-import pseudo from "../src/presentation/generated/en-XA.json";
+import english from "../src/presentation/generated/en.json";
 
 const literal = (value: string): LiteralElement => ({ type: TYPE.literal, value });
 
 it("derives the published pseudo label exactly from the preserved generated catalog [CC-WEB-001]", () => {
   expect(
     renderKey({ language: "en-XA", displayLocale: "en-GB" }, "field.caseReference.label"),
-  ).toBe(pseudo["field.caseReference.label"].map((node) => node.value).join(""));
+  ).toBe(
+    `⟦${pseudolocalize(english["field.caseReference.label"])
+      .map((node) => (node.type === TYPE.literal ? node.value : ""))
+      .join("")}⟧`,
+  );
 });
 
 it("pseudolocalizes nested literals while preserving argument, selector and plural identities [CC-WEB-001]", () => {
