@@ -55,7 +55,7 @@ lint() {
 unit() {
   build_native
   # Native freshness tests check the complete tracked contracts/ inventory and exact bytes.
-  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 289
+  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 294
   dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
     --configuration Debug --no-restore -p:Optimize=false
   tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 31 Debug 15m
@@ -81,8 +81,8 @@ workflows() {
 
 integration() {
   build_native
-  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 107 Release 20m
-  tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj 70 Release 20m
+  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 108 Release 20m
+  tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj 74 Release 20m
 }
 
 browsers() {
@@ -109,8 +109,8 @@ acceptance() {
   build_native
   restore_node
   npm --prefix web run build
-  local floor=13
-  [[ -n "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE:-}" ]] && floor=11
+  local floor=18
+  [[ -n "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE:-}" ]] && floor=16
   tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj "${floor}" Release 40m
 }
 

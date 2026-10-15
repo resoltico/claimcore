@@ -127,16 +127,24 @@ let private browserArguments engine =
     @ [ "--project"; engine; "--forbid-only"; "--max-failures=1" ]
     @ (if smoke then [ "--global-timeout=120000" ] else [])
 
+let private printFailureSummary engine bytes =
+    let passed, failed = BrowserProgress.counts bytes
+    let locations = BrowserProgress.failedLocations bytes |> String.concat ","
+
+    Console.WriteLine(
+        $"Published {engine}: completed rows passed={passed}, failed={failed}; locations={locations}"
+    )
+
 let private runBrowser engine output start =
     try
         PublishedProcesses.run 900_000 start None
     with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
         FixtureFiles.write output "playwright.stdout" failure.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" failure.StandardError |> ignore
-        let passed, failed = BrowserProgress.counts failure.StandardOutput
+        printFailureSummary engine failure.StandardOutput
 
         Console.WriteLine(
-            $"Published {engine}: observed completed rows passed={passed}, failed={failed}, cleanupFailed={failure.CleanupFailed}"
+            $"Published {engine}: bounded process cleanupFailed={failure.CleanupFailed}"
         )
 
         failtest ($"Browser process failure: {failure.Kind}; bounded private evidence retained.")
@@ -178,6 +186,9 @@ let private qualifyEngine engine =
         let result = runBrowser engine output start
         FixtureFiles.write output "playwright.stdout" result.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" result.StandardError |> ignore
+
+        if result.ExitCode <> 0 then
+            printFailureSummary engine result.StandardOutput
 
         Expect.equal
             result.ExitCode
