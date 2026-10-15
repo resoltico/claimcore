@@ -5,8 +5,8 @@ Read [Domain](docs/domain.md), [Architecture](docs/architecture.md) and
 
 Domain/Application own rules and authority, RecordFormat owns durable encodings, Contracts owns
 wire definitions, Postgres owns persistence and Hosting owns runtime composition. Keep affected
-consumers, locks, tests and documentation together. Add a migration rather than editing applied
-bytes. Tests use synthetic data and owned isolated fixtures; preserve existing installations and
+consumers, locks, tests and documentation together. Add a migration rather than changing bytes
+shipped by a release. Tests use synthetic data and owned isolated fixtures; preserve existing installations and
 private state. Report executed commands separately from inspection, including failures and limits.
 
 The owner reviews and merges changes. The required pull-request check is `Gate`; green CI is

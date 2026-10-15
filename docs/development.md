@@ -2,9 +2,10 @@
 
 ## First checkout
 
-Use the pinned SDK in global.json and Node/npm versions declared by .node-version and
-web/package.json. Docker is required for integration and published-process/browser acceptance. Integration also
-uses Bash and OpenSSL to check the real local configuration producer.
+Use the pinned SDK in [global.json](../global.json) and Node/npm versions declared by
+[.node-version](../.node-version) and [web/package.json](../web/package.json). Docker is required
+for integration and published-process/browser acceptance. Integration also uses Bash and OpenSSL
+to check the real local configuration producer.
 Restore locked NuGet inputs and build the solution with .NET. Run `npm --prefix web ci`
 and `npm --prefix web run build` for frontend assets. Ordinary .NET builds do not invoke npm;
 frontend consumers use the tracked `contracts/` artifacts and require no .NET process.
@@ -62,20 +63,21 @@ The selector does not qualify a new major: adding support still requires actual 
 reviewed evidence for that entry.
 
 Local runs sequence the selected engines in one native test case and stop before creating a later
-engine fixture when an earlier engine fails. Successful default execution still requires all three
-complete engine suites; no browser specifications are removed by this orchestration.
+engine fixture when an earlier engine fails. Successful default execution requires all three
+complete engine suites.
 
 Browser workers remain serial within each fixture because tests change shared actor grants and
 redirect state. Parallelism comes from isolated engine runners. Retries are disabled. Failures
 retain private evidence; successful fixtures remove their resources. Never target an existing
 evaluation stack. Tracked contract artifacts are reviewed with their F# producer; generated
 localizations/assets, private inputs and reports stay ignored. Only remove resources created
-by the current run. Stylelint has been removed deliberately; CSS semantic linting is reduced,
-while formatting and browser accessibility/layout checks remain.
+by the current run. CSS has formatting and browser accessibility/layout checks, with no dedicated
+semantic lint stage.
 
 ## Changes
 
-A migration is a new numbered SQL file under db/migrations; never rewrite an applied script.
+A migration is a new numbered SQL file under db/migrations. Migration bytes shipped by a release
+are immutable.
 Update readers/writers and prove atomic application, exact prefix/checksum admission and refusal
 of unsupported history. An endpoint is one catalogue entry with schemas, typed core operation,
 codec/rendering and every outcome/host-failure test. Regenerate tracked artifacts and review their diff.

@@ -1,9 +1,9 @@
 # ClaimCore
 
 A claims case register for people and automation. Record claim facts, payment decisions and
-payment dates through a browser or structured CLI. Both use one authenticated HTTPS service;
-Domain and Application own validation, transitions and actor authorization. One PostgreSQL
-database holds accepted ledger entries and current projections.
+payment dates through a browser or structured CLI. Both use one authenticated HTTPS service
+that validates changes and actor authorization. One PostgreSQL database holds accepted ledger
+entries and current projections.
 
 [Get started](docs/getting-started.md) · [Documentation](docs/README.md) ·
 [Service and CLI](docs/api.md) · [Operations](docs/operations.md) ·
@@ -34,10 +34,10 @@ The browser offers English, Latvian and Arabic, right-to-left layout and indepen
 formats. The installation's immutable IANA business time zone governs business dates.
 Seven default-deny role presets and scoped grants control case work and administration.
 
-Every mutation rechecks locked current state. Exact replay returns its recorded receipt
-without another acceptance. If delivery is uncertain, preserve the operation ID, expected
-revision and exact request bytes and retry that request. The browser retains one retry while
-the page remains alive; the service stores accepted operations only.
+Every mutation rechecks locked current state. Replaying a retained accepted request returns
+its original acceptance without another ledger entry. If delivery is uncertain, preserve the operation ID, expected
+revision and exact request bytes and retry that request. The browser keeps one pending request
+for exact retries while the page remains alive; the service stores accepted operations only.
 
 ## Run and verify
 

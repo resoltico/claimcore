@@ -29,12 +29,13 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   decides. Domain, RecordFormat, Application and Contracts perform no I/O and read no clock,
   time zone, environment or randomness; the instant and the payload nonce arrive in the locked
   view.
-- An operation is its caller-chosen ID plus its RFC 8785 canonical request content. An exact replay returns the
-  original receipt; different content under a used ID is refused; a rejection records nothing.
+- An operation is its caller-chosen ID plus its RFC 8785 canonical request content. While request content
+  remains retained, an authorized exact replay returns its original acceptance metadata with current
+  snapshot disclosure; different content under a used ID is refused; a rejection records nothing.
   `OUTCOME_UNKNOWN` means a commit confirmation was lost and nothing else. Never infer that a
   commit failed, mint a replacement ID, or rebase a request.
 - RecordFormat owns every byte-stable encoding and its canonical JSON writer. A format's number
-  changes only when its bytes change. Format dispatch exists now. Before 1.0.0, a release may
+  changes only when its bytes change. Format dispatch selects supported readers. Before 1.0.0, a release may
   explicitly refuse older installations untouched. From 1.0.0, keep reading every format a release
   wrote and ship migrations instead of refusing installations. The entry hash covers the salted
   payload commitment and never the payload, so erasure

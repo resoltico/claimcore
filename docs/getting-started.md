@@ -11,22 +11,22 @@ Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, the .NET
 [`global.json`](../global.json), and Node/npm versions declared by
 [`.node-version`](../.node-version) and [`web/package.json`](../web/package.json).
 Use your intended local Docker engine. Downloads require network access. No C compiler is needed.
+For isolated browser trust, also install the NSS certificate utility `certutil` before starting.
 
-Choose a new absolute checkout location, then restore and build the source. The example uses
+Choose a new absolute checkout location, then prepare the CLI and locked browser tools. Compose
+builds the Web and administration images. The example uses
 `$HOME/claimcore-first-run`; use the same chosen path in both terminals if you select another location:
 
 ```sh
 claimcore_source="$HOME/claimcore-first-run"
 git clone https://github.com/resoltico/claimcore.git "$claimcore_source"
 cd "$claimcore_source"
-dotnet restore ClaimCore.slnx --locked-mode
+dotnet restore src/ClaimCore.Cli --locked-mode
+dotnet build src/ClaimCore.Cli --configuration Release --no-restore
 npm --prefix web ci
-npm --prefix web run build
-dotnet build ClaimCore.slnx --configuration Release --no-restore
 ```
 
-For an unpublished change, select its reviewed branch before restoring. The instructions in
-a checkout describe that revision. Discover the CLI without service credentials:
+Discover the CLI without service credentials:
 
 ```sh
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- help
@@ -47,16 +47,16 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml ps -a
 ```
 
-The initializer must exit successfully and Web must become healthy. PostgreSQL has no host
-port. The service runs without a writable container filesystem; only its private configuration
-is mounted read-only. Configuration generation refuses an existing path. Initialization refuses
-an unsupported schema and supplies no conversion.
+The initializer must exit successfully and Web must become healthy; repeat `ps -a` while startup
+is in progress. PostgreSQL has no host port. Web runs without a writable container filesystem;
+its private configuration is mounted read-only. Configuration generation refuses an existing path.
+Initialization refuses an unsupported schema and supplies no conversion.
 
 ## Trust the certificate and sign in
 
-Use a separate Firefox profile for evaluation trust. Install the NSS certificate utility
-`certutil` as a prerequisite. Import only this installation's CA, then install the locked
-Firefox engine into this new configuration directory:
+Use a separate Firefox profile for evaluation trust. Import only this installation's CA, then
+install the locked Firefox engine into this new configuration directory. On Linux, the installer
+also installs required browser system libraries and may require administrator access:
 
 ```sh
 mkdir -m 700 "$claimcore_config/browser-profile"
@@ -64,7 +64,11 @@ certutil -N --empty-password -d "sql:$claimcore_config/browser-profile"
 certutil -A -d "sql:$claimcore_config/browser-profile" -n 'ClaimCore evaluation CA' -t 'C,,' -i "$claimcore_config/ca.pem"
 certutil -L -d "sql:$claimcore_config/browser-profile"
 export PLAYWRIGHT_BROWSERS_PATH="$claimcore_config/browser-runtime"
-(cd web && npm exec -- playwright install firefox)
+if [ "$(uname -s)" = Linux ]; then
+  (cd web && npm exec -- playwright install --with-deps firefox)
+else
+  (cd web && npm exec -- playwright install firefox)
+fi
 claimcore_firefox="$(cd web && node --input-type=module -e 'import { firefox } from "playwright"; console.log(firefox.executablePath());')"
 "$claimcore_firefox" --no-remote --profile "$claimcore_config/browser-profile"
 ```
@@ -128,8 +132,8 @@ printf '%s\n' '{"endpoint":"authority.list","input":{"limit":50}}' | \
 
 Require exit 0. Create one explicit installation grant
 frame from the returned human principal. The operation ID is generated once and the file refuses
-overwrite; preserve it for exact retries. The script refuses an unexpected result or a non-fresh
-actor list rather than guessing an owner:
+overwrite; preserve it for exact retries. Use it only for this fresh installation; the script
+refuses an unexpected reply or an actor list other than one human:
 
 ```sh
 node --input-type=module - "$claimcore_config/cli/authority.json" "$claimcore_config/cli/grant-case-handler.json" <<'JS'
@@ -158,7 +162,8 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- cal
 ```
 
 Require exit 0 and `ACCEPTED` (`ALREADY_ACCEPTED` on exact replay). If confirmation is uncertain,
-repeat that same command with the same file; do not regenerate its operation ID. `CASE_HANDLER` permits case registration, decisions and closing. Add a separate
+repeat that same command with the same file; do not regenerate its operation ID.
+`CASE_HANDLER` permits case registration, decisions and closing. Add a separate
 `PAYMENT_RECORDER` grant using the same frame shape and a fresh operation ID when this person
 also records or clears payments.
 
@@ -168,7 +173,7 @@ Reload Cases to obtain current capability advice. Choose Open a case and use syn
 reference `START-0001`, incident `2026-09-01`, notification `2026-09-02`, country `LV`, claimant
 `Synthetic claimant`, insurer `Synthetic insurer`, amount `100.00`, currency `EUR`. Review,
 confirm and record the change. Expect an accepted receipt at revision 1 and the thirteen case
-fields on return to the case. The first-run checkpoint includes explicit authority and a recorded
+fields on return to the case. You now have an explicitly granted human actor and one accepted
 synthetic case; owner status alone never grants case work.
 
 ## Stop and retain data

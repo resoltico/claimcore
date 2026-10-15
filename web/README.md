@@ -37,11 +37,11 @@ rewrite authored business values or country codes.
 graph. Ordinary .NET builds do not run npm. Publishing consumes assets; the Node container stage
 builds them before SDK publication. Source formatting and type-aware lint retain size/complexity
 limits and networking/localization negative controls. Coverage is optional and gates nothing.
-Stylelint and its braces override were removed deliberately: CSS semantic linting is reduced;
-formatting and browser layout/accessibility checks remain.
+CSS verification covers formatting and browser layout/accessibility; there is no separate CSS
+semantic linter.
 
-The browser correction cross-product uses 36 literal serialization tests and six localized real
-acceptance/refusal cases. Other browser specifications remain. Each fixture has one worker and
-zero retries because grants/relay state are shared. CI isolates engines across jobs; smoke is
-nine selected cases on Chromium, while complete qualification is all specifications on all three
-engines. No smoke result represents complete qualification.
+Serialization and real browser acceptance cover correction combinations, localized validation,
+consent and exact retries. Each fixture has one worker and zero retries because grants/relay
+state are shared. CI isolates engines across jobs; complete qualification runs all specifications
+on Chromium, Firefox and WebKit. See [Development](../docs/development.md) for local sequencing
+and the explicitly partial PR smoke selection.

@@ -8,11 +8,12 @@ help and version. Discovery opens no database.
 
 ### CC-DB-002 — Private owner inputs precede database access
 
-The two settings are CLAIMCORE_ADMIN_CONNECTION_FILE and CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE.
+The two settings are `CLAIMCORE_ADMIN_CONNECTION_FILE` and `CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE`.
 Connections and owner identity are owner-private regular files. Unsupported platforms,
 symlinks, foreign ownership, group/other permissions, oversized or malformed files are refused.
-The principal file has exactly operationId, issuer and subject; operationId is a stable nonzero canonical
-UUID. Provisioning validates one human principal through Application and is exact-operation idempotent.
+The principal file has exactly `operationId`, `issuer` and `subject`; `operationId` is a stable
+nonzero canonical UUID. Provisioning validates one human principal through Application and is
+exact-operation idempotent.
 Keep that operation identity for a retry. No secret or connection string belongs in argv or output.
 Remote database connections require verified TLS, a qualified PostgreSQL major and minimum minor listed in
 [server support](../db/postgresql-baseline.json), and appropriate
@@ -26,8 +27,8 @@ owner privileges. Runtime credentials are separately admitted with no schema-own
 Initialization atomically installs the baseline and immutable canonical IANA business zone.
 Repeated initialization requires the same zone. Unsupported namespaces or migration histories
 are refused untouched. There is no adoption, reset or conversion of existing installations.
-Migrations are numbered forward-only scripts; applied bytes are immutable. Opening requires
-history to be exactly the checksum-bound prefix of the shipped scripts.
+Migrations are numbered forward-only scripts. Migration bytes shipped by a release are immutable.
+Opening requires history to be exactly the checksum-bound prefix of the shipped scripts.
 
 Provision-owner bootstraps only an empty authority with its stable operation ID. Database outputs are
 structured tags and positions. Exit 0 succeeds; 2 refuses invocation or input; 3 fails; 4 reports lost commit knowledge;
@@ -44,8 +45,8 @@ checkpoint; it does not prove that the checkpoint is itself the newest. See [Ope
 
 The supported-major list and enforced minimum minor are owned by
 [postgresql-baseline.json](../db/postgresql-baseline.json): currently PostgreSQL 18.6 or later
-within major 18, tested with its pinned image. No major 19 qualification is claimed. Persisted
-text/date/money guards mirror format, never current admission policy. Dates/instants are finite
+within major 18, tested with its pinned image. Server admission enforces the declared major and
+minimum minor. Persisted text/date/money guards mirror format, never current admission policy. Dates/instants are finite
 and in years 0001–9999. Reference identity uses ASCII folding with C-collation semantics.
 
 Verification chooses its first divergence deterministically: scan ledger entries in sequence
@@ -63,5 +64,3 @@ The trusted owner payload-clear exception and verification limits are described 
 [Operations](operations.md#erasure-limits). `pg_restore --data-only` into an initialized schema
 is unsupported because append-only guards reject reconstruction; use ordinary full restore into
 an empty database under the operator’s procedure, then verify independently retained evidence.
-Released migrations are immutable. This unreleased baseline replaces an earlier development
-schema; old installations are refused untouched rather than converted.

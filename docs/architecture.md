@@ -16,17 +16,37 @@ TimeZoneInfo belongs only to Hosting, Database and Postgres. Compiled negative f
 each rule rejects a forbidden dependency or call. Internals grants name a permitted referencer
 or an actual test project. Test projects reference only product or tooling projects.
 
-RecordFormat owns RFC 8785 canonical request/snapshot/authority JSON and the fixed-width ledger
-metadata preimage. Durable format numbers change with bytes and use explicit decoder dispatch now.
-Before 1.0.0, releases may explicitly refuse older installations untouched. From 1.0.0, the promise
-is to keep reading every format a release wrote and ship migrations instead of refusing installations.
-Contracts owns the eleven-endpoint catalogue, request/response schemas,
-strict codecs, fingerprint and generated client types. HostSecurity admits private files.
+RecordFormat owns durable byte encodings. Contracts owns the eleven-endpoint catalogue,
+request/response schemas, strict codecs, fingerprint and generated client types. HostSecurity
+admits private files.
 Postgres owns transactions, projection persistence, schema administration and verification.
 Hosting owns case-work composition and runtime lifetime. Web binds authenticated principals;
 Cli delivers generated-contract frames; Database is the separate owner administration process.
 Database references Application to validate principals and render shared ledger/authority values,
 so it does not duplicate their definitions. ContractGenerator derives artifacts from Contracts.
+
+#### Durable records
+
+RecordFormat writes RFC 8785 canonical request, snapshot and authority JSON with ordinal UTF-16
+member ordering and invariant numeric spelling. Business amounts remain exact decimal strings.
+The [canonical writer](../src/ClaimCore.RecordFormat/CanonicalJson.fs) can encode escaped NUL;
+business-record admission and decoding separately reject it under the [Domain format](domain.md#scalars).
+Canonical content gives replay one stable identity across equivalent JSON member order, whitespace
+and escape spelling while retaining authored string values without Unicode normalization.
+
+[LedgerEntry](../src/ClaimCore.RecordFormat/LedgerEntry.fs) frames the request and snapshot bytes.
+Its entry hash covers a fixed-width metadata preimage containing a salted payload commitment.
+The payload and its nonce can be erased while the retained metadata chain remains verifiable;
+no unsalted business-content digest is retained alongside it. The same transaction appends the
+ledger entry and updates its projections. The ledger is the only acceptance record; projections
+are derived views, not independent acceptance evidence. Reads need no second acceptance authority
+or request-preparation store. [Operations](operations.md) defines the limits of this trust model.
+
+[RecordVersions](../src/ClaimCore.RecordFormat/Versions.fs) owns durable format identifiers.
+A format number changes only when its bytes change, and decoders dispatch explicitly by format.
+Before 1.0.0, releases may explicitly refuse older installations untouched. From 1.0.0, readers
+must retain every format a release wrote and schema changes require forward migrations.
+[Database admission](database.md#cc-db-001) refuses unsupported installations without conversion.
 
 <a id="cc-run-001"></a>
 
@@ -84,15 +104,22 @@ A rejection appends nothing and changes no projection. Writers first lock the si
 head, then read authority, operation identity and case state in the same READ COMMITTED
 transaction. The captured database instant and stored zone determine the business date.
 
+The [lock helper](../db/migrations/0001_baseline.sql) acquires the row lock before reading
+`clock_timestamp()` in a subsequent PL/pgSQL statement. Putting the clock in the locking SELECT's
+target list would date a waiting writer before its lock wait. The
+[transaction tests](../tests/ClaimCore.IntegrationTests/TransactionTests.fs) include that unsafe
+ordering as a rejecting control. Lock, statement and idle-transaction timeouts bound serialization.
+
 <a id="cc-app-002"></a>
 
 ### CC-APP-002 — Exact replay and commit uncertainty
 
 Every accepted case operation and authority change appends exactly one ledger entry in the
-transaction updating its projections. Exact replay returns the original accepted result;
-different content under the same ID is refused. OUTCOME_UNKNOWN means a commit confirmation
-was lost. It does not prove rejection and never permits rebasing or replacement identity.
-Erased request content is unavailable. Reads use one REPEATABLE READ snapshot.
+transaction updating its projections. While accepted request content is retained, authorized
+exact replay returns the original acceptance metadata with snapshot disclosure evaluated in the
+current locked/read context. Different content under the same ID is refused. OUTCOME_UNKNOWN
+means a commit confirmation was lost. It does not prove rejection and never permits rebasing or
+replacement identity. Erased request content cannot be replayed. Reads use one REPEATABLE READ snapshot.
 
 Verification folds permanent record and authority invariants, compares projections and checks
 chain/commitments. It does not replay today’s capability matrix or admission rules against history.

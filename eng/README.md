@@ -12,8 +12,8 @@ Playwright engine and its Linux dependencies; `acceptance` builds and tests publ
 ContractGenerator derives tracked catalogue, schemas, descriptors, corpus and client declarations
 from Contracts. Native tests check exact artifact bytes and inventory, without invoking Node.
 Frontend checks include consumed-response guards, localization, notices and accessibility tooling.
-Knip checks unused frontend code. Stylelint is no longer a gate: this deliberately removes its
-CSS semantic linting; formatting, type checks and browser accessibility/layout cases remain.
+Knip checks unused frontend code. CSS checks cover formatting and browser accessibility/layout;
+the gate performs no dedicated CSS semantic linting.
 
 Native tests use Microsoft Testing Platform and automatic Expecto discovery. Required properties
 are bounded in memory; no mutation or standalone fuzz campaign is invoked locally or in CI.
