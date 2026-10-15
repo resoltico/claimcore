@@ -73,36 +73,39 @@ module Inputs =
         finally
             CryptographicOperations.ZeroMemory value
 
+    let decodeOwner (value: byte array) =
+        use document = JsonDocument.Parse(ReadOnlyMemory value)
+        let root = document.RootElement
+        let names = root.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
+
+        if names <> [ "issuer"; "operationId"; "subject" ] then
+            invalidOp "Owner input properties differ."
+
+        let text name =
+            root.GetProperty(name: string).GetString()
+            |> Option.ofObj
+            |> Option.defaultWith (fun () -> invalidOp "Owner value is absent.")
+
+        let operationText = text "operationId"
+        let mutable operationId = Guid.Empty
+
+        if
+            not (Guid.TryParseExact(operationText, "D", &operationId))
+            || operationId = Guid.Empty
+            || operationId.ToString("D") <> operationText
+        then
+            invalidOp "Owner operation identifier is invalid."
+
+        let principal =
+            PrincipalKey.human (text "issuer") (text "subject")
+            |> Result.defaultWith (fun _ -> invalidOp "Owner principal is invalid.")
+
+        operationId, principal
+
     let owner () =
         let value = bytes "CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE" 8192
 
         try
-            use document = JsonDocument.Parse(ReadOnlyMemory value)
-            let root = document.RootElement
-            let names = root.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
-
-            if names <> [ "issuer"; "operationId"; "subject" ] then
-                invalidOp "Owner input properties differ."
-
-            let text name =
-                root.GetProperty(name: string).GetString()
-                |> Option.ofObj
-                |> Option.defaultWith (fun () -> invalidOp "Owner value is absent.")
-
-            let operationText = text "operationId"
-            let mutable operationId = Guid.Empty
-
-            if
-                not (Guid.TryParseExact(operationText, "D", &operationId))
-                || operationId = Guid.Empty
-                || operationId.ToString("D") <> operationText
-            then
-                invalidOp "Owner operation identifier is invalid."
-
-            let principal =
-                PrincipalKey.human (text "issuer") (text "subject")
-                |> Result.defaultWith (fun _ -> invalidOp "Owner principal is invalid.")
-
-            operationId, principal
+            decodeOwner value
         finally
             CryptographicOperations.ZeroMemory value
