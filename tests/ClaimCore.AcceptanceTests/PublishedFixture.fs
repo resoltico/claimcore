@@ -19,6 +19,7 @@ let private database (image: string) runId =
         .WithLabel("claimcore.test", "acceptance")
         .WithLabel("claimcore.test-run", runId)
         .WithTmpfsMount("/var/lib/postgresql")
+        .WithWaitStrategy(ClaimCore.TestSupport.PostgresReadiness.strategy ())
         .Build()
 
 let private client (certificate: X509Certificate2) =

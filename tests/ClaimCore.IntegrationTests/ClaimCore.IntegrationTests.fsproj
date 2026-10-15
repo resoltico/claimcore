@@ -2,6 +2,7 @@
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
+    <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
