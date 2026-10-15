@@ -32,11 +32,16 @@ module Inputs =
             && parts[1]
                |> Seq.forall (fun c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
         then
-            Some
+            let position: ExpectedPosition =
                 {
                     Sequence = sequence
                     EntryHash = Convert.FromHexString(parts[1])
                 }
+
+            if ExpectedPositions.isValid position then
+                Some position
+            else
+                None
         else
             None
 
@@ -76,7 +81,7 @@ module Inputs =
             let root = document.RootElement
             let names = root.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
 
-            if names <> [ "eventId"; "issuer"; "subject" ] then
+            if names <> [ "issuer"; "operationId"; "subject" ] then
                 invalidOp "Owner input properties differ."
 
             let text name =
@@ -84,20 +89,20 @@ module Inputs =
                 |> Option.ofObj
                 |> Option.defaultWith (fun () -> invalidOp "Owner value is absent.")
 
-            let eventText = text "eventId"
-            let mutable eventId = Guid.Empty
+            let operationText = text "operationId"
+            let mutable operationId = Guid.Empty
 
             if
-                not (Guid.TryParseExact(eventText, "D", &eventId))
-                || eventId = Guid.Empty
-                || eventId.ToString("D") <> eventText
+                not (Guid.TryParseExact(operationText, "D", &operationId))
+                || operationId = Guid.Empty
+                || operationId.ToString("D") <> operationText
             then
-                invalidOp "Owner event identifier is invalid."
+                invalidOp "Owner operation identifier is invalid."
 
             let principal =
                 PrincipalKey.human (text "issuer") (text "subject")
                 |> Result.defaultWith (fun _ -> invalidOp "Owner principal is invalid.")
 
-            eventId, principal
+            operationId, principal
         finally
             CryptographicOperations.ZeroMemory value

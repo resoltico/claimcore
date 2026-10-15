@@ -1,4 +1,4 @@
-module internal ClaimCore.IntegrationTests.AcceptedHistoryFixtures
+module ClaimCore.IntegrationTests.AcceptedHistoryFixtures
 
 open System
 open Expecto
@@ -36,7 +36,7 @@ let private snapshot reference claimant : CaseSnapshot =
 
 /// Represents an acceptance under an earlier text policy. It still appends the whole canonical
 /// ledger entry and projection atomically; current admission is deliberately not the fixture oracle.
-let seed (database: PostgresFixture.Database) claimant =
+let internal seed (database: PostgresFixture.Database) claimant =
     let fixture = database.Fixture
 
     let request =
@@ -104,7 +104,7 @@ let seed (database: PostgresFixture.Database) claimant =
         | _ -> failtest "Historical fixture append failed"
     }
 
-let grandfathering (database: PostgresFixture.Database) =
+let private grandfathering (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
         let name = String.replicate 201 "A"

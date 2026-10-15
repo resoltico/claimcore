@@ -64,7 +64,7 @@ let tests =
                         )
 
                     let fixture = fixture store
-                    let! core = editor fixture |> Async.AwaitTask
+                    let! core = caseWorker fixture |> Async.AwaitTask
                     let gate = AdmissionGate(ignore)
                     let actor = ActorFacade.bind gate core
 
@@ -88,14 +88,14 @@ let tests =
                                         10
                                         "synthetic-lifetime"
                                         0L
-                                        (ClaimCore.Domain.Command.Open registration),
+                                        (ClaimCore.Domain.BusinessCommand.Open registration),
                                     CancellationToken.None
                                 ))
                         )
 
                     do! entered.Task |> Async.AwaitTask
                     let stopping = gate.Shutdown(TimeSpan.FromSeconds 2.)
-                    let! refused = actor.Definition CancellationToken.None |> Async.AwaitTask
+                    let! refused = actor.Context CancellationToken.None |> Async.AwaitTask
 
                     Expect.equal
                         refused

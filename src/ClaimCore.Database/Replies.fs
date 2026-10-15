@@ -3,6 +3,7 @@ namespace ClaimCore.Database
 open System
 open System.Text.Json
 open ClaimCore.Application
+open ClaimCore.Postgres
 
 module Replies =
     let encode value =
@@ -12,44 +13,67 @@ module Replies =
 
     let position (value: LedgerPosition) =
         {|
-            sequence = value.Sequence.ToString(Globalization.CultureInfo.InvariantCulture)
+            sequence = value.Sequence
             hash = value.EntryHash
         |}
 
+    let private accepted outcomeTag (receipt: OperationReceipt) =
+        match receipt.Scope with
+        | ReceiptScope.Authority target ->
+            encode
+                {|
+                    tag = outcomeTag
+                    operationId = receipt.OperationId
+                    targetActorId = target.TargetActorId
+                    position = position receipt.Position
+                |},
+            0
+        | _ -> tag "FAILED" 3
+
     let authority =
         function
-        | AuthorityOutcome.Applied(event, head, actor) ->
-            encode
-                {|
-                    tag = "APPLIED"
-                    eventId = event
-                    actorId = actor
-                    position = position head
-                |},
-            0
-        | AuthorityOutcome.AlreadyApplied(event, head, actor) ->
-            encode
-                {|
-                    tag = "ALREADY_APPLIED"
-                    eventId = event
-                    actorId = actor
-                    position = position head
-                |},
-            0
-        | AuthorityOutcome.Rejected _ -> tag "REFUSED" 2
-        | AuthorityOutcome.Failed _ -> tag "FAILED" 3
-        | AuthorityOutcome.Cancelled -> tag "CANCELLED" 3
-        | AuthorityOutcome.OutcomeUnknown event ->
+        | ExecuteOutcome.Accepted receipt -> accepted "ACCEPTED" receipt
+        | ExecuteOutcome.AlreadyAccepted receipt -> accepted "ALREADY_ACCEPTED" receipt
+        | ExecuteOutcome.Rejected _ -> tag "REFUSED" 2
+        | ExecuteOutcome.Failed _ -> tag "FAILED" 3
+        | ExecuteOutcome.Cancelled -> tag "CANCELLED" 3
+        | ExecuteOutcome.OutcomeUnknown(operationId, _) ->
             encode
                 {|
                     tag = "OUTCOME_UNKNOWN"
-                    eventId = event
+                    operationId = operationId
                 |},
             4
+
+    let verification =
+        function
+        | VerificationResult.Verified head ->
+            encode
+                {|
+                    tag = "VERIFIED"
+                    position = position head
+                |},
+            0
+        | VerificationResult.Diverged finding ->
+            encode
+                {|
+                    tag = "DIVERGED"
+                    sequence = finding.Sequence
+                    finding = VerificationFindings.token finding.Finding
+                |},
+            5
 
     let help () =
         encode
             {|
+                exitCodes =
+                    {|
+                        success = 0
+                        refused = 2
+                        failed = 3
+                        outcomeUnknown = 4
+                        diverged = 5
+                    |}
                 commands =
                     [|
                         "initialize"
