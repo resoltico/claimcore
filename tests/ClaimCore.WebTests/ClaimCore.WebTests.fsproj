@@ -23,6 +23,8 @@
     <Compile Include="BindingAdmissionTests.fs" />
     <Compile Include="ProbeTransportTests.fs" />
     <Compile Include="IdentityRealm.fs" />
+    <Compile Include="IdentityReadiness.fs" />
+    <Compile Include="IdentityReadinessTests.fs" />
     <Compile Include="IdentityServer.fs" />
     <Compile Include="OidcLiveKeys.fs" />
     <Compile Include="OidcLiveTokens.fs" />

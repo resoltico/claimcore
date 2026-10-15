@@ -4,6 +4,7 @@ open System
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
 open System.Text
+open System.Net.Http
 open System.Threading
 open System.Threading.Tasks
 open DotNet.Testcontainers.Builders
@@ -146,7 +147,21 @@ type Identity() =
                     |]
             |}
 
-    member _.Start(token: CancellationToken) = container.StartAsync token
+    member this.Start(token: CancellationToken) =
+        task {
+            do! container.StartAsync token
+            use handler = ClaimCore.Web.AuthMiddleware.syntheticTrustHandler root
+
+            use client =
+                new HttpClient(
+                    handler,
+                    false,
+                    Timeout = TimeSpan.FromSeconds 5.,
+                    MaxResponseContentBufferSize = 65536L
+                )
+
+            do! IdentityReadiness.wait client (Uri this.Issuer) token
+        }
 
     interface IAsyncDisposable with
         member _.DisposeAsync() =
