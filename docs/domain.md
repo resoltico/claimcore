@@ -95,7 +95,9 @@ authority; adapters do not add another action policy.
 Disposition is separate from business status and payment facts. `VOID` requires a reason and
 blocks business commands while preserving every accepted snapshot. `REINSTATE` requires a
 reason and restores ordinary case work on a voided record. Reasons contain 1–200 Unicode
-scalars, with no surrounding whitespace, control, format or line/paragraph separator characters.
+scalars under the same admission profile as newly asserted names: no surrounding whitespace,
+controls, line/paragraph separators or explicitly forbidden invisible/directional characters.
+Joining characters and other permitted format characters remain accepted.
 Neither act reverses a payment or changes a business field.
 
 `ERASE` removes the case's business payload and its whole history from the live database.
@@ -123,9 +125,10 @@ be replayed as retained requests. Its physical limits are in [Operations](operat
 - Retained business text excludes NUL, unpaired surrogates and Unicode noncharacters as permanent
   format invariants. New name assertions contain 1–200 Unicode scalars, no surrounding whitespace,
   controls, line/paragraph separators, or the forbidden invisible/directional characters described
-  by the Domain text policy. Joining characters are preserved where permitted. Display warnings
-  expose suspicious code points without rewriting accepted data. Stewardship reasons additionally
-  refuse format characters.
+  by the [shared Domain text policy](../src/ClaimCore.Domain/Validation.fs). Names and stewardship
+  reasons share this profile: U+200C (ZWNJ), U+200D (ZWJ), U+180E (Mongolian vowel separator),
+  permitted selectors and private-use characters remain accepted. Unicode category Format is
+  not a blanket refusal. Display warnings expose suspicious code points without rewriting data.
 - Format and admission are separate. Decoding, generic schemas, SQL and verification enforce
   permanent scalar syntax and state invariants. Current admission policy judges newly asserted
   values only: unchanged retained names and dates may be reaffirmed. Tightening admission never

@@ -27,6 +27,12 @@ at least one enabled human installation owner, and revoke ClaimCore grants indep
 membership. Service principals cannot receive OWNER or DATA_STEWARD. Bearer service identity comes
 from the admitted client ID; the CLI’s PKCE principal uses the human subject.
 
+Before registering a SERVICE principal, restrict its confidential IdP client to client credentials
+and disable interactive/user grant paths. The human CLI client is public authorization-code/PKCE,
+with service accounts disabled. Put the API audience in access tokens only, never ID tokens.
+`azp`/`client_id` classification does not establish the grant type; operators must maintain these
+flow restrictions as described in [Web admission](web.md#cc-web-001).
+
 Browser sessions and list cursors are ephemeral. A runtime restart invalidates cursor signatures;
 expired or changed-grant cursors must be restarted. The browser retains no pending request across
 reload. Preserve exact uncertain requests through the caller’s process; never replace their ID.

@@ -33,6 +33,13 @@ human and requires `sub`. Other verified clients identify services by client ID;
 `azp`/`client_id` values or their single-claim fallback are accepted. Duplicate, blank or conflicting
 client identities are refused. IdP verification does not register or grant a ClaimCore actor.
 
+Configure SERVICE actors only for confidential clients restricted to client credentials; disable
+interactive authorization and other user grant paths for those clients. Configure the CLI as a
+public human authorization-code/PKCE client with service accounts disabled. Issue the API audience
+only in access tokens, never ID tokens. Classification by `azp`/`client_id` identifies the client;
+it does not prove which OAuth grant produced a token. These IdP flow restrictions are part of the
+deployment trust contract and prevent user tokens from inheriting a shared service actor’s grants.
+
 The browser consumes tracked contract types/descriptors and validates strict bounded JSON plus
 required endpoint/outcome shapes. It has no AJV schema engine. Missing or unusable mutation receipt
 data remains uncertain and preserves the original retry identity/content. WITHHELD snapshots show

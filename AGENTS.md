@@ -34,7 +34,10 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   `OUTCOME_UNKNOWN` means a commit confirmation was lost and nothing else. Never infer that a
   commit failed, mint a replacement ID, or rebase a request.
 - RecordFormat owns every byte-stable encoding and its canonical JSON writer. A format's number
-  changes only when its bytes change; retain decoders for every released format. The entry hash covers the salted payload commitment and never the payload, so erasure
+  changes only when its bytes change. Format dispatch exists now. Before 1.0.0, a release may
+  explicitly refuse older installations untouched. From 1.0.0, keep reading every format a release
+  wrote and ship migrations instead of refusing installations. The entry hash covers the salted
+  payload commitment and never the payload, so erasure
   leaves the chain verifiable; do not add content-derived data to the hash preimage or to any
   column that erasure does not clear.
 - Format invariants are checked on admission, decode and verification; SQL mirrors only these.

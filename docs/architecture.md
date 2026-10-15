@@ -17,7 +17,10 @@ each rule rejects a forbidden dependency or call. Internals grants name a permit
 or an actual test project. Test projects reference only product or tooling projects.
 
 RecordFormat owns RFC 8785 canonical request/snapshot/authority JSON and the fixed-width ledger
-metadata preimage. Durable format numbers change with bytes; released decoders remain supported. Contracts owns the eleven-endpoint catalogue, request/response schemas,
+metadata preimage. Durable format numbers change with bytes and use explicit decoder dispatch now.
+Before 1.0.0, releases may explicitly refuse older installations untouched. From 1.0.0, the promise
+is to keep reading every format a release wrote and ship migrations instead of refusing installations.
+Contracts owns the eleven-endpoint catalogue, request/response schemas,
 strict codecs, fingerprint and generated client types. HostSecurity admits private files.
 Postgres owns transactions, projection persistence, schema administration and verification.
 Hosting owns case-work composition and runtime lifetime. Web binds authenticated principals;

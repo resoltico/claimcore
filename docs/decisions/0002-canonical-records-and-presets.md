@@ -48,10 +48,10 @@ support declares and enforces major/minimum minor (initially 18.6); no major 19 
 Cursors bind authority/query/time in a bounded authenticated envelope, with a shared ephemeral
 runtime HMAC key, fixed-time verification, 15-minute lifetime and restart invalidation.
 
-OD-6 establishes format-number dispatch now and decoder retention for released formats. Public
-compatibility commitments start with 1.0.0; unreleased formats may be replaced with explicit
-incompatibility. Shipped migrations remain immutable. This is a compatibility mechanism, not an
-assertion that older development databases can be converted or a promise of current production use.
+OD-6 establishes format-number dispatch now. Before 1.0.0, releases may explicitly refuse older
+installations untouched. From 1.0.0, the promise is to keep reading every format a release wrote
+and ship migrations instead of refusing installations. Shipped migrations remain immutable.
+The current mechanism does not assert conversion of older development databases or production use.
 
 ## Alternatives and challenge
 
@@ -71,5 +71,6 @@ transitive pins were removed only after restore/audit/build evidence, preserving
 
 Deploy matching clients/service and initialize a fresh database; no conversion is supplied.
 Grant CASE_HANDLER and PAYMENT_RECORDER where one person decides and records payments.
-Policy tightening does not invalidate history. One format change adds a decoder after release.
+Policy tightening does not invalidate history. From 1.0.0, format changes retain readers for
+earlier released formats and ship the required forward migrations.
 PR smoke is partial evidence; complete qualification is separate and never implied by its result.
