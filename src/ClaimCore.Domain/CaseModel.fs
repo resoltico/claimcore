@@ -143,9 +143,14 @@ type CaseSnapshot =
         View: CaseView
     }
 
-module Revision =
+/// Exact integer range shared by Domain revisions and interoperable JSON records.
+module SafeInteger =
     [<Literal>]
     let Maximum = 9007199254740991L
+
+module Revision =
+    [<Literal>]
+    let Maximum = SafeInteger.Maximum
 
 [<RequireQualifiedAccess>]
 type CaseRefusal =

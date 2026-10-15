@@ -85,7 +85,6 @@ type ActViolation =
     | EmptyOperationId
     | ExpectedRevisionOutOfRange
     | StoredRevisionOutOfRange
-    | RevisionExhausted
     | CaseReferenceMismatch
     | StateTransitionMismatch
     | ExactInputsRequired

@@ -1,82 +1,152 @@
 namespace ClaimCore.Application
 
-open System
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
-[<RequireQualifiedAccess; NoEquality; NoComparison>]
+[<RequireQualifiedAccess; NoComparison>]
 type internal CaseReviewDecision =
-    | Proposed of Claim option * Claim
-    | Replay of StoredEntry
+    | Proposed of before: ClaimCore.Domain.CaseRecord option * after: ClaimCore.Domain.CaseRecord
+    | Replay of OperationReceipt
     | Refuse of Rejection
     | Fail of CoreFault
 
 module internal CaseDecisions =
-    let authorize principal actor capability opening (case: StoredCase option) =
-        match opening, case with
-        | true, _ -> ActorAuthorization.can principal actor capability ResourceScope.Installation
-        | false, Some value ->
-            ActorAuthorization.can principal actor capability (ResourceScope.Case value.CaseId)
-        | _ -> false
+    let authorize principal actor capability (record: StoredCase option) =
+        record
+        |> Option.exists (fun value ->
+            ActorAuthorization.can principal actor capability (ResourceScope.Case value.CaseId))
 
-    let current (case: StoredCase) =
-        match case.State with
-        | StoredCaseState.Erased -> Error CoreFault.StoreIntegrityError
-        | StoredCaseState.Live(view, _) when
-            view.Version = case.Revision && view.Fields.CaseReference = case.Reference
-            ->
-            Claim.restore view |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
-        | _ -> Error CoreFault.StoreIntegrityError
+    let current installationId (record: StoredCase) =
+        Case.ofAccepted record.Snapshot
+        |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+        |> Result.bind (fun value ->
+            if CaseReferenceId.encode installationId record.Snapshot.Reference = record.CaseId then
+                Ok value
+            else
+                Error CoreFault.StoreIntegrityError)
 
-    let review
+    let private permission principal actor (request: CaseRequest) (record: StoredCase option) =
+        if CaseActs.kind request.Act = CaseActKind.Open then
+            if ActorAuthorization.canAct principal actor ResourceScope.Installation request.Act then
+                Ok()
+            else
+                Error Rejection.ResourceUnavailable
+        else
+            match record with
+            | None -> Error Rejection.ResourceUnavailable
+            | Some value when
+                ActorAuthorization.canAct
+                    principal
+                    actor
+                    (ResourceScope.Case value.CaseId)
+                    request.Act
+                ->
+                Ok()
+            | Some value when
+                ActorAuthorization.can
+                    principal
+                    actor
+                    Capability.ReadCase
+                    (ResourceScope.Case value.CaseId)
+                ->
+                Error Rejection.ActNotPermitted
+            | _ -> Error Rejection.ResourceUnavailable
+
+    let private admission installationId principal request bytes (view: CaseReadView) =
+        match permission principal view.Actor request view.Case with
+        | Error refusal -> IdentityDecision.Refuse refusal
+        | Ok() ->
+            OperationIdentity.decide
+                installationId
+                principal
+                view.Actor
+                request.OperationId
+                bytes
+                view.ExistingOperation
+
+    let private propose installationId (calendar: IBusinessCalendar) request (view: CaseReadView) =
+        let before =
+            match view.Case with
+            | None -> Ok None
+            | Some record -> current installationId record |> Result.map Some
+
+        match before with
+        | Error fault -> CaseReviewDecision.Fail fault
+        | Ok before ->
+            match Case.decide (calendar.DateAt view.ObservedAt) request before with
+            | Error refusal -> CaseReviewDecision.Refuse(Rejection.Case refusal)
+            | Ok after -> CaseReviewDecision.Proposed(before, after)
+
+    let review installationId calendar principal request (view: CaseReadView) =
+        let bytes = RequestRecord.encode request
+
+        match admission installationId principal request bytes view with
+        | IdentityDecision.Refuse refusal -> CaseReviewDecision.Refuse refusal
+        | IdentityDecision.Fail fault -> CaseReviewDecision.Fail fault
+        | IdentityDecision.Replay entry ->
+            LedgerEntries.receipt principal view.Actor view.Case entry
+            |> Result.map CaseReviewDecision.Replay
+            |> Result.defaultWith CaseReviewDecision.Fail
+        | IdentityDecision.Fresh -> propose installationId calendar request view
+
+    let private append
+        installationId
         (calendar: IBusinessCalendar)
         principal
-        (request: CommandRequest)
-        (view: CaseReadView)
+        (request: CaseRequest)
+        bytes
+        (view: CaseLockedView)
+        after
         =
-        if
-            not (
-                authorize
-                    principal
-                    view.Actor
-                    Capability.EditCase
-                    (Commands.kind request.Command = CommandKind.Open)
-                    view.Case
+        let snapshot = Case.snapshot after
+
+        let id =
+            view.Case
+            |> Option.map _.CaseId
+            |> Option.defaultWith (fun () ->
+                CaseReferenceId.encode installationId snapshot.Reference)
+
+        let actor =
+            view.Actor
+            |> Option.defaultWith (fun () ->
+                invalidArg (nameof view) "Authorized actor is missing.")
+
+        let scope =
+            StoredScope.Case(
+                id,
+                snapshot.Revision,
+                CaseActs.kind request.Act,
+                calendar.DateAt view.ObservedAt
             )
-        then
-            CaseReviewDecision.Refuse Rejection.ResourceUnavailable
-        else
-            match
-                OperationIdentity.decide
-                    principal
-                    view.Actor
-                    (RequestRecord.encode request)
-                    view.ExistingOperation
-            with
-            | IdentityDecision.Replay entry -> CaseReviewDecision.Replay entry
-            | IdentityDecision.Refuse reason -> CaseReviewDecision.Refuse reason
-            | IdentityDecision.Fail fault -> CaseReviewDecision.Fail fault
-            | IdentityDecision.Fresh ->
-                match view.Case with
-                | Some { State = StoredCaseState.Erased } ->
-                    CaseReviewDecision.Refuse Rejection.CaseErased
-                | Some {
-                           State = StoredCaseState.Live(_, CaseDisposition.Voided)
-                       } -> CaseReviewDecision.Refuse Rejection.CaseVoided
-                | value ->
-                    let before =
-                        match value with
-                        | None -> Ok None
-                        | Some case -> current case |> Result.map Some
 
-                    match before with
-                    | Error fault -> CaseReviewDecision.Fail fault
-                    | Ok claim ->
-                        match Claim.decide (calendar.DateAt view.ObservedAt) request claim with
-                        | Error reason -> CaseReviewDecision.Refuse(Rejection.Domain reason)
-                        | Ok after -> CaseReviewDecision.Proposed(claim, after)
+        let entry =
+            LedgerEntries.create
+                installationId
+                view.Head
+                view.ObservedAt
+                view.PayloadNonce
+                actor.ActorId
+                request.OperationId
+                scope
+                bytes
+                (ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot)
 
-    let command installationId calendar principal request (view: CaseLockedView) =
+        let projection =
+            match snapshot.View, view.Case with
+            | CaseView.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision)
+            | _, None -> CaseProjection.Insert(id, snapshot)
+            | _ -> CaseProjection.Update(id, snapshot)
+
+        let current = Some { CaseId = id; Snapshot = snapshot }
+
+        LedgerEntries.validate installationId (LedgerEntries.stored entry)
+        |> Result.bind (LedgerEntries.receipt principal view.Actor current)
+        |> Result.map (fun receipt -> LedgerDecision.Append(entry, projection, receipt))
+        |> Result.defaultWith LedgerDecision.Fail
+
+    let execute installationId calendar principal request (view: CaseLockedView) =
+        let bytes = RequestRecord.encode request
+
         let read: CaseReadView =
             {
                 ObservedAt = view.ObservedAt
@@ -85,142 +155,19 @@ module internal CaseDecisions =
                 Case = view.Case
             }
 
-        match review calendar principal request read with
-        | CaseReviewDecision.Replay entry -> CaseDecision.Replay entry
-        | CaseReviewDecision.Refuse reason -> CaseDecision.Refuse reason
-        | CaseReviewDecision.Fail fault -> CaseDecision.Fail fault
-        | CaseReviewDecision.Proposed(_, after) ->
-            let snapshot = Claim.view after
-
-            let id =
-                view.Case
-                |> Option.map _.CaseId
-                |> Option.defaultWith (fun () ->
-                    CaseReferenceId.encode installationId snapshot.Fields.CaseReference)
-
-            let actor =
-                view.Actor
-                |> Option.defaultWith (fun () -> invalidOp "Authorized actor missing.")
-
-            let scope =
-                StoredScope.Case(
-                    id,
-                    snapshot.Version,
-                    AcceptedAct.Command(Commands.kind request.Command),
-                    calendar.DateAt view.ObservedAt
-                )
-
-            let entry =
-                LedgerEntries.create
-                    installationId
-                    view.Head
-                    view.ObservedAt
-                    view.PayloadNonce
-                    actor.ActorId
-                    request.OperationId
-                    scope
-                    (RequestRecord.encode request)
-                    (ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot)
-
-            let projection =
-                if view.Case.IsNone then
-                    CaseProjection.Insert(id, snapshot)
-                else
-                    CaseProjection.Update(id, snapshot, CaseDisposition.Active)
-
-            CaseDecision.Append(entry, projection)
-
-    let private stewardshipRefusal =
-        function
-        | StewardshipError.InvalidRequest error -> Rejection.Domain error
-        | StewardshipError.InvalidReason -> Rejection.InvalidReason
-        | StewardshipError.AlreadyVoided -> Rejection.AlreadyVoided
-        | StewardshipError.NotVoided -> Rejection.NotVoided
-        | StewardshipError.VersionConflict value ->
-            Rejection.Domain(DomainError.VersionConflict value)
-        | StewardshipError.RevisionExhausted ->
-            Rejection.Domain(
-                DomainError.InvalidInput(
-                    InputTarget.ExpectedVersion,
-                    InputViolation.Command CommandViolation.RevisionExhausted
-                )
-            )
-
-    let private stewardshipProjection (case: StoredCase) before result =
-        match result with
-        | StewardshipResult.Erased revision ->
-            revision, [||], CaseProjection.Erase(case.CaseId, revision)
-        | StewardshipResult.Retained(revision, next) ->
-            let snapshot =
-                { Claim.view before with
-                    Version = revision
-                }
-
-            revision,
-            ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot,
-            CaseProjection.Update(case.CaseId, snapshot, next)
-
-    let private stewardFresh
-        installationId
-        (calendar: IBusinessCalendar)
-        (request: StewardshipRequest)
-        (view: CaseLockedView)
-        =
-        match view.Case with
-        | None -> CaseDecision.Refuse Rejection.ResourceUnavailable
-        | Some { State = StoredCaseState.Erased } -> CaseDecision.Refuse Rejection.CaseErased
-        | Some case ->
-            let disposition =
-                match case.State with
-                | StoredCaseState.Live(_, value) -> value
-                | _ -> invalidOp "Live case required."
-
-            match current case, Stewardship.decide request case.Revision disposition with
-            | Error fault, _ -> CaseDecision.Fail fault
-            | _, Error error ->
-                let reason = stewardshipRefusal error
-                CaseDecision.Refuse reason
-            | Ok before, Ok result ->
-                let revision, snapshot, projection = stewardshipProjection case before result
-
-                let actor =
-                    view.Actor
-                    |> Option.defaultWith (fun () -> invalidOp "Authorized actor missing.")
-
-                let scope =
-                    StoredScope.Case(
-                        case.CaseId,
-                        revision,
-                        AcceptedAct.Stewardship(Stewardship.kind request.Action),
-                        calendar.DateAt view.ObservedAt
-                    )
-
-                CaseDecision.Append(
-                    LedgerEntries.create
-                        installationId
-                        view.Head
-                        view.ObservedAt
-                        view.PayloadNonce
-                        actor.ActorId
-                        request.OperationId
-                        scope
-                        (StewardshipRecord.encode request)
-                        snapshot,
-                    projection
-                )
-
-    let steward installationId calendar principal request (view: CaseLockedView) =
-        if not (authorize principal view.Actor Capability.StewardCase false view.Case) then
-            CaseDecision.Refuse Rejection.ResourceUnavailable
-        else
-            match
-                OperationIdentity.decide
-                    principal
-                    view.Actor
-                    (StewardshipRecord.encode request)
-                    view.ExistingOperation
-            with
-            | IdentityDecision.Replay entry -> CaseDecision.Replay entry
-            | IdentityDecision.Refuse reason -> CaseDecision.Refuse reason
-            | IdentityDecision.Fail fault -> CaseDecision.Fail fault
-            | IdentityDecision.Fresh -> stewardFresh installationId calendar request view
+        match admission installationId principal request bytes read with
+        | IdentityDecision.Refuse refusal -> LedgerDecision.Refuse refusal
+        | IdentityDecision.Fail fault -> LedgerDecision.Fail fault
+        | IdentityDecision.Replay entry ->
+            LedgerEntries.receipt principal view.Actor view.Case entry
+            |> Result.map LedgerDecision.Replay
+            |> Result.defaultWith LedgerDecision.Fail
+        | IdentityDecision.Fresh when view.Head.Sequence = Revision.Maximum ->
+            LedgerDecision.Refuse Rejection.LedgerExhausted
+        | IdentityDecision.Fresh ->
+            match propose installationId calendar request read with
+            | CaseReviewDecision.Proposed(_, after) ->
+                append installationId calendar principal request bytes view after
+            | CaseReviewDecision.Refuse refusal -> LedgerDecision.Refuse refusal
+            | CaseReviewDecision.Fail fault -> LedgerDecision.Fail fault
+            | CaseReviewDecision.Replay receipt -> LedgerDecision.Replay receipt

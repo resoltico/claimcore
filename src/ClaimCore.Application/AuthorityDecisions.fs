@@ -1,110 +1,183 @@
 namespace ClaimCore.Application
 
 open System
+open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess>]
 type internal AuthorityAction =
-    | Register
+    | User of AuthorityAct
     | ProvisionOwner
-    | Grant of Role * GrantTarget * bool
-    | Enable of bool
 
 module internal AuthorityDecisions =
-    let record eventId target action =
-        let kind, issuer, subject = PrincipalKey.storageParts target
-
-        let recorded =
-            match action with
-            | AuthorityAction.Register -> RecordedAuthorityAction.RegisterActor
-            | AuthorityAction.ProvisionOwner -> RecordedAuthorityAction.ProvisionOwner
-            | AuthorityAction.Enable enabled -> RecordedAuthorityAction.SetEnabled enabled
-            | AuthorityAction.Grant(role, scope, active) ->
-                RecordedAuthorityAction.SetGrant(
-                    Roles.token role,
-                    (match scope with
-                     | GrantTarget.Installation -> RecordedGrantScope.Installation
-                     | GrantTarget.CaseReference value -> RecordedGrantScope.CaseReference value),
-                    active
-                )
-
-        {
-            EventId = eventId
-            Target =
-                {
-                    Kind = kind
-                    Issuer = issuer
-                    Subject = subject
-                }
-            Action = recorded
-        }
-
     let private owner (actor: ActorAuthority) =
         actor.Enabled
         && PrincipalKey.isHuman actor.Principal
         && List.contains
-            {
+            ({
                 Role = Role.Owner
                 Scope = GrantScope.Installation
             }
+            : ActorGrant)
             actor.Grants
 
-    let private projection eventId target action (view: AuthorityLockedView) =
+    let private grantProjection
+        role
+        scope
+        active
+        (actor: ActorAuthority)
+        (view: AuthorityLockedView)
+        =
+        let caseId =
+            match scope, view.TargetCase with
+            | GrantTarget.Installation, _ -> Ok None
+            | GrantTarget.CaseReference _, Some record -> Ok(Some record.CaseId)
+            | _ -> Error Rejection.ResourceUnavailable
+
+        caseId
+        |> Result.bind (fun id ->
+            if Roles.requiresHuman role && not (PrincipalKey.isHuman actor.Principal) then
+                Error Rejection.HumanPrincipalRequired
+            elif
+                not active
+                && role = Role.Owner
+                && id.IsNone
+                && owner actor
+                && view.EnabledHumanOwners <= 1
+            then
+                Error Rejection.LastOwner
+            elif active then
+                Ok(actor.ActorId, AuthorityProjection.AddGrant(actor.ActorId, role, id))
+            else
+                Ok(actor.ActorId, AuthorityProjection.RemoveGrant(actor.ActorId, role, id)))
+
+    let private projection operationId target action (view: AuthorityLockedView) =
         match action, view.Target with
-        | AuthorityAction.Register, Some _ -> Error Rejection.ActorAlreadyRegistered
-        | AuthorityAction.Register, None ->
-            Ok(eventId, AuthorityProjection.RegisterActor(eventId, target))
         | AuthorityAction.ProvisionOwner, _ when not (PrincipalKey.isHuman target) ->
             Error Rejection.HumanPrincipalRequired
         | AuthorityAction.ProvisionOwner, None when view.ActorCount = 0 ->
-            Ok(eventId, AuthorityProjection.ProvisionOwner(eventId, target))
-        | AuthorityAction.ProvisionOwner, _ -> Error Rejection.ActorAlreadyRegistered
+            Ok(operationId, AuthorityProjection.ProvisionOwner(operationId, target))
+        | AuthorityAction.ProvisionOwner, _
+        | AuthorityAction.User AuthorityAct.RegisterActor, Some _ ->
+            Error Rejection.ActorAlreadyRegistered
+        | AuthorityAction.User AuthorityAct.RegisterActor, None ->
+            Ok(operationId, AuthorityProjection.RegisterActor(operationId, target))
         | _, None -> Error Rejection.ActorUnknown
-        | AuthorityAction.Enable enabled, Some actor ->
+        | AuthorityAction.User(AuthorityAct.SetEnabled enabled), Some actor ->
             if not enabled && owner actor && view.EnabledHumanOwners <= 1 then
                 Error Rejection.LastOwner
             else
                 Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, enabled))
-        | AuthorityAction.Grant(role, scope, active), Some actor ->
-            let caseId =
-                match scope, view.TargetCase with
-                | GrantTarget.Installation, _ -> Ok None
-                | GrantTarget.CaseReference _, Some case -> Ok(Some case.CaseId)
-                | _ -> Error Rejection.ResourceUnavailable
+        | AuthorityAction.User(AuthorityAct.SetGrant(role, scope, active)), Some actor ->
+            grantProjection role scope active actor view
 
-            caseId
-            |> Result.bind (fun id ->
-                if
-                    not active
-                    && role = Role.Owner
-                    && id.IsNone
-                    && owner actor
-                    && view.EnabledHumanOwners <= 1
-                then
-                    Error Rejection.LastOwner
-                elif active then
-                    Ok(actor.ActorId, AuthorityProjection.AddGrant(actor.ActorId, role, id))
-                else
-                    Ok(actor.ActorId, AuthorityProjection.RemoveGrant(actor.ActorId, role, id)))
+    let private targets installationId target action (view: AuthorityLockedView) =
+        if
+            view.Target
+            |> Option.exists (fun actor -> actor.ActorId = Guid.Empty || actor.Principal <> target)
+        then
+            Error CoreFault.StoreIntegrityError
+        else
+            match action, view.TargetCase with
+            | AuthorityAction.User(AuthorityAct.SetGrant(_, GrantTarget.CaseReference reference, _)),
+              Some record ->
+                CaseDecisions.current installationId record
+                |> Result.bind (fun _ ->
+                    if
+                        CaseReference.key record.Snapshot.Reference = CaseReference.key reference
+                    then
+                        Ok()
+                    else
+                        Error CoreFault.StoreIntegrityError)
+            | _ -> Ok()
 
-    let private identity principal action bytes (view: AuthorityLockedView) =
-        if action = AuthorityAction.ProvisionOwner && view.ActorCount = 0 then
-            if view.Head.Sequence = 0L then
+    let private provisionIdentity installationId operationId bytes (view: AuthorityLockedView) =
+        if view.ActorCount = 0 then
+            if view.Head.Sequence = 0L && view.ExistingOperation.IsNone then
                 IdentityDecision.Fresh
             else
                 IdentityDecision.Fail CoreFault.StoreIntegrityError
-        elif action = AuthorityAction.ProvisionOwner then
-            match view.ExistingOperation with
-            | Some entry ->
-                match LedgerEntries.payload entry with
-                | Ok payload when payload.Request = bytes -> IdentityDecision.Replay entry
-                | Ok _ -> IdentityDecision.Refuse Rejection.IdempotencyConflict
-                | Error fault -> IdentityDecision.Fail fault
-            | None -> IdentityDecision.Refuse Rejection.ActorAlreadyRegistered
         else
-            OperationIdentity.decide principal view.Actor bytes view.ExistingOperation
+            match view.ExistingOperation with
+            | None -> IdentityDecision.Refuse Rejection.ActorAlreadyRegistered
+            | Some entry when entry.OperationId <> operationId ->
+                IdentityDecision.Fail CoreFault.StoreIntegrityError
+            | Some entry ->
+                match LedgerEntries.validate installationId entry with
+                | Error fault -> IdentityDecision.Fail fault
+                | Ok validated ->
+                    match LedgerEntries.identityBytes validated with
+                    | Some accepted when accepted = bytes -> IdentityDecision.Replay validated
+                    | _ -> IdentityDecision.Refuse Rejection.IdempotencyConflict
 
-    let decide installationId principal eventId target action (view: AuthorityLockedView) =
+    let private append
+        installationId
+        principal
+        operationId
+        action
+        bytes
+        (view: AuthorityLockedView)
+        targetId
+        projection
+        =
+        let actorId =
+            match action with
+            | AuthorityAction.ProvisionOwner -> targetId
+            | _ ->
+                view.Actor
+                |> Option.map _.ActorId
+                |> Option.defaultWith (fun () ->
+                    invalidArg (nameof view) "Authorized actor is missing.")
+
+        let record =
+            AuthorityRecord.decode ServiceLimits.RequestByteLimit bytes
+            |> Result.defaultWith (fun _ -> invalidArg (nameof bytes) "Invalid authority record.")
+
+        let scope = StoredScope.Authority(targetId, RecordedAuthorityActs.kind record.Act)
+
+        let entry =
+            LedgerEntries.create
+                installationId
+                view.Head
+                view.ObservedAt
+                view.PayloadNonce
+                actorId
+                operationId
+                scope
+                bytes
+                Array.empty
+
+        LedgerEntries.validate installationId (LedgerEntries.stored entry)
+        |> Result.bind (LedgerEntries.receipt principal view.Actor None)
+        |> Result.map (fun receipt -> LedgerDecision.Append(entry, projection, receipt))
+        |> Result.defaultWith LedgerDecision.Fail
+
+    let private fresh
+        installationId
+        principal
+        operationId
+        target
+        action
+        bytes
+        (view: AuthorityLockedView)
+        =
+        match targets installationId target action view with
+        | Error fault -> LedgerDecision.Fail fault
+        | Ok() ->
+            match projection operationId target action view with
+            | Error reason -> LedgerDecision.Refuse reason
+            | Ok(targetId, projection) ->
+                append installationId principal operationId action bytes view targetId projection
+
+    let private decide
+        installationId
+        principal
+        operationId
+        target
+        action
+        bytes
+        (view: AuthorityLockedView)
+        =
         if
             action <> AuthorityAction.ProvisionOwner
             && not (
@@ -115,38 +188,48 @@ module internal AuthorityDecisions =
                     ResourceScope.Installation
             )
         then
-            AuthorityDecision.Refuse Rejection.ResourceUnavailable
+            LedgerDecision.Refuse Rejection.ResourceUnavailable
         else
-            let bytes = record eventId target action |> AuthorityRecord.encode
-
-            let identity = identity principal action bytes view
+            let identity =
+                match action with
+                | AuthorityAction.ProvisionOwner ->
+                    provisionIdentity installationId operationId bytes view
+                | _ ->
+                    OperationIdentity.decide
+                        installationId
+                        principal
+                        view.Actor
+                        operationId
+                        bytes
+                        view.ExistingOperation
 
             match identity with
-            | IdentityDecision.Replay entry -> AuthorityDecision.Replay entry
-            | IdentityDecision.Refuse reason -> AuthorityDecision.Refuse reason
-            | IdentityDecision.Fail fault -> AuthorityDecision.Fail fault
+            | IdentityDecision.Replay entry ->
+                LedgerEntries.receipt principal view.Actor None entry
+                |> Result.map LedgerDecision.Replay
+                |> Result.defaultWith LedgerDecision.Fail
+            | IdentityDecision.Refuse reason -> LedgerDecision.Refuse reason
+            | IdentityDecision.Fail fault -> LedgerDecision.Fail fault
+            | IdentityDecision.Fresh when view.Head.Sequence = Revision.Maximum ->
+                LedgerDecision.Refuse Rejection.LedgerExhausted
             | IdentityDecision.Fresh ->
-                match projection eventId target action view with
-                | Error reason -> AuthorityDecision.Refuse reason
-                | Ok(targetId, projection) ->
-                    let actorId =
-                        if action = AuthorityAction.ProvisionOwner then
-                            targetId
-                        else
-                            view.Actor
-                            |> Option.map _.ActorId
-                            |> Option.defaultWith (fun () -> invalidOp "Authorized actor missing.")
+                fresh installationId principal operationId target action bytes view
 
-                    AuthorityDecision.Append(
-                        LedgerEntries.create
-                            installationId
-                            view.Head
-                            view.ObservedAt
-                            view.PayloadNonce
-                            actorId
-                            eventId
-                            (StoredScope.Authority targetId)
-                            bytes
-                            [||],
-                        projection
-                    )
+    let execute installationId principal (request: AuthorityRequest) (view: AuthorityLockedView) =
+        let bytes = AuthorityRequests.toRecord request |> AuthorityRecord.encode
+
+        decide
+            installationId
+            principal
+            request.OperationId
+            request.Target
+            (AuthorityAction.User request.Act)
+            bytes
+            view
+
+    /// Reachable only through the owner administration composition, never the actor facade.
+    let provision installationId operationId target (view: AuthorityLockedView) =
+        let bytes =
+            AuthorityRequests.provisionRecord operationId target |> AuthorityRecord.encode
+
+        decide installationId target operationId target AuthorityAction.ProvisionOwner bytes view

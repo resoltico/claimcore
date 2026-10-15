@@ -4,19 +4,19 @@ open System
 
 [<RequireQualifiedAccess>]
 type Capability =
-    | ReadDefinition
-    | ListCases
     | ReadCase
-    | ReadHistorySummary
+    | ReadHistory
     | ReadHistoryFull
-    | ObserveOperation
-    | EditCase
-    | StewardCase
+    | Register
+    | Decide
+    | RecordPayment
+    | Close
+    | Steward
     | ManageAuthority
+    | ReadAuthority
 
 [<RequireQualifiedAccess>]
 type ResourceScope =
-    | Definition
     | Installation
     | Case of Guid
 

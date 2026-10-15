@@ -22,6 +22,7 @@
     <Compile Include="CanonicalJsonTests.fs" />
     <Compile Include="CanonicalRecordTests.fs" />
     <Compile Include="RecordBoundaryTests.fs" />
+    <Compile Include="CursorRecordTests.fs" />
     <Compile Include="RecordPropertyTests.fs" />
     <Compile Include="DecoderCorpora.fs" />
     <Compile Include="OperationRecordTests.fs" />
@@ -30,8 +31,14 @@
     <Compile Include="PrivateFileTests.fs" />
     <Compile Include="MemoryLedgerStore.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
+    <Compile Include="ApplicationFixtures.fs" />
     <Compile Include="HostingTests.fs" />
+    <Compile Include="AuthorizationPolicyTests.fs" />
+    <Compile Include="CursorTests.fs" />
     <Compile Include="ApplicationTests.fs" />
+    <Compile Include="AuthorityTests.fs" />
+    <Compile Include="DisclosureTests.fs" />
+    <Compile Include="PaginationTests.fs" />
     <Compile Include="ContractTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="RemoteClientTests.fs" />

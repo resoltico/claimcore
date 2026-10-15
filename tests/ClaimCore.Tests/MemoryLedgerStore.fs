@@ -3,11 +3,10 @@ module ClaimCore.Tests.MemoryLedgerStore
 open System
 open System.Threading
 open System.Threading.Tasks
-
-exception private UnknownCommitFault
-
 open ClaimCore.Domain
 open ClaimCore.Application
+
+exception private UnknownCommitFault
 
 [<NoEquality; NoComparison>]
 type private State =
@@ -17,15 +16,22 @@ type private State =
         Entries: StoredEntry list
     }
 
-let private referenceOrder (left: string) (right: string) =
-    compare (Text.Encoding.UTF8.GetBytes left) (Text.Encoding.UTF8.GetBytes right)
-
 let private copyEntry (entry: StoredEntry) =
     { entry with
         EntryHash = Array.copy entry.EntryHash
+        PayloadCommitment = Array.copy entry.PayloadCommitment
         Payload = entry.Payload |> Option.map Array.copy
-        RequestSha256 = entry.RequestSha256 |> Option.map Array.copy
+        PayloadNonce = entry.PayloadNonce |> Option.map Array.copy
     }
+
+let private ownerGrant: ActorGrant =
+    {
+        Role = Role.Owner
+        Scope = GrantScope.Installation
+    }
+
+let private referenceOrder left right =
+    String.CompareOrdinal(CaseReference.key left, CaseReference.key right)
 
 let private updateActor id change state =
     let actor = state.Actors |> Map.values |> Seq.find (fun value -> value.ActorId = id)
@@ -48,54 +54,36 @@ let private registerActor id principal grants state =
                 }
     }
 
+let private grant role caseId : ActorGrant =
+    {
+        Role = role
+        Scope =
+            caseId
+            |> Option.map GrantScope.Case
+            |> Option.defaultValue GrantScope.Installation
+    }
+
 let private applyAuthority projection state =
     match projection with
     | AuthorityProjection.RegisterActor(id, principal) -> registerActor id principal [] state
     | AuthorityProjection.ProvisionOwner(id, principal) ->
-        registerActor
-            id
-            principal
-            [
-                {
-                    Role = Role.Owner
-                    Scope = GrantScope.Installation
-                }
-            ]
-            state
+        registerActor id principal [ ownerGrant ] state
     | AuthorityProjection.SetEnabled(id, enabled) ->
-        updateActor id (fun value -> { value with Enabled = enabled }) state
+        updateActor id (fun actor -> { actor with Enabled = enabled }) state
     | AuthorityProjection.AddGrant(id, role, caseId) ->
-        let grant =
-            {
-                Role = role
-                Scope =
-                    caseId
-                    |> Option.map GrantScope.Case
-                    |> Option.defaultValue GrantScope.Installation
-            }
-
         updateActor
             id
-            (fun value ->
-                { value with
-                    Grants = grant :: value.Grants |> List.distinct
+            (fun actor ->
+                { actor with
+                    Grants = grant role caseId :: actor.Grants |> List.distinct
                 })
             state
     | AuthorityProjection.RemoveGrant(id, role, caseId) ->
-        let grant =
-            {
-                Role = role
-                Scope =
-                    caseId
-                    |> Option.map GrantScope.Case
-                    |> Option.defaultValue GrantScope.Installation
-            }
-
         updateActor
             id
-            (fun value ->
-                { value with
-                    Grants = value.Grants |> List.filter ((<>) grant)
+            (fun actor ->
+                { actor with
+                    Grants = actor.Grants |> List.filter ((<>) (grant role caseId))
                 })
             state
 
@@ -107,10 +95,13 @@ let private eraseCase id revision state =
         Cases =
             state.Cases
             |> Map.add
-                original.Reference
+                (CaseReference.key original.Snapshot.Reference)
                 { original with
-                    Revision = revision
-                    State = StoredCaseState.Erased
+                    Snapshot =
+                        { original.Snapshot with
+                            Revision = revision
+                            View = CaseView.Erased
+                        }
                 }
         Entries =
             state.Entries
@@ -119,46 +110,91 @@ let private eraseCase id revision state =
                 | StoredScope.Case(caseId, _, _, _) when caseId = id ->
                     { entry with
                         Payload = None
-                        RequestSha256 = None
+                        PayloadNonce = None
                     }
                 | _ -> entry)
     }
 
 let private applyCase projection state =
     match projection with
-    | CaseProjection.Insert(id, view) ->
-        if Map.containsKey view.Fields.CaseReference state.Cases then
+    | CaseProjection.Insert(id, snapshot) ->
+        let key = CaseReference.key snapshot.Reference
+
+        if Map.containsKey key state.Cases then
             invalidOp "Duplicate case."
 
         { state with
-            Cases =
-                state.Cases
-                |> Map.add
-                    view.Fields.CaseReference
-                    {
-                        CaseId = id
-                        Reference = view.Fields.CaseReference
-                        Revision = view.Version
-                        State = StoredCaseState.Live(view, CaseDisposition.Active)
-                    }
+            Cases = Map.add key { CaseId = id; Snapshot = snapshot } state.Cases
         }
-    | CaseProjection.Update(id, view, disposition) ->
-        let original = state.Cases[view.Fields.CaseReference]
+    | CaseProjection.Update(id, snapshot) ->
+        let key = CaseReference.key snapshot.Reference
+        let original = state.Cases[key]
 
-        if original.CaseId <> id then
+        if original.CaseId <> id || original.Snapshot.Reference <> snapshot.Reference then
             invalidOp "Wrong case projection."
 
         { state with
-            Cases =
-                state.Cases
-                |> Map.add
-                    original.Reference
-                    { original with
-                        Revision = view.Version
-                        State = StoredCaseState.Live(view, disposition)
-                    }
+            Cases = Map.add key { original with Snapshot = snapshot } state.Cases
         }
     | CaseProjection.Erase(id, revision) -> eraseCase id revision state
+
+let private reviewGrant state (value: ActorGrant) : AuthorityGrant =
+    let scope =
+        match value.Scope with
+        | GrantScope.Installation -> GrantTarget.Installation
+        | GrantScope.Case id ->
+            state.Cases
+            |> Map.values
+            |> Seq.find (fun record -> record.CaseId = id)
+            |> fun record -> GrantTarget.CaseReference record.Snapshot.Reference
+
+    { Role = value.Role; Scope = scope }
+
+let private reviewActor state (actor: ActorAuthority) : ActorReview =
+    let scopeKey =
+        function
+        | GrantTarget.Installation -> ""
+        | GrantTarget.CaseReference reference -> CaseReference.key reference
+
+    let order (left: AuthorityGrant) (right: AuthorityGrant) =
+        let role = String.CompareOrdinal(Roles.token left.Role, Roles.token right.Role)
+
+        if role <> 0 then
+            role
+        else
+            String.CompareOrdinal(scopeKey left.Scope, scopeKey right.Scope)
+
+    {
+        ActorId = actor.ActorId
+        Principal = actor.Principal
+        Enabled = actor.Enabled
+        Grants = actor.Grants |> List.map (reviewGrant state) |> List.sortWith order
+    }
+
+let private historyRows (state: State) (record: StoredCase option) after limit =
+    state.Entries
+    |> List.filter (fun entry ->
+        match entry.Scope, record with
+        | StoredScope.Case(id, revision, _, _), Some record ->
+            id = record.CaseId && revision > after
+        | _ -> false)
+    |> List.sortBy (fun entry ->
+        match entry.Scope with
+        | StoredScope.Case(_, revision, _, _) -> revision
+        | _ -> 0L)
+    |> List.truncate (limit + 1)
+    |> List.map copyEntry
+
+let private nextRevision (rows: StoredEntry list) (visible: StoredEntry list) limit =
+    if List.length rows <= limit then
+        None
+    else
+        visible
+        |> List.tryLast
+        |> Option.map (fun entry ->
+            match entry.Scope with
+            | StoredScope.Case(_, revision, _, _) -> revision
+            | _ -> invalidOp "Case history required.")
 
 type internal Store(instant: DateTimeOffset) =
     let gate = new SemaphoreSlim(1, 1)
@@ -175,8 +211,11 @@ type internal Store(instant: DateTimeOffset) =
     let mutable unknownLands = true
     let mutable afterCommit = ignore
     let mutable calls = 0
-    let actor key = Map.tryFind key state.Actors
-    let case reference = Map.tryFind reference state.Cases
+    let mutable forcedHead: LedgerHead option = None
+    let actor principal = Map.tryFind principal state.Actors
+
+    let case reference =
+        Map.tryFind (CaseReference.key reference) state.Cases
 
     let operation id =
         state.Entries
@@ -184,8 +223,12 @@ type internal Store(instant: DateTimeOffset) =
         |> Option.map copyEntry
 
     let head () : LedgerHead =
-        match state.Entries |> List.tryLast with
-        | Some entry ->
+        match forcedHead, state.Entries |> List.tryLast with
+        | Some value, _ ->
+            { value with
+                EntryHash = Array.copy value.EntryHash
+            }
+        | _, Some entry ->
             {
                 Sequence = entry.Sequence
                 EntryHash = Array.copy entry.EntryHash
@@ -200,9 +243,13 @@ type internal Store(instant: DateTimeOffset) =
         let head = head ()
 
         if
-            entry.Sequence <> head.Sequence + 1L
+            head.Sequence < 0L
+            || head.Sequence > Revision.Maximum
+            || entry.Sequence < 1L
+            || entry.Sequence > Revision.Maximum
+            || entry.Sequence <> head.Sequence + 1L
             || entry.PreviousHash <> head.EntryHash
-            || operation entry.OperationId |> Option.isSome
+            || (operation entry.OperationId |> Option.isSome)
         then
             invalidOp "Invalid ledger append."
 
@@ -225,15 +272,10 @@ type internal Store(instant: DateTimeOffset) =
     let owners () =
         state.Actors
         |> Map.values
-        |> Seq.filter (fun value ->
-            value.Enabled
-            && PrincipalKey.isHuman value.Principal
-            && List.contains
-                {
-                    Role = Role.Owner
-                    Scope = GrantScope.Installation
-                }
-                value.Grants)
+        |> Seq.filter (fun actor ->
+            actor.Enabled
+            && PrincipalKey.isHuman actor.Principal
+            && List.contains ownerGrant actor.Grants)
         |> Seq.length
 
     let locked (ct: CancellationToken) work =
@@ -257,6 +299,20 @@ type internal Store(instant: DateTimeOffset) =
         nextFailure <- None
         value
 
+    let write result project (failure: StoreFailure option) =
+        match result with
+        | LedgerDecision.Refuse error -> Ok(LedgerWriteResult.Refused error)
+        | LedgerDecision.Fail fault -> Ok(LedgerWriteResult.Failed fault)
+        | LedgerDecision.Replay receipt -> Ok(LedgerWriteResult.Replayed receipt)
+        | LedgerDecision.Append(entry, projection, receipt) ->
+            if failure.IsNone || unknownLands then
+                commit entry (project projection)
+
+            if failure.IsSome then
+                Error StoreFailure.CommitOutcomeUnknown
+            else
+                Ok(LedgerWriteResult.Appended receipt)
+
     member _.Instant
         with get () = observedAt
         and set value = observedAt <- value
@@ -269,6 +325,9 @@ type internal Store(instant: DateTimeOffset) =
 
     member _.AfterCommit
         with set value = afterCommit <- value
+
+    member _.HeadOverride
+        with set value = forcedHead <- value
 
     member _.DecisionCalls = calls
     member _.Entries = state.Entries |> List.map copyEntry
@@ -298,18 +357,7 @@ type internal Store(instant: DateTimeOffset) =
                             Case = case reference
                         }
 
-                    match decide view with
-                    | CaseDecision.Refuse error -> Ok(CaseWriteResult.Refused error)
-                    | CaseDecision.Fail fault -> Ok(CaseWriteResult.Failed fault)
-                    | CaseDecision.Replay entry -> Ok(CaseWriteResult.Replayed entry)
-                    | CaseDecision.Append(entry, projection) ->
-                        if failure.IsNone || unknownLands then
-                            commit entry (applyCase projection)
-
-                        if failure.IsSome then
-                            Error StoreFailure.CommitOutcomeUnknown
-                        else
-                            Ok(CaseWriteResult.Appended entry))
+                    write (decide view) applyCase failure)
 
         member _.WriteAuthority(principal, id, target, reference, decide, ct) =
             locked ct (fun () ->
@@ -333,18 +381,7 @@ type internal Store(instant: DateTimeOffset) =
                             ActorCount = state.Actors.Count
                         }
 
-                    match decide view with
-                    | AuthorityDecision.Refuse error -> Ok(AuthorityWriteResult.Refused error)
-                    | AuthorityDecision.Fail fault -> Ok(AuthorityWriteResult.Failed fault)
-                    | AuthorityDecision.Replay entry -> Ok(AuthorityWriteResult.Replayed entry)
-                    | AuthorityDecision.Append(entry, projection) ->
-                        if failure.IsNone || unknownLands then
-                            commit entry (applyAuthority projection)
-
-                        if failure.IsSome then
-                            Error StoreFailure.CommitOutcomeUnknown
-                        else
-                            Ok(AuthorityWriteResult.Appended entry))
+                    write (decide view) applyAuthority failure)
 
         member _.ReadCase(principal, id, reference, ct) =
             locked ct (fun () ->
@@ -368,73 +405,73 @@ type internal Store(instant: DateTimeOffset) =
             locked ct (fun () ->
                 let entry = operation id
 
-                let record =
+                let current =
                     entry
                     |> Option.bind (fun value ->
                         match value.Scope with
                         | StoredScope.Case(id, _, _, _) ->
                             state.Cases
                             |> Map.values
-                            |> Seq.tryFind (fun value -> value.CaseId = id)
+                            |> Seq.tryFind (fun record -> record.CaseId = id)
                         | _ -> None)
-
-                Ok(actor principal, entry, record))
-
-        member _.ReadHistory(principal, reference, after, limit, ct) =
-            locked ct (fun () ->
-                let record = case reference
-
-                let rows =
-                    state.Entries
-                    |> List.filter (fun entry ->
-                        match entry.Scope, record with
-                        | StoredScope.Case(id, revision, _, _), Some case ->
-                            id = case.CaseId && revision > after
-                        | _ -> false)
-                    |> List.sortBy (fun entry ->
-                        match entry.Scope with
-                        | StoredScope.Case(_, revision, _, _) -> revision
-                        | _ -> 0L)
-                    |> List.truncate (limit + 1)
-                    |> List.map copyEntry
-
-                let visible = rows |> List.truncate limit
-
-                let next =
-                    if rows.Length > limit then
-                        visible
-                        |> List.tryLast
-                        |> Option.map (fun entry ->
-                            match entry.Scope with
-                            | StoredScope.Case(_, revision, _, _) -> revision
-                            | _ -> invalidOp "Case history required.")
-                    else
-                        None
 
                 Ok
                     {
+                        ObservedAt = observedAt
                         Actor = actor principal
-                        Case = record
-                        Entries = visible
-                        NextAfterRevision = next
+                        Entry = entry
+                        Case = current
                     })
 
-        member _.ListCases(principal, visibility, after, limit, ct) =
+        member _.ReadHistory(principal, reference, select, limit, ct) =
             locked ct (fun () ->
-                match actor principal |> Option.bind visibility with
-                | None -> Ok None
-                | Some visibility ->
+                let view: HistoryReadView =
+                    {
+                        ObservedAt = observedAt
+                        Actor = actor principal
+                        Case = case reference
+                    }
+
+                match select view with
+                | Error reason -> Ok(Error reason)
+                | Ok after ->
+                    let rows = historyRows state view.Case after limit
+                    let visible = rows |> List.truncate limit
+
+                    Ok(
+                        Ok
+                            {
+                                ObservedAt = view.ObservedAt
+                                Actor = view.Actor
+                                Case = view.Case
+                                Entries = visible
+                                NextAfterRevision = nextRevision rows visible limit
+                            }
+                    ))
+
+        member _.ListCases(principal, select, limit, ct) =
+            locked ct (fun () ->
+                let view: ActorReadView =
+                    {
+                        ObservedAt = observedAt
+                        Actor = actor principal
+                    }
+
+                match select view with
+                | Error reason -> Ok(Error reason)
+                | Ok selection ->
                     let rows =
                         state.Cases
                         |> Map.values
-                        |> Seq.filter (fun value ->
-                            (match visibility with
+                        |> Seq.filter (fun record ->
+                            (match selection.Visibility with
                              | CaseVisibility.Every -> true
-                             | CaseVisibility.Only ids -> List.contains value.CaseId ids)
-                            && (after
-                                |> Option.forall (fun position ->
-                                    referenceOrder value.Reference position > 0)))
-                        |> Seq.sortWith (fun a b -> referenceOrder a.Reference b.Reference)
+                             | CaseVisibility.Only ids -> List.contains record.CaseId ids)
+                            && (selection.AfterReference
+                                |> Option.forall (fun after ->
+                                    referenceOrder record.Snapshot.Reference after > 0)))
+                        |> Seq.sortWith (fun left right ->
+                            referenceOrder left.Snapshot.Reference right.Snapshot.Reference)
                         |> Seq.truncate (limit + 1)
                         |> Seq.toList
 
@@ -442,15 +479,68 @@ type internal Store(instant: DateTimeOffset) =
 
                     let next =
                         if rows.Length > limit then
-                            items |> List.tryLast |> Option.map _.Reference
+                            items
+                            |> List.tryLast
+                            |> Option.map (fun record ->
+                                CaseReference.key record.Snapshot.Reference)
                         else
                             None
 
                     Ok(
-                        Some
+                        Ok
                             {
-                                Actor = actor principal
+                                ObservedAt = view.ObservedAt
+                                Actor = view.Actor
                                 Items = items
                                 NextAfterReference = next
+                            }
+                    ))
+
+        member _.ListActors(principal, select, limit, ct) =
+            locked ct (fun () ->
+                let view: ActorReadView =
+                    {
+                        ObservedAt = observedAt
+                        Actor = actor principal
+                    }
+
+                match select view with
+                | Error reason -> Ok(Error reason)
+                | Ok after ->
+                    let rows =
+                        state.Actors
+                        |> Map.values
+                        |> Seq.filter (fun actor ->
+                            after
+                            |> Option.forall (fun id ->
+                                String.CompareOrdinal(
+                                    actor.ActorId.ToString("D"),
+                                    id.ToString("D")
+                                )
+                                    >
+                                    0))
+                        |> Seq.sortWith (fun left right ->
+                            String.CompareOrdinal(
+                                left.ActorId.ToString("D"),
+                                right.ActorId.ToString("D")
+                            ))
+                        |> Seq.truncate (limit + 1)
+                        |> Seq.toList
+
+                    let visible = rows |> List.truncate limit
+
+                    let next =
+                        if rows.Length > limit then
+                            visible |> List.tryLast |> Option.map _.ActorId
+                        else
+                            None
+
+                    Ok(
+                        Ok
+                            {
+                                ObservedAt = view.ObservedAt
+                                Actor = view.Actor
+                                Items = visible |> List.map (reviewActor state)
+                                NextAfterActorId = next
                             }
                     ))

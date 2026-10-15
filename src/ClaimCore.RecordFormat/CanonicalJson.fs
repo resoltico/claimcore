@@ -18,7 +18,7 @@ type CanonicalValue =
 
 module CanonicalJson =
     [<Literal>]
-    let MaximumInteger = 9007199254740991L
+    let MaximumInteger = SafeInteger.Maximum
 
     let private appendString (output: StringBuilder) (value: string) =
         if not (UnicodeText.isInterchange value) then

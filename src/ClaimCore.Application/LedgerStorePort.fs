@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
+open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess>]
 type internal StoreFailure =
@@ -19,23 +20,13 @@ type internal LedgerHead =
         EntryHash: byte array
     }
 
-[<RequireQualifiedAccess>]
-type internal StoredCaseState =
-    | Live of CaseView * CaseDisposition
-    | Erased
-
 type internal StoredCase =
-    {
-        CaseId: Guid
-        Reference: string
-        Revision: int64
-        State: StoredCaseState
-    }
+    { CaseId: Guid; Snapshot: CaseSnapshot }
 
 [<RequireQualifiedAccess>]
 type internal StoredScope =
-    | Case of caseId: Guid * revision: int64 * act: AcceptedAct * businessDate: DateOnly
-    | Authority of targetActorId: Guid
+    | Case of caseId: Guid * revision: int64 * act: CaseActKind * businessDate: DateOnly
+    | Authority of targetActorId: Guid * act: RecordedAuthorityKind
 
 type internal StoredEntry =
     {
@@ -45,7 +36,8 @@ type internal StoredEntry =
         ActorId: Guid
         RecordedAt: DateTimeOffset
         Scope: StoredScope
-        RequestSha256: byte array option
+        PayloadCommitment: byte array
+        PayloadNonce: byte array option
         Payload: byte array option
     }
 
@@ -69,8 +61,8 @@ type internal CaseLockedView =
 
 [<RequireQualifiedAccess>]
 type internal CaseProjection =
-    | Insert of caseId: Guid * snapshot: CaseView
-    | Update of caseId: Guid * snapshot: CaseView * disposition: CaseDisposition
+    | Insert of caseId: Guid * snapshot: CaseSnapshot
+    | Update of caseId: Guid * snapshot: CaseSnapshot
     | Erase of caseId: Guid * revision: int64
 
 type internal EntryDraft =
@@ -82,24 +74,22 @@ type internal EntryDraft =
         ActorId: Guid
         RecordedAt: DateTimeOffset
         Scope: StoredScope
-        RuleRevision: int option
         PayloadCommitment: byte array
         PayloadNonce: byte array
         Payload: byte array
-        RequestSha256: byte array
     }
 
 [<RequireQualifiedAccess>]
-type internal CaseDecision =
-    | Append of EntryDraft * CaseProjection
-    | Replay of StoredEntry
+type internal LedgerDecision<'projection> =
+    | Append of EntryDraft * 'projection * OperationReceipt
+    | Replay of OperationReceipt
     | Refuse of Rejection
     | Fail of CoreFault
 
 [<RequireQualifiedAccess>]
-type internal CaseWriteResult =
-    | Appended of EntryDraft
-    | Replayed of StoredEntry
+type internal LedgerWriteResult =
+    | Appended of OperationReceipt
+    | Replayed of OperationReceipt
     | Refused of Rejection
     | Failed of CoreFault
 
@@ -124,28 +114,28 @@ type internal AuthorityProjection =
     | AddGrant of actorId: Guid * role: Role * caseId: Guid option
     | RemoveGrant of actorId: Guid * role: Role * caseId: Guid option
 
-[<RequireQualifiedAccess>]
-type internal AuthorityDecision =
-    | Append of EntryDraft * AuthorityProjection
-    | Replay of StoredEntry
-    | Refuse of Rejection
-    | Fail of CoreFault
-
-[<RequireQualifiedAccess>]
-type internal AuthorityWriteResult =
-    | Appended of EntryDraft
-    | Replayed of StoredEntry
-    | Refused of Rejection
-    | Failed of CoreFault
-
 type internal ActorReadView =
     {
         ObservedAt: DateTimeOffset
         Actor: ActorAuthority option
     }
 
+type internal CasePageSelection =
+    {
+        Visibility: CaseVisibility
+        AfterReference: string option
+    }
+
+type internal HistoryReadView =
+    {
+        ObservedAt: DateTimeOffset
+        Actor: ActorAuthority option
+        Case: StoredCase option
+    }
+
 type internal StoredCasePage =
     {
+        ObservedAt: DateTimeOffset
         Actor: ActorAuthority option
         Items: StoredCase list
         NextAfterReference: string option
@@ -153,30 +143,48 @@ type internal StoredCasePage =
 
 type internal StoredHistoryPage =
     {
+        ObservedAt: DateTimeOffset
         Actor: ActorAuthority option
         Case: StoredCase option
         Entries: StoredEntry list
         NextAfterRevision: int64 option
     }
 
-/// One locked load, one pure decision, one atomic append/projection/commit. Storage never decides policy.
+type internal StoredActorPage =
+    {
+        ObservedAt: DateTimeOffset
+        Actor: ActorAuthority option
+        Items: ActorReview list
+        NextAfterActorId: Guid option
+    }
+
+type internal OperationReadView =
+    {
+        ObservedAt: DateTimeOffset
+        Actor: ActorAuthority option
+        Entry: StoredEntry option
+        Case: StoredCase option
+    }
+
+/// Selection callbacks authorize and validate cursors within the snapshot that fetches the page.
+/// Storage executes those selections and persists decisions; it invents no authority or transition rules.
 type internal ILedgerStore =
     abstract WriteCase:
         principal: PrincipalKey *
         operationId: Guid *
         caseReference: string *
-        decide: (CaseLockedView -> CaseDecision) *
+        decide: (CaseLockedView -> LedgerDecision<CaseProjection>) *
         cancellationToken: CancellationToken ->
-            Task<Result<CaseWriteResult, StoreFailure>>
+            Task<Result<LedgerWriteResult, StoreFailure>>
 
     abstract WriteAuthority:
         principal: PrincipalKey *
-        eventId: Guid *
+        operationId: Guid *
         target: PrincipalKey *
         targetCaseReference: string option *
-        decide: (AuthorityLockedView -> AuthorityDecision) *
+        decide: (AuthorityLockedView -> LedgerDecision<AuthorityProjection>) *
         cancellationToken: CancellationToken ->
-            Task<Result<AuthorityWriteResult, StoreFailure>>
+            Task<Result<LedgerWriteResult, StoreFailure>>
 
     abstract ReadCase:
         principal: PrincipalKey *
@@ -187,25 +195,29 @@ type internal ILedgerStore =
 
     abstract ListCases:
         principal: PrincipalKey *
-        visibility: (ActorAuthority -> CaseVisibility option) *
-        afterReference: string option *
+        select: (ActorReadView -> Result<CasePageSelection, Rejection>) *
         limit: int *
         cancellationToken: CancellationToken ->
-            Task<Result<StoredCasePage option, StoreFailure>>
+            Task<Result<Result<StoredCasePage, Rejection>, StoreFailure>>
 
     abstract ReadHistory:
         principal: PrincipalKey *
         caseReference: string *
-        afterRevision: int64 *
+        select: (HistoryReadView -> Result<int64, Rejection>) *
         limit: int *
         cancellationToken: CancellationToken ->
-            Task<Result<StoredHistoryPage, StoreFailure>>
+            Task<Result<Result<StoredHistoryPage, Rejection>, StoreFailure>>
+
+    abstract ListActors:
+        principal: PrincipalKey *
+        select: (ActorReadView -> Result<Guid option, Rejection>) *
+        limit: int *
+        cancellationToken: CancellationToken ->
+            Task<Result<Result<StoredActorPage, Rejection>, StoreFailure>>
 
     abstract ReadOperation:
         principal: PrincipalKey * operationId: Guid * cancellationToken: CancellationToken ->
-            Task<
-                Result<ActorAuthority option * StoredEntry option * StoredCase option, StoreFailure>
-             >
+            Task<Result<OperationReadView, StoreFailure>>
 
     abstract ReadActor:
         principal: PrincipalKey * cancellationToken: CancellationToken ->
