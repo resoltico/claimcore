@@ -1,11 +1,20 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { isResponse } from "../src/api/responseGuards";
 import { startOpen } from "./case-workflow";
-import { expectAccessible, openAuthenticated } from "./session-helpers";
+import {
+  expectAccessible,
+  openAuthenticated,
+  browserRequest,
+  sessionToken,
+} from "./session-helpers";
 import {
   expectKeyboardContained,
   confirmReview,
   pauseJsonReply,
+  pauseHostReply,
+  expectInputRefusal,
+  inputRefusalText,
   reviewFrom,
   selectFormat,
   selectLanguage,
@@ -44,26 +53,89 @@ const reviewLanguage = async (page: Page) => {
   }
 };
 
-const calendarLanguage = async (page: Page) => {
-  for (const [language, message] of [
-    ["lv", "Izmantojiet vienu derīgu datumu formātā YYYY-MM-DD."],
-    ["ar", "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD."],
-    ["en", "Use one valid calendar date in YYYY-MM-DD format."],
-  ] as const) {
-    await selectLanguage(page, language);
-    await expect(page.getByRole("alert")).toContainText(message);
+const unacceptedCase = async (page: Page, reference: string) => {
+  const reply = await browserRequest(page, "/api/case.get", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": await sessionToken(page),
+    },
+    body: JSON.stringify({ caseReference: reference }),
+  });
+  if (reply.status !== 200 || !isResponse("case.get", reply.payload)) {
+    throw new Error("E2E_UNACCEPTED_CASE_READ_INVALID");
+  }
+  expect(reply.payload.outcome.tag).toBe("REJECTED");
+  if (reply.payload.outcome.tag === "REJECTED") {
+    expect(reply.payload.outcome.data.diagnostic.id).toBe("ACCESS_RESOURCE_UNAVAILABLE");
+  }
+};
+const invalidCalendar = async (page: Page, requests: string[]) => {
+  const pending = await pauseHostReply(page, "case.preview", 400);
+  try {
+    await page.getByRole("button", { name: "Review changes" }).click();
+    expectInputRefusal((await pending.ready).reply);
+    await selectLanguage(page, "lv");
+    pending.release();
+    for (const language of ["lv", "ar", "en"] as const) {
+      await selectLanguage(page, language);
+      await expect(page.getByRole("alert")).toContainText(inputRefusalText[language]);
+    }
+    await expect(page.locator('input[name="incidentDate"]')).toHaveValue("2026-02-30");
+    await expect(page.locator('input[name="claimantName"]')).toHaveValue("A\u0308 / العربية");
+    expect(requests).toEqual(["POST /api/case.preview"]);
+    await expect(page.locator("section.receipt")).toHaveCount(0);
+    await expectAccessible(page);
+  } finally {
+    pending.release();
+  }
+};
+const policyRefusal = async (page: Page, requests: string[]) => {
+  const name = page.locator('input[name="claimantName"]');
+  const authored = `A\u0308 / العربية${"x".repeat(201)}`;
+  await page.locator('input[name="incidentDate"]').fill("2026-09-01");
+  await name.fill(authored);
+  const pending = await pauseJsonReply(page, "case.preview");
+  try {
+    await page.getByRole("button", { name: "Review changes" }).click();
+    const { outcome } = (await pending.ready).reply;
+    expect(outcome.tag).toBe("REJECTED");
+    if (outcome.tag === "REJECTED") {
+      expect(outcome.data.field).toBe("claimantName");
+      expect(outcome.data.diagnostic).toEqual({
+        id: "INPUT_TEXT_TOO_LONG",
+        parameters: { maximumCharacters: 200 },
+      });
+    }
+    await selectLanguage(page, "lv");
+    pending.release();
+    await expect(name).toBeFocused();
+    await expect(name).toHaveAttribute("aria-invalid", "true");
+    for (const [language, text] of [
+      ["lv", "Vērtība nedrīkst pārsniegt 200 Unicode rakstzīmes."],
+      ["ar", "يجب ألا تتجاوز القيمة \u2068200\u2069 محارف Unicode."],
+      ["en", "The value must not exceed 200 Unicode characters."],
+    ] as const) {
+      await selectLanguage(page, language);
+      await expect(page.getByRole("alert")).toContainText(text);
+      await expect(name).toHaveAttribute("aria-invalid", "true");
+    }
+    await expect(name).toHaveValue(authored);
+    expect(requests).toEqual(["POST /api/case.preview", "POST /api/case.preview"]);
+  } finally {
+    pending.release();
   }
 };
 
-test("preserves authored Unicode and invalid calendar text while localizing real core validation", async ({
+test("preserves authored Unicode and malformed calendar input, then localizes a real policy refusal", async ({
   page,
 }) => {
+  const reference = `LOCALE-VALIDATE-${randomUUID()}`;
   await openAuthenticated(page);
-  await startOpen(page, `LOCALE-VALIDATE-${randomUUID()}`);
+  await startOpen(page, reference);
   const name = page.locator('input[name="claimantName"]');
-  const date = page.locator('input[name="incidentDate"]');
   await name.fill("A\u0308 / العربية");
-  await date.fill("2026-02-30");
+  await page.locator('input[name="incidentDate"]').fill("2026-02-30");
   await name.evaluate((element: HTMLInputElement) => {
     element.setSelectionRange(1, 3);
   });
@@ -77,26 +149,11 @@ test("preserves authored Unicode and invalid calendar text while localizing real
       element.selectionEnd,
     ]),
   ).toEqual([1, 3]);
-  await expect(name).toHaveValue("A\u0308 / العربية");
-  await expect(date).toHaveValue("2026-02-30");
   expect(requests).toHaveLength(0);
-  const pending = await pauseJsonReply(page, "case.preview");
-  try {
-    await page.getByRole("button", { name: "Review changes" }).click();
-    const captured = await pending.ready;
-    expect(captured.reply.outcome.tag).toBe("REJECTED");
-    await selectLanguage(page, "lv");
-    expect(requests).toHaveLength(1);
-    pending.release();
-    await expect(date).toBeFocused();
-    await expect(date).toHaveAttribute("aria-invalid", "true");
-    await calendarLanguage(page);
-    await expect(date).toHaveValue("2026-02-30");
-    expect(requests).toHaveLength(1);
-    await expectAccessible(page);
-  } finally {
-    pending.release();
-  }
+  await invalidCalendar(page, requests);
+  await policyRefusal(page, requests);
+  await expectAccessible(page);
+  await unacceptedCase(page, reference);
 });
 
 test("switches language and independent display format during draft review without changing consent", async ({
