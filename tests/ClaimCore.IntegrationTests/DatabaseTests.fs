@@ -42,21 +42,23 @@ let private refused action message =
 
 let private populated (database: PostgresFixture.Database) =
     task {
-        let! actor = editor database.Fixture
+        let! actor = caseWorker database.Fixture
 
         let! outcome =
             actor.Execute(
-                request 10 "synthetic-a" 0L (ClaimCore.Domain.Command.Open registration),
+                request 10 "synthetic-a" 0L (ClaimCore.Domain.BusinessCommand.Open registration),
                 token
             )
 
         let receipt = accepted outcome
 
-        let! _ =
+        let! second =
             actor.Execute(
-                request 11 "synthetic-b" 0L (ClaimCore.Domain.Command.Open registration),
+                request 11 "synthetic-b" 0L (ClaimCore.Domain.BusinessCommand.Open registration),
                 token
             )
+
+        accepted second |> ignore
 
         return actor, receipt
     }
@@ -85,32 +87,41 @@ let private erasureFixture (database: PostgresFixture.Database) =
         let! actor, _ = populated database
 
         let! granted =
-            actor.Authority.SetGrant(
-                id 12,
-                database.Fixture.Owner,
-                Role.DataSteward,
-                GrantTarget.Installation,
-                true,
-                token
-            )
+            grant
+                actor
+                (id 12)
+                database.Fixture.Owner
+                Role.DataSteward
+                GrantTarget.Installation
+                true
 
-        applied granted
+        acceptedAuthority granted
         return actor
     }
 
 let private erased (actor: IActorClaimsCore) =
     task {
-        let request: ClaimCore.Domain.StewardshipRequest =
-            {
-                OperationId = id 13
-                CaseReference = "synthetic-a"
-                ExpectedVersion = 1L
-                Action = ClaimCore.Domain.StewardshipAction.Erase
-            }
+        let request =
+            actRequest
+                13
+                "synthetic-a"
+                1L
+                (ClaimCore.Domain.CaseAct.Stewardship ClaimCore.Domain.StewardshipAct.Erase)
 
-        let! result = actor.Steward(request, token)
+        let! result = actor.Execute(request, token)
         return accepted result
     }
+
+let private position =
+    function
+    | VerificationResult.Verified position -> position
+    | VerificationResult.Diverged _ -> failtest "Expected consistent ledger"
+
+let private diverged code =
+    function
+    | VerificationResult.Diverged finding ->
+        Expect.equal finding.Finding code "Exact verification divergence"
+    | _ -> failtest "Expected typed divergence"
 
 let private exec (database: PostgresFixture.Database) arguments =
     task {
@@ -225,7 +236,7 @@ let tests =
                                 database.Fixture.Owner
                                 token
 
-                        applied first
+                        acceptedAuthority first
 
                         let! repeated =
                             LedgerAdministration.provisionOwner
@@ -236,7 +247,7 @@ let tests =
 
                         Expect.isTrue
                             (match repeated with
-                             | AuthorityOutcome.AlreadyApplied _ -> true
+                             | ExecuteOutcome.AlreadyAccepted _ -> true
                              | _ -> false)
                             "Exact repeat"
 
@@ -253,7 +264,7 @@ let tests =
 
                         Expect.equal
                             otherResult
-                            (AuthorityOutcome.Rejected Rejection.ActorAlreadyRegistered)
+                            (ExecuteOutcome.Rejected Rejection.ActorAlreadyRegistered)
                             "No second bootstrap"
 
                         let! changed =
@@ -265,7 +276,7 @@ let tests =
 
                         Expect.equal
                             changed
-                            (AuthorityOutcome.Rejected Rejection.IdempotencyConflict)
+                            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
                             "Different principal is a conflict"
                     }))
             testCaseAsync
@@ -274,7 +285,7 @@ let tests =
                     task {
                         let! _, receipt = populated database
                         let! head = verify database
-                        Expect.equal head.Sequence 4L "Four accepted entries"
+                        Expect.equal (position head).Sequence 5L "Five accepted entries"
 
                         let expected =
                             {
@@ -284,51 +295,25 @@ let tests =
 
                         let! _ = Verification.verify database.OwnerSource (Some expected) token
 
-                        do!
-                            refused
-                                (fun () ->
-                                    Verification.verify
-                                        database.OwnerSource
-                                        (Some
-                                            { expected with
-                                                EntryHash = Array.zeroCreate 32
-                                            })
-                                        token)
-                                "Wrong hash rejected"
+                        let! wrong =
+                            Verification.verify
+                                database.OwnerSource
+                                (Some
+                                    { expected with
+                                        EntryHash = Array.zeroCreate 32
+                                    })
+                                token
 
-                        do!
-                            refused
-                                (fun () ->
-                                    Verification.verify
-                                        database.OwnerSource
-                                        (Some { expected with Sequence = 999L })
-                                        token)
-                                "Future position rejected"
+                        diverged VerificationFinding.ExpectedPosition wrong
+
+                        let! future =
+                            Verification.verify
+                                database.OwnerSource
+                                (Some { expected with Sequence = 999L })
+                                token
+
+                        diverged VerificationFinding.ExpectedPosition future
                     }))
-            for name, tamper in
-                [
-                    "metadata",
-                    "UPDATE claimcore.ledger SET recorded_at=recorded_at+interval '1 second' WHERE sequence=3"
-                    "payload",
-                    "UPDATE claimcore.ledger SET payload=set_byte(payload,20,42) WHERE sequence=3"
-                    "deleted row", "DELETE FROM claimcore.ledger WHERE sequence=3"
-                    "swapped metadata",
-                    "UPDATE claimcore.ledger SET actor_id=operation_id WHERE sequence>=3"
-                    "case projection",
-                    "UPDATE claimcore.cases SET claimant_name='Tampered synthetic' WHERE case_reference='synthetic-a'"
-                    "grant projection", "DELETE FROM claimcore.grants WHERE role='CASE_EDITOR'"
-                    "missing payload",
-                    "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL,request_sha256=NULL WHERE sequence=3"
-                ] do
-                testCaseAsync
-                    ($"verification rejects {name} tampering")
-                    (run (fun database ->
-                        task {
-                            let! _ = populated database
-                            let! _ = verify database
-                            do! sql database tamper
-                            do! refused (fun () -> verify database) $"{name} detected"
-                        }))
             for name, change in
                 [
                     "absent schema", "DROP SCHEMA claimcore CASCADE"
@@ -424,40 +409,10 @@ let tests =
 
                         let! _ = verify database
 
-                        do!
-                            refused
-                                (fun () ->
-                                    Verification.verify database.OwnerSource (Some expected) token)
-                                "Restored history lacks the erasure position"
-                    }))
-            testCaseAsync
-                "verification rejects a valid historical payload restored into erased history"
-                (run (fun database ->
-                    task {
-                        let! actor = erasureFixture database
-                        use! connection = database.OwnerSource.OpenConnectionAsync()
+                        let! restored =
+                            Verification.verify database.OwnerSource (Some expected) token
 
-                        let! rows =
-                            DatabaseSession.rows
-                                connection
-                                "SELECT payload,payload_nonce,request_sha256 FROM claimcore.ledger WHERE sequence=3"
-                                [||]
-                                token
-
-                        let! _ = erased actor
-                        let! _ = verify database
-
-                        let! _ =
-                            DatabaseSession.execute
-                                connection
-                                "UPDATE claimcore.ledger SET payload=$1,payload_nonce=$2,request_sha256=$3 WHERE sequence=3"
-                                rows.Head
-                                token
-
-                        do!
-                            refused
-                                (fun () -> verify database)
-                                "All erased rows must have null payloads"
+                        diverged VerificationFinding.ExpectedPosition restored
                     }))
             testCase "all migration files are embedded with their exact byte digests" (fun () ->
                 let root = ClaimCore.TestSupport.RepositoryRoot.find ()
@@ -481,18 +436,22 @@ let tests =
                         Migrations.scripts[index].Digest
                         (SHA256.HashData(IO.File.ReadAllBytes files[index]))
                         "Raw script bytes are checksum-bound")
-            testCase "unsupported server major and noncanonical zone are refused" (fun () ->
-                ServerSupport.requireMajor ServerSupport.major
+            testCase
+                "supported server majors enforce their minimum minor and reject unlisted majors"
+                (fun () ->
+                    ServerSupport.require (System.Version(18, 6))
+                    ServerSupport.require (System.Version(18, 7))
 
-                for major in [ ServerSupport.major - 1; ServerSupport.major + 1 ] do
-                    Expect.throws
-                        (fun () -> ServerSupport.requireMajor major)
-                        "Unsupported server refused"
+                    for version in
+                        [ System.Version(18, 5); System.Version(17, 9); System.Version(19, 0) ] do
+                        Expect.throws
+                            (fun () -> ServerSupport.require version)
+                            "Unqualified major or too-old minor refuses"
 
-                for zone in [ "US/Eastern"; "Europe/Riga "; "UTC"; "Eastern Standard Time" ] do
-                    Expect.throws
-                        (fun () -> Migrations.zone zone |> ignore)
-                        "Aliases and platform names refused")
+                    for zone in [ "US/Eastern"; "Europe/Riga "; "UTC"; "Eastern Standard Time" ] do
+                        Expect.throws
+                            (fun () -> Migrations.zone zone |> ignore)
+                            "Canonical IANA zone required")
             testCaseAsync
                 "public administration opens one source and refuses foreign schemas untouched"
                 (run (fun database ->
@@ -508,7 +467,7 @@ let tests =
                             "Public initializer is idempotent"
 
                         let! empty = administration.Verify(None, token)
-                        Expect.equal empty.Sequence 0L "Public verifier reports genesis"
+                        Expect.equal (position empty).Sequence 0L "Public verifier reports genesis"
 
                         do!
                             sql
@@ -555,7 +514,7 @@ let tests =
                             "Foreign state was not changed"
                     }))
             testCaseAsync
-                "retained erased reference remains bound to the externally retained position"
+                "retained erased reference key remains bound to ledger subject identity"
                 (run (fun database ->
                     task {
                         let! actor = erasureFixture database
@@ -574,11 +533,10 @@ let tests =
                                 database
                                 "UPDATE claimcore.cases SET case_reference='forged-reference' WHERE case_reference='synthetic-a'"
 
-                        do!
-                            refused
-                                (fun () ->
-                                    Verification.verify database.OwnerSource (Some expected) token)
-                                "Erasure cannot make the retained reference unverifiable"
+                        let! changed =
+                            Verification.verify database.OwnerSource (Some expected) token
+
+                        diverged VerificationFinding.CaseProjection changed
                     }))
             for inheritance in [ true; false ] do
                 testCaseAsync

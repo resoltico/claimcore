@@ -65,15 +65,12 @@ module Runtime =
 
 module internal LedgerAdministration =
     let verify source expected cancellationToken =
-        task {
-            let! head = Verification.verify source expected cancellationToken
-            return LedgerEntries.position head.Sequence head.EntryHash
-        }
+        Verification.verify source expected cancellationToken
 
     let head source cancellationToken =
         DatabaseSession.read source cancellationToken (fun connection ->
             task {
-                ServerSupport.requireMajor connection.PostgreSqlVersion.Major
+                ServerSupport.require connection.PostgreSqlVersion
                 let! count = Migrations.history connection Migrations.scripts cancellationToken
 
                 if count <> Migrations.scripts.Length then
@@ -95,34 +92,33 @@ module internal LedgerAdministration =
                 | _ -> return invalidOp "Ledger head is absent."
             })
 
-    let private provisionResult eventId result =
+    let private provisionResult operationId principal result =
         match result with
-        | Ok(AuthorityWriteResult.Appended entry) ->
-            AuthorityOutcome.Applied(
-                eventId,
-                LedgerEntries.position entry.Sequence entry.EntryHash,
-                eventId
-            )
-        | Ok(AuthorityWriteResult.Replayed entry) ->
-            AuthorityOutcome.AlreadyApplied(
-                eventId,
-                LedgerEntries.position entry.Sequence entry.EntryHash,
-                eventId
-            )
-        | Ok(AuthorityWriteResult.Refused reason) -> AuthorityOutcome.Rejected reason
-        | Ok(AuthorityWriteResult.Failed fault) -> AuthorityOutcome.Failed fault
-        | Error StoreFailure.Cancelled -> AuthorityOutcome.Cancelled
-        | Error StoreFailure.CommitOutcomeUnknown -> AuthorityOutcome.OutcomeUnknown eventId
-        | Error StoreFailure.SchemaMismatch -> AuthorityOutcome.Failed CoreFault.SchemaMismatch
-        | Error StoreFailure.Integrity -> AuthorityOutcome.Failed CoreFault.StoreIntegrityError
-        | Error StoreFailure.Unavailable -> AuthorityOutcome.Failed CoreFault.StoreUnavailable
+        | Ok(LedgerWriteResult.Appended receipt) -> ExecuteOutcome.Accepted receipt
+        | Ok(LedgerWriteResult.Replayed receipt) -> ExecuteOutcome.AlreadyAccepted receipt
+        | Ok(LedgerWriteResult.Refused reason) -> ExecuteOutcome.Rejected reason
+        | Ok(LedgerWriteResult.Failed fault) -> ExecuteOutcome.Failed fault
+        | Error StoreFailure.Cancelled -> ExecuteOutcome.Cancelled
+        | Error StoreFailure.CommitOutcomeUnknown ->
+            let bytes =
+                AuthorityRequests.provisionRecord operationId principal
+                |> ClaimCore.RecordFormat.AuthorityRecord.encode
 
-    let provisionOwner source eventId principal cancellationToken =
+            ExecuteOutcome.OutcomeUnknown(
+                operationId,
+                ClaimCore.RecordFormat.LedgerEntry.requestDigest bytes
+                |> Convert.ToHexStringLower
+            )
+        | Error StoreFailure.SchemaMismatch -> ExecuteOutcome.Failed CoreFault.SchemaMismatch
+        | Error StoreFailure.Integrity -> ExecuteOutcome.Failed CoreFault.StoreIntegrityError
+        | Error StoreFailure.Unavailable -> ExecuteOutcome.Failed CoreFault.StoreUnavailable
+
+    let provisionOwner source operationId principal cancellationToken =
         task {
             let! installationId, _ =
                 DatabaseSession.read source cancellationToken (fun connection ->
                     task {
-                        ServerSupport.requireMajor connection.PostgreSqlVersion.Major
+                        ServerSupport.require connection.PostgreSqlVersion
 
                         let! count =
                             Migrations.history connection Migrations.scripts cancellationToken
@@ -139,19 +135,14 @@ module internal LedgerAdministration =
             let! result =
                 store.WriteAuthority(
                     principal,
-                    eventId,
+                    operationId,
                     principal,
                     None,
-                    AuthorityDecisions.decide
-                        installationId
-                        principal
-                        eventId
-                        principal
-                        AuthorityAction.ProvisionOwner,
+                    AuthorityDecisions.provision installationId operationId principal,
                     cancellationToken
                 )
 
-            return provisionResult eventId result
+            return provisionResult operationId principal result
         }
 
 [<RequireQualifiedAccess>]
@@ -192,8 +183,8 @@ type Administration(connectionString: string) =
     member _.Head(cancellationToken) =
         LedgerAdministration.head source cancellationToken
 
-    member _.ProvisionOwner(eventId, principal, cancellationToken) =
-        LedgerAdministration.provisionOwner source eventId principal cancellationToken
+    member _.ProvisionOwner(operationId, principal, cancellationToken) =
+        LedgerAdministration.provisionOwner source operationId principal cancellationToken
 
     interface IDisposable with
         member _.Dispose() = source.Dispose()

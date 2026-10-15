@@ -141,7 +141,7 @@ module internal Migrations =
                     token
                     (fun connection transaction ->
                         task {
-                            ServerSupport.requireMajor connection.PostgreSqlVersion.Major
+                            ServerSupport.require connection.PostgreSqlVersion
                             let! exists = exists connection token
 
                             if exists then
@@ -173,7 +173,7 @@ module internal Migrations =
     let migrateWith (source: NpgsqlDataSource) scripts token =
         task {
             use! connection = source.OpenConnectionAsync(token)
-            ServerSupport.requireMajor connection.PostgreSqlVersion.Major
+            ServerSupport.require connection.PostgreSqlVersion
             let! applied = history connection scripts token
 
             for script in scripts |> List.skip applied do

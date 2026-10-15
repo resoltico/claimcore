@@ -35,7 +35,10 @@ let private replay (database: PostgresFixture.Database) (actor: IActorClaimsCore
 
         let! head = Verification.verify database.OwnerSource None token
 
-        Expect.equal head.Sequence 3L "One accepted case operation after replay"
+        Expect.equal
+            (VerificationSupport.position head).Sequence
+            4L
+            "One accepted case operation after replay"
     }
 
 let private proxyCore (database: PostgresFixture.Database) source =
@@ -47,6 +50,7 @@ let private proxyCore (database: PostgresFixture.Database) source =
             database.Fixture.InstallationId
             store
             database.Fixture.Calendar
+            cursorKey
             database.Fixture.Owner
 
     actor
@@ -93,7 +97,7 @@ let tests =
                     ($"replay after {drop}")
                     (run (fun database ->
                         task {
-                            let! actor = editor database.Fixture
+                            let! actor = caseWorker database.Fixture
 
                             let settings =
                                 NpgsqlConnectionStringBuilder(
@@ -123,7 +127,7 @@ let tests =
                                     20
                                     "synthetic-commit"
                                     0L
-                                    (ClaimCore.Domain.Command.Open registration)
+                                    (ClaimCore.Domain.BusinessCommand.Open registration)
 
                             let! result = throughProxy.Execute(operation, token)
 

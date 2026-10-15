@@ -17,7 +17,10 @@ let private image () =
     use document =
         JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "db/postgresql-baseline.json")))
 
-    document.RootElement.GetProperty("containerImage").GetString() |> nonNull
+    let baseline =
+        document.RootElement.GetProperty("supportedMajors").EnumerateArray() |> Seq.head
+
+    baseline.GetProperty("containerImage").GetString() |> nonNull
 
 let private owner =
     PrincipalKey.human "https://issuer.example/" "synthetic-owner"

@@ -3,92 +3,186 @@ namespace ClaimCore.Postgres
 open System
 open ClaimCore.Application
 open ClaimCore.RecordFormat
+open ClaimCore.Postgres.VerificationChecks
 
+/// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
-    let private grant cases (actor: ActorAuthority) role scope active =
-        let role =
-            Roles.tryParse role
-            |> Option.defaultWith (fun () -> invalidOp "Invalid authority role.")
+    let private ownerGrant: ActorGrant =
+        {
+            Role = Role.Owner
+            Scope = GrantScope.Installation
+        }
 
-        let scope =
-            match scope with
-            | RecordedGrantScope.Installation -> GrantScope.Installation
-            | RecordedGrantScope.CaseReference reference ->
-                cases
-                |> List.tryFind (fun case -> case.Reference = reference)
-                |> Option.map (_.CaseId >> GrantScope.Case)
-                |> Option.defaultWith (fun () -> invalidOp "Authority case is absent.")
+    let private owner (actor: ActorAuthority) =
+        actor.Enabled
+        && PrincipalKey.isHuman actor.Principal
+        && List.contains ownerGrant actor.Grants
 
-        let grant = { Role = role; Scope = scope }
-        let grants = actor.Grants |> List.filter ((<>) grant)
-        let grants = if active then grant :: grants else grants
-        { actor with Grants = grants }
+    let executor actors (entry: StoredEntry) human ownerRequired =
+        result {
+            let! actor =
+                Map.tryFind entry.ActorId actors
+                |> known (Some entry.Sequence) VerificationFinding.ActorNotEnabled
 
-    let private register (actors: Map<Guid, ActorAuthority>) (entry: StoredEntry) principal action =
-        let grants =
-            if action = RecordedAuthorityAction.ProvisionOwner then
-                if
-                    not actors.IsEmpty
-                    || not (PrincipalKey.isHuman principal)
-                    || entry.ActorId <> entry.OperationId
-                then
-                    invalidOp "Invalid owner provisioning entry."
+            do! require (Some entry.Sequence) VerificationFinding.ActorNotEnabled actor.Enabled
 
-                [
-                    {
-                        Role = Role.Owner
-                        Scope = GrantScope.Installation
-                    }
-                ]
-            else
-                []
+            do!
+                require
+                    (Some entry.Sequence)
+                    VerificationFinding.HumanRequired
+                    (not human || PrincipalKey.isHuman actor.Principal)
 
-        Map.add
-            entry.OperationId
-            {
-                ActorId = entry.OperationId
-                Principal = principal
-                Enabled = true
-                Grants = grants
-            }
-            actors
+            do!
+                require
+                    (Some entry.Sequence)
+                    VerificationFinding.OwnerRequired
+                    (not ownerRequired || owner actor)
+
+            return ()
+        }
+
+    let private principal (entry: StoredEntry) (request: AuthorityRequestRecord) =
+        PrincipalKey.fromStorage request.Target.Kind request.Target.Issuer request.Target.Subject
+        |> Result.mapError (fun _ ->
+            divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
+
+    let private target actors (entry: StoredEntry) id principal =
+        result {
+            let! actor =
+                Map.tryFind id actors
+                |> known (Some entry.Sequence) VerificationFinding.AuthorityFold
+
+            do!
+                require
+                    (Some entry.Sequence)
+                    VerificationFinding.AuthorityFold
+                    (actor.Principal = principal)
+
+            return actor
+        }
+
+    let private register actors (entry: StoredEntry) id principal provision =
+        result {
+            do!
+                require
+                    (Some entry.Sequence)
+                    VerificationFinding.AuthorityFold
+                    (id = entry.OperationId
+                     && not (Map.containsKey id actors)
+                     && (actors
+                         |> Map.values
+                         |> Seq.forall (fun actor -> actor.Principal <> principal)))
+
+            do!
+                require
+                    (Some entry.Sequence)
+                    VerificationFinding.AuthorityFold
+                    (not provision
+                     || (Map.isEmpty actors && entry.Sequence = 1L && entry.ActorId = id))
+
+            do!
+                require
+                    (Some entry.Sequence)
+                    VerificationFinding.HumanRequired
+                    (not provision || PrincipalKey.isHuman principal)
+
+            let actor =
+                {
+                    ActorId = id
+                    Principal = principal
+                    Enabled = true
+                    Grants = if provision then [ ownerGrant ] else []
+                }
+
+            return Map.add id actor actors
+        }
+
+    let private grant
+        installationId
+        caseExists
+        (entry: StoredEntry)
+        (actor: ActorAuthority)
+        role
+        scope
+        active
+        =
+        result {
+            let! role =
+                Roles.tryParse role
+                |> known (Some entry.Sequence) VerificationFinding.PayloadFormat
+
+            do!
+                require
+                    (Some entry.Sequence)
+                    VerificationFinding.HumanRequired
+                    (not (Roles.requiresHuman role) || PrincipalKey.isHuman actor.Principal)
+
+            let! scope =
+                match scope with
+                | RecordedGrantScope.Installation -> Ok GrantScope.Installation
+                | RecordedGrantScope.CaseReference reference ->
+                    let id = CaseReferenceId.encode installationId reference
+
+                    require (Some entry.Sequence) VerificationFinding.AuthorityFold (caseExists id)
+                    |> Result.map (fun () -> GrantScope.Case id)
+
+            let grant: ActorGrant = { Role = role; Scope = scope }
+            let grants = actor.Grants |> List.filter ((<>) grant)
+
+            return
+                { actor with
+                    Grants = if active then grant :: grants else grants
+                }
+        }
+
+    let private action installationId caseExists actors (entry: StoredEntry) id principal request =
+        match request.Act with
+        | RecordedAuthorityAct.ProvisionOwner -> register actors entry id principal true
+        | RecordedAuthorityAct.RegisterActor -> register actors entry id principal false
+        | RecordedAuthorityAct.SetEnabled enabled ->
+            target actors entry id principal
+            |> Result.map (fun actor -> Map.add id { actor with Enabled = enabled } actors)
+        | RecordedAuthorityAct.SetGrant(role, scope, active) ->
+            target actors entry id principal
+            |> Result.bind (fun actor ->
+                grant installationId caseExists entry actor role scope active
+                |> Result.map (fun actor -> Map.add id actor actors))
 
     let apply
-        (cases: StoredCase list)
-        (actors: Map<Guid, ActorAuthority>)
+        installationId
+        caseExists
+        actors
         (entry: StoredEntry)
-        (payload: LedgerPayload)
+        (request: AuthorityRequestRecord)
         =
-        let request =
-            AuthorityRecord.decode 65536 payload.Request
-            |> Result.defaultWith (fun _ -> invalidOp "Invalid authority record.")
+        result {
+            let! id, kind =
+                match entry.Scope with
+                | StoredScope.Authority(id, kind) -> Ok(id, kind)
+                | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
-        if
-            AuthorityRecord.encode request <> payload.Request
-            || request.EventId <> entry.OperationId
-            || payload.Snapshot.Length <> 0
-        then
-            invalidOp "Authority payload identity differs."
+            do!
+                require
+                    (Some entry.Sequence)
+                    VerificationFinding.PayloadFormat
+                    (request.OperationId = entry.OperationId
+                     && RecordedAuthorityActs.kind request.Act = kind)
 
-        let principal =
-            PrincipalKey.fromStorage
-                request.Target.Kind
-                request.Target.Issuer
-                request.Target.Subject
-            |> Result.defaultWith (fun _ -> invalidOp "Invalid authority principal.")
+            let! principal = principal entry request
 
-        let target =
-            actors
-            |> Map.toSeq
-            |> Seq.tryFind (fun (_, actor) -> actor.Principal = principal)
-            |> Option.map snd
+            do!
+                if request.Act = RecordedAuthorityAct.ProvisionOwner then
+                    Ok()
+                else
+                    executor actors entry true true
 
-        match request.Action, target with
-        | RecordedAuthorityAction.RegisterActor, None
-        | RecordedAuthorityAction.ProvisionOwner, None ->
-            register actors entry principal request.Action
-        | RecordedAuthorityAction.SetEnabled enabled, Some actor ->
-            Map.add actor.ActorId { actor with Enabled = enabled } actors
-        | RecordedAuthorityAction.SetGrant(role, scope, active), Some actor ->
-            Map.add actor.ActorId (grant cases actor role scope active) actors
-        | _ -> invalidOp "Authority history cannot be folded."
+            let! next = action installationId caseExists actors entry id principal request
+
+            do!
+                require
+                    (Some entry.Sequence)
+                    VerificationFinding.AuthorityFold
+                    (next |> Map.values |> Seq.exists owner)
+
+            return next
+        }

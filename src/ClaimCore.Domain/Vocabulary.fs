@@ -32,6 +32,9 @@ module CaseActKinds =
         | CaseActKind.Reinstate -> "REINSTATE"
         | CaseActKind.Erase -> "ERASE"
 
+    let tryParse value =
+        all |> List.tryFind (token >> (=) value)
+
 module BusinessCommands =
     let kind command =
         match command with

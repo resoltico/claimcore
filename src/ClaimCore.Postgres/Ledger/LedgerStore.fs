@@ -29,8 +29,11 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
         member _.ReadOperation(principal, id, token) =
             ReadOperations.operation source installationId principal id token
 
-        member _.ListCases(principal, visibility, after, limit, token) =
-            ReadOperations.list source principal visibility after limit token
+        member _.ListCases(principal, select, limit, token) =
+            ReadOperations.list source principal select limit token
 
-        member _.ReadHistory(principal, reference, after, limit, token) =
-            ReadOperations.history source installationId principal reference after limit token
+        member _.ReadHistory(principal, reference, select, limit, token) =
+            ReadOperations.history source installationId principal reference select limit token
+
+        member _.ListActors(principal, select, limit, token) =
+            ReadOperations.actors source principal select limit token

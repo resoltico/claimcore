@@ -45,12 +45,19 @@ module RecordedAuthorityActs =
         | RecordedAuthorityAct.SetGrant _ -> RecordedAuthorityKind.SetGrant
         | RecordedAuthorityAct.SetEnabled _ -> RecordedAuthorityKind.SetEnabled
 
-    let token =
-        function
-        | RecordedAuthorityKind.ProvisionOwner -> "PROVISION_OWNER"
-        | RecordedAuthorityKind.RegisterActor -> "REGISTER_ACTOR"
-        | RecordedAuthorityKind.SetGrant -> "SET_GRANT"
-        | RecordedAuthorityKind.SetEnabled -> "SET_ENABLED"
+    let private tokens =
+        [
+            RecordedAuthorityKind.ProvisionOwner, "PROVISION_OWNER"
+            RecordedAuthorityKind.RegisterActor, "REGISTER_ACTOR"
+            RecordedAuthorityKind.SetGrant, "SET_GRANT"
+            RecordedAuthorityKind.SetEnabled, "SET_ENABLED"
+        ]
+
+    let token kind =
+        tokens |> List.find (fst >> (=) kind) |> snd
+
+    let tryKind value =
+        tokens |> List.tryFind (snd >> (=) value) |> Option.map fst
 
 module AuthorityRecord =
     let private scope root =

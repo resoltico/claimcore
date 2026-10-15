@@ -3,40 +3,45 @@ namespace ClaimCore.Postgres
 open System
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.RecordFormat
 
 module internal Persistence =
     let entry connection (entry: EntryDraft) token =
-        let kind, caseId, revision, command, date =
+        let scope, subject, revision, act, date =
             match entry.Scope with
-            | StoredScope.Authority _ -> "AUTHORITY", None, None, None, None
-            | StoredScope.Case(id, revision, act, date) ->
-                "CASE", Some id, Some revision, Some(StoredEntries.actToken act), Some date
+            | StoredScope.Authority(target, kind) ->
+                "AUTHORITY", target, None, RecordedAuthorityActs.token kind, None
+            | StoredScope.Case(id, revision, kind, date) ->
+                "CASE", id, Some revision, CaseActKinds.token kind, Some date
 
         DatabaseSession.execute
             connection
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,kind,operation_id,actor_id,recorded_at,case_id,case_revision,command_kind,business_date,rule_revision,payload_commitment,payload,payload_nonce,request_sha256) VALUES ($1,$2,$3,1,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)"
+            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,scope,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)"
             [|
                 box entry.Sequence
                 box entry.PreviousHash
                 box entry.EntryHash
-                box kind
+                box (int16 RecordVersions.LedgerEntry)
+                box scope
+                box act
                 box entry.OperationId
                 box entry.ActorId
                 box entry.RecordedAt
-                DatabaseSession.parameter caseId
+                box subject
                 DatabaseSession.parameter revision
-                DatabaseSession.parameter command
                 DatabaseSession.parameter date
-                DatabaseSession.parameter (entry.RuleRevision |> Option.map int16)
                 box entry.PayloadCommitment
                 box entry.Payload
                 box entry.PayloadNonce
-                box entry.RequestSha256
             |]
             token
 
-    let private snapshotParameters id disposition (snapshot: CaseView) =
-        let fields = snapshot.Fields
+    let private snapshotParameters id (snapshot: CaseSnapshot) =
+        let fields, disposition =
+            match snapshot.View with
+            | CaseView.Live(fields, Disposition.Active) -> fields, "ACTIVE"
+            | CaseView.Live(fields, Disposition.Voided) -> fields, "VOIDED"
+            | CaseView.Erased -> invalidArg (nameof snapshot) "Use the erasure projection."
 
         let date text =
             DateOnly.ParseExact(text, "yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture)
@@ -47,7 +52,7 @@ module internal Persistence =
         [|
             box id
             box fields.CaseReference
-            box snapshot.Version
+            box snapshot.Revision
             box disposition
             box (date fields.IncidentDate)
             box (date fields.IncidentNotificationDate)
@@ -74,21 +79,16 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "INSERT INTO claimcore.cases VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)"
-                        (snapshotParameters id "ACTIVE" snapshot)
+                        (snapshotParameters id snapshot)
                         token
 
                 return ()
-            | CaseProjection.Update(id, snapshot, disposition) ->
-                let disposition =
-                    match disposition with
-                    | CaseDisposition.Active -> "ACTIVE"
-                    | CaseDisposition.Voided -> "VOIDED"
-
+            | CaseProjection.Update(id, snapshot) ->
                 let! changed =
                     DatabaseSession.execute
                         connection
                         updateCase
-                        (snapshotParameters id disposition snapshot)
+                        (snapshotParameters id snapshot)
                         token
 
                 if changed <> 1 then
@@ -133,8 +133,8 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.grants VALUES ($1,'OWNER',NULL)"
-                        [| box id |]
+                        "INSERT INTO claimcore.grants VALUES ($1,$2,NULL)"
+                        [| box id; box (Roles.token Role.Owner) |]
                         token
 
                 return ()

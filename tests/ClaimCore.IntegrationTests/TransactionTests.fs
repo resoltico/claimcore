@@ -1,7 +1,6 @@
 module ClaimCore.IntegrationTests.TransactionTests
 
 open System
-open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Expecto
@@ -86,56 +85,28 @@ let private waiter (database: PostgresFixture.Database) settings =
             database.Fixture.Owner,
             id 20,
             "synthetic-timeout",
-            (fun _ -> CaseDecision.Refuse Rejection.ResourceUnavailable),
+            (fun _ -> LedgerDecision.Refuse Rejection.ResourceUnavailable),
             token
         )
 
     result
 
-let private scenarios () =
-    let statements =
-        File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "SchemaScenarios.sql"))
-        |> Array.filter (fun line ->
-            not (
-                line.StartsWith("\\", StringComparison.Ordinal)
-                || line.StartsWith("--", StringComparison.Ordinal)
-            ))
-        |> String.concat "\n"
-
-    statements
-
-let private refusalCodes =
-    let codes =
-        [ "CC001"; "CC001"; "23505" ]
-        @ List.replicate 6 "42501"
-        @ [
-            "CC002"
-            "23514"
-            "23514"
-            "23514"
-            "23514"
-            "23505"
-            "23514"
-            "23514"
-            "23505"
-        ]
-
-    codes
-
-let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasEditor =
+let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandler =
     match result with
     | Ok {
              Actor = Some actor
              Case = Some {
-                             State = StoredCaseState.Live(view, _)
+                             Snapshot = {
+                                            View = ClaimCore.Domain.CaseView.Live(fields, _)
+                                        }
                          }
          } ->
         Expect.equal
-            (actor.Grants |> List.exists (fun grant -> grant.Role = Role.CaseEditor))
-            hasEditor
+            (actor.Grants |> List.exists (fun grant -> grant.Role = Role.CaseHandler))
+            hasHandler
             "Authority belongs to this snapshot"
 
-        Expect.equal view.Fields.ClaimantName name "Data belongs to this snapshot"
+        Expect.equal fields.ClaimantName name "Data belongs to this snapshot"
     | _ -> failtest "Expected a coherent read"
 
 [<Tests>]
@@ -148,7 +119,7 @@ let tests =
                 "concurrent writers decide once on current heads and produce a gapless chain"
                 (run (fun database ->
                     task {
-                        let! actor = editor database.Fixture
+                        let! actor = caseWorker database.Fixture
 
                         let tasks =
                             [|
@@ -158,7 +129,7 @@ let tests =
                                             (100 + index)
                                             ($"synthetic-{index}")
                                             0L
-                                            (ClaimCore.Domain.Command.Open registration),
+                                            (ClaimCore.Domain.BusinessCommand.Open registration),
                                         token
                                     )
                             |]
@@ -170,11 +141,15 @@ let tests =
 
                         Expect.equal
                             positions
-                            [| 3L .. 22L |]
+                            [| 4L .. 23L |]
                             "Each locked decision saw the current sequence"
 
                         let! verified = Verification.verify database.OwnerSource None token
-                        Expect.equal verified.Sequence 22L "All links recompute"
+
+                        Expect.equal
+                            (VerificationSupport.position verified).Sequence
+                            23L
+                            "All links recompute"
                     }))
             testCaseAsync
                 "database instant is read after the lock wait; pre-lock clock is a failing control"
@@ -195,7 +170,7 @@ let tests =
                 "lock timeout is definite and a disabled timeout fails the negative control"
                 (run (fun database ->
                     task {
-                        let! actor = editor database.Fixture
+                        let! actor = caseWorker database.Fixture
                         use! holder = database.RuntimeSource.OpenConnectionAsync()
                         use! transaction = holder.BeginTransactionAsync()
                         let! _ = Transactions.head holder token
@@ -231,11 +206,16 @@ let tests =
 
                         Expect.equal
                             recovered
-                            (Ok(CaseWriteResult.Refused Rejection.ResourceUnavailable))
+                            (Ok(LedgerWriteResult.Refused Rejection.ResourceUnavailable))
                             "Next writer proceeds"
 
                         let! head = Verification.verify database.OwnerSource None token
-                        Expect.equal head.Sequence 2L "Neither waiter wrote"
+
+                        Expect.equal
+                            (VerificationSupport.position head).Sequence
+                            3L
+                            "Neither waiter wrote"
+
                         let! _ = actor.Get("absent", token)
                         return ()
                     }))
@@ -319,7 +299,7 @@ let tests =
                 "deferred commit error is definite and rolls back entry and projection"
                 (run (fun database ->
                     task {
-                        let! actor = editor database.Fixture
+                        let! actor = caseWorker database.Fixture
 
                         do!
                             sql
@@ -331,7 +311,7 @@ let tests =
                                 20
                                 "synthetic-deferred"
                                 0L
-                                (ClaimCore.Domain.Command.Open registration)
+                                (ClaimCore.Domain.BusinessCommand.Open registration)
 
                         let! failed = actor.Execute(operation, token)
 
@@ -341,66 +321,22 @@ let tests =
                             "SQLSTATE is definite"
 
                         let! head = Verification.verify database.OwnerSource None token
-                        Expect.equal head.Sequence 2L "Failed commit did not append"
+
+                        Expect.equal
+                            (VerificationSupport.position head).Sequence
+                            3L
+                            "Failed commit did not append"
+
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
                         let! retry = actor.Execute(operation, token)
                         accepted retry |> ignore
-                    }))
-            testCaseAsync
-                "runtime exercises all eighteen structural and privilege refusals"
-                (run (fun database ->
-                    task {
-                        let scenarios = scenarios ()
-                        use! connection = database.RuntimeSource.OpenConnectionAsync()
-                        let codes = ResizeArray<string>()
-
-                        for statement in
-                            scenarios.Split(';', StringSplitOptions.RemoveEmptyEntries) do
-                            try
-                                let! _ = DatabaseSession.execute connection statement [||] token in
-                                ()
-                            with :? PostgresException as error ->
-                                codes.Add error.SqlState
-
-
-                        Expect.equal
-                            (List.ofSeq codes)
-                            refusalCodes
-                            "Every refusal has its exact SQLSTATE"
-
-                        let! rows =
-                            DatabaseSession.rows
-                                connection
-                                "SELECT sequence,payload IS NULL,payload_nonce IS NULL,request_sha256 IS NULL FROM claimcore.ledger ORDER BY sequence"
-                                [||]
-                                token
-
-                        Expect.equal rows.Length 2 "Accepted erasure extends head"
-
-                        for row in rows do
-                            for column in 1..3 do
-                                Expect.isTrue
-                                    (DatabaseSession.value<bool> column row)
-                                    "Every payload column cleared"
-
-                        let! heads =
-                            DatabaseSession.rows
-                                connection
-                                "SELECT sequence FROM claimcore.ledger_head"
-                                [||]
-                                token
-
-                        Expect.equal
-                            (DatabaseSession.value<int64> 0 heads.Head)
-                            2L
-                            "Rejected inserts never moved head"
                     }))
             testCaseAsync
                 "stale-head guard rejects a fork; disabling the trigger is detected"
                 (run (fun database ->
                     task {
                         let insert =
-                            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,kind,operation_id,actor_id,recorded_at,payload_commitment) VALUES (2,decode(repeat('00',32),'hex'),decode(repeat('11',32),'hex'),1,'AUTHORITY','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001',clock_timestamp(),decode(repeat('00',32),'hex'))"
+                            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,scope,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce) VALUES (2,decode(repeat('00',32),'hex'),decode(repeat('11',32),'hex'),2,'AUTHORITY','REGISTER_ACTOR','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001',clock_timestamp(),'80000000-0000-4000-8000-000000000001',decode(repeat('00',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('00',32),'hex'))"
 
                         use! connection = database.RuntimeSource.OpenConnectionAsync()
 
@@ -428,7 +364,7 @@ let tests =
                 "case data and authority remain in one snapshot across a concurrent change"
                 (run (fun database ->
                     task {
-                        let! actor = editor database.Fixture
+                        let! actor = caseWorker database.Fixture
 
                         let! opened =
                             actor.Execute(
@@ -436,7 +372,7 @@ let tests =
                                     20
                                     "synthetic-snapshot"
                                     0L
-                                    (ClaimCore.Domain.Command.Open registration),
+                                    (ClaimCore.Domain.BusinessCommand.Open registration),
                                 token
                             )
 
@@ -464,7 +400,7 @@ let tests =
                         let! _ =
                             DatabaseSession.execute
                                 holder
-                                "UPDATE claimcore.cases SET claimant_name='Changed synthetic'; DELETE FROM claimcore.grants WHERE role='CASE_EDITOR'"
+                                "UPDATE claimcore.cases SET claimant_name='Changed synthetic'; DELETE FROM claimcore.grants WHERE role='CASE_HANDLER'"
                                 [||]
                                 token
 

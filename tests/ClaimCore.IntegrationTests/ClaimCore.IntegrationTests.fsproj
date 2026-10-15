@@ -6,6 +6,11 @@
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
     <Compile Include="PostgresFixture.fs" />
     <Compile Include="StoreTests.fs" />
+    <Compile Include="VerificationSupport.fs" />
+    <Compile Include="VerificationTests.fs" />
+    <Compile Include="SchemaTests.fs" />
+    <Compile Include="PaginationTests.fs" />
+    <Compile Include="AcceptedHistoryFixtures.fs" />
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
@@ -14,6 +19,7 @@
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="AdministrationTests.fs" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="OwnerSchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
