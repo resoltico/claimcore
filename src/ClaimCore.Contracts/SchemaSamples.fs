@@ -12,6 +12,7 @@ module SchemaSamples =
         | Some "date", _ -> "2026-01-01"
         | Some "uri", _ -> "https://identity.example.test/"
         | _, Some pattern when pattern.Contains("[0-9a-f]{64}") -> String.replicate 64 "0"
+        | _, Some pattern when pattern.Contains("[A-Z]{2}") -> "LV"
         | _, Some pattern when pattern.Contains("[A-Z]{3}") -> "EUR"
         | _, Some pattern when pattern.Contains("(?!0$)") -> "1"
         | _, Some pattern when pattern.Contains("[1-9][0-9]{0,") -> "0"
@@ -122,8 +123,7 @@ module SchemaSamples =
             | OneOfSchema items -> items
             | ObjectSchema value ->
                 match
-                    value.Properties
-                    |> List.tryFind (fun p -> p.Name = "outcome" || p.Name = "command")
+                    value.Properties |> List.tryFind (fun p -> p.Name = "outcome" || p.Name = "act")
                 with
                 | Some property ->
                     match property.Schema with

@@ -86,14 +86,6 @@ module internal HttpInputSupport =
 
         value
 
-    let canonicalNonNegativeInt64 (value: string) =
-        match Int64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
-        | true, parsed when
-            parsed < Int64.MaxValue && parsed.ToString(CultureInfo.InvariantCulture) = value
-            ->
-            parsed
-        | _ -> fail HttpInputProblem.InvalidRevision
-
     let operationIdValue (value: string) =
         match Guid.TryParseExact(value, "D") with
         | true, parsed when parsed <> Guid.Empty && parsed.ToString("D") = value -> parsed

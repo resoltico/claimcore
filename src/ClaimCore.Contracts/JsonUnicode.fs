@@ -2,22 +2,21 @@ namespace ClaimCore.Contracts
 
 open System
 open System.Text.Json
+open ClaimCore.Domain
 
-/// Validate every decoded JSON name and string before endpoint-specific request admission.
 module internal JsonUnicode =
     let rec private visit (element: JsonElement) =
         match element.ValueKind with
         | JsonValueKind.Object ->
-            for property in element.EnumerateObject() do
-                property.Name |> ignore
-                visit property.Value
-        | JsonValueKind.Array -> element.EnumerateArray() |> Seq.iter visit
-        | JsonValueKind.String -> element.GetString() |> ignore
-        | _ -> ()
+            element.EnumerateObject()
+            |> Seq.forall (fun item -> UnicodeText.isPersisted item.Name && visit item.Value)
+        | JsonValueKind.Array -> element.EnumerateArray() |> Seq.forall visit
+        | JsonValueKind.String ->
+            element.GetString() |> Option.ofObj |> Option.exists UnicodeText.isPersisted
+        | _ -> true
 
     let validDecodedStrings root =
         try
             visit root
-            true
         with :? InvalidOperationException ->
             false

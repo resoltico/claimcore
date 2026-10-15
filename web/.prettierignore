@@ -1,3 +1,1 @@
-# Generated schema JSON and bundled third-party validator code are checked against the contract lock.
-src/generated/contracts/*.json
-src/generated/contracts/validators.*.mjs
+../contracts/

@@ -4,10 +4,6 @@ open ClaimCore.Application
 
 module RejectionDiagnosticSchemas =
     let private property name schema = Schema.property name schema true
-    let private text value = Schema.constant (TextConstant value)
-
-    let private number value =
-        Schema.constant (IntegerConstant(int64 value))
 
     let private parameterSchema (parameter: DiagnosticParameterDefinition) =
         property
@@ -35,43 +31,3 @@ module RejectionDiagnosticSchemas =
         |> Schema.oneOf
 
     let value = forDefinitions RejectionDiagnosticIds.definitions
-    let scalarAdmission = forDefinitions ScalarAdmissionDiagnostics.definitions
-
-    let private parameterDefinition parameters =
-        parameters
-        |> List.map (fun parameter ->
-            Schema.objectOf
-                false
-                [
-                    property "name" (text parameter.Name)
-                    property "minimum" (number parameter.Minimum)
-                    property "maximum" (number parameter.Maximum)
-                ])
-        |> Schema.tuple
-
-    let private definitionWith parameters (diagnostic: DiagnosticDefinition) =
-        Schema.objectOf
-            false
-            [ property "id" (text diagnostic.Id); property "parameters" parameters ]
-
-    let definition (diagnostic: DiagnosticDefinition) =
-        definitionWith (parameterDefinition diagnostic.Parameters) diagnostic
-
-    /// Share repeated parameter metadata in Web schemas without changing catalogue admission.
-    let sharedCatalogue prefix (diagnostics: DiagnosticDefinition list) =
-        let shapes = diagnostics |> List.map _.Parameters |> List.distinct
-
-        let name index =
-            prefix + "ParameterDefinition" + string index
-
-        let definitions =
-            shapes |> List.mapi (fun index shape -> name index, parameterDefinition shape)
-
-        let catalogue =
-            diagnostics
-            |> List.map (fun diagnostic ->
-                let index = shapes |> List.findIndex ((=) diagnostic.Parameters)
-                definitionWith (Schema.reference (name index)) diagnostic)
-            |> Schema.tuple
-
-        catalogue, definitions

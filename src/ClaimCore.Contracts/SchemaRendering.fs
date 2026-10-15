@@ -167,7 +167,7 @@ module internal CanonicalJson =
 
         let options =
             JsonWriterOptions(
-                Indented = false,
+                Indented = true,
                 Encoder = JavaScriptEncoder.Default,
                 SkipValidation = false
             )

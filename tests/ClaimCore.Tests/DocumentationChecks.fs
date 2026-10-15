@@ -13,39 +13,40 @@ open Markdig.Extensions.AutoIdentifiers
 let private pipeline =
     MarkdownPipelineBuilder().UseAutoIdentifiers(AutoIdentifierOptions.GitHub).Build()
 
-let private contractHeading = Regex(@"^(CC-[A-Z]+-[0-9]{3})\b")
-let private contractToken = Regex(@"\[(CC-[A-Z]+-[0-9]{3})\]")
+let private contractHeading = Regex(@"^\[?(CC-[A-Z]+-[0-9]{3})\]?(?:\s|$)")
 
-let private matches (pattern: Regex) text =
-    pattern.Matches(text: string)
-    |> Seq.map (fun found -> found.Groups[1].Value)
-    |> Set.ofSeq
-
-let contracts documents tests =
+let contracts documents =
     let headings =
         documents
         |> Seq.collect (fun (_, text) ->
             Markdown.Parse(text, pipeline).Descendants<HeadingBlock>()
-            |> Seq.collect (fun heading ->
+            |> Seq.map (fun heading ->
                 heading.Inline
                 |> Option.ofObj
                 |> Option.toList
                 |> Seq.collect (fun value -> value.Descendants<LiteralInline>())
                 |> Seq.map (fun literal -> literal.Content.ToString())
-                |> String.concat ""
-                |> matches contractHeading))
-        |> Set.ofSeq
+                |> String.concat ""))
+        |> Seq.filter (fun text ->
+            text.StartsWith("CC-", StringComparison.Ordinal)
+            || text.StartsWith("[CC-", StringComparison.Ordinal))
+        |> Seq.toList
 
-    let tokens = tests |> Seq.collect (matches contractToken) |> Set.ofSeq
+    let parsed = headings |> List.map (fun text -> text, contractHeading.Match text)
 
-    let unnamed = Set.difference headings tokens
-    let unknown = Set.difference tokens headings
+    let duplicates =
+        parsed
+        |> List.filter (snd >> _.Success)
+        |> List.map (fun (_, value) -> value.Groups[1].Value)
+        |> List.countBy id
+        |> List.filter (snd >> (<) 1)
 
     [
-        if not (Set.isEmpty unnamed) then
-            "Contract headings without named tests: " + String.concat ", " unnamed
-        if not (Set.isEmpty unknown) then
-            "Test tokens without contract headings: " + String.concat ", " unknown
+        for heading, found in parsed do
+            if not found.Success then
+                yield "Malformed contract heading: " + heading
+        for token, _ in duplicates do
+            yield "Duplicate contract heading: " + token
     ]
 
 let private anchors text =
@@ -149,4 +150,4 @@ let repository root =
         |> Map.ofArray
 
     links documents (fun path -> File.Exists path || Directory.Exists path)
-    @ contracts (Map.toSeq documents) (DocumentationDiscovery.repository root)
+    @ contracts (Map.toSeq documents)

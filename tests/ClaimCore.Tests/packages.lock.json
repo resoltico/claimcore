@@ -112,11 +112,19 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
+      "claimcore.contractgenerator": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Contracts": "[0.8.0, )",
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.contracts": {
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application": "[0.8.0, )",
           "ClaimCore.Domain": "[0.8.0, )",
+          "ClaimCore.RecordFormat": "[0.8.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },

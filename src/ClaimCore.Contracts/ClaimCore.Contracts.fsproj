@@ -9,14 +9,11 @@
     <Compile Include="SchemaRendering.fs" />
     <Compile Include="ScalarSchemas.fs" />
     <Compile Include="CommandInputProjection.fs" />
-    <Compile Include="ScalarAdmissionDiagnostics.fs" />
     <Compile Include="RejectionDiagnosticSchemas.fs" />
-    <Compile Include="Projection.fs" />
-    <Compile Include="SemanticInputRenderer.fs" />
-    <Compile Include="SemanticRenderer.fs" />
+    <Compile Include="CommandInputRendering.fs" />
+    <Compile Include="DescriptorRendering.fs" />
     <Compile Include="JsonUnicode.fs" />
     <Compile Include="InputSupport.fs" />
-    <Compile Include="HttpCommandInput.fs" />
     <Compile Include="ServiceInputs.fs" />
     <Compile Include="WireSchema.fs" />
     <Compile Include="RejectionPresentation.fs" />
@@ -27,12 +24,15 @@
     <Compile Include="WireValues.fs" />
     <Compile Include="HostFailures.fs" />
     <Compile Include="FrameSchemas.fs" />
+    <Compile Include="DefaultPresentation.fs" />
+    <Compile Include="ContractIdentity.fs" />
     <Compile Include="EndpointCatalog.fs" />
     <Compile Include="OutcomeCodec.fs" />
     <Compile Include="Frames.fs" />
     <Compile Include="Discovery.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
   </ItemGroup>

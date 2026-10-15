@@ -53,6 +53,8 @@ module RecordedAuthorityActs =
             RecordedAuthorityKind.SetEnabled, "SET_ENABLED"
         ]
 
+    let all = tokens |> List.map fst
+
     let token kind =
         tokens |> List.find (fst >> (=) kind) |> snd
 

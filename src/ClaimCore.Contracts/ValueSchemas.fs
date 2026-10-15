@@ -2,6 +2,7 @@ namespace ClaimCore.Contracts
 
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.RecordFormat
 open WireSchema
 
 module internal ValueSchemas =
@@ -12,49 +13,62 @@ module internal ValueSchemas =
             [
                 property "productVersion" text
                 property
-                    "effectiveBusinessDate"
+                    "businessDate"
                     (ScalarSchemas.scalar (FieldDefinitions.scalar "incidentDate"))
-                property "timeZoneId" text
+                property "timeZone" text
+            ]
+
+    let actorContext =
+        objectOf
+            [
+                property "productVersion" text
+                property
+                    "businessDate"
+                    (ScalarSchemas.scalar (FieldDefinitions.scalar "incidentDate"))
+                property "timeZone" text
+                property
+                    "capabilities"
+                    (array (Capabilities.all |> List.map Capabilities.token |> enumeration))
             ]
 
     let fields =
-        SemanticContract.current.Fields
+        FieldDefinitions.all
         |> List.map (fun field ->
+            let schema = ScalarSchemas.scalar field.Scalar
+
             property
                 field.Name
-                (let s = ScalarSchemas.scalar field.Scalar in
-                 if field.AllowsAbsence then Schema.nullable s else s))
+                (if field.AllowsAbsence then
+                     Schema.nullable schema
+                 else
+                     schema))
         |> objectOf
 
-    let view =
-        objectOf [ property "fields" (ref "CaseFields"); property "revision" revision ]
+    let private live available =
+        tagged
+            "LIVE"
+            ([ property "disposition" disposition; property "fields" (ref "CaseFields") ]
+             @ (if available then
+                    [ property "availableActs" (array command) ]
+                else
+                    []))
+
+    let private state available =
+        Schema.oneOf [ live available; tagged "ERASED" [] ]
+
+    let private view available =
+        objectOf
+            [
+                property "caseReference" reference
+                property "revision" sequence
+                property "state" (state available)
+            ]
+
+    let record = view true
+    let snapshot = view false
 
     let position =
         objectOf [ property "sequence" sequence; property "entryHash" digest ]
-
-    let act =
-        enumeration (
-            (CommandKinds.all |> List.map CommandKinds.token)
-            @ [ "VOID"; "REINSTATE"; "ERASE" ]
-        )
-
-    let record =
-        Schema.oneOf
-            [
-                objectOf
-                    [
-                        property "state" (token "LIVE")
-                        property "case" (ref "CaseView")
-                        property "disposition" disposition
-                        property "availableCommands" (array command)
-                    ]
-                objectOf
-                    [
-                        property "state" (token "ERASED")
-                        property "caseReference" reference
-                        property "revision" revision
-                    ]
-            ]
 
     let summary =
         Schema.oneOf
@@ -63,41 +77,73 @@ module internal ValueSchemas =
                     [
                         property "state" (token "LIVE")
                         property "caseReference" reference
-                        property "revision" revision
+                        property "revision" sequence
                         property
                             "status"
-                            ((CaseStatuses.all |> List.map CaseStatuses.token |> enumeration))
+                            (CaseStatuses.all |> List.map CaseStatuses.token |> enumeration)
                         property "disposition" disposition
                     ]
                 objectOf
                     [
                         property "state" (token "ERASED")
                         property "caseReference" reference
-                        property "revision" revision
+                        property "revision" sequence
                     ]
             ]
 
-    let receipt =
-        objectOf
+    let private receiptVariants =
+        let common =
             [
                 property "operationId" uuid
                 property "position" (ref "Position")
-                property "caseReference" reference
-                property "revision" revision
-                property "act" act
-                property "disposition" (Schema.nullable disposition)
-                property "snapshot" (Schema.nullable (ref "CaseView"))
                 property "recordedAt" timestamp
                 property "recordedBy" uuid
             ]
+
+        let disclosure =
+            Schema.oneOf
+                [
+                    tagged "DISCLOSED" [ property "state" (live false) ]
+                    tagged "WITHHELD" []
+                    tagged "ERASED" []
+                ]
+
+        [
+            objectOf (
+                common
+                @ [
+                    property "scope" (token "CASE")
+                    property "caseReference" reference
+                    property "revision" sequence
+                    property "act" command
+                    property "snapshot" disclosure
+                ]
+            )
+            objectOf (
+                common
+                @ [
+                    property "scope" (token "AUTHORITY")
+                    property "targetActorId" uuid
+                    property
+                        "act"
+                        (RecordedAuthorityActs.all
+                         |> List.map RecordedAuthorityActs.token
+                         |> enumeration)
+                ]
+            )
+        ]
+
+    let caseReceipt = List.head receiptVariants
+    let authorityReceipt = List.last receiptVariants
+    let receipt = Schema.oneOf receiptVariants
 
     let change =
         objectOf
             [
                 property "operationId" uuid
                 property "position" (ref "Position")
-                property "revision" revision
-                property "act" act
+                property "revision" sequence
+                property "act" command
                 property "recordedAt" timestamp
                 property "recordedBy" uuid
             ]
@@ -106,36 +152,32 @@ module internal ValueSchemas =
         Schema.oneOf
             [
                 tagged "SUMMARY" [ property "change" (ref "ChangeSummary") ]
-                tagged "FULL" [ property "receipt" (ref "Receipt") ]
+                tagged "FULL" [ property "receipt" (ref "CaseReceipt") ]
             ]
 
     let review =
         objectOf
             [
-                property "before" (Schema.nullable (ref "CaseView"))
-                property "proposed" (ref "CaseView")
+                property "before" (Schema.nullable snapshot)
+                property "after" snapshot
                 property
                     "changes"
                     (array (
                         objectOf
                             [
                                 property
-                                    "fieldName"
-                                    (SemanticContract.current.Fields
-                                     |> List.map _.Name
-                                     |> enumeration)
+                                    "field"
+                                    (FieldDefinitions.all |> List.map _.Name |> enumeration)
                                 property "before" (Schema.nullable text)
                                 property "after" (Schema.nullable text)
                             ]
                     ))
-                property "context" (ref "RuntimeContext")
-                property "advisory" (Schema.constant (BooleanConstant true))
+                property "context" context
             ]
 
     let rejection =
         objectOf
             [
-                property "code" (WireTokens.rejectionCodes |> List.map snd |> enumeration)
                 property "diagnostic" RejectionDiagnosticSchemas.value
                 property "message" text
                 property
@@ -143,7 +185,7 @@ module internal ValueSchemas =
                     (Schema.nullable (
                         enumeration ((InputTargets.all |> List.map snd) @ [ "limit"; "cursor" ])
                     ))
-                property "actualRevision" (Schema.nullable revision)
+                property "actualRevision" (Schema.nullable sequence)
                 property
                     "recommendedAction"
                     (enumeration
@@ -155,7 +197,6 @@ module internal ValueSchemas =
         |> List.map (fun (reason, id) ->
             objectOf
                 [
-                    property "code" (token (WireTokens.faultCode reason.Code))
                     property
                         "diagnostic"
                         (objectOf [ property "id" (token id); property "parameters" (objectOf []) ])
@@ -164,11 +205,31 @@ module internal ValueSchemas =
                 ])
         |> Schema.oneOf
 
+    let actor =
+        objectOf
+            [
+                property "actorId" uuid
+                property "principal" RequestSchemas.principal
+                property "enabled" Schema.boolean
+                property
+                    "grants"
+                    (array (
+                        objectOf
+                            [
+                                property "role" (Roles.all |> List.map Roles.token |> enumeration)
+                                property "scope" RequestSchemas.scope
+                            ]
+                    ))
+            ]
+
     let definitions =
         [
             "CaseFields", fields
-            "CaseView", view
+            "CaseView", record
+            "CaseSnapshot", snapshot
             "Position", position
+            "CaseReceipt", caseReceipt
+            "AuthorityReceipt", authorityReceipt
             "Receipt", receipt
             "ChangeSummary", change
             "HistoryEntry", history
@@ -176,6 +237,6 @@ module internal ValueSchemas =
             "Rejection", rejection
             "Fault", fault
             "RuntimeContext", context
-            "SemanticDefinition",
-            (ProjectionSchema.definitionDocument SemanticContract.current).Root
+            "ActorContext", actorContext
+            "ActorReview", actor
         ]

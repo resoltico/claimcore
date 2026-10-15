@@ -67,16 +67,16 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   protections unless separately and explicitly authorized.
 - Test only with synthetic data in isolated databases. Preserve adopted cases, database volumes
   and private local state. Never print secrets, connection strings or claimant payloads.
-- Contract headings carry a `[CC-…]` token in their owner document and at least one test names
-  each token; the documentation test fails on an unnamed contract and on a token that names
-  none. Review a contract by reading its heading and the tests that name it.
+- Contract headings carry a unique, well-formed `CC-…` token in their owner document.
+  Documentation checks validate token format, uniqueness and current relative links.
+  Review a contract by reading its owner heading and the behavior tests relevant to the change.
 - Tests run with `dotnet test` on the Microsoft Testing Platform. Every test module carries
   `[<Tests>]`; there is no hand-kept registry. Focused, pending, skipped, filtered or retried
   runs cannot satisfy verification. `bash eng/verify.sh` is the complete local gate and CI runs
   the same commands.
-- Contract artifacts are generated, not tracked. `npm --prefix web run contract:generate` must
-  match `config/contracts.lock.json`; accept an intentional contract change only with
-  `contract:lock` and review the lock diff with the F# change.
+- Contract artifacts are generated and tracked in `contracts/`. Run
+  `dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts` and review
+  the generated diff with the F# change. Freshness checks require exact inventory and bytes.
 - Suppress a lint, type or format rule only inline, for one named rule, with the reason on the
   same line. Function, lambda and member length and complexity limits apply to production and
   test code without exception. There is no file, module or value length limit: organize by

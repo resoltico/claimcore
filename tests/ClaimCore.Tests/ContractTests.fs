@@ -10,9 +10,10 @@ open Hedgehog.FSharp
 open ClaimCore.Application
 open ClaimCore.Contracts
 open ClaimCore.Domain
+open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
 
-let private bytes (text: string) = Encoding.UTF8.GetBytes text
+let private bytes (value: string) = Encoding.UTF8.GetBytes value
 let private id = Guid.Parse "20000000-0000-4000-8000-000000000001"
 let private digest = String.replicate 64 "a"
 let private position = { Sequence = 1L; EntryHash = digest }
@@ -21,51 +22,59 @@ let private receipt =
     {
         OperationId = id
         Position = position
-        CaseReference = "UNIT-001"
-        Revision = 1L
-        Act = AcceptedAct.Command CommandKind.Open
-        Disposition = Some CaseDisposition.Active
-        Snapshot = Some(Claim.view (opened ()))
+        Scope =
+            ReceiptScope.Case
+                {
+                    Reference = "UNIT-001"
+                    Revision = 1L
+                    Act = CaseActKind.Open
+                    Snapshot = SnapshotDisclosure.Disclosed (Case.snapshot (opened ())).View
+                }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
         RecordedBy = id
     }
 
-let private encode endpoint value = OutcomeCodec.encode endpoint value
+let private authority =
+    { receipt with
+        Scope =
+            ReceiptScope.Authority
+                {
+                    TargetActorId = id
+                    Act = RecordedAuthorityKind.RegisterActor
+                }
+    }
 
 let private admitted endpoint value =
-    encode endpoint value |> EndpointCatalog.admitResponse endpoint |> accepted
+    OutcomeCodec.encode endpoint value
+    |> EndpointCatalog.admitResponse endpoint
+    |> accepted
 
 let private mutate bytes key value =
     let node = JsonNode.Parse(bytes: byte array) |> nonNull
     node.AsObject().Add(key, JsonValue.Create<string> value)
-    node.ToJsonString() |> Encoding.UTF8.GetBytes
+    bytes |> ignore
+    Encoding.UTF8.GetBytes(node.ToJsonString())
 
 let private exactCatalogue () =
-    let expected =
+    Expect.equal
+        (EndpointCatalog.all |> List.map _.Identifier)
         [
             "session"
             "session.logout"
-            "definition"
+            "context"
             "case.get"
             "case.list"
             "case.history"
+            "case.preview"
+            "case.execute"
             "operation.observe"
-            "command.preview"
-            "command.execute"
-            "case.steward"
-            "authority.register"
-            "authority.setGrant"
-            "authority.setEnabled"
-            "authority.observe"
+            "authority.execute"
+            "authority.list"
         ]
-
-    Expect.equal
-        (EndpointCatalog.all |> List.map _.Identifier)
-        expected
-        "One exact endpoint inventory"
+        "Exact inventory"
 
     for endpoint in EndpointCatalog.all do
-        Expect.equal endpoint.Path ("/api/" + endpoint.Identifier) "Literal path"
+        Expect.equal endpoint.Path ("/api/" + endpoint.Identifier) "Literal route"
 
         Expect.equal
             endpoint.Method
@@ -74,14 +83,8 @@ let private exactCatalogue () =
 
     Expect.equal
         (EndpointCatalog.all |> List.filter _.Mutates |> List.map _.Identifier)
-        [
-            "command.execute"
-            "case.steward"
-            "authority.register"
-            "authority.setGrant"
-            "authority.setEnabled"
-        ]
-        "All durable mutations"
+        [ "case.execute"; "authority.execute" ]
+        "Durable mutations"
 
 let private requestAlternatives () =
     let mutable count = 0
@@ -93,15 +96,15 @@ let private requestAlternatives () =
             frame.Add("endpoint", JsonValue.Create endpoint.Identifier)
             frame.Add("input", JsonNode.Parse sample)
             let parsed = Frames.parse (bytes (frame.ToJsonString())) |> accepted
-            Expect.equal (Frames.inputBytes parsed) sample "Exact input bytes preserved"
+            Expect.equal (Frames.inputBytes parsed) sample "Exact raw input retained"
 
             Expect.isError
-                (EndpointCatalog.admitRequest endpoint.Identifier (mutate sample "unexpected" "x"))
-                "Unknown member refused"
+                (EndpointCatalog.admitRequest endpoint.Identifier (mutate sample "extra" "x"))
+                "Closed request"
 
             count <- count + 1
 
-    Expect.equal count 32 "Every command and stewardship branch reached"
+    Expect.equal count 35 "Every case and authority act is sampled"
 
 let private responseAlternatives () =
     let mutable count = 0
@@ -110,175 +113,128 @@ let private responseAlternatives () =
         for sample in SchemaSamples.variants endpoint.Response do
             EndpointCatalog.admitResponse endpoint.Identifier sample |> accepted |> ignore
             let frame = Frames.result endpoint.Identifier sample |> accepted
-            let decoded = Frames.decode frame |> accepted
-
-            Expect.equal
-                (decoded.GetProperty("endpoint").GetString())
-                endpoint.Identifier
-                "Round-trip identity"
-
-            Expect.isError
-                (Frames.decode (mutate frame "unexpected" "x"))
-                "Extra frame member refused"
-
+            Expect.isOk (Frames.decode frame) "Admitted response round-trips"
+            Expect.isError (Frames.decode (mutate frame "extra" "x")) "Closed frame"
             count <- count + 1
 
-    Expect.equal count 62 "Every response family reached"
+    Expect.equal count 43 "Every response alternative is sampled"
 
 let private executeOutcomes () =
-    let cases =
-        [
-            ExecuteOutcome.Accepted receipt, 0
-            ExecuteOutcome.AlreadyAccepted receipt, 0
-            ExecuteOutcome.Rejected Rejection.CaseVoided, 2
-            ExecuteOutcome.Failed CoreFault.StoreUnavailable, 3
-            ExecuteOutcome.Cancelled, 130
-            ExecuteOutcome.OutcomeUnknown(id, digest), 4
-        ]
-
-    for value, code in cases do
-        for endpoint in [ "command.execute"; "case.steward" ] do
-            let encoded = encode endpoint (OutcomeCodec.execute value)
+    for endpoint, receipt in [ "case.execute", receipt; "authority.execute", authority ] do
+        for value, exit in
+            [
+                ExecuteOutcome.Accepted receipt, 0
+                ExecuteOutcome.AlreadyAccepted receipt, 0
+                ExecuteOutcome.Rejected Rejection.LastOwner, 2
+                ExecuteOutcome.Failed CoreFault.StoreUnavailable, 3
+                ExecuteOutcome.Cancelled, 130
+                ExecuteOutcome.OutcomeUnknown(id, digest), 4
+            ] do
+            let encoded = OutcomeCodec.encode endpoint (OutcomeCodec.execute value)
             let frame = Frames.result endpoint encoded |> accepted |> Frames.decode |> accepted
-            Expect.equal (Frames.exitCode frame) code "Outcome selects exit"
+            Expect.equal (Frames.exitCode frame) exit "Shared mutation exits"
 
-    let erased =
-        { receipt with
-            Revision = 2L
-            Act = AcceptedAct.Stewardship StewardshipKind.Erase
-            Disposition = None
-            Snapshot = None
-        }
+    for endpoint, wrong in [ "case.execute", authority; "authority.execute", receipt ] do
+        Expect.throws
+            (fun () ->
+                OutcomeCodec.encode endpoint (OutcomeCodec.execute (ExecuteOutcome.Accepted wrong))
+                |> ignore)
+            "A mutation receipt must match its endpoint scope"
 
-    let decoded =
-        admitted "case.steward" (OutcomeCodec.execute (ExecuteOutcome.Accepted erased))
+let private disclosures () =
+    for disclosure, tag in
+        [ SnapshotDisclosure.Withheld, "WITHHELD"; SnapshotDisclosure.Erased, "ERASED" ] do
+        let target =
+            match receipt.Scope with
+            | ReceiptScope.Case value -> value
+            | _ -> failtest "Case receipt"
 
-    Expect.equal
-        (decoded.GetProperty("outcome").GetProperty("data").GetProperty("snapshot").ValueKind)
-        JsonValueKind.Null
-        "Erasure has no snapshot"
+        let value =
+            { receipt with
+                Scope = ReceiptScope.Case { target with Snapshot = disclosure }
+            }
 
-let private authorityOutcomes () =
-    let values =
-        [
-            AuthorityOutcome.Applied(id, position, id)
-            AuthorityOutcome.AlreadyApplied(id, position, id)
-            AuthorityOutcome.Rejected Rejection.LastOwner
-            AuthorityOutcome.Failed CoreFault.SchemaMismatch
-            AuthorityOutcome.Cancelled
-            AuthorityOutcome.OutcomeUnknown id
-        ]
+        let decoded =
+            admitted "operation.observe" (OutcomeCodec.operation (QueryOutcome.Succeeded value))
 
-    for endpoint in [ "authority.register"; "authority.setGrant"; "authority.setEnabled" ] do
-        for value in values do
-            admitted endpoint (OutcomeCodec.authority value) |> ignore
+        Expect.equal
+            (decoded
+                .GetProperty("outcome")
+                .GetProperty("data")
+                .GetProperty("snapshot")
+                .GetProperty("tag")
+                .GetString())
+            tag
+            "Disclosure is explicit"
 
-    for value in List.take 5 values do
-        admitted "authority.observe" (OutcomeCodec.authority value) |> ignore
+let private queryCodecs () =
+    let snapshot = Case.snapshot (opened ())
 
-    Expect.throws
-        (fun () ->
-            encode
-                "authority.observe"
-                (OutcomeCodec.authority (AuthorityOutcome.OutcomeUnknown id))
-            |> ignore)
-        "Observe cannot be uncertain"
-
-let private caseQueries () =
     admitted
         "case.get"
         (OutcomeCodec.currentCase (
-            QueryOutcome.Succeeded(
-                Lookup.Found(
-                    CaseRecord.Live(
-                        Claim.view (opened ()),
-                        CaseDisposition.Active,
-                        [ CommandKind.Close ]
-                    )
-                )
-            )
+            QueryOutcome.Succeeded
+                {
+                    Snapshot = snapshot
+                    AvailableActs = [ CaseActKind.Close ]
+                }
         ))
     |> ignore
 
     admitted
         "case.get"
         (OutcomeCodec.currentCase (
-            QueryOutcome.Succeeded(Lookup.Found(CaseRecord.Erased("UNIT-001", 2L)))
+            QueryOutcome.Succeeded
+                {
+                    Snapshot = { snapshot with View = CaseView.Erased }
+                    AvailableActs = []
+                }
         ))
     |> ignore
 
-    admitted
-        "case.get"
-        (OutcomeCodec.currentCase (QueryOutcome.Succeeded(Lookup.NotFound "UNIT-001")))
-    |> ignore
-
-let private casePage () =
     admitted
         "case.list"
         (OutcomeCodec.caseList (
             QueryOutcome.Succeeded
                 {
-                    Items =
-                        [
-                            CaseSummary.Live(
-                                "UNIT-001",
-                                1L,
-                                CaseStatus.Opened,
-                                CaseDisposition.Voided
-                            )
-                            CaseSummary.Erased("UNIT-002", 2L)
-                        ]
-                    NextCursor = Some "cursor"
-                    AvailableCommands = []
+                    Items = [ CaseSummary.Erased("UNIT-001", 2L) ]
+                    NextCursor = None
                 }
         ))
     |> ignore
 
-let private ledgerQueries () =
     admitted
         "case.history"
         (OutcomeCodec.history (
-            QueryOutcome.Succeeded(
-                Lookup.Found
-                    {
-                        Entries =
-                            [
-                                HistoryEntry.FullEntry receipt
-                                HistoryEntry.SummaryEntry
-                                    {
-                                        OperationId = id
-                                        Position = position
-                                        Revision = 1L
-                                        Act = receipt.Act
-                                        RecordedAt = receipt.RecordedAt
-                                        RecordedBy = id
-                                    }
-                            ]
-                        NextCursor = None
-                    }
-            )
+            QueryOutcome.Succeeded
+                {
+                    Entries = [ HistoryEntry.FullEntry receipt ]
+                    NextCursor = None
+                }
         ))
     |> ignore
 
-    admitted
-        "operation.observe"
-        (OutcomeCodec.operation (QueryOutcome.Succeeded(Lookup.Found receipt)))
+    admitted "operation.observe" (OutcomeCodec.operation (QueryOutcome.Succeeded authority))
     |> ignore
 
-let private discoveryQueries () =
     admitted
-        "definition"
-        (OutcomeCodec.definition (
+        "authority.list"
+        (OutcomeCodec.actors (QueryOutcome.Succeeded { Items = []; NextCursor = None }))
+    |> ignore
+
+let private contextCodecs () =
+    admitted
+        "context"
+        (OutcomeCodec.context (
             QueryOutcome.Succeeded
                 {
-                    Contract = SemanticContract.current
-                    SemanticFingerprint = SemanticContract.fingerprint SemanticContract.current
                     Runtime =
                         {
-                            ProductVersion = BuildIdentity.current.Version
+                            ProductVersion = "0.1.0"
                             EffectiveBusinessDate = today
                             TimeZoneId = "Etc/UTC"
                         }
+                    Capabilities = Capabilities.all
                 }
         ))
     |> ignore
@@ -286,80 +242,96 @@ let private discoveryQueries () =
     admitted "session" (OutcomeCodec.session true (Some "token")) |> ignore
     admitted "session.logout" (OutcomeCodec.logout ()) |> ignore
 
-let private diagnostics () =
-    let refusals =
+let private previewCodecs () =
+    let snapshot = Case.snapshot (opened ())
+
+    let review =
+        {
+            Before = None
+            Proposed = snapshot
+            Changes = []
+            Context =
+                {
+                    ProductVersion = "0.1.0"
+                    EffectiveBusinessDate = today
+                    TimeZoneId = "Etc/UTC"
+                }
+        }
+
+    for value in
         [
-            Rejection.IdempotencyConflict
-            Rejection.ResourceUnavailable
-            Rejection.CaseVoided
-            Rejection.CaseErased
-            Rejection.InvalidReason
-            Rejection.AlreadyVoided
-            Rejection.NotVoided
+            PreviewOutcome.Reviewed(review, digest)
+            PreviewOutcome.AlreadyAccepted receipt
+            PreviewOutcome.Rejected Rejection.ActNotPermitted
+            PreviewOutcome.Failed CoreFault.StoreIntegrityError
+            PreviewOutcome.Cancelled
+        ] do
+        admitted "case.preview" (OutcomeCodec.preview value) |> ignore
+
+let private diagnostics () =
+    for identifier, _ in RejectionDiagnosticIds.all do
+        Expect.isNonEmpty
+            (RejectionPresentation.template identifier)
+            "Every diagnostic has outward text"
+
+    for fault, _ in CoreFaults.all do
+        admitted "case.get" (OutcomeCodec.currentCase (QueryOutcome.Failed fault))
+        |> ignore
+
+    for value in
+        [
+            Rejection.LedgerExhausted
+            Rejection.InvalidCursor
             Rejection.LastOwner
-            Rejection.ActorAlreadyRegistered
-            Rejection.ActorUnknown
-            Rejection.HumanPrincipalRequired
-            Rejection.PageLimitOutOfRange 100
-            Rejection.InvalidCaseListCursor
-            Rejection.InvalidHistoryCursor
-        ]
+            Rejection.ActNotPermitted
+            Rejection.ResourceUnavailable
+        ] do
+        let result =
+            admitted "case.get" (OutcomeCodec.currentCase (QueryOutcome.Rejected value))
 
-    for value in refusals do
-        admitted "case.get" (OutcomeCodec.currentCase (QueryOutcome.Rejected value))
-        |> ignore
-
-    for value, _ in CoreFaults.all do
-        admitted "case.get" (OutcomeCodec.currentCase (QueryOutcome.Failed value))
-        |> ignore
+        Expect.isFalse
+            (result.GetProperty("outcome").GetProperty("data").TryGetProperty("code") |> fst)
+            "No coarse refusal code"
 
 let private rejectFrames () =
-    for text in
+    for value in
         [
             "null"
             "[]"
             "{}"
-            "{\"endpoint\":\"definition\",\"endpoint\":\"definition\",\"input\":{}}"
-            "{\"endpoint\":\"case.unknown\",\"input\":{}}"
-            "{\"endpoint\":\"definition\",\"input\":{\"secret\":\"private\"}}"
+            "{\"endpoint\":\"context\",\"endpoint\":\"context\",\"input\":{}}"
+            "{\"endpoint\":\"unknown\",\"input\":{}}"
+            "{\"endpoint\":\"context\",\"input\":{\"secret\":true}}"
             "{\"endpoint\":\"case.get\",\"input\":{\"caseReference\":\"\\ud800\"}}"
         ] do
-        Expect.isError (Frames.parse (bytes text)) "Malformed, duplicate or unknown input refused"
+        Expect.isError (Frames.parse (bytes value)) "Malformed, duplicate and unknown refuse"
 
     for blob in [ [| 0xffuy |]; Array.zeroCreate<byte>(16 * 1024 * 1024 + 1) ] do
-        Expect.isError (Frames.parse blob) "UTF-8 and byte bound"
+        Expect.isError (Frames.parse blob) "UTF8 and byte bounds"
 
-    let original = bytes "{ \"endpoint\": \"definition\", \"input\": { } }"
-    let parsed = Frames.parse original |> accepted
+    let original = bytes "{ \"endpoint\":\"context\", \"input\":{} }"
+    let frame = Frames.parse original |> accepted
     original[0] <- 0uy
-    Expect.equal ((Frames.bytes parsed)[0]) (byte '{') "Defensive frame copy"
-    let copy = Frames.bytes parsed
+    let copy = Frames.bytes frame
     copy[0] <- 0uy
-    Expect.equal ((Frames.bytes parsed)[0]) (byte '{') "Caller cannot change retained bytes"
+    Expect.equal ((Frames.bytes frame)[0]) (byte '{') "Defensive copies"
 
 let private handshakeAndFailures () =
     let fingerprint = WireContractFingerprint.value EndpointCatalog.fingerprint
-    Expect.equal fingerprint.Length 64 "SHA-256"
-    Expect.isTrue (EndpointCatalog.matches (Some fingerprint)) "Exact build"
+    Expect.equal fingerprint.Length 64 "SHA256"
+    Expect.isTrue (EndpointCatalog.matches (Some fingerprint)) "Exact identity"
 
     for value in [ None; Some(fingerprint.ToUpperInvariant()); Some(String.replicate 64 "0") ] do
-        Expect.isFalse (EndpointCatalog.matches value) "Mismatch refuses dispatch"
+        Expect.isFalse (EndpointCatalog.matches value) "Mismatch refuses"
 
-    for reason in HostFailures.all do
-        let wire = HostFailures.encode reason
-        use parsed = JsonDocument.Parse wire
-
-        Expect.isTrue
-            (SchemaValueValidation.verify HostFailures.schema parsed.RootElement)
-            "Typed host failure"
-
+    for failure in HostFailures.all do
         Expect.equal
-            (parsed.RootElement.GetProperty("status").GetInt32())
-            (HostFailures.status reason)
-            "Correlated status"
+            (HostFailures.decode (HostFailures.encode failure) |> accepted)
+            failure
+            "Host failure round-trip"
 
     Expect.equal
-        (Frames.serviceFailure "definition" HostFailure.RateLimited
+        (Frames.serviceFailure "context" HostFailure.RateLimited
          |> Frames.decode
          |> accepted
          |> Frames.exitCode)
@@ -385,8 +357,9 @@ let private handshakeAndFailures () =
 let private decoderProperty =
     let seeds =
         EndpointCatalog.all
-        |> List.collect (fun e ->
-            SchemaSamples.variants e.Request @ SchemaSamples.variants e.Response)
+        |> List.collect (fun endpoint ->
+            SchemaSamples.variants endpoint.Request
+            @ SchemaSamples.variants endpoint.Response)
 
     let generator =
         Gen.choice (DecoderCorpora.jsonLike :: List.map DecoderCorpora.mutated seeds)
@@ -405,132 +378,144 @@ let private decoderProperty =
             total Frames.parse
             && total Frames.decode
             && (EndpointCatalog.all
-                |> List.forall (fun e ->
-                    total (EndpointCatalog.admitRequest e.Identifier)
-                    && total (EndpointCatalog.admitResponse e.Identifier)))
+                |> List.forall (fun endpoint ->
+                    total (EndpointCatalog.admitRequest endpoint.Identifier)
+                    && total (EndpointCatalog.admitResponse endpoint.Identifier)))
     }
 
-let private previewAndRoles () =
-    let view = Claim.view (opened ())
+let private integerLexemes () =
+    let wire =
+        RequestRecord.encodeWire (request 0L (BusinessCommand.Open registration))
+        |> Encoding.UTF8.GetString
 
-    let review =
-        {
-            Before = None
-            Proposed = view
-            Changes =
-                [
+    for value in [ "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\"" ] do
+        Expect.isError
+            (EndpointCatalog.admitRequest
+                "case.execute"
+                (bytes (wire.Replace("\"expectedRevision\":0", "\"expectedRevision\":" + value))))
+            "Strict raw integer request"
+
+    for value in [ "0"; "-0"; "9007199254740991" ] do
+        Expect.isOk
+            (EndpointCatalog.admitRequest
+                "case.execute"
+                (bytes (wire.Replace("\"expectedRevision\":0", "\"expectedRevision\":" + value))))
+            "Safe integer boundary"
+
+    for sequence in [ 0L; SafeInteger.Maximum + 1L ] do
+        Expect.throws
+            (fun () ->
+                OutcomeCodec.encode
+                    "case.execute"
+                    (OutcomeCodec.execute (
+                        ExecuteOutcome.Accepted
+                            { receipt with
+                                Position = { position with Sequence = sequence }
+                            }
+                    ))
+                |> ignore)
+            "Accepted sequence bounds"
+
+let private retainedText () =
+    for name in [ String.replicate 201 "A"; "Earlier\u202eName" ] do
+        let original = Case.snapshot (opened ())
+
+        let fields =
+            { viewFields original with
+                ClaimantName = name
+            }
+
+        let snapshot =
+            { original with
+                View = CaseView.Live(fields, Disposition.Active)
+            }
+
+        let prior = Case.ofAccepted snapshot |> accepted
+
+        admitted
+            "case.get"
+            (OutcomeCodec.currentCase (
+                QueryOutcome.Succeeded
                     {
-                        FieldName = "caseReference"
-                        Before = None
-                        After = Some "UNIT-001"
+                        Snapshot = snapshot
+                        AvailableActs = []
                     }
-                ]
-            Context =
-                {
-                    ProductVersion = BuildIdentity.current.Version
-                    EffectiveBusinessDate = today
-                    TimeZoneId = "Etc/UTC"
-                }
-            IsAdvisory = true
-        }
-
-    for value in
-        [
-            PreviewOutcome.Reviewed(review, digest)
-            PreviewOutcome.AlreadyAccepted receipt
-            PreviewOutcome.Rejected Rejection.InvalidReason
-            PreviewOutcome.Failed CoreFault.StoreIntegrityError
-            PreviewOutcome.Cancelled
-        ] do
-        admitted "command.preview" (OutcomeCodec.preview value) |> ignore
-
-    let input role =
-        bytes (
-            "{\"eventId\":\""
-            + id.ToString("D")
-            + "\",\"principal\":{\"kind\":\"HUMAN\",\"issuer\":\"https://identity.example.test/\",\"subject\":\"steward\"},\"role\":\""
-            + role
-            + "\",\"scope\":{\"type\":\"INSTALLATION\"},\"active\":true}"
-        )
-
-    for token in [ "OWNER"; "CASE_READER"; "CASE_EDITOR"; "DATA_STEWARD"; "AUDITOR" ] do
-        EndpointCatalog.admitRequest "authority.setGrant" (input token)
-        |> accepted
+            ))
         |> ignore
 
-    for token in [ "READER"; "EDITOR"; "STEWARD"; "administrator" ] do
-        Expect.isError
-            (EndpointCatalog.admitRequest "authority.setGrant" (input token))
-            "No alternate role names"
+        let reaffirm =
+            request
+                1L
+                (BusinessCommand.AmendRegistration
+                    { registration with
+                        ClaimantName = name
+                        InsurerName = "Changed insurer"
+                    })
 
-let private sequenceBoundary () =
-    admitted
-        "command.execute"
-        (OutcomeCodec.execute (
-            ExecuteOutcome.Accepted
-                { receipt with
-                    Position =
-                        { position with
-                            Sequence = Int64.MaxValue
-                        }
-                }
-        ))
-    |> ignore
+        let wire = RequestRecord.encodeWire reaffirm
+        EndpointCatalog.admitRequest "case.execute" wire |> accepted |> ignore
+        Case.decide today reaffirm (Some prior) |> accepted |> ignore
 
-    for value in [ "0"; "-1"; "9223372036854775808"; "01" ] do
-        let sample =
-            encode "command.execute" (OutcomeCodec.execute (ExecuteOutcome.Accepted receipt))
-
-        let node = JsonNode.Parse sample |> nonNull
-
-        let outcome = node["outcome"] |> nonNull
-        let data = outcome["data"] |> nonNull
-        let position = data["position"] |> nonNull
-        position.AsObject()["sequence"] <- JsonValue.Create value
+        let changed =
+            { reaffirm with
+                Act =
+                    CaseAct.Business(
+                        BusinessCommand.AmendRegistration
+                            { registration with
+                                ClaimantName = name + "B"
+                            }
+                    )
+            }
 
         Expect.isError
-            (EndpointCatalog.admitResponse "command.execute" (bytes (node.ToJsonString())))
-            "Sequence must be a positive representable BIGINT"
+            (Case.decide today changed (Some prior))
+            "Changed new assertion follows admission"
+
+let private policyHints () =
+    use descriptors =
+        JsonDocument.Parse(CanonicalContract.bytes (ContractDescriptors.render ()))
+
+    let claimant =
+        descriptors.RootElement.GetProperty("fields").EnumerateArray()
+        |> Seq.find (fun field -> field.GetProperty("name").GetString() = "claimantName")
+
+    Expect.equal
+        (claimant
+            .GetProperty("scalar")
+            .GetProperty("policy")
+            .GetProperty("maximumCharacters")
+            .GetInt32())
+        200
+        "Current policy is a nonvalidating hint"
 
 [<Tests>]
 let tests =
     testList
         "service contract"
         [
+            testCase "current text admission is exposed as a nonvalidating policy hint" policyHints
             testCase
-                "all frame and HTTP decoders are total on arbitrary, hostile and mutated bytes"
-                (fun () -> PropertyHarness.run "CC-FUZZ-INVOCATION-001" decoderProperty)
+                "retained text passes wire rendering and reaffirmation while changed policy violations refuse"
+                retainedText
+            testCase "one catalogue defines eleven routes and both durable mutations" exactCatalogue
             testCase
-                "preview codec and authority role tokens preserve the core definitions"
-                previewAndRoles
-            testCase
-                "ledger positions admit positive BIGINT maximum and refuse zero or overflow"
-                sequenceBoundary
-            testCase
-                "one catalogue defines fourteen literal routes and every durable mutation"
-                exactCatalogue
-            testCase
-                "all request alternatives admit, preserve bytes and reject extra members"
+                "all act request alternatives preserve bytes and reject extra members"
                 requestAlternatives
             testCase
-                "all response alternatives round-trip and reject extra frame members"
+                "all response alternatives round-trip and reject extra members"
                 responseAlternatives
+            testCase "both mutation scopes share outcomes and exit codes" executeOutcomes
+            testCase "withheld and erased snapshots remain distinct" disclosures
+            testCase "queries encode current cases authority and context" (fun () ->
+                queryCodecs ()
+                contextCodecs ())
+            testCase "preview encodes review and replay outcomes" previewCodecs
+            testCase "closed diagnostics have complete presentation and no coarse codes" diagnostics
+            testCase "strict decoders reject malformed input and preserve copies" rejectFrames
             testCase
-                "execute outcomes select exits and erased receipts have no snapshot"
-                executeOutcomes
-            testCase
-                "authority outcomes cover mutations and reject unknown observation"
-                authorityOutcomes
-            testCase "typed query codecs preserve live, voided, erased and ledger views" (fun () ->
-                caseQueries ()
-                casePage ()
-                ledgerQueries ()
-                discoveryQueries ())
-            testCase "the closed diagnostic sets have complete schema and presentation" diagnostics
-            testCase
-                "strict frame decoding rejects hostile bytes and preserves defensive copies"
-                rejectFrames
-            testCase
-                "fingerprint handshake and typed failure guards have rejecting controls"
+                "handshake and host failure guards have rejecting controls"
                 handshakeAndFailures
+            testCase "integer transport checks raw lexical forms and safe boundaries" integerLexemes
+            testCase "all frame and HTTP decoders are total for bounded hostile bytes" (fun () ->
+                PropertyHarness.run "CC-FUZZ-INVOCATION-001" decoderProperty)
         ]

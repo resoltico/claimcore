@@ -82,7 +82,7 @@ Desktop.ini
 .mypy_cache/
 .ruff_cache/
 
-# Contract artifacts are generated from the F# projection; config/contracts.lock.json is what is reviewed.
+# Browser build output; authoritative generated contract artifacts are tracked in contracts/.
 /web/src/generated/
 
 # Private credential inputs

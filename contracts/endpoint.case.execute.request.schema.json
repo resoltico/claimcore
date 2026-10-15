@@ -1,0 +1,566 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claimcore.local/contracts/endpoint.case.execute.request.schema.json",
+  "title": "ClaimCore endpoint.case.execute.request.schema.json",
+  "$defs": {
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "caseReference": {
+          "type": "string",
+          "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "act": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "OPEN"
+                },
+                "values": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "incidentDate": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+                      "minLength": 10,
+                      "maxLength": 10
+                    },
+                    "incidentNotificationDate": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+                      "minLength": 10,
+                      "maxLength": 10
+                    },
+                    "incidentCountry": {
+                      "type": "string",
+                      "pattern": "^(?:[A-Z]{2})(?![\\s\\S])",
+                      "minLength": 1
+                    },
+                    "claimantName": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "insurerName": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "claimedAmount": {
+                      "type": "string",
+                      "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                      "minLength": 1
+                    },
+                    "claimedCurrency": {
+                      "type": "string",
+                      "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "incidentDate",
+                    "incidentNotificationDate",
+                    "incidentCountry",
+                    "claimantName",
+                    "insurerName",
+                    "claimedAmount",
+                    "claimedCurrency"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "values"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "AMEND_REGISTRATION"
+                },
+                "values": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "incidentDate": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+                      "minLength": 10,
+                      "maxLength": 10
+                    },
+                    "incidentNotificationDate": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+                      "minLength": 10,
+                      "maxLength": 10
+                    },
+                    "incidentCountry": {
+                      "type": "string",
+                      "pattern": "^(?:[A-Z]{2})(?![\\s\\S])",
+                      "minLength": 1
+                    },
+                    "claimantName": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "insurerName": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "claimedAmount": {
+                      "type": "string",
+                      "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                      "minLength": 1
+                    },
+                    "claimedCurrency": {
+                      "type": "string",
+                      "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "incidentDate",
+                    "incidentNotificationDate",
+                    "incidentCountry",
+                    "claimantName",
+                    "insurerName",
+                    "claimedAmount",
+                    "claimedCurrency"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "values"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CORRECT_CASE"
+                },
+                "groups": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "registration": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "const": "KEEP"
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "const": "REPLACE"
+                            },
+                            "values": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "incidentDate": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+                                  "minLength": 10,
+                                  "maxLength": 10
+                                },
+                                "incidentNotificationDate": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+                                  "minLength": 10,
+                                  "maxLength": 10
+                                },
+                                "incidentCountry": {
+                                  "type": "string",
+                                  "pattern": "^(?:[A-Z]{2})(?![\\s\\S])",
+                                  "minLength": 1
+                                },
+                                "claimantName": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "insurerName": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "claimedAmount": {
+                                  "type": "string",
+                                  "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                                  "minLength": 1
+                                },
+                                "claimedCurrency": {
+                                  "type": "string",
+                                  "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "incidentDate",
+                                "incidentNotificationDate",
+                                "incidentCountry",
+                                "claimantName",
+                                "insurerName",
+                                "claimedAmount",
+                                "claimedCurrency"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "mode",
+                            "values"
+                          ]
+                        }
+                      ]
+                    },
+                    "decision": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "const": "KEEP"
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "const": "REPLACE"
+                            },
+                            "values": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "paymentDecisionDate": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+                                  "minLength": 10,
+                                  "maxLength": 10
+                                },
+                                "payableAmount": {
+                                  "type": "string",
+                                  "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                                  "minLength": 1
+                                },
+                                "payableCurrency": {
+                                  "type": "string",
+                                  "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "paymentDecisionDate",
+                                "payableAmount",
+                                "payableCurrency"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "mode",
+                            "values"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "const": "CLEAR"
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ]
+                        }
+                      ]
+                    },
+                    "payment": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "const": "KEEP"
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "const": "REPLACE"
+                            },
+                            "values": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "paymentDate": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+                                  "minLength": 10,
+                                  "maxLength": 10
+                                }
+                              },
+                              "required": [
+                                "paymentDate"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "mode",
+                            "values"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "const": "CLEAR"
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "registration",
+                    "decision",
+                    "payment"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "groups"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "DECIDE"
+                },
+                "values": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "paymentDecisionDate": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+                      "minLength": 10,
+                      "maxLength": 10
+                    },
+                    "payableAmount": {
+                      "type": "string",
+                      "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                      "minLength": 1
+                    },
+                    "payableCurrency": {
+                      "type": "string",
+                      "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "paymentDecisionDate",
+                    "payableAmount",
+                    "payableCurrency"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "values"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "WITHDRAW_DECISION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "RECORD_PAYMENT"
+                },
+                "values": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "paymentDate": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+                      "minLength": 10,
+                      "maxLength": 10
+                    }
+                  },
+                  "required": [
+                    "paymentDate"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "values"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CLEAR_PAYMENT"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CLOSE"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "REOPEN"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "VOID"
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "reason"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "REINSTATE"
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "reason"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "ERASE"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "operationId",
+        "caseReference",
+        "expectedRevision",
+        "act"
+      ]
+    }
+  },
+  "$ref": "#/$defs/root"
+}

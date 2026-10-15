@@ -41,6 +41,7 @@
     <Compile Include="PaginationTests.fs" />
     <Compile Include="ContractTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
+    <Compile Include="ContractSnapshotTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
     <Compile Include="RemoteTlsTests.fs" />
     <Compile Include="TokenLifetimeTests.fs" />
@@ -50,11 +51,11 @@
     <Compile Include="CliFrameTests.fs" />
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
-    <Compile Include="DocumentationDiscovery.fs" />
     <Compile Include="DocumentationChecks.fs" />
     <Compile Include="DocumentationTests.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />

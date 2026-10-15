@@ -3,9 +3,9 @@ namespace ClaimCore.Contracts
 open System.Text.Json
 open ClaimCore.Domain
 
-/// Renders Domain's one input descriptor into the semantic contract without flattening correction
+/// Renders Domain's one input descriptor into the static descriptors without flattening correction
 /// groups into transport-specific optional fields.
-module internal SemanticInputRenderer =
+module internal CommandInputRendering =
     let private field (writer: Utf8JsonWriter) (input: FieldInputDefinition) =
         writer.WriteStartObject()
         writer.WriteString("fieldName", input.FieldName)

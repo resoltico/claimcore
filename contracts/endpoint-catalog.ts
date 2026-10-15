@@ -1,0 +1,5 @@
+/* Generated from ClaimCore.Contracts. Do not edit. */
+export const wireContractFingerprint = "6c34a27d2c4edd28cebaab0b8e9ee3650615289d662ed7b20ee00afb69f1ff19";
+export const endpoints = [{id:"session",method:"GET",path:"/api/session",mutates:false},{id:"session.logout",method:"POST",path:"/api/session.logout",mutates:false},{id:"context",method:"POST",path:"/api/context",mutates:false},{id:"case.get",method:"POST",path:"/api/case.get",mutates:false},{id:"case.list",method:"POST",path:"/api/case.list",mutates:false},{id:"case.history",method:"POST",path:"/api/case.history",mutates:false},{id:"case.preview",method:"POST",path:"/api/case.preview",mutates:false},{id:"case.execute",method:"POST",path:"/api/case.execute",mutates:true},{id:"operation.observe",method:"POST",path:"/api/operation.observe",mutates:false},{id:"authority.execute",method:"POST",path:"/api/authority.execute",mutates:true},{id:"authority.list",method:"POST",path:"/api/authority.list",mutates:false}] as const;
+export type EndpointId = (typeof endpoints)[number]["id"];
+export const isEndpointId = (value: string): value is EndpointId => endpoints.some(endpoint => endpoint.id === value);
