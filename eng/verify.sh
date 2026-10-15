@@ -86,14 +86,16 @@ integration() {
 }
 
 browsers() {
-  restore_node
   local engines=(chromium firefox webkit)
-  if [[ -n "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE:-}" ]]; then
+  if [[ -n "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then
     case "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE}" in
-      chromium | firefox | webkit) engines=("${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE}") ;;
+      chromium) engines=(chromium) ;;
+      firefox | webkit) engines=(chromium "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE}") ;;
       *) echo "invalid browser engine" >&2; return 64 ;;
     esac
   fi
+  # Published CLI PKCE setup uses Chromium even when specifications select another engine.
+  restore_node
   local platform
   platform="$(uname -s)"
   if [[ "${platform}" == Linux ]]; then

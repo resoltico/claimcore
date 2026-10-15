@@ -3,7 +3,8 @@
 ## First checkout
 
 Use the pinned SDK in global.json and Node/npm versions declared by .node-version and
-web/package.json. Docker is required for integration and published-process/browser acceptance.
+web/package.json. Docker is required for integration and published-process/browser acceptance. Integration also
+uses Bash and OpenSSL to check the real local configuration producer.
 Restore locked NuGet inputs and build the solution with .NET. Run `npm --prefix web ci`
 and `npm --prefix web run build` for frontend assets. Ordinary .NET builds do not invoke npm;
 frontend consumers use the tracked `contracts/` artifacts and require no .NET process.
@@ -35,7 +36,9 @@ every specification on Chromium, Firefox and WebKit. Set `CLAIMCORE_ACCEPTANCE_B
 to exactly `chromium`, `firefox` or `webkit` for one engine. Set
 `CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE=smoke` with an explicit engine for the short smoke selection;
 `complete` is the default. The runner reports scope and checks completion for that selection.
-Smoke and one-engine success do not establish complete browser qualification.
+Smoke and one-engine success do not establish complete browser qualification. The installer also
+includes Chromium for shared CLI PKCE authentication when Firefox or WebKit specifications are
+selected; this prerequisite does not add Chromium specifications to that selected-engine run.
 
 CI runs native and frontend checks in parallel, then starts expensive fixtures after their
 prerequisites succeed. PRs and merge queues run Chromium smoke; main/tag pushes and a manual
