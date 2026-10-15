@@ -4,6 +4,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-15
+
 ### Security
 
 - Accepted-operation responses disclose superseded case snapshots only with full-history authority; current snapshots require case-read authority. Execution, exact replay, preview, observation and history apply disclosure in the same locked or read snapshot. `WITHHELD` and `ERASED` are distinct, so ordinary case readers cannot use an older receipt to obtain a superseded snapshot.
