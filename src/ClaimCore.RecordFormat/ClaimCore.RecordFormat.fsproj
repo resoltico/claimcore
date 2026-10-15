@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="Versions.fs" />
+    <Compile Include="CanonicalJson.fs" />
     <Compile Include="Json.fs" />
     <Compile Include="RequestRecord.fs" />
     <Compile Include="CaseRecord.fs" />

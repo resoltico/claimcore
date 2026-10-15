@@ -11,6 +11,8 @@ open Hedgehog.FSharp
 let private propertyIds =
     set
         [
+            "CC-PROP-CANONICAL-ROUNDTRIP-001"
+            "CC-PROP-CANONICAL-SPELLING-001"
             "CC-PROP-STEWARDSHIP-001"
             "CC-PROP-STEWARDSHIP-RECORD-001"
             "CC-PROP-AUTHORITY-RECORD-001"

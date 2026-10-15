@@ -18,6 +18,7 @@
     <Compile Include="AvailabilityTests.fs" />
     <Compile Include="DomainDescriptorTests.fs" />
     <Compile Include="StewardshipTests.fs" />
+    <Compile Include="CanonicalJsonTests.fs" />
     <Compile Include="CanonicalRecordTests.fs" />
     <Compile Include="RecordPropertyTests.fs" />
     <Compile Include="DecoderCorpora.fs" />
