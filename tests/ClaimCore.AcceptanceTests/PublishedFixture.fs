@@ -19,8 +19,10 @@ let private database runId =
     use document =
         JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "db/postgresql-baseline.json")))
 
-    let image =
-        document.RootElement.GetProperty("containerImage").GetString() |> nonNull
+    let baseline =
+        document.RootElement.GetProperty("supportedMajors").EnumerateArray() |> Seq.head
+
+    let image = baseline.GetProperty("containerImage").GetString() |> nonNull
 
     (new PostgreSqlBuilder(image))
         .WithName("claimcore-acceptance-db-" + runId)

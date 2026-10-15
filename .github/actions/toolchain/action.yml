@@ -32,6 +32,14 @@ runs:
       uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
       with:
         global-json-file: global.json
+    - if: inputs.dotnet == 'true'
+      name: Require the exact .NET SDK
+      shell: bash
+      run: |
+        set -euo pipefail
+        expected_sdk="$(sed -nE 's/^[[:space:]]*"version":[[:space:]]*"([^"]+)".*/\1/p' global.json)"
+        test -n "${expected_sdk}"
+        test "$(dotnet --version)" = "${expected_sdk}"
     - if: inputs.node == 'true'
       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:

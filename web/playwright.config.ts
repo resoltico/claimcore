@@ -40,7 +40,11 @@ if (!isAbsolute(privateOutput)) {
 export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/auth-setup.ts",
+  // Specs mutate shared actor grants and relay state within one isolated fixture.
   fullyParallel: false,
+  forbidOnly: true,
+  maxFailures: 1,
+  globalTimeout: 840_000,
   workers: 1,
   outputDir: privateOutput,
   reporter: [["list"]],
