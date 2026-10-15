@@ -1,7 +1,9 @@
 # Engineering commands
 
 [Development](../docs/development.md) owns setup and verification. `verify.sh` runs named
-stages in order, stops at failure and shares restore/build work within one invocation. CI
+stages in order, stops at failure and shares restore/build work within one invocation. Browser
+selection is checked before any expensive work; frontend assets build once when frontend and
+acceptance stages share an invocation. CI
 calls these same stages. `unit`, `lint` and `integration` require .NET; `frontend` requires
 Node only and consumes tracked `contracts/` artifacts. `browsers` installs the selected
 Playwright engine and its Linux dependencies; `acceptance` builds and tests published clients.
@@ -17,4 +19,5 @@ Native tests use Microsoft Testing Platform and automatic Expecto discovery. Req
 are bounded in memory; no mutation or standalone fuzz campaign is invoked locally or in CI.
 PR and merge-queue CI run one explicitly labelled Chromium smoke check. Main/tag CI and an
 explicit full-qualification dispatch run all specifications on three independent engine runners.
-A smoke result does not establish complete browser coverage. Release publication is owner work.
+Local engine execution stops on its first failure. A smoke result does not establish complete
+browser coverage. Release publication is owner work.

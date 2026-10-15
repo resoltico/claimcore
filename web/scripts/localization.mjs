@@ -95,9 +95,12 @@ const prettierOptions = await resolveConfig(resolve(root, "package.json"));
 for (const [file, raw] of Object.entries(expected)) {
   const text = await format(raw, { ...prettierOptions, filepath: file });
   const path = resolve(output, file);
+  const existing = await readFile(path, "utf8").catch(() => null);
   if (generate) {
-    await writeFile(path, text);
-  } else if ((await readFile(path, "utf8").catch(() => null)) !== text) {
+    if (existing !== text) {
+      await writeFile(path, text);
+    }
+  } else if (existing !== text) {
     throw new Error(`Localization generated file drift: ${file}`);
   }
 }

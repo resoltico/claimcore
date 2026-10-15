@@ -1,5 +1,5 @@
 // Lints the frontend with oxlint's type-aware rules, one TypeScript project after another, and
-// exits non-zero on any finding, warning or unused disable directive.
+// stops at the first project with a finding, warning, unused disable directive or tool failure.
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { lintProjects } from "./lint-projects.mjs";
@@ -7,7 +7,6 @@ import { lintProjects } from "./lint-projects.mjs";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const oxlint = fileURLToPath(new URL("../node_modules/oxlint/bin/oxlint", import.meta.url));
 
-let failed = false;
 for (const project of lintProjects) {
   const run = spawnSync(
     process.execPath,
@@ -23,8 +22,9 @@ for (const project of lintProjects) {
     { cwd: root, stdio: "inherit" },
   );
   if (run.status !== 0) {
-    process.stderr.write(`oxlint failed for ${project.tsconfig} (${run.status ?? run.signal}).\n`);
-    failed = true;
+    const failure = run.error?.message ?? run.status ?? run.signal;
+    process.stderr.write(`oxlint failed for ${project.tsconfig} (${failure}).\n`);
+    process.exitCode = 1;
+    break;
   }
 }
-process.exitCode = failed ? 1 : 0;

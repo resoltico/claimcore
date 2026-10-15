@@ -5,6 +5,7 @@ open System.Text
 open System.Text.RegularExpressions
 open System.Collections.Generic
 open System.IO
+open System.Threading.Tasks
 open Expecto
 
 let private selectEngines (value: string | null) =
@@ -111,6 +112,40 @@ let private selectionControls () =
     Expect.isFalse (smokeScope "complete") "Complete scope is explicit"
     Expect.isTrue (smokeScope "smoke") "Smoke is explicitly selected"
 
+let private runSelected (qualify: string -> Task<unit>) selected =
+    task {
+        for engine in selected do
+            do! qualify engine
+    }
+
+let private orchestrationControls () =
+    let selected = [ "chromium"; "firefox"; "webkit" ]
+    let observed = ResizeArray<string>()
+
+    let complete engine =
+        observed.Add engine
+        Task.FromResult()
+
+    (runSelected complete selected).GetAwaiter().GetResult()
+    Expect.equal (Seq.toList observed) selected "Success executes every selected engine in order"
+
+    for refused, expected in [ "chromium", [ "chromium" ]; "firefox", [ "chromium"; "firefox" ] ] do
+        observed.Clear()
+
+        let qualify engine =
+            observed.Add engine
+
+            if engine = refused then
+                Task.FromException<unit>(InvalidOperationException "Synthetic engine refusal.")
+            else
+                Task.FromResult()
+
+        Expect.throws
+            (fun () -> (runSelected qualify selected).GetAwaiter().GetResult())
+            "An engine failure remains a failing browser qualification"
+
+        Expect.equal (Seq.toList observed) expected "Failure never starts later expensive fixtures"
+
 let private browserArguments engine =
     let specifications =
         if smoke then
@@ -208,19 +243,18 @@ let tests =
              "published browser smoke"
          else
              "published browser qualification")
-        ([
+        [
             testCase
                 "completion evidence rejects missing, under-floor and skipped reports"
                 (fun () ->
                     completionControls ()
-                    selectionControls ())
-         ]
-         @ (engines
-            |> List.map (fun engine ->
-                testCaseAsync
-                    ((if smoke then
-                          "workflow, localization and Unicode smoke on "
-                      else
-                          "complete browser specification suite on ")
-                     + engine)
-                    (async { do! qualifyEngine engine |> Async.AwaitTask }))))
+                    selectionControls ()
+                    orchestrationControls ())
+            testCaseAsync
+                ((if smoke then
+                      "workflow, localization and Unicode smoke on "
+                  else
+                      "complete browser specification suites on ")
+                 + String.concat ", " engines)
+                (async { do! runSelected qualifyEngine engines |> Async.AwaitTask })
+        ]

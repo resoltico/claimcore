@@ -16,6 +16,32 @@ for stage in "${stages[@]}"; do
   esac
 done
 
+validate_browser_selection() {
+  if [[ -n "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then
+    case "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE}" in
+      chromium | firefox | webkit) ;;
+      *) echo "invalid browser engine" >&2; return 64 ;;
+    esac
+  fi
+  case "${CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE-complete}" in
+    complete) ;;
+    smoke)
+      if [[ -z "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then
+        echo "smoke requires one explicit browser engine" >&2
+        return 64
+      fi ;;
+    *) echo "invalid browser scope" >&2; return 64 ;;
+  esac
+}
+
+# Refuse invalid expensive-stage inputs before restoring, installing browsers or building.
+for stage in "${stages[@]}"; do
+  case "${stage}" in
+    browsers | acceptance) validate_browser_selection; break ;;
+    *) : ;;
+  esac
+done
+
 # Floors follow measured unfiltered suites. No filtered or retried run qualifies a stage.
 tests() { # <project> <minimum-expected-tests> [configuration] [timeout]
   dotnet test --project "$1" --configuration "${3:-Release}" --no-build --no-restore \
@@ -45,6 +71,14 @@ build_native() {
   built=true
 }
 
+frontend_built=false
+build_frontend() {
+  ${frontend_built} && return
+  restore_node
+  npm --prefix web run build
+  frontend_built=true
+}
+
 lint() {
   restore_native
   dotnet tool restore
@@ -70,7 +104,7 @@ frontend() { # Node only: no generated contract prerequisite or .NET process.
   npm --prefix web run test:unit
   npm --prefix web run dead-code
   npm --prefix web run licenses:check
-  npm --prefix web run build
+  build_frontend
 }
 
 workflows() {
@@ -107,11 +141,9 @@ browsers() {
 
 acceptance() {
   build_native
-  restore_node
-  npm --prefix web run build
-  local floor=18
-  [[ -n "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE:-}" ]] && floor=16
-  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj "${floor}" Release 40m
+  build_frontend
+  # One native case sequences every selected engine and stops before starting a later engine after a failure.
+  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 16 Release 40m
 }
 
 for stage in "${stages[@]}"; do

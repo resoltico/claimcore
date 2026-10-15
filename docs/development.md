@@ -13,7 +13,8 @@ frontend consumers use the tracked `contracts/` artifacts and require no .NET pr
 
 `bash eng/verify.sh` runs the complete local gate. Named stages run independently or in order,
 for example `bash eng/verify.sh unit frontend`; `--fast` runs native lint, unit/architecture and
-frontend checks without Docker. Restore and build work is shared within one invocation.
+frontend checks without Docker. Restore, native build and frontend asset build work are shared
+within one invocation; a later acceptance stage reuses the frontend stage's successful asset build.
 
 | Stage         | Coverage and prerequisites                                                                               |
 | ------------- | -------------------------------------------------------------------------------------------------------- |
@@ -36,7 +37,8 @@ every specification on Chromium, Firefox and WebKit. Set `CLAIMCORE_ACCEPTANCE_B
 to exactly `chromium`, `firefox` or `webkit` for one engine. Set
 `CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE=smoke` with an explicit engine for the short smoke selection;
 `complete` is the default. The runner reports scope and checks completion for that selection.
-Smoke and one-engine success do not establish complete browser qualification. The installer also
+Smoke and one-engine success do not establish complete browser qualification. The local gate
+validates engine/scope selection before any restore, build or browser installation. The installer also
 includes Chromium for shared CLI PKCE authentication when Firefox or WebKit specifications are
 selected; this prerequisite does not add Chromium specifications to that selected-engine run.
 
@@ -58,6 +60,10 @@ that exact listed major and pinned image. Unset selects the first listed entry f
 local use; blank, malformed and unlisted overrides are refused before resources are created.
 The selector does not qualify a new major: adding support still requires actual execution and
 reviewed evidence for that entry.
+
+Local runs sequence the selected engines in one native test case and stop before creating a later
+engine fixture when an earlier engine fails. Successful default execution still requires all three
+complete engine suites; no browser specifications are removed by this orchestration.
 
 Browser workers remain serial within each fixture because tests change shared actor grants and
 redirect state. Parallelism comes from isolated engine runners. Retries are disabled. Failures
