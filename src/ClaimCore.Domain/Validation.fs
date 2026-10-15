@@ -31,20 +31,6 @@ module internal Validation =
     let invalidCorrection field violation =
         invalid field (InputViolation.Correction violation)
 
-    let private validUnicode (value: string) =
-        try
-            UTF8Encoding(false, true).GetByteCount(value) |> ignore
-
-            value.EnumerateRunes()
-            |> Seq.forall (fun rune ->
-                let scalar = rune.Value
-
-                scalar <> 0
-                && not (scalar >= 0xFDD0 && scalar <= 0xFDEF)
-                && (scalar &&& 0xFFFE) <> 0xFFFE)
-        with :? EncoderFallbackException ->
-            false
-
     let private matches (grammar: string) (value: string) =
         Regex.IsMatch(
             value,
@@ -68,7 +54,7 @@ module internal Validation =
 
         if String.IsNullOrEmpty value then
             failure TextViolation.NonBlankRequired
-        elif not (validUnicode value) then
+        elif not (UnicodeText.isPersisted value) then
             failure TextViolation.MalformedUnicode
         elif textGrammar field |> Option.exists (fun pattern -> not (matches pattern value)) then
             failure (

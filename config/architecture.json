@@ -65,6 +65,9 @@
       "ClaimCore.Hosting",
       "ClaimCore.Database",
       "ClaimCore.Postgres"
+    ],
+    "recordFormatAvoidsFrameworkSerialization": [
+      "ClaimCore.RecordFormat"
     ]
   }
 }

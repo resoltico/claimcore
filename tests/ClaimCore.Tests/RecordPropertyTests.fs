@@ -20,7 +20,7 @@ let private safeText =
 
 let private registrationGenerator =
     gen {
-        let! country = safeText
+        let! country = Gen.item [ "LV"; "ZZ"; "QQ" ]
         let! claimant = safeText
         let! insurer = safeText
         let! amount = Gen.uint32 (Range.constant 0u 1_000_000u)
@@ -64,7 +64,7 @@ let private commandsGenerator =
                         PaymentCorrection.Clear
                     ]
                     |> List.map (fun payment ->
-                        Command.CorrectCase
+                        BusinessCommand.CorrectCase
                             {
                                 Registration = registration
                                 Decision = decision
@@ -73,14 +73,14 @@ let private commandsGenerator =
 
         return
             [
-                Command.Open registration
-                Command.AmendRegistration registration
-                Command.Decide decision
-                Command.WithdrawDecision
-                Command.RecordPayment "2026-08-20"
-                Command.ClearPayment
-                Command.Close
-                Command.Reopen
+                BusinessCommand.Open registration
+                BusinessCommand.AmendRegistration registration
+                BusinessCommand.Decide decision
+                BusinessCommand.WithdrawDecision
+                BusinessCommand.RecordPayment "2026-08-20"
+                BusinessCommand.ClearPayment
+                BusinessCommand.Close
+                BusinessCommand.Reopen
             ]
             @ corrections
     }
@@ -88,7 +88,7 @@ let private commandsGenerator =
 let private requestsGenerator =
     gen {
         let! operationId = Gen.guid
-        let! reference = safeText
+        let! reference = Gen.string (Range.constant 1 20) Gen.alphaNum
         let! version = Gen.int64 (Range.constant 0L 1_000_000L)
         let! commands = commandsGenerator
 
@@ -102,16 +102,16 @@ let private requestsGenerator =
                         else
                             operationId
                     CaseReference = reference
-                    ExpectedVersion = version
-                    Command = command
+                    ExpectedRevision = version
+                    Act = CaseAct.Business command
                 })
     }
 
 let private limit = 65536
 
-let private correctionModesMatch (request: CommandRequest) (encoded: byte array) =
-    match request.Command with
-    | Command.CorrectCase correction ->
+let private correctionModesMatch (request: CaseRequest) (encoded: byte array) =
+    match request.Act with
+    | CaseAct.Business(BusinessCommand.CorrectCase correction) ->
         let registration =
             match correction.Registration with
             | RegistrationCorrection.Keep -> "KEEP"
@@ -130,7 +130,7 @@ let private correctionModesMatch (request: CommandRequest) (encoded: byte array)
             | PaymentCorrection.Clear -> "CLEAR"
 
         use document = JsonDocument.Parse(ReadOnlyMemory<byte>(encoded))
-        let command = document.RootElement.GetProperty("command")
+        let command = document.RootElement.GetProperty("act").GetProperty("groups")
 
         [ "registration", registration; "decision", decision; "payment", payment ]
         |> List.forall (fun (group, expected) ->
@@ -160,14 +160,7 @@ let private reordered (bytes: byte array) =
 
     writer.WriteStartObject()
 
-    for name in
-        [
-            "command"
-            "expectedVersion"
-            "caseReference"
-            "operationId"
-            "canonicalCommandFormat"
-        ] do
+    for name in [ "act"; "expectedRevision"; "caseReference"; "operationId"; "format" ] do
         writer.WritePropertyName(name)
         document.RootElement.GetProperty(name).WriteTo(writer)
 
@@ -176,7 +169,7 @@ let private reordered (bytes: byte array) =
     buffer.WrittenSpan.ToArray()
 
 let private fingerprint request =
-    Claim.validateRequest request
+    Case.validateRequest request
     |> Result.defaultWith (fun _ -> failtest "Generated request must be domain-valid.")
 
     request
@@ -184,7 +177,7 @@ let private fingerprint request =
     |> LedgerEntry.requestDigest
     |> Convert.ToHexStringLower
 
-let private identityChanges (request: CommandRequest) =
+let private identityChanges (request: CaseRequest) =
     let replacementId = Guid.Parse("20000000-0000-4000-8000-000000000099")
 
     let distinctId =
@@ -193,10 +186,10 @@ let private identityChanges (request: CommandRequest) =
         else
             replacementId
 
-    let differentCommand =
-        match request.Command with
-        | Command.Close -> Command.Reopen
-        | _ -> Command.Close
+    let differentAct =
+        match request.Act with
+        | CaseAct.Business BusinessCommand.Close -> CaseAct.Business BusinessCommand.Reopen
+        | _ -> CaseAct.Business BusinessCommand.Close
 
     let changed =
         [
@@ -207,28 +200,16 @@ let private identityChanges (request: CommandRequest) =
                 OperationId = distinctId
             }
             { request with
-                ExpectedVersion = request.ExpectedVersion + 1L
+                ExpectedRevision = request.ExpectedRevision + 1L
             }
-            { request with
-                Command = differentCommand
-            }
+            { request with Act = differentAct }
         ]
 
     changed
 
 let private identityMatches request =
-    match request.Command with
-    | Command.CorrectCase {
-                              Registration = RegistrationCorrection.Keep
-                              Decision = DecisionCorrection.Keep
-                              Payment = PaymentCorrection.Keep
-                          } ->
-        match Claim.validateRequest request with
-        | Error DomainError.CorrectionNoChanges -> true
-        | _ -> false
-    | _ ->
-        identityChanges request
-        |> List.forall (fun changed -> fingerprint changed <> fingerprint request)
+    identityChanges request
+    |> List.forall (fun changed -> fingerprint changed <> fingerprint request)
 
 let private fingerprintProperty =
     property {

@@ -21,6 +21,7 @@
     <Compile Include="StewardshipTests.fs" />
     <Compile Include="CanonicalJsonTests.fs" />
     <Compile Include="CanonicalRecordTests.fs" />
+    <Compile Include="RecordBoundaryTests.fs" />
     <Compile Include="RecordPropertyTests.fs" />
     <Compile Include="DecoderCorpora.fs" />
     <Compile Include="OperationRecordTests.fs" />

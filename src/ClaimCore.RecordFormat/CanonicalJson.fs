@@ -4,6 +4,7 @@ open System
 open System.Globalization
 open System.Text
 open System.Text.Json
+open ClaimCore.Domain
 
 /// The integer-only I-JSON subset used by ClaimCore's canonical records.
 [<RequireQualifiedAccess>]
@@ -19,20 +20,13 @@ module CanonicalJson =
     [<Literal>]
     let MaximumInteger = 9007199254740991L
 
-    let private noncharacter scalar =
-        (scalar >= 0xFDD0 && scalar <= 0xFDEF) || (scalar &&& 0xFFFE) = 0xFFFE
-
     let private appendString (output: StringBuilder) (value: string) =
-        if obj.ReferenceEquals(value, null) then
-            invalidArg (nameof value) "A JSON string cannot be null."
+        if not (UnicodeText.isInterchange value) then
+            invalidArg (nameof value) "I-JSON strings require valid Unicode without noncharacters."
 
-        UTF8Encoding(false, true).GetByteCount(value) |> ignore
         output.Append('"') |> ignore
 
         for rune in value.EnumerateRunes() do
-            if noncharacter rune.Value then
-                invalidArg (nameof value) "I-JSON excludes Unicode noncharacters."
-
             let escaped =
                 match rune.Value with
                 | 0x22 -> "\\\""

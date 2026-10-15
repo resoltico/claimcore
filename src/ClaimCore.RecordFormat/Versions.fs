@@ -1,18 +1,18 @@
 namespace ClaimCore.RecordFormat
 
-/// Independent byte-format identities for durable records.
+/// A format number changes only with its durable bytes.
 module RecordVersions =
     [<Literal>]
-    let CanonicalCommandFormat = 3
+    let CaseRequest = 4
 
     [<Literal>]
-    let RequestFingerprint = 1
+    let Snapshot = 3
 
     [<Literal>]
-    let Snapshot = 2
+    let Authority = 2
 
     [<Literal>]
-    let LedgerEntry = 1
+    let LedgerEntry = 2
 
     [<Literal>]
-    let CaseReferenceIdentity = 1
+    let CaseReferenceIdentity = 2
