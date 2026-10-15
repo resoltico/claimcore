@@ -8,16 +8,16 @@ let private eligible (fields: CaseFields) command =
     let paid = fields.PaymentDate.IsSome
 
     match command with
-    | Command.Open _ -> false
-    | Command.Reopen -> fields.Status = CaseStatus.Closed
-    | Command.CorrectCase _ -> fields.Status = CaseStatus.Closed || decided
+    | BusinessCommand.Open _ -> false
+    | BusinessCommand.Reopen -> fields.Status = CaseStatus.Closed
+    | BusinessCommand.CorrectCase _ -> fields.Status = CaseStatus.Closed || decided
     | _ when fields.Status = CaseStatus.Closed -> false
-    | Command.Close -> true
-    | Command.AmendRegistration _ -> not decided
-    | Command.Decide _ -> not paid
-    | Command.WithdrawDecision -> decided && not paid
-    | Command.RecordPayment _ -> decided && not paid && fields.PayableAmount <> Some "0"
-    | Command.ClearPayment -> paid
+    | BusinessCommand.Close -> true
+    | BusinessCommand.AmendRegistration _ -> not decided
+    | BusinessCommand.Decide _ -> not paid
+    | BusinessCommand.WithdrawDecision -> decided && not paid
+    | BusinessCommand.RecordPayment _ -> decided && not paid && fields.PayableAmount <> Some "0"
+    | BusinessCommand.ClearPayment -> paid
 
 let private registration (value: RegistrationInput) (fields: CaseFields) =
     { fields with
@@ -32,53 +32,76 @@ let private registration (value: RegistrationInput) (fields: CaseFields) =
 
 let private changed fields command =
     match command with
-    | Command.AmendRegistration value -> registration value fields
-    | Command.CorrectCase value ->
+    | BusinessCommand.AmendRegistration value -> registration value fields
+    | BusinessCommand.CorrectCase value ->
         match value.Registration with
         | RegistrationCorrection.Replace value -> registration value fields
         | RegistrationCorrection.Keep -> fields
-    | Command.Decide value ->
+    | BusinessCommand.Decide value ->
         { fields with
             PaymentDecisionDate = Some value.PaymentDecisionDate
             PayableAmount = Some(if value.PayableAmount = "0" then "0" else "750")
             PayableCurrency = Some value.PayableCurrency
         }
-    | Command.WithdrawDecision ->
+    | BusinessCommand.WithdrawDecision ->
         { fields with
             PaymentDecisionDate = None
             PayableAmount = None
             PayableCurrency = None
         }
-    | Command.RecordPayment date -> { fields with PaymentDate = Some date }
-    | Command.ClearPayment -> { fields with PaymentDate = None }
-    | Command.Close ->
+    | BusinessCommand.RecordPayment date -> { fields with PaymentDate = Some date }
+    | BusinessCommand.ClearPayment -> { fields with PaymentDate = None }
+    | BusinessCommand.Close ->
         { fields with
             Status = CaseStatus.Closed
         }
-    | Command.Reopen ->
+    | BusinessCommand.Reopen ->
         { fields with
             Status = CaseStatus.Opened
         }
-    | Command.Open _ -> fields
+    | BusinessCommand.Open _ -> fields
 
-let advance (before: CaseView) stale command =
-    let fields = changed before.Fields command
+let private business before fields stale command =
+    let nextFields = changed fields command
 
     let noOpCorrection =
         match command with
-        | Command.CorrectCase _ -> fields = before.Fields
+        | BusinessCommand.CorrectCase _ -> nextFields = fields
         | _ -> false
 
-    if stale || not (eligible before.Fields command) || noOpCorrection then
+    if stale || not (eligible fields command) || noOpCorrection then
         None
     else
         Some
-            {
-                Fields = fields
-                Version = before.Version + 1L
+            { before with
+                Revision = before.Revision + 1L
+                View = CaseView.Live(nextFields, Disposition.Active)
             }
 
-let matches expected (actual: Result<CaseView, DomainError>) =
+let advance (before: CaseSnapshot) stale act =
+    if stale then
+        None
+    else
+        let changed view =
+            Some
+                { before with
+                    Revision = before.Revision + 1L
+                    View = view
+                }
+
+        match before.View, act with
+        | CaseView.Erased, _ -> None
+        | CaseView.Live(fields, Disposition.Active), CaseAct.Business command ->
+            business before fields stale command
+        | CaseView.Live(_, Disposition.Voided), CaseAct.Business _ -> None
+        | CaseView.Live(fields, Disposition.Active), CaseAct.Stewardship(StewardshipAct.Void _) ->
+            changed (CaseView.Live(fields, Disposition.Voided))
+        | CaseView.Live(fields, Disposition.Voided), CaseAct.Stewardship(StewardshipAct.Reinstate _) ->
+            changed (CaseView.Live(fields, Disposition.Active))
+        | CaseView.Live _, CaseAct.Stewardship StewardshipAct.Erase -> changed CaseView.Erased
+        | _ -> None
+
+let matches expected (actual: Result<CaseSnapshot, CaseRefusal>) =
     match expected, actual with
     | Some view, Ok observed -> view = observed
     | None, Error _ -> true

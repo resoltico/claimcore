@@ -10,6 +10,7 @@
     <Compile Include="TransitionOracle.fs" />
     <Compile Include="TransitionPropertyTests.fs" />
     <Compile Include="DomainTests.fs" />
+    <Compile Include="CaseModelTests.fs" />
     <Compile Include="CaseCorrectionTests.fs" />
     <Compile Include="BusinessDateTests.fs" />
     <Compile Include="DomainAdmissionTests.fs" />

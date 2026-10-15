@@ -17,13 +17,14 @@ type InputTarget =
     | PaymentDate
     | Status
     | OperationId
-    | ExpectedVersion
-    | Version
-    | Command
+    | ExpectedRevision
+    | Revision
+    | Act
     | Fields
     | Registration
     | Decision
     | Payment
+    | Reason
 
 module InputTargets =
     let all =
@@ -42,13 +43,14 @@ module InputTargets =
             InputTarget.PaymentDate, "paymentDate"
             InputTarget.Status, "status"
             InputTarget.OperationId, "operationId"
-            InputTarget.ExpectedVersion, "expectedRevision"
-            InputTarget.Version, "revision"
-            InputTarget.Command, "command"
+            InputTarget.ExpectedRevision, "expectedRevision"
+            InputTarget.Revision, "revision"
+            InputTarget.Act, "act"
             InputTarget.Fields, "fields"
             InputTarget.Registration, "registration"
             InputTarget.Decision, "decision"
             InputTarget.Payment, "payment"
+            InputTarget.Reason, "reason"
         ]
 
     let token target =
@@ -62,6 +64,9 @@ type TextViolation =
     | TooShort of minimumCharacters: int
     | TooLong of maximumCharacters: int
     | ControlCharacters
+    | FormattingCharacter
+    | ReferenceFormat
+    | CountryFormat
 
 [<RequireQualifiedAccess>]
 type DateViolation =
@@ -76,10 +81,10 @@ type AmountViolation =
     | NotRepresentable
 
 [<RequireQualifiedAccess>]
-type CommandViolation =
+type ActViolation =
     | EmptyOperationId
-    | ExpectedVersionOutOfRange
-    | StoredVersionOutOfRange
+    | ExpectedRevisionOutOfRange
+    | StoredRevisionOutOfRange
     | RevisionExhausted
     | CaseReferenceMismatch
     | StateTransitionMismatch
@@ -101,5 +106,5 @@ type InputViolation =
     | Text of TextViolation
     | Date of DateViolation
     | Amount of AmountViolation
-    | Command of CommandViolation
+    | Act of ActViolation
     | Correction of CorrectionViolation

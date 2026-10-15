@@ -7,7 +7,7 @@ module internal CaseCorrections =
     let private requireChange (correction: CaseCorrection) =
         match correction.Registration, correction.Decision, correction.Payment with
         | RegistrationCorrection.Keep, DecisionCorrection.Keep, PaymentCorrection.Keep ->
-            Error DomainError.CorrectionNoChanges
+            Error CaseRefusal.CorrectionNoChanges
         | _ -> Ok()
 
     let private registrationInput =
@@ -52,7 +52,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | ValidatedDecisionCorrection.Keep, _ -> Ok current
-        | _, None -> Error DomainError.CorrectionRequiresExistingValue
+        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
         | ValidatedDecisionCorrection.Replace replacement, Some _ -> Ok(Some replacement)
         | ValidatedDecisionCorrection.Clear, Some _ -> Ok None
 
@@ -61,7 +61,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | ValidatedPaymentCorrection.Keep, _ -> Ok current
-        | _, None -> Error DomainError.CorrectionRequiresExistingValue
+        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
         | ValidatedPaymentCorrection.Replace replacement, Some _ -> Ok(Some replacement)
         | ValidatedPaymentCorrection.Clear, Some _ -> Ok None
 
@@ -94,7 +94,7 @@ module internal CaseCorrections =
             let! nextProgress = PaymentProgress.fromGroups nextDecision nextPayment
 
             if nextFacts = facts && nextProgress = progress then
-                return! Error DomainError.CorrectionNoChanges
+                return! Error CaseRefusal.CorrectionNoChanges
             else
                 return nextFacts, nextProgress
         }

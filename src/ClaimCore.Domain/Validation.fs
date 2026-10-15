@@ -23,10 +23,10 @@ module internal Validation =
     type Decision = { Date: DateOnly; Payable: Amount }
 
     let invalid field violation =
-        Error(DomainError.InvalidInput(field, violation))
+        Error(CaseRefusal.InvalidInput(field, violation))
 
-    let invalidCommand field violation =
-        invalid field (InputViolation.Command violation)
+    let invalidAct field violation =
+        invalid field (InputViolation.Act violation)
 
     let invalidCorrection field violation =
         invalid field (InputViolation.Correction violation)
@@ -34,7 +34,14 @@ module internal Validation =
     let private validUnicode (value: string) =
         try
             UTF8Encoding(false, true).GetByteCount(value) |> ignore
-            true
+
+            value.EnumerateRunes()
+            |> Seq.forall (fun rune ->
+                let scalar = rune.Value
+
+                scalar <> 0
+                && not (scalar >= 0xFDD0 && scalar <= 0xFDEF)
+                && (scalar &&& 0xFFFE) <> 0xFFFE)
         with :? EncoderFallbackException ->
             false
 
@@ -45,27 +52,86 @@ module internal Validation =
             RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
         )
 
+    let private textGrammar field =
+        match field with
+        | InputTarget.CaseReference
+        | InputTarget.IncidentCountry ->
+            FieldDefinitions.scalar (InputTargets.token field)
+            |> ScalarRules.textConstraints
+            |> _.Format.Grammar
+        | _ -> None
+
+    /// Format checks apply to requests and retained records alike; policy never runs here.
     let text field (value: string) =
+        let failure violation =
+            invalid field (InputViolation.Text violation)
+
+        if String.IsNullOrEmpty value then
+            failure TextViolation.NonBlankRequired
+        elif not (validUnicode value) then
+            failure TextViolation.MalformedUnicode
+        elif textGrammar field |> Option.exists (fun pattern -> not (matches pattern value)) then
+            failure (
+                if field = InputTarget.CaseReference then
+                    TextViolation.ReferenceFormat
+                else
+                    TextViolation.CountryFormat
+            )
+        else
+            Ok value
+
+    let private formatting scalar =
+        let ranges =
+            [
+                0x115F, 0x1160
+                0x17B4, 0x17B5
+                0x200E, 0x200F
+                0x2028, 0x202E
+                0x2060, 0x2064
+                0x2066, 0x2069
+                0xFFF9, 0xFFFB
+                0xE0000, 0xE007F
+            ]
+
+        List.contains scalar [ 0x00AD; 0x061C; 0x200B; 0x3164; 0xFEFF; 0xFFA0 ]
+        || List.exists (fun (first, last) -> scalar >= first && scalar <= last) ranges
+
+    /// Called only after format validation, when a value is newly asserted.
+    let admission field (value: string) =
         let constraints =
             FieldDefinitions.scalar (InputTargets.token field)
             |> ScalarRules.textConstraints
 
-        if constraints.RequiresNonBlank && String.IsNullOrWhiteSpace(value) then
-            invalid field (InputViolation.Text TextViolation.NonBlankRequired)
-        elif constraints.RequiresWellFormedUnicode && not (validUnicode value) then
-            invalid field (InputViolation.Text TextViolation.MalformedUnicode)
-        elif constraints.RejectsSurroundingWhitespace && value <> value.Trim() then
-            invalid field (InputViolation.Text TextViolation.SurroundingWhitespace)
-        elif (value.EnumerateRunes() |> Seq.length) < constraints.MinimumCharacters then
-            invalid
-                field
-                (InputViolation.Text(TextViolation.TooShort constraints.MinimumCharacters))
-        elif (value.EnumerateRunes() |> Seq.length) > constraints.MaximumCharacters then
-            invalid field (InputViolation.Text(TextViolation.TooLong constraints.MaximumCharacters))
-        elif constraints.RejectsControlCharacters && (value |> Seq.exists Char.IsControl) then
-            invalid field (InputViolation.Text TextViolation.ControlCharacters)
-        else
-            Ok value
+        let failure violation =
+            invalid field (InputViolation.Text violation)
+
+        match constraints.Policy with
+        | None -> Ok()
+        | Some policy ->
+            if policy.RequiresNonBlank && String.IsNullOrWhiteSpace value then
+                failure TextViolation.NonBlankRequired
+            elif policy.RejectsSurroundingWhitespace && value <> value.Trim() then
+                failure TextViolation.SurroundingWhitespace
+            elif (value.EnumerateRunes() |> Seq.length) > policy.MaximumCharacters then
+                failure (TextViolation.TooLong policy.MaximumCharacters)
+            elif policy.RejectsControlCharacters && (value |> Seq.exists Char.IsControl) then
+                failure TextViolation.ControlCharacters
+            elif
+                policy.RejectsFormattingCharacters
+                && (value.EnumerateRunes() |> Seq.exists (fun rune -> formatting rune.Value))
+            then
+                failure TextViolation.FormattingCharacter
+            else
+                Ok()
+
+    let assertedText previous (facts: Facts) =
+        let changed field before after =
+            if before = Some after then Ok() else admission field after
+
+        result {
+            do! changed InputTarget.ClaimantName (previous |> Option.map _.Claimant) facts.Claimant
+            do! changed InputTarget.InsurerName (previous |> Option.map _.Insurer) facts.Insurer
+        }
 
     let date field (value: string) =
         match FieldDefinitions.scalar (InputTargets.token field) with

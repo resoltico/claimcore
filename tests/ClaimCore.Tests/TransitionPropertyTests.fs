@@ -7,16 +7,16 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 open ClaimCore.Tests.PropertyHarness
 
-type private Step = { Command: Command; Stale: bool }
+type private Step = { Act: CaseAct; Stale: bool }
 
-let private commands =
+let private businessCommands =
     [
-        Command.Open registration
-        Command.AmendRegistration
+        BusinessCommand.Open registration
+        BusinessCommand.AmendRegistration
             { registration with
                 ClaimantName = "Amended Synthetic Name"
             }
-        Command.CorrectCase
+        BusinessCommand.CorrectCase
             {
                 Registration =
                     RegistrationCorrection.Replace
@@ -26,41 +26,53 @@ let private commands =
                 Decision = DecisionCorrection.Keep
                 Payment = PaymentCorrection.Keep
             }
-        Command.Decide decision
-        Command.Decide { decision with PayableAmount = "0" }
-        Command.WithdrawDecision
-        Command.RecordPayment "2026-08-20"
-        Command.ClearPayment
-        Command.Close
-        Command.Reopen
+        BusinessCommand.Decide decision
+        BusinessCommand.Decide { decision with PayableAmount = "0" }
+        BusinessCommand.WithdrawDecision
+        BusinessCommand.RecordPayment "2026-08-20"
+        BusinessCommand.ClearPayment
+        BusinessCommand.Close
+        BusinessCommand.Reopen
+    ]
+
+let private commands =
+    (businessCommands |> List.map CaseAct.Business)
+    @ [
+        CaseAct.Stewardship(StewardshipAct.Void "Entry error")
+        CaseAct.Stewardship(StewardshipAct.Reinstate "Entry confirmed")
+        CaseAct.Stewardship StewardshipAct.Erase
     ]
 
 let private stepGenerator =
     gen {
         let! command = Gen.item commands
         let! stale = Gen.bool
-        return { Command = command; Stale = stale }
+        return { Act = command; Stale = stale }
     }
 
-let private initial: CaseView =
+let private initial: CaseSnapshot =
     {
-        Fields =
-            {
-                IncidentDate = "2026-08-01"
-                IncidentNotificationDate = "2026-08-03"
-                IncidentCountry = "Lithuania"
-                ClaimantName = "Example Claimant Ltd"
-                InsurerName = "Example Alleged Insurer"
-                ClaimedAmount = "1000"
-                ClaimedCurrency = "EUR"
-                CaseReference = "UNIT-001"
-                PaymentDecisionDate = None
-                PayableAmount = None
-                PayableCurrency = None
-                PaymentDate = None
-                Status = CaseStatus.Opened
-            }
-        Version = 1L
+        Reference = "UNIT-001"
+        View =
+            CaseView.Live(
+                {
+                    IncidentDate = "2026-08-01"
+                    IncidentNotificationDate = "2026-08-03"
+                    IncidentCountry = "LV"
+                    ClaimantName = "Example Claimant Ltd"
+                    InsurerName = "Example Alleged Insurer"
+                    ClaimedAmount = "1000"
+                    ClaimedCurrency = "EUR"
+                    CaseReference = "UNIT-001"
+                    PaymentDecisionDate = None
+                    PayableAmount = None
+                    PayableCurrency = None
+                    PaymentDate = None
+                    Status = CaseStatus.Opened
+                },
+                Disposition.Active
+            )
+        Revision = 1L
     }
 
 let private checkSequence steps =
@@ -71,37 +83,52 @@ let private checkSequence steps =
         |> List.fold
             (fun (current, expected, valid) step ->
                 let candidate =
-                    request
+                    actRequest
                         (if step.Stale then
-                             expected.Version - 1L
+                             expected.Revision - 1L
                          else
-                             expected.Version)
-                        step.Command
+                             expected.Revision)
+                        step.Act
 
-                let result = Claim.decide today candidate (Some current)
-                let nextExpected = TransitionOracle.advance expected step.Stale step.Command
-                let observed = result |> Result.map Claim.view
+                let result = Case.decide today candidate (Some current)
+                let nextExpected = TransitionOracle.advance expected step.Stale step.Act
+                let observed = result |> Result.map Case.snapshot
                 let matches = TransitionOracle.matches nextExpected observed
                 let nextActual = result |> Result.defaultValue current
                 nextActual, Option.defaultValue expected nextExpected, valid && matches)
-            (actualInitial, initial, Claim.view actualInitial = initial)
+            (actualInitial, initial, Case.snapshot actualInitial = initial)
 
     valid
 
 let private acceptingPath =
     [
-        Command.Decide decision
-        Command.RecordPayment "2026-08-20"
-        Command.Close
-        Command.Reopen
-        Command.ClearPayment
-        Command.WithdrawDecision
-        Command.AmendRegistration registration
-        Command.Close
-        Command.Close
-        Command.Reopen
+        BusinessCommand.Decide decision
+        BusinessCommand.RecordPayment "2026-08-20"
+        BusinessCommand.Close
+        BusinessCommand.Reopen
+        BusinessCommand.ClearPayment
+        BusinessCommand.WithdrawDecision
+        BusinessCommand.AmendRegistration registration
+        BusinessCommand.Close
+        BusinessCommand.Close
+        BusinessCommand.Reopen
     ]
-    |> List.map (fun command -> { Command = command; Stale = false })
+    |> List.map (fun command ->
+        {
+            Act = CaseAct.Business command
+            Stale = false
+        })
+    |> fun steps ->
+        let tail =
+            [
+                CaseAct.Stewardship(StewardshipAct.Void "Entry error")
+                CaseAct.Business BusinessCommand.Close
+                CaseAct.Stewardship(StewardshipAct.Reinstate "Entry confirmed")
+                CaseAct.Stewardship StewardshipAct.Erase
+                CaseAct.Business(BusinessCommand.Open registration)
+            ]
+
+        steps @ (tail |> List.map (fun act -> { Act = act; Stale = false }))
 
 let private sequenceProperty =
     let sequenceGenerator =
@@ -114,30 +141,49 @@ let private sequenceProperty =
 
 let private negativeControls () =
     let decided =
-        TransitionOracle.advance initial false (Command.Decide decision) |> Option.get
-
-    let paid =
-        TransitionOracle.advance decided false (Command.RecordPayment "2026-08-20")
+        TransitionOracle.advance initial false (CaseAct.Business(BusinessCommand.Decide decision))
         |> Option.get
 
-    let closed = TransitionOracle.advance paid false Command.Close |> Option.get
+    let paid =
+        TransitionOracle.advance
+            decided
+            false
+            (CaseAct.Business(BusinessCommand.RecordPayment "2026-08-20"))
+        |> Option.get
+
+    let closed =
+        TransitionOracle.advance paid false (CaseAct.Business BusinessCommand.Close)
+        |> Option.get
 
     let controls =
         [
-            Some decided, Error DomainError.NotFound
+            Some decided, Error CaseRefusal.NotFound
             Some paid,
             Ok
                 { paid with
-                    Fields = { paid.Fields with PaymentDate = None }
+                    View =
+                        CaseView.Live(
+                            { viewFields paid with
+                                PaymentDate = None
+                            },
+                            Disposition.Active
+                        )
                 }
-            Some paid, Ok { paid with Version = decided.Version }
+            Some paid,
+            Ok
+                { paid with
+                    Revision = decided.Revision
+                }
             Some closed,
             Ok
                 { closed with
-                    Fields =
-                        { closed.Fields with
-                            PaymentDate = None
-                        }
+                    View =
+                        CaseView.Live(
+                            { viewFields closed with
+                                PaymentDate = None
+                            },
+                            Disposition.Active
+                        )
                 }
             None, Ok paid
         ]
@@ -156,6 +202,8 @@ type private ReachableState =
     | ClosedUndecided
     | ClosedDecided
     | ClosedPaid
+    | Voided
+    | Erased
 
 let private reach state =
     match state with
@@ -163,14 +211,26 @@ let private reach state =
     | OpenDecided -> decided ()
     | OpenZeroDecision ->
         opened ()
-        |> apply (Command.Decide { decision with PayableAmount = "0" })
+        |> apply (BusinessCommand.Decide { decision with PayableAmount = "0" })
         |> accepted
     | OpenPaid -> paid ()
-    | ClosedUndecided -> opened () |> apply Command.Close |> accepted
-    | ClosedDecided -> decided () |> apply Command.Close |> accepted
-    | ClosedPaid -> paid () |> apply Command.Close |> accepted
+    | ClosedUndecided -> opened () |> apply BusinessCommand.Close |> accepted
+    | ClosedDecided -> decided () |> apply BusinessCommand.Close |> accepted
+    | ClosedPaid -> paid () |> apply BusinessCommand.Close |> accepted
+    | Voided ->
+        Case.decide
+            today
+            (actRequest 1L (CaseAct.Stewardship(StewardshipAct.Void "Entry error")))
+            (Some(opened ()))
+        |> accepted
+    | Erased ->
+        Case.decide
+            today
+            (actRequest 1L (CaseAct.Stewardship StewardshipAct.Erase))
+            (Some(opened ()))
+        |> accepted
 
-let private expectedCommands =
+let private expectedBusiness =
     function
     | OpenUndecided -> [ "AMEND_REGISTRATION"; "DECIDE"; "CLOSE" ]
     | OpenDecided -> [ "CORRECT_CASE"; "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ]
@@ -179,19 +239,27 @@ let private expectedCommands =
     | ClosedUndecided
     | ClosedDecided
     | ClosedPaid -> [ "CORRECT_CASE"; "REOPEN" ]
+    | Voided
+    | Erased -> []
+
+let private expectedCommands state =
+    match state with
+    | Voided -> [ "REINSTATE"; "ERASE" ]
+    | Erased -> []
+    | _ -> expectedBusiness state @ [ "VOID"; "ERASE" ]
 
 let private executionMatchesAdvertisement claim expected =
-    let view = Claim.view claim
+    let view = Case.snapshot claim
 
     commands
     |> List.forall (fun command ->
         let candidate =
-            { request view.Version command with
-                CaseReference = view.Fields.CaseReference
+            { actRequest view.Revision command with
+                CaseReference = view.Reference
             }
 
-        let accepted = Claim.decide today candidate (Some claim) |> Result.isOk
-        accepted = Set.contains (Commands.name command) expected)
+        let accepted = Case.decide today candidate (Some claim) |> Result.isOk
+        accepted = Set.contains (CaseActs.name command) expected)
 
 let private availabilityProperty =
     property {
@@ -205,11 +273,13 @@ let private availabilityProperty =
                     ClosedUndecided
                     ClosedDecided
                     ClosedPaid
+                    Voided
+                    Erased
                 ]
 
         let claim = reach state
         let expected = expectedCommands state |> Set.ofList
-        let actual = Claim.availableCommands claim |> Set.ofList
+        let actual = (Case.eligibleActs claim |> List.map CaseActKinds.token) |> Set.ofList
         return actual = expected && executionMatchesAdvertisement claim expected
     }
 

@@ -5,13 +5,13 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private decisionWith amount =
-    Command.Decide { decision with PayableAmount = amount }
+    BusinessCommand.Decide { decision with PayableAmount = amount }
 
 let private states () =
     let zero = opened () |> apply (decisionWith "0") |> accepted
 
     [ opened (); decided (); zero; paid () ]
-    |> List.collect (fun claim -> [ claim; claim |> apply Command.Close |> accepted ])
+    |> List.collect (fun claim -> [ claim; claim |> apply BusinessCommand.Close |> accepted ])
 
 let private registrationChoices =
     [
@@ -92,10 +92,10 @@ let private checkChoice
     (decision, decisionMode)
     (payment, paymentMode)
     =
-    let snapshot = Claim.view before
+    let snapshot = Case.snapshot before
 
     let command =
-        Command.CorrectCase
+        BusinessCommand.CorrectCase
             {
                 Registration = registration
                 Decision = decision
@@ -105,19 +105,19 @@ let private checkChoice
     let result = before |> apply command
 
     let expected =
-        permitted snapshot.Fields registrationChanged decisionMode paymentMode
+        permitted (viewFields snapshot) registrationChanged decisionMode paymentMode
 
     Expect.equal (Result.isOk result) expected "Independent correction eligibility"
 
     match result with
-    | Error _ -> Expect.isTrue (Claim.view before = snapshot) "Refusal preserves accepted state"
+    | Error _ -> Expect.isTrue (Case.snapshot before = snapshot) "Refusal preserves accepted state"
     | Ok changed ->
-        let after = Claim.view changed
-        Expect.equal after.Version (snapshot.Version + 1L) "One revision"
+        let after = Case.snapshot changed
+        Expect.equal after.Revision (snapshot.Revision + 1L) "One revision"
 
         Expect.isTrue
-            (after.Fields =
-                expectedFields snapshot.Fields registrationChanged decisionMode paymentMode)
+            ((viewFields after) =
+                expectedFields (viewFields snapshot) registrationChanged decisionMode paymentMode)
             "Complete canonical result, reference and status"
 
 let private matrix =
@@ -140,7 +140,7 @@ let private zeroPaid =
         "[CC-DOM-001] explicit paid reaffirmation cannot retain a zero replacement decision"
         (fun () ->
             let command =
-                Command.CorrectCase
+                BusinessCommand.CorrectCase
                     {
                         Registration = RegistrationCorrection.Keep
                         Decision = DecisionCorrection.Replace { decision with PayableAmount = "0" }
@@ -149,22 +149,23 @@ let private zeroPaid =
 
             Expect.equal
                 (paid () |> apply command)
-                (Error DomainError.ZeroDecisionCannotBePaid)
+                (Error CaseRefusal.ZeroDecisionCannotBePaid)
                 "No zero payment assertion"
 
             let cleared =
                 match command with
-                | Command.CorrectCase value ->
-                    Command.CorrectCase
+                | BusinessCommand.CorrectCase value ->
+                    BusinessCommand.CorrectCase
                         { value with
                             Payment = PaymentCorrection.Clear
                         }
                 | _ -> failtest "Synthetic correction shape"
 
-            let after = paid () |> apply cleared |> accepted |> Claim.view
+            let after = paid () |> apply cleared |> accepted |> Case.snapshot
 
             Expect.isTrue
-                (after.Fields.PayableAmount = Some "0" && after.Fields.PaymentDate.IsNone)
+                ((viewFields after).PayableAmount = Some "0"
+                 && (viewFields after).PaymentDate.IsNone)
                 "An unpaid zero decision is valid")
 
 [<Tests>]
