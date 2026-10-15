@@ -75,7 +75,6 @@ CLAIMCORE_OIDC_ISSUER=https://identity.localhost:${identity_port}/realms/claimco
 CLAIMCORE_OIDC_CLIENT_ID=claimcore-web
 CLAIMCORE_OIDC_CLIENT_SECRET_FILE=/etc/claimcore/runtime/client.secret
 CLAIMCORE_OIDC_API_AUDIENCE=claimcore-api
-CLAIMCORE_OIDC_SERVICE_CLIENT_ID=claimcore-service
 CLAIMCORE_OIDC_CLI_CLIENT_ID=claimcore-cli
 CLAIMCORE_OIDC_CA_CERT_FILE=/etc/claimcore/runtime/ca.pem
 ENV

@@ -20,7 +20,7 @@ let private serviceReply service (token: AccessToken) cancelled =
         let invocation =
             Frames.parse (
                 System.Text.Encoding.UTF8.GetBytes(
-                    """{"endpoint":"case.get","input":{"caseReference":"SYNTHETIC-1"}}"""
+                    """{"endpoint":"case.get","input":{"caseReference":"SYNTHETIC-001"}}"""
                 )
             )
             |> Result.defaultWith (fun _ -> failtest "Frame refused.")

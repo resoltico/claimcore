@@ -144,7 +144,7 @@ module AuthMiddleware =
         options.TokenValidationParameters.ValidateIssuerSigningKey <- true
         options.TokenValidationParameters.ValidateLifetime <- true
         options.TokenValidationParameters.ValidAlgorithms <- acceptedAlgorithms
-        options.TokenValidationParameters.ValidTypes <- [| "JWT"; "at+jwt"; "Bearer" |]
+        options.TokenValidationParameters.ValidTypes <- [| "JWT"; "at+jwt" |]
 
         options.TokenValidationParameters.ClockSkew <-
             if syntheticRoot.IsNone then

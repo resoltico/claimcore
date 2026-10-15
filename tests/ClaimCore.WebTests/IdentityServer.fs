@@ -129,6 +129,7 @@ type Identity() =
                 apiAudience = "api"
                 serviceClientId = "service"
                 serviceClientSecret = serviceSecret
+                secondServiceClientId = "second-service"
                 publicClientId = "cli"
                 unscopedClientId = "unscoped"
                 unscopedClientSecret = unscopedSecret

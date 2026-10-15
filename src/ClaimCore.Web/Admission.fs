@@ -57,7 +57,6 @@ module Admission =
                         PrincipalIdentity.fromAccessToken
                             configuration.Issuer
                             configuration.CliClientId
-                            configuration.ServiceClientId
                             principal
                     with
                     | Ok actor -> return Ok actor

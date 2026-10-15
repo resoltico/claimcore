@@ -12,7 +12,7 @@ let private principal claims =
     ClaimsPrincipal(ClaimsIdentity(claims, "verified-bearer"))
 
 let private bearer claims =
-    PrincipalIdentity.fromAccessToken issuer "cli" "service" (principal claims)
+    PrincipalIdentity.fromAccessToken issuer "cli" (principal claims)
 
 let private ambiguousClaims () =
     for first, second in [ "cli", "service"; "service", "cli"; "cli", "cli" ] do
@@ -54,6 +54,42 @@ let private exactClaimNames () =
         (PrincipalIdentity.human issuer "human")
         "Distinct extensions cannot replace exact identity claims"
 
+let private clientClaims () =
+    for claims in
+        [
+            [ Claim("client_id", "cli"); Claim("sub", "human") ]
+            [ Claim("azp", "cli"); Claim("client_id", "cli"); Claim("sub", "human") ]
+        ] do
+        Expect.equal
+            (bearer claims)
+            (PrincipalIdentity.human issuer "human")
+            "Fallback and matching client claims select the CLI human"
+
+    for claims in
+        [
+            [ Claim("azp", "cli"); Claim("client_id", "service"); Claim("sub", "human") ]
+            [ Claim("client_id", "service"); Claim("client_id", "service") ]
+            [ Claim("azp", "service"); Claim("client_id", "") ]
+            [ Claim("azp", " ") ]
+            [ Claim("sub", "human") ]
+        ] do
+        Expect.isError (bearer claims) "Conflicting duplicate blank and absent clients refuse"
+
+    Expect.equal
+        (bearer [ Claim("client_id", "service-a") ])
+        (PrincipalIdentity.service issuer "service-a")
+        "Client credentials need no human subject"
+
+    Expect.notEqual
+        (bearer [ Claim("azp", "service-a") ])
+        (bearer [ Claim("azp", "service-b") ])
+        "Distinct service clients remain distinct"
+
+    Expect.equal
+        (bearer [ Claim("azp", "service-a"); Claim("sub", "one") ])
+        (bearer [ Claim("azp", "service-a"); Claim("sub", "two") ])
+        "Service identity follows client rather than subject"
+
 let private multipleIdentities () =
     let claims = [ Claim("azp", "cli"); Claim("sub", "human") ]
 
@@ -63,7 +99,7 @@ let private multipleIdentities () =
     let combined = ClaimsPrincipal(identities)
 
     Expect.isError
-        (PrincipalIdentity.fromAccessToken issuer "cli" "service" combined)
+        (PrincipalIdentity.fromAccessToken issuer "cli" combined)
         "A composite principal has no single actor identity"
 
     Expect.isError
@@ -125,6 +161,9 @@ let tests =
     testList
         "exact principal admission"
         [
+            testCase
+                "verified client claims agree exactly and distinct services keep distinct identities"
+                clientClaims
             testCase
                 "[CC-WEB-001] claim names select identity with ordinal case sensitivity"
                 exactClaimNames

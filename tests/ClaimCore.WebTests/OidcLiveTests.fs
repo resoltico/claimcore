@@ -60,7 +60,6 @@ let private qualify (server: IdentityServer.Identity) (stage: string -> unit) to
                 ClientId = text "webClientId"
                 ClientSecret = text "webClientSecret"
                 ApiAudience = text "apiAudience"
-                ServiceClientId = text "serviceClientId"
                 CliClientId = text "publicClientId"
             }
 
@@ -71,7 +70,8 @@ let private qualify (server: IdentityServer.Identity) (stage: string -> unit) to
         use identity = new HttpClient(handler, Timeout = TimeSpan.FromSeconds 30.)
         stage "issuer metadata"
         do! OidcStartup.verify identity configuration token
-        use host = new OidcHostFixture.Host(configuration, server.Root)
+        use! core = OidcCoreFixture.create configuration.Issuer.AbsoluteUri
+        use host = new OidcHostFixture.Host(configuration, server.Root, core.Actor)
         stage "PKCE browser"
 
         let! cookies = login host.Client identity credentials.RootElement stage

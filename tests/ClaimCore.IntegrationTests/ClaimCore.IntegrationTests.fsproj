@@ -11,6 +11,10 @@
     <Compile Include="SchemaTests.fs" />
     <Compile Include="PaginationTests.fs" />
     <Compile Include="AcceptedHistoryFixtures.fs" />
+    <Compile Include="../ClaimCore.WebTests/ProbeHttpsFixture.fs" Link="ProbeHttpsFixture.fs" />
+    <Compile Include="../ClaimCore.WebTests/FacadeStub.fs" Link="FacadeStub.fs" />
+    <Compile Include="../ClaimCore.WebTests/TestServerFixture.fs" Link="TestServerFixture.fs" />
+    <Compile Include="HistoricalHttpTests.fs" />
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
@@ -22,6 +26,10 @@
     <None Include="OwnerSchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />

@@ -5,6 +5,9 @@
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="PrivateTestPaths.fs" />
     <Compile Include="ProbeHttpsFixture.fs" />
+    <Compile Include="../ClaimCore.Tests/MemoryLedgerStore.fs" Link="MemoryLedgerStore.fs" />
+    <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
+    <Compile Include="OidcCoreFixture.fs" />
     <Compile Include="FacadeStub.fs" />
     <Compile Include="TestServerFixture.fs" />
     <Compile Include="AuthFoundationTests.fs" />
@@ -34,6 +37,7 @@
     <Compile Include="RequestLogTests.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />

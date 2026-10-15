@@ -39,15 +39,15 @@ module Discovery =
             |> Option.map (fun item -> Encoding.UTF8.GetBytes(item.GetRawText()))
 
     let describe arguments =
-        let semantic = ContractDiscovery.semantic () |> CanonicalContract.bytes
+        let descriptors = ContractDiscovery.descriptors () |> CanonicalContract.bytes
 
         match arguments with
         | []
-        | [ "summary" ] -> Some semantic
-        | [ "fields" ] -> select semantic "fields" "name" None
-        | [ "fields"; name ] -> select semantic "fields" "name" (Some name)
-        | [ "commands" ] -> select semantic "commands" "kind" None
-        | [ "commands"; kind ] -> select semantic "commands" "kind" (Some kind)
+        | [ "summary" ] -> Some descriptors
+        | [ "fields" ] -> select descriptors "fields" "name" None
+        | [ "fields"; name ] -> select descriptors "fields" "name" (Some name)
+        | [ "commands" ] -> select descriptors "commands" "kind" None
+        | [ "commands"; kind ] -> select descriptors "commands" "kind" (Some kind)
         | [ "endpoints" ] -> Some(ContractDiscovery.catalogue ())
         | [ "endpoints"; id ] -> select (ContractDiscovery.catalogue ()) "endpoints" "id" (Some id)
         | [ "diagnostics" ] -> Some(ContractDiscovery.presentation ())

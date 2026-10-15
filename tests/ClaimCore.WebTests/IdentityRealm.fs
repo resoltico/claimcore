@@ -37,6 +37,7 @@ let bytes realm webSecret serviceSecret unscopedSecret password =
     let clients = JsonArray()
     clients.Add(client "web" webSecret true true)
     clients.Add(client "service" serviceSecret false true)
+    clients.Add(client "second-service" serviceSecret false true)
     clients.Add(client "unscoped" unscopedSecret false false)
     root.Add("clients", clients)
 

@@ -32,7 +32,6 @@ let oidc =
         ClientId = "web"
         ClientSecret = "synthetic"
         ApiAudience = "api"
-        ServiceClientId = "service"
         CliClientId = "cli"
     }
 
@@ -128,7 +127,7 @@ let private login (context: HttpContext) : Task =
         context.Response.StatusCode <- 200
     }
 
-type Host(ready: bool) =
+type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
     let assets = Directory.CreateTempSubdirectory("claimcore-host-").FullName
     let sink = new StringWriter()
     let certificate = ProbeHttpsFixture.certificate ()
@@ -156,7 +155,10 @@ type Host(ready: bool) =
             (configuration certificate)
             (fun principal ->
                 facade.Principal <- Some principal
-                facade.ActorCore)
+
+                match forActor with
+                | Some factory -> factory principal
+                | None -> facade.ActorCore)
             application
 
         application.StartAsync().GetAwaiter().GetResult()

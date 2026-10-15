@@ -14,7 +14,7 @@ open ClaimCore.WebTests.FacadeStub
 open ClaimCore.WebTests.TestServerFixture
 
 let private body name =
-    if name = "command.preview" || name = "command.execute" then
+    if name = "case.preview" || name = "case.execute" then
         Array.copy commandInput
     else
         EndpointCatalog.tryFind name
@@ -54,11 +54,11 @@ let private catalogueRoutes () =
                     (EndpointCatalog.admitResponse endpoint.Identifier response)
                     "Typed response schema"
 
-            Expect.equal host.Facade.Calls.Length 12 "Every core endpoint exactly once"
+            Expect.equal host.Facade.Calls.Length 9 "Every core endpoint exactly once"
             let! status, response = host.Call("session.logout", body "session.logout", token)
             Expect.equal status 200 "Logout"
             Expect.isOk (EndpointCatalog.admitResponse "session.logout" response) "Logout schema"
-            let! status, _ = host.Call("definition", body "definition", token)
+            let! status, _ = host.Call("context", body "context", token)
             Expect.equal status 401 "Revoked cookie cannot call core"
         })
 
@@ -68,8 +68,8 @@ let private handshakeRefusals () =
             for fingerprint in [ ""; String.replicate 64 "0" ] do
                 let! status, response =
                     host.Call(
-                        "command.execute",
-                        body "command.execute",
+                        "case.execute",
+                        body "case.execute",
                         token,
                         fingerprint = fingerprint
                     )
@@ -85,8 +85,8 @@ let private handshakeRefusals () =
             let! status, _ =
                 host.Send(
                     HttpMethod.Post,
-                    "/api/command.execute",
-                    Some(body "command.execute"),
+                    "/api/case.execute",
+                    Some(body "case.execute"),
                     [
                         "Origin", origin.GetLeftPart(UriPartial.Authority)
                         "X-ClaimCore-Antiforgery", token
@@ -96,15 +96,15 @@ let private handshakeRefusals () =
             Expect.equal status 409 "Missing header"
             Expect.isEmpty host.Facade.Calls "No factory/core dispatch on mismatch"
             Expect.isNone host.Facade.Principal "No actor factory on mismatch"
-            let! status, _ = host.Call("command.execute", body "command.execute", token)
+            let! status, _ = host.Call("case.execute", body "case.execute", token)
             Expect.equal status 200 "Matching header"
-            Expect.equal host.Facade.Calls [ "command.execute" ] "One matching dispatch"
+            Expect.equal host.Facade.Calls [ "case.execute" ] "One matching dispatch"
         })
 
 let private admissionRefusals () =
     loggedIn true (fun host token ->
         task {
-            let! status, _ = host.Call("command.execute", body "command.execute", "incorrect")
+            let! status, _ = host.Call("case.execute", body "case.execute", "incorrect")
             Expect.equal status 403 "Antiforgery"
 
             let! status, _ =
@@ -118,8 +118,7 @@ let private admissionRefusals () =
             let! status, _ = host.Send(HttpMethod.Get, "/api/case.get", None, [])
             Expect.equal status 405 "Wrong method"
 
-            let! status, _ =
-                host.Send(HttpMethod.Post, "/API/definition", Some(body "definition"), [])
+            let! status, _ = host.Send(HttpMethod.Post, "/API/context", Some(body "context"), [])
 
             Expect.equal status 404 "No path aliases"
 
@@ -139,7 +138,10 @@ let private outcomes () =
                 [
                     ExecuteOutcome.Accepted accepted, "ACCEPTED"
                     ExecuteOutcome.AlreadyAccepted accepted, "ALREADY_ACCEPTED"
-                    ExecuteOutcome.Rejected Rejection.CaseVoided, "REJECTED"
+                    ExecuteOutcome.Rejected(
+                        Rejection.Case(ClaimCore.Domain.CaseRefusal.CaseVoided)
+                    ),
+                    "REJECTED"
                     ExecuteOutcome.Failed CoreFault.StoreUnavailable, "FAILED"
                     ExecuteOutcome.Cancelled, "CANCELLED"
                     ExecuteOutcome.OutcomeUnknown(operationId, String.replicate 64 "a"),
@@ -156,15 +158,63 @@ let private outcomes () =
 
                         Task.FromResult value)
 
-                let! status, response = host.Call("command.execute", body "command.execute", token)
+                let! status, response = host.Call("case.execute", body "case.execute", token)
                 Expect.equal status 200 "Outcomes stay typed"
-                Expect.isOk (EndpointCatalog.admitResponse "command.execute" response) "Schema"
+                Expect.isOk (EndpointCatalog.admitResponse "case.execute" response) "Schema"
                 use payload = parse response
 
                 Expect.equal
                     (payload.RootElement.GetProperty("outcome").GetProperty("tag").GetString())
                     tag
                     "Outcome identity"
+        })
+
+let private authorityCancellation () =
+    loggedIn true (fun host token ->
+        task {
+            host.Facade.ExecuteAuthority <-
+                fun (request, ct) ->
+                    Expect.equal
+                        ct
+                        CancellationToken.None
+                        "Authority mutations are not request-cancellable"
+
+                    Task.FromResult(ExecuteOutcome.Accepted(authorityReceipt request))
+
+            let! status, response =
+                host.Call("authority.execute", body "authority.execute", token)
+
+            Expect.equal status 200 "Authority dispatch"
+
+            Expect.isOk
+                (EndpointCatalog.admitResponse "authority.execute" response)
+                "Authority response"
+        })
+
+let private malformedWire () =
+    loggedIn true (fun host token ->
+        task {
+            let source = Encoding.UTF8.GetString commandInput
+
+            let changes =
+                [
+                    for value in [ "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\"" ] do
+                        yield "\"expectedRevision\":0", "\"expectedRevision\":" + value
+                    yield "\"LV\"", "\"Latvia\""
+                    yield "\"WEB-001\"", "\"a b\""
+                    yield "\"WEB-001\"", "\"é\""
+                    yield "Synthetic claimant", "bad\\u0000name"
+                    yield "Synthetic claimant", "bad\\ufdd0name"
+                    yield "Synthetic claimant", "bad\\ud800name"
+                ]
+
+            for before, after in changes do
+                let changed = source.Replace(before, after)
+                Expect.notEqual changed source "Negative control changes actual bytes"
+                let! status, _ = host.Call("case.execute", Encoding.UTF8.GetBytes changed, token)
+                Expect.equal status 400 "Permanent malformed format refuses before dispatch"
+
+            Expect.isEmpty host.Facade.Calls "Malformed wire never reaches Application"
         })
 
 let private readiness () =
@@ -186,7 +236,13 @@ let tests =
     testList
         "HTTP service"
         [
-            testCase "all fourteen endpoints use the one catalogue and typed facade" catalogueRoutes
+            testCase
+                "authority execution preserves mutation cancellation semantics"
+                authorityCancellation
+            testCase
+                "raw malformed numeric Unicode reference and country inputs cannot dispatch"
+                malformedWire
+            testCase "all eleven endpoints use the one catalogue and typed facade" catalogueRoutes
             testCase
                 "matching contract dispatches; missing and different contracts never dispatch"
                 handshakeRefusals

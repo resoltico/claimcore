@@ -46,13 +46,13 @@ let bearerRequest (local: HttpClient) token =
         return int response.StatusCode
     }
 
-let private caseRequest (local: HttpClient) token browserCookies =
+let private caseRequest (local: HttpClient) token browserCookies reference =
     task {
         use request = new HttpRequestMessage(HttpMethod.Post, "/api/case.get")
 
         request.Content <-
             new StringContent(
-                """{"caseReference":"SYNTHETIC-001"}""",
+                JsonSerializer.Serialize {| caseReference = reference |},
                 Encoding.UTF8,
                 "application/json"
             )
@@ -73,7 +73,15 @@ let private caseRequest (local: HttpClient) token browserCookies =
             |> ignore)
 
         use! response = local.SendAsync(request)
-        return int response.StatusCode
+        let! payload = response.Content.ReadAsByteArrayAsync()
+        use document = JsonDocument.Parse payload
+
+        let outcome =
+            match document.RootElement.TryGetProperty "outcome" with
+            | true, value -> Some(value.Clone())
+            | _ -> None
+
+        return int response.StatusCode, outcome
     }
 
 let private requireDenied (local: HttpClient) tokens =
@@ -99,6 +107,36 @@ let private wrongIssuerToken issuer (identity: HttpClient) (credentials: JsonEle
         (value credentials "serviceClientId")
         (value credentials "foreignClientSecret")
 
+let private serviceAuthority issuer identity local (credentials: JsonElement) token first =
+    task {
+        let tag (value: JsonElement option) =
+            value |> Option.map (fun value -> value.GetProperty("tag").GetString())
+
+        if tag first <> Some "SUCCEEDED" then
+            invalidOp "Registered service could not read its case."
+
+        let! second =
+            serviceToken
+                issuer
+                identity
+                (value credentials "secondServiceClientId")
+                (value credentials "serviceClientSecret")
+
+        let! authenticated = bearerRequest local second
+        let! status, denied = caseRequest local second None "SYNTHETIC-001"
+        let! _, absent = caseRequest local token None "SYNTHETIC-MISSING"
+
+        if authenticated <> 204 || status <> 200 || tag denied <> Some "REJECTED" then
+            invalidOp "Distinct unregistered service must authenticate and receive a typed refusal."
+
+        let refusal value =
+            value
+            |> Option.map (fun (value: JsonElement) -> value.GetProperty("data").GetRawText())
+
+        if refusal denied <> refusal absent then
+            invalidOp "Absent and inaccessible resources must share the same public refusal."
+    }
+
 let qualifyBearers
     issuer
     (identity: HttpClient)
@@ -115,11 +153,13 @@ let qualifyBearers
                 (value credentials "serviceClientSecret")
 
         let! allowed = bearerRequest local token
-        let! caseAllowed = caseRequest local token None
-        let! mixed = caseRequest local token (Some browserCookies)
+        let! caseAllowed, first = caseRequest local token None "SYNTHETIC-001"
+        let! mixed, _ = caseRequest local token (Some browserCookies) "SYNTHETIC-001"
 
         if allowed <> 204 || caseAllowed <> 200 || mixed <> 401 then
             raise (CredentialDispatchMismatch(allowed, caseAllowed, mixed))
+
+        do! serviceAuthority issuer identity local credentials token first
 
         let! unscoped =
             serviceToken

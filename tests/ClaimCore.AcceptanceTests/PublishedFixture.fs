@@ -87,7 +87,6 @@ let private webEnvironment
             "CLAIMCORE_OIDC_CLIENT_SECRET_FILE",
             FixtureFiles.text directory "web.secret" identity.WebSecret
             "CLAIMCORE_OIDC_API_AUDIENCE", "api"
-            "CLAIMCORE_OIDC_SERVICE_CLIENT_ID", "service"
             "CLAIMCORE_OIDC_CLI_CLIENT_ID", "cli"
             "CLAIMCORE_OIDC_CA_CERT_FILE",
             FixtureFiles.text directory "identity.pem" (identity.Root.ExportCertificatePem())
@@ -124,7 +123,7 @@ let private initialize
                 "owner.principal"
                 (JsonSerializer.Serialize
                     {|
-                        eventId = Guid.NewGuid().ToString("D")
+                        operationId = Guid.NewGuid().ToString("D")
                         issuer = identity.Issuer
                         subject = IdentityRealm.ownerSubject
                     |})

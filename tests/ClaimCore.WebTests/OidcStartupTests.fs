@@ -48,7 +48,6 @@ let private configuration issuer =
         ClientId = "web"
         ClientSecret = "synthetic"
         ApiAudience = "api"
-        ServiceClientId = "service"
         CliClientId = "cli"
     }
 

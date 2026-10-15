@@ -73,11 +73,7 @@ let private accessTokenIdentity () =
         )
 
     let classify client subject =
-        PrincipalIdentity.fromAccessToken
-            issuer
-            "claimcore-cli"
-            "claimcore-service"
-            (principal client subject)
+        PrincipalIdentity.fromAccessToken issuer "claimcore-cli" (principal client subject)
 
     Expect.equal
         (classify "claimcore-cli" "person-1")
@@ -89,7 +85,10 @@ let private accessTokenIdentity () =
         (PrincipalIdentity.service issuer "claimcore-service")
         "Service bearer maps to client ID, not service-account subject"
 
-    Expect.isError (classify "unknown-client" "person-1") "Unknown OAuth client is denied"
+    Expect.equal
+        (classify "another-service" "service-subject")
+        (PrincipalIdentity.service issuer "another-service")
+        "Each other verified client is a distinct service"
 
 let private opaqueSessionStore () =
     let principal =
@@ -133,7 +132,6 @@ let private middlewareConfiguration () =
         ClientId = "claimcore-web"
         ClientSecret = "synthetic-secret"
         ApiAudience = "claimcore-api"
-        ServiceClientId = "claimcore-service"
         CliClientId = "claimcore-cli"
     }
 
@@ -172,7 +170,7 @@ let private middlewarePolicy () =
 
     Expect.equal
         (bearer.TokenValidationParameters.ValidTypes |> Seq.toList)
-        [ "JWT"; "at+jwt"; "Bearer" ]
+        [ "JWT"; "at+jwt" ]
         "Bearer token header type is allowlisted"
 
     Expect.isTrue oidc.RequireHttpsMetadata "BFF discovery is HTTPS-only"
