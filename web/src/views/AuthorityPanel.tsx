@@ -7,6 +7,7 @@ import { AccessibleModal } from "../components/AccessibleModal";
 import { ProtocolSummary } from "../components/ProtocolSummary";
 import { ProtocolFields } from "../components/ProtocolFields";
 import { selectedSchema } from "../protocol/forms";
+import type { Notice } from "../api/notices";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { useRead } from "../hooks/useRead";
@@ -26,6 +27,7 @@ const AuthorityPicker = ({ model, offered }: FormProps) => {
     <label>
       {p.text("ui.command")}
       <select
+        disabled={model.busy || offered.length === 0}
         value={String(model.values["act.kind"] ?? offered[0]?.kind ?? "")}
         onChange={(event) => {
           model.changeCommand(event.target.value);
@@ -180,6 +182,32 @@ const AuthorityReview = ({ model }: { model: AuthorityOperation }) => {
     </section>
   );
 };
+const AuthorityContextStatus = ({
+  loading,
+  message,
+  reload,
+}: {
+  loading: boolean;
+  message: Notice | null;
+  reload: () => void;
+}) => {
+  const p = usePresentation();
+  return (
+    <>
+      {loading ? <p role="status">{p.text("ui.loading")}</p> : null}
+      {message === null ? null : (
+        <>
+          <p role="alert">
+            <NoticeView value={message} />
+          </p>
+          <button type="button" onClick={reload}>
+            {p.text("ui.tryAgain")}
+          </button>
+        </>
+      )}
+    </>
+  );
+};
 const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityOperation }) => {
   const { refused, restored } = model.disclosure;
   const context = useRead(
@@ -210,6 +238,13 @@ const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityO
       ) : (
         <AuthorityReview model={model} />
       )}
+      <AuthorityContextStatus
+        loading={context.loading}
+        message={context.message}
+        reload={() => {
+          model.disclosure.invalidate(true);
+        }}
+      />
       <AuthorityListing
         token={token}
         onDisclosureRefused={refused}

@@ -5,6 +5,7 @@ import { openCase, startCommand } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
+import { observeAuthorityRefresh } from "./authority-read-evidence";
 
 const stewardAct = async (page: Page, label: string, reason?: string) => {
   await startCommand(page, label);
@@ -71,34 +72,46 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
     throw new Error("Missing authority response.");
   }
   expect(value.outcome.tag).toBe(expected);
+  if (value.outcome.tag === "ACCEPTED" || value.outcome.tag === "ALREADY_ACCEPTED") {
+    await expect(
+      page.getByRole("status").filter({ hasText: value.outcome.data.operationId }),
+    ).toBeVisible();
+  }
 };
 test("browser registers service principals, changes scoped grants and enablement, and renders core refusal", async ({
   page,
 }) => {
-  await openAuthenticated(page);
-  const source = await syntheticPrincipals();
-  const reference = `AUTHORITY-${randomUUID()}`;
-  await openCase(page, reference);
-  await page.getByRole("button", { name: "Authority", exact: true }).click();
-  const subject = `browser-service-${randomUUID()}`;
-  await authorityTarget(page, source.issuer, subject);
-  await submitAuthority(page, "ACCEPTED");
-  await page.getByLabel("Case action", { exact: true }).selectOption("SET_GRANT");
-  await authorityTarget(page, source.issuer, subject);
-  await page.locator('[name="act.role"]').selectOption("CASE_READER");
-  await page.locator('[name="act.scope.kind"]').selectOption("CASE");
-  await page.locator('[name="act.scope.caseReference"]').fill(reference);
-  await page.locator('[name="act.active"]').check();
-  await submitAuthority(page, "ACCEPTED");
-  await page.getByLabel("Case action", { exact: true }).selectOption("SET_ENABLED");
-  await authorityTarget(page, source.issuer, subject);
-  await page.locator('[name="act.enabled"]').uncheck();
-  await submitAuthority(page, "ACCEPTED");
-  await page.getByLabel("Case action", { exact: true }).selectOption("SET_GRANT");
-  await authorityTarget(page, source.issuer, subject);
-  await page.locator('[name="act.role"]').selectOption("OWNER");
-  await page.locator('[name="act.active"]').check();
-  await submitAuthority(page, "REJECTED");
-  await expect(page.getByRole("alert")).toBeVisible();
-  await expectAccessible(page);
+  const finishEvidence = observeAuthorityRefresh(page);
+  let completed = false;
+  try {
+    await openAuthenticated(page);
+    const source = await syntheticPrincipals();
+    const reference = `AUTHORITY-${randomUUID()}`;
+    await openCase(page, reference);
+    await page.getByRole("button", { name: "Authority", exact: true }).click();
+    const subject = `browser-service-${randomUUID()}`;
+    await authorityTarget(page, source.issuer, subject);
+    await submitAuthority(page, "ACCEPTED");
+    await page.getByLabel("Case action", { exact: true }).selectOption("SET_GRANT");
+    await authorityTarget(page, source.issuer, subject);
+    await page.locator('[name="act.role"]').selectOption("CASE_READER");
+    await page.locator('[name="act.scope.kind"]').selectOption("CASE");
+    await page.locator('[name="act.scope.caseReference"]').fill(reference);
+    await page.locator('[name="act.active"]').check();
+    await submitAuthority(page, "ACCEPTED");
+    await page.getByLabel("Case action", { exact: true }).selectOption("SET_ENABLED");
+    await authorityTarget(page, source.issuer, subject);
+    await page.locator('[name="act.enabled"]').uncheck();
+    await submitAuthority(page, "ACCEPTED");
+    await page.getByLabel("Case action", { exact: true }).selectOption("SET_GRANT");
+    await authorityTarget(page, source.issuer, subject);
+    await page.locator('[name="act.role"]').selectOption("OWNER");
+    await page.locator('[name="act.active"]').check();
+    await submitAuthority(page, "REJECTED");
+    await expect(page.getByRole("alert")).toBeVisible();
+    await expectAccessible(page);
+    completed = true;
+  } finally {
+    await finishEvidence(!completed);
+  }
 });

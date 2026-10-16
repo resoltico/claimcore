@@ -210,12 +210,89 @@ let private categoryControls () =
         [ "TIMEOUT" ]
         "Runner deadline category"
 
+let private authorityReadRefusals (read: string -> string list) (context: string) =
+    for invalid in
+        [
+            "private " + context
+            context + " private-token"
+            context.Replace("429", "0")
+            context.Replace("429", "600")
+            context.Replace("429", "0429")
+            context.Replace("HOST_FAILURE", "PRIVATE_KIND")
+            context.Replace("HOST_RATELIMITED", "HOST_RATELIMITED?token=private")
+            "E2E_AUTHORITY_READ CONTEXT 200 TRANSPORT NONE"
+        ] do
+        Expect.isEmpty (read invalid) "Malformed or private observation data is omitted"
+
+let private authorityReadControls () =
+    let read text =
+        Encoding.UTF8.GetBytes(text: string)
+        |> BrowserProgress.authorityReads [ "HOST_RATELIMITED"; "ACCESS_RESOURCE_UNAVAILABLE" ]
+
+    let context = "E2E_AUTHORITY_READ CONTEXT 429 HOST_FAILURE HOST_RATELIMITED"
+    let listing = "E2E_AUTHORITY_READ LIST 200 SUCCEEDED NONE"
+
+    Expect.equal
+        (read (context + "\n" + listing))
+        [ "CONTEXT:429:HOST_FAILURE:HOST_RATELIMITED"; "LIST:200:SUCCEEDED:NONE" ]
+        "Context and list refresh observations remain independent"
+
+    Expect.equal
+        (read (
+            context
+            + "\nE2E_AUTHORITY_READ CONTEXT 200 REJECTED ACCESS_RESOURCE_UNAVAILABLE\n"
+            + listing
+        ))
+        [
+            "CONTEXT:200:REJECTED:ACCESS_RESOURCE_UNAVAILABLE"
+            "LIST:200:SUCCEEDED:NONE"
+        ]
+        "Only the latest observation of each endpoint survives"
+
+    Expect.equal
+        (read (context.Replace("HOST_RATELIMITED", "PRIVATE_TOKEN")))
+        [ "CONTEXT:429:HOST_FAILURE:OTHER" ]
+        "Unknown diagnostic text is never exposed"
+
+    for kind in [ "UNOBSERVED"; "PENDING"; "TRANSPORT" ] do
+        Expect.equal
+            (read $"E2E_AUTHORITY_READ CONTEXT 0 {kind} NONE")
+            [ $"CONTEXT:0:{kind}:NONE" ]
+            "Absent HTTP status"
+
+    Expect.equal
+        (read "E2E_AUTHORITY_READ LIST 200 PENDING NONE")
+        [ "LIST:200:PENDING:NONE" ]
+        "Body remains pending"
+
+    authorityReadRefusals read context
+
+let private authorityPhaseControls () =
+    let phase text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.authorityPhase
+
+    Expect.equal
+        (phase "E2E_AUTHORITY_PHASE LOADING\nE2E_AUTHORITY_PHASE EMPTY_ADVICE")
+        "EMPTY_ADVICE"
+        "Only the latest closed UI phase survives"
+
+    for invalid in
+        [
+            "E2E_AUTHORITY_PHASE PRIVATE_TOKEN"
+            "E2E_AUTHORITY_PHASE REVIEW private-token"
+            "private-body E2E_AUTHORITY_PHASE FAILURE"
+            "E2E_AUTHORITY_PHASE https://private.invalid/credential"
+        ] do
+        Expect.equal (phase invalid) "UNAVAILABLE" "Private or malformed UI details are omitted"
+
 let private controls () =
     cleanupControls ()
     progressControls ()
     locationControls ()
     stackControls ()
     categoryControls ()
+    authorityReadControls ()
+    authorityPhaseControls ()
 
     let deadline =
         failure Deadline "printf synthetic-out; printf synthetic-err >&2; sleep 2" None 64 250

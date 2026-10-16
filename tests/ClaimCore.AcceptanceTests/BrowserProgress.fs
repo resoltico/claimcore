@@ -91,3 +91,46 @@ let failureCategories bytes =
         else "ERROR")
     |> Set.ofSeq
     |> Set.toList
+
+/// Refresh observations contain only fixed kinds/statuses and generated public diagnostic IDs.
+let authorityReads diagnosticIds bytes =
+    let known = diagnosticIds |> Set.ofSeq
+
+    Regex.Matches(
+        plain bytes,
+        @"(?m)^[ \t]*E2E_AUTHORITY_READ (?<endpoint>CONTEXT|LIST) (?<status>0|[1-5][0-9]{2}) (?<kind>SUCCEEDED|REJECTED|FAILED|CANCELLED|HOST_FAILURE|INVALID|UNOBSERVED|PENDING|TRANSPORT) (?<diagnostic>[A-Z][A-Z0-9_]{0,99})[ \t]*\r?$",
+        RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
+    )
+    |> Seq.choose (fun row ->
+        let endpoint = row.Groups["endpoint"].Value
+        let status = row.Groups["status"].Value
+        let kind = row.Groups["kind"].Value
+        let diagnostic = row.Groups["diagnostic"].Value
+        let noResponse = List.contains kind [ "UNOBSERVED"; "PENDING"; "TRANSPORT" ]
+
+        if status = "0" && not noResponse then
+            None
+        elif status <> "0" && List.contains kind [ "UNOBSERVED"; "TRANSPORT" ] then
+            None
+        else
+            let safeDiagnostic =
+                if diagnostic = "NONE" || Set.contains diagnostic known then
+                    diagnostic
+                else
+                    "OTHER"
+
+            Some(endpoint, $"{endpoint}:{status}:{kind}:{safeDiagnostic}"))
+    |> Seq.fold (fun summary (endpoint, value) -> Map.add endpoint value summary) Map.empty
+    |> Map.toList
+    |> List.map snd
+
+/// UI phases use fixed observer vocabulary; arbitrary DOM text is never returned.
+let authorityPhase bytes =
+    Regex.Matches(
+        plain bytes,
+        @"(?m)^[ \t]*E2E_AUTHORITY_PHASE (?<phase>REVIEW|LOADING|EMPTY_ADVICE|FAILURE|USABLE_PICKER|DISCARD_CONFIRMATION|UNAVAILABLE)[ \t]*\r?$",
+        RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
+    )
+    |> Seq.map (fun row -> row.Groups["phase"].Value)
+    |> Seq.tryLast
+    |> Option.defaultValue "UNAVAILABLE"

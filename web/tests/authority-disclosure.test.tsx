@@ -390,7 +390,10 @@ it.each(["lost", "unknown"] as const)(
     await waitFor(() => {
       expect(screen.queryByRole("alert")).toBeNull();
     });
-    expect(screen.getByRole("status")).toHaveTextContent(pending.input.operationId);
+    expect(screen.getByText(pending.input.operationId, { exact: false })).toHaveAttribute(
+      "role",
+      "status",
+    );
     expect(screen.queryByRole("button", { name: "Retry the same operation" })).toBeNull();
     expect(execute.mock.calls[1]![0]).toBe(pending);
     expect(execute.mock.calls[1]![0].bytes).toBe(pending.bytes);

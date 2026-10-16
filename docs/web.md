@@ -65,6 +65,8 @@ interaction/transport do not import views. Access refusal and session replacemen
 disclosures. Authority refusals invalidate context, offers and actor listings together, then independently
 revalidate current read and management rights. A refusal during revalidation clears both caches and
 waits for explicit reload; exact authored pending requests and uncertainty remain separate.
+Authority advice read failures remain visible with an explicit retry. Fresh authoring requires
+a successful nonempty offer set; retrying advice does not discard or replace a prepared request.
 Generated protocol purity follows the resolved transitive import closure, including JavaScript
 modules, and rejects React, locale, clock, randomness and I/O dependencies. Generated TypeScript
 is included in the normal type-aware lint stage.
