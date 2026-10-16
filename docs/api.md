@@ -27,7 +27,7 @@ also carry the antiforgery token returned by `session`; bearer calls authenticat
 | `operation.observe` | Accepted case or authority evidence visible to the actor |
 | `authority.execute` | Register actor, set grant or set enabled state           |
 | `authority.list`    | Bounded installation actor summaries                     |
-| `authority.grants`  | Bounded grant review for one selected actor               |
+| `authority.grants`  | Bounded grant review for one selected actor              |
 
 Paged reads accept a maximum `limit` from 1 through 50. `case.list` includes installation offers
 from the same actor snapshot as that page's rows. Advice follows the latest successful page;
@@ -42,7 +42,10 @@ A successful reply must echo the requested actor ID in its actor header.
 Use an actor ID returned by `authority.list` in the CLI frame (the ID below is synthetic):
 
 ```json
-{"endpoint":"authority.grants","input":{"actorId":"10000000-0000-4000-8000-000000000001","limit":50}}
+{
+    "endpoint": "authority.grants",
+    "input": { "actorId": "10000000-0000-4000-8000-000000000001", "limit": 50 }
+}
 ```
 
 `case.history` returns uniform SUMMARY or FULL entries. SUMMARY pages contain at most 50 entries;
@@ -95,15 +98,14 @@ conflict proves CONTENT_EXCLUDED; other refusals do not resolve earlier uncertai
 
 Principal wire syntax is deliberately generic Unicode text plus HUMAN/SERVICE kind. Canonical issuer
 and kind-specific identity admission remain Application-owned and run in Hosting before ledger dispatch;
-invalid identities return INPUT_INVALID/400/NOT_STARTED. The CLI no longer rejects those semantic
-identity failures before authentication; the authenticated host failure carries exit 3. Decoding wire syntax never promises principal admission.
+invalid identities return INPUT_INVALID/400/NOT_STARTED after authentication. The CLI renders that
+host failure with exit 3. Decoding wire syntax never promises principal admission.
 
-Deploy matching service, CLI, browser assets and generated artifacts together. Actor summaries replace nested grants, case pages carry offers, and authority.grants adds a
-coordinated breaking read-contract change. Use matching generated types and follow grant/history
-continuations rather than assuming a requested page size is returned. The response envelopes,
-CLI frame format and interaction advice are also coordinated; there is no dual
-parser or compatibility endpoint. Existing installations retain their schema, durable bytes and private
-state. Rebuild client integrations and update frame consumers before switching the service.
+Deploy matching service, CLI, browser assets and generated artifacts together. Integrations must use
+the generated types and frame format for that fingerprint and follow grant/history continuations
+rather than assuming a requested page size is returned. The service accepts one contract; it provides
+no compatibility endpoint or alternative parser. Installation admission follows the
+[database contract](database.md#cc-db-001).
 
 <a id="cc-cli-001"></a>
 
@@ -118,7 +120,6 @@ Preview is advisory; execution revalidates locked state.
 
 Discovery needs no credentials. `describe authority [kind]` exposes the Application-owned
 authority definitions alongside case command discovery:
-
 
 ```sh
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- help

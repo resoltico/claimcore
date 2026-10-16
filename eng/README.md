@@ -5,8 +5,8 @@ stages in order, stops at failure and shares restore/build work within one invoc
 selection and explicit PostgreSQL major overrides are checked before any expensive work; frontend assets build once when frontend and
 acceptance stages share an invocation. CI
 calls these same stages. `unit`, `lint`, `integration`, `postgres` and `web` require .NET;
-`frontend` requires Node only and consumes tracked `contracts/` artifacts. `browsers` installs the selected
-Playwright engine and its Linux dependencies; `acceptance` builds and tests published clients.
+`frontend` requires Node only and consumes tracked `contracts/` artifacts. `browsers` installs the required
+Playwright engines, including Chromium for CLI authentication, and their Linux dependencies; `acceptance` builds and tests published clients.
 `postgres` and `web` run the complete individual integration suites and restore and build only their project
 closures; `integration` sequences these stages and reuses an earlier solution build when available.
 Docker-dependent stages check the daemon before any selected expensive work. CI starts the two

@@ -10,7 +10,7 @@ Restore locked NuGet inputs and build the solution with .NET. Run `npm --prefix 
 and `npm --prefix web run build` for frontend assets. Ordinary .NET builds do not invoke npm;
 frontend consumers use the tracked `contracts/` artifacts and require no .NET process.
 
-Native .NET consumers also need the C17 toolchain enforced by [build-native.sh](../eng/build-native.sh):
+Building or publishing applications, and building tests that consume native components, requires the C17 toolchain enforced by [build-native.sh](../eng/build-native.sh):
 macOS Command Line Tools with Apple Clang 17+, macOS SDK 15+ and deployment target 14.0;
 or Linux with GCC 13+ and glibc development headers. Only matching native `osx-x64`,
 `osx-arm64`, `linux-x64` and `linux-arm64` hosts/targets are supported. Cross-RID builds,
@@ -71,9 +71,9 @@ includes Chromium for shared CLI PKCE authentication when Firefox or WebKit spec
 selected; this prerequisite does not add Chromium specifications to that selected-engine run.
 
 CI starts independent checks in parallel. PostgreSQL waits only for baseline configuration, Web/identity
-starts independently, and acceptance waits only for frontend qualification. Each native job restores
-and builds its own inputs. PostgreSQL keeps its baseline-major matrix and fail-fast cancellation.
-`Gate` still requires every native, frontend and acceptance job. The local `integration` stage runs
+starts independently, and acceptance waits only for frontend qualification. Native test jobs restore
+and build their selected inputs. PostgreSQL keeps its baseline-major matrix and fail-fast cancellation.
+`Gate` requires every native, frontend and acceptance job. The local `integration` stage runs
 both suites in order and builds their project closures; an earlier solution build is reused. Use
 `postgres` or `web` for a complete individual suite.
 PRs and merge queues run eleven-case Chromium smoke, including authority uncertainty and
@@ -84,7 +84,7 @@ to succeed. Thus a green PR `Gate` proves its advertised smoke scope, not full b
 Complete qualification remains separate evidence required for delivery and source releases.
 The frontend CI job executes inside the pinned Node image derived from the deployment Dockerfile,
 with a writable temporary home. It refuses an executable `dotnet` before running frontend checks;
-the hosted runner's preinstalled SDK is outside that container. Native jobs set up .NET only.
+the hosted runner's preinstalled SDK is outside that container. Format/lint, unit, PostgreSQL and Web/identity jobs prepare .NET and native compiler toolchains without Node. Published-client acceptance also uses Node.
 The container build likewise builds frontend assets in a Node stage and publishes applications
 in a .NET SDK plus pinned C compiler stage.
 
@@ -105,13 +105,13 @@ The selector does not qualify a new major: adding support still requires actual 
 reviewed evidence for that entry.
 
 The PostgreSQL stage uses [bounded runner settings](../eng/expecto.integration.runsettings) to
-overlap at most two independent test cases. Each owns a fresh pinned PostgreSQL cluster; role
+overlap at most two independent test cases. Each database-backed case owns a fresh pinned PostgreSQL cluster; role
 changes, schema corruption and shutdown tests cannot affect another case. Operations inside a
 case retain their sequence and transaction boundaries. Direct PostgreSQL test invocations must
 pass `-- --settings=eng/expecto.integration.runsettings` to retain this resource bound. Other
-native suites keep their existing runner settings. PostgreSQL readiness retains both protocol and
+native suites use the general runner settings. PostgreSQL readiness retains both protocol and
 mapped-port checks, polls each every 250 ms, and bounds the protocol phase to 60 seconds; the
-mapped-port phase retains the Npgsql connection timeout. Durability settings are unchanged.
+mapped-port phase retains the Npgsql connection timeout.
 
 Local runs sequence the selected engines in one native test case and stop before creating a later
 engine fixture when an earlier engine fails. Successful default execution requires all three
@@ -139,7 +139,7 @@ target exit. Ordinary descendants in the inherited group are covered. Deliberate
 escape is outside this fixture contract. The supervisor and its resolution probes never ship in
 product outputs. Executable resolution follows the supported .NET Unix behavior before launch,
 including controller PATH/cwd semantics; isolated child tests qualify that behavior without
-changing the test runner's environment. The quiet-output oracle remains 250 ms and 64 bytes.
+changing the test runner's environment. The quiet-deadline control uses a 250 ms deadline and 64-byte per-stream output bound.
 
 ## Changes
 
@@ -173,6 +173,8 @@ verify with `dotnet restore ClaimCore.slnx --locked-mode`. An explicit audit is
 `dotnet list ClaimCore.slnx package --vulnerable --include-transitive --no-restore`.
 The testing platform's telemetry packages are library dependencies; SDK and platform telemetry
 remain disabled in CI.
+
+## Generated contracts and boundary verification
 
 The generator stages and validates the complete owned artifact set before replacement. Its tracked
 inventory permits removal of obsolete generated outputs; unexpected content is refused, never deleted.

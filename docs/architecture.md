@@ -46,11 +46,6 @@ Database is the separate owner administration process.
 Database references Application to validate principals and render shared ledger/authority values,
 so it does not duplicate their definitions. ContractGenerator derives artifacts from Contracts.
 
-The additional protocol library and generated catalogues remove parallel client wire and operation
-maps while retaining explicit F# decisions and one PostgreSQL ledger. Server-rendered interaction
-would require another interaction protocol or draft state; crosscompilation would add a runtime and
-toolchain for logic the structured CLI does not need. No database schema or durable encoding changes.
-
 #### Durable records
 
 RecordFormat writes RFC 8785 canonical request, snapshot and authority JSON with ordinal UTF-16
@@ -157,7 +152,7 @@ exact replay returns the original acceptance metadata with snapshot disclosure e
 current locked/read context. Different content under the same ID is refused. OUTCOME_UNKNOWN
 means a commit confirmation was lost. It does not prove rejection and never permits rebasing or
 replacement identity. Erased request content cannot be replayed. Reads use one REPEATABLE READ snapshot. Public actor and grant pages are bounded at 50 rows;
-FULL history uses an Application-owned capacity of 10 while SUMMARY remains 50. The unchanged
+FULL history uses an Application-owned capacity of 10 while SUMMARY remains 50. The
 RecordFormat payload bound and independent worst-escaping codec controls establish the FULL page's
 wire budget. A continuation follows the last included row; a short page is not necessarily terminal.
 

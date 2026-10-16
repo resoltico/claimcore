@@ -50,7 +50,7 @@ and preserves the original retry identity/content. WITHHELD snapshots show
 metadata without fields; ERASED is distinct. Country display hints use localized names where known,
 accept syntactically valid unassigned codes, and explain `ZZ` without imposing membership policy.
 
-Case stewardship uses the existing preview/review/execute flow. The confirmation dialog names the
+Case stewardship uses the preview/review/execute flow. The confirmation dialog names the
 prepared act, shows its exact authored reason and authoritative before/after record state, and repeats
 the owned act meaning, including live-database erasure limits. These values remain separate from
 the thirteen business fields. Authority actions use local exact-request
