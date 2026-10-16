@@ -101,7 +101,8 @@ let private locationControls () =
         "  ✘  29 [chromium] › e2e/localization-editor.spec.ts:58:1 › private payload/title (30.0s)"
 
     let locations value =
-        Encoding.UTF8.GetBytes(value: string) |> BrowserProgress.failedLocations
+        Encoding.UTF8.GetBytes(value: string)
+        |> BrowserProgress.failedLocations [ "/repo/web/e2e/localization-editor.spec.ts" ]
 
     Expect.equal
         (locations row)
@@ -116,6 +117,7 @@ let private locationControls () =
             row.Replace(":58:1", ":0:1")
             row.Replace(":58:1", ":58:0")
             row.Replace("[chromium]", "[private-title]")
+            row.Replace("localization-editor.spec.ts", "private-credential.spec.ts")
         ] do
         Expect.isEmpty (locations changed) "Private or malformed locations are omitted"
 
@@ -126,10 +128,94 @@ let private locationControls () =
         [ "localization-editor.spec.ts:58" ]
         "Even reporter titles containing private details are never exposed"
 
+let private stackControls () =
+    let files =
+        [
+            "/repo/web/e2e/session-helpers.ts"
+            "/repo/web/e2e/stewardship-authority.spec.ts"
+        ]
+
+    let frame =
+        "        at submitAuthority (/repo/web/e2e/stewardship-authority.spec.ts:66:3)"
+
+    let locations text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.stackLocations files
+
+    Expect.equal
+        (locations (frame + "\n" + frame + "\n        at /repo/web/e2e/session-helpers.ts:108:9"))
+        [ "stewardship-authority.spec.ts:66"; "session-helpers.ts:108" ]
+        "Nested helper and bare frames expose only unique source locations"
+
+    Expect.equal
+        (locations ("\u001b[31m" + frame + "\u001b[0m"))
+        (locations frame)
+        "Colors are omitted"
+
+    for changed in
+        [
+            "private payload " + frame
+            frame.Replace("/repo/", "/private/")
+            frame.Replace("/e2e/", "/e2e/../e2e/")
+            frame.Replace(".spec.ts", ".spec.ts?token=private")
+            frame.Replace(":66:3", ":0:3")
+            frame.Replace(":66:3", ":66:0")
+            frame.Replace("stewardship-authority.spec.ts", "private-payload.spec.ts")
+            frame.Replace("submitAuthority (", "private\n(")
+        ] do
+        Expect.isEmpty
+            (locations changed)
+            "Unknown, malformed or private stack locations are omitted"
+
+    let many =
+        [ 1..8 ]
+        |> List.map (fun line -> frame.Replace(":66:3", $":{line}:3"))
+        |> String.concat "\n"
+
+    Expect.equal (locations many |> List.length) 5 "Public stack is bounded"
+
+let private categoryControls () =
+    let categories text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.failureCategories
+
+    let privateDetails =
+        "private-token https://private.invalid/credential claimant-body"
+
+    let errors =
+        [
+            "    Error: expect(locator).toHaveText(" + privateDetails + ") failed"
+            "    Error: E2E_AXE_LANDMARK_ONE_MAIN__REGION"
+            "    TimeoutError: " + privateDetails
+            "    Error: " + privateDetails
+            "    AssertionError: " + privateDetails
+        ]
+        |> String.concat "\n"
+
+    Expect.equal
+        (categories errors)
+        [ "ACCESSIBILITY"; "ASSERTION"; "ERROR"; "TIMEOUT" ]
+        "Only closed categories survive private assertion, accessibility and timeout details"
+
+    Expect.equal
+        (categories ("payload Error: " + privateDetails))
+        []
+        "Unrelated text is not an error"
+
+    Expect.equal
+        (categories "    Error: E2E_AXE_RULE private-token")
+        [ "ERROR" ]
+        "Marker requires a safe suffix"
+
+    Expect.equal
+        (categories "    Test timeout of 30000ms exceeded.")
+        [ "TIMEOUT" ]
+        "Runner deadline category"
+
 let private controls () =
     cleanupControls ()
     progressControls ()
     locationControls ()
+    stackControls ()
+    categoryControls ()
 
     let deadline =
         failure Deadline "printf synthetic-out; printf synthetic-err >&2; sleep 2" None 64 250

@@ -189,21 +189,35 @@ let private browserArguments engine =
     @ [ "--project"; engine; "--forbid-only"; "--max-failures=1" ]
     @ (if smoke then [ "--global-timeout=120000" ] else [])
 
-let private printFailureSummary engine bytes =
+let private printFailureSummary root engine bytes =
+    let codeFiles =
+        try
+            Directory.EnumerateFiles(
+                Path.Combine(root, "web", "e2e"),
+                "*",
+                SearchOption.AllDirectories
+            )
+            |> Seq.toArray
+        with
+        | :? IOException
+        | :? UnauthorizedAccessException -> [||]
+
     let passed, failed = BrowserProgress.counts bytes
-    let locations = BrowserProgress.failedLocations bytes |> String.concat ","
+    let locations = BrowserProgress.failedLocations codeFiles bytes |> String.concat ","
+    let stack = BrowserProgress.stackLocations codeFiles bytes |> String.concat ","
+    let categories = BrowserProgress.failureCategories bytes |> String.concat ","
 
     Console.WriteLine(
-        $"Published {engine}: completed rows passed={passed}, failed={failed}; locations={locations}"
+        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; stack={stack}"
     )
 
-let private runBrowser engine output start =
+let private runBrowser root engine output start =
     try
         PublishedProcesses.run 900_000 start None
     with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
         FixtureFiles.write output "playwright.stdout" failure.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" failure.StandardError |> ignore
-        printFailureSummary engine failure.StandardOutput
+        printFailureSummary root engine failure.StandardOutput
 
         Console.WriteLine(
             $"Published {engine}: bounded process cleanupFailed={failure.CleanupFailed}"
@@ -245,17 +259,17 @@ let private qualifyEngine engine =
         let start = PublishedProcesses.start "npm" (browserArguments engine) values
 
         start.WorkingDirectory <- Path.Combine(fixture.Root, "web")
-        let result = runBrowser engine output start
+        let result = runBrowser fixture.Root engine output start
         FixtureFiles.write output "playwright.stdout" result.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" result.StandardError |> ignore
 
         if result.ExitCode <> 0 then
-            printFailureSummary engine result.StandardOutput
+            printFailureSummary fixture.Root engine result.StandardOutput
 
         Expect.equal
             result.ExitCode
             0
-            ("Published browser scope " + engine + "; private logs: " + output)
+            ("Published browser scope " + engine + "; private evidence retained")
 
         report (if smoke then 11 else 131) engine result
         BrowserReadback.qualify fixture output
