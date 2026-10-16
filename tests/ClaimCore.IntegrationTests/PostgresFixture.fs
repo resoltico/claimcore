@@ -66,6 +66,14 @@ let private container () =
 
 let internal empty () = container ()
 
+let private disposalSteps (container: PostgreSqlContainer) (sources: NpgsqlDataSource list) =
+    [
+        for source in sources do
+            (fun () -> source.Dispose())
+
+        (fun () -> container.DisposeAsync().AsTask().GetAwaiter().GetResult())
+    ]
+
 let private admittedDatabase
     (container: PostgreSqlContainer)
     sources
@@ -74,10 +82,7 @@ let private admittedDatabase
     installationId
     =
     let dispose () =
-        for source: NpgsqlDataSource in sources do
-            source.Dispose()
-
-        container.DisposeAsync().AsTask().GetAwaiter().GetResult()
+        disposalSteps container sources |> ClaimCore.TestSupport.FixtureDisposal.finish
 
     let fixture =
         {
@@ -148,11 +153,9 @@ let internal create () =
             | :? IO.IOException
             | :? ObjectDisposedException -> ()
 
-            for source in sources do
-                source.Dispose()
+            disposalSteps container sources
+            |> ClaimCore.TestSupport.FixtureDisposal.afterFailure error
 
-            do! container.DisposeAsync().AsTask()
-            Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
             return Unchecked.defaultof<Database>
     }
 

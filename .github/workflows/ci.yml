@@ -140,13 +140,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Cache frontend package downloads
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ${{ runner.temp }}/claimcore-npm-cache
+          key: frontend-npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.node-version', 'web/package.json', 'web/package-lock.json') }}
       - name: Run frontend in the deployment Node image
         env:
           NODE_IMAGE: ${{ needs.configuration.outputs.node_image }}
+          NPM_CACHE_DIRECTORY: ${{ runner.temp }}/claimcore-npm-cache
         run: |
+          mkdir -p "${NPM_CACHE_DIRECTORY}"
           docker run --rm --user "$(id -u):$(id -g)" \
             --env CI=true --env NO_COLOR=1 --env HOME=/tmp/claimcore-home \
             --env NPM_CONFIG_CACHE=/tmp/claimcore-npm-cache \
+            --volume "${NPM_CACHE_DIRECTORY}:/tmp/claimcore-npm-cache" \
             --volume "$PWD:/workspace" --workdir /workspace "${NODE_IMAGE}" \
             bash -euo pipefail -c '
               mkdir -p "${HOME}"

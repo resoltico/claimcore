@@ -2,22 +2,9 @@ module ClaimCore.AcceptanceTests.FixtureCleanup
 
 open System.IO
 open System
-open System.Runtime.ExceptionServices
 open Expecto
 
-let internal finish (steps: (unit -> unit) list) =
-    let failures = ResizeArray<exn>()
-
-    for step in steps do
-        try
-            step ()
-        with error ->
-            failures.Add error
-
-    match failures.Count with
-    | 0 -> ()
-    | 1 -> ExceptionDispatchInfo.Capture(failures[0]).Throw()
-    | _ -> raise (AggregateException("Fixture teardown failed.", failures))
+let internal finish = ClaimCore.TestSupport.FixtureDisposal.finish
 
 type internal OwnedDirectory() =
     let root = FixtureFiles.directory ()

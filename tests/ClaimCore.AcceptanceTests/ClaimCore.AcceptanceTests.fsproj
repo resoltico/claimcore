@@ -3,6 +3,7 @@
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../FixtureDisposal.fs" Link="FixtureDisposal.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />

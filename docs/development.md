@@ -63,6 +63,12 @@ the hosted runner's preinstalled SDK is outside that container. Native jobs set 
 The container build likewise builds frontend assets in a Node stage and publishes applications
 in an SDK stage.
 
+CI caches NuGet packages and npm downloads using the tracked lockfiles. The SDK-free frontend
+mounts only its npm download cache into the Node container as the runner user. Every run still
+performs locked restore or `npm ci` and the dependency audit; caches do not substitute for checks.
+Product build outputs, `node_modules`, generated assets and test results are not cached. GitHub
+scopes caches by branch; untrusted pull requests do not populate the default branch cache.
+
 The integration CI matrix derives every major from `db/postgresql-baseline.json` and passes it
 as `CLAIMCORE_TEST_POSTGRES_MAJOR`. Both integration and published acceptance fixtures select
 that exact listed major and pinned image. Unset selects the first listed entry for deterministic

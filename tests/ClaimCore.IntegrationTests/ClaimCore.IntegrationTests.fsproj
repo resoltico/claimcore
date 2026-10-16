@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../FixtureDisposal.fs" Link="FixtureDisposal.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
     <Compile Include="PostgresFixture.fs" />
+    <Compile Include="FixtureDisposalTests.fs" />
     <Compile Include="StoreTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="VerificationTests.fs" />
