@@ -126,53 +126,42 @@ const trackFailure = (state: Observation, value: Request) => {
   }
 };
 
-const authorityPhase = async (page: Page): Promise<string> => {
-  try {
-    const panel = page.locator(".authority-panel");
-    if (await page.getByRole("dialog").count()) {
-      return "DISCARD_CONFIRMATION";
-    }
-    if (await panel.getByRole("heading", { name: "Review exact request", exact: true }).count()) {
-      return "REVIEW";
-    }
-    if (await panel.getByRole("alert").count()) {
-      return "FAILURE";
-    }
-    const picker = panel.getByLabel("Case action", { exact: true });
-    if (
-      (await picker.count()) &&
-      (await picker.locator("option").count()) &&
-      (await picker.isEnabled())
-    ) {
-      return "USABLE_PICKER";
-    }
-    if (
-      await panel
-        .getByRole("status")
-        .filter({ hasText: /^Loading/u })
-        .count()
-    ) {
-      return "LOADING";
-    }
-    return "EMPTY_ADVICE";
-  } catch {
-    return "UNAVAILABLE";
+const readAuthorityDOM = () => {
+  const panel = document.querySelector(".authority-panel");
+  if (panel === null) {
+    return { phase: "UNAVAILABLE", picker: "MISSING UNOBSERVED" };
   }
+  const select = panel.querySelector<HTMLSelectElement>("form select");
+  const enabled = select !== null && !select.matches(":disabled");
+  const grant =
+    select !== null && Array.from(select.options).some((option) => option.value === "SET_GRANT");
+  const picker =
+    select === null
+      ? "MISSING UNOBSERVED"
+      : `${enabled ? "ENABLED" : "DISABLED"} ${grant ? "GRANT" : "NO_GRANT"}`;
+  const dialog = Array.from(document.querySelectorAll('[role="dialog"]')).some(
+    (element) => element.getClientRects().length > 0,
+  );
+  const review = Array.from(panel.querySelectorAll("h3")).some(
+    (element) => element.textContent === "Review exact request",
+  );
+  const loading = Array.from(panel.querySelectorAll('[role="status"]')).some((element) =>
+    (element.textContent ?? "").trim().startsWith("Loading"),
+  );
+  const phases: [boolean, string][] = [
+    [dialog, "DISCARD_CONFIRMATION"],
+    [review, "REVIEW"],
+    [panel.querySelector('[role="alert"]') !== null, "FAILURE"],
+    [enabled && select !== null && select.options.length > 0, "USABLE_PICKER"],
+    [loading, "LOADING"],
+  ];
+  return { phase: phases.find(([matches]) => matches)?.[1] ?? "EMPTY_ADVICE", picker };
 };
-
-const authorityPicker = async (page: Page): Promise<string> => {
+const authoritySnapshot = async (page: Page): Promise<{ phase: string; picker: string }> => {
   try {
-    const picker = page.locator(".authority-panel").getByLabel("Case action", { exact: true });
-    if (!(await picker.count())) {
-      return "MISSING UNOBSERVED";
-    }
-    const [enabled, grant] = await Promise.all([
-      picker.isEnabled(),
-      picker.locator('option[value="SET_GRANT"]').count(),
-    ]);
-    return `${enabled ? "ENABLED" : "DISABLED"} ${grant > 0 ? "GRANT" : "NO_GRANT"}`;
+    return await page.evaluate(readAuthorityDOM);
   } catch {
-    return "UNOBSERVED UNOBSERVED";
+    return { phase: "UNAVAILABLE", picker: "UNOBSERVED UNOBSERVED" };
   }
 };
 
@@ -182,11 +171,10 @@ const recordTiming = (state: Observation) => {
     state.timings.set(state.stage, value);
   }
 };
-const reportFailure = async (page: Page, state: Observation) => {
+const reportFailure = (state: Observation) => {
   const ended = state.clock();
-  const phase = await authorityPhase(page);
   const lines = [
-    `E2E_AUTHORITY_PHASE ${phase === "UNAVAILABLE" ? state.phase : phase}`,
+    `E2E_AUTHORITY_PHASE ${state.phase}`,
     `E2E_AUTHORITY_ADVICE ${state.advice.kind} ${state.advice.count}`,
     `E2E_AUTHORITY_PICKER ${state.picker}`,
   ];
@@ -250,21 +238,20 @@ export const observeAuthorityRefresh = (page: Page, info?: Pick<TestInfo, "timeo
       state.stage = stage;
       recordTiming(state);
       if (stage === "REGISTER_ACTOR" || stage === "NEXT_GRANT") {
-        const [phase, picker] = await Promise.all([authorityPhase(page), authorityPicker(page)]);
+        const { phase, picker } = await authoritySnapshot(page);
         if (phase !== "UNAVAILABLE") {
           state.phase = phase;
+          state.picker = picker;
         }
-        state.picker = picker;
-        recordTiming(state);
       }
     },
-    finish: async (report: boolean) => {
+    finish: (report: boolean) => {
       state.closed = true;
       page.off("request", request);
       page.off("response", response);
       page.off("requestfailed", failed);
       if (report) {
-        await reportFailure(page, state);
+        reportFailure(state);
       }
     },
   };

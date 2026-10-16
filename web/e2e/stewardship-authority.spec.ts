@@ -119,6 +119,6 @@ test("browser registers service principals, changes scoped grants and enablement
     await expectAccessible(page);
     completed = true;
   } finally {
-    await evidence.finish(!completed);
+    evidence.finish(!completed);
   }
 });
