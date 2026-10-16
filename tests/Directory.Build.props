@@ -17,4 +17,12 @@
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
     <PackageReference Include="YoloDev.Expecto.TestSdk" PrivateAssets="all" />
   </ItemGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'ClaimCore.Tests' Or '$(MSBuildProjectName)' == 'ClaimCore.AcceptanceTests'">
+    <ClaimCoreNativeProgram Include="$(MSBuildThisFileDirectory)native/process-supervisor.c" ProgramName="claimcore-test-supervisor" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'ClaimCore.Tests'">
+    <ClaimCoreNativeProgram Include="$(MSBuildThisFileDirectory)native/private_file_controls.c"
+                            ProgramName="claimcore-private-file-controls"
+                            Headers="$(MSBuildThisFileDirectory)../src/ClaimCore.HostSecurity/native/private_file.c;$(MSBuildThisFileDirectory)../src/ClaimCore.HostSecurity/native/private_file.h" />
+  </ItemGroup>
 </Project>

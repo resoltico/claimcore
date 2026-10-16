@@ -57,6 +57,8 @@
     <Compile Include="CliReplyLossTests.fs" />
     <Compile Include="CliFrameTests.fs" />
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
+    <Compile Include="../ProcessResolution.fs" Link="ProcessResolution.fs" />
+    <Compile Include="../ProcessSupervision.fs" Link="ProcessSupervision.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="VerificationStageTests.fs" />
     <Compile Include="DocumentationChecks.fs" />

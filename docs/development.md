@@ -10,24 +10,47 @@ Restore locked NuGet inputs and build the solution with .NET. Run `npm --prefix 
 and `npm --prefix web run build` for frontend assets. Ordinary .NET builds do not invoke npm;
 frontend consumers use the tracked `contracts/` artifacts and require no .NET process.
 
+Native .NET consumers also need the C17 toolchain enforced by [build-native.sh](../eng/build-native.sh):
+macOS Command Line Tools with Apple Clang 17+, macOS SDK 15+ and deployment target 14.0;
+or Linux with GCC 13+ and glibc development headers. Only matching native `osx-x64`,
+`osx-arm64`, `linux-x64` and `linux-arm64` hosts/targets are supported. Cross-RID builds,
+Windows and musl are refused; use the matching host instead. Linux private-file tests additionally
+require `setfacl` from the `acl` package. CI prepares these prerequisites; Docker builds use the
+pinned GCC/Bookworm compiler and headers stage declared in [Dockerfile](../deployment/Dockerfile).
+Compiler, SDK, flags, source and header inputs participate in incremental native builds.
+Normal builds and framework-dependent `publish --no-build --no-restore` carry the HostSecurity
+library into all three applications. Preserve the complete publish directory. Trimming,
+single-file and self-contained publication are outside the reviewed notice coverage and refused.
+
+Shared application items copy the reviewed notice superset and manifest from
+[eng/licenses](../eng/licenses/native-notices.json), plus SDK-resolved apphost provenance.
+Acceptance checks selected dependency/runtime/resource assets and actual recursive publication
+contents against this review, including native assets and the apphost outside `.deps.json`.
+Package-declared and reviewed source revisions are distinguished where an upstream declared
+revision is unavailable; the review does not claim inaccessible contents were inspected.
+Source archives include the native sources/headers, build plumbing and canonical notices;
+there is no binary-only source dependency.
+
 ## Verification stages
 
-`bash eng/verify.sh` runs the complete local gate. Named stages run independently or in order,
+`bash eng/verify.sh` with no arguments runs the complete local gate. Named stages run independently or in order,
 for example `bash eng/verify.sh unit frontend`; `--fast` runs native lint, unit/architecture and
-frontend checks without Docker. Restore, native build and frontend asset build work are shared
+frontend checks without Docker and must be its only argument. Explicit empty arguments,
+unknown stages and `--fast` mixed with other arguments refuse with exit 64 before invoking tools
+or Docker. Restore, native build and frontend asset build work are shared
 within one invocation; a later acceptance stage reuses the frontend stage's successful asset build.
 Stages requiring Docker check the daemon before any selected restore, build or browser download.
 
-| Stage         | Coverage and prerequisites                                                                               |
-| ------------- | -------------------------------------------------------------------------------------------------------- |
-| `lint`        | .NET restore, F# formatting and lint                                                                     |
-| `unit`        | .NET build, native/property and unoptimized architecture tests; tracked contract freshness               |
-| `frontend`    | Node only: locked install, audit, formatting, lint, types, unit tests, Knip, licenses, build and notices |
-| `workflows`   | ShellCheck and pinned Actionlint container; Docker required                                              |
-| `integration` | Isolated PostgreSQL and Web/identity-provider tests; builds their project closures; Docker required |
+| Stage              | Coverage and prerequisites                                                                                           |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `lint`             | .NET restore, F# formatting and lint                                                                                 |
+| `unit`             | .NET build, native/property and unoptimized architecture tests; tracked contract freshness                           |
+| `frontend`         | Node only: locked install, audit, formatting, lint, types, unit tests, Knip, licenses, build and notices             |
+| `workflows`        | ShellCheck and pinned Actionlint container; Docker required                                                          |
+| `integration`      | Isolated PostgreSQL and Web/identity-provider tests; builds their project closures; Docker required                  |
 | `postgres` / `web` | Independent complete PostgreSQL or Web/identity suite; restores and builds only its project closure; Docker required |
-| `browsers`    | Locked npm install and Playwright browser/dependency installation                                        |
-| `acceptance`  | Published service/CLI and browser tests; .NET, Node, Docker and installed browsers required              |
+| `browsers`         | Locked npm install and Playwright browser/dependency installation                                                    |
+| `acceptance`       | Published service/CLI and browser tests; .NET, Node, Docker and installed browsers required                          |
 
 Use `bash eng/verify.sh browsers acceptance` to install browsers and then qualify published
 clients. Tests use native Microsoft Testing Platform; every module is discovered with `[<Tests>]`
@@ -63,7 +86,7 @@ The frontend CI job executes inside the pinned Node image derived from the deplo
 with a writable temporary home. It refuses an executable `dotnet` before running frontend checks;
 the hosted runner's preinstalled SDK is outside that container. Native jobs set up .NET only.
 The container build likewise builds frontend assets in a Node stage and publishes applications
-in an SDK stage.
+in a .NET SDK plus pinned C compiler stage.
 
 CI toolchain jobs cache NuGet packages and npm downloads using the tracked lockfiles. The
 SDK-free frontend container mounts a download-only npm cache keyed by its pinned toolchain,
@@ -104,6 +127,19 @@ evaluation stack. Tracked contract artifacts are reviewed with their F# producer
 localizations/assets, private inputs and reports stay ignored. Only remove resources created
 by the current run. CSS has formatting and browser accessibility/layout checks, with no dedicated
 semantic lint stage.
+
+## Test process lifetime
+
+The test-only native supervisor starts a session before launching the target and remains its
+process-group anchor until teardown. Anonymous control/status pipes distinguish target exit,
+signal and exec failure; controller EOF also triggers teardown. Managed bounded readers preserve
+partial evidence and original failure identity. Cleanup has its own bound and observes group
+absence after the anchor exits; failed or incomplete cleanup is reported, never inferred from
+target exit. Ordinary descendants in the inherited group are covered. Deliberate session/daemon
+escape is outside this fixture contract. The supervisor and its resolution probes never ship in
+product outputs. Executable resolution follows the supported .NET Unix behavior before launch,
+including controller PATH/cwd semantics; isolated child tests qualify that behavior without
+changing the test runner's environment. The quiet-output oracle remains 250 ms and 64 bytes.
 
 ## Changes
 

@@ -3,11 +3,17 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-case "${1:-}" in
-  "") stages=(lint unit frontend workflows integration acceptance) ;;
-  --fast) stages=(lint unit frontend) ;;
-  *) stages=("$@") ;;
-esac
+if [[ $# -eq 0 ]]; then
+  stages=(lint unit frontend workflows integration acceptance)
+elif [[ "$1" == --fast ]]; then
+  if [[ $# -ne 1 ]]; then
+    echo "--fast must be the sole argument" >&2
+    exit 64
+  fi
+  stages=(lint unit frontend)
+else
+  stages=("$@")
+fi
 # Validate all arguments before restoring inputs or running a partial gate.
 for stage in "${stages[@]}"; do
   case "${stage}" in
@@ -126,10 +132,10 @@ lint() {
 unit() {
   build_native
   # Native freshness tests check the complete tracked contracts/ inventory and exact bytes.
-  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 332
+  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 339
   dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
     --configuration Debug --no-restore -p:Optimize=false
-  tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 40 Debug 15m
+  tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 43 Debug 15m
 }
 
 frontend() { # Node only: no generated contract prerequisite or .NET process.
@@ -157,7 +163,7 @@ integration() {
 
 postgres() {
   build_native tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
-  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 118 Release 20m eng/expecto.integration.runsettings
+  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 121 Release 20m eng/expecto.integration.runsettings
 }
 
 web() {
@@ -189,7 +195,7 @@ acceptance() {
   build_native
   build_frontend
   # One native case sequences every selected engine and stops before starting a later engine after a failure.
-  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 17 Release 40m
+  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 19 Release 40m
 }
 
 for stage in "${stages[@]}"; do

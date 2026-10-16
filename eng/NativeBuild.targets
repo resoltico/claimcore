@@ -1,0 +1,45 @@
+<Project>
+  <PropertyGroup>
+    <ClaimCoreNativeRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</ClaimCoreNativeRid>
+    <ClaimCoreNativeRid Condition="'$(ClaimCoreNativeRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</ClaimCoreNativeRid>
+    <ClaimCoreNativeDirectory>$(ArtifactsPath)/native/$(MSBuildProjectName)/$(ClaimCoreNativeRid)/$(Configuration)</ClaimCoreNativeDirectory>
+    <ClaimCoreNativeLibraryExtension Condition="$([MSBuild]::IsOSPlatform('OSX'))">dylib</ClaimCoreNativeLibraryExtension>
+    <ClaimCoreNativeLibraryExtension Condition="$([MSBuild]::IsOSPlatform('Linux'))">so</ClaimCoreNativeLibraryExtension>
+    <ClaimCoreNativeBuildScript>$(MSBuildThisFileDirectory)build-native.sh</ClaimCoreNativeBuildScript>
+  </PropertyGroup>
+  <ItemGroup>
+    <ClaimCoreNativeArtifact Include="@(ClaimCoreNativeLibrary)">
+      <Kind>library</Kind>
+      <OutputPath>$(ClaimCoreNativeDirectory)/lib%(LibraryName).$(ClaimCoreNativeLibraryExtension)</OutputPath>
+      <Publish>PreserveNewest</Publish>
+    </ClaimCoreNativeArtifact>
+    <ClaimCoreNativeArtifact Include="@(ClaimCoreNativeProgram)">
+      <Kind>program</Kind>
+      <OutputPath>$(ClaimCoreNativeDirectory)/%(ProgramName)</OutputPath>
+      <Publish>Never</Publish>
+    </ClaimCoreNativeArtifact>
+    <Content Include="@(ClaimCoreNativeArtifact->'%(OutputPath)')">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>%(ClaimCoreNativeArtifact.Publish)</CopyToPublishDirectory>
+      <Visible>false</Visible>
+    </Content>
+  </ItemGroup>
+  <Target Name="ClaimCoreValidateNativeHost"
+          BeforeTargets="BuildOnlySettings;PrepareForBuild;ComputeFilesToPublish;GetCopyToOutputDirectoryItems;GetCopyToPublishDirectoryItems"
+          Condition="'@(ClaimCoreNativeArtifact)' != '' Or '$(IsShippedApplication)' == 'true'">
+    <Error Condition="'@(ClaimCoreNativeLibrary)' != '' And '$(MSBuildProjectName)' != 'ClaimCore.HostSecurity'"
+           Text="Product native libraries belong only to ClaimCore.HostSecurity." />
+    <Error Condition="'@(ClaimCoreNativeProgram)' != '' And '$(MSBuildProjectName)' != 'ClaimCore.Tests' And '$(MSBuildProjectName)' != 'ClaimCore.AcceptanceTests'"
+           Text="Native supervisor/control programs belong only to the applicable test projects." />
+    <Exec Command="bash &quot;$(ClaimCoreNativeBuildScript)&quot; identify &quot;$(ClaimCoreNativeRid)&quot; &quot;$(ClaimCoreNativeDirectory)/toolchain.txt&quot;" />
+  </Target>
+  <Target Name="ClaimCoreBuildNative"
+          BeforeTargets="BeforeBuild"
+          DependsOnTargets="ClaimCoreValidateNativeHost"
+          Condition="'@(ClaimCoreNativeArtifact)' != ''"
+          Inputs="$(MSBuildAllProjects);$(MSBuildProjectFullPath);%(ClaimCoreNativeArtifact.Identity);%(ClaimCoreNativeArtifact.Headers);$(ClaimCoreNativeBuildScript);$(MSBuildThisFileFullPath);$(ClaimCoreNativeDirectory)/toolchain.txt"
+          Outputs="%(ClaimCoreNativeArtifact.OutputPath)">
+    <Exec Command="bash &quot;$(ClaimCoreNativeBuildScript)&quot; %(ClaimCoreNativeArtifact.Kind) &quot;$(ClaimCoreNativeRid)&quot; &quot;%(ClaimCoreNativeArtifact.Identity)&quot; &quot;%(ClaimCoreNativeArtifact.OutputPath)&quot;" />
+  </Target>
+</Project>

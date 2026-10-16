@@ -9,13 +9,17 @@ open ClaimCore.Hosting
 open ClaimCore.HostSecurity
 
 module internal TlsCertificate =
-    let load hostname path =
+    let private certificateBytes path =
+        match PrivateFile.read (8 * 1024 * 1024) path with
+        | Ok value when value.Length > 0 -> value
+        | Error PrivateFileFailure.NativeAssetUnavailable ->
+            Console.Error.WriteLine PrivateFile.nativeAssetGuidance
+            WebStartupDiagnostics.refuse WebStartupProblem.CertificateAccessRefused
+        | Ok _
+        | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.CertificateAccessRefused
 
-        let bytes =
-            match PrivateFile.read (8 * 1024 * 1024) path with
-            | Ok value when value.Length > 0 -> value
-            | Ok _
-            | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.CertificateAccessRefused
+    let load hostname path =
+        let bytes = certificateBytes path
 
         // macOS does not implement EphemeralKeySet for PKCS#12 imports. The certificate is a
         // private, mode-restricted local deployment input; use the platform default there and

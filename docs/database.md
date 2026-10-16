@@ -9,8 +9,25 @@ help and version. Discovery opens no database.
 ### CC-DB-002 — Private owner inputs precede database access
 
 The two settings are `CLAIMCORE_ADMIN_CONNECTION_FILE` and `CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE`.
-Connections and owner identity are owner-private regular files. Unsupported platforms,
-symlinks, foreign ownership, group/other permissions, oversized or malformed files are refused.
+Connections and owner identity are owner-private regular files. HostSecurity opens once with
+read-only, no-follow, nonblocking and close-on-exec flags, then checks and reads that same
+admitted descriptor. It requires effective-UID ownership, owner-read permission and no group/other
+mode bits. Unsupported platforms, final-component symlinks, foreign ownership, group/other
+permissions, embedded-NUL, malformed-Unicode or relative paths, oversized or malformed files are refused. Parent
+components and hard links have no additional admission rule.
+
+On Linux/glibc filesystems with [POSIX ACL semantics](https://man7.org/linux/man-pages/man5/acl.5.html),
+group-class access is bounded by the mode mask: zero group mode bits
+prevent named-user/group grants, while owner permissions remain separately checked. On macOS,
+descriptor ACL inspection ignores inherit-only entries and admits denies, empty allows and
+canonical owner-UUID allows; other applicable nonempty allows, unknown fields or inspection/owner
+mapping failures refuse. ACL absence requires successful descriptor metadata/property inspection.
+These are supported filesystem semantics, not protection from a privileged host administrator.
+Synchronous filesystem and owner-directory calls have no universal hard deadline.
+
+The C17 library and matching application must be distributed together. Missing, unloadable or
+wrong-architecture assets refuse before database access and emit fixed nonsecret installation
+guidance on stderr. See [native build prerequisites](development.md#first-checkout).
 The principal file has exactly `operationId`, `issuer` and `subject`; `operationId` is a stable
 nonzero canonical UUID. Provisioning validates one human principal through Application and is
 exact-operation idempotent.

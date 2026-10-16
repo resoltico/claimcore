@@ -7,10 +7,11 @@ before using personal data.
 
 ## Prerequisites
 
-Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, the .NET SDK in
+Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, the [native compiler prerequisites](development.md#first-checkout), and the .NET SDK in
 [`global.json`](../global.json), and Node/npm versions declared by
 [`.node-version`](../.node-version) and [`web/package.json`](../web/package.json).
-Use your intended local Docker engine. Downloads require network access. No C compiler is needed.
+Use your intended local Docker engine. Downloads require network access. The local CLI build needs
+the native compiler/SDK above; image builds carry their pinned Linux compiler.
 For isolated browser trust, also install the NSS certificate utility `certutil` before starting.
 
 Choose a new absolute checkout location, then prepare the CLI and locked browser tools. Compose

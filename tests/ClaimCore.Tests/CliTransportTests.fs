@@ -151,6 +151,127 @@ let private invalidReplies () =
             (if (Frames.endpoint (frame endpoint)).Mutates then 4 else 2)
             "HTTP status is bound to failure body"
 
+let private successfulBody endpoint invocation =
+    let tag =
+        if (Frames.endpoint invocation).Mutates then
+            "ACCEPTED"
+        else
+            "SUCCEEDED"
+
+    let definition = EndpointCatalog.tryFind endpoint |> Option.get
+
+    SchemaSamples.variants definition.Response
+    |> List.find (fun body ->
+        use document = JsonDocument.Parse(ReadOnlyMemory body)
+
+        document.RootElement.GetProperty("outcome").GetProperty("tag").GetString() = tag
+        && (Frames.result invocation body |> Result.isOk))
+
+let private mediaVariants () =
+    for endpoint in [ "case.get"; "case.execute" ] do
+        let invocation = frame endpoint
+
+        for status, body, exit in
+            [
+                200, successfulBody endpoint invocation, 0
+                500, HostFailures.encode HostFailure.BeforeDispatchFailed, 3
+            ] do
+            use canonical = new Handler(fun _ -> Task.FromResult(response status body))
+            let expected = send canonical invocation
+            Expect.equal expected.ExitCode exit "Canonical result and delivery exit"
+
+            for media in
+                [ "application/json"; "APPLICATION/JSON"; "Application/Json; charset=utf-8" ] do
+                use handler =
+                    new Handler(fun _ ->
+                        let message = response status body
+
+                        message.Content.Headers.ContentType <-
+                            System.Net.Http.Headers.MediaTypeHeaderValue.Parse media
+
+                        Task.FromResult message)
+
+                let actual = send handler invocation
+                Expect.equal actual.ExitCode expected.ExitCode "Media casing retains exit"
+
+                Expect.equal
+                    actual.Bytes
+                    expected.Bytes
+                    "Typed result and delivery remain identical"
+
+let private mixedMediaRefusals () =
+    for endpoint in [ "case.get"; "case.execute" ] do
+        let invocation = frame endpoint
+        let expected = if (Frames.endpoint invocation).Mutates then 4 else 2
+
+        for media in [ Some "Application/JSON"; Some "text/plain"; None ] do
+            for status, body in
+                [
+                    200, bytes "{"
+                    200, bytes "{}"
+                    403, HostFailures.encode HostFailure.SessionRejected
+                ] do
+                use handler =
+                    new Handler(fun _ ->
+                        let message = response status body
+
+                        message.Content.Headers.ContentType <-
+                            media
+                            |> Option.map System.Net.Http.Headers.MediaTypeHeaderValue.Parse
+                            |> Option.toObj
+
+                        Task.FromResult message)
+
+                Expect.equal
+                    (send handler invocation).ExitCode
+                    expected
+                    "Invalid replies stay refused"
+
+let private absentJsonMedia () =
+    for endpoint in [ "case.get"; "case.execute" ] do
+        let invocation = frame endpoint
+        let body = successfulBody endpoint invocation
+        let expected = if (Frames.endpoint invocation).Mutates then 4 else 2
+
+        for media in [ Some "text/plain"; None ] do
+            use handler =
+                new Handler(fun _ ->
+                    let message = response 200 body
+
+                    message.Content.Headers.ContentType <-
+                        media
+                        |> Option.map System.Net.Http.Headers.MediaTypeHeaderValue.Parse
+                        |> Option.toObj
+
+                    Task.FromResult message)
+
+            Expect.equal (send handler invocation).ExitCode expected "JSON media is required"
+
+let private mixedMediaCorrelation () =
+    let invocation = frame "case.execute"
+
+    let node =
+        successfulBody "case.execute" invocation
+        |> System.Text.Json.Nodes.JsonNode.Parse
+        |> nonNull
+
+    let receipt = node["outcome"] |> nonNull |> fun value -> value["data"] |> nonNull
+    receipt["caseReference"] <- System.Text.Json.Nodes.JsonValue.Create("another")
+    let body = node.ToJsonString() |> bytes
+
+    Expect.isError (Frames.result invocation body) "Changed receipt identity is uncorrelated"
+
+    use handler =
+        new Handler(fun _ ->
+            let message = response 200 body
+
+            message.Content.Headers.ContentType <-
+                System.Net.Http.Headers.MediaTypeHeaderValue "Application/JSON"
+
+            Task.FromResult message)
+
+    Expect.equal (send handler invocation).ExitCode 4 "Mixed media cannot settle wrong correlation"
+
 let private localExits () =
     for failure, expected in
         [
@@ -270,7 +391,11 @@ let tests =
         [
             testCase "response bounds media status and cancellation guards reject" (fun () ->
                 responseBounds ()
-                dispatchGuards ())
+                dispatchGuards ()
+                mediaVariants ()
+                mixedMediaRefusals ()
+                absentJsonMedia ()
+                mixedMediaCorrelation ())
             testCase "all result tags select the specified exit" resultExits
             testCase "catalogue methods handshake and exact input bytes are sent" requestBytes
             testCase "all typed service failure phases preserve mutation knowledge" failurePhases

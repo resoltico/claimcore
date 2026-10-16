@@ -11,7 +11,15 @@ Playwright engine and its Linux dependencies; `acceptance` builds and tests publ
 closures; `integration` sequences these stages and reuses an earlier solution build when available.
 Docker-dependent stages check the daemon before any selected expensive work. CI starts the two
 suites independently of lint/unit completion and requires every suite in `Gate`. `workflows` checks shell scripts and workflow syntax.
-`Check-FSharpLint.sh` retains every failure.
+`Check-FSharpLint.sh` retains every failure. With no arguments `verify.sh` selects the default;
+`--fast` must stand alone. Empty or invalid arguments refuse before tools or Docker.
+
+`build-native.sh` owns the C17 host/compiler/SDK policy, consumed by `NativeBuild.targets`.
+It builds the product HostSecurity library and separate test-only programs incrementally;
+unsupported or cross-RID compilation refuses. [Development](../docs/development.md#first-checkout)
+owns contributor prerequisites and publication limits. `licenses/native-notices.json` is the
+reviewed package/asset provenance and canonical-text owner; app publication copies this common
+superset without consulting the NuGet cache.
 
 ContractGenerator derives tracked catalogue, schemas, descriptors, corpus and client declarations
 from Contracts. Native tests check exact artifact bytes and inventory, without invoking Node.

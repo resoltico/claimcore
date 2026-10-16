@@ -66,6 +66,52 @@ let private start directory platform engine stages =
 
     config, commands
 
+let private stageArguments directory =
+    for stages in
+        [
+            [ "--fast"; "acceptance" ]
+            [ "--fast"; "not-a-stage" ]
+            [ "--fast"; "--fast" ]
+            [ "unit"; "--fast" ]
+            [ "" ]
+            [ ""; "acceptance" ]
+        ] do
+        let config, commands = start directory "Linux" None stages
+        let result = BoundedProcess.run config None 8192 10000
+        Expect.equal result.ExitCode 64 "Malformed selectors refuse before work"
+        Expect.isEmpty (File.ReadAllLines commands) "No tool starts"
+        Expect.isEmpty (File.ReadAllLines(commands + ".docker")) "No Docker starts"
+
+let private orderedStages directory =
+    for stages in [ [ "--fast" ]; [ "frontend"; "unit" ]; [] ] do
+        let config, commands = start directory "Linux" None stages
+        let result = BoundedProcess.run config None 8192 10000
+        Expect.equal result.ExitCode 0 "Supported selectors succeed"
+        let actual = File.ReadAllLines commands |> Array.toList
+
+        let first (prefix: string) =
+            actual |> List.findIndex _.StartsWith(prefix)
+
+        if stages = [ "frontend"; "unit" ] then
+            Expect.isLessThan (first "--prefix web ci") (first "dotnet restore") "Named order"
+        else
+            Expect.isLessThan
+                (first "dotnet tool restore")
+                (first "dotnet test ")
+                "Lint before unit"
+
+            Expect.isLessThan
+                (first "dotnet test ")
+                (first "--prefix web ci")
+                "Unit before frontend"
+
+        if stages = [ "--fast" ] then
+            Expect.isEmpty (File.ReadAllLines(commands + ".docker")) "Fast needs no Docker"
+        else if stages.IsEmpty then
+            Expect.isTrue
+                ((File.ReadAllLines(commands + ".docker")).Length > 0)
+                "Default includes Docker"
+
 let private installSets directory =
     let expected =
         [
@@ -152,9 +198,17 @@ let private sharedBuild directory =
             1
             "Packages restore once"
 
-        Expect.isTrue
-            (actual |> Array.exists _.StartsWith("dotnet test "))
-            "Acceptance launches after assets build"
+        let execution = actual |> Array.find _.StartsWith("dotnet test ")
+
+        Expect.stringContains
+            execution
+            "ClaimCore.AcceptanceTests.fsproj"
+            "Acceptance launches after assets"
+
+        Expect.stringContains
+            execution
+            "--minimum-expected-tests=19"
+            "Independent acceptance discovery floor"
 
 let private failedBuild directory =
     let config, commands = start directory "Linux" None [ "acceptance" ]
@@ -170,7 +224,7 @@ let private nativeStages directory =
     let project suite =
         "tests/ClaimCore." + suite + "Tests/ClaimCore." + suite + "Tests.fsproj"
 
-    for stage, suite, floor in [ "postgres", "Integration", 118; "web", "Web", 76 ] do
+    for stage, suite, floor in [ "postgres", "Integration", 121; "web", "Web", 76 ] do
         let config, commands = start directory "Linux" None [ stage ]
         let result = BoundedProcess.run config None 8192 10000
         Expect.equal result.ExitCode 0 "Independent native suite succeeds"
@@ -259,13 +313,16 @@ let private nativeUnitFloor directory =
     let result = BoundedProcess.run config None 8192 10000
     Expect.equal result.ExitCode 0 "Unit stage launches complete native qualification"
 
-    let execution =
-        File.ReadAllLines commands |> Array.find _.StartsWith("dotnet test ")
+    let executions =
+        File.ReadAllLines commands |> Array.filter _.StartsWith("dotnet test ")
 
-    Expect.stringContains
-        execution
-        "--minimum-expected-tests=332"
-        "Independent native discovery floor"
+    Expect.equal executions.Length 2 "Both complete native suites launch"
+
+    for execution, floor in List.zip (Array.toList executions) [ 339; 43 ] do
+        Expect.stringContains
+            execution
+            ("--minimum-expected-tests=" + string floor)
+            "Independent native and architecture discovery floors"
 
 let private unavailableDocker directory =
     for stages in
@@ -295,6 +352,8 @@ let tests =
                 Directory.CreateTempSubdirectory("claimcore-verification-stage-").FullName
 
             try
+                stageArguments directory
+                orderedStages directory
                 installSets directory
                 invalidSelection directory
                 invalidPostgresSelection directory

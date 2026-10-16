@@ -13,6 +13,7 @@
     <Compile Include="StoreTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="VerificationTests.fs" />
+    <Compile Include="CaseProjectionTests.fs" />
     <Compile Include="SchemaTests.fs" />
     <Compile Include="PaginationTests.fs" />
     <Compile Include="GrantPaginationTests.fs" />

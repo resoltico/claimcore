@@ -27,7 +27,12 @@ without core dependencies. ContractGenerator projects the same definitions into 
 catalogue values and executable browser schemas/builders; complete inventory and byte checks
 reject missing, extra and stale outputs. Structural JSON Schema alone does not express the
 fingerprinted byte profile (UTF-8, duplicate names, Unicode, numeric lexemes and bounds). HostSecurity
-admits private files.
+admits private files through its own original public-header C17 shim. Only scalar admission
+statuses and the admitted descriptor cross that native boundary; platform layouts and constants
+remain in C. The managed owner consumes that descriptor once. Shared native build plumbing also
+builds the separate test-only process supervisor, without sharing either mechanism or adding a
+product process-supervision dependency. Product native items belong only to HostSecurity;
+test executables belong only to their test projects.
 Postgres owns transactions, projection persistence, schema administration and verification.
 Hosting owns case-work composition, typed protocol dispatch and runtime lifetime. Its public service
 accepts verified subject facts and opaque admitted inputs and returns encoded replies with safe audit

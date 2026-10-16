@@ -136,15 +136,25 @@ let private tokenResponse () =
     let valid =
         """{"access_token":"synthetic-token","token_type":"Bearer","expires_in":300}"""
 
-    match OAuthTokenClient.parseTokenResponse (Encoding.UTF8.GetBytes(valid)) with
-    | Ok token ->
-        Expect.equal (token.ToString()) "<redacted access token>" "Secret is not printable"
-        Expect.equal token.Authorization.Scheme "Bearer" "Bearer scheme"
-    | Error _ -> failtest "Expected bounded synthetic token"
+    for kind in [ "Bearer"; "bearer"; "BEARER"; "bEaReR" ] do
+        let body = valid.Replace("Bearer", kind)
+
+        match OAuthTokenClient.parseTokenResponse (Encoding.UTF8.GetBytes(body)) with
+        | Ok token ->
+            Expect.equal (token.ToString()) "<redacted access token>" "Secret is not printable"
+            Expect.equal token.Authorization.Scheme "Bearer" "Canonical bearer scheme"
+            Expect.equal token.Authorization.Parameter "synthetic-token" "Exact credential bytes"
+        | Error _ -> failtest "Expected bounded synthetic token with case-insensitive type"
 
     for invalid in
         [
             valid.Replace("Bearer", "Basic")
+            valid.Replace("Bearer", "")
+            valid.Replace("Bearer", " Bearer")
+            valid.Replace("Bearer", "Bearer ")
+            valid.Replace("\"Bearer\"", "null")
+            valid.Replace("\"Bearer\"", "1")
+            valid.Replace("token_type", "Token_Type")
             valid.Replace("300", "0")
             valid.Replace("synthetic-token", "")
             "{"

@@ -97,60 +97,93 @@ module BoundedProcess =
 
         BoundedProcessFailure(kind, stdout (), stderr (), cleanupFailed)
 
-    let private stopChild (child: Process) started =
-        if not started || child.HasExited then
-            true
-        else
-            child.Kill(true)
-            child.WaitForExit(2000)
+    let cleanupSucceeded (error: exn) stopped =
+        match error with
+        | :? ProcessStartupFailure as failed -> stopped && not failed.CleanupFailed
+        | _ -> stopped
+
+    let private awaitTarget
+        (owned: ProcessSupervision.Session)
+        (deadline: CancellationTokenSource)
+        =
+        task {
+            try
+                return! owned.Target.WaitAsync(deadline.Token)
+            with error ->
+                deadline.Cancel()
+                return raise error
+        }
+
+    let private finishReaders milliseconds (readers: Task array) =
+        try
+            Task.WhenAll(readers).Wait(milliseconds: int) |> ignore
+        with _ ->
+            ()
+
+        readers |> Array.forall _.IsCompleted
 
     let run (start: ProcessStartInfo) input maximum timeoutMilliseconds =
         if maximum < 1 || maximum >= Int32.MaxValue || timeoutMilliseconds < 1 then
             invalidArg (nameof maximum) "Test process bounds must be positive."
 
-        use child = new Process(StartInfo = start)
         use expiry = new CancellationTokenSource(timeoutMilliseconds)
         use deadline = CancellationTokenSource.CreateLinkedTokenSource(expiry.Token)
         let stdout = Capture maximum
         let stderr = Capture maximum
-        let mutable started = false
+        let mutable session: ProcessSupervision.Session option = None
+        let mutable readers = [||]
+        let mutable completedTarget = false
+
+        use release =
+            { new IDisposable with
+                member _.Dispose() =
+                    session |> Option.iter (fun owned -> (owned :> IDisposable).Dispose())
+            }
+
+        let stop () =
+            let timer = Stopwatch.StartNew()
+            let stopped = session |> Option.forall _.Stop()
+
+            finishReaders (max 1 (2000 - int timer.ElapsedMilliseconds)) readers
+            && stopped
+            && timer.ElapsedMilliseconds < 2000L
 
         try
-            started <- child.Start()
+            let owned =
+                new ProcessSupervision.Session(
+                    ProcessSupervision.executable,
+                    start,
+                    cancellationToken = expiry.Token
+                )
 
-            if not started then
-                invalidOp "Test process did not start."
-
+            session <- Some owned
+            let child = owned.Process
             let output = readInto stdout child.StandardOutput.BaseStream deadline
             let errors = readInto stderr child.StandardError.BaseStream deadline
             let writing = writeInput child input deadline
-            let exited = child.WaitForExitAsync(deadline.Token)
+            let exited = awaitTarget owned deadline
+            readers <- [| output :> Task; errors :> Task; writing :> Task |]
+            let completed = Task.WhenAll(Array.append readers [| exited :> Task |])
+            completed.WaitAsync(expiry.Token).GetAwaiter().GetResult()
+            completedTarget <- true
 
-            let completed =
-                Task.WhenAll([| output :> Task; errors :> Task; writing :> Task; exited |])
-
-            let winner =
-                Task
-                    .WhenAny(completed, Task.Delay(Timeout.Infinite, expiry.Token))
-                    .GetAwaiter()
-                    .GetResult()
-
-            if not (obj.ReferenceEquals(winner, completed)) then
-                invalidOp "Test process exceeded its deadline."
-
-            completed.GetAwaiter().GetResult()
+            if not (stop ()) then
+                invalidOp "Test process cleanup was incomplete."
 
             {
-                ExitCode = child.ExitCode
+                ExitCode = exited.Result
                 StandardOutput = output.Result
                 StandardError = errors.Result
             }
-        with _ ->
-            let kind = failureKind maximum expiry.IsCancellationRequested stdout stderr
+        with error ->
+            let kind =
+                if completedTarget then
+                    Delivery
+                else
+                    failureKind maximum expiry.IsCancellationRequested stdout stderr
 
             deadline.Cancel()
 
-            raise (
-                captureFailure kind stdout.Snapshot stderr.Snapshot (fun () ->
-                    stopChild child started)
-            )
+            let cleanup () = cleanupSucceeded error (stop ())
+
+            raise (captureFailure kind stdout.Snapshot stderr.Snapshot cleanup)

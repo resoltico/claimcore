@@ -21,9 +21,16 @@ module RemoteServiceCall =
     let internal readResponse frame (response: HttpResponseMessage) cancelled =
         task {
             let media =
-                response.Content.Headers.ContentType |> Option.ofObj |> Option.map _.MediaType
+                response.Content.Headers.ContentType
+                |> Option.ofObj
+                |> Option.exists (fun contentType ->
+                    String.Equals(
+                        contentType.MediaType,
+                        "application/json",
+                        StringComparison.OrdinalIgnoreCase
+                    ))
 
-            if media <> Some "application/json" then
+            if not media then
                 return invalid frame
             else
                 do! response.Content.LoadIntoBufferAsync(int64 MaximumResponseBytes, cancelled)

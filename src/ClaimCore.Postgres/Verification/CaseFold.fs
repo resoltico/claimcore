@@ -147,4 +147,6 @@ module internal CaseFold =
         require
             None
             VerificationFinding.CaseProjection
-            (cases.Length = Map.count histories && List.forall matches cases)
+            (cases.Length = Map.count histories
+             && (cases |> List.distinctBy _.CaseId |> List.length) = cases.Length
+             && List.forall matches cases)

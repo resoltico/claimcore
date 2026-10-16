@@ -61,6 +61,9 @@ type RemoteTls private (handler: HttpClientHandler, root: X509Certificate2 optio
         | Some _ when not (HttpsOrigins.isLocal endpoint) -> Error "TLS_TRUST_ROOT_SCOPE_INVALID"
         | Some location ->
             match PrivateFile.read 16384 location with
+            | Error PrivateFileFailure.NativeAssetUnavailable ->
+                Console.Error.WriteLine PrivateFile.nativeAssetGuidance
+                Error "TLS_TRUST_ROOT_UNAVAILABLE"
             | Error _ -> Error "TLS_TRUST_ROOT_UNAVAILABLE"
             | Ok bytes ->
                 try

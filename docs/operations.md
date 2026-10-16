@@ -41,6 +41,15 @@ Browser sessions and list cursors are ephemeral. A runtime restart invalidates c
 expired or changed-grant cursors must be restarted. The browser retains no pending request across
 reload. Preserve exact uncertain requests through the caller’s process; never replace their ID.
 
+## Private configuration
+
+Use the [owner-private input policy](database.md#cc-db-002) on supported local filesystem
+semantics. Linux POSIX ACL masks and macOS descriptor ACLs are admitted explicitly; unrelated
+network/userspace permission models are outside that assurance. The file owner and host
+administrator remain trusted: descriptor admission does not freeze a concurrent owner rewriting
+content or permissions. Preserve matching native libraries and all notices when distributing a
+published application; [Development](development.md#first-checkout) owns supported build targets.
+
 ## Backups and restore
 
 Back up PostgreSQL with ordinary platform tools and protect copies as sensitive data. Retain

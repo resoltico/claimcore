@@ -48,6 +48,7 @@ let publish root directory name =
 
     let result = run 120_000 (start "dotnet" args (Dictionary<string, string>())) None
     Expect.equal result.ExitCode 0 ("Publish " + name)
+    NativeNotices.qualify root output name |> ignore
 
     if name = "ClaimCore.Cli" then
         let forbidden =
