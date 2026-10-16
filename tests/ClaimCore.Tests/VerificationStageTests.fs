@@ -161,7 +161,7 @@ let private nativeStages directory =
     let project suite =
         "tests/ClaimCore." + suite + "Tests/ClaimCore." + suite + "Tests.fsproj"
 
-    for stage, suite, floor in [ "postgres", "Integration", 109; "web", "Web", 76 ] do
+    for stage, suite, floor in [ "postgres", "Integration", 111; "web", "Web", 76 ] do
         let config, commands = start directory "Linux" None [ stage ]
         let result = BoundedProcess.run config None 8192 10000
         Expect.equal result.ExitCode 0 "Independent native suite succeeds"
@@ -187,7 +187,7 @@ let private nativeStages directory =
         Expect.stringContains
             execution
             ("--minimum-expected-tests=" + string floor)
-            "Original floor"
+            "Complete suite floor"
 
         let failed, failedCommands = start directory "Linux" None [ stage ]
         failed.Environment["CLAIMCORE_TEST_FAIL_COMMAND"] <- build
