@@ -188,19 +188,24 @@ static void teardown(pid_t child, int status_fd) {
     _exit(125);
 }
 
+static _Noreturn void report_target_failure(int error_write) {
+    int failure = errno;
+    ssize_t written;
+    do {
+        written = write(error_write, &failure, sizeof(failure));
+    } while (written < 0 && errno == EINTR);
+    _exit(126);
+}
+
 static void target(int control, int status, int error_write, const char *file, char **arguments,
                    const struct sigaction *original_pipe, const struct sigaction *original_term) {
     close(control);
     close(status);
     if (sigaction(SIGPIPE, original_pipe, NULL) != 0 || sigaction(SIGTERM, original_term, NULL) != 0) {
-        int failure = errno;
-        (void)write(error_write, &failure, sizeof(failure));
-        _exit(126);
+        report_target_failure(error_write);
     }
     execv(file, arguments);
-    int failure = errno;
-    (void)write(error_write, &failure, sizeof(failure));
-    _exit(126);
+    report_target_failure(error_write);
 }
 
 static bool exited_status(pid_t child, int descriptor, bool *finished) {
