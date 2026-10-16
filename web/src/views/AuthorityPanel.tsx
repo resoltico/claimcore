@@ -251,7 +251,7 @@ export const AuthorityPanel = ({
   const p = usePresentation();
   const model = useAuthorityOperation(token, "", onLockChange);
   return (
-    <section aria-labelledby="authority-title">
+    <section aria-labelledby="authority-title" className="authority-panel">
       <h2 id="authority-title">{p.text("ui.authority")}</h2>
       {model.receipt === null ? null : (
         <p role="status">

@@ -14,7 +14,7 @@ Notable changes to this project are documented in this file. The format is based
 ### Internal
 
 - ClientProtocol isolates generic strict admission, correlation and delivery policy from server semantics. The generated native catalogue lets the published CLI omit core/server assemblies; Hosting owns typed service dispatch behind protocol-only host signatures. Evaluated project edges, published closure, transitive frontend purity and generated-inventory checks enforce these boundaries. Runner-level completion checks reject focused, skipped, pending and retried browser unit runs. Ordinary .NET and Node builds remain separate.
-- PostgreSQL integration overlaps at most two isolated test cases, and CI runs database and Web/identity suites on separate runners. Individual suite stages build their project closures and reject invalid database selections before setup. Published acceptance overlaps independent database and identity startup, waits for imported identity metadata, and avoids repeating elapsed token lifetime in expiry checks. Required coverage and fresh-database isolation are retained; see [verification](docs/development.md).
+- PostgreSQL integration overlaps at most two isolated test cases, and CI runs database and Web/identity suites on separate runners. Individual suite stages build their project closures and reject invalid database selections before setup. Published acceptance overlaps independent database and identity startup, waits for imported identity metadata, and avoids repeating elapsed token lifetime in expiry checks. PR smoke includes authority uncertainty and stewardship localization. Required coverage and fresh-database isolation are retained; see [verification](docs/development.md).
 
 ## [0.9.0] - 2026-10-15
 

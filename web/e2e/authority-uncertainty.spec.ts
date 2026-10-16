@@ -83,7 +83,7 @@ test("authority review and uncertainty survive locale changes while refusal clea
       await noHorizontalOverflow(steward, "narrow");
     }
     await expect(
-      steward.getByRole("heading", { name: "Actors", exact: true }).locator(".."),
+      steward.getByRole("heading", { name: ui("en", "ui.actors"), exact: true }).locator(".."),
     ).toContainText(source.ownerSubject);
     const bytes = await uncertainRegistration(steward);
     await ownerGrant(page, false);

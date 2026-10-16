@@ -51,7 +51,8 @@ runners after native prerequisites succeed; neither waits for unrelated frontend
 keeps its baseline-major matrix and fail-fast cancellation. `Gate` requires both native integration
 jobs as well as frontend and acceptance. The local `integration` stage still runs both suites in
 order with one shared solution build; use `postgres` or `web` for a complete individual suite.
-PRs and merge queues run Chromium smoke; main/tag pushes and a manual
+PRs and merge queues run eleven-case Chromium smoke, including authority uncertainty and
+stewardship localization; main/tag pushes and a manual
 CI dispatch with `full_browser_qualification` enabled run all specifications in an isolated
 three-engine matrix. A failed engine cancels sibling jobs; `Gate` requires every scheduled job
 to succeed. Thus a green PR `Gate` proves its advertised smoke scope, not full browser coverage.
