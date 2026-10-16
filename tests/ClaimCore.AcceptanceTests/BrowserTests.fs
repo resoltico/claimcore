@@ -189,23 +189,6 @@ let private browserArguments engine =
     @ [ "--project"; engine; "--forbid-only"; "--max-failures=1" ]
     @ (if smoke then [ "--global-timeout=120000" ] else [])
 
-let private publicDiagnosticIds root =
-    try
-        use document =
-            JsonDocument.Parse(
-                File.ReadAllText(Path.Combine(root, "contracts", "default-presentation.en.json"))
-            )
-
-        document.RootElement.EnumerateObject()
-        |> Seq.map _.Name
-        |> Seq.filter (fun name -> name.StartsWith("diagnostic.", StringComparison.Ordinal))
-        |> Seq.map (fun name -> name.Substring("diagnostic.".Length))
-        |> Seq.toArray
-    with
-    | :? IOException
-    | :? UnauthorizedAccessException
-    | :? JsonException -> [||]
-
 let private printFailureSummary root engine bytes =
     let codeFiles =
         try
@@ -225,17 +208,8 @@ let private printFailureSummary root engine bytes =
     let stack = BrowserProgress.stackLocations codeFiles bytes |> String.concat ","
     let categories = BrowserProgress.failureCategories bytes |> String.concat ","
 
-    let reads =
-        BrowserProgress.authorityReads (publicDiagnosticIds root) bytes
-        |> String.concat ","
-
-    let phase = BrowserProgress.authorityPhase bytes
-    let timing = BrowserProgress.authorityBodyTiming bytes |> String.concat ","
-    let advice = BrowserProgress.authorityAdvice bytes
-    let picker = BrowserProgress.authorityPicker bytes
-
     Console.WriteLine(
-        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; durations={durations}; stack={stack}; authorityReads={reads}; authorityPhase={phase}; authorityBodyTimingMs={timing}; authorityAdvice={advice}; authorityPicker={picker}"
+        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; durations={durations}; stack={stack}"
     )
 
 let private runBrowser root engine output start =

@@ -132,18 +132,17 @@ let private stackControls () =
     let files =
         [
             "/repo/web/e2e/session-helpers.ts"
-            "/repo/web/e2e/stewardship-authority.spec.ts"
+            "/repo/web/e2e/localization-editor.spec.ts"
         ]
 
-    let frame =
-        "        at submitAuthority (/repo/web/e2e/stewardship-authority.spec.ts:66:3)"
+    let frame = "        at openCase (/repo/web/e2e/localization-editor.spec.ts:66:3)"
 
     let locations text =
         Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.stackLocations files
 
     Expect.equal
         (locations (frame + "\n" + frame + "\n        at /repo/web/e2e/session-helpers.ts:108:9"))
-        [ "stewardship-authority.spec.ts:66"; "session-helpers.ts:108" ]
+        [ "localization-editor.spec.ts:66"; "session-helpers.ts:108" ]
         "Nested helper and bare frames expose only unique source locations"
 
     Expect.equal
@@ -159,8 +158,8 @@ let private stackControls () =
             frame.Replace(".spec.ts", ".spec.ts?token=private")
             frame.Replace(":66:3", ":0:3")
             frame.Replace(":66:3", ":66:0")
-            frame.Replace("stewardship-authority.spec.ts", "private-payload.spec.ts")
-            frame.Replace("submitAuthority (", "private\n(")
+            frame.Replace("localization-editor.spec.ts", "private-payload.spec.ts")
+            frame.Replace("openCase (", "private\n(")
         ] do
         Expect.isEmpty
             (locations changed)
@@ -261,160 +260,6 @@ let private timeoutControls () =
         (categories "private TimeoutError: private-token")
         "Payload prefixes do not become timeout evidence"
 
-let private authorityReadRefusals (read: string -> string list) (context: string) =
-    for invalid in
-        [
-            "private " + context
-            context + " private-token"
-            context.Replace("429", "0")
-            context.Replace("429", "600")
-            context.Replace("429", "0429")
-            context.Replace("HOST_FAILURE", "PRIVATE_KIND")
-            context.Replace("HOST_RATELIMITED", "HOST_RATELIMITED?token=private")
-            "E2E_AUTHORITY_READ CONTEXT 200 TRANSPORT NONE"
-        ] do
-        Expect.isEmpty (read invalid) "Malformed or private observation data is omitted"
-
-let private authorityReadControls () =
-    let read text =
-        Encoding.UTF8.GetBytes(text: string)
-        |> BrowserProgress.authorityReads [ "HOST_RATELIMITED"; "ACCESS_RESOURCE_UNAVAILABLE" ]
-
-    let context = "E2E_AUTHORITY_READ CONTEXT 429 HOST_FAILURE HOST_RATELIMITED"
-    let listing = "E2E_AUTHORITY_READ LIST 200 SUCCEEDED NONE"
-
-    Expect.equal
-        (read (context + "\n" + listing))
-        [ "CONTEXT:429:HOST_FAILURE:HOST_RATELIMITED"; "LIST:200:SUCCEEDED:NONE" ]
-        "Context and list refresh observations remain independent"
-
-    Expect.equal
-        (read (
-            context
-            + "\nE2E_AUTHORITY_READ CONTEXT 200 REJECTED ACCESS_RESOURCE_UNAVAILABLE\n"
-            + listing
-        ))
-        [
-            "CONTEXT:200:REJECTED:ACCESS_RESOURCE_UNAVAILABLE"
-            "LIST:200:SUCCEEDED:NONE"
-        ]
-        "Only the latest observation of each endpoint survives"
-
-    Expect.equal
-        (read (context.Replace("HOST_RATELIMITED", "PRIVATE_TOKEN")))
-        [ "CONTEXT:429:HOST_FAILURE:OTHER" ]
-        "Unknown diagnostic text is never exposed"
-
-    for kind in [ "UNOBSERVED"; "PENDING"; "TRANSPORT" ] do
-        Expect.equal
-            (read $"E2E_AUTHORITY_READ CONTEXT 0 {kind} NONE")
-            [ $"CONTEXT:0:{kind}:NONE" ]
-            "Absent HTTP status"
-
-    Expect.equal
-        (read "E2E_AUTHORITY_READ LIST 200 PENDING NONE")
-        [ "LIST:200:PENDING:NONE" ]
-        "Body remains pending"
-
-    authorityReadRefusals read context
-
-let private authorityPhaseControls () =
-    let phase text =
-        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.authorityPhase
-
-    Expect.equal
-        (phase "E2E_AUTHORITY_PHASE LOADING\nE2E_AUTHORITY_PHASE EMPTY_ADVICE")
-        "EMPTY_ADVICE"
-        "Only the latest closed UI phase survives"
-
-    for invalid in
-        [
-            "E2E_AUTHORITY_PHASE PRIVATE_TOKEN"
-            "E2E_AUTHORITY_PHASE REVIEW private-token"
-            "private-body E2E_AUTHORITY_PHASE FAILURE"
-            "E2E_AUTHORITY_PHASE https://private.invalid/credential"
-        ] do
-        Expect.equal (phase invalid) "UNAVAILABLE" "Private or malformed UI details are omitted"
-
-let private authorityBodyTimingControls () =
-    let timing text =
-        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.authorityBodyTiming
-
-    let marker = "E2E_AUTHORITY_BODY_TIMING NEXT_GRANT 30001 30000"
-
-    Expect.equal
-        (timing marker)
-        [ "NEXT_GRANT:30001/30000" ]
-        "Observed elapsed time can exceed the declared budget"
-
-    Expect.equal
-        (timing (marker + "\nE2E_AUTHORITY_BODY_TIMING NEXT_GRANT 30002 30000"))
-        [ "NEXT_GRANT:30002/30000" ]
-        "Only the latest bounded timing per stage survives"
-
-    Expect.equal
-        (timing
-            "E2E_AUTHORITY_BODY_TIMING NEXT_GRANT 32000 30000\nE2E_AUTHORITY_BODY_TIMING FAILURE 33000 30000")
-        [ "FAILURE:33000/30000"; "NEXT_GRANT:32000/30000" ]
-        "Failure timing does not overwrite the action entry checkpoint"
-
-    for invalid in
-        [
-            marker.Replace("NEXT_GRANT", "PRIVATE_TOKEN")
-            marker.Replace("30001", "10000000")
-            marker.Replace("30001", "030001")
-            marker.Replace("30000", "-1")
-            marker + " private-token"
-        ] do
-        Expect.isEmpty (timing invalid) "Unknown stages and unsafe timing data are omitted"
-
-let private authorityAdviceControls () =
-    let advice text =
-        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.authorityAdvice
-
-    Expect.equal (advice "E2E_AUTHORITY_ADVICE GRANT 3") "GRANT:3" "Fixed advice and bounded count"
-
-    Expect.equal
-        (advice "E2E_AUTHORITY_ADVICE GRANT 3\nE2E_AUTHORITY_ADVICE NO_GRANT 2")
-        "NO_GRANT:2"
-        "Only the latest validated advice survives"
-
-    for invalid in
-        [
-            "E2E_AUTHORITY_ADVICE PRIVATE_TOKEN 1"
-            "E2E_AUTHORITY_ADVICE GRANT 1000"
-            "E2E_AUTHORITY_ADVICE GRANT 0"
-            "E2E_AUTHORITY_ADVICE UNOBSERVED 1"
-            "E2E_AUTHORITY_ADVICE GRANT 3 private-token"
-        ] do
-        Expect.equal (advice invalid) "UNOBSERVED:0" "Private or inconsistent advice is omitted"
-
-let private authorityPickerControls () =
-    let picker text =
-        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.authorityPicker
-
-    Expect.equal
-        (picker "E2E_AUTHORITY_PICKER MISSING NO_GRANT")
-        "MISSING:NO_GRANT"
-        "Fixed picker snapshot"
-
-    Expect.equal
-        (picker "E2E_AUTHORITY_PICKER DISABLED GRANT\nE2E_AUTHORITY_PICKER ENABLED GRANT")
-        "ENABLED:GRANT"
-        "Only the latest fixed picker snapshot survives"
-
-    for invalid in
-        [
-            "E2E_AUTHORITY_PICKER PRIVATE_TOKEN GRANT"
-            "E2E_AUTHORITY_PICKER ENABLED PRIVATE_TOKEN"
-            "private-body E2E_AUTHORITY_PICKER ENABLED GRANT"
-            "E2E_AUTHORITY_PICKER ENABLED GRANT private-token"
-        ] do
-        Expect.equal
-            (picker invalid)
-            "UNOBSERVED:UNOBSERVED"
-            "Private or malformed picker state is omitted"
-
 let private browserMetadataControls () =
     progressControls ()
     locationControls ()
@@ -422,11 +267,6 @@ let private browserMetadataControls () =
     categoryControls ()
     durationControls ()
     timeoutControls ()
-    authorityReadControls ()
-    authorityPhaseControls ()
-    authorityBodyTimingControls ()
-    authorityAdviceControls ()
-    authorityPickerControls ()
 
 let private controls () =
     cleanupControls ()
