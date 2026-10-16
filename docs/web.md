@@ -29,7 +29,8 @@ revision and state; history exposes metadata without snapshots. Command advertis
 advice. The service locks and revalidates execution. The browser offers English, Latvian and
 Arabic with independent date/number formats and right-to-left Arabic layout. Latvian and Arabic
 catalogues are machine-drafted and require native-language review. Pseudolocalization supports
-layout checks. Stewardship and authority management are reachable browser operations, using core offers and generated forms.
+layout checks. Authority form selects and non-checkbox inputs size to their panel while checkboxes
+retain native dimensions. Stewardship and authority management are reachable browser operations, using core offers and generated forms.
 
 Bearer tokens require an admitted issuer/audience and `JWT` or `at+jwt` type. The CLI client is
 human and requires `sub`. Other verified clients identify services by client ID; matching single

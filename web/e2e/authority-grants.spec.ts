@@ -9,11 +9,41 @@ import {
   ui,
 } from "./localization-support";
 
+const expectAuthorityControlsContained = async (page: Page) => {
+  const panel = page.locator(".authority-panel");
+  await expect(panel).toHaveCount(1);
+  const geometry = await panel.evaluate((element) => {
+    const panelBounds = element.getBoundingClientRect();
+    let count = 0;
+    let left = panelBounds.right;
+    let right = panelBounds.left;
+    for (const control of element.querySelectorAll('input:not([type="checkbox"]), select')) {
+      const bounds = control.getBoundingClientRect();
+      if (
+        control.getClientRects().length === 0 ||
+        bounds.width <= 0 ||
+        bounds.height <= 0 ||
+        getComputedStyle(control).visibility !== "visible"
+      ) {
+        continue;
+      }
+      count += 1;
+      left = Math.min(left, bounds.left);
+      right = Math.max(right, bounds.right);
+    }
+    return { panelLeft: panelBounds.left, panelRight: panelBounds.right, count, left, right };
+  });
+  expect(geometry.count).toBeGreaterThan(0);
+  expect(geometry.left).toBeGreaterThanOrEqual(geometry.panelLeft - 1);
+  expect(geometry.right).toBeLessThanOrEqual(geometry.panelRight + 1);
+};
+
 const checkPresentation = async (page: Page, complete: boolean) => {
   const view = page.locator('section[aria-labelledby="actor-grants-title"]');
   await page.setViewportSize({ width: 320, height: 800 });
   await expect(view.getByRole("heading")).toBeVisible();
   await noHorizontalOverflow(page, "narrow");
+  await expectAuthorityControlsContained(page);
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
     await selectFormat(page, "lv-LV");
@@ -27,6 +57,7 @@ const checkPresentation = async (page: Page, complete: boolean) => {
       ui(language, complete ? "ui.grantsEnd" : "ui.grantsPartial"),
     );
     await noHorizontalOverflow(page, "narrow");
+    await expectAuthorityControlsContained(page);
   }
 };
 
