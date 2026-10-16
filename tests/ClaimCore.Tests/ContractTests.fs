@@ -364,6 +364,61 @@ let private diagnostics () =
             (result.GetProperty("outcome").GetProperty("data").TryGetProperty("code") |> fst)
             "No coarse refusal code"
 
+let private actionExpectations =
+    [
+        Rejection.Case(
+            CaseRefusal.InvalidInput(
+                InputTarget.Reason,
+                InputViolation.Text TextViolation.NonBlankRequired
+            )
+        ),
+        RecommendedAction.CorrectInput,
+        "CORRECT_INPUT",
+        Some "reason",
+        None
+        Rejection.PageLimitOutOfRange 50,
+        RecommendedAction.CorrectInput,
+        "CORRECT_INPUT",
+        Some "limit",
+        None
+        Rejection.InvalidCursor, RecommendedAction.ReadCurrent, "READ_CURRENT", Some "cursor", None
+        Rejection.Case(CaseRefusal.RevisionConflict 7L),
+        RecommendedAction.ReadCurrent,
+        "READ_CURRENT",
+        None,
+        Some 7L
+    ]
+
+let private actionEnums () =
+    for refusal, expected, _, _, _ in actionExpectations do
+        Expect.equal
+            refusal.Action
+            expected
+            "Input correction and current-state recovery are distinct"
+
+let private actionTokens () =
+    for refusal, _, expected, field, revision in actionExpectations do
+        let result =
+            admitted "case.get" (OutcomeCodec.currentCase (QueryOutcome.Rejected refusal))
+
+        let data = result.GetProperty("outcome").GetProperty("data")
+
+        Expect.equal
+            (data.GetProperty("recommendedAction").GetString())
+            expected
+            "Literal wire guidance"
+
+        Expect.equal
+            (data.GetProperty("field").GetString())
+            (Option.toObj field)
+            "Serialized field metadata is retained"
+
+        let encodedRevision = data.GetProperty("actualRevision").GetRawText()
+        let expectedRevision = revision |> Option.map string |> Option.defaultValue "null"
+        Expect.equal encodedRevision expectedRevision "Serialized revision metadata is retained"
+        Expect.equal refusal.Field field "Field metadata is retained"
+        Expect.equal refusal.ActualRevision revision "Revision metadata is retained"
+
 let private rejectFrames () =
     for value in
         [
@@ -708,6 +763,8 @@ let tests =
                 contextCodecs ())
             testCase "preview encodes review and replay outcomes" previewCodecs
             testCase "closed diagnostics have complete presentation and no coarse codes" diagnostics
+            testCase "input and cursor refusals retain core action guidance" actionEnums
+            testCase "input and cursor refusals retain serialized action guidance" actionTokens
             testCase "strict decoders reject malformed input and preserve copies" rejectFrames
             testCase
                 "handshake and host failure guards have rejecting controls"

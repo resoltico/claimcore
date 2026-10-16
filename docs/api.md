@@ -51,6 +51,10 @@ The server can return fewer entries than requested. Only `nextCursor: null` esta
 follow a non-null cursor even after a short page. This capacity does not change accepted text,
 truncate history or reduce historical disclosure requirements.
 
+Malformed business input and out-of-range page limits recommend `CORRECT_INPUT`. Revision
+conflicts recommend `READ_CURRENT`, preserving the distinction between correcting a request
+and refreshing state.
+
 `QUERY_CURSOR_INVALID` recommends `READ_CURRENT`: discard the local continuation and load the
 same view without a cursor. It does not by itself establish loss of authority. A fresh request
 still rechecks current rights. Browser case, actor, selected-grant and history views offer explicit

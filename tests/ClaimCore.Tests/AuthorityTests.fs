@@ -381,6 +381,7 @@ let private contextOffers (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                 "SET_GRANT"
                 "SET_ENABLED"
                 "authority.list"
+                "authority.grants"
                 "operation.observe"
             ]
             "An owner has administration advice without case authority"

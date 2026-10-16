@@ -213,6 +213,80 @@ let private remainingHistory (actor: IActorClaimsCore) (query: HistoryRequest) =
         return entries
     }
 
+let private withheldReceipt (receipt: OperationReceipt) =
+    let scope = caseReceipt receipt
+
+    { receipt with
+        Scope =
+            ReceiptScope.Case
+                { scope with
+                    Snapshot = SnapshotDisclosure.Withheld
+                }
+    }
+
+let private revokedFullHistory
+    (database: PostgresFixture.Database)
+    (actor: IActorClaimsCore)
+    (query: HistoryRequest)
+    (first: HistoryResultPage)
+    =
+    task {
+        let original =
+            match List.head first.Entries with
+            | HistoryEntry.FullEntry receipt -> receipt
+            | _ -> failtest "Original FULL receipt"
+
+        Expect.equal
+            original.OperationId
+            (ClaimCore.TestSupport.StoreContractTests.id 10)
+            "Original OPEN acceptance"
+
+        Expect.isSome first.NextCursor "Retain the genuine first FULL continuation"
+
+        let! removed =
+            grant
+                actor
+                (ClaimCore.TestSupport.StoreContractTests.id 200)
+                database.Fixture.Owner
+                Role.CaseHandler
+                GrantTarget.Installation
+                false
+
+        acceptedAuthority removed
+
+        for request in
+            [
+                { query with
+                    AfterCursor = first.NextCursor
+                }
+                query
+            ] do
+            let! refused = actor.History(request, token)
+
+            Expect.equal
+                refused
+                (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+                "FULL requires current rights before accepting or comparing a cursor"
+
+        let! summary =
+            actor.History(
+                { query with
+                    Detail = HistoryDetail.Summary
+                },
+                token
+            )
+
+        let summary = historyPage summary
+        Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
+
+        let! observed = actor.Observe(original.OperationId, token)
+
+        Expect.equal
+            observed
+            (QueryOutcome.Succeeded(withheldReceipt original))
+            "Superseded OPEN keeps every acceptance metadata field and withholds its snapshot"
+    }
+
 let private retainedPages (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
@@ -269,6 +343,8 @@ let private retainedPages (database: PostgresFixture.Database) =
         | QueryOutcome.Succeeded p ->
             Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
         | _ -> failtest "Retained summary page"
+
+        do! revokedFullHistory database actor query first
 
         let! _ = verified database
         return ()

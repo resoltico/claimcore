@@ -254,6 +254,19 @@ let private combinedNativeStages directory =
     Expect.stringContains suites[1] "ClaimCore.WebTests.fsproj" "Web runs second"
     Expect.stringContains suites[1] "eng/expecto.runsettings" "Web settings remain unchanged"
 
+let private nativeUnitFloor directory =
+    let config, commands = start directory "Linux" None [ "unit" ]
+    let result = BoundedProcess.run config None 8192 10000
+    Expect.equal result.ExitCode 0 "Unit stage launches complete native qualification"
+
+    let execution =
+        File.ReadAllLines commands |> Array.find _.StartsWith("dotnet test ")
+
+    Expect.stringContains
+        execution
+        "--minimum-expected-tests=332"
+        "Independent native discovery floor"
+
 let private unavailableDocker directory =
     for stages in
         [
@@ -292,5 +305,6 @@ let tests =
                 failedNativeRestore directory
                 combinedNativeStages directory
                 unavailableDocker directory
+                nativeUnitFloor directory
             finally
                 Directory.Delete(directory, true))

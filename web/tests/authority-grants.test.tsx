@@ -342,3 +342,92 @@ it("resets only the selected grant page on invalid continuation and reloads it w
   expect(request.mock.calls[2]?.[1]).toBeNull();
   expect(onRefused).not.toHaveBeenCalled();
 });
+
+const actorPage = (
+  ids: string[],
+  nextCursor: string | null = null,
+): ApiResult<ServiceResponse<"authority.list">> => ({
+  kind: "outcome",
+  status: 200,
+  value: {
+    endpoint: "authority.list",
+    outcome: {
+      tag: "SUCCEEDED",
+      data: { items: ids.map((id) => actor(id, "listed")), nextCursor },
+    },
+  },
+});
+const focusedBack = () => {
+  const back = screen.getByRole("button", { name: "Back to actors" });
+  back.focus();
+  expect(back).toHaveFocus();
+  fireEvent.click(back);
+};
+it("returns focus to the originating grant control when it is still present", async () => {
+  reads();
+  vi.spyOn(service, "authorityGrants").mockResolvedValue(grants(first));
+  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  const origin = (await screen.findAllByRole("button", { name: "View grants" }))[0]!;
+  fireEvent.click(origin);
+  await screen.findByText(`GRANT-${first}`);
+  focusedBack();
+  expect(origin).toHaveFocus();
+});
+it("focuses the stable actors heading during a pending reload and keeps it after the late page", async () => {
+  reads();
+  vi.spyOn(service, "authorityGrants").mockResolvedValue(grants(first));
+  const late = pending<Awaited<ReturnType<typeof service.authorityList>>>();
+  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  fireEvent.click((await screen.findAllByRole("button", { name: "View grants" }))[0]!);
+  await screen.findByText(`GRANT-${first}`);
+  vi.mocked(service.authorityList).mockReturnValueOnce(late.promise);
+  fireEvent.click(screen.getByRole("button", { name: "Reload actors" }));
+  expect(screen.queryByRole("button", { name: "View grants" })).toBeNull();
+  focusedBack();
+  const heading = screen.getByRole("heading", { name: "Actors and grants" });
+  expect(heading).toHaveFocus();
+  await act(() =>
+    Promise.resolve().then(() => {
+      late.finish(actorPage([first]));
+    }),
+  );
+  await screen.findByRole("button", { name: "View grants" });
+  expect(heading).toHaveFocus();
+});
+it("focuses the actors heading when a page-two origin is absent from refreshed page one", async () => {
+  reads();
+  vi.mocked(service.authorityList)
+    .mockResolvedValueOnce(actorPage([first], "second"))
+    .mockResolvedValueOnce(actorPage([second]))
+    .mockResolvedValueOnce(actorPage([first]));
+  vi.spyOn(service, "authorityGrants").mockResolvedValue(grants(second));
+  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "More actors" }));
+  await screen.findByText(`listed-${second}`);
+  fireEvent.click(screen.getAllByRole("button", { name: "View grants" })[1]!);
+  await screen.findByText(`GRANT-${second}`);
+  fireEvent.click(screen.getByRole("button", { name: "Reload actors" }));
+  await screen.findByText(`listed-${first}`);
+  expect(screen.queryByText(`listed-${second}`)).toBeNull();
+  focusedBack();
+  expect(screen.getByRole("heading", { name: "Actors and grants" })).toHaveFocus();
+});
+it("does not restore actor focus when global disclosure refusal removes the selected pane", async () => {
+  reads();
+  vi.spyOn(service, "authorityGrants")
+    .mockResolvedValueOnce(grants(first, "next"))
+    .mockResolvedValueOnce(refused("session"));
+  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  fireEvent.click((await screen.findAllByRole("button", { name: "View grants" }))[0]!);
+  await screen.findByText(`GRANT-${first}`);
+  screen.getByRole("button", { name: "Back to actors" }).focus();
+  const focus = vi.spyOn(HTMLElement.prototype, "focus");
+  fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+  await waitFor(() => {
+    expect(service.authorityList).toHaveBeenCalledTimes(2);
+  });
+  await screen.findByText(`listed-${first}`);
+  expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
+  expect(focus).not.toHaveBeenCalled();
+  expect(document.body).toHaveFocus();
+});

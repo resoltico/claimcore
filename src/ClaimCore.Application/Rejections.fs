@@ -55,8 +55,8 @@ module Rejections =
     let action =
         function
         | Rejection.Case(CaseRefusal.InvalidInput _)
-        | Rejection.PageLimitOutOfRange _
-        | Rejection.InvalidCursor -> RecommendedAction.ReadCurrent
+        | Rejection.PageLimitOutOfRange _ -> RecommendedAction.CorrectInput
+        | Rejection.InvalidCursor
         | Rejection.Case(CaseRefusal.RevisionConflict _) -> RecommendedAction.ReadCurrent
         | Rejection.IdempotencyConflict
         | Rejection.LedgerExhausted -> RecommendedAction.StopAndInvestigate

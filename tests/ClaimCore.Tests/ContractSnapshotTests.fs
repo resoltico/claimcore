@@ -87,8 +87,15 @@ let private identitySensitivity () =
 
     Expect.equal
         names.Length
-        31
+        33
         "Metadata, descriptors, default English, schemas and strict-byte/delivery profiles"
+
+    for name in
+        [
+            "endpoint.authority.grants.request.schema.json"
+            "endpoint.authority.grants.response.schema.json"
+        ] do
+        Expect.contains names name "Selected grant schemas participate in identity"
 
     Expect.isFalse
         (names

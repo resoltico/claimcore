@@ -266,7 +266,10 @@ const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityO
           actorId={selectedActorId}
           token={token}
           onBack={() => {
-            globalThis.document.getElementById(`actor-grants-${selectedActorId}`)?.focus();
+            (
+              globalThis.document.getElementById(`actor-grants-${selectedActorId}`) ??
+              globalThis.document.getElementById("authority-actors-title")
+            )?.focus();
             setSelectedActorId(null);
           }}
           onDisclosureRefused={refused}

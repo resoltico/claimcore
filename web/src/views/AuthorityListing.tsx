@@ -58,7 +58,9 @@ export const AuthorityListing = (props: ListingProps) => {
   const page = useAuthorityPage(props);
   return (
     <section>
-      <h3>{p.text("ui.actors")}</h3>
+      <h3 id="authority-actors-title" tabIndex={-1}>
+        {p.text("ui.actors")}
+      </h3>
       <ul>
         {page.items.map((actor) => (
           <li key={actor.actorId}>
