@@ -49,7 +49,10 @@ and preserves the original retry identity/content. WITHHELD snapshots show
 metadata without fields; ERASED is distinct. Country display hints use localized names where known,
 accept syntactically valid unassigned codes, and explain `ZZ` without imposing membership policy.
 
-Case stewardship uses the existing preview/review/execute flow. Authority actions use local exact-request
+Case stewardship uses the existing preview/review/execute flow. The confirmation dialog names the
+prepared act, shows its exact authored reason and authoritative before/after record state, and repeats
+the owned act meaning, including live-database erasure limits. These values remain separate from
+the thirteen business fields. Authority actions use local exact-request
 review and authoritative execute; there is no authority preview endpoint. Confirmation is a local
 consent action, with human/service, last-owner and grant rules enforced by Application. ERASE removes
 live database payload history and does not reach WAL, backups or copies. Display preferences and RTL
@@ -59,4 +62,9 @@ Interaction modules own local state, focus, consent, exact pending bytes and acc
 knowledge while the page remains alive. A retry failure cannot clear earlier uncertainty; correlated
 exact acceptance/replay or content-exclusion evidence is needed. `src/api/transport.ts` owns networking behind the service facade;
 interaction/transport do not import views. Access refusal and session replacement clear stale server
-disclosures. Generated protocol code remains free of React, locale and I/O dependencies.
+disclosures. Authority refusals invalidate context, offers and actor listings together, then independently
+revalidate current read and management rights. A refusal during revalidation clears both caches and
+waits for explicit reload; exact authored pending requests and uncertainty remain separate.
+Generated protocol purity follows the resolved transitive import closure, including JavaScript
+modules, and rejects React, locale, clock, randomness and I/O dependencies. Generated TypeScript
+is included in the normal type-aware lint stage.

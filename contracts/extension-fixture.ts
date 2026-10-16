@@ -1105,11 +1105,10 @@ export const hostFailureSchema: SchemaDocument = {
 ;
 export const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 export function isResponse<K extends keyof ResponseByEndpoint>(endpoint: K, value: unknown): value is ResponseByEndpoint[K] { return validateSchema(wireSchemas[endpoint].response, value); }
-export function decodeResponse<K extends keyof ResponseByEndpoint>(endpoint: K, bytes: Uint8Array): ResponseByEndpoint[K] { const value = admitBytes(bytes); if (!isResponse(endpoint, value)) throw new Error('Invalid endpoint response.'); return value; }
+export function decodeResponse<K extends keyof ResponseByEndpoint>(endpoint: K, bytes: Uint8Array): ResponseByEndpoint[K] { const value = admitBytes(bytes); if (!isResponse(endpoint, value)) { throw new Error('Invalid endpoint response.'); } return value; }
 export function isHostFailure(value: unknown, status: number): value is HostFailure { return validateSchema(hostFailureSchema, value) && typeof value === 'object' && value !== null && 'status' in value && value.status === status; }
-export function buildRequest<K extends keyof RequestByEndpoint>(endpoint: K, value: unknown): RequestByEndpoint[K] { if (!hasRequestStructure(endpoint, value)) throw new Error('Invalid endpoint request structure.'); return value; }
-function hasRequestStructure<K extends keyof RequestByEndpoint>(endpoint: K, value: unknown): value is RequestByEndpoint[K] { return validateStructure(wireSchemas[endpoint].request, value); }
-export function requestIssue<K extends keyof RequestByEndpoint>(endpoint:K,value:unknown):ReadonlyArray<string>|null { return schemaIssue(wireSchemas[endpoint].request,value); }
+export function buildRequest<K extends keyof RequestByEndpoint>(endpoint: K, value: unknown): RequestByEndpoint[K] { const matches = (candidate: unknown): candidate is RequestByEndpoint[K] => validateStructure(wireSchemas[endpoint].request, candidate); if (!matches(value)) { throw new Error('Invalid endpoint request structure.'); } return value; }
+export function requestIssue(endpoint:keyof RequestByEndpoint,value:unknown):ReadonlyArray<string>|null { return schemaIssue(wireSchemas[endpoint].request,value); }
 export function isRequest<K extends keyof RequestByEndpoint>(endpoint: K, value: unknown): value is RequestByEndpoint[K] { return validateSchema(wireSchemas[endpoint].request, value); }
 const correlationRules = [{"selector":"RECEIPT_ENDPOINT","tags":[],"replyPath":["operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"ALL","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"ALL","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","scope"],"requestPath":[],"comparison":"RECEIPT_SCOPE"},{"selector":"ALL","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","act"],"requestPath":["act","kind"],"comparison":"EXACT"},{"selector":"CASE_RECEIPT","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","caseReference"],"requestPath":["caseReference"],"comparison":"REFERENCE"},{"selector":"CASE_RECEIPT","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","revision"],"requestPath":["expectedRevision"],"comparison":"SUCCESSOR"},{"selector":"ALL","tags":["OUTCOME_UNKNOWN"],"replyPath":["outcome","data","operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"OPERATION_QUERY","tags":["SUCCEEDED"],"replyPath":["outcome","data","operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"ALL","tags":["REVIEWED"],"replyPath":["outcome","data","review","after","caseReference"],"requestPath":["caseReference"],"comparison":"REFERENCE"},{"selector":"ALL","tags":["REVIEWED"],"replyPath":["outcome","data","review","after","revision"],"requestPath":["expectedRevision"],"comparison":"SUCCESSOR"}] as const;
 const correlationSelectors = [{"name":"ALL","receiptScopes":[],"requestPresent":[],"requestAbsent":[]},{"name":"RECEIPT_ENDPOINT","receiptScopes":["CASE","AUTHORITY"],"requestPresent":[],"requestAbsent":[]},{"name":"CASE_RECEIPT","receiptScopes":["CASE"],"requestPresent":[],"requestAbsent":[]},{"name":"OPERATION_QUERY","receiptScopes":[],"requestPresent":[["operationId"]],"requestAbsent":[["act"]]}] as const;
@@ -1118,38 +1117,43 @@ const correlationTagPath = ["outcome","tag"] as const;
 function correlationPath(value: unknown, path: ReadonlyArray<string>): unknown {
   let current = value;
   for (const part of path) {
-    if (!isObject(current) || !(part in current)) return undefined;
+    if (!isObject(current) || !(part in current)) { return undefined; }
     current = current[part];
   }
   return current;
 }
 function sameReference(left: unknown, right: unknown): boolean {
-  const fold = (value: string) => value.replace(/[A-Z]/g, character => String.fromCharCode(character.charCodeAt(0) + 32));
+  const fold = (value: string) => value.replace(/[A-Z]/gu, character => String.fromCharCode(character.charCodeAt(0) + 32));
   return typeof left === 'string' && typeof right === 'string' && fold(left) === fold(right);
+}
+type CorrelationRule = typeof correlationRules[number];
+function selectedRule(rule: CorrelationRule, scope: string, tag: unknown, request: unknown): boolean {
+  const selector = correlationSelectors.find(item => item.name === rule.selector);
+  if (selector === undefined) { throw new Error('Unsupported correlation selector'); }
+  const scopes: ReadonlyArray<string> = selector.receiptScopes;
+  const tags: ReadonlyArray<string> = rule.tags;
+  return (scopes.length === 0 || scopes.includes(scope))
+    && selector.requestPresent.every(path => correlationPath(request, path) !== undefined)
+    && selector.requestAbsent.every(path => correlationPath(request, path) === undefined)
+    && (tags.length === 0 || (typeof tag === 'string' && tags.includes(tag)));
+}
+function comparisonMatches(rule: CorrelationRule, left: unknown, right: unknown, scope: string): boolean {
+  switch (rule.comparison) {
+    case 'EXACT': return typeof left === 'string' && typeof right === 'string' && left === right;
+    case 'RECEIPT_SCOPE': return left === scope;
+    case 'REFERENCE': return sameReference(left, right);
+    case 'SUCCESSOR': return typeof left === 'number' && typeof right === 'number' && Number.isSafeInteger(right + 1) && left === right + 1;
+    default: throw new Error('Unsupported correlation comparison');
+  }
 }
 export function correlateReply(endpoint: keyof RequestByEndpoint, request: unknown, response: unknown): boolean {
   const definition = endpoints.find(item => item.id === endpoint);
-  if (definition === undefined) return false;
+  if (definition === undefined) { return false; }
   const tag = correlationPath(response, correlationTagPath);
-  return correlationRules.every(rule => {
-    const selector = correlationSelectors.find(item => item.name === rule.selector);
-    if (selector === undefined) throw new Error('Unsupported correlation selector');
-    const scopes: ReadonlyArray<string> = selector.receiptScopes;
-    const tags: ReadonlyArray<string> = rule.tags;
-    const selected = (scopes.length === 0 || scopes.includes(definition.receiptScope))
-      && selector.requestPresent.every(path => correlationPath(request, path) !== undefined)
-      && selector.requestAbsent.every(path => correlationPath(request, path) === undefined)
-      && (tags.length === 0 || (typeof tag === 'string' && tags.includes(tag)));
-    if (!selected) return true;
-    const left = correlationPath(response, rule.replyPath);
-    const right = correlationPath(request, rule.requestPath);
-    switch (rule.comparison) {
-      case 'EXACT': return typeof left === 'string' && typeof right === 'string' && left === right;
-      case 'RECEIPT_SCOPE': return left === definition.receiptScope;
-      case 'REFERENCE': return sameReference(left, right);
-      case 'SUCCESSOR': return typeof left === 'number' && typeof right === 'number' && Number.isSafeInteger(right + 1) && left === right + 1;
-    }
-  });
+  return correlationRules.every(rule => !selectedRule(rule, definition.receiptScope, tag, request)
+    || comparisonMatches(rule, correlationPath(response, rule.replyPath), correlationPath(request, rule.requestPath), definition.receiptScope));
 }
 
 export const extensionOperation = "SYNTHETIC_CORRECTION";
+export const extensionDescriptor = {"inputs":{"groups":[{"actions":["KEEP","REPLACE"],"label":"Synthetic group","meaning":"Test-only correction group.","name":"syntheticGroup","replaceFields":[{"currentField":null,"fieldName":"syntheticText","prefill":"BLANK"}]}],"kind":"CORRECTION_GROUPS"},"kind":"SYNTHETIC_CORRECTION","label":"Synthetic correction","meaning":"Test-only additional grouped operation.","valuesMember":null} as const;
+export const extensionField = {"allowsAbsence":false,"label":"Synthetic text","meaning":"Test-only additional authored field.","name":"syntheticText","nativeName":"SyntheticText","scalar":{"format":{"grammar":null,"minimumCharacters":1},"kind":"TEXT","policy":null}} as const;

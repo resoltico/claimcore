@@ -39,11 +39,10 @@ module BrowserArtifacts =
         + ";\n"
         + "export const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);\n"
         + "export function isResponse<K extends keyof ResponseByEndpoint>(endpoint: K, value: unknown): value is ResponseByEndpoint[K] { return validateSchema(wireSchemas[endpoint].response, value); }\n"
-        + "export function decodeResponse<K extends keyof ResponseByEndpoint>(endpoint: K, bytes: Uint8Array): ResponseByEndpoint[K] { const value = admitBytes(bytes); if (!isResponse(endpoint, value)) throw new Error('Invalid endpoint response.'); return value; }\n"
+        + "export function decodeResponse<K extends keyof ResponseByEndpoint>(endpoint: K, bytes: Uint8Array): ResponseByEndpoint[K] { const value = admitBytes(bytes); if (!isResponse(endpoint, value)) { throw new Error('Invalid endpoint response.'); } return value; }\n"
         + "export function isHostFailure(value: unknown, status: number): value is HostFailure { return validateSchema(hostFailureSchema, value) && typeof value === 'object' && value !== null && 'status' in value && value.status === status; }\n"
-        + "export function buildRequest<K extends keyof RequestByEndpoint>(endpoint: K, value: unknown): RequestByEndpoint[K] { if (!hasRequestStructure(endpoint, value)) throw new Error('Invalid endpoint request structure.'); return value; }\n"
-        + "function hasRequestStructure<K extends keyof RequestByEndpoint>(endpoint: K, value: unknown): value is RequestByEndpoint[K] { return validateStructure(wireSchemas[endpoint].request, value); }\n"
-        + "export function requestIssue<K extends keyof RequestByEndpoint>(endpoint:K,value:unknown):ReadonlyArray<string>|null { return schemaIssue(wireSchemas[endpoint].request,value); }\n"
+        + "export function buildRequest<K extends keyof RequestByEndpoint>(endpoint: K, value: unknown): RequestByEndpoint[K] { const matches = (candidate: unknown): candidate is RequestByEndpoint[K] => validateStructure(wireSchemas[endpoint].request, candidate); if (!matches(value)) { throw new Error('Invalid endpoint request structure.'); } return value; }\n"
+        + "export function requestIssue(endpoint:keyof RequestByEndpoint,value:unknown):ReadonlyArray<string>|null { return schemaIssue(wireSchemas[endpoint].request,value); }\n"
         + "export function isRequest<K extends keyof RequestByEndpoint>(endpoint: K, value: unknown): value is RequestByEndpoint[K] { return validateSchema(wireSchemas[endpoint].request, value); }\n"
         + BrowserCorrelation.source
         |> Encoding.UTF8.GetBytes

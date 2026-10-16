@@ -51,6 +51,7 @@
     <Compile Include="CliTransportFixture.fs" />
     <Compile Include="CliTransportTests.fs" />
     <Compile Include="ClientProtocolTests.fs" />
+    <Compile Include="ClientDecoderConformanceTests.fs" />
     <Compile Include="ContractExtensionTests.fs" />
     <Compile Include="CliReplyLossTests.fs" />
     <Compile Include="CliFrameTests.fs" />

@@ -75,14 +75,21 @@ module ProtocolFrames =
         | true, value -> value.GetString() |> Option.ofObj
         | _ -> None
 
-    let result (frame: ProtocolInvocation) response =
-        HttpInputSupport.parse response (fun root ->
-            if
-                not (SchemaValueValidation.verify frame.Endpoint.Response root)
-                || not (correlate frame root)
-            then
+    let response (endpoint: ClientEndpoint) bytes =
+        HttpInputSupport.parse bytes (fun root ->
+            if not (SchemaValueValidation.verify endpoint.Response root) then
                 HttpInputSupport.fail HttpInputProblem.InvalidJson
 
+            root.Clone())
+
+    let result (frame: ProtocolInvocation) bytes =
+        response frame.Endpoint bytes
+        |> Result.bind (fun root ->
+            if not (correlate frame root) then
+                Error HttpInputProblem.InvalidJson
+            else
+                Ok root)
+        |> Result.map (fun root ->
             let outcome = root.GetProperty "outcome"
             let knowledge = DeliveryPolicy.outcome frame.Endpoint.Mutates (string "tag" outcome)
 

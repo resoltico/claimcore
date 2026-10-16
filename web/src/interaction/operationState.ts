@@ -59,7 +59,7 @@ export type OperationAction =
       requestId: number;
       message: Notice;
       field: string | null;
-      contentExcluded?: boolean;
+      evidence?: string;
       disclosureRefused?: boolean;
     }
   | { type: "SUBMITTING"; requestId: number }

@@ -1,3 +1,4 @@
+import { accumulateKnowledge } from "../protocol/delivery";
 import { prepareRequest } from "../protocol/preparedRequest";
 import type { CommandKind, DraftValues } from "./metadata";
 import { isCorrectionValues } from "./metadata";
@@ -123,15 +124,29 @@ const beginPreview = (
     pending: { kind: "PREVIEW", requestId: action.requestId },
   };
 };
+const completionKnowledge = (state: OperationState, action: CompletionResponse): string => {
+  let attempt = "NOT_ACCEPTED";
+  let evidence = "NONE";
+  if (action.type === "ACCEPTED") {
+    attempt = "ACCEPTED";
+    evidence = "CONTENT_ACCEPTED";
+  } else if (action.type === "OUTCOME_UNKNOWN") {
+    attempt = "UNCONFIRMED";
+  } else {
+    evidence = action.evidence ?? "NONE";
+  }
+  return accumulateKnowledge(state.unresolved ? "UNCONFIRMED" : "NOT_SENT", attempt, evidence);
+};
 const complete = (state: OperationState, action: CompletionResponse): OperationState => {
   if (state.pending?.requestId !== action.requestId) {
     return state;
   }
+  const unresolved = completionKnowledge(state, action) === "UNCONFIRMED";
   if (action.type === "ACCEPTED") {
     return {
       ...state,
       delivery: "ACCEPTED",
-      unresolved: false,
+      unresolved,
       receipt: action.receipt,
       pending: null,
       message: null,
@@ -142,7 +157,7 @@ const complete = (state: OperationState, action: CompletionResponse): OperationS
       ? {
           ...state,
           delivery: "OUTCOME_UNKNOWN",
-          unresolved: true,
+          unresolved,
           pending: null,
           message: action.message,
         }
@@ -150,11 +165,8 @@ const complete = (state: OperationState, action: CompletionResponse): OperationS
   }
   return {
     ...state,
-    delivery:
-      state.unresolved && action.contentExcluded !== true
-        ? "OUTCOME_UNKNOWN"
-        : "DEFINITELY_REJECTED",
-    unresolved: state.unresolved && action.contentExcluded !== true,
+    delivery: unresolved ? "OUTCOME_UNKNOWN" : "DEFINITELY_REJECTED",
+    unresolved,
     disclosureRefused: action.disclosureRefused === true,
     review: null,
     requestSha256: null,

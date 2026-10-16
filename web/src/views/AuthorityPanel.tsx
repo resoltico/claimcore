@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { productMetadata } from "@contracts/product-metadata";
-import { service, type ServiceResponse } from "../api/service";
+import { isDisclosureRefused } from "../api/outcomes";
+import { resultNotice, service, type ServiceResponse } from "../api/service";
 import { AuthorityListing } from "./AuthorityListing";
 import { AccessibleModal } from "../components/AccessibleModal";
 import { ProtocolSummary } from "../components/ProtocolSummary";
@@ -85,7 +86,7 @@ const AuthorityForm = ({ model, offered }: FormProps) => {
       ref={form}
       onSubmit={(event) => {
         event.preventDefault();
-        model.review();
+        model.review(offered[0]?.kind ?? "");
       }}
     >
       <AuthorityPicker model={model} offered={offered} />
@@ -93,17 +94,29 @@ const AuthorityForm = ({ model, offered }: FormProps) => {
         <>
           <AuthorityInputs model={model} offered={offered} />
           <button type="submit">{p.text("ui.previewOperation")}</button>
-          <button
-            type="button"
-            onClick={() => {
-              model.setPendingDiscard("");
-            }}
-          >
-            {p.text("ui.discardAndLeave")}
-          </button>
         </>
       )}
     </form>
+  );
+};
+const AuthorityDiscardAction = ({ model }: { model: AuthorityOperation }) => {
+  const p = usePresentation();
+  if (
+    model.busy ||
+    model.uncertain ||
+    (model.bytes === null && Object.keys(model.values).length === 1)
+  ) {
+    return null;
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        model.setPendingDiscard("");
+      }}
+    >
+      {p.text("ui.discardAndLeave")}
+    </button>
   );
 };
 const AuthorityDiscard = ({ model }: { model: AuthorityOperation }) => {
@@ -113,13 +126,13 @@ const AuthorityDiscard = ({ model }: { model: AuthorityOperation }) => {
       title={p.text("ui.changeCommandTitle")}
       closeLabel={p.text("ui.keepEditing")}
       description={p.text("ui.changeCommandDescription")}
-      isOpen={model.pendingDiscard !== null}
+      isOpen={model.pendingDiscard !== null && !model.busy && !model.uncertain}
       isDismissable
       onOpenChange={() => {
         model.setPendingDiscard(null);
       }}
     >
-      <button type="button" onClick={model.discard}>
+      <button type="button" disabled={model.busy || model.uncertain} onClick={model.discard}>
         {p.text("ui.discardAndChange")}
       </button>
     </AccessibleModal>
@@ -167,6 +180,67 @@ const AuthorityReview = ({ model }: { model: AuthorityOperation }) => {
     </section>
   );
 };
+const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityOperation }) => {
+  const { refused, restored } = model.disclosure;
+  const context = useRead(
+    useCallback(
+      async (signal: AbortSignal) => {
+        const result = await service.context(token, signal);
+        if (!signal.aborted) {
+          if (isDisclosureRefused(result)) {
+            refused(resultNotice(result));
+          } else if (result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED") {
+            restored("context");
+          }
+        }
+        return result;
+      },
+      [token, refused, restored],
+    ),
+    contextData,
+    token,
+  );
+  const offered = productMetadata.descriptors.authorityCommands.filter(
+    (command) => context.value?.offers.some((offer) => offer.definition === command.kind) === true,
+  );
+  return (
+    <>
+      {model.bytes === null ? (
+        <AuthorityForm model={model} offered={offered} />
+      ) : (
+        <AuthorityReview model={model} />
+      )}
+      <AuthorityListing
+        token={token}
+        onDisclosureRefused={refused}
+        onDisclosureRestored={restored}
+      />
+    </>
+  );
+};
+const AuthorityDisclosure = ({ token, model }: { token: string; model: AuthorityOperation }) => {
+  const p = usePresentation();
+  if (model.disclosure.active) {
+    return <AuthorityWorkspace token={token} model={model} />;
+  }
+  return (
+    <>
+      {model.bytes === null ? (
+        <AuthorityForm model={model} offered={[]} />
+      ) : (
+        <AuthorityReview model={model} />
+      )}
+      <button
+        type="button"
+        onClick={() => {
+          model.disclosure.invalidate(true);
+        }}
+      >
+        {p.text("ui.reloadActors")}
+      </button>
+    </>
+  );
+};
 export const AuthorityPanel = ({
   token,
   onLockChange,
@@ -175,15 +249,7 @@ export const AuthorityPanel = ({
   onLockChange: (locked: boolean) => void;
 }) => {
   const p = usePresentation();
-  const context = useRead(
-    useCallback((signal: AbortSignal) => service.context(token, signal), [token]),
-    contextData,
-    token,
-  );
-  const offered = productMetadata.descriptors.authorityCommands.filter(
-    (command) => context.value?.offers.some((offer) => offer.definition === command.kind) === true,
-  );
-  const model = useAuthorityOperation(token, offered[0]?.kind ?? "", onLockChange);
+  const model = useAuthorityOperation(token, "", onLockChange);
   return (
     <section aria-labelledby="authority-title">
       <h2 id="authority-title">{p.text("ui.authority")}</h2>
@@ -192,17 +258,17 @@ export const AuthorityPanel = ({
           {p.text("ui.accepted")} · {model.receipt}
         </p>
       )}
-      {model.bytes === null ? (
-        <AuthorityForm model={model} offered={offered} />
-      ) : (
-        <AuthorityReview model={model} />
-      )}
-      {model.notice === null ? null : (
+      <AuthorityDisclosure
+        key={`${token}:${model.disclosure.revision}`}
+        token={token}
+        model={model}
+      />
+      {model.disclosure.notice === null && model.notice === null ? null : (
         <p role="alert">
-          <NoticeView value={model.notice} />
+          <NoticeView value={(model.disclosure.notice ?? model.notice)!} />
         </p>
       )}
-      <AuthorityListing key={model.receipt} token={token} />
+      <AuthorityDiscardAction model={model} />
       <AuthorityDiscard model={model} />
     </section>
   );

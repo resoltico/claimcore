@@ -19,8 +19,7 @@ export type CorrectionDraftValues = Record<CorrectionGroupName, CorrectionGroupV
 export type DraftValues = FlatDraftValues | CorrectionDraftValues;
 export type CommandKind = CommandDescriptor["kind"];
 
-const correctionNames = productMetadata.descriptors.commands.flatMap((command) => command.inputs.kind === "CORRECTION_GROUPS" ? command.inputs.groups.map((group) => group.name) : []);
-export const isCorrectionValues = (values: unknown, names: ReadonlyArray<string> = correctionNames): values is CorrectionDraftValues =>
+export const isCorrectionValues = (values: unknown, names: ReadonlyArray<string> = []): values is CorrectionDraftValues =>
   typeof values === "object" &&
   values !== null &&
   names.every((name) => Object.hasOwn(values, name)) &&
@@ -41,7 +40,7 @@ export const createDraft = (
   const {inputs} = definition;
   let act: object;
   if (inputs.kind === "CORRECTION_GROUPS") {
-    if (!isCorrectionValues(values)) {throw new Error(`${command} requires grouped values.`);}
+    if (!isCorrectionValues(values, inputs.groups.map((group) => group.name))) {throw new Error(`${command} requires grouped values.`);}
     const groups = Object.fromEntries(
       inputs.groups.map((group) => {
         const draft = values[group.name];

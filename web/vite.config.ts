@@ -3,6 +3,7 @@ import { availableParallelism } from "node:os";
 import react from "@vitejs/plugin-react";
 import type { UserConfig } from "vite";
 import ContractFirstSequencer from "./scripts/contract-first-sequencer.mjs";
+import RequiredTestReporter from "./scripts/required-test-reporter.mjs";
 
 const testWorkers = Math.max(1, Math.min(6, Math.ceil(availableParallelism() / 3)));
 
@@ -41,7 +42,9 @@ export default {
     pool: "vmThreads",
     include: ["tests/**/*.test.{ts,tsx}"],
     setupFiles: "./tests/setup.ts",
-    reporters: ["default"],
+    allowOnly: false,
+    retry: 0,
+    reporters: ["default", new RequiredTestReporter()],
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],

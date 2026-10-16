@@ -26,6 +26,7 @@ module Frames =
     let bytes = ProtocolFrames.bytes
     let inputBytes = ProtocolFrames.inputBytes
     let decode bytes = ProtocolFrames.decode EndpointCatalog.catalogue bytes
+    let response = ProtocolFrames.response
     let result = ProtocolFrames.result
     let serviceFailure = ProtocolFrames.serviceFailure
     let localFailure code = ProtocolFrames.failure "localFailure" code

@@ -5,10 +5,12 @@ import {
 } from "../../protocol/preparedRequest";
 import { useEffect, useState, useRef } from "react";
 import { buildRequest, wireSchemas } from "@contracts/browser-contract";
-import { service, resultNotice, isMutationUncertain } from "../../api/service";
+import { service, resultNotice } from "../../api/service";
 import { localNotice, type Notice } from "../../api/notices";
 import { formValue, type FormValues } from "../../protocol/forms";
-import { resolutionEvidence } from "../../protocol/delivery";
+import { accumulateKnowledge, attemptKnowledge, resolutionEvidence } from "../../protocol/delivery";
+import { isDisclosureRefused } from "../../api/outcomes";
+import { useAuthorityDisclosure } from "./useAuthorityDisclosure";
 export const authorityDocument = wireSchemas["authority.execute"].request;
 const useAuthorityState = () => {
   const [values, setValues] = useState<FormValues>({ operationId: crypto.randomUUID() });
@@ -68,7 +70,12 @@ const reviewAuthority = (state: State, fallback: string) => {
   }
 };
 type DeliveryControl = { busy: boolean; serial: number; dispatched: boolean; token: string };
-const executeAuthority = async (state: State, token: string, control: DeliveryControl) => {
+const executeAuthority = async (
+  state: State,
+  token: string,
+  control: DeliveryControl,
+  invalidateDisclosure: (force: boolean) => void,
+) => {
   if (state.prepared === null || control.busy || (!state.confirmed && !state.uncertain)) {
     return;
   }
@@ -83,6 +90,15 @@ const executeAuthority = async (state: State, token: string, control: DeliveryCo
   control.busy = false;
   control.dispatched = false;
   state.setBusy(false);
+  const knowledge = accumulateKnowledge(
+    state.uncertain ? "UNCONFIRMED" : "NOT_SENT",
+    attemptKnowledge("authority.execute", result),
+    resolutionEvidence(result),
+  );
+  state.setUncertain(knowledge === "UNCONFIRMED");
+  if (isDisclosureRefused(result)) {
+    invalidateDisclosure(true);
+  }
   if (
     result.kind === "outcome" &&
     (result.value.outcome.tag === "ACCEPTED" || result.value.outcome.tag === "ALREADY_ACCEPTED")
@@ -90,17 +106,16 @@ const executeAuthority = async (state: State, token: string, control: DeliveryCo
     state.setValues({ operationId: crypto.randomUUID() });
     state.setReceipt(result.value.outcome.data.operationId);
     state.setBytes(null);
-    state.setUncertain(false);
+    invalidateDisclosure(true);
     return;
   }
   state.setNotice(resultNotice(result));
-  state.setUncertain(
-    resolutionEvidence(result) !== "CONTENT_EXCLUDED" &&
-      (state.uncertain || isMutationUncertain(result)),
-  );
 };
 const authorityDraftActions = (state: State) => {
   const discard = () => {
+    if (state.uncertain || state.busy) {
+      return;
+    }
     state.setValues({
       operationId: crypto.randomUUID(),
       ...(state.pendingDiscard !== null && state.pendingDiscard !== ""
@@ -119,40 +134,60 @@ const authorityDraftActions = (state: State) => {
   };
   return { discard, changeCommand };
 };
-export const useAuthorityOperation = (
-  token: string,
-  fallback: string,
-  onLockChange: (locked: boolean) => void,
-) => {
-  const state = useAuthorityState();
-  const delivery = useRef<DeliveryControl>({ busy: false, serial: 0, dispatched: false, token });
-  const { setBusy, setUncertain, setReceipt } = state;
-  useEffect(() => {
-    const control = delivery.current;
-    if (control.token !== token) {
-      control.token = token;
-      setBusy(false);
-      setUncertain((prior) => control.dispatched || prior);
-      setReceipt(null);
-    }
-    return () => {
-      control.serial += 1;
-      control.busy = false;
-    };
-  }, [token, setBusy, setUncertain, setReceipt]);
+const useAuthorityLock = (state: State, onLockChange: (locked: boolean) => void) => {
   useEffect(() => {
     onLockChange(state.bytes !== null || state.busy || Object.keys(state.values).length > 1);
     return () => {
       onLockChange(false);
     };
   }, [state.bytes, state.busy, state.values, onLockChange]);
+};
+export const useAuthorityOperation = (
+  token: string,
+  fallback: string,
+  onLockChange: (locked: boolean) => void,
+) => {
+  const state = useAuthorityState();
+  const disclosure = useAuthorityDisclosure();
+  const delivery = useRef<DeliveryControl>({ busy: false, serial: 0, dispatched: false, token });
+  const { setBusy, setUncertain, setReceipt } = state;
+  const { invalidate } = disclosure;
+  useEffect(() => {
+    const control = delivery.current;
+    if (control.token !== token) {
+      control.token = token;
+      invalidate(true);
+      setBusy(false);
+      setUncertain(
+        (prior) =>
+          accumulateKnowledge(
+            prior ? "UNCONFIRMED" : "NOT_SENT",
+            control.dispatched ? "UNCONFIRMED" : "NOT_SENT",
+            "NONE",
+          ) === "UNCONFIRMED",
+      );
+      setReceipt(null);
+    }
+    return () => {
+      control.serial += 1;
+      control.busy = false;
+    };
+  }, [token, setBusy, setUncertain, setReceipt, invalidate]);
+  useAuthorityLock(state, onLockChange);
+  const draftActions = authorityDraftActions(state);
   return {
     ...state,
-    ...authorityDraftActions(state),
-    review: () => {
-      reviewAuthority(state, fallback);
+    disclosure,
+    ...draftActions,
+    discard: () => {
+      if (!delivery.current.busy && !delivery.current.dispatched) {
+        draftActions.discard();
+      }
     },
-    execute: () => executeAuthority(state, token, delivery.current),
+    review: (command = fallback) => {
+      reviewAuthority(state, command);
+    },
+    execute: () => executeAuthority(state, token, delivery.current, disclosure.invalidate),
   };
 };
 export type AuthorityOperation = ReturnType<typeof useAuthorityOperation>;

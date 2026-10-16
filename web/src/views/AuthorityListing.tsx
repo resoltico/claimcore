@@ -1,5 +1,7 @@
 import { useCallback } from "react";
-import { service, type ServiceResponse } from "../api/service";
+import { isDisclosureRefused } from "../api/outcomes";
+import type { Notice } from "../api/notices";
+import { resultNotice, service, type ServiceResponse } from "../api/service";
 import { useRetryablePage } from "../hooks/useRead";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
@@ -36,13 +38,38 @@ const AuthorityActor = ({ actor }: { actor: Actor }) => {
     </li>
   );
 };
-export const AuthorityListing = ({ token }: { token: string }) => {
-  const p = usePresentation();
+type ListingProps = {
+  token: string;
+  onDisclosureRefused: (notice?: Notice) => void;
+  onDisclosureRestored: (source: "listing") => void;
+};
+const useAuthorityPage = ({ token, onDisclosureRefused, onDisclosureRestored }: ListingProps) => {
   const request = useCallback(
-    (cursor: string | null, signal: AbortSignal) => service.authorityList(cursor, token, signal),
-    [token],
+    async (cursor: string | null, signal: AbortSignal) => {
+      const result = await service.authorityList(cursor, token, signal);
+      if (!signal.aborted && isDisclosureRefused(result)) {
+        onDisclosureRefused(resultNotice(result));
+      }
+      if (
+        !signal.aborted &&
+        result.kind === "outcome" &&
+        result.value.outcome.tag === "SUCCEEDED"
+      ) {
+        onDisclosureRestored("listing");
+      }
+      return result;
+    },
+    [token, onDisclosureRestored, onDisclosureRefused],
   );
-  const page = useRetryablePage<ServiceResponse<"authority.list">, Actor>(request, authorityPage);
+  return useRetryablePage<ServiceResponse<"authority.list">, Actor>(
+    request,
+    authorityPage,
+    onDisclosureRefused,
+  );
+};
+export const AuthorityListing = (props: ListingProps) => {
+  const p = usePresentation();
+  const page = useAuthorityPage(props);
   return (
     <section>
       <h3>{p.text("ui.actors")}</h3>

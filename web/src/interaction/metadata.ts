@@ -141,11 +141,15 @@ export const isDirty = (values: DraftValues, baseline: DraftValues): boolean => 
   if (isCorrectionValues(values)) {
     return (
       !isCorrectionValues(baseline) ||
-      correctionGroupNames.some(
-        (group) =>
+      Object.keys(values).length !== Object.keys(baseline).length ||
+      Object.keys(values).some((name) => {
+        const group = correctionGroupName(name);
+        return (
+          baseline[group] === undefined ||
           values[group].mode !== baseline[group].mode ||
-          flatValuesChanged(values[group].values, baseline[group].values),
-      )
+          flatValuesChanged(values[group].values, baseline[group].values)
+        );
+      })
     );
   }
   return isCorrectionValues(baseline) || flatValuesChanged(values, baseline);

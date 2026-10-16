@@ -10,11 +10,12 @@ it("admits every positive and rejects every negative generated endpoint corpus c
     const bytes = new TextEncoder().encode(JSON.stringify(sample.value));
     let valid: boolean;
     try {
-      const value = admitBytes(bytes);
-      valid =
-        sample.direction === "request"
-          ? isRequest(sample.endpoint, value)
-          : isResponse(sample.endpoint, value);
+      if (sample.direction === "request") {
+        valid = isRequest(sample.endpoint, admitBytes(bytes));
+      } else {
+        decodeResponse(sample.endpoint, bytes);
+        valid = true;
+      }
     } catch {
       valid = false;
     }

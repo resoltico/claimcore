@@ -129,3 +129,7 @@ Build the generator from Contracts/ClientProtocol independently of CLI, then com
 tracked outputs. `contracts/ClientContract.fs` is compiled into CLI and `browser-contract.ts` is consumed
 by the browser. Neither normal build invokes generation. Final verification includes published CLI
 closure/discovery with server assemblies absent and complete positive/negative byte corpora.
+
+Browser unit qualification forbids focused runs and rejects runner-reported skipped, todo, pending,
+interrupted or retried outcomes. The completion reporter is tested against the actual runner,
+including namespace imports and chained declarations; source spelling is not the completion oracle.

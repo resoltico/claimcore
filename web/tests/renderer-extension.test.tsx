@@ -1,124 +1,113 @@
-import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
-import { ProtocolFields } from "../src/components/ProtocolFields";
-import { formValue, type FormValues } from "../src/protocol/forms";
-import { sendHttp } from "../src/api/transport";
-import { responseBytes } from "../src/api/responseBytes";
-import {
-  wireSchemas,
-  buildRequest,
-  decodeResponse,
-  correlateReply,
-} from "@contracts/extension-fixture";
+import { OperationEditor } from "../src/views/OperationEditor";
+import { productMetadata } from "@contracts/product-metadata";
+import { wireSchemas } from "@contracts/browser-contract";
+import { wireSchemas as extensionSchemas } from "@contracts/extension-fixture";
+import type { CommandKind } from "../src/interaction/metadata";
+import { current, previewReply } from "./presentation-state.fixtures";
+import { response } from "./service-ui.fixtures";
+import { generatedWebValue } from "./contract-corpus.fixtures";
 
-const document = wireSchemas["extension.execute"].request;
-const operationId = "10000000-0000-4000-8000-000000000001";
-const requestValues = { operationId, caseReference: "EXTENSION", expectedRevision: "0" };
-const deliverExtension = async (execute: boolean, values: FormValues, body: string | null) => {
-  const endpoint = execute ? "extension.execute" : "extension.preview";
-  const request = buildRequest(endpoint, formValue(document, document, "", values));
-  const bytes = body ?? JSON.stringify(request);
-  const { signal } = new AbortController();
-  const response = await sendHttp(
-    { path: `/api/${endpoint}`, method: "POST" },
-    { "content-type": "application/json" },
-    bytes,
-    signal,
-  );
-  const result = decodeResponse(endpoint, await responseBytes(response, 16777216, signal));
-  if (!correlateReply(endpoint, request, result)) {
-    throw new Error("Synthetic reply mismatch.");
-  }
-  return bytes;
-};
-const Extension = () => {
-  const [values, setValues] = useState<FormValues>(requestValues);
-  const [body, setBody] = useState<string | null>(null);
-  const [reviewed, setReviewed] = useState(false);
-  const [accepted, setAccepted] = useState(false);
-  const send = async (execute: boolean) => {
-    setBody(await deliverExtension(execute, values, body));
-    if (execute) {
-      setAccepted(true);
-    } else {
-      setReviewed(true);
-    }
-  };
-  return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        void send(false);
-      }}
-    >
-      <ProtocolFields
-        document={document}
-        node={document}
-        path=""
-        values={values}
-        disabled={body !== null}
-        onChange={(path, value) => {
-          setValues({ ...values, [path]: value });
-        }}
-      />
-      <button type="submit">Review synthetic operation</button>
-      {reviewed ? (
-        <button type="button" onClick={() => void send(true)}>
-          Execute synthetic operation
-        </button>
-      ) : null}
-      {accepted ? <p role="status">Synthetic operation accepted</p> : null}
-    </form>
-  );
-};
-it("renders a generated additional operation, field and correction group through the real transport seam", async () => {
-  const sent: string[] = [];
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((url, init) => {
-    if (typeof url !== "string" || typeof init?.body !== "string") {
-      throw new Error("Synthetic exact request is missing.");
-    }
-    const request = buildRequest("extension.execute", JSON.parse(init.body));
-    sent.push(init.body);
-    const identity = {
-      caseReference: request.caseReference,
-      revision: request.expectedRevision + 1,
-    };
-    const execute = url.endsWith("extension.execute");
-    const outcome = execute
-      ? {
-          tag: "ACCEPTED",
-          data: { ...identity, operationId, scope: "CASE", act: request.act.kind },
-        }
-      : { tag: "REVIEWED", data: { review: { after: identity } } };
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          endpoint: execute ? "extension.execute" : "extension.preview",
-          operationId,
-          outcome,
-        }),
-        { headers: { "content-type": "application/json" } },
-      ),
-    );
-  });
-  vi.stubGlobal("fetch", fetch);
-  const user = userEvent.setup();
-  render(<Extension />);
-  await user.selectOptions(screen.getByRole("combobox", { name: "mode" }), "REPLACE");
-  await user.type(screen.getByRole("textbox", { name: "syntheticText" }), "Exact 1.0000 العربية");
-  await user.click(screen.getByRole("button", { name: "Review synthetic operation" }));
-  await user.click(await screen.findByRole("button", { name: "Execute synthetic operation" }));
-  await screen.findByRole("status");
-  expect(sent).toHaveLength(2);
-  expect(sent[1]).toBe(sent[0]);
-  expect(JSON.parse(sent[0]!)).toMatchObject({
-    act: {
-      kind: "SYNTHETIC_CORRECTION",
-      groups: {
-        syntheticGroup: { mode: "REPLACE", values: { syntheticText: "Exact 1.0000 العربية" } },
+vi.mock("@contracts/product-metadata", async (original) => {
+  const actual = await original<{ productMetadata: typeof productMetadata }>();
+  const metadata = structuredClone(actual.productMetadata);
+  const { descriptors } = metadata;
+  const { extensionDescriptor, extensionField } = await import("@contracts/extension-fixture");
+  return {
+    productMetadata: {
+      ...metadata,
+      descriptors: {
+        ...descriptors,
+        inputFields: [...descriptors.inputFields, extensionField],
+        commands: [...descriptors.commands, extensionDescriptor],
       },
     },
-  });
+  };
+});
+
+const extendReceiptActs = (node: unknown): void => {
+  if (typeof node !== "object" || node === null) {
+    return;
+  }
+  for (const [name, child] of Object.entries(node)) {
+    if (name === "enum" && Array.isArray(child) && child.includes("CLOSE")) {
+      child.push("SYNTHETIC_CORRECTION");
+    } else {
+      extendReceiptActs(child);
+    }
+  }
+};
+
+const renderExtension = () => {
+  render(
+    <OperationEditor
+      token="token"
+      definition={productMetadata}
+      current={{
+        ...current,
+        offers: [
+          {
+            definition: "SYNTHETIC_CORRECTION",
+            caseReference: null,
+            expectedRevision: null,
+            choices: [],
+          },
+        ],
+      }}
+      initialCommand={"SYNTHETIC_CORRECTION" as CommandKind}
+      onClose={vi.fn()}
+      onCommitted={vi.fn()}
+      onMutationLockChange={vi.fn()}
+    />,
+  );
+};
+
+it("uses the production case editor, reducer, generated builder and delivery for an added operation, field and correction group", async () => {
+  const originals = structuredClone(wireSchemas);
+  Object.assign(wireSchemas["case.execute"].request, extensionSchemas["extension.execute"].request);
+  Object.assign(wireSchemas["case.preview"].request, extensionSchemas["extension.preview"].request);
+  extendReceiptActs(wireSchemas["case.execute"].response);
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockImplementationOnce(() => Promise.resolve(previewReply()))
+    .mockImplementationOnce(() =>
+      Promise.resolve(
+        response("case.execute", "ACCEPTED", generatedWebValue("case.execute").outcome.data),
+      ),
+    );
+  vi.stubGlobal("fetch", fetch);
+  try {
+    renderExtension();
+    const user = userEvent.setup();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Action" }), "REPLACE");
+    await user.type(screen.getByRole("textbox", { name: "syntheticText" }), "Exact 1.0000 العربية");
+    await user.click(screen.getByRole("button", { name: "Review changes" }));
+    await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
+    await user.click(screen.getByRole("button", { name: "Record changes" }));
+    await screen.findByRole("heading", { name: "Recorded change" });
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+      "/api/case.preview",
+      "/api/case.execute",
+    ]);
+    const preview = fetch.mock.calls[0]?.[1]?.body;
+    expect(fetch.mock.calls[1]?.[1]?.body).toBe(preview);
+    if (typeof preview !== "string") {
+      throw new Error("Missing exact prepared bytes.");
+    }
+    expect(JSON.parse(preview)).toMatchObject({
+      act: {
+        kind: "SYNTHETIC_CORRECTION",
+        groups: {
+          syntheticGroup: { mode: "REPLACE", values: { syntheticText: "Exact 1.0000 العربية" } },
+        },
+      },
+    });
+  } finally {
+    for (const endpoint of ["case.preview", "case.execute"] as const) {
+      Object.assign(wireSchemas[endpoint].request, originals[endpoint].request);
+      Object.assign(wireSchemas[endpoint].response, originals[endpoint].response);
+    }
+  }
 });

@@ -1,5 +1,6 @@
 // Lints the frontend with oxlint's type-aware rules, one TypeScript project after another, and
 // stops at the first project with a finding, warning, unused disable directive or tool failure.
+import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { lintProjects } from "./lint-projects.mjs";
@@ -17,7 +18,7 @@ for (const project of lintProjects) {
       "--type-aware",
       "--tsconfig",
       project.tsconfig,
-      ...project.paths,
+      ...project.paths.map((path) => resolve(root, path)),
     ],
     { cwd: root, stdio: "inherit" },
   );

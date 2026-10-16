@@ -61,7 +61,7 @@ export const sendPreview = async (
     message: resultNotice(result),
     disclosureRefused: isDisclosureRefused(result),
     field,
-    contentExcluded: resolutionEvidence(result) === "CONTENT_EXCLUDED",
+    evidence: resolutionEvidence(result),
   });
 };
 export const sendSubmit = async ({
@@ -94,6 +94,6 @@ export const sendSubmit = async ({
     message: resultNotice(result),
     disclosureRefused: isDisclosureRefused(result),
     field,
-    contentExcluded: resolutionEvidence(result) === "CONTENT_EXCLUDED",
+    evidence: resolutionEvidence(result),
   });
 };

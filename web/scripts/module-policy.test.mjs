@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
-import { moduleViolations, testDiscoveryViolations } from "./module-policy.mjs";
+import { moduleViolations } from "./module-policy.mjs";
 const root = new URL("..", import.meta.url).pathname;
 /** @param {string} directory @returns {string[]} */
 function files(directory) {
@@ -10,7 +10,7 @@ function files(directory) {
     if (item.isDirectory()) {
       return files(join(directory, item.name));
     }
-    if (/\.(ts|tsx)$/u.test(item.name)) {
+    if (/\.(ts|tsx|js|mjs)$/u.test(item.name)) {
       return [join(directory, item.name)];
     }
     return [];
@@ -56,7 +56,7 @@ test("renderer module boundaries resolve aliases, barrel exports and dynamic imp
     0,
   );
 });
-test("production renderer boundaries and required unit discovery are complete", () => {
+test("production renderer module inventory and boundaries are complete", () => {
   const source = Object.fromEntries(
     [...files(join(root, "src")), ...files(join(root, "../contracts"))].map((file) => [
       relative(root, file),
@@ -65,26 +65,6 @@ test("production renderer boundaries and required unit discovery are complete", 
   );
   const config = JSON.parse(readFileSync(join(root, "tsconfig.base.json"), "utf8"));
   assert.deepEqual(moduleViolations(source, config.compilerOptions.paths), []);
-  const units = files(join(root, "tests")).filter((file) => /\.test\.tsx?$/u.test(file));
-  assert.ok(units.length > 0);
-  for (const file of units) {
-    assert.deepEqual(testDiscoveryViolations(file, readFileSync(file, "utf8")), []);
-  }
-});
-test("focused, pending and conditional unit declarations are rejected with alias controls", () => {
-  for (const modifier of ["only", "skip", "todo", "skipIf", "runIf"]) {
-    assert.notEqual(
-      testDiscoveryViolations(
-        "test.ts",
-        `import {it as caseTest} from 'vitest'; caseTest.${modifier}('case',()=>{});`,
-      ).length,
-      0,
-    );
-  }
-  assert.deepEqual(
-    testDiscoveryViolations("test.ts", "import {it} from 'vitest'; it('case',()=>{});"),
-    [],
-  );
 });
 
 test("transport facade and generated protocol purity reject representative bypasses", () => {
@@ -123,6 +103,36 @@ test("transport facade and generated protocol purity reject representative bypas
       {
         "../contracts/generated.ts": 'import "../web/src/protocol/scalar"',
         "src/protocol/scalar.ts": 'new Date("2026-01-01T00:00:00Z")',
+      },
+      {},
+    ),
+    [],
+  );
+});
+
+test("protocol purity follows indirect helpers and JavaScript modules", () => {
+  for (const extension of ["ts", "tsx", "js", "mjs"]) {
+    for (const platform of [
+      'import "react"',
+      'import "node:fs"',
+      "Date.now()",
+      "globalThis.Date.now()",
+      'globalThis.fetch("/")',
+      "performance.now()",
+    ]) {
+      const sources = {
+        "../contracts/generated.ts": 'export * from "../web/src/helper"',
+        [`src/helper.${extension}`]: 'export * from "./hooks/indirect"',
+        [`src/hooks/indirect.${extension}`]: platform,
+      };
+      assert.notEqual(moduleViolations(sources, {}).length, 0, `${extension}: ${platform}`);
+    }
+  }
+  assert.deepEqual(
+    moduleViolations(
+      {
+        "../contracts/generated.ts": 'export * from "../web/src/helper.mjs"',
+        "src/helper.mjs": "export const exact = (value) => value;",
       },
       {},
     ),

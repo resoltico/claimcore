@@ -54,9 +54,13 @@ function resolve(file, name, aliases, files) {
   }
   target = posix.relative("/workspace/web", posix.resolve("/workspace/web", target));
   return (
-    [target, `${target}.ts`, `${target}.tsx`, `${target}/index.ts`, `${target}/index.tsx`].find(
-      (candidate) => files.has(candidate),
-    ) ?? target
+    [
+      target,
+      ...["ts", "tsx", "js", "mjs"].flatMap((extension) => [
+        `${target}.${extension}`,
+        `${target}/index.${extension}`,
+      ]),
+    ].find((candidate) => files.has(candidate)) ?? target
   );
 }
 /** @param {string} file @param {string[]} targets @returns {string[]} */
@@ -84,23 +88,10 @@ function edgeViolations(file, targets) {
   }
   return problems;
 }
-/** @param {Record<string,string>} sources @param {Record<string,string[]>} aliases */
-export function moduleViolations(sources, aliases) {
-  const files = new Set(Object.keys(sources));
+/** @param {Map<string,string[]>} graph @returns {string[]} */
+function cycleViolations(graph) {
   /** @type {string[]} */
   const problems = [];
-  const graph = new Map();
-  for (const [file, source] of Object.entries(sources)) {
-    const targets = imports(file, source).map((name) => resolve(file, name, aliases, files));
-    graph.set(
-      file,
-      targets.filter((target) => files.has(target)),
-    );
-    if (/^(src\/protocol\/|\.\.\/contracts\/)/u.test(file)) {
-      problems.push(...platformViolations(file, source));
-    }
-    problems.push(...edgeViolations(file, targets));
-  }
   const active = new Set();
   const done = new Set();
   /** @param {string} file */
@@ -114,48 +105,59 @@ export function moduleViolations(sources, aliases) {
     }
     active.add(file);
     for (const target of graph.get(file) ?? []) {
-      inspect(target);
+      if (graph.has(target)) {
+        inspect(target);
+      }
     }
     active.delete(file);
     done.add(file);
   };
-  for (const file of files) {
+  for (const file of graph.keys()) {
     inspect(file);
   }
   return problems;
 }
-/** @param {string} file @param {string} source */
-export function testDiscoveryViolations(file, source) {
-  const { program, errors } = parseSync(file, source);
-  if (errors.length) {
-    return [`Cannot parse ${file}`];
-  }
-  const identities = new Set(["it", "test", "describe", "suite"]);
-  walk(program, (node) => {
-    if (
-      node["type"] === "ImportSpecifier" &&
-      ["it", "test", "describe", "suite"].includes(node["imported"].name)
-    ) {
-      identities.add(node["local"].name);
-    }
-  });
-  /** @type {string[]} */
+/** @param {Record<string,string>} sources @param {Map<string,string[]>} graph */
+function purityViolations(sources, graph) {
   /** @type {string[]} */
   const failures = [];
-  walk(program, (node) => {
-    if (
-      node["type"] === "MemberExpression" &&
-      identities.has(node["object"]?.name) &&
-      ["only", "skip", "todo", "skipIf", "runIf"].includes(
-        node["property"]?.name ?? node["property"]?.value,
-      )
-    ) {
-      failures.push(`${file}: incomplete test declaration`);
+  const visited = new Set();
+  /** @param {string} file */
+  const inspect = (file) => {
+    if (visited.has(file)) {
+      return;
     }
-  });
+    visited.add(file);
+    failures.push(...platformViolations(file, sources[file] ?? ""));
+    for (const target of graph.get(file) ?? []) {
+      if (graph.has(target)) {
+        failures.push(...edgeViolations("src/protocol/closure.ts", [target]));
+        inspect(target);
+      } else {
+        failures.push(`${file} imports unavailable or external protocol dependency ${target}`);
+      }
+    }
+  };
+  for (const file of graph.keys()) {
+    if (/^(src\/protocol\/|\.\.\/contracts\/)/u.test(file)) {
+      inspect(file);
+    }
+  }
   return failures;
 }
-
+/** @param {Record<string,string>} sources @param {Record<string,string[]>} aliases */
+export function moduleViolations(sources, aliases) {
+  const files = new Set(Object.keys(sources));
+  /** @type {string[]} */
+  const problems = [];
+  const graph = new Map();
+  for (const [file, source] of Object.entries(sources)) {
+    const targets = imports(file, source).map((name) => resolve(file, name, aliases, files));
+    graph.set(file, targets);
+    problems.push(...edgeViolations(file, targets));
+  }
+  return [...problems, ...cycleViolations(graph), ...purityViolations(sources, graph)];
+}
 /** @param {string} file @param {string} source @returns {string[]} */
 function platformViolations(file, source) {
   const { program } = parseSync(file, source);
@@ -169,18 +171,31 @@ function platformViolations(file, source) {
   return failures;
 }
 
+/** @param {Record<string,any>|undefined} node @returns {string[]} */
+function memberPath(node) {
+  if (node?.["type"] === "Identifier") {
+    return [node["name"]];
+  }
+  if (node?.["type"] !== "MemberExpression") {
+    return [];
+  }
+  return [...memberPath(node["object"]), node["property"]?.name ?? node["property"]?.value];
+}
 /** @param {Record<string,any>} node */
 function ambientMember(node) {
   if (node["type"] !== "MemberExpression") {
     return false;
   }
-  const object = node["object"]?.name;
-  const property = node["property"]?.name ?? node["property"]?.value;
+  const path = memberPath(node);
+  if (path[0] === "globalThis") {
+    path.shift();
+  }
+  const [object = "", property] = path;
   return (
     ["Intl", "crypto", "process", "window", "navigator", "localStorage", "sessionStorage"].includes(
       object,
     ) ||
-    (object === "Date" && property === "now") ||
+    (["Date", "performance"].includes(object) && property === "now") ||
     (object === "Math" && property === "random")
   );
 }
@@ -189,12 +204,20 @@ function ambientCall(node) {
   if (!["CallExpression", "NewExpression"].includes(node["type"])) {
     return false;
   }
+  const path = memberPath(node["callee"]);
+  if (path[0] === "globalThis") {
+    path.shift();
+  }
   return (
-    ["fetch", "XMLHttpRequest", "WebSocket", "EventSource", "setTimeout", "setInterval"].includes(
-      node["callee"]?.name,
-    ) ||
-    (node["type"] === "NewExpression" &&
-      node["callee"]?.name === "Date" &&
-      node["arguments"]?.length === 0)
+    [
+      "fetch",
+      "XMLHttpRequest",
+      "WebSocket",
+      "EventSource",
+      "setTimeout",
+      "setInterval",
+      "require",
+    ].includes(path[0] ?? "") ||
+    (path[0] === "Date" && node["arguments"]?.length === 0)
   );
 }
