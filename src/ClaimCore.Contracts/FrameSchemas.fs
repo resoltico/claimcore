@@ -35,15 +35,37 @@ module internal FrameSchemas =
             ]
 
     let private delivery =
-        [ property "operationId" (Schema.nullable ScalarSchemas.uuid)
-          property "attemptKnowledge" (enumeration [ "NOT_SENT"; "READ_SUCCEEDED"; "READ_FAILED"; "ACCEPTED"; "NOT_ACCEPTED"; "UNCONFIRMED" ])
-          property "resolutionEvidence" (enumeration [ "NONE"; "CONTENT_ACCEPTED"; "CONTENT_EXCLUDED" ]) ]
+        [
+            property "operationId" (Schema.nullable ScalarSchemas.uuid)
+            property
+                "attemptKnowledge"
+                (enumeration
+                    [
+                        "NOT_SENT"
+                        "READ_SUCCEEDED"
+                        "READ_FAILED"
+                        "ACCEPTED"
+                        "NOT_ACCEPTED"
+                        "UNCONFIRMED"
+                    ])
+            property
+                "resolutionEvidence"
+                (enumeration [ "NONE"; "CONTENT_ACCEPTED"; "CONTENT_EXCLUDED" ])
+        ]
 
     let private delivered schema =
         match schema with
         | ObjectSchema value ->
-            let properties = value.Properties |> List.filter (fun item -> item.Name <> "diagnosticId" && item.Name <> "path")
-            let endpoint = if properties |> List.exists (fun item -> item.Name = "endpoint") then [] else [ property "endpoint" (Schema.nullable text) ]
+            let properties =
+                value.Properties
+                |> List.filter (fun item -> item.Name <> "diagnosticId" && item.Name <> "path")
+
+            let endpoint =
+                if properties |> List.exists (fun item -> item.Name = "endpoint") then
+                    []
+                else
+                    [ property "endpoint" (Schema.nullable text) ]
+
             Schema.objectOf false (properties @ endpoint @ delivery)
         | _ -> invalidArg "schema" "A frame must be an object."
 
@@ -65,9 +87,9 @@ module internal FrameSchemas =
                     [
                         property "kind" (token "serviceFailure")
                         property "endpoint" (token id)
-                        property
-                            "failure"
-                            HostFailures.schema.Root
+                        property "failure" HostFailures.schema.Root
                     ])
 
-        results @ failures @ [ localFailure; protocolFailure ] |> List.map delivered |> Schema.oneOf
+        results @ failures @ [ localFailure; protocolFailure ]
+        |> List.map delivered
+        |> Schema.oneOf

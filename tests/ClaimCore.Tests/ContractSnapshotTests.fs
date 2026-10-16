@@ -84,7 +84,11 @@ let private identitySensitivity () =
         "Single identity"
 
     let names = inputs |> List.map fst
-    Expect.equal names.Length 31 "Metadata, descriptors, default English, schemas and strict-byte/delivery profiles"
+
+    Expect.equal
+        names.Length
+        31
+        "Metadata, descriptors, default English, schemas and strict-byte/delivery profiles"
 
     Expect.isFalse
         (names

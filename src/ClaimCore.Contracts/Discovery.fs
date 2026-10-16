@@ -132,14 +132,30 @@ module ContractDiscovery =
         + String.concat "," endpoints
         + "] as const;\nexport type EndpointId = (typeof endpoints)[number][\"id\"];\nexport const isEndpointId = (value: string): value is EndpointId => endpoints.some(endpoint => endpoint.id === value);\n"
         + guardMetadataTypeScript ()
-        + "export const strictByteProfile = " + System.Text.Json.JsonSerializer.Serialize(ProtocolProfile.strictBytes) + " as const;\n"
-        + "export const resolutionEvidencePolicies = " + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.evidencePolicies) + " as const;\n"
-        + "export const contentExcludedDiagnostic = " + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.contentExcludedDiagnostic) + " as const;\n"
-        + "export const unresolvedKnowledge = " + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.unresolvedKnowledge) + " as const;\n"
-        + "export const deliveryOutcomePolicies = " + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.outcomePolicies) + " as const;\n"
-        + "export const deliveryMissingPolicies = " + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.missingPolicies) + " as const;\n"
-        + "export const deliveryHostPolicies = " + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.hostPolicies) + " as const;\n"
-        + "export const deliveryResolutionPolicies = " + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.resolutionPolicies) + " as const;\n"
+        + "export const strictByteProfile = "
+        + System.Text.Json.JsonSerializer.Serialize(ProtocolProfile.strictBytes)
+        + " as const;\n"
+        + "export const resolutionEvidencePolicies = "
+        + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.evidencePolicies)
+        + " as const;\n"
+        + "export const contentExcludedDiagnostic = "
+        + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.contentExcludedDiagnostic)
+        + " as const;\n"
+        + "export const unresolvedKnowledge = "
+        + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.unresolvedKnowledge)
+        + " as const;\n"
+        + "export const deliveryOutcomePolicies = "
+        + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.outcomePolicies)
+        + " as const;\n"
+        + "export const deliveryMissingPolicies = "
+        + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.missingPolicies)
+        + " as const;\n"
+        + "export const deliveryHostPolicies = "
+        + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.hostPolicies)
+        + " as const;\n"
+        + "export const deliveryResolutionPolicies = "
+        + System.Text.Json.JsonSerializer.Serialize(DeliveryPolicy.resolutionPolicies)
+        + " as const;\n"
 
     let presentation () =
         DefaultPresentation.render () |> CanonicalContract.bytes

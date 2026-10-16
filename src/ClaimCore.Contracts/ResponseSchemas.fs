@@ -84,12 +84,14 @@ module internal ResponseSchemas =
     let receiptScope endpoint =
         let rec scopes schema =
             match schema with
-            | ReferenceSchema "CaseReceipt" -> ["CASE"]
-            | ReferenceSchema "AuthorityReceipt" -> ["AUTHORITY"]
-            | ObjectSchema value -> value.Properties |> List.collect (fun property -> scopes property.Schema)
+            | ReferenceSchema "CaseReceipt" -> [ "CASE" ]
+            | ReferenceSchema "AuthorityReceipt" -> [ "AUTHORITY" ]
+            | ObjectSchema value ->
+                value.Properties |> List.collect (fun property -> scopes property.Schema)
             | OneOfSchema alternatives -> alternatives |> List.collect scopes
             | _ -> []
+
         match outcome endpoint |> scopes |> List.distinct with
-        | [scope] -> scope
+        | [ scope ] -> scope
         | [] -> "NONE"
         | _ -> invalidArg "endpoint" "Receipt scope is ambiguous."

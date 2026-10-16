@@ -78,4 +78,5 @@ export const createDraft = (
 
         """
 
-    let source () = (template.TrimEnd() + "\n") |> Encoding.UTF8.GetBytes
+    let source () =
+        (template.TrimEnd() + "\n") |> Encoding.UTF8.GetBytes
