@@ -192,7 +192,7 @@ let private categoryControls () =
 
     Expect.equal
         (categories errors)
-        [ "ACCESSIBILITY"; "ASSERTION"; "ERROR"; "TIMEOUT" ]
+        [ "ACCESSIBILITY"; "ACTION_TIMEOUT"; "ASSERTION"; "ERROR" ]
         "Only closed categories survive private assertion, accessibility and timeout details"
 
     Expect.equal
@@ -207,8 +207,59 @@ let private categoryControls () =
 
     Expect.equal
         (categories "    Test timeout of 30000ms exceeded.")
-        [ "TIMEOUT" ]
+        [ "TEST_TIMEOUT" ]
         "Runner deadline category"
+
+let private durationControls () =
+    let row =
+        "  ✘  1 [chromium] › e2e/localization-editor.spec.ts:58:1 › private-title (30.0s)"
+
+    let duration text =
+        Encoding.UTF8.GetBytes(text: string)
+        |> BrowserProgress.failedDurations [ "/repo/web/e2e/localization-editor.spec.ts" ]
+
+    Expect.equal
+        (duration row)
+        [ "localization-editor.spec.ts:58:30.0s" ]
+        "Only safe source and duration survive"
+
+    for invalid in
+        [
+            row.Replace("30.0s", "1000000s")
+            row.Replace("30.0s", "1.1234s")
+            row.Replace("30.0s", "private-token")
+            row.Replace("localization-editor.spec.ts", "private-token.spec.ts")
+            "private " + row
+        ] do
+        Expect.isEmpty (duration invalid) "Private or unbounded duration data is omitted"
+
+let private timeoutControls () =
+    let categories text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.failureCategories
+
+    for action in
+        [
+            "    TimeoutError: private-details"
+            "    Error: locator.selectOption: Timeout 10000ms exceeded. private-details"
+        ] do
+        Expect.equal
+            (categories action)
+            [ "ACTION_TIMEOUT" ]
+            "An explicit action timeout has its own category"
+
+    Expect.equal
+        (categories "    Error: locator.selectOption: Test timeout of 30000ms exceeded.")
+        [ "TEST_TIMEOUT" ]
+        "An action interrupted by the test deadline is a test timeout"
+
+    Expect.equal
+        (categories "    Error: Timeout 10000ms exceeded.")
+        [ "TIMEOUT" ]
+        "Unclassified timeout remains generic"
+
+    Expect.isEmpty
+        (categories "private TimeoutError: private-token")
+        "Payload prefixes do not become timeout evidence"
 
 let private authorityReadRefusals (read: string -> string list) (context: string) =
     for invalid in
@@ -285,14 +336,101 @@ let private authorityPhaseControls () =
         ] do
         Expect.equal (phase invalid) "UNAVAILABLE" "Private or malformed UI details are omitted"
 
-let private controls () =
-    cleanupControls ()
+let private authorityBodyTimingControls () =
+    let timing text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.authorityBodyTiming
+
+    let marker = "E2E_AUTHORITY_BODY_TIMING NEXT_GRANT 30001 30000"
+
+    Expect.equal
+        (timing marker)
+        [ "NEXT_GRANT:30001/30000" ]
+        "Observed elapsed time can exceed the declared budget"
+
+    Expect.equal
+        (timing (marker + "\nE2E_AUTHORITY_BODY_TIMING NEXT_GRANT 30002 30000"))
+        [ "NEXT_GRANT:30002/30000" ]
+        "Only the latest bounded timing per stage survives"
+
+    Expect.equal
+        (timing
+            "E2E_AUTHORITY_BODY_TIMING NEXT_GRANT 32000 30000\nE2E_AUTHORITY_BODY_TIMING FAILURE 33000 30000")
+        [ "FAILURE:33000/30000"; "NEXT_GRANT:32000/30000" ]
+        "Failure timing does not overwrite the action entry checkpoint"
+
+    for invalid in
+        [
+            marker.Replace("NEXT_GRANT", "PRIVATE_TOKEN")
+            marker.Replace("30001", "10000000")
+            marker.Replace("30001", "030001")
+            marker.Replace("30000", "-1")
+            marker + " private-token"
+        ] do
+        Expect.isEmpty (timing invalid) "Unknown stages and unsafe timing data are omitted"
+
+let private authorityAdviceControls () =
+    let advice text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.authorityAdvice
+
+    Expect.equal (advice "E2E_AUTHORITY_ADVICE GRANT 3") "GRANT:3" "Fixed advice and bounded count"
+
+    Expect.equal
+        (advice "E2E_AUTHORITY_ADVICE GRANT 3\nE2E_AUTHORITY_ADVICE NO_GRANT 2")
+        "NO_GRANT:2"
+        "Only the latest validated advice survives"
+
+    for invalid in
+        [
+            "E2E_AUTHORITY_ADVICE PRIVATE_TOKEN 1"
+            "E2E_AUTHORITY_ADVICE GRANT 1000"
+            "E2E_AUTHORITY_ADVICE GRANT 0"
+            "E2E_AUTHORITY_ADVICE UNOBSERVED 1"
+            "E2E_AUTHORITY_ADVICE GRANT 3 private-token"
+        ] do
+        Expect.equal (advice invalid) "UNOBSERVED:0" "Private or inconsistent advice is omitted"
+
+let private authorityPickerControls () =
+    let picker text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.authorityPicker
+
+    Expect.equal
+        (picker "E2E_AUTHORITY_PICKER MISSING NO_GRANT")
+        "MISSING:NO_GRANT"
+        "Fixed picker snapshot"
+
+    Expect.equal
+        (picker "E2E_AUTHORITY_PICKER DISABLED GRANT\nE2E_AUTHORITY_PICKER ENABLED GRANT")
+        "ENABLED:GRANT"
+        "Only the latest fixed picker snapshot survives"
+
+    for invalid in
+        [
+            "E2E_AUTHORITY_PICKER PRIVATE_TOKEN GRANT"
+            "E2E_AUTHORITY_PICKER ENABLED PRIVATE_TOKEN"
+            "private-body E2E_AUTHORITY_PICKER ENABLED GRANT"
+            "E2E_AUTHORITY_PICKER ENABLED GRANT private-token"
+        ] do
+        Expect.equal
+            (picker invalid)
+            "UNOBSERVED:UNOBSERVED"
+            "Private or malformed picker state is omitted"
+
+let private browserMetadataControls () =
     progressControls ()
     locationControls ()
     stackControls ()
     categoryControls ()
+    durationControls ()
+    timeoutControls ()
     authorityReadControls ()
     authorityPhaseControls ()
+    authorityBodyTimingControls ()
+    authorityAdviceControls ()
+    authorityPickerControls ()
+
+let private controls () =
+    cleanupControls ()
+    browserMetadataControls ()
 
     let deadline =
         failure Deadline "printf synthetic-out; printf synthetic-err >&2; sleep 2" None 64 250

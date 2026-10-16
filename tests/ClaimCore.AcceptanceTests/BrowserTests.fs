@@ -221,6 +221,7 @@ let private printFailureSummary root engine bytes =
 
     let passed, failed = BrowserProgress.counts bytes
     let locations = BrowserProgress.failedLocations codeFiles bytes |> String.concat ","
+    let durations = BrowserProgress.failedDurations codeFiles bytes |> String.concat ","
     let stack = BrowserProgress.stackLocations codeFiles bytes |> String.concat ","
     let categories = BrowserProgress.failureCategories bytes |> String.concat ","
 
@@ -229,9 +230,12 @@ let private printFailureSummary root engine bytes =
         |> String.concat ","
 
     let phase = BrowserProgress.authorityPhase bytes
+    let timing = BrowserProgress.authorityBodyTiming bytes |> String.concat ","
+    let advice = BrowserProgress.authorityAdvice bytes
+    let picker = BrowserProgress.authorityPicker bytes
 
     Console.WriteLine(
-        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; stack={stack}; authorityReads={reads}; authorityPhase={phase}"
+        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; durations={durations}; stack={stack}; authorityReads={reads}; authorityPhase={phase}; authorityBodyTimingMs={timing}; authorityAdvice={advice}; authorityPicker={picker}"
     )
 
 let private runBrowser root engine output start =
