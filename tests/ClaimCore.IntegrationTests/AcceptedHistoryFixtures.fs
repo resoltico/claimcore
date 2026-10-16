@@ -224,6 +224,31 @@ let private withheldReceipt (receipt: OperationReceipt) =
                 }
     }
 
+let private assertRemainingHistoryAccess
+    (actor: IActorClaimsCore)
+    (query: HistoryRequest)
+    (original: OperationReceipt)
+    =
+    task {
+        let! summary =
+            actor.History(
+                { query with
+                    Detail = HistoryDetail.Summary
+                },
+                token
+            )
+
+        let summary = historyPage summary
+        Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
+
+        let! observed = actor.Observe(original.OperationId, token)
+
+        Expect.equal
+            observed
+            (QueryOutcome.Succeeded(withheldReceipt original))
+            "Superseded OPEN keeps every acceptance metadata field and withholds its snapshot"
+    }
+
 let private revokedFullHistory
     (database: PostgresFixture.Database)
     (actor: IActorClaimsCore)
@@ -268,23 +293,7 @@ let private revokedFullHistory
                 (QueryOutcome.Rejected Rejection.ResourceUnavailable)
                 "FULL requires current rights before accepting or comparing a cursor"
 
-        let! summary =
-            actor.History(
-                { query with
-                    Detail = HistoryDetail.Summary
-                },
-                token
-            )
-
-        let summary = historyPage summary
-        Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
-
-        let! observed = actor.Observe(original.OperationId, token)
-
-        Expect.equal
-            observed
-            (QueryOutcome.Succeeded(withheldReceipt original))
-            "Superseded OPEN keeps every acceptance metadata field and withholds its snapshot"
+        do! assertRemainingHistoryAccess actor query original
     }
 
 let private retainedPages (database: PostgresFixture.Database) =
