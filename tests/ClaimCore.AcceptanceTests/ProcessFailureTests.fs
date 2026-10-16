@@ -306,11 +306,11 @@ let private controls () =
     cleanupControls ()
     browserMetadataControls ()
 
-    let deadline =
-        failure Deadline "printf synthetic-out; printf synthetic-err >&2; sleep 2" None 64 250
+    let deadline = failure Deadline "exec sleep 2" None 64 250
 
-    Expect.equal (Encoding.UTF8.GetString deadline.StandardOutput) "synthetic-out" "Deadline stdout"
-    Expect.equal (Encoding.UTF8.GetString deadline.StandardError) "synthetic-err" "Deadline stderr"
+    Expect.isEmpty deadline.StandardOutput "The quiet deadline child writes no stdout"
+    Expect.isEmpty deadline.StandardError "The quiet deadline child writes no stderr"
+    Expect.isFalse deadline.CleanupFailed "The owned quiet child completed cleanup"
 
     outputControls ()
 
