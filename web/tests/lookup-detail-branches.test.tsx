@@ -17,12 +17,9 @@ import {
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
-it("keeps missing case lookup and non-full history entries out of case presentation", async () => {
+it("does not request history or commands for a missing case", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(response("case.get", "REJECTED", unavailable));
-  fetch.mockResolvedValueOnce(
-    response("case.history", "SUCCEEDED", { entries: [{ tag: "SUMMARY" }], nextCursor: null }),
-  );
   render(
     <CaseDetail
       token="token"
@@ -33,8 +30,9 @@ it("keeps missing case lookup and non-full history entries out of case presentat
       onCommand={vi.fn()}
     />,
   );
-  expect(await screen.findByRole("heading", { name: "Case history" })).toBeVisible();
   expect(await screen.findByText("The requested resource is unavailable.")).toBeVisible();
+  expect(screen.queryByRole("heading", { name: "Case history" })).toBeNull();
+  expect(fetch).toHaveBeenCalledTimes(1);
   expect(screen.queryByRole("heading", { name: "Available actions" })).toBeNull();
 });
 

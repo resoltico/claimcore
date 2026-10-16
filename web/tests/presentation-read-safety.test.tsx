@@ -118,6 +118,9 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   );
   assertSafe(view.container.querySelector(".section-heading + p")!, value, points);
   if (!missing) {
+    await waitFor(() => {
+      expect(view.container.querySelector("select")).not.toBeNull();
+    });
     fireEvent.change(view.container.querySelector("select")!, { target: { value: "FULL" } });
   }
   await waitFor(() => {

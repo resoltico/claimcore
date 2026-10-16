@@ -152,6 +152,7 @@ const complete = (state: OperationState, action: CompletionResponse): OperationS
       delivery: "ACCEPTED",
       unresolved,
       receipt: action.receipt,
+      disclosureRefused: false,
       pending: null,
       message: null,
     };

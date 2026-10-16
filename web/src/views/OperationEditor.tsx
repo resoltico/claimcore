@@ -47,10 +47,14 @@ const requestLeave = (model: OperationEditorModel, onClose: () => void): void =>
 const UnknownOperation = ({ model }: { model: OperationEditorModel }) => {
   const p = usePresentation();
   return (
-    <section role="alert">
-      <NoticeView value={model.state.message!} />
+    <section role="alert" aria-busy={model.state.delivery === "SUBMITTING"}>
+      <NoticeView value={model.state.message ?? { kind: "local", reason: "outcomeUnknown" }} />
       <p>{p.text("ui.retryExactDescription")}</p>
-      <button type="button" onClick={() => void model.submit()}>
+      <button
+        type="button"
+        disabled={model.state.delivery === "SUBMITTING"}
+        onClick={() => void model.submit()}
+      >
         {p.text("ui.retryExact")}
       </button>
     </section>
@@ -85,7 +89,7 @@ const OperationEditorLayout = ({
   const section = useRef<HTMLElement>(null);
   const previewButtonRef = useRef<HTMLButtonElement>(null);
   useEditorFocus(model, section, previewButtonRef);
-  if (model.state.delivery === "OUTCOME_UNKNOWN") {
+  if (model.state.unresolved) {
     return <UnknownOperation model={model} />;
   }
   if (model.state.disclosureRefused) {
