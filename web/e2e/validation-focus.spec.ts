@@ -3,12 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 import { startOpen } from "./case-workflow";
-import {
-  pauseHostReply,
-  pauseJsonReply,
-  expectInputRefusal,
-  inputRefusalText,
-} from "./localization-support";
+import { pauseJsonReply, localInputRefusalText, trackRequests } from "./localization-support";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
 test("separates malformed amount refusal from named policy-field focus", async ({ page }) => {
@@ -16,11 +11,12 @@ test("separates malformed amount refusal from named policy-field focus", async (
   await startOpen(page, `INVALID-${randomUUID()}`);
   const amount = page.getByLabel("Amount claimed", { exact: true });
   await amount.fill("00.10");
-  const malformed = await pauseHostReply(page, "case.preview", 400);
+  const requests = trackRequests(page);
   await page.getByRole("button", { name: "Review changes" }).click();
-  expectInputRefusal((await malformed.ready).reply);
-  malformed.release();
-  await expect(page.getByRole("alert")).toContainText(inputRefusalText.en);
+  await expect(page.getByRole("alert")).toContainText(localInputRefusalText.en);
+  await expect(amount).toBeFocused();
+  await expect(amount).toHaveAttribute("aria-invalid", "true");
+  expect(requests).toHaveLength(0);
   await expect(amount).toHaveValue("00.10");
   await amount.fill("0.10");
   const name = page.getByLabel("Claimant name", { exact: true });

@@ -4,7 +4,6 @@ import { expect, type Page, type Locator, type APIResponse } from "@playwright/t
 import type { EndpointId } from "@contracts/endpoint-catalog";
 import { endpoints } from "@contracts/endpoint-catalog";
 import type { ServiceResponse } from "../src/api/types";
-import type { HostFailure } from "@contracts/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "@contracts/browser-contract";
 import { preferenceKey } from "../src/presentation/preferences";
@@ -176,30 +175,11 @@ export const pauseJsonReply = <K extends EndpointId>(page: Page, endpoint: K, dr
     },
     drop,
   );
-export const pauseHostReply = (page: Page, endpoint: EndpointId, expectedStatus: number) =>
-  pauseReply(
-    page,
-    endpoint,
-    (payload, status): HostFailure => {
-      if (status !== expectedStatus || !isHostFailure(payload, status)) {
-        throw new Error("Expected a checked host failure.");
-      }
-      return payload;
-    },
-    false,
-  );
-
-export const inputRefusalText = {
-  en: "The input does not satisfy the endpoint contract.",
-  lv: "Ievade neatbilst galapunkta līgumam.",
-  ar: "المدخلات لا تطابق عقد نقطة النهاية.",
+export const localInputRefusalText = {
+  en: "Complete this input using the required format.",
+  lv: "Aizpildiet šo ievadi vajadzīgajā formātā.",
+  ar: "أكمل هذا الحقل بالتنسيق المطلوب.",
 } as const;
-export const expectInputRefusal = (reply: HostFailure): void => {
-  expect(reply.status).toBe(400);
-  expect(reply.code).toBe("INPUT_INVALID");
-  expect(reply.executionPhase).toBe("NOT_STARTED");
-  expect(reply.diagnostic.id).toBe("HOST_INPUTINVALID");
-};
 const collectLayoutMetrics = () => {
   const { clientWidth } = document.documentElement;
   const offenders = [...document.querySelectorAll("*")]

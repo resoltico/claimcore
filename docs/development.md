@@ -31,7 +31,9 @@ Use `bash eng/verify.sh browsers acceptance` to install browsers and then qualif
 clients. Tests use native Microsoft Testing Platform; every module is discovered with `[<Tests>]`
 and guarded against missing source membership, undiscovered tests and focused/pending cases.
 Floors come from measured unfiltered suites; never lower one to clear a failure. A partial or
-filtered run is iteration evidence and cannot establish the complete gate.
+filtered run is iteration evidence and cannot establish the complete gate. Native stages retain
+TRX results, including captured browser-engine completion counts, in unique ignored directories
+under `artifacts/verification/`; later runs do not overwrite earlier failure evidence.
 
 Acceptance owns fresh labelled PostgreSQL/Keycloak and published processes. By default it runs
 every specification on Chromium, Firefox and WebKit. Set `CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE`

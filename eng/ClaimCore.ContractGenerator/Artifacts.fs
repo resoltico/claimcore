@@ -28,6 +28,10 @@ module ContractArtifacts =
     let private clientArtifacts () =
         [
             {
+                Name = "package.json"
+                Bytes = Encoding.UTF8.GetBytes "{\"private\":true,\"type\":\"module\"}\n"
+            }
+            {
                 Name = "ContractExtensionFixture.fs"
                 Bytes = ContractExtension.native ()
             }
