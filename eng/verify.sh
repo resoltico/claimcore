@@ -64,7 +64,7 @@ tests() { # <project> <minimum-expected-tests> [configuration] [timeout] [settin
   local report_directory
   mkdir -p artifacts/verification
   report_directory="$(mktemp -d "${PWD}/artifacts/verification/native.XXXXXXXX")"
-  dotnet test --project "$1" --configuration "${3:-Release}" --no-build --no-restore \
+  CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" dotnet test --project "$1" --configuration "${3:-Release}" --no-build --no-restore \
     --minimum-expected-tests="$2" --zero-tests-policy=strict --timeout="${4:-30m}" \
     --report-trx --report-trx-filename="${report_directory}/results.trx" \
     -- --settings="${PWD}/${5:-eng/expecto.runsettings}"

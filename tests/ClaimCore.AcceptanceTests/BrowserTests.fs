@@ -3,6 +3,7 @@ module ClaimCore.AcceptanceTests.BrowserTests
 open System
 open System.Text
 open System.Text.RegularExpressions
+open System.Text.Json
 open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
@@ -69,6 +70,30 @@ let private report minimum engine (result: ClaimCore.TestSupport.BoundedProcessR
             "smoke; full browser qualification remains unrun"
         else
             "complete engine suite"
+
+    let directory =
+        match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
+        | null ->
+            Path.Combine(
+                ClaimCore.TestSupport.RepositoryRoot.find (),
+                "artifacts",
+                "verification",
+                "native." + Guid.NewGuid().ToString("N")
+            )
+        | value -> value
+
+    Directory.CreateDirectory directory |> ignore
+
+    JsonSerializer.SerializeToUtf8Bytes
+        {|
+            runId = Path.GetFileName directory
+            engine = engine
+            scope = if smoke then "smoke" else "complete"
+            passed = count
+            duration = duration
+        |}
+    |> FixtureFiles.write directory ("browser-" + engine + ".json")
+    |> ignore
 
     Console.WriteLine($"Published {engine} ({scope}): {count} passed; {duration}")
 

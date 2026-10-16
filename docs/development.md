@@ -33,7 +33,7 @@ clients. Tests use native Microsoft Testing Platform; every module is discovered
 and guarded against missing source membership, undiscovered tests and focused/pending cases.
 Floors come from measured unfiltered suites; never lower one to clear a failure. A partial or
 filtered run is iteration evidence and cannot establish the complete gate. Native stages retain
-TRX results, including captured browser-engine completion counts, in unique ignored directories
+TRX results and adjacent sanitized browser-engine count/duration summaries in unique ignored directories
 under `artifacts/verification/`; later runs do not overwrite earlier failure evidence.
 
 Acceptance owns fresh labelled PostgreSQL/Keycloak and published processes. By default it runs

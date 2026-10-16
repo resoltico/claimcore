@@ -181,12 +181,28 @@ jobs:
           CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ matrix.engine }}
           CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: ${{ matrix.scope }}
         run: bash eng/verify.sh browsers acceptance
-      - name: Report coverage scope
+      - name: Report browser execution
         env:
           BROWSER_ENGINE: ${{ matrix.engine }}
           BROWSER_SCOPE: ${{ matrix.scope }}
         run: |
-          printf 'Browser coverage: %s / %s. Smoke is not complete qualification.\n' "${BROWSER_ENGINE}" "${BROWSER_SCOPE}" >> "${GITHUB_STEP_SUMMARY}"
+          python3 - <<'PYTHON'
+          import json, os, pathlib
+          reports = list(pathlib.Path("artifacts/verification").glob("native.*/browser-*.json"))
+          if len(reports) != 1:
+              raise ValueError("Expected one completed browser engine report")
+          result = json.loads(reports[0].read_text())
+          if result["runId"] != reports[0].parent.name:
+              raise ValueError("Browser report belongs to another test run")
+          if result["engine"] != os.environ["BROWSER_ENGINE"] or result["scope"] != os.environ["BROWSER_SCOPE"]:
+              raise ValueError("Browser execution differs from scheduled scope")
+          if type(result["passed"]) is not int or result["passed"] < 1:
+              raise ValueError("Missing executed browser count")
+          message = f"Browser execution: {result['engine']} / {result['scope']}: {result['passed']} passed; {result['duration']}. Smoke is not complete qualification."
+          print(message)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(message + "\n")
+          PYTHON
 
   gate:
     name: Gate
