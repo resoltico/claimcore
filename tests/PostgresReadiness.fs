@@ -22,10 +22,17 @@ let strategy () =
     let hostDeadline =
         TimeSpan.FromSeconds(float (NpgsqlConnectionStringBuilder().Timeout))
 
+    // Fresh clusters usually initialize in seconds; avoid whole-second polling gaps and
+    // the library's one-hour protocol default while retaining both readiness checks.
+    let interval = TimeSpan.FromMilliseconds 250.
+
     Wait
         .ForUnixContainer()
-        .UntilCommandIsCompleted(protocol)
+        .UntilCommandIsCompleted(
+            protocol,
+            fun wait -> wait.WithInterval(interval).WithTimeout(TimeSpan.FromSeconds 60.) |> ignore
+        )
         .UntilExternalTcpPortIsAvailable(
             int PostgreSqlBuilder.PostgreSqlPort,
-            fun wait -> wait.WithTimeout(hostDeadline) |> ignore
+            fun wait -> wait.WithInterval(interval).WithTimeout(hostDeadline) |> ignore
         )

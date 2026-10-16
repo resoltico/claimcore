@@ -3,20 +3,7 @@ import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "./presentation-test-support";
 import { CaseHistory } from "../src/views/CaseHistory";
 import { definition, response } from "./service-ui.fixtures";
-import { generatedWebValue } from "./contract-corpus.fixtures";
-
-const historyVariants = () => {
-  const source = generatedWebValue("case.history").outcome;
-  if (source.tag !== "SUCCEEDED") {
-    throw new Error("Synthetic history is missing.");
-  }
-  const summary = source.data.entries.find((entry) => entry.tag === "SUMMARY");
-  const full = source.data.entries.find((entry) => entry.tag === "FULL");
-  if (summary === undefined || full === undefined) {
-    throw new Error("Synthetic variants are missing.");
-  }
-  return { summary, full };
-};
+import { historyVariants } from "./contract-corpus.fixtures";
 
 const expectHistoryRequest = (body: unknown) => {
   if (typeof body !== "string") {
@@ -68,4 +55,52 @@ it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY a
   });
   expect(view.container.querySelectorAll(".history-list li")).toHaveLength(1);
   expect(fetch).toHaveBeenCalledTimes(3);
+});
+
+it("recovers a refused continuation with a fresh no-cursor request without reporting lost disclosure", async () => {
+  const { summary } = historyVariants();
+  const refused = vi.fn();
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(
+      response("case.history", "SUCCEEDED", { entries: [summary], nextCursor: "old" }),
+    )
+    .mockResolvedValueOnce(
+      response("case.history", "REJECTED", {
+        diagnostic: { id: "QUERY_CURSOR_INVALID", parameters: {} },
+        message: "Synthetic invalid continuation",
+        field: null,
+        actualRevision: null,
+        recommendedAction: "READ_CURRENT",
+      }),
+    )
+    .mockResolvedValueOnce(
+      response("case.history", "SUCCEEDED", { entries: [summary], nextCursor: null }),
+    );
+  vi.stubGlobal("fetch", fetch);
+  const user = userEvent.setup();
+  const view = render(
+    <CaseHistory
+      token="token"
+      caseReference="CASE-1"
+      fields={definition.descriptors.fields}
+      onDisclosureRefused={refused}
+    />,
+  );
+  await user.click(await screen.findByRole("button", { name: "Load more history" }));
+  await screen.findByRole("alert");
+  expect(view.container.querySelectorAll(".history-list li")).toHaveLength(0);
+  expect(screen.queryByRole("button", { name: "Load more history" })).toBeNull();
+  expect(refused).not.toHaveBeenCalled();
+  expect(fetch).toHaveBeenCalledTimes(2);
+  await user.click(screen.getByRole("button", { name: "Reload history" }));
+  await waitFor(() => {
+    expect(view.container.querySelectorAll(".history-list li")).toHaveLength(1);
+  });
+  const body = fetch.mock.calls[2]?.[1]?.body;
+  if (typeof body !== "string") {
+    throw new Error("Expected history request bytes.");
+  }
+  expect(JSON.parse(body)).not.toHaveProperty("cursor");
+  expect(refused).not.toHaveBeenCalled();
 });

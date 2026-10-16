@@ -18,6 +18,7 @@ let private executable directory name source =
 let private start directory platform engine stages =
     let commands = Path.Combine(directory, "commands")
     File.WriteAllText(commands, "")
+    File.WriteAllText(commands + ".docker", "")
 
     executable
         directory
@@ -28,6 +29,11 @@ let private start directory platform engine stages =
         directory
         "dotnet"
         "printf 'dotnet %s\\n' \"$*\" >> \"$CLAIMCORE_TEST_COMMANDS_FILE\"\nif [ \"${CLAIMCORE_TEST_FAIL_COMMAND:-}\" = \"dotnet $*\" ]; then exit 19; fi\n"
+
+    executable
+        directory
+        "docker"
+        "printf '%s\\n' \"$*\" >> \"$CLAIMCORE_TEST_COMMANDS_FILE.docker\"\nif [ \"${CLAIMCORE_TEST_FAIL_DOCKER:-}\" = true ]; then exit 19; fi\n"
 
     executable directory "uname" "printf '%s\\n' \"$CLAIMCORE_TEST_PLATFORM\"\n"
 
@@ -50,6 +56,7 @@ let private start directory platform engine stages =
             "CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE"
             "CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE"
             "CLAIMCORE_TEST_FAIL_COMMAND"
+            "CLAIMCORE_TEST_FAIL_DOCKER"
             "CLAIMCORE_TEST_POSTGRES_MAJOR"
         ] do
         config.Environment.Remove(name) |> ignore
@@ -102,6 +109,7 @@ let private invalidSelection directory =
             let result = BoundedProcess.run config None 8192 10000
             Expect.equal result.ExitCode 64 "Invalid selection refuses before any selected stage"
             Expect.isEmpty (File.ReadAllLines commands) "No tool starts for invalid selection"
+            Expect.isEmpty (File.ReadAllLines(commands + ".docker")) "No Docker preflight starts"
 
 let private invalidPostgresSelection directory =
     for major in [ ""; "0"; "018"; "text"; "18 "; "99999" ] do
@@ -111,6 +119,7 @@ let private invalidPostgresSelection directory =
             let result = BoundedProcess.run config None 8192 10000
             Expect.equal result.ExitCode 64 "Unlisted major refuses before any stage"
             Expect.isEmpty (File.ReadAllLines commands) "No build, restore or test starts"
+            Expect.isEmpty (File.ReadAllLines(commands + ".docker")) "No Docker preflight starts"
 
 let private listedPostgresSelection directory =
     let baseline = Path.Combine(RepositoryRoot.find (), "db/postgresql-baseline.json")
@@ -161,7 +170,7 @@ let private nativeStages directory =
     let project suite =
         "tests/ClaimCore." + suite + "Tests/ClaimCore." + suite + "Tests.fsproj"
 
-    for stage, suite, floor in [ "postgres", "Integration", 111; "web", "Web", 76 ] do
+    for stage, suite, floor in [ "postgres", "Integration", 118; "web", "Web", 76 ] do
         let config, commands = start directory "Linux" None [ stage ]
         let result = BoundedProcess.run config None 8192 10000
         Expect.equal result.ExitCode 0 "Independent native suite succeeds"
@@ -220,13 +229,18 @@ let private combinedNativeStages directory =
 
     Expect.equal
         (actual |> Array.filter _.StartsWith("dotnet build ") |> Array.length)
-        1
-        "Shared build"
+        2
+        "Only PostgreSQL and Web project closures build"
 
     Expect.equal
         (actual |> Array.filter _.StartsWith("dotnet restore ") |> Array.toList)
-        [ "dotnet restore ClaimCore.slnx --locked-mode" ]
-        "One shared solution restore"
+        [
+            "dotnet restore tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj --locked-mode"
+            "dotnet restore tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj --locked-mode"
+        ]
+        "Only selected project closures restore"
+
+    Expect.equal (File.ReadAllLines(commands + ".docker")).Length 1 "Daemon preflight is shared"
 
     let suites = actual |> Array.filter _.StartsWith("dotnet test ")
     Expect.equal suites.Length 2 "Both complete suites run"
@@ -239,6 +253,25 @@ let private combinedNativeStages directory =
 
     Expect.stringContains suites[1] "ClaimCore.WebTests.fsproj" "Web runs second"
     Expect.stringContains suites[1] "eng/expecto.runsettings" "Web settings remain unchanged"
+
+let private unavailableDocker directory =
+    for stages in
+        [
+            [ "unit"; "postgres" ]
+            [ "browsers"; "acceptance" ]
+            [ "workflows" ]
+            [ "web" ]
+        ] do
+        let config, commands = start directory "Linux" None stages
+        config.Environment["CLAIMCORE_TEST_FAIL_DOCKER"] <- "true"
+        let result = BoundedProcess.run config None 8192 10000
+        Expect.equal result.ExitCode 69 "Missing Docker fails before expensive work"
+        Expect.isEmpty (File.ReadAllLines commands) "No restore, build or browser download starts"
+
+        Expect.equal
+            (File.ReadAllLines(commands + ".docker"))
+            [| "info --format {{.ServerVersion}}" |]
+            "One daemon preflight"
 
 [<Tests>]
 let tests =
@@ -258,5 +291,6 @@ let tests =
                 nativeStages directory
                 failedNativeRestore directory
                 combinedNativeStages directory
+                unavailableDocker directory
             finally
                 Directory.Delete(directory, true))

@@ -41,20 +41,7 @@ export const generatedWebValue = <K extends EndpointId>(endpoint: K): ServiceRes
         ...value.outcome,
         data: {
           ...value.outcome.data,
-          entries: [
-            {
-              tag: "SUMMARY",
-              change: {
-                operationId: accepted.outcome.data.operationId,
-                position: accepted.outcome.data.position,
-                revision: accepted.outcome.data.revision,
-                act: accepted.outcome.data.act,
-                recordedAt: accepted.outcome.data.recordedAt,
-                recordedBy: accepted.outcome.data.recordedBy,
-              },
-            },
-            { tag: "FULL", receipt: accepted.outcome.data },
-          ],
+          entries: [{ tag: "FULL", receipt: accepted.outcome.data }],
         },
       },
     };
@@ -81,3 +68,19 @@ export const hostCases = () => [
     },
   },
 ];
+
+export const historyVariants = () => {
+  const accepted = generatedWebValue("case.execute").outcome;
+  if (accepted.tag !== "ACCEPTED") {
+    throw new Error("Receipt fixture absent.");
+  }
+  const receipt = accepted.data;
+  const { operationId, position, revision, act, recordedAt, recordedBy } = receipt;
+  return {
+    full: { tag: "FULL" as const, receipt },
+    summary: {
+      tag: "SUMMARY" as const,
+      change: { operationId, position, revision, act, recordedAt, recordedBy },
+    },
+  };
+};

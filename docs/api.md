@@ -1,6 +1,6 @@
 # Service and CLI contract
 
-The [endpoint catalogue](../contracts/catalog.json) defines eleven endpoints, their strict wire
+The [endpoint catalogue](../contracts/catalog.json) defines twelve endpoints, their strict wire
 schemas and one shared fingerprint. `session` is GET; the others are POST to the literal
 `/api/<endpoint>` path, including dots in names such as `/api/case.execute`. Session bootstrap is
 anonymous; remaining operations require an authenticated principal. Case and authority work also
@@ -26,7 +26,35 @@ also carry the antiforgery token returned by `session`; bearer calls authenticat
 | `case.history`      | Summary or retained full history page                    |
 | `operation.observe` | Accepted case or authority evidence visible to the actor |
 | `authority.execute` | Register actor, set grant or set enabled state           |
-| `authority.list`    | Installation authority review with pagination            |
+| `authority.list`    | Bounded installation actor summaries                     |
+| `authority.grants`  | Bounded grant review for one selected actor               |
+
+Paged reads accept a maximum `limit` from 1 through 50. `case.list` includes installation offers
+from the same actor snapshot as that page's rows. Advice follows the latest successful page;
+accumulated rows from successive requests are not one frozen snapshot. Execution rechecks authority.
+
+`authority.list` returns actor ID, principal and enabled state, without nested grants. Use
+`authority.grants` with `actorId`, optional `cursor` and `limit` to review that actor's grants.
+Both reads require current installation ReadAuthority; disabled targets remain reviewable.
+The grant page returns its current actor header and at most 50 grants. Continuations bind the
+caller, complete caller authority, endpoint and target; grants may evolve between requests.
+A successful reply must echo the requested actor ID in its actor header.
+Use an actor ID returned by `authority.list` in the CLI frame (the ID below is synthetic):
+
+```json
+{"endpoint":"authority.grants","input":{"actorId":"10000000-0000-4000-8000-000000000001","limit":50}}
+```
+
+`case.history` returns uniform SUMMARY or FULL entries. SUMMARY pages contain at most 50 entries;
+FULL pages contain at most 10 to keep supported retained snapshots inside the response byte limit.
+The server can return fewer entries than requested. Only `nextCursor: null` establishes the end:
+follow a non-null cursor even after a short page. This capacity does not change accepted text,
+truncate history or reduce historical disclosure requirements.
+
+`QUERY_CURSOR_INVALID` recommends `READ_CURRENT`: discard the local continuation and load the
+same view without a cursor. It does not by itself establish loss of authority. A fresh request
+still rechecks current rights. Browser case, actor, selected-grant and history views offer explicit
+reload; they never rebase or replace an uncertain mutation to recover a read.
 
 Case preview/execute inputs carry `operationId`, `caseReference`, integer `expectedRevision` and
 a tagged `act`. Authority execution carries `operationId`, `target` principal and a tagged `act`.
@@ -57,7 +85,8 @@ Case preview/execute and authority execute response envelopes echo the admitted 
 including refusals. Clients correlate that ID and receipt scope/act, case resource identity and promised
 revision before using the reply. ASCII reference identity permits case differences without rewriting
 accepted spelling. Observation correlates the queried ID but cannot prove pending request content:
-only exact execute or preview replay confirms that content. A specifically correlated idempotency
+only exact execute or preview replay confirms that content. The shared read correlation policy also
+rejects a schema-valid authority.grants reply for another actor. A specifically correlated idempotency
 conflict proves CONTENT_EXCLUDED; other refusals do not resolve earlier uncertainty.
 
 Principal wire syntax is deliberately generic Unicode text plus HUMAN/SERVICE kind. Canonical issuer
@@ -65,8 +94,10 @@ and kind-specific identity admission remain Application-owned and run in Hosting
 invalid identities return INPUT_INVALID/400/NOT_STARTED. The CLI no longer rejects those semantic
 identity failures before authentication; the authenticated host failure carries exit 3. Decoding wire syntax never promises principal admission.
 
-Deploy matching service, CLI, browser assets and generated artifacts together. The response envelopes,
-CLI frame format and interaction advice are a coordinated breaking contract change; there is no dual
+Deploy matching service, CLI, browser assets and generated artifacts together. Actor summaries replace nested grants, case pages carry offers, and authority.grants adds a
+coordinated breaking read-contract change. Use matching generated types and follow grant/history
+continuations rather than assuming a requested page size is returned. The response envelopes,
+CLI frame format and interaction advice are also coordinated; there is no dual
 parser or compatibility endpoint. Existing installations retain their schema, durable bytes and private
 state. Rebuild client integrations and update frame consumers before switching the service.
 
@@ -88,6 +119,7 @@ authority definitions alongside case command discovery:
 ```sh
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- help
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- describe endpoints case.execute
+dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- describe endpoints authority.grants
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- schema case.execute request
 ```
 

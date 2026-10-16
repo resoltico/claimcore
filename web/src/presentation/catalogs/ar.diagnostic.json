@@ -68,7 +68,7 @@
   "diagnostic.LEDGER_SEQUENCE_EXHAUSTED": "وصل السجل إلى رقم التسلسل الأخير.",
   "diagnostic.NOT_VOIDED": "هذا الملف غير ملغى.",
   "diagnostic.OPERATION_CONTENT_CONFLICT": "يخص معرّف العملية هذا محتوى أمر مختلفًا. لا تعِد استخدامه.",
-  "diagnostic.QUERY_CURSOR_INVALID": "استخدم مؤشر صفحة حاليًا صادرًا عن ClaimCore.",
+  "diagnostic.QUERY_CURSOR_INVALID": "لم يعد مؤشر متابعة الصفحة صالحًا. أعد تحميل القائمة من البداية.",
   "diagnostic.QUERY_PAGE_LIMIT_RANGE": "استخدم قيمة من 1 إلى {maximumPageSize}.",
   "diagnostic.REVISION_EXHAUSTED": "وصلت الحالة إلى مراجعتها الأخيرة.",
   "diagnostic.STATE_CASE_REFERENCE_MISMATCH": "الملف المحمّل لا يطابق هذا الأمر.",

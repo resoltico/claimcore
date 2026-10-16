@@ -53,6 +53,7 @@ module EndpointCatalog =
             "operation.observe", "NONE"
             "authority.execute", "AUTHORITY"
             "authority.list", "NONE"
+            "authority.grants", "NONE"
         ]
         |> List.map endpoint
 

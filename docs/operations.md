@@ -21,7 +21,11 @@ requires an accepted ERASE and removes its case’s complete live payload histor
 
 ## Access review and sessions
 
-Use `authority.list` with installation OWNER or AUDITOR for current actors and grants. Registration
+Use `authority.list` with installation OWNER or AUDITOR for current actor summaries, then
+`authority.grants` for the selected actor's bounded grant pages. Follow continuations to completion;
+actor summaries do not contain a hidden complete grant set, and disabled actors remain reviewable.
+Each request checks current caller rights; pages do not constitute one frozen cross-request audit.
+Registration
 records both executor and target; for REGISTER_ACTOR they differ. Scope grants deliberately, keep
 at least one enabled human installation owner, and revoke ClaimCore grants independently of IdP
 membership. Service principals cannot receive OWNER or DATA_STEWARD. Bearer service identity comes

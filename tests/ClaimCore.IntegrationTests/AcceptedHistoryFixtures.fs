@@ -161,8 +161,129 @@ let private grandfathering (database: PostgresFixture.Database) =
         return ()
     }
 
+let private appendTransitions (actor: IActorClaimsCore) =
+    task {
+        for revision in 1L .. 49L do
+            let act =
+                if revision % 2L = 1L then
+                    BusinessCommand.Close
+                else
+                    BusinessCommand.Reopen
+
+            let! result =
+                actor.Execute(request (100 + int revision) "HISTORICAL-1" revision act, token)
+
+            accepted result |> ignore
+
+    }
+
+let private assertRetained name entries =
+    for entry in entries do
+        match entry with
+        | HistoryEntry.FullEntry {
+                                     Scope = ReceiptScope.Case {
+                                                                   Snapshot = SnapshotDisclosure.Disclosed(CaseView.Live(fields,
+                                                                                                                         _))
+                                                               }
+                                 } ->
+            Expect.equal
+                fields.ClaimantName
+                name
+                "Accepted history is never re-admitted or truncated"
+        | _ -> failtest "Expected disclosed retained fields"
+
+
+let private historyPage =
+    function
+    | QueryOutcome.Succeeded page -> page
+    | _ -> failtest "Expected accepted history page"
+
+let private remainingHistory (actor: IActorClaimsCore) (query: HistoryRequest) =
+    task {
+        let mutable cursor = query.AfterCursor
+        let mutable entries = []
+
+        while cursor.IsSome do
+            let! current = actor.History({ query with AfterCursor = cursor }, token)
+            let current = historyPage current
+            Expect.equal current.Entries.Length 10 "Every FULL page respects the effective capacity"
+            entries <- entries @ current.Entries
+            cursor <- current.NextCursor
+
+        return entries
+    }
+
+let private retainedPages (database: PostgresFixture.Database) =
+    task {
+        let! actor = caseWorker database.Fixture
+        let name = String.replicate 60000 "<"
+        do! seed database name
+
+        do! appendTransitions actor
+
+        let query =
+            {
+                CaseReference = "HISTORICAL-1"
+                AfterCursor = None
+                Limit = 50
+                Detail = HistoryDetail.Full
+            }
+
+        let! first = actor.History(query, token)
+
+        let first = historyPage first
+
+        Expect.equal first.Entries.Length 10 "FULL fetch and extra-row detection use effective ten"
+
+        let! remaining =
+            remainingHistory
+                actor
+                { query with
+                    AfterCursor = first.NextCursor
+                }
+
+        let entries = first.Entries @ remaining
+
+        let revisions =
+            entries
+            |> List.map (function
+                | HistoryEntry.FullEntry { Scope = ReceiptScope.Case c } -> c.Revision
+                | _ -> failtest "Full case receipt")
+
+        Expect.equal
+            revisions
+            [ 1L .. 50L ]
+            "Every retained revision traverses without omissions or duplicates"
+
+        assertRetained name entries
+
+        let! summary =
+            actor.History(
+                { query with
+                    Detail = HistoryDetail.Summary
+                },
+                token
+            )
+
+        match summary with
+        | QueryOutcome.Succeeded p ->
+            Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
+        | _ -> failtest "Retained summary page"
+
+        let! _ = verified database
+        return ()
+    }
+
 [<Tests>]
 let tests =
-    testCaseAsync
-        "historical format-valid text reads reaffirms and verifies without current admission while changed text refuses"
-        (run grandfathering)
+    testList
+        "accepted historical pages"
+        [
+            testCaseAsync
+                "retained text FULL pages are bounded and traverse all revisions"
+                (run retainedPages)
+            testCaseAsync
+                "historical format-valid text reads reaffirms and verifies without current admission while changed text refuses"
+                (run grandfathering)
+
+        ]

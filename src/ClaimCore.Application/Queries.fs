@@ -148,6 +148,7 @@ module internal Queries =
                     yield offer (RecordedAuthorityActs.token definition.Kind) None None []
             if can Capability.ReadAuthority then
                 yield offer "authority.list" None None []
+                yield offer "authority.grants" None None []
                 yield offer "operation.observe" None None []
             match actor with
             | Some authority when ActorAuthorization.visibility principal authority |> Option.isSome ->
@@ -306,6 +307,8 @@ module internal Queries =
         : Result<CaseSummaryPage, CoreFault> =
         match currentActor principal page.Actor with
         | Error _ -> Error CoreFault.StoreIntegrityError
+        | Ok _ when page.Items.Length > ServiceLimits.MaximumPageSize ->
+            Error CoreFault.StoreIntegrityError
         | Ok actor ->
             page.Items
             |> List.map (summary installationId)
@@ -313,6 +316,7 @@ module internal Queries =
             |> Result.map (fun items ->
                 {
                     Items = items
+                    Offers = installationOffers principal page.Actor
                     NextCursor =
                         page.NextAfterReference
                         |> Option.map (fun reference ->
@@ -440,7 +444,10 @@ module internal Queries =
                         principal,
                         request.CaseReference,
                         selectHistory key installationId principal request,
-                        request.Limit,
+                        (if request.Detail = HistoryDetail.Full then
+                             min request.Limit ServiceLimits.MaximumFullHistoryPageSize
+                         else
+                             request.Limit),
                         ct
                     )
 
@@ -530,20 +537,24 @@ module internal Queries =
         : Result<ActorReviewPage, CoreFault> =
         currentActor principal page.Actor
         |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
-        |> Result.map (fun actor ->
-            {
-                Items = page.Items
-                NextCursor =
-                    page.NextAfterActorId
-                    |> Option.map (fun id ->
-                        Cursors.encode
-                            key
-                            installationId
-                            actor
-                            CursorQuery.Actors
-                            page.ObservedAt
-                            (id.ToString("D")))
-            })
+        |> Result.bind (fun actor ->
+            if page.Items.Length > ServiceLimits.MaximumPageSize then
+                Error CoreFault.StoreIntegrityError
+            else
+                Ok
+                    {
+                        Items = page.Items
+                        NextCursor =
+                            page.NextAfterActorId
+                            |> Option.map (fun id ->
+                                Cursors.encode
+                                    key
+                                    installationId
+                                    actor
+                                    CursorQuery.Actors
+                                    page.ObservedAt
+                                    (id.ToString("D")))
+                    })
 
     let actors
         (store: ILedgerStore)
@@ -571,6 +582,114 @@ module internal Queries =
                     | Ok(Error reason) -> rejected reason
                     | Ok(Ok page) ->
                         actorPage key installationId principal page
+                        |> Result.map QueryOutcome.Succeeded
+                        |> Result.defaultWith QueryOutcome.Failed
+        }
+
+    let private grantPosition =
+        function
+        | None -> Ok None
+        | Some value ->
+            match GrantCursorPosition.decode value with
+            | Ok(role, caseId) ->
+                match Roles.tryParse role, actorPosition caseId with
+                | Some role, Ok id -> Ok(Some { Role = role; CaseId = id })
+                | _ -> Error Rejection.InvalidCursor
+            | Error _ -> Error Rejection.InvalidCursor
+
+    let private selectGrants
+        key
+        installationId
+        principal
+        (request: AuthorityGrantListRequest)
+        (view: GrantReadView)
+        =
+        if
+            not (
+                ActorAuthorization.can
+                    principal
+                    view.Actor
+                    Capability.ReadAuthority
+                    ResourceScope.Installation
+            )
+        then
+            Error Rejection.ResourceUnavailable
+        else
+            match currentActor principal view.Actor, view.Target with
+            | Ok actor, Some target when target.ActorId = request.ActorId ->
+                cursor
+                    key
+                    installationId
+                    actor
+                    (CursorQuery.Grants request.ActorId)
+                    view.ObservedAt
+                    request.AfterCursor
+                |> Result.bind grantPosition
+            | _ -> Error Rejection.ResourceUnavailable
+
+    let private grantPage
+        key
+        installationId
+        principal
+        (request: AuthorityGrantListRequest)
+        (page: StoredGrantPage)
+        =
+        currentActor principal page.Actor
+        |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+        |> Result.bind (fun actor ->
+            if
+                page.Target.ActorId <> request.ActorId
+                || page.Items.Length > ServiceLimits.MaximumPageSize
+            then
+                Error CoreFault.StoreIntegrityError
+            else
+                Ok
+                    {
+                        Actor = page.Target
+                        Items = page.Items
+                        NextCursor =
+                            page.NextAfterGrant
+                            |> Option.map (fun position ->
+                                GrantCursorPosition.encode
+                                    (Roles.token position.Role)
+                                    (position.CaseId |> Option.map (fun id -> id.ToString("D")))
+                                |> Cursors.encode
+                                    key
+                                    installationId
+                                    actor
+                                    (CursorQuery.Grants request.ActorId)
+                                    page.ObservedAt)
+                    })
+
+    let grants
+        (store: ILedgerStore)
+        installationId
+        key
+        principal
+        (request: AuthorityGrantListRequest)
+        ct
+        : Task<QueryOutcome<AuthorityGrantPage>> =
+        task {
+            if not (validLimit request.Limit) then
+                return invalidLimit ()
+            elif request.ActorId = Guid.Empty then
+                return unavailable
+            else
+                let! read =
+                    store.ListGrants(
+                        principal,
+                        request.ActorId,
+                        selectGrants key installationId principal request,
+                        request.Limit,
+                        ct
+                    )
+
+                return
+                    match read with
+                    | Error error -> failure error
+                    | Ok(Error reason) -> rejected reason
+                    | Ok(Ok page) ->
+                        grantPage key installationId principal request page
                         |> Result.map QueryOutcome.Succeeded
                         |> Result.defaultWith QueryOutcome.Failed
         }

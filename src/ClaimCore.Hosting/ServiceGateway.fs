@@ -99,6 +99,9 @@ module ServiceGateway =
             | "authority.list", ServiceInput.ActorList request ->
                 let! value = core.ListActors(request, token) in
                 return OutcomeCodec.actors value, None
+            | "authority.grants", ServiceInput.ActorGrants request ->
+                let! value = core.ListGrants(request, token) in
+                return OutcomeCodec.grants value, None
             | "case.preview", ServiceInput.Case request ->
                 let! value = core.Preview(request, token) in return OutcomeCodec.preview value, None
             | "case.execute", ServiceInput.Case request ->

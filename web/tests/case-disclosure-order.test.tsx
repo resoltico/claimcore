@@ -1,5 +1,5 @@
 import userEvent from "@testing-library/user-event";
-import { generatedWebValue } from "./contract-corpus.fixtures";
+import { historyVariants } from "./contract-corpus.fixtures";
 import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { HistoryEntry } from "../src/api/service";
@@ -37,13 +37,8 @@ const pageEntry = (entry: Extract<HistoryEntry, { tag: "SUMMARY" }>, page: numbe
   change: { ...entry.change, operationId: `10000000-0000-4000-8000-00000000000${page}` },
 });
 const history = (nextCursor: string | null = null, page = 1) => {
-  const sample = generatedWebValue("case.history");
-  if (sample.outcome.tag !== "SUCCEEDED") {
-    throw new Error("History fixture is required.");
-  }
-  const entries = sample.outcome.data.entries
-    .filter((entry) => entry.tag === "SUMMARY")
-    .map((entry) => pageEntry(entry, page));
+  const { summary } = historyVariants();
+  const entries = [pageEntry(summary, page)];
   return response("case.history", "SUCCEEDED", { entries, nextCursor });
 };
 const refusal = (kind: string) =>

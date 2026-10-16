@@ -9,4 +9,7 @@ module ServiceLimits =
     let MaximumPageSize = 50
 
     [<Literal>]
+    let MaximumFullHistoryPageSize = 10
+
+    [<Literal>]
     let RequestByteLimit = 65536

@@ -24,9 +24,9 @@ it("renders public product metadata while an authorized case read is pending", a
 it("locks navigation and logout while a reviewed mutation is dispatched", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch
-    .mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }))
-    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
+  fetch.mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", { offers: context.offers, items: [], nextCursor: null }),
+  );
   fetch.mockReturnValueOnce(
     new Promise<Response>(() => {
       /* never settles */

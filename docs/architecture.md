@@ -109,8 +109,10 @@ issued ≤ database now < expiry, with a 15-minute lifetime. Tokens confer no ri
 Register covers OPEN/amend and registration correction; Decide covers decide/withdraw and decision
 correction; RecordPayment covers payment/clear and payment correction; Close covers close/reopen.
 Correction checks every requested REPLACE/CLEAR group, including unchanged reaffirmations.
-Installation ReadAuthority is required for authority listing and observation; case grants do not
-supply it. Human-only grants are enforced on their target as well as their executor.
+Installation ReadAuthority is required for actor listing, selected-actor grant paging and authority
+observation; case grants do not supply it. Public actor summaries exclude grants; selected grant
+pages load a bounded target header and grant rows in one REPEATABLE READ snapshot. Complete caller
+grants remain internal authorization and cursor-binding inputs, including when caller equals target. Human-only grants are enforced on their target as well as their executor.
 
 A receipt contains attribution ActorId and metadata; its snapshot is DISCLOSED, WITHHELD or ERASED.
 A current snapshot requires ReadCase; a superseded one requires ReadHistoryFull. Execute, replay,
@@ -120,7 +122,11 @@ there is no post-commit authority fetch. Authorize before revealing identity rep
 Core-returned installation and case offers are advice from the same authority/read snapshot.
 They carry operation definitions, target/revision bindings, permitted correction choices and scoped
 history detail. Unauthorized correction groups remain required KEEP inputs. Preview evaluates
-combinations; execution rechecks current locked authority and state. No offer is an authorization token.
+combinations; execution rechecks current locked authority and state. Case-list rows and installation offers come from the same actor snapshot; clients need no sibling
+context request. Grant cursors bind target actor and role-column collation/case UUID ascending,
+NULLS LAST order. Installation-null positions pass the final row within that role; case positions
+include later UUIDs and that role's installation grant. Retained erased-case references remain visible.
+No offer is an authorization token.
 
 <a id="cc-app-001"></a>
 
@@ -145,7 +151,10 @@ transaction updating its projections. While accepted request content is retained
 exact replay returns the original acceptance metadata with snapshot disclosure evaluated in the
 current locked/read context. Different content under the same ID is refused. OUTCOME_UNKNOWN
 means a commit confirmation was lost. It does not prove rejection and never permits rebasing or
-replacement identity. Erased request content cannot be replayed. Reads use one REPEATABLE READ snapshot.
+replacement identity. Erased request content cannot be replayed. Reads use one REPEATABLE READ snapshot. Public actor and grant pages are bounded at 50 rows;
+FULL history uses an Application-owned capacity of 10 while SUMMARY remains 50. The unchanged
+RecordFormat payload bound and independent worst-escaping codec controls establish the FULL page's
+wire budget. A continuation follows the last included row; a short page is not necessarily terminal.
 
 Verification folds permanent record and authority invariants, compares projections and checks
 chain/commitments. It does not replay today’s capability matrix or admission rules against history.

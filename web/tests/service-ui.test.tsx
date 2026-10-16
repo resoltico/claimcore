@@ -126,9 +126,9 @@ describe("service session lifecycle", () => {
         antiforgeryToken: "authenticated",
       }),
     );
-    fetch
-      .mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }))
-      .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
+    fetch.mockResolvedValueOnce(
+      response("case.list", "SUCCEEDED", { offers: context.offers, items: [], nextCursor: null }),
+    );
     fetch.mockResolvedValueOnce(
       response("session.logout", "SUCCEEDED", {
         authenticated: false,

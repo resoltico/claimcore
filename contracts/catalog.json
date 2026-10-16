@@ -1,5 +1,5 @@
 {
-  "wireFingerprint": "af898b414e939d6a996a6944c8f9c9dcfa6816e45d6ed222c15db5d9707244df",
+  "wireFingerprint": "21373e3587aaf51f32b86f76e9787ac752551e5aaca16502e725355afe05eff1",
   "endpoints": [
     {
       "id": "session",
@@ -110,6 +110,16 @@
       "receiptScope": "NONE",
       "requestSchema": "endpoint.authority.list.request.schema.json",
       "responseSchema": "endpoint.authority.list.response.schema.json"
+    },
+    {
+      "id": "authority.grants",
+      "method": "POST",
+      "path": "/api/authority.grants",
+      "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "NONE",
+      "requestSchema": "endpoint.authority.grants.request.schema.json",
+      "responseSchema": "endpoint.authority.grants.response.schema.json"
     }
   ]
 }

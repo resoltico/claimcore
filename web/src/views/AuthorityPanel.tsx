@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { productMetadata } from "@contracts/product-metadata";
 import { isDisclosureRefused } from "../api/outcomes";
 import { resultNotice, service, type ServiceResponse } from "../api/service";
+import { AuthorityGrants } from "./AuthorityGrants";
 import { AuthorityListing } from "./AuthorityListing";
 import { AccessibleModal } from "../components/AccessibleModal";
 import { ProtocolSummary } from "../components/ProtocolSummary";
@@ -208,9 +209,9 @@ const AuthorityContextStatus = ({
     </>
   );
 };
-const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityOperation }) => {
+const useAuthorityContext = (token: string, model: AuthorityOperation) => {
   const { refused, restored } = model.disclosure;
-  const context = useRead(
+  return useRead(
     useCallback(
       async (signal: AbortSignal) => {
         const result = await service.context(token, signal);
@@ -228,6 +229,11 @@ const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityO
     contextData,
     token,
   );
+};
+const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityOperation }) => {
+  const { refused, restored } = model.disclosure;
+  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+  const context = useAuthorityContext(token, model);
   const offered = productMetadata.descriptors.authorityCommands.filter(
     (command) => context.value?.offers.some((offer) => offer.definition === command.kind) === true,
   );
@@ -247,9 +253,25 @@ const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityO
       />
       <AuthorityListing
         token={token}
+        mayReadGrants={
+          context.value?.offers.some((offer) => offer.definition === "authority.grants") === true
+        }
+        onSelect={setSelectedActorId}
         onDisclosureRefused={refused}
         onDisclosureRestored={restored}
       />
+      {selectedActorId === null ? null : (
+        <AuthorityGrants
+          key={selectedActorId}
+          actorId={selectedActorId}
+          token={token}
+          onBack={() => {
+            globalThis.document.getElementById(`actor-grants-${selectedActorId}`)?.focus();
+            setSelectedActorId(null);
+          }}
+          onDisclosureRefused={refused}
+        />
+      )}
     </>
   );
 };

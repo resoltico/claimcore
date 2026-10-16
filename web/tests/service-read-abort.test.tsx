@@ -12,6 +12,7 @@ const result = (reference: string): ApiResult<ListResponse> => ({
     outcome: {
       tag: "SUCCEEDED",
       data: {
+        offers: [],
         items: [
           {
             state: "LIVE",
@@ -129,4 +130,23 @@ it("starts a changed history mode at the same cursor while its cancelled predece
     await first;
   });
   expect(hook.current.items).toEqual(["full"]);
+});
+
+it("does not start a queued initial page read after its owner unmounts", async () => {
+  const request = vi.fn((_cursor: string | null, _signal: AbortSignal) =>
+    Promise.resolve(result("fresh")),
+  );
+  const select = (response: ListResponse) =>
+    response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
+  const removed = renderHook(() => useRetryablePage(request, select));
+  removed.unmount();
+  await act(() => Promise.resolve());
+  expect(request).not.toHaveBeenCalled();
+  const mounted = renderHook(() => useRetryablePage(request, select));
+  await waitFor(() => {
+    expect(mounted.result.current.items).toHaveLength(1);
+  });
+  expect(request).toHaveBeenCalledOnce();
+  mounted.unmount();
+  expect(request.mock.calls[0]?.[1].aborted).toBe(true);
 });

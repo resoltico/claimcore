@@ -65,17 +65,12 @@ module internal RequestSchemas =
 
         objectOf [ property "operationId" uuid; property "target" principal; property "act" act ]
 
-    let forEndpoint =
+    let private query =
         function
-        | "session"
-        | "session.logout"
-        | "context" -> empty
-        | "case.preview"
-        | "case.execute" -> caseRequest
-        | "authority.execute" -> authorityRequest
         | "case.get" -> objectOf [ property "caseReference" reference ]
         | "case.list"
         | "authority.list" -> objectOf page
+        | "authority.grants" -> objectOf (property "actorId" uuid :: page)
         | "case.history" ->
             objectOf (
                 [
@@ -86,3 +81,13 @@ module internal RequestSchemas =
             )
         | "operation.observe" -> objectOf [ property "operationId" uuid ]
         | _ -> invalidArg "endpoint" "Unknown endpoint."
+
+    let forEndpoint =
+        function
+        | "session"
+        | "session.logout"
+        | "context" -> empty
+        | "case.preview"
+        | "case.execute" -> caseRequest
+        | "authority.execute" -> authorityRequest
+        | endpoint -> query endpoint

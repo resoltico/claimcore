@@ -148,5 +148,13 @@
   "ui.yes": "Jā",
   "ui.no": "Nē",
   "ui.reloadActors": "Pārlādēt dalībniekus",
-  "ui.moreActors": "Vairāk dalībnieku"
+  "ui.moreActors": "Vairāk dalībnieku",
+  "ui.reloadHistory": "Pārlādēt vēsturi",
+  "ui.viewGrants": "Skatīt pilnvaras",
+  "ui.actorGrants": "Dalībnieka pilnvaras",
+  "ui.backToActors": "Atpakaļ pie dalībniekiem",
+  "ui.reloadGrants": "Pārlādēt pilnvaras",
+  "ui.moreGrants": "Vairāk pilnvaru",
+  "ui.grantsPartial": "Parādīta tikai daļa šī dalībnieka pilnvaru.",
+  "ui.grantsEnd": "Parādītas visas šajā pārskatā atgrieztās pilnvaras."
 }

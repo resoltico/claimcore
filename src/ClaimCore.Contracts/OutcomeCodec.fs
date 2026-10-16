@@ -22,6 +22,7 @@ module OutcomeCodec =
             obj
                 [
                     "items", value.Items |> List.map WireValues.summary |> array
+                    "offers", WireValues.offers value.Offers
                     "nextCursor", optional text value.NextCursor
                 ])
 
@@ -40,6 +41,15 @@ module OutcomeCodec =
             obj
                 [
                     "items", value.Items |> List.map WireValues.actor |> array
+                    "nextCursor", optional text value.NextCursor
+                ])
+
+    let grants =
+        query (fun (value: AuthorityGrantPage) ->
+            obj
+                [
+                    "actor", WireValues.actor value.Actor
+                    "items", value.Items |> List.map WireValues.grant |> array
                     "nextCursor", optional text value.NextCursor
                 ])
 

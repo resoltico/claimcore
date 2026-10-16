@@ -122,7 +122,7 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- des
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- schema authority.execute request
 ```
 
-List the fresh installation's sole owner. Keep the result in this private configuration directory:
+List the fresh installation's sole owner summary (grants are read separately with `authority.grants`). Keep the result in this private configuration directory:
 
 ```sh
 umask 077

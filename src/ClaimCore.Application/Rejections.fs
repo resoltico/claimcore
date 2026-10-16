@@ -56,7 +56,7 @@ module Rejections =
         function
         | Rejection.Case(CaseRefusal.InvalidInput _)
         | Rejection.PageLimitOutOfRange _
-        | Rejection.InvalidCursor -> RecommendedAction.CorrectInput
+        | Rejection.InvalidCursor -> RecommendedAction.ReadCurrent
         | Rejection.Case(CaseRefusal.RevisionConflict _) -> RecommendedAction.ReadCurrent
         | Rejection.IdempotencyConflict
         | Rejection.LedgerExhausted -> RecommendedAction.StopAndInvestigate

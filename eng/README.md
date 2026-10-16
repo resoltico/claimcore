@@ -8,8 +8,9 @@ calls these same stages. `unit`, `lint`, `integration`, `postgres` and `web` req
 `frontend` requires Node only and consumes tracked `contracts/` artifacts. `browsers` installs the selected
 Playwright engine and its Linux dependencies; `acceptance` builds and tests published clients.
 `postgres` and `web` run the complete individual integration suites and restore and build only their project
-closures; `integration` retains both suites and a shared solution build. CI runs the two suites on
-separate runners and requires both in `Gate`. `workflows` checks shell scripts and workflow syntax.
+closures; `integration` sequences these stages and reuses an earlier solution build when available.
+Docker-dependent stages check the daemon before any selected expensive work. CI starts the two
+suites independently of lint/unit completion and requires every suite in `Gate`. `workflows` checks shell scripts and workflow syntax.
 `Check-FSharpLint.sh` retains every failure.
 
 ContractGenerator derives tracked catalogue, schemas, descriptors, corpus and client declarations

@@ -59,6 +59,20 @@ for stage in "${stages[@]}"; do
   esac
 done
 
+# Check the daemon once before any restore, build or browser download. Each fixture still
+# validates its pinned images and owns its isolated resources.
+for stage in "${stages[@]}"; do
+  case "${stage}" in
+    workflows | integration | postgres | web | acceptance)
+      if ! command -v docker >/dev/null 2>&1 || ! docker info --format '{{.ServerVersion}}' >/dev/null; then
+        echo "Selected stages require a running Docker daemon; start Docker and retry." >&2
+        exit 69
+      fi
+      break ;;
+    *) : ;;
+  esac
+done
+
 # Floors follow complete discovery. No filtered or retried run qualifies a stage.
 tests() { # <project> <minimum-expected-tests> [configuration] [timeout] [settings]
   local report_directory
@@ -112,7 +126,7 @@ lint() {
 unit() {
   build_native
   # Native freshness tests check the complete tracked contracts/ inventory and exact bytes.
-  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 323
+  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 330
   dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
     --configuration Debug --no-restore -p:Optimize=false
   tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 40 Debug 15m
@@ -137,14 +151,13 @@ workflows() {
 }
 
 integration() {
-  build_native
   postgres
   web
 }
 
 postgres() {
   build_native tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
-  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 111 Release 20m eng/expecto.integration.runsettings
+  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 118 Release 20m eng/expecto.integration.runsettings
 }
 
 web() {

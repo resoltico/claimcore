@@ -15,6 +15,7 @@ const initial: ApiResult<ListResponse> = {
     outcome: {
       tag: "SUCCEEDED",
       data: {
+        offers: [],
         items: [
           {
             state: "LIVE",
@@ -110,4 +111,51 @@ it("does not interpret a local delivery notice as a definite server refusal", ()
       },
     }),
   ).toBe(false);
+});
+
+it("resets an invalid continuation locally and waits for a deliberate fresh reload", async () => {
+  const refused = vi.fn();
+  const invalid: ApiResult<ListResponse> = {
+    kind: "outcome",
+    status: 200,
+    value: {
+      endpoint: "case.list",
+      outcome: {
+        tag: "REJECTED",
+        data: {
+          diagnostic: { id: "QUERY_CURSOR_INVALID", parameters: {} },
+          message: "Synthetic invalid continuation",
+          field: null,
+          actualRevision: null,
+          recommendedAction: "READ_CURRENT",
+        },
+      },
+    },
+  };
+  const request = vi
+    .fn()
+    .mockResolvedValueOnce(initial)
+    .mockResolvedValueOnce(invalid)
+    .mockResolvedValueOnce(initial);
+  const { result } = renderHook(() =>
+    useRetryablePage<ListResponse, CaseSummary>(request, select, refused),
+  );
+  await waitFor(() => {
+    expect(result.current.items).toHaveLength(1);
+  });
+  await act(async () => {
+    await result.current.load("continuation");
+  });
+  expect(result.current.items).toEqual([]);
+  expect(result.current.page).toBeNull();
+  expect(result.current.cursor).toBeNull();
+  expect(result.current.message).not.toBeNull();
+  expect(refused).not.toHaveBeenCalled();
+  expect(request).toHaveBeenCalledTimes(2);
+  await act(async () => {
+    await result.current.load(null);
+  });
+  expect(result.current.items).toHaveLength(1);
+  expect(request.mock.calls[2]?.[0]).toBeNull();
+  expect(refused).not.toHaveBeenCalled();
 });

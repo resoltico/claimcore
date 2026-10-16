@@ -100,7 +100,7 @@ jobs:
 
   integration:
     name: PostgreSQL ${{ matrix.major }} store tests
-    needs: [configuration, lint, unit]
+    needs: [configuration]
     strategy:
       fail-fast: true
       matrix: ${{ fromJSON(needs.configuration.outputs.postgresql) }}
@@ -119,7 +119,6 @@ jobs:
 
   web:
     name: Web host and identity tests
-    needs: [lint, unit]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -140,13 +139,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Cache npm downloads for the SDK-free frontend
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # zizmor: ignore[cache-poisoning] -- v5.1.0; npm verifies lockfile integrity; no build outputs cached.
+        with:
+          path: ${{ runner.temp }}/claimcore-npm-cache
+          key: frontend-npm-${{ runner.os }}-${{ hashFiles('.node-version', 'web/package-lock.json', 'deployment/Dockerfile') }}
       - name: Run frontend in the deployment Node image
         env:
           NODE_IMAGE: ${{ needs.configuration.outputs.node_image }}
         run: |
+          mkdir -p "${RUNNER_TEMP}/claimcore-npm-cache"
           docker run --rm --user "$(id -u):$(id -g)" \
             --env CI=true --env NO_COLOR=1 --env HOME=/tmp/claimcore-home \
             --env NPM_CONFIG_CACHE=/tmp/claimcore-npm-cache \
+            --volume "${RUNNER_TEMP}/claimcore-npm-cache:/tmp/claimcore-npm-cache" \
             --volume "$PWD:/workspace" --workdir /workspace "${NODE_IMAGE}" \
             bash -euo pipefail -c '
               mkdir -p "${HOME}"
@@ -163,7 +169,7 @@ jobs:
 
   acceptance:
     name: Published clients (${{ matrix.engine }}, ${{ matrix.scope }})
-    needs: [lint, unit, frontend]
+    needs: [frontend]
     strategy:
       fail-fast: true
       matrix:

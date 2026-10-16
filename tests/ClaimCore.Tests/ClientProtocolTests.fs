@@ -208,11 +208,42 @@ let private equivalentReference () =
         (Frames.inputBytes (CliTransportFixture.frame "case.execute"))
         "Correlation leaves exact authored bytes unchanged"
 
+let private actorQueryCorrelation () =
+    let invocation = CliTransportFixture.frame "authority.grants"
+    let original = responseFixture "authority.grants" "SUCCEEDED"
+
+    let encoded (node: JsonNode) =
+        Encoding.UTF8.GetBytes(node.ToJsonString())
+
+    Expect.isOk (Frames.result invocation (encoded original)) "Matching target read succeeds"
+    let changed = original.DeepClone()
+
+    let actor =
+        changed["outcome"]
+        |> nonNull
+        |> fun node -> node["data"] |> nonNull |> fun node -> node["actor"] |> nonNull
+
+    actor["actorId"] <- JsonValue.Create("10000000-0000-4000-8000-000000000002")
+
+    Expect.isOk
+        (EndpointCatalog.admitResponse "authority.grants" (encoded changed))
+        "Wrong target is independently schema-valid"
+
+    Expect.isError
+        (Frames.result invocation (encoded changed))
+        "Read target correlation rejects another actor"
+
+    Expect.equal
+        (DeliveryPolicy.missing true false)
+        "READ_FAILED"
+        "Target read loss is never mutation uncertainty"
+
 [<Tests>]
 let tests =
     testList
         "Client protocol"
         [
+            testCase "actor query replies bind the exact requested target" actorQueryCorrelation
             testCase "independent finite delivery truth table" policyTruthTable
             testCase "accumulated attempts require exact evidence" accumulatedEvidence
             testCase "integer admission retains lexical spelling" integerLexemes

@@ -873,6 +873,38 @@
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -1647,7 +1679,7 @@
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -1683,71 +1715,67 @@
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },

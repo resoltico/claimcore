@@ -104,6 +104,7 @@ type CaseListRequest =
 type CaseSummaryPage =
     {
         Items: CaseSummary list
+        Offers: OperationOffer list
         NextCursor: string option
     }
 
@@ -149,17 +150,30 @@ type AuthorityListRequest =
 
 type AuthorityGrant = { Role: Role; Scope: GrantTarget }
 
-type ActorReview =
+type ActorSummary =
     {
         ActorId: Guid
         Principal: PrincipalKey
         Enabled: bool
-        Grants: AuthorityGrant list
     }
 
 type ActorReviewPage =
     {
-        Items: ActorReview list
+        Items: ActorSummary list
+        NextCursor: string option
+    }
+
+type AuthorityGrantListRequest =
+    {
+        ActorId: Guid
+        AfterCursor: string option
+        Limit: int
+    }
+
+type AuthorityGrantPage =
+    {
+        Actor: ActorSummary
+        Items: AuthorityGrant list
         NextCursor: string option
     }
 
@@ -227,3 +241,6 @@ type IActorClaimsCore =
 
     abstract ListActors:
         AuthorityListRequest * CancellationToken -> Task<QueryOutcome<ActorReviewPage>>
+
+    abstract ListGrants:
+        AuthorityGrantListRequest * CancellationToken -> Task<QueryOutcome<AuthorityGrantPage>>

@@ -86,7 +86,7 @@ module internal WireValues =
                 "state", state None value.View
             ]
 
-    let private offers (values: OperationOffer list) =
+    let offers (values: OperationOffer list) =
         values
         |> List.map (fun value ->
             obj
@@ -239,18 +239,16 @@ module internal WireValues =
         | GrantTarget.CaseReference reference ->
             obj [ "kind", text "CASE"; "caseReference", text reference ]
 
-    let actor (value: ActorReview) =
+    let actor (value: ActorSummary) =
         obj
             [
                 "actorId", uuid value.ActorId
                 "principal", principal value.Principal
                 "enabled", boolean value.Enabled
-                "grants",
-                (value.Grants
-                 |> List.map (fun grant ->
-                     obj [ "role", text (Roles.token grant.Role); "scope", scope grant.Scope ])
-                 |> array)
             ]
+
+    let grant (value: AuthorityGrant) =
+        obj [ "role", text (Roles.token value.Role); "scope", scope value.Scope ]
 
     let rejection (value: Rejection) =
         let diagnostic = RejectionDiagnostics.describe value

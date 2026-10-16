@@ -45,6 +45,12 @@ module CorrelationPolicy =
                 RequestAbsent = []
             }
             {
+                Name = "ACTOR_QUERY"
+                ReceiptScopes = []
+                RequestPresent = [ [ "actorId" ] ]
+                RequestAbsent = []
+            }
+            {
                 Name = "OPERATION_QUERY"
                 ReceiptScopes = []
                 RequestPresent = [ [ "operationId" ] ]
@@ -65,6 +71,12 @@ module CorrelationPolicy =
         let receipt = [ "ACCEPTED"; "ALREADY_ACCEPTED" ]
 
         [
+            rule
+                "ACTOR_QUERY"
+                [ "SUCCEEDED" ]
+                [ "outcome"; "data"; "actor"; "actorId" ]
+                [ "actorId" ]
+                "EXACT"
             rule "RECEIPT_ENDPOINT" [] [ "operationId" ] [ "operationId" ] "EXACT"
             rule "ALL" receipt [ "outcome"; "data"; "operationId" ] [ "operationId" ] "EXACT"
             rule "ALL" receipt [ "outcome"; "data"; "scope" ] [] "RECEIPT_SCOPE"

@@ -16,6 +16,7 @@ frontend consumers use the tracked `contracts/` artifacts and require no .NET pr
 for example `bash eng/verify.sh unit frontend`; `--fast` runs native lint, unit/architecture and
 frontend checks without Docker. Restore, native build and frontend asset build work are shared
 within one invocation; a later acceptance stage reuses the frontend stage's successful asset build.
+Stages requiring Docker check the daemon before any selected restore, build or browser download.
 
 | Stage         | Coverage and prerequisites                                                                               |
 | ------------- | -------------------------------------------------------------------------------------------------------- |
@@ -23,7 +24,7 @@ within one invocation; a later acceptance stage reuses the frontend stage's succ
 | `unit`        | .NET build, native/property and unoptimized architecture tests; tracked contract freshness               |
 | `frontend`    | Node only: locked install, audit, formatting, lint, types, unit tests, Knip, licenses, build and notices |
 | `workflows`   | ShellCheck and pinned Actionlint container; Docker required                                              |
-| `integration` | .NET build, isolated PostgreSQL and Web/identity-provider tests; Docker required                         |
+| `integration` | Isolated PostgreSQL and Web/identity-provider tests; builds their project closures; Docker required |
 | `postgres` / `web` | Independent complete PostgreSQL or Web/identity suite; restores and builds only its project closure; Docker required |
 | `browsers`    | Locked npm install and Playwright browser/dependency installation                                        |
 | `acceptance`  | Published service/CLI and browser tests; .NET, Node, Docker and installed browsers required              |
@@ -46,11 +47,12 @@ validates engine/scope selection before any restore, build or browser installati
 includes Chromium for shared CLI PKCE authentication when Firefox or WebKit specifications are
 selected; this prerequisite does not add Chromium specifications to that selected-engine run.
 
-CI runs native and frontend checks in parallel. PostgreSQL and Web/identity suites use separate
-runners after native prerequisites succeed; neither waits for unrelated frontend checks. PostgreSQL
-keeps its baseline-major matrix and fail-fast cancellation. `Gate` requires both native integration
-jobs as well as frontend and acceptance. The local `integration` stage still runs both suites in
-order with one shared solution build; use `postgres` or `web` for a complete individual suite.
+CI starts independent checks in parallel. PostgreSQL waits only for baseline configuration, Web/identity
+starts independently, and acceptance waits only for frontend qualification. Each native job restores
+and builds its own inputs. PostgreSQL keeps its baseline-major matrix and fail-fast cancellation.
+`Gate` still requires every native, frontend and acceptance job. The local `integration` stage runs
+both suites in order and builds their project closures; an earlier solution build is reused. Use
+`postgres` or `web` for a complete individual suite.
 PRs and merge queues run eleven-case Chromium smoke, including authority uncertainty and
 stewardship localization; main/tag pushes and a manual
 CI dispatch with `full_browser_qualification` enabled run all specifications in an isolated
@@ -64,7 +66,8 @@ The container build likewise builds frontend assets in a Node stage and publishe
 in an SDK stage.
 
 CI toolchain jobs cache NuGet packages and npm downloads using the tracked lockfiles. The
-SDK-free frontend container uses a fresh npm download cache for each job. Every run still performs
+SDK-free frontend container mounts a download-only npm cache keyed by its pinned toolchain,
+lockfile and deployment image. Every run still performs
 locked restore or `npm ci` and the dependency audit; caches do not substitute for checks.
 Product build outputs, `node_modules`, generated assets and test results are not cached. GitHub
 scopes caches by branch; untrusted pull requests do not populate the default branch cache.
@@ -83,7 +86,9 @@ overlap at most two independent test cases. Each owns a fresh pinned PostgreSQL 
 changes, schema corruption and shutdown tests cannot affect another case. Operations inside a
 case retain their sequence and transaction boundaries. Direct PostgreSQL test invocations must
 pass `-- --settings=eng/expecto.integration.runsettings` to retain this resource bound. Other
-native suites keep their existing runner settings.
+native suites keep their existing runner settings. PostgreSQL readiness retains both protocol and
+mapped-port checks, polls each every 250 ms, and bounds the protocol phase to 60 seconds; the
+mapped-port phase retains the Npgsql connection timeout. Durability settings are unchanged.
 
 Local runs sequence the selected engines in one native test case and stop before creating a later
 engine fixture when an earlier engine fails. Successful default execution requires all three
@@ -140,3 +145,9 @@ closure/discovery with server assemblies absent and complete positive/negative b
 Browser unit qualification forbids focused runs and rejects runner-reported skipped, todo, pending,
 interrupted or retried outcomes. The completion reporter is tested against the actual runner,
 including namespace imports and chained declarations; source spelling is not the completion oracle.
+
+Read-contract changes include the core/store page policy, generated maxItems/correlation and both
+byte decoders. Grant review pages must traverse installation-null/case/erased scopes without
+omission under current caller authority. FULL history uses the effective server limit and the
+last included revision, with retained-format and actual escaping/metadata byte-budget controls.
+Browser cursor recovery is local unless an actual access/session refusal is observed.

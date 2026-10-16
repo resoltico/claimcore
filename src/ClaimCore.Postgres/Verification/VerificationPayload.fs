@@ -91,7 +91,9 @@ module internal VerificationPayload =
                         VerificationFinding.Commitment
                         (commitment = entry.PayloadCommitment)
 
-                let! payload = LedgerEntry.decodePayload 262144 bytes |> decoded entry
+                let! payload =
+                    LedgerEntry.decodePayload FormatLimits.MaximumPayloadBytes bytes
+                    |> decoded entry
 
                 return!
                     match entry.Scope with

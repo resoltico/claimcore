@@ -166,12 +166,9 @@ module internal ValueSchemas =
                 property "recordedBy" uuid
             ]
 
-    let history =
-        Schema.oneOf
-            [
-                tagged "SUMMARY" [ property "change" (ref "ChangeSummary") ]
-                tagged "FULL" [ property "receipt" (ref "CaseReceipt") ]
-            ]
+    let summaryHistory = tagged "SUMMARY" [ property "change" (ref "ChangeSummary") ]
+    let fullHistory = tagged "FULL" [ property "receipt" (ref "CaseReceipt") ]
+    let history = Schema.oneOf [ summaryHistory; fullHistory ]
 
     let review =
         objectOf
@@ -229,15 +226,13 @@ module internal ValueSchemas =
                 property "actorId" uuid
                 property "principal" RequestSchemas.principal
                 property "enabled" Schema.boolean
-                property
-                    "grants"
-                    (array (
-                        objectOf
-                            [
-                                property "role" (Roles.all |> List.map Roles.token |> enumeration)
-                                property "scope" RequestSchemas.scope
-                            ]
-                    ))
+            ]
+
+    let grant =
+        objectOf
+            [
+                property "role" (Roles.all |> List.map Roles.token |> enumeration)
+                property "scope" RequestSchemas.scope
             ]
 
     let definitions =
@@ -251,10 +246,13 @@ module internal ValueSchemas =
             "Receipt", receipt
             "ChangeSummary", change
             "HistoryEntry", history
+            "SummaryHistoryEntry", summaryHistory
+            "FullHistoryEntry", fullHistory
             "Review", review
             "Rejection", rejection
             "Fault", fault
             "RuntimeContext", context
             "ActorContext", actorContext
-            "ActorReview", actor
+            "ActorSummary", actor
+            "AuthorityGrant", grant
         ]

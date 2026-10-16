@@ -162,6 +162,9 @@ export const CaseHistory = ({
         </p>
       )}
       {loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
+      <Button onPress={() => void load(null)} isDisabled={loading}>
+        {p.text("ui.reloadHistory")}
+      </Button>
       {cursor === null ? null : (
         <Button onPress={() => void load(cursor)} isDisabled={loading}>
           {p.text("ui.moreHistory")}

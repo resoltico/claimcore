@@ -181,41 +181,24 @@ module internal Projections =
             | _ -> return invalidOp "Duplicate stored principal."
         }
 
-    let actorReview connection row token : System.Threading.Tasks.Task<ActorReview> =
-        task {
-            let id = required<Guid> 0 row
-
-            let principal =
+    let actorSummary row : ActorSummary =
+        {
+            ActorId = required 0 row
+            Principal =
                 PrincipalKey.fromStorage (required 1 row) (required 2 row) (required 3 row)
                 |> parsed
-
-            let! grants =
-                DatabaseSession.rows
-                    connection
-                    "SELECT g.role,c.case_reference,g.case_id FROM claimcore.grants g LEFT JOIN claimcore.cases c USING(case_id) WHERE g.actor_id=$1 ORDER BY g.role COLLATE \"C\",upper(c.case_reference COLLATE \"C\") NULLS FIRST"
-                    [| box id |]
-                    token
-
-            let grants =
-                grants
-                |> List.map (fun row ->
-                    let scope =
-                        match optional<Guid> 2 row, optional<string> 1 row with
-                        | None, None -> GrantTarget.Installation
-                        | Some _, Some reference when
-                            CaseReference.validate reference |> Result.isOk
-                            ->
-                            GrantTarget.CaseReference reference
-                        | _ -> invalidOp "Invalid grant projection."
-
-                    ({ Role = role row; Scope = scope }: AuthorityGrant))
-
-            return
-                ({
-                    ActorId = id
-                    Principal = principal
-                    Enabled = required 4 row
-                    Grants = grants
-                }
-                : ActorReview)
+            Enabled = required 4 row
         }
+
+    let grantRow row : AuthorityGrant * GrantPosition =
+        let role = role row
+        let caseId = optional<Guid> 2 row
+
+        let scope =
+            match caseId, optional<string> 1 row with
+            | None, None -> GrantTarget.Installation
+            | Some _, Some reference when CaseReference.validate reference |> Result.isOk ->
+                GrantTarget.CaseReference reference
+            | _ -> invalidOp "Invalid grant projection."
+
+        { Role = role; Scope = scope }, { Role = role; CaseId = caseId }

@@ -37,3 +37,6 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
 
         member _.ListActors(principal, select, limit, token) =
             ReadOperations.actors source principal select limit token
+
+        member _.ListGrants(principal, target, select, limit, token) =
+            ReadOperations.grants source principal target select limit token

@@ -148,5 +148,13 @@
   "ui.yes": "نعم",
   "ui.no": "لا",
   "ui.reloadActors": "إعادة تحميل الجهات",
-  "ui.moreActors": "المزيد من الجهات"
+  "ui.moreActors": "المزيد من الجهات",
+  "ui.reloadHistory": "إعادة تحميل السجل",
+  "ui.viewGrants": "عرض الصلاحيات",
+  "ui.actorGrants": "صلاحيات الفاعل",
+  "ui.backToActors": "العودة إلى الفاعلين",
+  "ui.reloadGrants": "إعادة تحميل الصلاحيات",
+  "ui.moreGrants": "المزيد من الصلاحيات",
+  "ui.grantsPartial": "يُعرض جزء فقط من صلاحيات هذا الفاعل.",
+  "ui.grantsEnd": "تُعرض جميع الصلاحيات التي أُعيدت لهذه المراجعة."
 }

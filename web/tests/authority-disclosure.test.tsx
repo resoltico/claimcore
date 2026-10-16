@@ -16,7 +16,6 @@ const disclosedActor = {
     subject: "synthetic-disclosed",
   },
   enabled: true,
-  grants: [{ role: "OWNER", scope: { kind: "INSTALLATION" } }],
 } as const;
 const success = <K extends "context" | "authority.list">(
   endpoint: K,
@@ -303,7 +302,7 @@ it.each([
       await user.click(screen.getByRole("button", { name: "Reload actors" }));
     }
     await waitFor(() => {
-      expect(context).toHaveBeenCalledTimes(3);
+      expect(context).toHaveBeenCalledTimes(2);
     });
     if (returned) {
       await user.click(screen.getByRole("button", { name: "Back to cases" }));

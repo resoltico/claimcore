@@ -1514,6 +1514,46 @@
             "endpoint",
             "input"
           ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "endpoint": {
+              "const": "authority.grants"
+            },
+            "input": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "actorId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                  "minLength": 36,
+                  "maxLength": 36
+                },
+                "cursor": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50
+                }
+              },
+              "required": [
+                "actorId",
+                "limit"
+              ]
+            }
+          },
+          "required": [
+            "endpoint",
+            "input"
+          ]
         }
       ]
     }

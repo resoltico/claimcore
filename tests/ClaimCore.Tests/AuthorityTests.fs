@@ -291,7 +291,20 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                 "RecordedBy attribution includes principal and actor ID"
 
             Expect.isTrue found.Enabled "Current enabled state"
-            Expect.isEmpty found.Grants "No implied grants"
+
+            let! grants =
+                actor.ListGrants(
+                    {
+                        ActorId = found.ActorId
+                        AfterCursor = None
+                        Limit = 50
+                    },
+                    CancellationToken.None
+                )
+
+            match grants with
+            | QueryOutcome.Succeeded value -> Expect.isEmpty value.Items "No implied grants"
+            | _ -> failtest "Expected grant review"
         | _ -> failtest "Owner review unavailable"
     }
 

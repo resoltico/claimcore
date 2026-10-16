@@ -40,6 +40,21 @@ let private loggedIn ready work =
     }
     |> _.GetAwaiter().GetResult()
 
+let private actorTarget endpoint (response: byte array) =
+    if endpoint = "authority.grants" then
+        use request = JsonDocument.Parse(ReadOnlyMemory(body endpoint))
+        use result = JsonDocument.Parse(ReadOnlyMemory response)
+
+        Expect.equal
+            (result.RootElement
+                .GetProperty("outcome")
+                .GetProperty("data")
+                .GetProperty("actor")
+                .GetProperty("actorId")
+                .GetString())
+            (request.RootElement.GetProperty("actorId").GetString())
+            "Typed grant dispatch retains the requested target"
+
 let private catalogueRoutes () =
     loggedIn true (fun host token ->
         task {
@@ -60,7 +75,9 @@ let private catalogueRoutes () =
                     (EndpointCatalog.admitResponse endpoint.Identifier response)
                     "Typed response schema"
 
-            Expect.equal host.Facade.Calls.Length 9 "Every core endpoint exactly once"
+                actorTarget endpoint.Identifier response
+
+            Expect.equal host.Facade.Calls.Length 10 "Every core endpoint exactly once"
             let! status, response = host.Call("session.logout", body "session.logout", token)
             Expect.equal status 200 "Logout"
             Expect.isOk (EndpointCatalog.admitResponse "session.logout" response) "Logout schema"
@@ -313,7 +330,7 @@ let tests =
             testCase
                 "raw malformed numeric Unicode reference and country inputs cannot dispatch"
                 malformedWire
-            testCase "all eleven endpoints use the one catalogue and typed facade" catalogueRoutes
+            testCase "all twelve endpoints use the one catalogue and typed facade" catalogueRoutes
             testCase
                 "matching contract dispatches; missing and different contracts never dispatch"
                 handshakeRefusals

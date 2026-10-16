@@ -148,5 +148,13 @@
   "ui.yes": "Yes",
   "ui.no": "No",
   "ui.reloadActors": "Reload actors",
-  "ui.moreActors": "More actors"
+  "ui.moreActors": "More actors",
+  "ui.reloadHistory": "Reload history",
+  "ui.viewGrants": "View grants",
+  "ui.actorGrants": "Actor grants",
+  "ui.backToActors": "Back to actors",
+  "ui.reloadGrants": "Reload grants",
+  "ui.moreGrants": "More grants",
+  "ui.grantsPartial": "Only part of this actor’s grants is shown.",
+  "ui.grantsEnd": "All grants returned for this review are shown."
 }

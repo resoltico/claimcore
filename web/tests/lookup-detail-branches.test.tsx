@@ -167,9 +167,9 @@ it("focuses and describes invalid operation identity then clears the stale error
 });
 
 it("requires an exact nonempty reference without silently trimming lookup [CC-WEB-001]", async () => {
-  vi.mocked(globalThis.fetch)
-    .mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }))
-    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
+  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", { offers: context.offers, items: [], nextCursor: null }),
+  );
   const selected = vi.fn();
   const user = userEvent.setup();
   render(<CaseList token="token" onSelect={selected} onOpen={vi.fn()} />);
@@ -178,5 +178,5 @@ it("requires an exact nonempty reference without silently trimming lookup [CC-WE
   await user.type(screen.getByLabelText("Handler's case reference (exact)"), " REF ");
   await user.click(find);
   expect(selected).toHaveBeenCalledWith(" REF ");
-  expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 });

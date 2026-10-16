@@ -14,6 +14,7 @@ import {
   resolveDisplayLocale,
   resolveLanguage,
   savePreferences,
+  type Preferences,
 } from "../src/presentation/preferences";
 
 afterEach(() => vi.restoreAllMocks());
@@ -76,6 +77,22 @@ it("persists only presentation preferences and remains usable when storage is de
   });
   expect(loadPreferences()).toEqual(defaults);
   expect(savePreferences(next)).toBe(false);
+});
+
+it("projects owned preference fields from typed width subtypes", () => {
+  const extended: Preferences & { readonly version: 2; readonly extra: string } = {
+    language: "lv",
+    displayLocale: "ar-EG",
+    version: 2,
+    extra: "synthetic-extension",
+  };
+  expect(savePreferences(extended)).toBe(true);
+  expect(JSON.parse(localStorage.getItem(preferenceKey)!)).toEqual({
+    version: 1,
+    language: "lv",
+    displayLocale: "ar-EG",
+  });
+  expect(loadPreferences()).toEqual({ language: "lv", displayLocale: "ar-EG" });
 });
 
 const Probe = ({ mount }: { mount: () => void }) => {

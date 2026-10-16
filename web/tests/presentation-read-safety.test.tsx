@@ -7,7 +7,7 @@ import { CaseList } from "../src/views/CaseList";
 import { BusinessValue } from "../src/components/BusinessValue";
 import { CopyValue } from "../src/components/CopyValue";
 import { definition, fields, response, context, unavailable } from "./service-ui.fixtures";
-import { generatedWebValue } from "./contract-corpus.fixtures";
+import { historyVariants } from "./contract-corpus.fixtures";
 
 const languages = ["en", "lv", "ar", "en-XA"] as const;
 const values = [
@@ -33,14 +33,7 @@ const preferences = (language: (typeof languages)[number]) => {
 };
 
 const historyReply = (value: string) => {
-  const history = generatedWebValue("case.history");
-  if (history.outcome.tag !== "SUCCEEDED") {
-    throw new Error("Expected generated history fixture.");
-  }
-  const full = history.outcome.data.entries.find((entry) => entry.tag === "FULL");
-  if (full === undefined) {
-    throw new Error("Expected a full synthetic history receipt.");
-  }
+  const { full } = historyVariants();
   const entries = [
     {
       tag: "FULL" as const,
@@ -57,7 +50,7 @@ const historyReply = (value: string) => {
       },
     },
   ];
-  return { ...history.outcome.data, entries };
+  return { nextCursor: "next", entries };
 };
 const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/context")) {
@@ -65,6 +58,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
   }
   if (url.endsWith("/case.list")) {
     return response("case.list", "SUCCEEDED", {
+      offers: context.offers,
       items: [
         {
           state: "LIVE",

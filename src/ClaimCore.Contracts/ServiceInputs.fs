@@ -20,6 +20,7 @@ type ServiceInput =
     | Operation of Guid
     | Authority of AuthorityRequest
     | ActorList of AuthorityListRequest
+    | ActorGrants of AuthorityGrantListRequest
 
 module internal ServiceInputs =
     let private text name values = required name values |> stringValue
@@ -30,10 +31,48 @@ module internal ServiceInputs =
     let private decoded value =
         Result.defaultWith (fun _ -> fail HttpInputProblem.InvalidJson) value
 
-    let read endpoint element =
-        let values = properties element
+    let private page endpoint values =
         let cursor = optionalString "cursor" values
         let limit () = required "limit" values |> integerValue
+
+        match endpoint with
+        | "case.list" ->
+            ServiceInput.CaseList
+                {
+                    AfterCursor = cursor
+                    Limit = limit ()
+                }
+        | "authority.list" ->
+            ServiceInput.ActorList
+                {
+                    AfterCursor = cursor
+                    Limit = limit ()
+                }
+        | "authority.grants" ->
+            ServiceInput.ActorGrants
+                {
+                    ActorId = text "actorId" values |> operationIdValue
+                    AfterCursor = cursor
+                    Limit = limit ()
+                }
+        | "case.history" ->
+            let detail =
+                match text "detail" values with
+                | "SUMMARY" -> HistoryDetail.Summary
+                | "FULL" -> HistoryDetail.Full
+                | _ -> fail HttpInputProblem.HistoryDetail
+
+            ServiceInput.History
+                {
+                    CaseReference = text "caseReference" values
+                    AfterCursor = cursor
+                    Limit = limit ()
+                    Detail = detail
+                }
+        | _ -> fail HttpInputProblem.InvalidAction
+
+    let read endpoint element =
+        let values = properties element
 
         match endpoint with
         | "session"
@@ -55,30 +94,4 @@ module internal ServiceInputs =
         | "case.get" -> ServiceInput.CaseReference(text "caseReference" values)
         | "operation.observe" ->
             ServiceInput.Operation(text "operationId" values |> operationIdValue)
-        | "case.list" ->
-            ServiceInput.CaseList
-                {
-                    AfterCursor = cursor
-                    Limit = limit ()
-                }
-        | "authority.list" ->
-            ServiceInput.ActorList
-                {
-                    AfterCursor = cursor
-                    Limit = limit ()
-                }
-        | "case.history" ->
-            let detail =
-                match text "detail" values with
-                | "SUMMARY" -> HistoryDetail.Summary
-                | "FULL" -> HistoryDetail.Full
-                | _ -> fail HttpInputProblem.HistoryDetail
-
-            ServiceInput.History
-                {
-                    CaseReference = text "caseReference" values
-                    AfterCursor = cursor
-                    Limit = limit ()
-                    Detail = detail
-                }
-        | _ -> fail HttpInputProblem.InvalidAction
+        | _ -> page endpoint values

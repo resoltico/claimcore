@@ -121,6 +121,13 @@ export const service = {
     request("operation.observe", token, { operationId }, signal),
   authorityList: (cursor: string | null, token: string, signal?: AbortSignal) =>
     request("authority.list", token, { ...(cursor === null ? {} : { cursor }), limit: 50 }, signal),
+  authorityGrants: (actorId: string, cursor: string | null, token: string, signal?: AbortSignal) =>
+    request(
+      "authority.grants",
+      token,
+      { actorId, ...(cursor === null ? {} : { cursor }), limit: 50 },
+      signal,
+    ),
   authorityExecute: (prepared: PreparedRequest<"authority.execute">, token: string) =>
     withinResponseDeadline((owned) => send(prepared.endpoint, token, prepared.bytes, owned)),
   preview: (prepared: PreparedRequest<"case.execute">, token: string) =>

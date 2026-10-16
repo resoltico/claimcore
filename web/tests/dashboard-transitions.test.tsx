@@ -32,22 +32,21 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
 const queueDefinitionAndList = () => {
   const fetch = vi.mocked(globalThis.fetch);
-  fetch
-    .mockResolvedValueOnce(
-      response("case.list", "SUCCEEDED", {
-        items: [
-          {
-            state: "LIVE",
-            disposition: "ACTIVE",
-            caseReference: "CASE-1",
-            revision: 1,
-            status: "OPENED",
-          },
-        ],
-        nextCursor: null,
-      }),
-    )
-    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
+  fetch.mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", {
+      offers: context.offers,
+      items: [
+        {
+          state: "LIVE",
+          disposition: "ACTIVE",
+          caseReference: "CASE-1",
+          revision: 1,
+          status: "OPENED",
+        },
+      ],
+      nextCursor: null,
+    }),
+  );
 };
 
 const queueDetail = () => {

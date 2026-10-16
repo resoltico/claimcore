@@ -9,11 +9,13 @@
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
     <Compile Include="PostgresFixture.fs" />
     <Compile Include="FixtureDisposalTests.fs" />
+    <Compile Include="PostgresReadinessTests.fs" />
     <Compile Include="StoreTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="VerificationTests.fs" />
     <Compile Include="SchemaTests.fs" />
     <Compile Include="PaginationTests.fs" />
+    <Compile Include="GrantPaginationTests.fs" />
     <Compile Include="AcceptedHistoryFixtures.fs" />
     <Compile Include="../ClaimCore.WebTests/ProbeHttpsFixture.fs" Link="ProbeHttpsFixture.fs" />
     <Compile Include="../ClaimCore.WebTests/FacadeStub.fs" Link="FacadeStub.fs" />

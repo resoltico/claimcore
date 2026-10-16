@@ -81,6 +81,7 @@ let private exactCatalogue () =
             "operation.observe"
             "authority.execute"
             "authority.list"
+            "authority.grants"
         ]
         "Exact inventory"
 
@@ -144,7 +145,7 @@ let private requestAlternatives () =
 
             count <- count + 1
 
-    Expect.equal count 35 "Every case and authority act is sampled"
+    Expect.equal count 36 "Every case and authority act is sampled"
 
 let private responseAlternatives () =
     let mutable count = 0
@@ -169,7 +170,7 @@ let private responseAlternatives () =
 
             count <- count + 1
 
-    Expect.equal count 43 "Every response alternative is sampled"
+    Expect.equal count 47 "Every response alternative is sampled"
 
 let private executeOutcomes () =
     for endpoint, receipt in [ "case.execute", receipt; "authority.execute", authority ] do
@@ -266,6 +267,7 @@ let private queryCodecs () =
             QueryOutcome.Succeeded
                 {
                     Items = [ CaseSummary.Erased("UNIT-001", 2L) ]
+                    Offers = []
                     NextCursor = None
                 }
         ))
@@ -692,7 +694,7 @@ let tests =
             testCase
                 "retained text passes wire rendering and reaffirmation while changed policy violations refuse"
                 retainedText
-            testCase "one catalogue defines eleven routes and both durable mutations" exactCatalogue
+            testCase "one catalogue defines twelve routes and both durable mutations" exactCatalogue
             testCase
                 "all act request alternatives preserve bytes and reject extra members"
                 requestAlternatives

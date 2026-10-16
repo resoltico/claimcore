@@ -919,6 +919,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -1693,7 +1725,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -1729,71 +1761,67 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -2688,6 +2716,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -3462,7 +3522,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -3498,71 +3558,67 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -4509,6 +4565,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -5283,7 +5371,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -5319,71 +5407,67 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -6339,6 +6423,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -7113,7 +7229,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -7149,71 +7265,67 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -7339,7 +7451,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                             ]
                           }
                         ]
-                      }
+                      },
+                      "maxItems": 50
                     },
                     "nextCursor": {
                       "oneOf": [
@@ -7351,11 +7464,79 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                           "type": "null"
                         }
                       ]
+                    },
+                    "offers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "definition": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "caseReference": {
+                            "oneOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                                "minLength": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "expectedRevision": {
+                            "oneOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "choices": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "input": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "values": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                }
+                              },
+                              "required": [
+                                "input",
+                                "values"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "definition",
+                          "caseReference",
+                          "expectedRevision",
+                          "choices"
+                        ]
+                      }
                     }
                   },
                   "required": [
                     "items",
-                    "nextCursor"
+                    "nextCursor",
+                    "offers"
                   ]
                 }
               },
@@ -8261,6 +8442,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -9035,7 +9248,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -9071,71 +9284,67 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -9208,10 +9417,32 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "additionalProperties": false,
                   "properties": {
                     "entries": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/$defs/HistoryEntry"
-                      }
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/SummaryHistoryEntry"
+                          },
+                          "minItems": 1,
+                          "maxItems": 50
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/FullHistoryEntry"
+                          },
+                          "minItems": 1,
+                          "maxItems": 10
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/HistoryEntry"
+                          },
+                          "minItems": 0,
+                          "maxItems": 0
+                        }
+                      ]
                     },
                     "nextCursor": {
                       "oneOf": [
@@ -10133,6 +10364,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -10907,7 +11170,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -10943,71 +11206,67 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -12547,6 +12806,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -13321,7 +13612,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -13357,71 +13648,67 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -14981,6 +15268,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -15755,7 +16074,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -15791,71 +16110,67 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -16813,6 +17128,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -17587,7 +17934,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -17623,71 +17970,67 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -18825,6 +19168,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -19599,7 +19974,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -19635,71 +20010,67 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -19761,8 +20132,9 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "items": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/$defs/ActorReview"
-                      }
+                        "$ref": "#/$defs/ActorSummary"
+                      },
+                      "maxItems": 50
                     },
                     "nextCursor": {
                       "oneOf": [
@@ -20684,6 +21056,38 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         }
       ]
     },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
     "Review": {
       "type": "object",
       "additionalProperties": false,
@@ -21458,7 +21862,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -21494,71 +21898,1967 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
+      ]
+    }
+  },
+  "$ref": "#/$defs/root"
+}
+ },
+  "authority.grants": { request: {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claimcore.local/contracts/endpoint.authority.grants.request.schema.json",
+  "title": "ClaimCore endpoint.authority.grants.request.schema.json",
+  "$defs": {
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "actorId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "cursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "required": [
+        "actorId",
+        "limit"
+      ]
+    }
+  },
+  "$ref": "#/$defs/root"
+}
+, response: {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claimcore.local/contracts/endpoint.authority.grants.response.schema.json",
+  "title": "ClaimCore endpoint.authority.grants.response.schema.json",
+  "$defs": {
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "endpoint": {
+          "const": "authority.grants"
+        },
+        "outcome": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "SUCCEEDED"
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "actor": {
+                      "$ref": "#/$defs/ActorSummary"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/AuthorityGrant"
+                      },
+                      "maxItems": 50
+                    },
+                    "nextCursor": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "actor",
+                    "items",
+                    "nextCursor"
+                  ]
+                }
+              },
+              "required": [
+                "tag",
+                "data"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "REJECTED"
+                },
+                "data": {
+                  "$ref": "#/$defs/Rejection"
+                }
+              },
+              "required": [
+                "tag",
+                "data"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "FAILED"
+                },
+                "data": {
+                  "$ref": "#/$defs/Fault"
+                }
+              },
+              "required": [
+                "tag",
+                "data"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "CANCELLED"
+                },
+                "data": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "tag",
+                "data"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "endpoint",
+        "outcome"
+      ]
+    },
+    "CaseFields": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "incidentDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "incidentNotificationDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "incidentCountry": {
+          "type": "string",
+          "pattern": "^(?:[A-Z]{2})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "claimantName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "insurerName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claimedAmount": {
+          "type": "string",
+          "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+          "minLength": 1
+        },
+        "claimedCurrency": {
+          "type": "string",
+          "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "caseReference": {
+          "type": "string",
+          "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "paymentDecisionDate": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+              "minLength": 10,
+              "maxLength": 10
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payableAmount": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payableCurrency": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "paymentDate": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+              "minLength": 10,
+              "maxLength": 10
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "OPENED",
+            "CLOSED"
+          ]
+        }
+      },
+      "required": [
+        "incidentDate",
+        "incidentNotificationDate",
+        "incidentCountry",
+        "claimantName",
+        "insurerName",
+        "claimedAmount",
+        "claimedCurrency",
+        "caseReference",
+        "paymentDecisionDate",
+        "payableAmount",
+        "payableCurrency",
+        "paymentDate",
+        "status"
+      ]
+    },
+    "CaseView": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "caseReference": {
+          "type": "string",
+          "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "state": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "LIVE"
+                },
+                "disposition": {
+                  "enum": [
+                    "ACTIVE",
+                    "VOIDED"
+                  ]
+                },
+                "fields": {
+                  "$ref": "#/$defs/CaseFields"
+                },
+                "availableActs": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "OPEN",
+                      "AMEND_REGISTRATION",
+                      "CORRECT_CASE",
+                      "DECIDE",
+                      "WITHDRAW_DECISION",
+                      "RECORD_PAYMENT",
+                      "CLEAR_PAYMENT",
+                      "CLOSE",
+                      "REOPEN",
+                      "VOID",
+                      "REINSTATE",
+                      "ERASE"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "tag",
+                "disposition",
+                "fields",
+                "availableActs"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "ERASED"
+                }
+              },
+              "required": [
+                "tag"
+              ]
+            }
+          ]
+        },
+        "offers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "definition": {
+                "type": "string",
+                "minLength": 1
+              },
+              "caseReference": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "choices": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "input": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "input",
+                    "values"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "definition",
+              "caseReference",
+              "expectedRevision",
+              "choices"
+            ]
+          }
+        },
+        "historyDetails": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "SUMMARY",
+              "FULL"
+            ]
+          }
+        }
+      },
+      "required": [
+        "caseReference",
+        "revision",
+        "state",
+        "offers",
+        "historyDetails"
+      ]
+    },
+    "CaseSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "caseReference": {
+          "type": "string",
+          "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "state": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "LIVE"
+                },
+                "disposition": {
+                  "enum": [
+                    "ACTIVE",
+                    "VOIDED"
+                  ]
+                },
+                "fields": {
+                  "$ref": "#/$defs/CaseFields"
+                }
+              },
+              "required": [
+                "tag",
+                "disposition",
+                "fields"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "ERASED"
+                }
+              },
+              "required": [
+                "tag"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "caseReference",
+        "revision",
+        "state"
+      ]
+    },
+    "Position": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "entryHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "sequence",
+        "entryHash"
+      ]
+    },
+    "CaseReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "recordedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\\u002B00:00$",
+          "minLength": 33,
+          "maxLength": 33
+        },
+        "recordedBy": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "scope": {
+          "const": "CASE"
+        },
+        "caseReference": {
+          "type": "string",
+          "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "act": {
+          "enum": [
+            "OPEN",
+            "AMEND_REGISTRATION",
+            "CORRECT_CASE",
+            "DECIDE",
+            "WITHDRAW_DECISION",
+            "RECORD_PAYMENT",
+            "CLEAR_PAYMENT",
+            "CLOSE",
+            "REOPEN",
+            "VOID",
+            "REINSTATE",
+            "ERASE"
+          ]
+        },
+        "snapshot": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "DISCLOSED"
+                },
+                "state": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "LIVE"
+                    },
+                    "disposition": {
+                      "enum": [
+                        "ACTIVE",
+                        "VOIDED"
+                      ]
+                    },
+                    "fields": {
+                      "$ref": "#/$defs/CaseFields"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "disposition",
+                    "fields"
+                  ]
+                }
+              },
+              "required": [
+                "tag",
+                "state"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "WITHHELD"
+                }
+              },
+              "required": [
+                "tag"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tag": {
+                  "const": "ERASED"
+                }
+              },
+              "required": [
+                "tag"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "operationId",
+        "position",
+        "recordedAt",
+        "recordedBy",
+        "scope",
+        "caseReference",
+        "revision",
+        "act",
+        "snapshot"
+      ]
+    },
+    "AuthorityReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "recordedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\\u002B00:00$",
+          "minLength": 33,
+          "maxLength": 33
+        },
+        "recordedBy": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "scope": {
+          "const": "AUTHORITY"
+        },
+        "targetActorId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "act": {
+          "enum": [
+            "PROVISION_OWNER",
+            "REGISTER_ACTOR",
+            "SET_GRANT",
+            "SET_ENABLED"
+          ]
+        }
+      },
+      "required": [
+        "operationId",
+        "position",
+        "recordedAt",
+        "recordedBy",
+        "scope",
+        "targetActorId",
+        "act"
+      ]
+    },
+    "Receipt": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "position": {
+              "$ref": "#/$defs/Position"
+            },
+            "recordedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\\u002B00:00$",
+              "minLength": 33,
+              "maxLength": 33
+            },
+            "recordedBy": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "scope": {
+              "const": "CASE"
+            },
+            "caseReference": {
+              "type": "string",
+              "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "act": {
+              "enum": [
+                "OPEN",
+                "AMEND_REGISTRATION",
+                "CORRECT_CASE",
+                "DECIDE",
+                "WITHDRAW_DECISION",
+                "RECORD_PAYMENT",
+                "CLEAR_PAYMENT",
+                "CLOSE",
+                "REOPEN",
+                "VOID",
+                "REINSTATE",
+                "ERASE"
+              ]
+            },
+            "snapshot": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "DISCLOSED"
+                    },
+                    "state": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "tag": {
+                          "const": "LIVE"
+                        },
+                        "disposition": {
+                          "enum": [
+                            "ACTIVE",
+                            "VOIDED"
+                          ]
+                        },
+                        "fields": {
+                          "$ref": "#/$defs/CaseFields"
+                        }
+                      },
+                      "required": [
+                        "tag",
+                        "disposition",
+                        "fields"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "state"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "WITHHELD"
+                    }
+                  },
+                  "required": [
+                    "tag"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "ERASED"
+                    }
+                  },
+                  "required": [
+                    "tag"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "operationId",
+            "position",
+            "recordedAt",
+            "recordedBy",
+            "scope",
+            "caseReference",
+            "revision",
+            "act",
+            "snapshot"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "position": {
+              "$ref": "#/$defs/Position"
+            },
+            "recordedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\\u002B00:00$",
+              "minLength": 33,
+              "maxLength": 33
+            },
+            "recordedBy": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "scope": {
+              "const": "AUTHORITY"
+            },
+            "targetActorId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "act": {
+              "enum": [
+                "PROVISION_OWNER",
+                "REGISTER_ACTOR",
+                "SET_GRANT",
+                "SET_ENABLED"
+              ]
+            }
+          },
+          "required": [
+            "operationId",
+            "position",
+            "recordedAt",
+            "recordedBy",
+            "scope",
+            "targetActorId",
+            "act"
+          ]
+        }
+      ]
+    },
+    "ChangeSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "act": {
+          "enum": [
+            "OPEN",
+            "AMEND_REGISTRATION",
+            "CORRECT_CASE",
+            "DECIDE",
+            "WITHDRAW_DECISION",
+            "RECORD_PAYMENT",
+            "CLEAR_PAYMENT",
+            "CLOSE",
+            "REOPEN",
+            "VOID",
+            "REINSTATE",
+            "ERASE"
+          ]
+        },
+        "recordedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\\u002B00:00$",
+          "minLength": 33,
+          "maxLength": 33
+        },
+        "recordedBy": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        }
+      },
+      "required": [
+        "operationId",
+        "position",
+        "revision",
+        "act",
+        "recordedAt",
+        "recordedBy"
+      ]
+    },
+    "HistoryEntry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tag": {
+              "const": "SUMMARY"
+            },
+            "change": {
+              "$ref": "#/$defs/ChangeSummary"
+            }
+          },
+          "required": [
+            "tag",
+            "change"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tag": {
+              "const": "FULL"
+            },
+            "receipt": {
+              "$ref": "#/$defs/CaseReceipt"
+            }
+          },
+          "required": [
+            "tag",
+            "receipt"
+          ]
+        }
+      ]
+    },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
+      ]
+    },
+    "Review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "before": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "state": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "tag": {
+                          "const": "LIVE"
+                        },
+                        "disposition": {
+                          "enum": [
+                            "ACTIVE",
+                            "VOIDED"
+                          ]
+                        },
+                        "fields": {
+                          "$ref": "#/$defs/CaseFields"
+                        }
+                      },
+                      "required": [
+                        "tag",
+                        "disposition",
+                        "fields"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "tag": {
+                          "const": "ERASED"
+                        }
+                      },
+                      "required": [
+                        "tag"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "caseReference",
+                "revision",
+                "state"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "after": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "caseReference": {
+              "type": "string",
+              "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "state": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "LIVE"
+                    },
+                    "disposition": {
+                      "enum": [
+                        "ACTIVE",
+                        "VOIDED"
+                      ]
+                    },
+                    "fields": {
+                      "$ref": "#/$defs/CaseFields"
+                    }
+                  },
+                  "required": [
+                    "tag",
+                    "disposition",
+                    "fields"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "tag": {
+                      "const": "ERASED"
+                    }
+                  },
+                  "required": [
+                    "tag"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "caseReference",
+            "revision",
+            "state"
+          ]
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "field": {
+                "enum": [
+                  "incidentDate",
+                  "incidentNotificationDate",
+                  "incidentCountry",
+                  "claimantName",
+                  "insurerName",
+                  "claimedAmount",
+                  "claimedCurrency",
+                  "caseReference",
+                  "paymentDecisionDate",
+                  "payableAmount",
+                  "payableCurrency",
+                  "paymentDate",
+                  "status"
+                ]
+              },
+              "before": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "after": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "field",
+              "before",
+              "after"
+            ]
+          }
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "productVersion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "businessDate": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+              "minLength": 10,
+              "maxLength": 10
+            },
+            "timeZone": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "productVersion",
+            "businessDate",
+            "timeZone"
+          ]
+        }
+      },
+      "required": [
+        "before",
+        "after",
+        "changes",
+        "context"
+      ]
+    },
+    "Rejection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "diagnostic": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "INPUT_TEXT_REQUIRED",
+                    "INPUT_MALFORMED_UNICODE",
+                    "INPUT_SURROUNDING_WHITESPACE",
+                    "INPUT_CONTROL_CHARACTERS",
+                    "TEXT_FORMATTING_CHARACTER",
+                    "INPUT_CASE_REFERENCE_FORMAT",
+                    "INPUT_COUNTRY_FORMAT",
+                    "INPUT_CALENDAR_DATE_REQUIRED",
+                    "INPUT_DATE_ORDER",
+                    "INPUT_FUTURE_DATE",
+                    "INPUT_CURRENCY_FORMAT",
+                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
+                    "COMMAND_OPERATION_ID_REQUIRED",
+                    "COMMAND_EXPECTED_REVISION_RANGE",
+                    "STATE_STORED_REVISION_RANGE",
+                    "REVISION_EXHAUSTED",
+                    "STATE_CASE_REFERENCE_MISMATCH",
+                    "STATE_TRANSITION_MISMATCH",
+                    "INPUT_EXACT_FIELDS_REQUIRED",
+                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
+                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
+                    "CORRECTION_PAYMENT_CLEAR_REQUIRED",
+                    "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
+                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
+                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
+                    "CASE_NOT_FOUND",
+                    "CASE_ALREADY_EXISTS",
+                    "CASE_REVISION_CONFLICT",
+                    "CASE_CLOSED",
+                    "CASE_ALREADY_CLOSED",
+                    "CASE_ALREADY_OPENED",
+                    "CASE_AMENDMENT_REQUIRES_UNDECIDED",
+                    "CORRECTION_NO_CHANGES",
+                    "CORRECTION_EXISTING_VALUE_REQUIRED",
+                    "CASE_DECISION_REQUIRED",
+                    "CASE_PAYMENT_ALREADY_RECORDED",
+                    "CASE_PAYMENT_NOT_RECORDED",
+                    "CASE_DECISION_ALREADY_PAID",
+                    "CASE_ZERO_DECISION_CANNOT_BE_PAID",
+                    "QUERY_CURSOR_INVALID",
+                    "ACT_NOT_PERMITTED",
+                    "LEDGER_SEQUENCE_EXHAUSTED",
+                    "OPERATION_CONTENT_CONFLICT",
+                    "ACCESS_RESOURCE_UNAVAILABLE",
+                    "CASE_VOIDED",
+                    "CASE_ERASED",
+                    "ALREADY_VOIDED",
+                    "NOT_VOIDED",
+                    "LAST_OWNER",
+                    "ACTOR_ALREADY_REGISTERED",
+                    "ACTOR_UNKNOWN",
+                    "HUMAN_PRINCIPAL_REQUIRED"
+                  ]
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "INPUT_TEXT_TOO_SHORT"
+                  ]
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "minimumCharacters": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "minimumCharacters"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "INPUT_TEXT_TOO_LONG"
+                  ]
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "maximumCharacters": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "maximumCharacters"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "INPUT_DECIMAL_FORMAT"
+                  ]
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "maximumIntegerDigits": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "maximumFractionalDigits": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "maximumIntegerDigits",
+                    "maximumFractionalDigits"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "QUERY_PAGE_LIMIT_RANGE"
+                  ]
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "maximumPageSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "maximumPageSize"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            }
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field": {
+          "oneOf": [
+            {
+              "enum": [
+                "incidentDate",
+                "incidentNotificationDate",
+                "incidentCountry",
+                "claimantName",
+                "insurerName",
+                "claimedAmount",
+                "claimedCurrency",
+                "caseReference",
+                "paymentDecisionDate",
+                "payableAmount",
+                "payableCurrency",
+                "paymentDate",
+                "status",
+                "operationId",
+                "expectedRevision",
+                "revision",
+                "act",
+                "fields",
+                "registration",
+                "decision",
+                "payment",
+                "reason",
+                "limit",
+                "cursor"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actualRevision": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommendedAction": {
+          "enum": [
+            "CORRECT_INPUT",
+            "READ_CURRENT",
+            "STOP_AND_INVESTIGATE",
+            "NONE_REQUIRED"
+          ]
+        }
+      },
+      "required": [
+        "diagnostic",
+        "message",
+        "field",
+        "actualRevision",
+        "recommendedAction"
+      ]
+    },
+    "Fault": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_STORE_UNAVAILABLE"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "RETRY_SAFE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_STORE_INTEGRITY_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_SCHEMA_MISMATCH"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_OPERATION_CONTENT_CONFLICT"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        }
+      ]
+    },
+    "RuntimeContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "productVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "businessDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "timeZone": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "productVersion",
+        "businessDate",
+        "timeZone"
+      ]
+    },
+    "ActorContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "productVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "businessDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})(?![\\s\\S])",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "timeZone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "offers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "definition": {
+                "type": "string",
+                "minLength": 1
+              },
+              "caseReference": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "choices": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "input": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "input",
+                    "values"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "definition",
+              "caseReference",
+              "expectedRevision",
+              "choices"
+            ]
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "MANAGE_AUTHORITY",
+              "READ_AUTHORITY",
+              "READ_CASE",
+              "READ_HISTORY",
+              "REGISTER",
+              "READ_HISTORY_FULL",
+              "DECIDE",
+              "CLOSE",
+              "RECORD_PAYMENT",
+              "STEWARD"
+            ]
+          }
+        }
+      },
+      "required": [
+        "productVersion",
+        "businessDate",
+        "timeZone",
+        "offers",
+        "capabilities"
+      ]
+    },
+    "ActorSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "actorId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "principal": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "HUMAN",
+                "SERVICE"
+              ]
+            },
+            "issuer": {
+              "type": "string"
+            },
+            "subject": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "issuer",
+            "subject"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "actorId",
+        "principal",
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },
@@ -22306,8 +24606,8 @@ export function isHostFailure(value: unknown, status: number): value is HostFail
 export function buildRequest<K extends keyof RequestByEndpoint>(endpoint: K, value: unknown): RequestByEndpoint[K] { const matches = (candidate: unknown): candidate is RequestByEndpoint[K] => validateStructure(wireSchemas[endpoint].request, candidate); if (!matches(value)) { throw new Error('Invalid endpoint request structure.'); } return value; }
 export function requestIssue(endpoint:keyof RequestByEndpoint,value:unknown):ReadonlyArray<string>|null { return schemaIssue(wireSchemas[endpoint].request,value); }
 export function isRequest<K extends keyof RequestByEndpoint>(endpoint: K, value: unknown): value is RequestByEndpoint[K] { return validateSchema(wireSchemas[endpoint].request, value); }
-const correlationRules = [{"selector":"RECEIPT_ENDPOINT","tags":[],"replyPath":["operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"ALL","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"ALL","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","scope"],"requestPath":[],"comparison":"RECEIPT_SCOPE"},{"selector":"ALL","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","act"],"requestPath":["act","kind"],"comparison":"EXACT"},{"selector":"CASE_RECEIPT","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","caseReference"],"requestPath":["caseReference"],"comparison":"REFERENCE"},{"selector":"CASE_RECEIPT","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","revision"],"requestPath":["expectedRevision"],"comparison":"SUCCESSOR"},{"selector":"ALL","tags":["OUTCOME_UNKNOWN"],"replyPath":["outcome","data","operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"OPERATION_QUERY","tags":["SUCCEEDED"],"replyPath":["outcome","data","operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"ALL","tags":["REVIEWED"],"replyPath":["outcome","data","review","after","caseReference"],"requestPath":["caseReference"],"comparison":"REFERENCE"},{"selector":"ALL","tags":["REVIEWED"],"replyPath":["outcome","data","review","after","revision"],"requestPath":["expectedRevision"],"comparison":"SUCCESSOR"}] as const;
-const correlationSelectors = [{"name":"ALL","receiptScopes":[],"requestPresent":[],"requestAbsent":[]},{"name":"RECEIPT_ENDPOINT","receiptScopes":["CASE","AUTHORITY"],"requestPresent":[],"requestAbsent":[]},{"name":"CASE_RECEIPT","receiptScopes":["CASE"],"requestPresent":[],"requestAbsent":[]},{"name":"OPERATION_QUERY","receiptScopes":[],"requestPresent":[["operationId"]],"requestAbsent":[["act"]]}] as const;
+const correlationRules = [{"selector":"ACTOR_QUERY","tags":["SUCCEEDED"],"replyPath":["outcome","data","actor","actorId"],"requestPath":["actorId"],"comparison":"EXACT"},{"selector":"RECEIPT_ENDPOINT","tags":[],"replyPath":["operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"ALL","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"ALL","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","scope"],"requestPath":[],"comparison":"RECEIPT_SCOPE"},{"selector":"ALL","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","act"],"requestPath":["act","kind"],"comparison":"EXACT"},{"selector":"CASE_RECEIPT","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","caseReference"],"requestPath":["caseReference"],"comparison":"REFERENCE"},{"selector":"CASE_RECEIPT","tags":["ACCEPTED","ALREADY_ACCEPTED"],"replyPath":["outcome","data","revision"],"requestPath":["expectedRevision"],"comparison":"SUCCESSOR"},{"selector":"ALL","tags":["OUTCOME_UNKNOWN"],"replyPath":["outcome","data","operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"OPERATION_QUERY","tags":["SUCCEEDED"],"replyPath":["outcome","data","operationId"],"requestPath":["operationId"],"comparison":"EXACT"},{"selector":"ALL","tags":["REVIEWED"],"replyPath":["outcome","data","review","after","caseReference"],"requestPath":["caseReference"],"comparison":"REFERENCE"},{"selector":"ALL","tags":["REVIEWED"],"replyPath":["outcome","data","review","after","revision"],"requestPath":["expectedRevision"],"comparison":"SUCCESSOR"}] as const;
+const correlationSelectors = [{"name":"ALL","receiptScopes":[],"requestPresent":[],"requestAbsent":[]},{"name":"RECEIPT_ENDPOINT","receiptScopes":["CASE","AUTHORITY"],"requestPresent":[],"requestAbsent":[]},{"name":"CASE_RECEIPT","receiptScopes":["CASE"],"requestPresent":[],"requestAbsent":[]},{"name":"ACTOR_QUERY","receiptScopes":[],"requestPresent":[["actorId"]],"requestAbsent":[]},{"name":"OPERATION_QUERY","receiptScopes":[],"requestPresent":[["operationId"]],"requestAbsent":[["act"]]}] as const;
 const correlationTagPath = ["outcome","tag"] as const;
 
 function correlationPath(value: unknown, path: ReadonlyArray<string>): unknown {

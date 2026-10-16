@@ -1,45 +1,34 @@
 import { useCallback } from "react";
-import { isDisclosureRefused } from "../api/outcomes";
 import type { Notice } from "../api/notices";
-import { resultNotice, service, type ServiceResponse } from "../api/service";
+import { service, type ServiceResponse } from "../api/service";
 import { useRetryablePage } from "../hooks/useRead";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 const authorityPage = (response: ServiceResponse<"authority.list">) =>
   response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
 type Actor = NonNullable<ReturnType<typeof authorityPage>>["items"][number];
-const AuthorityActor = ({ actor }: { actor: Actor }) => {
+export const ActorSummary = ({ actor }: { actor: Actor }) => {
   const p = usePresentation();
   return (
-    <li>
-      <dl>
-        <dt>{p.text("ui.actor")}</dt>
-        <dd>
-          <bdi>{actor.actorId}</bdi>
-        </dd>
-        <dt>{p.text("ui.principal")}</dt>
-        <dd>
-          {p.token(actor.principal.kind)} · <bdi>{actor.principal.issuer}</bdi> ·{" "}
-          <bdi>{actor.principal.subject}</bdi>
-        </dd>
-        <dt>{p.text("ui.enabled")}</dt>
-        <dd>{p.text(actor.enabled ? "ui.yes" : "ui.no")}</dd>
-      </dl>
-      <ul>
-        {actor.grants.map((grant) => (
-          <li
-            key={`${grant.role}:${grant.scope.kind}:${grant.scope.kind === "CASE" ? grant.scope.caseReference : ""}`}
-          >
-            {p.token(grant.role)} · {p.token(grant.scope.kind)}{" "}
-            {grant.scope.kind === "CASE" ? <bdi>{grant.scope.caseReference}</bdi> : null}
-          </li>
-        ))}
-      </ul>
-    </li>
+    <dl>
+      <dt>{p.text("ui.actor")}</dt>
+      <dd>
+        <bdi>{actor.actorId}</bdi>
+      </dd>
+      <dt>{p.text("ui.principal")}</dt>
+      <dd>
+        {p.token(actor.principal.kind)} · <bdi>{actor.principal.issuer}</bdi> ·{" "}
+        <bdi>{actor.principal.subject}</bdi>
+      </dd>
+      <dt>{p.text("ui.enabled")}</dt>
+      <dd>{p.text(actor.enabled ? "ui.yes" : "ui.no")}</dd>
+    </dl>
   );
 };
 type ListingProps = {
   token: string;
+  mayReadGrants: boolean;
+  onSelect: (actorId: string) => void;
   onDisclosureRefused: (notice?: Notice) => void;
   onDisclosureRestored: (source: "listing") => void;
 };
@@ -47,9 +36,6 @@ const useAuthorityPage = ({ token, onDisclosureRefused, onDisclosureRestored }: 
   const request = useCallback(
     async (cursor: string | null, signal: AbortSignal) => {
       const result = await service.authorityList(cursor, token, signal);
-      if (!signal.aborted && isDisclosureRefused(result)) {
-        onDisclosureRefused(resultNotice(result));
-      }
       if (
         !signal.aborted &&
         result.kind === "outcome" &&
@@ -59,7 +45,7 @@ const useAuthorityPage = ({ token, onDisclosureRefused, onDisclosureRestored }: 
       }
       return result;
     },
-    [token, onDisclosureRestored, onDisclosureRefused],
+    [token, onDisclosureRestored],
   );
   return useRetryablePage<ServiceResponse<"authority.list">, Actor>(
     request,
@@ -75,7 +61,20 @@ export const AuthorityListing = (props: ListingProps) => {
       <h3>{p.text("ui.actors")}</h3>
       <ul>
         {page.items.map((actor) => (
-          <AuthorityActor key={actor.actorId} actor={actor} />
+          <li key={actor.actorId}>
+            <ActorSummary actor={actor} />
+            {props.mayReadGrants ? (
+              <button
+                type="button"
+                id={`actor-grants-${actor.actorId}`}
+                onClick={() => {
+                  props.onSelect(actor.actorId);
+                }}
+              >
+                {p.text("ui.viewGrants")}
+              </button>
+            ) : null}
+          </li>
         ))}
       </ul>
       {page.message === null ? null : (

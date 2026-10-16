@@ -4,15 +4,30 @@ import { parseDocument } from "yaml";
 
 /** @typedef {string | ({literal: string} | {hole: string})[]} Message */
 
-/** @param {string} source @returns {Record<string, string>} */
+/** @param {unknown} value @returns {value is Record<string, unknown>} */
+const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+/** @param {unknown} value @returns {value is {literal: string} | {hole: string}} */
+const isMessagePart = (value) =>
+  isRecord(value) &&
+  Object.keys(value).length === 1 &&
+  ((Object.hasOwn(value, "literal") && typeof value["literal"] === "string") ||
+    (Object.hasOwn(value, "hole") && typeof value["hole"] === "string"));
+/** @param {unknown} value @returns {value is Message} */
+const isMessage = (value) =>
+  typeof value === "string" || (Array.isArray(value) && value.every(isMessagePart));
+/** @param {unknown} value @returns {value is Record<string, Message>} */
+const isCatalog = (value) => isRecord(value) && Object.values(value).every(isMessage);
+
+/** @param {string} source @returns {Record<string, Message>} */
 export const readCatalog = (source) => {
   const parsed = parseDocument(source, { schema: "json", uniqueKeys: true });
   if (parsed.errors.length || parsed.warnings.length) {
     throw new Error("Catalog JSON is ambiguous or duplicated.");
   }
+  /** @type {unknown} */
   const value = JSON.parse(source);
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Catalog must be an object.");
+  if (!isCatalog(value)) {
+    throw new Error("Invalid catalog message shape.");
   }
   return value;
 };
