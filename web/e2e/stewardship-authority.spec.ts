@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "@contracts/browser-contract";
 import { openCase, startCommand } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
+import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 
 const stewardAct = async (page: Page, label: string, reason?: string) => {
@@ -14,7 +15,7 @@ const stewardAct = async (page: Page, label: string, reason?: string) => {
     await expect(page.getByText(/WAL, backups and copies elsewhere are not erased/u)).toBeVisible();
   }
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
-  await page.getByRole("checkbox", { name: "I confirm these changes.", exact: true }).check();
+  await confirmReview(page);
   const pending = page.waitForResponse((reply) => reply.url().endsWith("/api/case.execute"));
   await page.getByRole("button", { name: "Record changes", exact: true }).click();
   const reply = await pending;
