@@ -7,7 +7,7 @@ open System.Threading
 open ClaimCore.Application
 
 /// A case-work host receives actor-bound operations and a bounded shutdown operation.
-type IRuntime =
+type internal IRuntime =
     inherit IDisposable
     abstract Actor: PrincipalKey -> IActorClaimsCore
     abstract BusinessTimeZone: string
@@ -42,7 +42,7 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
         member _.Shutdown bound = gate.Shutdown bound
         member _.Dispose() = gate.Stop() |> ignore
 
-module Runtime =
+module internal Runtime =
     let openConnection connectionString cancellationToken =
         task {
             let! opened =

@@ -115,8 +115,14 @@ module ActorAuthorization =
                 CaseActKind.Erase, Capability.Steward
             ]
 
-    let private correctionCapabilities =
-        [ Capability.Register; Capability.Decide; Capability.RecordPayment ]
+    let correctionGroups =
+        [
+            "registration", Capability.Register
+            "decision", Capability.Decide
+            "payment", Capability.RecordPayment
+        ]
+
+    let private correctionCapabilities = correctionGroups |> List.map snd
 
     /// Reaffirmation is still a requested replacement and requires its group's capability.
     let requiredCapabilities =
@@ -125,13 +131,13 @@ module ActorAuthorization =
             [
                 match correction.Registration with
                 | RegistrationCorrection.Keep -> ()
-                | _ -> yield Capability.Register
+                | _ -> yield (correctionGroups |> List.find (fst >> (=) "registration") |> snd)
                 match correction.Decision with
                 | DecisionCorrection.Keep -> ()
-                | _ -> yield Capability.Decide
+                | _ -> yield (correctionGroups |> List.find (fst >> (=) "decision") |> snd)
                 match correction.Payment with
                 | PaymentCorrection.Keep -> ()
-                | _ -> yield Capability.RecordPayment
+                | _ -> yield (correctionGroups |> List.find (fst >> (=) "payment") |> snd)
             ]
         | act -> [ ordinaryActs[CaseActs.kind act] ]
 

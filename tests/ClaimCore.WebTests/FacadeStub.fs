@@ -98,6 +98,7 @@ let description =
                 TimeZoneId = "Etc/UTC"
             }
         Capabilities = Capabilities.all
+        Offers = []
     }
 
 type Facade() =
@@ -148,10 +149,19 @@ type Facade() =
                     {
                         Snapshot = view reference
                         AvailableActs = []
+                        Offers = []
+                        HistoryDetails = []
                     })
 
         member this.List(_, _) =
-            this.Invoke "case.list" (QueryOutcome.Succeeded { Items = []; NextCursor = None })
+            this.Invoke
+                "case.list"
+                (QueryOutcome.Succeeded
+                    {
+                        Items = []
+                        NextCursor = None
+                        Offers = []
+                    })
 
         member this.History(_, _) =
             this.Invoke "case.history" (QueryOutcome.Succeeded { Entries = []; NextCursor = None })
@@ -165,6 +175,25 @@ type Facade() =
             match this.Error with
             | Some error -> raise error
             | None -> this.ExecuteAuthority(request, token)
+
+        member this.ListGrants(request, _) =
+            let principal =
+                PrincipalKey.human "https://identity.example/" "synthetic-target"
+                |> Result.defaultWith failwith
+
+            this.Invoke
+                "authority.grants"
+                (QueryOutcome.Succeeded
+                    {
+                        Actor =
+                            {
+                                ActorId = request.ActorId
+                                Principal = principal
+                                Enabled = false
+                            }
+                        Items = []
+                        NextCursor = None
+                    })
 
         member this.ListActors(_, _) =
             this.Invoke "authority.list" (QueryOutcome.Succeeded { Items = []; NextCursor = None })

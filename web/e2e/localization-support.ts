@@ -1,12 +1,9 @@
-import { writeFile } from "node:fs/promises";
-
 import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
 import type { EndpointId } from "@contracts/endpoint-catalog";
 import { endpoints } from "@contracts/endpoint-catalog";
 import type { ServiceResponse } from "../src/api/types";
-import type { HostFailure } from "@contracts/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
-import { isHostFailure, isResponse } from "../src/api/responseGuards";
+import { isHostFailure, isResponse } from "@contracts/browser-contract";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
@@ -176,93 +173,12 @@ export const pauseJsonReply = <K extends EndpointId>(page: Page, endpoint: K, dr
     },
     drop,
   );
-export const pauseHostReply = (page: Page, endpoint: EndpointId, expectedStatus: number) =>
-  pauseReply(
-    page,
-    endpoint,
-    (payload, status): HostFailure => {
-      if (status !== expectedStatus || !isHostFailure(payload, status)) {
-        throw new Error("Expected a checked host failure.");
-      }
-      return payload;
-    },
-    false,
-  );
-
-export const inputRefusalText = {
-  en: "The input does not satisfy the endpoint contract.",
-  lv: "Ievade neatbilst galapunkta līgumam.",
-  ar: "المدخلات لا تطابق عقد نقطة النهاية.",
+export const localInputRefusalText = {
+  en: "Complete this input using the required format.",
+  lv: "Aizpildiet šo ievadi vajadzīgajā formātā.",
+  ar: "أكمل هذا الحقل بالتنسيق المطلوب.",
 } as const;
-export const expectInputRefusal = (reply: HostFailure): void => {
-  expect(reply.status).toBe(400);
-  expect(reply.code).toBe("INPUT_INVALID");
-  expect(reply.executionPhase).toBe("NOT_STARTED");
-  expect(reply.diagnostic.id).toBe("HOST_INPUTINVALID");
-};
-const collectLayoutMetrics = () => {
-  const { clientWidth } = document.documentElement;
-  const offenders = [...document.querySelectorAll("*")]
-    .map((element) => ({ element, rect: element.getBoundingClientRect() }))
-    .filter(({ rect }) => rect.left < -1 || rect.right > clientWidth + 1)
-    .slice(0, 5)
-    .map(({ element, rect }) => ({
-      tag: element.tagName.toLowerCase(),
-      className: typeof element.className === "string" ? element.className : "",
-      left: Math.round(rect.left),
-      right: Math.round(rect.right),
-      width: Math.round(rect.width),
-    }));
-  const scrollable = [...document.querySelectorAll("*")]
-    .filter(
-      (element) =>
-        element !== document.documentElement &&
-        element !== document.body &&
-        element.scrollWidth > element.clientWidth + 1,
-    )
-    .sort((left, right) => right.scrollWidth - left.scrollWidth)
-    .slice(0, 10)
-    .map((element) => ({
-      tag: element.tagName.toLowerCase(),
-      className: typeof element.className === "string" ? element.className : "",
-      clientWidth: element.clientWidth,
-      scrollWidth: element.scrollWidth,
-    }));
-  return {
-    clientWidth,
-    scrollWidth: document.documentElement.scrollWidth,
-    offenders,
-    scrollable,
-  };
-};
-export const noHorizontalOverflow = async (page: Page, stage: "narrow" | "zoom"): Promise<void> => {
-  const metrics = await page.evaluate(collectLayoutMetrics);
-  if (metrics.scrollWidth <= metrics.clientWidth + 1) {
-    return;
-  }
-  const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"];
-  if (engine !== undefined && ["chromium", "firefox", "webkit"].includes(engine)) {
-    const report = new URL(
-      `../../artifacts/browser/localization-layout-${engine}.json`,
-      import.meta.url,
-    );
-    const offenders = metrics.offenders.map(({ tag, className, left, right, width }) => ({
-      tag,
-      className: className.replace(/[^a-zA-Z0-9_-]/gu, "").slice(0, 40),
-      left,
-      right,
-      width,
-    }));
-    const scrollable = metrics.scrollable.map(({ tag, className, clientWidth, scrollWidth }) => ({
-      tag,
-      className: className.replace(/[^a-zA-Z0-9_-]/gu, "").slice(0, 40),
-      clientWidth,
-      scrollWidth,
-    }));
-    await writeFile(report, `${JSON.stringify({ stage, ...metrics, offenders, scrollable })}\n`);
-  }
-  throw new Error(`E2E_LOCALIZATION_${stage.toUpperCase()}_OVERFLOW`);
-};
+export { noHorizontalOverflow } from "./layout-support";
 
 export const expectKeyboardContained = async (page: Page, dialog: Locator): Promise<void> => {
   await dialog.getByRole("checkbox").focus();

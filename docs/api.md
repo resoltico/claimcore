@@ -1,6 +1,6 @@
 # Service and CLI contract
 
-The [endpoint catalogue](../contracts/catalog.json) defines eleven endpoints, their strict wire
+The [endpoint catalogue](../contracts/catalog.json) defines twelve endpoints, their strict wire
 schemas and one shared fingerprint. `session` is GET; the others are POST to the literal
 `/api/<endpoint>` path, including dots in names such as `/api/case.execute`. Session bootstrap is
 anonymous; remaining operations require an authenticated principal. Case and authority work also
@@ -26,7 +26,42 @@ also carry the antiforgery token returned by `session`; bearer calls authenticat
 | `case.history`      | Summary or retained full history page                    |
 | `operation.observe` | Accepted case or authority evidence visible to the actor |
 | `authority.execute` | Register actor, set grant or set enabled state           |
-| `authority.list`    | Installation authority review with pagination            |
+| `authority.list`    | Bounded installation actor summaries                     |
+| `authority.grants`  | Bounded grant review for one selected actor              |
+
+Paged reads accept a maximum `limit` from 1 through 50. `case.list` includes installation offers
+from the same actor snapshot as that page's rows. Advice follows the latest successful page;
+accumulated rows from successive requests are not one frozen snapshot. Execution rechecks authority.
+
+`authority.list` returns actor ID, principal and enabled state, without nested grants. Use
+`authority.grants` with `actorId`, optional `cursor` and `limit` to review that actor's grants.
+Both reads require current installation ReadAuthority; disabled targets remain reviewable.
+The grant page returns its current actor header and at most 50 grants. Continuations bind the
+caller, complete caller authority, endpoint and target; grants may evolve between requests.
+A successful reply must echo the requested actor ID in its actor header.
+Use an actor ID returned by `authority.list` in the CLI frame (the ID below is synthetic):
+
+```json
+{
+    "endpoint": "authority.grants",
+    "input": { "actorId": "10000000-0000-4000-8000-000000000001", "limit": 50 }
+}
+```
+
+`case.history` returns uniform SUMMARY or FULL entries. SUMMARY pages contain at most 50 entries;
+FULL pages contain at most 10 to keep supported retained snapshots inside the response byte limit.
+The server can return fewer entries than requested. Only `nextCursor: null` establishes the end:
+follow a non-null cursor even after a short page. This capacity does not change accepted text,
+truncate history or reduce historical disclosure requirements.
+
+Malformed business input and out-of-range page limits recommend `CORRECT_INPUT`. Revision
+conflicts recommend `READ_CURRENT`, preserving the distinction between correcting a request
+and refreshing state.
+
+`QUERY_CURSOR_INVALID` recommends `READ_CURRENT`: discard the local continuation and load the
+same view without a cursor. It does not by itself establish loss of authority. A fresh request
+still rechecks current rights. Browser case, actor, selected-grant and history views offer explicit
+reload; they never rebase or replace an uncertain mutation to recover a read.
 
 Case preview/execute inputs carry `operationId`, `caseReference`, integer `expectedRevision` and
 a tagged `act`. Authority execution carries `operationId`, `target` principal and a tagged `act`.
@@ -45,13 +80,32 @@ reject duplicate members, invalid UTF-8, malformed scalars, invalid UUID/revisio
 nesting/bytes. Wire-format failures are host refusals before Domain validation; they do not
 produce business-field rejections. Typed endpoint outcomes use HTTP 200; host failures carry
 their own HTTP status and an optional `executionPhase`. Server responses undergo full schema validation;
-browser guards check endpoint, outcome and required consumed shapes. Malformed mutation replies
+both clients validate complete generated endpoint schemas from bounded strict response bytes. Malformed mutation replies
 retain exact delivery uncertainty.
 
 Tracked [contract artifacts](../contracts/catalog.json) are generated from F# contract definitions.
 The fingerprint covers canonical framed catalogue metadata without its identity field, all schemas,
-descriptors and default English; derived TypeScript, corpus and the fingerprint itself are excluded.
+complete descriptors, default English, delivery/correlation policy and the strict-byte profile; derived TypeScript, corpus and the fingerprint itself are excluded.
 [Development](development.md) owns generation and freshness checks.
+
+Case preview/execute and authority execute response envelopes echo the admitted request operation ID,
+including refusals. Clients correlate that ID and receipt scope/act, case resource identity and promised
+revision before using the reply. ASCII reference identity permits case differences without rewriting
+accepted spelling. Observation correlates the queried ID but cannot prove pending request content:
+only exact execute or preview replay confirms that content. The shared read correlation policy also
+rejects a schema-valid authority.grants reply for another actor. A specifically correlated idempotency
+conflict proves CONTENT_EXCLUDED; other refusals do not resolve earlier uncertainty.
+
+Principal wire syntax is deliberately generic Unicode text plus HUMAN/SERVICE kind. Canonical issuer
+and kind-specific identity admission remain Application-owned and run in Hosting before ledger dispatch;
+invalid identities return INPUT_INVALID/400/NOT_STARTED after authentication. The CLI renders that
+host failure with exit 3. Decoding wire syntax never promises principal admission.
+
+Deploy matching service, CLI, browser assets and generated artifacts together. Integrations must use
+the generated types and frame format for that fingerprint and follow grant/history continuations
+rather than assuming a requested page size is returned. The service accepts one contract; it provides
+no compatibility endpoint or alternative parser. Installation admission follows the
+[database contract](database.md#cc-db-001).
 
 <a id="cc-cli-001"></a>
 
@@ -64,11 +118,13 @@ process-local authentication session. Each input frame is limited to 128 KiB; re
 limited to 16 MiB. Input is strict UTF-8 and replies are validated against the generated contract.
 Preview is advisory; execution revalidates locked state.
 
-Discovery needs no credentials:
+Discovery needs no credentials. `describe authority [kind]` exposes the Application-owned
+authority definitions alongside case command discovery:
 
 ```sh
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- help
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- describe endpoints case.execute
+dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- describe endpoints authority.grants
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- schema case.execute request
 ```
 
@@ -107,3 +163,13 @@ Host failures carry an HTTP status and an optional `executionPhase`. `NOT_STARTE
 dispatch; `STARTED_UNCONFIRMED` preserves mutation uncertainty. A null phase does not establish
 rejection. `CONTRACT_MISMATCH` is `NOT_STARTED`; reload before authoring a different request.
 No pending request is stored by the service.
+
+Every CLI reply explicitly carries per-invocation `attemptKnowledge`, endpoint/operation identity
+when available, resolution evidence and the typed/host/local result. Host status and execution phase
+are retained. NOT_SENT, READ_SUCCEEDED, READ_FAILED, ACCEPTED, NOT_ACCEPTED and UNCONFIRMED
+are client delivery knowledge; server OUTCOME_UNKNOWN still means lost commit confirmation.
+The automation caller retains prior unresolved knowledge and the original request across processes.
+A later pre-dispatch failure, authorization refusal or NOT_STARTED result cannot resolve its earlier
+uncertainty. The CLI stores no cross-process pending state. Output failure after a dispatched mutation
+uses exit 4 when confirmation could not be safely delivered; read/pre-dispatch output failures do not.
+If both output streams fail, only the nonzero exit can remain available.

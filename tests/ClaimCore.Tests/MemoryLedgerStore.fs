@@ -150,26 +150,34 @@ let private reviewGrant state (value: ActorGrant) : AuthorityGrant =
 
     { Role = value.Role; Scope = scope }
 
-let private reviewActor state (actor: ActorAuthority) : ActorReview =
-    let scopeKey =
-        function
-        | GrantTarget.Installation -> ""
-        | GrantTarget.CaseReference reference -> CaseReference.key reference
-
-    let order (left: AuthorityGrant) (right: AuthorityGrant) =
-        let role = String.CompareOrdinal(Roles.token left.Role, Roles.token right.Role)
-
-        if role <> 0 then
-            role
-        else
-            String.CompareOrdinal(scopeKey left.Scope, scopeKey right.Scope)
-
+let private reviewActor (actor: ActorAuthority) : ActorSummary =
     {
         ActorId = actor.ActorId
         Principal = actor.Principal
         Enabled = actor.Enabled
-        Grants = actor.Grants |> List.map (reviewGrant state) |> List.sortWith order
     }
+
+let private grantPosition (g: ActorGrant) : GrantPosition =
+    {
+        Role = g.Role
+        CaseId =
+            match g.Scope with
+            | GrantScope.Installation -> None
+            | GrantScope.Case id -> Some id
+    }
+
+let private compareGrantPosition (left: GrantPosition) (right: GrantPosition) =
+    let role = String.CompareOrdinal(Roles.token left.Role, Roles.token right.Role)
+
+    if role <> 0 then
+        role
+    else
+        match left.CaseId, right.CaseId with
+        | None, None -> 0
+        | None, Some _ -> 1
+        | Some _, None -> -1
+        | Some a, Some b -> String.CompareOrdinal(a.ToString("D"), b.ToString("D"))
+
 
 let private historyRows (state: State) (record: StoredCase option) after limit =
     state.Entries
@@ -540,7 +548,51 @@ type internal Store(instant: DateTimeOffset) =
                             {
                                 ObservedAt = view.ObservedAt
                                 Actor = view.Actor
-                                Items = visible |> List.map (reviewActor state)
+                                Items = visible |> List.map reviewActor
                                 NextAfterActorId = next
+                            }
+                    ))
+
+        member _.ListGrants(principal, targetId, select, limit, ct) =
+            locked ct (fun () ->
+                let target =
+                    state.Actors |> Map.values |> Seq.tryFind (fun a -> a.ActorId = targetId)
+
+                let view: GrantReadView =
+                    {
+                        ObservedAt = observedAt
+                        Actor = actor principal
+                        Target = target |> Option.map reviewActor
+                    }
+
+                match select view with
+                | Error reason -> Ok(Error reason)
+                | Ok after ->
+                    let target = target |> Option.get
+
+                    let rows =
+                        target.Grants
+                        |> List.sortWith (fun a b ->
+                            compareGrantPosition (grantPosition a) (grantPosition b))
+                        |> List.filter (fun g ->
+                            after
+                            |> Option.forall (fun p ->
+                                compareGrantPosition (grantPosition g) p > 0))
+                        |> List.truncate (limit + 1)
+
+                    let visible = rows |> List.truncate limit
+
+                    Ok(
+                        Ok
+                            {
+                                ObservedAt = observedAt
+                                Actor = view.Actor
+                                Target = reviewActor target
+                                Items = visible |> List.map (reviewGrant state)
+                                NextAfterGrant =
+                                    if rows.Length > limit then
+                                        visible |> List.tryLast |> Option.map grantPosition
+                                    else
+                                        None
                             }
                     ))

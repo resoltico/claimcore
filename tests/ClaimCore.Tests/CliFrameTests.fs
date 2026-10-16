@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliFrameTests
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Text
@@ -8,6 +10,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Cli
 open ClaimCore.Contracts
+open ClaimCore.ClientContract
 open CliTransportFixture
 
 type private BrokenOutput() =
@@ -15,6 +18,13 @@ type private BrokenOutput() =
 
     override _.Flush() =
         raise (IOException "synthetic-output-failure")
+
+type private PartialOutput() =
+    inherit MemoryStream()
+
+    override _.Write(value: ReadOnlySpan<byte>) =
+        base.Write(value.Slice(0, min value.Length 5))
+        raise (IOException "synthetic-partial-write")
 
 let private deliveryKnowledge () =
     use output = new MemoryStream()
@@ -47,6 +57,75 @@ let private deliveryKnowledge () =
         failtest "Expected broken output"
     with :? IOException as error ->
         Expect.equal (lost.Failure error) 4 "Stdout loss retains uncertainty"
+
+let private readOutputFailure () =
+    for dispatched, expected in [ false, "NOT_SENT"; true, "READ_FAILED" ] do
+        use output = new BrokenOutput()
+        use errors = new MemoryStream()
+        let delivery = FrameDelivery(output, errors)
+        let invocation = frame "case.get"
+        delivery.BeginFrame()
+        delivery.Prepare invocation
+
+        if dispatched then
+            delivery.BeforeDispatch invocation
+
+        try
+            delivery.Write(CliReply.local ClientFailure.Unavailable)
+            failtest "Expected output flush failure"
+        with :? IOException as error ->
+            Expect.equal
+                (delivery.Failure error)
+                70
+                "A failed read output remains a definite local failure"
+
+        let failure = Frames.decode (errors.ToArray()) |> Fixtures.accepted
+
+        Expect.equal
+            (failure.GetProperty("attemptKnowledge").GetString())
+            expected
+            "Read output failure retains actual dispatch facts"
+
+        Expect.equal
+            (failure.GetProperty("endpoint").GetString())
+            "case.get"
+            "Safe failure retains invocation endpoint"
+
+let private partialOutputKnowledge () =
+    for endpoint, code, knowledge in
+        [ "case.execute", 4, "UNCONFIRMED"; "case.get", 70, "READ_FAILED" ] do
+        use output = new PartialOutput()
+        use errors = new MemoryStream()
+        let delivery = FrameDelivery(output, errors)
+        delivery.BeginFrame()
+        delivery.BeforeDispatch(frame endpoint)
+
+        try
+            delivery.Write(CliReply.local ClientFailure.Unavailable)
+            failtest "Expected partial stdout write failure"
+        with :? IOException as error ->
+            Expect.equal
+                (delivery.Failure error)
+                code
+                "Partial output preserves delivery classification"
+
+        Expect.equal output.Length 5L "Only a partial frame was written"
+        let failure = Frames.decode (errors.ToArray()) |> Fixtures.accepted
+
+        Expect.equal
+            (failure.GetProperty("attemptKnowledge").GetString())
+            knowledge
+            "Stderr safely reports the attempt knowledge"
+
+        use brokenErrors = new PartialOutput()
+        let both = FrameDelivery(output, brokenErrors)
+        both.BeginFrame()
+        both.BeforeDispatch(frame endpoint)
+
+        Expect.equal
+            (both.Failure(IOException "synthetic-both-streams-failed"))
+            code
+            "The exit remains meaningful when stderr also fails"
 
 let private readerBounds () =
     for length, expected in [ FrameReader.MaximumBytes, false; FrameReader.MaximumBytes + 1, true ] do
@@ -158,6 +237,8 @@ let private offlineDiscovery () =
             [ "summary" ]
             [ "fields" ]
             [ "commands" ]
+            [ "authority" ]
+            [ "authority"; "REGISTER_ACTOR" ]
             [ "endpoints" ]
             [ "diagnostics" ]
         ] do
@@ -193,7 +274,12 @@ let private exampleFrames () =
             "Business and stewardship share execution"
 
         let request =
-            match Frames.input invocation with
+            match
+                ClaimCore.Contracts.EndpointCatalog.admitRequest
+                    "case.execute"
+                    (Frames.inputBytes invocation)
+                |> Fixtures.accepted
+            with
             | ServiceInput.Case request -> request
             | _ -> failtest "Example must be a case request"
 
@@ -223,6 +309,12 @@ let tests =
             testCase
                 "cancellation and stdout loss preserve current frame knowledge"
                 deliveryKnowledge
+            testCase
+                "read output failures distinguish dispatched and unsent attempts"
+                readOutputFailure
+            testCase
+                "partial stdout and stderr failures preserve delivery knowledge"
+                partialOutputKnowledge
             testCase "bounded documents and NDJSON reject invalid frames before I/O" readerBounds
             testCase
                 "uncertainty ends a session before another frame can overwrite exit four"

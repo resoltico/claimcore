@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.HostTransportTests
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Net.Http
 open System.Text
@@ -16,6 +18,10 @@ open ClaimCore.WebTests.TestServerFixture
 let private body name =
     if name = "case.preview" || name = "case.execute" then
         Array.copy commandInput
+    elif name = "authority.execute" then
+        Encoding.UTF8.GetBytes(
+            $"""{{"operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER_ACTOR"}}}}"""
+        )
     else
         EndpointCatalog.tryFind name
         |> Option.get
@@ -33,6 +39,21 @@ let private loggedIn ready work =
         do! work host token
     }
     |> _.GetAwaiter().GetResult()
+
+let private actorTarget endpoint (response: byte array) =
+    if endpoint = "authority.grants" then
+        use request = JsonDocument.Parse(ReadOnlyMemory(body endpoint))
+        use result = JsonDocument.Parse(ReadOnlyMemory response)
+
+        Expect.equal
+            (result.RootElement
+                .GetProperty("outcome")
+                .GetProperty("data")
+                .GetProperty("actor")
+                .GetProperty("actorId")
+                .GetString())
+            (request.RootElement.GetProperty("actorId").GetString())
+            "Typed grant dispatch retains the requested target"
 
 let private catalogueRoutes () =
     loggedIn true (fun host token ->
@@ -54,7 +75,9 @@ let private catalogueRoutes () =
                     (EndpointCatalog.admitResponse endpoint.Identifier response)
                     "Typed response schema"
 
-            Expect.equal host.Facade.Calls.Length 9 "Every core endpoint exactly once"
+                actorTarget endpoint.Identifier response
+
+            Expect.equal host.Facade.Calls.Length 10 "Every core endpoint exactly once"
             let! status, response = host.Call("session.logout", body "session.logout", token)
             Expect.equal status 200 "Logout"
             Expect.isOk (EndpointCatalog.admitResponse "session.logout" response) "Logout schema"
@@ -164,6 +187,11 @@ let private outcomes () =
                 use payload = parse response
 
                 Expect.equal
+                    (payload.RootElement.GetProperty("operationId").GetGuid())
+                    operationId
+                    "Every outcome, including refusal, echoes admitted request identity"
+
+                Expect.equal
                     (payload.RootElement.GetProperty("outcome").GetProperty("tag").GetString())
                     tag
                     "Outcome identity"
@@ -231,18 +259,78 @@ let private readiness () =
         Expect.equal actual 405 "Readiness is GET only"
         Expect.isEmpty host.Facade.Calls "Health has no actor facade"
 
+let private principalAdmission () =
+    loggedIn true (fun host token ->
+        task {
+            let schema = (EndpointCatalog.tryFind "authority.execute" |> Option.get).Request
+
+            let target kind issuer subject =
+                System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
+                    {|
+                        operationId = operationId
+                        target =
+                            {|
+                                kind = kind
+                                issuer = issuer
+                                subject = subject
+                            |}
+                        act = {| kind = "REGISTER_ACTOR" |}
+                    |}
+
+            let samples =
+                [
+                    "HUMAN", "https://ISSUER.example.test/realm", "person"
+                    "HUMAN", "https://issuer.example.test/realm?x=1", "person"
+                    "HUMAN", "https://user@issuer.example.test/realm", "person"
+                    "HUMAN", "https://issuer.example.test/realm#part", "person"
+                    "HUMAN", "https://issuer.example.test/realm", " "
+                    "HUMAN", "https://issuer.example.test/realm", String.replicate 257 "🙂"
+                    "SERVICE", "https://issuer.example.test/realm", String.replicate 257 "x"
+                    "HUMAN", "https://issuer.example.test/" + String.replicate 2048 "x", "person"
+                ]
+
+            for kind, issuer, subject in samples do
+                let input = target kind issuer subject
+                let admitted = HttpInputSupport.parse input (SchemaValueValidation.verify schema)
+
+                Expect.equal
+                    admitted
+                    (Ok true)
+                    "Generic wire syntax does not claim identity admission"
+
+                let! status, response = host.Call("authority.execute", input, token)
+                Expect.equal status 400 "Typed principal refusal occurs before core dispatch"
+                use failure = JsonDocument.Parse response
+
+                Expect.equal
+                    (failure.RootElement.GetProperty("code").GetString())
+                    "INPUT_INVALID"
+                    "Defined failure"
+
+                Expect.equal
+                    (failure.RootElement.GetProperty("executionPhase").GetString())
+                    "NOT_STARTED"
+                    "No dispatch"
+
+            Expect.isEmpty host.Facade.Calls "Identity failure never invokes the actor core"
+            Expect.isNone host.Facade.Principal "Identity failure never creates an actor facade"
+        })
+
 [<Tests>]
 let tests =
     testList
         "HTTP service"
         [
             testCase
+                "generic wire principal syntax is separate from authoritative pre-dispatch admission"
+                principalAdmission
+            testCase
                 "authority execution preserves mutation cancellation semantics"
                 authorityCancellation
             testCase
                 "raw malformed numeric Unicode reference and country inputs cannot dispatch"
                 malformedWire
-            testCase "all eleven endpoints use the one catalogue and typed facade" catalogueRoutes
+            testCase "all twelve endpoints use the one catalogue and typed facade" catalogueRoutes
             testCase
                 "matching contract dispatches; missing and different contracts never dispatch"
                 handshakeRefusals

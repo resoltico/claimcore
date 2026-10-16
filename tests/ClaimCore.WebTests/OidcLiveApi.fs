@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.OidcLiveApi
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Collections.Generic
 open System.Net.Http
@@ -62,8 +64,7 @@ let private caseRequest (local: HttpClient) token browserCookies reference =
 
         request.Headers.TryAddWithoutValidation(
             "ClaimCore-Contract",
-            ClaimCore.Contracts.WireContractFingerprint.value
-                ClaimCore.Contracts.EndpointCatalog.fingerprint
+            WireContractFingerprint.value ClaimCore.Contracts.EndpointCatalog.fingerprint
         )
         |> ignore
 
@@ -181,7 +182,8 @@ let qualifyBearers
                     alterHeader "RS256" "ID" token
                 ]
 
-        do! Task.Delay(TimeSpan.FromSeconds(17.))
+        // The synthetic host has zero JWT clock skew; prior boundary checks consume part of the TTL.
+        do! Task.Delay(expiryDelay DateTimeOffset.UtcNow token)
         let! expired = bearerRequest local token
 
         if expired <> 401 then

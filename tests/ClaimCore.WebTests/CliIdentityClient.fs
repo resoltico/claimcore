@@ -1,5 +1,7 @@
 module internal ClaimCore.WebTests.CliIdentityClient
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Net.Http
@@ -7,7 +9,7 @@ open System.Text.Json
 open System.Threading
 open Expecto
 open ClaimCore.Cli
-open ClaimCore.Contracts
+open ClaimCore.ClientContract
 
 let private privateText directory name (text: string) =
     let path = Path.Combine(directory, name)

@@ -5,7 +5,7 @@ import { useOperationEditor } from "../hooks/operation/useOperationEditor";
 import { AcceptedOperation, CommandChangeDialog } from "./operation/OperationDialogs";
 import { OperationForm } from "./operation/OperationForm";
 import { OperationReview } from "./operation/OperationReview";
-import type { OperationEditorModel, OperationEditorProps } from "./operation/editorTypes";
+import type { OperationEditorModel, OperationEditorProps } from "../interaction/editorTypes";
 
 const useEditorFocus = (
   model: OperationEditorModel,
@@ -47,16 +47,37 @@ const requestLeave = (model: OperationEditorModel, onClose: () => void): void =>
 const UnknownOperation = ({ model }: { model: OperationEditorModel }) => {
   const p = usePresentation();
   return (
-    <section role="alert">
-      <NoticeView value={model.state.message!} />
+    <section role="alert" aria-busy={model.state.delivery === "SUBMITTING"}>
+      <NoticeView value={model.state.message ?? { kind: "local", reason: "outcomeUnknown" }} />
       <p>{p.text("ui.retryExactDescription")}</p>
-      <button type="button" onClick={() => void model.submit()}>
+      <button
+        type="button"
+        disabled={model.state.delivery === "SUBMITTING"}
+        onClick={() => void model.submit()}
+      >
         {p.text("ui.retryExact")}
       </button>
     </section>
   );
 };
 
+const DisclosureRefused = ({
+  model,
+  onClose,
+}: {
+  model: OperationEditorModel;
+  onClose: () => void;
+}) => {
+  const p = usePresentation();
+  return (
+    <section role="alert">
+      <NoticeView value={model.state.message!} />
+      <button type="button" onClick={onClose}>
+        {p.text("ui.backToCase")}
+      </button>
+    </section>
+  );
+};
 const OperationEditorLayout = ({
   props,
   model,
@@ -68,8 +89,11 @@ const OperationEditorLayout = ({
   const section = useRef<HTMLElement>(null);
   const previewButtonRef = useRef<HTMLButtonElement>(null);
   useEditorFocus(model, section, previewButtonRef);
-  if (model.state.delivery === "OUTCOME_UNKNOWN") {
+  if (model.state.unresolved) {
     return <UnknownOperation model={model} />;
+  }
+  if (model.state.disclosureRefused) {
+    return <DisclosureRefused model={model} onClose={props.onClose} />;
   }
   if (model.receipt !== null) {
     return (

@@ -1,53 +1,83 @@
 module internal ClaimCore.AcceptanceTests.DifferentClient
 
+open ClaimCore.ClientProtocol
+
 open System.Collections.Generic
 open System.IO
 open Expecto
 
-let private copySource (fixture: PublishedFixture.Fixture) =
-    let directory = Path.Combine(fixture.Directory, "client-source")
-    Directory.CreateDirectory directory |> ignore
+let private copySourceFile (root: string) directory relative =
+    let target = Path.Combine(directory, relative)
+    Directory.CreateDirectory(Path.GetDirectoryName target |> nonNull) |> ignore
+    File.Copy(Path.Combine(root, relative), target)
+
+let private copyProject root directory project =
+    let relative = Path.Combine("src", project)
+    let source = Path.Combine(root, relative)
+
+    for path in Directory.GetFiles source do
+        let name = Path.GetFileName path |> nonNull
+
+        if
+            List.contains (Path.GetExtension path) [ ".fs"; ".fsi"; ".fsproj" ]
+            || name = "packages.lock.json"
+        then
+            copySourceFile root directory (Path.Combine(relative, name))
+
+let private copyNotices root directory =
+    let relative = "eng/licenses/native-notices.json"
+    let manifest = NativeNoticeManifest.read (Path.Combine(root, relative))
+    copySourceFile root directory relative
+
+    for notice in manifest.Texts do
+        copySourceFile root directory (Path.Combine("eng/licenses", notice.File))
+
+let private copySource root parent =
+    let directory = Path.Combine(parent, "client-source")
 
     for name in
         [
             "global.json"
             "Directory.Build.props"
+            "Directory.Build.targets"
             "Directory.Packages.props"
             "NuGet.Config"
+            "LICENSE"
+            "src/Directory.Build.props"
+            "eng/NativeBuild.targets"
+            "eng/build-native.sh"
+            "src/ClaimCore.HostSecurity/native/private_file.c"
+            "src/ClaimCore.HostSecurity/native/private_file.h"
+            "contracts/ClientContract.fs"
         ] do
-        File.Copy(Path.Combine(fixture.Root, name), Path.Combine(directory, name))
+        copySourceFile root directory name
 
-    for project in
-        [
-            "ClaimCore.Cli"
-            "ClaimCore.Contracts"
-            "ClaimCore.Application"
-            "ClaimCore.Domain"
-            "ClaimCore.RecordFormat"
-            "ClaimCore.HostSecurity"
-        ] do
-        let source = Path.Combine(fixture.Root, "src", project)
-        let target = Path.Combine(directory, "src", project)
-        Directory.CreateDirectory target |> ignore
+    for project in [ "ClaimCore.Cli"; "ClaimCore.ClientProtocol"; "ClaimCore.HostSecurity" ] do
+        copyProject root directory project
 
-        for path in Directory.GetFiles(source) do
-            File.Copy(path, Path.Combine(target, Path.GetFileName(path) |> nonNull))
-
+    copyNotices root directory
     directory
 
 let private differentIdentity directory =
-    let catalog = Path.Combine(directory, "src/ClaimCore.Contracts/EndpointCatalog.fs")
+    let catalog = Path.Combine(directory, "contracts/ClientContract.fs")
     let text = File.ReadAllText catalog
-    let marker = "writer.WriteString(\"id\", endpoint.Identifier)"
-    Expect.isTrue (text.Contains marker) "Mismatch fixture reaches compiled catalogue metadata"
+    let marker = "let fingerprint = WireContractFingerprint.create \""
+    let start = text.IndexOf(marker, System.StringComparison.Ordinal)
+
+    Expect.isGreaterThanOrEqual
+        start
+        0
+        "Mismatch fixture reaches the client-safe compiled fingerprint"
+
+    let valueStart = start + marker.Length
 
     File.WriteAllText(
         catalog,
-        text.Replace(marker, "writer.WriteString(\"id\", endpoint.Identifier + \"-synthetic\")")
+        text.Remove(valueStart, 64).Insert(valueStart, String.replicate 64 "0")
     )
 
 let qualify (fixture: PublishedFixture.Fixture) =
-    let directory = copySource fixture
+    let directory = copySource fixture.Root fixture.Directory
     differentIdentity directory
     let output = Path.Combine(fixture.Directory, "different-client")
 
@@ -68,7 +98,18 @@ let qualify (fixture: PublishedFixture.Fixture) =
             (PublishedProcesses.start "dotnet" args (Dictionary<string, string>()))
             None
 
-    Expect.equal built.ExitCode 0 "Compile a client with a different contract identity"
+    FixtureFiles.write fixture.Directory "different-client-build.stdout.log" built.StandardOutput
+    |> ignore
+
+    FixtureFiles.write fixture.Directory "different-client-build.stderr.log" built.StandardError
+    |> ignore
+
+    Expect.equal
+        built.ExitCode
+        0
+        "Compile a client with a different contract identity; see owned fixture build logs"
+
+    NativeNotices.qualify fixture.Root output "ClaimCore.Cli" |> ignore
 
     let result =
         ProcessRunner.dotnet

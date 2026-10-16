@@ -4,15 +4,30 @@ import { parseDocument } from "yaml";
 
 /** @typedef {string | ({literal: string} | {hole: string})[]} Message */
 
-/** @param {string} source @returns {Record<string, string>} */
+/** @param {unknown} value @returns {value is Record<string, unknown>} */
+const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+/** @param {unknown} value @returns {value is {literal: string} | {hole: string}} */
+const isMessagePart = (value) =>
+  isRecord(value) &&
+  Object.keys(value).length === 1 &&
+  ((Object.hasOwn(value, "literal") && typeof value["literal"] === "string") ||
+    (Object.hasOwn(value, "hole") && typeof value["hole"] === "string"));
+/** @param {unknown} value @returns {value is Message} */
+const isMessage = (value) =>
+  typeof value === "string" || (Array.isArray(value) && value.every(isMessagePart));
+/** @param {unknown} value @returns {value is Record<string, Message>} */
+const isCatalog = (value) => isRecord(value) && Object.values(value).every(isMessage);
+
+/** @param {string} source @returns {Record<string, Message>} */
 export const readCatalog = (source) => {
   const parsed = parseDocument(source, { schema: "json", uniqueKeys: true });
   if (parsed.errors.length || parsed.warnings.length) {
     throw new Error("Catalog JSON is ambiguous or duplicated.");
   }
+  /** @type {unknown} */
   const value = JSON.parse(source);
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Catalog must be an object.");
+  if (!isCatalog(value)) {
+    throw new Error("Invalid catalog message shape.");
   }
   return value;
 };
@@ -199,11 +214,24 @@ const assertDiagnosticShape = (message, args, id) => {
     throw new Error(`Diagnostic parameters differ: ${id}`);
   }
 };
+/** @param {import("./tooling-types.mjs").JsonRecord} descriptors */
+const authorityKeys = (descriptors) => {
+  /** @type {Array<{kind:string}>} */
+  const commands = descriptors["authorityCommands"] ?? [];
+  /** @type {Array<{labelId:string}>} */
+  const fields = descriptors["authorityFields"] ?? [];
+  return [
+    ...fields.map((field) => field.labelId),
+    ...commands.flatMap((command) =>
+      ["label", "meaning"].map((part) => `authority.${command.kind}.${part}`),
+    ),
+  ];
+};
 /** @param {Record<string, Message>} catalog @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {Record<string, Record<string, unknown>>} requirements */
 export const validateCoverage = (catalog, descriptors, requirements) => {
   /** @type {string[]} */
   const keys = [];
-  for (const field of descriptors["fields"]) {
+  for (const field of [...descriptors["fields"], ...(descriptors["inputFields"] ?? [])]) {
     for (const s of ["label", "meaning"]) {
       keys.push(`field.${field.name}.${s}`);
     }
@@ -218,6 +246,7 @@ export const validateCoverage = (catalog, descriptors, requirements) => {
       }
     }
   }
+  keys.push(...authorityKeys(descriptors));
   for (const [id, args] of Object.entries(requirements)) {
     const key = `diagnostic.${id}`;
     keys.push(key);
@@ -226,7 +255,9 @@ export const validateCoverage = (catalog, descriptors, requirements) => {
   if (keys.some((k) => !Object.hasOwn(catalog, k))) {
     throw new Error("Catalog omits authoritative metadata.");
   }
-  const owned = Object.keys(catalog).filter((k) => /^(field|command|group|diagnostic)\./u.test(k));
+  const owned = Object.keys(catalog).filter((k) =>
+    /^(field|command|group|authority|diagnostic)\./u.test(k),
+  );
   if (owned.some((k) => !keys.includes(k))) {
     throw new Error("Catalog contains obsolete metadata.");
   }

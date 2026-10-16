@@ -67,7 +67,14 @@ export const loadPreferences = (): Preferences => {
 };
 export const savePreferences = (value: Preferences): boolean => {
   try {
-    localStorage.setItem(preferenceKey, JSON.stringify({ version: 1, ...value }));
+    localStorage.setItem(
+      preferenceKey,
+      JSON.stringify({
+        version: 1,
+        language: value.language,
+        displayLocale: value.displayLocale,
+      }),
+    );
     return true;
   } catch {
     return false;

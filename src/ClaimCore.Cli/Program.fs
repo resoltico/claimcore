@@ -1,11 +1,12 @@
 module ClaimCore.Cli.Program
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Text
 open System.Threading
 open System.Runtime.InteropServices
-open ClaimCore.Application
-open ClaimCore.Contracts
+open ClaimCore.ClientContract
 
 let private writeBytes (bytes: byte array) =
     let output = Console.OpenStandardOutput()
@@ -82,7 +83,6 @@ let private remote session =
 [<EntryPoint>]
 let main argv =
     try
-        BuildIdentity.requireCompatibleAssembly typeof<Endpoint>.Assembly
         Console.OutputEncoding <- UTF8Encoding(false)
 
         match Array.toList argv with

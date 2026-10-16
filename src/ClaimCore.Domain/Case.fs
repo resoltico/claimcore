@@ -307,3 +307,9 @@ module Case =
                         Eligibility.check kind claim.Status claim.Progress |> Result.isOk)
 
                 business @ [ CaseActKind.Void; CaseActKind.Erase ]
+
+    let correctionActions (record: CaseRecord) group =
+        match record.State with
+        | CaseState.Live(claim, Disposition.Active) ->
+            CaseCorrections.availableActions claim.Progress group
+        | _ -> [ CorrectionGroupAction.Keep ]

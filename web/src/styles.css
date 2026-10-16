@@ -169,6 +169,8 @@ button:disabled {
 .text-field input,
 .lookup input,
 .operation-editor select,
+.authority-panel select,
+.authority-panel input:not([type="checkbox"]),
 .copy-value textarea {
   inline-size: 100%;
   min-inline-size: 0;

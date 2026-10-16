@@ -1,6 +1,8 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contracts
+open ClaimCore.ClientProtocol
+
+open ClaimCore.ClientContract
 
 type ClientFailure =
     | Configuration
@@ -38,4 +40,13 @@ module CliReply =
             ExitCode = exit
         }
 
-    let unknown reply = { reply with ExitCode = 4 }
+    let forAttempt frame knowledge reply =
+        ProtocolFrames.withKnowledge frame knowledge reply.Bytes |> admitted
+
+    let unknown reply =
+        let value =
+            System.Text.Json.Nodes.JsonNode.Parse(System.ReadOnlySpan<byte> reply.Bytes)
+            |> nonNull
+
+        value["attemptKnowledge"] <- System.Text.Json.Nodes.JsonValue.Create("UNCONFIRMED")
+        value.ToJsonString() |> System.Text.Encoding.UTF8.GetBytes |> admitted

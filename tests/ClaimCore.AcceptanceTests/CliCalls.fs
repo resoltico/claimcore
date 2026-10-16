@@ -11,11 +11,37 @@ let frame endpoint input =
     JsonSerializer.Serialize {| endpoint = endpoint; input = input |}
     |> Encoding.UTF8.GetBytes
 
+let private deliveryFields exitCode (reply: JsonElement) =
+    // Caller consumers require the breaking frame metadata even when values are null.
+    reply.GetProperty("endpoint") |> ignore
+    reply.GetProperty("operationId") |> ignore
+    let knowledge = reply.GetProperty("attemptKnowledge").GetString()
+    let evidence = reply.GetProperty("resolutionEvidence").GetString()
+
+    Expect.contains
+        [ "NONE"; "CONTENT_ACCEPTED"; "CONTENT_EXCLUDED" ]
+        evidence
+        "Closed content evidence"
+
+    match knowledge with
+    | "UNCONFIRMED" -> Expect.equal exitCode 4 "Unconfirmed attempts stop automation"
+    | "ACCEPTED" ->
+        Expect.equal exitCode 0 "Accepted content succeeds"
+        Expect.equal evidence "CONTENT_ACCEPTED" "Acceptance has exact-content evidence"
+    | "READ_SUCCEEDED" -> Expect.equal exitCode 0 "A successful read has no mutation uncertainty"
+    | "NOT_SENT"
+    | "NOT_ACCEPTED"
+    | "READ_FAILED" ->
+        Expect.contains [ 2; 3; 70; 130 ] exitCode "Definite attempt failure has a matching exit"
+    | _ -> failtest "Missing or unsupported per-attempt delivery knowledge"
+
 let parse code (result: ProcessRunner.Result) =
     Expect.equal result.ExitCode code "Published CLI exit"
     Expect.equal result.StandardError.Length 0 "No private diagnostics"
     use document = JsonDocument.Parse(ReadOnlyMemory result.StandardOutput)
-    document.RootElement.Clone()
+    let reply = document.RootElement.Clone()
+    deliveryFields code reply
+    reply
 
 let run (fixture: PublishedFixture.Fixture) environment source code =
     ProcessRunner.dotnet 90_000 fixture.Cli [ "call" ] environment (Some source)
@@ -96,14 +122,27 @@ let private grantFrame target role =
                 |}
         |}
 
-let grant fixture target role =
-    run
-        fixture
-        (interactiveEnvironment fixture "synthetic-owner" "valid")
-        (grantFrame target role)
-        0
+let setGrant fixture target role active =
+    let source =
+        frame
+            "authority.execute"
+            {|
+                operationId = id ()
+                target = target
+                act =
+                    {|
+                        kind = "SET_GRANT"
+                        role = role
+                        scope = installation
+                        active = active
+                    |}
+            |}
+
+    run fixture (interactiveEnvironment fixture "synthetic-owner" "valid") source 0
     |> require "ACCEPTED"
     |> ignore
+
+let grant fixture target role = setGrant fixture target role true
 
 let private setupFrames fixture =
     let registrations =
@@ -138,7 +177,33 @@ let internal requireAcceptedReplies expected (result: ProcessRunner.Result) =
 
     for line in lines[.. lines.Length - 2] do
         use document = JsonDocument.Parse(line)
-        document.RootElement |> require "ACCEPTED" |> ignore
+        let reply = document.RootElement
+        let receipt = reply |> require "ACCEPTED"
+
+        Expect.equal
+            (reply.GetProperty("kind").GetString())
+            "result"
+            "Setup returns a protocol result"
+
+        Expect.equal
+            (reply.GetProperty("endpoint").GetString())
+            "authority.execute"
+            "Authority setup endpoint"
+
+        Expect.equal
+            (reply.GetProperty("attemptKnowledge").GetString())
+            "ACCEPTED"
+            "Explicit setup acceptance"
+
+        Expect.equal
+            (reply.GetProperty("resolutionEvidence").GetString())
+            "CONTENT_ACCEPTED"
+            "Exact setup content is confirmed"
+
+        Expect.equal
+            (reply.GetProperty("operationId").GetString())
+            (receipt.GetProperty("operationId").GetString())
+            "Setup receipt correlation"
 
 let setup fixture =
     let frames = setupFrames fixture

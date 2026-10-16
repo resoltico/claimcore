@@ -1,3 +1,4 @@
+import { attemptKnowledge } from "../protocol/delivery";
 import type { ApiResult, EndpointOutcome } from "./types";
 import { localNotice, type Notice } from "./notices";
 export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
@@ -22,9 +23,8 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
   return localNotice("incomplete");
 };
 export const isMutationUncertain = (result: ApiResult<EndpointOutcome>): boolean =>
-  result.kind === "deliveryFailure" ||
-  (result.kind === "hostFailure" && result.failure.executionPhase !== "NOT_STARTED") ||
-  (result.kind === "outcome" && result.value.outcome.tag === "OUTCOME_UNKNOWN");
+  attemptKnowledge(result.kind === "outcome" ? result.value.endpoint : "case.execute", result) ===
+  "UNCONFIRMED";
 export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean =>
   (result.kind === "hostFailure" &&
     (result.failure.code === "SESSION_REJECTED" || result.failure.code === "SESSION_FORBIDDEN")) ||

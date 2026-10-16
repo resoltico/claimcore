@@ -1,10 +1,10 @@
 namespace ClaimCore.ContractGeneration
 
+open ClaimCore.ClientProtocol
+
 open System.Text
 open System.Text.Json.Nodes
 open ClaimCore.Contracts
-
-type Artifact = { Name: string; Bytes: byte array }
 
 module ContractArtifacts =
     let private schema name document =
@@ -13,17 +13,61 @@ module ContractArtifacts =
             Bytes = EndpointCatalog.schema document |> CanonicalContract.bytes
         }
 
-    let all () =
-        let endpoints =
-            EndpointCatalog.all
-            |> List.collect (fun e ->
-                [
-                    schema ("endpoint." + e.Identifier + ".request.schema.json") e.Request
-                    schema ("endpoint." + e.Identifier + ".response.schema.json") e.Response
-                ])
+    let private endpointSchemas () =
+        EndpointCatalog.all
+        |> List.collect (fun endpoint ->
+            [
+                schema
+                    ("endpoint." + endpoint.Identifier + ".request.schema.json")
+                    endpoint.Request
+                schema
+                    ("endpoint." + endpoint.Identifier + ".response.schema.json")
+                    endpoint.Response
+            ])
 
-        endpoints
-        @ [
+    let private clientArtifacts () =
+        [
+            {
+                Name = "package.json"
+                Bytes = Encoding.UTF8.GetBytes "{\"private\":true,\"type\":\"module\"}\n"
+            }
+            {
+                Name = "ContractExtensionFixture.fs"
+                Bytes = ContractExtension.native ()
+            }
+            {
+                Name = "extension-fixture.ts"
+                Bytes = ContractExtension.browser ()
+            }
+            {
+                Name = "extension-corpus.json"
+                Bytes = Corpus.forEndpoints ContractExtension.endpoints
+            }
+            schema "extension.request.schema.json" ContractExtension.request
+            {
+                Name = "request-builders.ts"
+                Bytes = BrowserBuilders.source ()
+            }
+            {
+                Name = "browser-contract.ts"
+                Bytes = BrowserArtifacts.source ()
+            }
+            {
+                Name = "strict-byte-profile.json"
+                Bytes = ProtocolProfile.strictBytesJson ()
+            }
+            {
+                Name = "delivery-policy.json"
+                Bytes = ProtocolProfile.deliveryJson ()
+            }
+            {
+                Name = "ClientContract.fs"
+                Bytes = NativeCatalogue.render ()
+            }
+        ]
+
+    let private catalogueArtifacts () =
+        [
             {
                 Name = "default-presentation.en.json"
                 Bytes = ContractDiscovery.presentation ()
@@ -32,10 +76,6 @@ module ContractArtifacts =
                 Name = "product-metadata.ts"
                 Bytes = ContractDiscovery.productMetadataTypeScript () |> Encoding.UTF8.GetBytes
             }
-            schema "invocation.schema.json" EndpointCatalog.invocation
-            schema "frame-response.schema.json" EndpointCatalog.frameResponse
-            schema "responses.schema.json" EndpointCatalog.responses
-            schema "host-failure.schema.json" HostFailures.schema
             {
                 Name = "descriptors.json"
                 Bytes = ContractDiscovery.descriptors () |> CanonicalContract.bytes
@@ -57,3 +97,18 @@ module ContractArtifacts =
                 Bytes = Corpus.bytes ()
             }
         ]
+
+    let private protocolSchemas () =
+        [
+            schema "invocation.schema.json" EndpointCatalog.invocation
+            schema "frame-response.schema.json" EndpointCatalog.frameResponse
+            schema "responses.schema.json" EndpointCatalog.responses
+            schema "host-failure.schema.json" HostFailures.schema
+        ]
+
+    let all () =
+        endpointSchemas ()
+        @ clientArtifacts ()
+        @ catalogueArtifacts ()
+        @ protocolSchemas ()
+        |> ArtifactPublication.withInventory

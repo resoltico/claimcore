@@ -1,9 +1,11 @@
 namespace ClaimCore.Web
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Net.Http
 open System.Threading
-open ClaimCore.Contracts
+open ClaimCore.Hosting
 
 module internal OidcStartup =
     let verify (client: HttpClient) (configuration: OidcConfiguration) (ct: CancellationToken) =

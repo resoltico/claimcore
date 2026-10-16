@@ -1,0 +1,8 @@
+import { productMetadata } from "@contracts/product-metadata";
+import { isGregorianDate } from "./schema";
+const amount = productMetadata.descriptors.fields
+  .map((field) => field.scalar)
+  .find((scalar) => scalar.kind === "AMOUNT");
+export const isAmountText = (value: string): boolean =>
+  amount !== undefined && new RegExp(`^(?:${amount.grammar})(?![\\s\\S])`, "u").test(value);
+export { isGregorianDate };

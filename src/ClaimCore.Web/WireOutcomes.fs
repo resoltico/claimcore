@@ -1,8 +1,10 @@
 namespace ClaimCore.Web
 
+open ClaimCore.ClientProtocol
+
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
-open ClaimCore.Contracts
+open ClaimCore.Hosting
 
 [<Sealed>]
 type private EncodedJsonResult(bytes: byte array, status: int) =
@@ -20,8 +22,7 @@ module internal WebWire =
     let result status bytes =
         EncodedJsonResult(bytes, status) :> IResult
 
-    let outcome endpoint value =
-        OutcomeCodec.encode endpoint value |> result 200
+    let outcome _endpoint value = result 200 value
 
     let hostFailure reason =
         HostFailures.encode reason |> result (HostFailures.status reason)

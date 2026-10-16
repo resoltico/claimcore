@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Security.Cryptography
 open System.Text
@@ -10,18 +12,22 @@ type Endpoint =
         Identifier: string
         Method: string
         Path: string
+        AcceptingScope: string
+        ReceiptScope: string
         Mutates: bool
         Request: SchemaDocument
         Response: SchemaDocument
     }
 
 module EndpointCatalog =
-    let private endpoint (identifier, mutates) =
+    let private endpoint (identifier, acceptingScope) =
         {
             Identifier = identifier
             Method = (if identifier = "session" then "GET" else "POST")
             Path = "/api/" + identifier
-            Mutates = mutates
+            AcceptingScope = acceptingScope
+            ReceiptScope = ResponseSchemas.receiptScope identifier
+            Mutates = acceptingScope <> "NONE"
             Request =
                 document
                     ("endpoint." + identifier + ".request.schema.json")
@@ -36,17 +42,18 @@ module EndpointCatalog =
 
     let all =
         [
-            "session", false
-            "session.logout", false
-            "context", false
-            "case.get", false
-            "case.list", false
-            "case.history", false
-            "case.preview", false
-            "case.execute", true
-            "operation.observe", false
-            "authority.execute", true
-            "authority.list", false
+            "session", "NONE"
+            "session.logout", "NONE"
+            "context", "NONE"
+            "case.get", "NONE"
+            "case.list", "NONE"
+            "case.history", "NONE"
+            "case.preview", "NONE"
+            "case.execute", "CASE"
+            "operation.observe", "NONE"
+            "authority.execute", "AUTHORITY"
+            "authority.list", "NONE"
+            "authority.grants", "NONE"
         ]
         |> List.map endpoint
 
@@ -54,48 +61,72 @@ module EndpointCatalog =
         all |> List.tryFind (fun value -> value.Identifier = identifier)
 
     let schema document =
-        CanonicalJson.renderSchema document document.Root
+        SchemaRendering.renderSchema document document.Root
 
-    let responseDefinitions =
-        ValueSchemas.definitions
-        @ (all |> List.map (fun e -> e.Identifier, e.Response.Root))
+    let responsesFor (endpoints: Endpoint list) =
+        let definitions =
+            endpoints
+            |> List.collect (fun endpoint -> endpoint.Response.Definitions)
+            |> List.distinct
 
-    let responses =
         document
             "responses.schema.json"
-            (all |> List.map _.Response.Root |> Schema.oneOf)
-            responseDefinitions
+            (endpoints |> List.map _.Response.Root |> Schema.oneOf)
+            (definitions
+             @ (endpoints
+                |> List.map (fun endpoint -> endpoint.Identifier, endpoint.Response.Root)))
 
-    let invocation =
+    let responses = responsesFor all
+
+    let invocationFor (endpoints: Endpoint list) =
         document
             "invocation.schema.json"
-            (all
+            (endpoints
              |> List.map (fun e ->
                  objectOf
                      [ property "endpoint" (token e.Identifier); property "input" e.Request.Root ])
              |> Schema.oneOf)
             []
 
-    let frameResponse =
+    let invocation = invocationFor all
+
+    let frameResponseFor (endpoints: Endpoint list) =
+        let outcome (endpoint: Endpoint) =
+            match endpoint.Response.Root with
+            | ObjectSchema value ->
+                value.Properties
+                |> List.find (fun property -> property.Name = "outcome")
+                |> _.Schema
+            | _ -> invalidArg "endpoints" "An endpoint response must be an object envelope."
+
+        let definitions =
+            endpoints
+            |> List.collect (fun endpoint -> endpoint.Response.Definitions)
+            |> List.distinct
+
         document
             "frame-response.schema.json"
             (FrameSchemas.response (
-                all
-                |> List.map (fun e ->
-                    e.Identifier, e.Request.Root, ResponseSchemas.outcome e.Identifier)
+                endpoints
+                |> List.map (fun endpoint ->
+                    endpoint.Identifier, endpoint.Request.Root, outcome endpoint)
             ))
-            ValueSchemas.definitions
+            definitions
 
-    let metadata () =
+    let frameResponse = frameResponseFor all
+
+    let metadataFor (endpoints: Endpoint list) =
         ContractJson.contract (fun writer ->
             writer.WriteStartArray()
 
-            for endpoint in all do
+            for endpoint in endpoints do
                 writer.WriteStartObject()
                 writer.WriteString("id", endpoint.Identifier)
                 writer.WriteString("method", endpoint.Method)
                 writer.WriteString("path", endpoint.Path)
                 writer.WriteBoolean("mutates", endpoint.Mutates)
+                writer.WriteString("acceptingScope", endpoint.AcceptingScope)
+                writer.WriteString("receiptScope", endpoint.ReceiptScope)
 
                 writer.WriteString(
                     "requestSchema",
@@ -110,6 +141,8 @@ module EndpointCatalog =
                 writer.WriteEndObject()
 
             writer.WriteEndArray())
+
+    let metadata () = metadataFor all
 
     let identityInputs () =
         [
@@ -132,6 +165,12 @@ module EndpointCatalog =
             "host-failure.schema.json", schema HostFailures.schema
         ]
         |> List.map (fun (name, value) -> name, CanonicalContract.bytes value)
+        |> fun values ->
+            values
+            @ [
+                "strict-byte-profile.json", ProtocolProfile.strictBytesJson ()
+                "delivery-policy.json", ProtocolProfile.deliveryJson ()
+            ]
 
     let fingerprint =
         identityInputs ()

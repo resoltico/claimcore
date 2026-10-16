@@ -15,7 +15,7 @@ type TextAdmissionPolicy =
         RequiresNonBlank: bool
         RejectsSurroundingWhitespace: bool
         RejectsControlCharacters: bool
-        RejectsFormattingCharacters: bool
+        RejectsForbiddenInvisibleCharacters: bool
     }
 
 type ScalarTextConstraints =

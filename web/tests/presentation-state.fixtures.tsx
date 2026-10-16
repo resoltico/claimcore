@@ -9,6 +9,13 @@ import { definition, fields, digest, response, runtime } from "./service-ui.fixt
 export const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
+  offers: ["CLOSE"].map((identifier) => ({
+    definition: identifier,
+    caseReference: null,
+    expectedRevision: null,
+    choices: [],
+  })),
+  historyDetails: ["SUMMARY", "FULL"],
   state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
 };
 export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>> = {}) => (

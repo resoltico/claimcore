@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { acceptedReceipt, isLocked } from "../src/views/operation/editorSupport";
+import { acceptedReceipt, isLocked } from "../src/interaction/editorSupport";
 import { generatedWebValue } from "./contract-corpus.fixtures";
 describe("operation outcomes", () => {
   it("locks only preview submission and uncertainty", () => {
@@ -14,7 +14,11 @@ describe("operation outcomes", () => {
     const result = generatedWebValue("case.execute");
     expect(acceptedReceipt(result)).not.toBeNull();
     expect(
-      acceptedReceipt({ endpoint: "case.execute", outcome: { tag: "CANCELLED", data: null } }),
+      acceptedReceipt({
+        endpoint: "case.execute",
+        operationId: "11111111-1111-4111-8111-111111111111",
+        outcome: { tag: "CANCELLED", data: null },
+      }),
     ).toBeNull();
   });
 });

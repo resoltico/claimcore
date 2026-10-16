@@ -58,6 +58,26 @@ module internal CaseCorrections =
         | ValidatedPaymentCorrection.Replace replacement, Some _ -> Ok(Some replacement)
         | ValidatedPaymentCorrection.Clear, Some _ -> Ok None
 
+    /// Unary presence advice shares the execution guards; combinations are still decided by apply.
+    let availableActions progress group =
+        let present =
+            match group with
+            | "registration" -> true
+            | "decision" -> decisionChoice progress ValidatedDecisionCorrection.Clear |> Result.isOk
+            | "payment" -> paymentChoice progress ValidatedPaymentCorrection.Clear |> Result.isOk
+            | _ -> invalidArg "group" "Unknown correction group."
+
+        let definition =
+            match (CommandDefinitions.forKind CaseActKind.CorrectCase).Inputs with
+            | CommandInputShape.CorrectionGroups groups ->
+                groups |> List.find (fun value -> value.Name = group)
+            | _ -> invalidOp "Correction requires explicit groups."
+
+        if present then
+            definition.Actions
+        else
+            [ CorrectionGroupAction.Keep ]
+
     let private paidAcknowledgement progress (correction: ValidatedCaseCorrection) =
         match progress, correction.Decision, correction.Payment with
         | PaymentProgress.Paid _, ValidatedDecisionCorrection.Clear, payment when

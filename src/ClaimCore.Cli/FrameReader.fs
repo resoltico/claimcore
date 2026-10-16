@@ -10,7 +10,7 @@ type InputFrame =
 
 module FrameReader =
     [<Literal>]
-    let MaximumBytes = 131072
+    let MaximumBytes = ClaimCore.ClientProtocol.ProtocolProfile.MaximumInvocationBytes
 
     let readDocument (stream: Stream) =
         let buffer = Array.zeroCreate<byte>(MaximumBytes + 1)

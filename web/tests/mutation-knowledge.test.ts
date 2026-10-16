@@ -8,6 +8,7 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
     status: 200,
     value: {
       endpoint: "case.execute",
+      operationId: "11111111-1111-4111-8111-111111111111",
       outcome: { tag: "OUTCOME_UNKNOWN", data: { operationId, requestSha256: digest } },
     },
   };
@@ -16,7 +17,11 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
     isMutationUncertain({
       kind: "outcome",
       status: 200,
-      value: { endpoint: "case.execute", outcome: { tag: "CANCELLED", data: null } },
+      value: {
+        endpoint: "case.execute",
+        operationId: "11111111-1111-4111-8111-111111111111",
+        outcome: { tag: "CANCELLED", data: null },
+      },
     }),
   ).toBe(false);
   expect(

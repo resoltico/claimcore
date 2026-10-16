@@ -76,7 +76,7 @@ module internal LedgerEntries =
                     Snapshot = snapshot
                 }
 
-        if payload.Length > 262144 then
+        if payload.Length > FormatLimits.MaximumPayloadBytes then
             invalidArg (nameof request) "Ledger payload exceeds its format bound."
 
         let commitment = LedgerEntry.commitment nonce payload
@@ -111,7 +111,7 @@ module internal LedgerEntries =
     let payload (entry: StoredEntry) =
         match entry.Payload, entry.PayloadNonce with
         | Some bytes, Some nonce when width 32 nonce && width 32 entry.PayloadCommitment ->
-            match LedgerEntry.decodePayload 262144 bytes with
+            match LedgerEntry.decodePayload FormatLimits.MaximumPayloadBytes bytes with
             | Error _ -> Error CoreFault.StoreIntegrityError
             | Ok value ->
                 if

@@ -1,9 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup>
+    <Compile Include="SchemaSupport.fs" />
     <Compile Include="Corpus.fs" />
+    <Compile Include="BrowserCorrelation.fs" />
+    <Compile Include="BrowserBuilders.fs" />
+    <Compile Include="BrowserArtifacts.fs" />
+    <Compile Include="NativeCatalogue.fs" />
+    <Compile Include="ContractExtension.fs" />
+    <Compile Include="ArtifactPublication.fs" />
     <Compile Include="Artifacts.fs" />
     <Compile Include="Program.fs" />
+    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup><ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" /></ItemGroup>
 </Project>

@@ -1,14 +1,18 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
-open ClaimCore.Contracts
+open ClaimCore.ClientContract
 
 /// A successful flush clears the current frame's dispatch knowledge.
 type FrameDelivery(output: Stream, errors: Stream) =
     let gate = obj ()
     let mutable interrupted = false
     let mutable potentiallyChanged = false
+    let mutable dispatched = false
+    let mutable pending: ProtocolInvocation option = None
 
     let advance action =
         lock gate (fun () ->
@@ -18,10 +22,19 @@ type FrameDelivery(output: Stream, errors: Stream) =
             action ())
 
     member _.BeginFrame() =
-        advance (fun () -> potentiallyChanged <- false)
+        advance (fun () ->
+            potentiallyChanged <- false
+            dispatched <- false
+            pending <- None)
+
+    member _.Prepare frame =
+        advance (fun () -> pending <- Some frame)
 
     member _.BeforeDispatch frame =
-        advance (fun () -> potentiallyChanged <- (Frames.endpoint frame).Mutates)
+        advance (fun () ->
+            potentiallyChanged <- (Frames.endpoint frame).Mutates
+            dispatched <- true
+            pending <- Some frame)
 
     member _.Write(reply: CliReply) =
         advance ignore
@@ -36,15 +49,28 @@ type FrameDelivery(output: Stream, errors: Stream) =
             if potentiallyChanged then 4 else 130)
 
     member _.Failure(error: exn) =
-        let uncertain = lock gate (fun () -> potentiallyChanged)
+        let uncertain, sent = lock gate (fun () -> potentiallyChanged, dispatched)
 
         let reply =
             if uncertain then
-                CliReply.unknown (CliReply.local ClientFailure.Unavailable)
+                let reply = CliReply.unknown (CliReply.local ClientFailure.Unavailable)
+
+                match pending with
+                | Some frame -> CliReply.forAttempt frame "UNCONFIRMED" reply
+                | None -> reply
             elif error :? OperationCanceledException then
                 CliReply.local ClientFailure.Cancelled
             else
                 CliReply.local ClientFailure.Unexpected
+
+        let reply =
+            match pending with
+            | Some frame when not uncertain ->
+                CliReply.forAttempt
+                    frame
+                    (DeliveryPolicy.missing sent (Frames.endpoint frame).Mutates)
+                    reply
+            | _ -> reply
 
         try
             errors.Write reply.Bytes

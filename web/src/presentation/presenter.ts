@@ -1,3 +1,4 @@
+import { productMetadata } from "@contracts/product-metadata";
 import correctionTargets from "./generated/correction-targets.json";
 import type { Notice } from "../api/notices";
 import type { FieldDescriptor } from "../api/service";
@@ -9,11 +10,19 @@ import type { MessageKey, Values } from "./types";
 
 const metadata = (
   preferences: Preferences,
-  owner: "field" | "command" | "group",
+  owner: "field" | "command" | "group" | "authority",
   name: string,
   part: "label" | "meaning",
 ): string => {
   const key = `${owner}.${name}.${part}`;
+  if (owner === "field" && part === "label") {
+    const field = productMetadata.descriptors.authorityFields.find(
+      (candidate) => candidate.name === name,
+    );
+    if (field !== undefined) {
+      return renderKey(preferences, field.labelId);
+    }
+  }
   if (hasMessage(key)) {
     return renderKey(preferences, key);
   }
@@ -84,6 +93,7 @@ export const createPresenter = (preferences: Preferences) => ({
   },
   fieldLabel: (name: string) => metadata(preferences, "field", name, "label"),
   fieldMeaning: (name: string) => metadata(preferences, "field", name, "meaning"),
+  authorityLabel: (name: string) => metadata(preferences, "authority", name, "label"),
   commandLabel: (name: string) => metadata(preferences, "command", name, "label"),
   commandMeaning: (name: string) => metadata(preferences, "command", name, "meaning"),
   groupLabel: (name: string) => metadata(preferences, "group", name, "label"),

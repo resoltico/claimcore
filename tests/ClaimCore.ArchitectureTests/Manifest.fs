@@ -1,6 +1,7 @@
 module internal ClaimCore.ArchitectureTests.Manifest
 
 open System.IO
+open System.Diagnostics
 open System.Text.Json
 open System.Xml.Linq
 
@@ -76,3 +77,57 @@ let references path =
 
         (Path.GetFileNameWithoutExtension target |> nonNull))
     |> Set.ofSeq
+
+/// Resolve SDK/imported project edges and the actual admitted compiler assembly paths.
+let private evaluatedItems path name target =
+    let start =
+        ProcessStartInfo(
+            "dotnet",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        )
+
+    let arguments =
+        [
+            "msbuild"
+            path
+            "-nologo"
+            "-verbosity:quiet"
+            "-property:BuildProjectReferences=false"
+            "-getItem:" + name
+        ]
+
+    for argument in
+        arguments
+        @ (target
+           |> Option.map (fun value -> [ "-target:" + value ])
+           |> Option.defaultValue []) do
+        start.ArgumentList.Add argument
+
+    use child = Process.Start start |> nonNull
+    let output = child.StandardOutput.ReadToEndAsync()
+    let errors = child.StandardError.ReadToEndAsync()
+
+    if not (child.WaitForExit 30000) then
+        child.Kill true
+        invalidOp ("Reference evaluation timed out: " + path)
+
+    if child.ExitCode <> 0 then
+        invalidOp ("Reference evaluation failed: " + path + " " + errors.Result)
+
+    use document = JsonDocument.Parse output.Result
+
+    document.RootElement.GetProperty("Items").GetProperty(name).EnumerateArray()
+    |> Seq.map (fun item ->
+        item.GetProperty("FullPath").GetString()
+        |> nonNull
+        |> Path.GetFileNameWithoutExtension
+        |> nonNull)
+    |> Set.ofSeq
+
+let evaluatedReferences path =
+    evaluatedItems path "ProjectReference" None
+
+let resolvedReferences path =
+    evaluatedItems path "ReferencePath" (Some "ResolveReferences")

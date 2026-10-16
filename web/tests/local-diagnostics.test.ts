@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { isHostFailure } from "../src/api/responseGuards";
+import { isHostFailure } from "@contracts/browser-contract";
 import { hostCases } from "./contract-corpus.fixtures";
 it("host failures bind actual HTTP status and forbid extra diagnostic parameters", () => {
   for (const c of hostCases()) {

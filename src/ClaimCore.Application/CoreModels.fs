@@ -13,10 +13,21 @@ type RuntimeContext =
         TimeZoneId: string
     }
 
+type InputChoiceOffer = { Input: string; Values: string list }
+
+type OperationOffer =
+    {
+        Definition: string
+        CaseReference: string option
+        ExpectedRevision: int64 option
+        Choices: InputChoiceOffer list
+    }
+
 type ActorContext =
     {
         Runtime: RuntimeContext
         Capabilities: Capability list
+        Offers: OperationOffer list
     }
 
 /// Admission vocabulary shared by persistence and the composition root.
@@ -71,6 +82,8 @@ type CaseReadModel =
     {
         Snapshot: CaseSnapshot
         AvailableActs: CaseActKind list
+        Offers: OperationOffer list
+        HistoryDetails: string list
     }
 
 [<RequireQualifiedAccess>]
@@ -91,6 +104,7 @@ type CaseListRequest =
 type CaseSummaryPage =
     {
         Items: CaseSummary list
+        Offers: OperationOffer list
         NextCursor: string option
     }
 
@@ -136,17 +150,30 @@ type AuthorityListRequest =
 
 type AuthorityGrant = { Role: Role; Scope: GrantTarget }
 
-type ActorReview =
+type ActorSummary =
     {
         ActorId: Guid
         Principal: PrincipalKey
         Enabled: bool
-        Grants: AuthorityGrant list
     }
 
 type ActorReviewPage =
     {
-        Items: ActorReview list
+        Items: ActorSummary list
+        NextCursor: string option
+    }
+
+type AuthorityGrantListRequest =
+    {
+        ActorId: Guid
+        AfterCursor: string option
+        Limit: int
+    }
+
+type AuthorityGrantPage =
+    {
+        Actor: ActorSummary
+        Items: AuthorityGrant list
         NextCursor: string option
     }
 
@@ -214,3 +241,6 @@ type IActorClaimsCore =
 
     abstract ListActors:
         AuthorityListRequest * CancellationToken -> Task<QueryOutcome<ActorReviewPage>>
+
+    abstract ListGrants:
+        AuthorityGrantListRequest * CancellationToken -> Task<QueryOutcome<AuthorityGrantPage>>

@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open ClaimCore.Domain
 
 /// Wire validation projects permanent format only. Admission policy is a descriptor hint.
@@ -42,4 +44,4 @@ module internal ScalarSchemas =
                 |> List.map (CaseStatuses.token >> TextConstant)
                 |> Schema.enumeration
 
-        Schema.scalarDiagnostics rule [] schema
+        schema

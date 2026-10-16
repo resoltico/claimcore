@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open WireSchema
 
 module internal FrameSchemas =
@@ -32,6 +34,41 @@ module internal FrameSchemas =
                     (Schema.string None (Some "^/(?:input|outcome|endpoint)?$") (Some 1) (Some 9))
             ]
 
+    let private delivery =
+        [
+            property "operationId" (Schema.nullable ScalarSchemas.uuid)
+            property
+                "attemptKnowledge"
+                (enumeration
+                    [
+                        "NOT_SENT"
+                        "READ_SUCCEEDED"
+                        "READ_FAILED"
+                        "ACCEPTED"
+                        "NOT_ACCEPTED"
+                        "UNCONFIRMED"
+                    ])
+            property
+                "resolutionEvidence"
+                (enumeration [ "NONE"; "CONTENT_ACCEPTED"; "CONTENT_EXCLUDED" ])
+        ]
+
+    let private delivered schema =
+        match schema with
+        | ObjectSchema value ->
+            let properties =
+                value.Properties
+                |> List.filter (fun item -> item.Name <> "diagnosticId" && item.Name <> "path")
+
+            let endpoint =
+                if properties |> List.exists (fun item -> item.Name = "endpoint") then
+                    []
+                else
+                    [ property "endpoint" (Schema.nullable text) ]
+
+            Schema.objectOf false (properties @ endpoint @ delivery)
+        | _ -> invalidArg "schema" "A frame must be an object."
+
     let response entries =
         let results =
             entries
@@ -50,17 +87,9 @@ module internal FrameSchemas =
                     [
                         property "kind" (token "serviceFailure")
                         property "endpoint" (token id)
-                        property
-                            "failure"
-                            (objectOf
-                                [
-                                    property
-                                        "code"
-                                        (HostFailures.all
-                                         |> List.map HostFailures.code
-                                         |> List.distinct
-                                         |> enumeration)
-                                ])
+                        property "failure" HostFailures.schema.Root
                     ])
 
-        Schema.oneOf (results @ failures @ [ localFailure; protocolFailure ])
+        results @ failures @ [ localFailure; protocolFailure ]
+        |> List.map delivered
+        |> Schema.oneOf

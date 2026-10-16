@@ -560,10 +560,159 @@ let private foldedOrdering fixture =
             "Continuation uses the same order"
     }
 
+let private scopedHandler fixture (admin: IActorClaimsCore) reference =
+    task {
+        let target =
+            PrincipalKey.service "https://issuer.example/" "scoped-handler"
+            |> Result.defaultWith failtest
+
+        let! registered =
+            admin.ExecuteAuthority(
+                authorityRequest (id 30) target AuthorityAct.RegisterActor,
+                CancellationToken.None
+            )
+
+        acceptedAuthority registered
+
+        let! granted =
+            grant admin (id 31) target Role.CaseHandler (GrantTarget.CaseReference reference) true
+
+        acceptedAuthority granted
+        return target, core fixture target
+    }
+
+let private checkScopedAdvice (actor: IActorClaimsCore) reference =
+    task {
+        let! result = actor.Get(reference, CancellationToken.None)
+
+        match result with
+        | QueryOutcome.Succeeded value ->
+            Expect.equal
+                value.HistoryDetails
+                [ "SUMMARY"; "FULL" ]
+                "Case-scoped full history is advised"
+
+            let correction =
+                value.Offers |> List.find (fun offer -> offer.Definition = "CORRECT_CASE")
+
+            Expect.equal correction.ExpectedRevision (Some 2L) "Advice binds the actual revision"
+
+            let payment =
+                correction.Choices |> List.find (fun choice -> choice.Input = "groups.payment")
+
+            Expect.equal
+                payment.Values
+                [ "KEEP" ]
+                "Absent payment and absent capability require explicit KEEP"
+        | _ -> failtest "Expected readable scoped case"
+    }
+
+let private advisedCase fixture reference =
+    task {
+        let! admin = caseWorker fixture
+
+        let! opened =
+            admin.Execute(
+                request 20 reference 0L (BusinessCommand.Open registration),
+                CancellationToken.None
+            )
+
+        accepted opened |> ignore
+
+        let decision =
+            {
+                PaymentDecisionDate = "2026-08-15"
+                PayableAmount = "750.0000"
+                PayableCurrency = "EUR"
+            }
+
+        let! decided =
+            admin.Execute(
+                request 21 reference 1L (BusinessCommand.Decide decision),
+                CancellationToken.None
+            )
+
+        accepted decided |> ignore
+        return admin
+    }
+
+let private refusedAdvice fixture (actor: IActorClaimsCore) pending =
+    task {
+        let! refused = actor.Execute(pending, CancellationToken.None)
+
+        Expect.equal
+            refused
+            (ExecuteOutcome.Rejected Rejection.ActNotPermitted)
+            "Revocation is decided again under lock"
+
+        let! current = actor.Get(pending.CaseReference, CancellationToken.None)
+
+        match current with
+        | QueryOutcome.Succeeded value ->
+            Expect.equal value.Snapshot.Revision 2L "Refusal preserves the projection"
+
+            Expect.equal
+                value.HistoryDetails
+                [ "SUMMARY" ]
+                "Fresh advice reflects revoked full history"
+
+            Expect.isFalse
+                (value.Offers |> List.exists (fun offer -> offer.Definition = "CORRECT_CASE"))
+                "No stale act offer"
+        | _ -> failtest "Reader remains authorized"
+
+        let! entries = history fixture pending.CaseReference 0L 50
+
+        Expect.equal
+            (storedPage entries).Entries.Length
+            2
+            "Revoked execution appends no case acceptance"
+    }
+
+let private revokedAdvice fixture =
+    task {
+        let reference = "SCOPED-ADVICE"
+        let! admin = advisedCase fixture reference
+        let! target, actor = scopedHandler fixture admin reference
+        do! checkScopedAdvice actor reference
+
+        let correction =
+            {
+                Registration =
+                    RegistrationCorrection.Replace
+                        { registration with
+                            ClaimedAmount = "1001.0000"
+                        }
+                Decision = DecisionCorrection.Keep
+                Payment = PaymentCorrection.Keep
+            }
+
+        let pending = request 35 reference 2L (BusinessCommand.CorrectCase correction)
+        let! preview = actor.Preview(pending, CancellationToken.None)
+
+        match preview with
+        | PreviewOutcome.Reviewed _ -> ()
+        | _ -> failtest "Expected authoritative correction review"
+
+        let! removed =
+            grant admin (id 32) target Role.CaseHandler (GrantTarget.CaseReference reference) false
+
+        acceptedAuthority removed
+
+        let! reader =
+            grant admin (id 33) target Role.CaseReader (GrantTarget.CaseReference reference) true
+
+        acceptedAuthority reader
+        do! refusedAdvice fixture actor pending
+    }
+
 let internal tests factory =
     testList
         "ledger store contract"
         [
+            testCaseAsync
+                "scoped advice and preview never authorize execution after revocation"
+                (withFixture factory revokedAdvice)
             testCaseAsync
                 "genesis append loads one view and co-commits authority"
                 (withFixture factory genesis)

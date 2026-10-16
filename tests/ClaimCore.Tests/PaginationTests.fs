@@ -6,6 +6,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.Tests.ApplicationFixtures
 
@@ -375,6 +376,277 @@ let private singleSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         | _ -> failtest "Authority review unavailable"
 
         Expect.equal proxy.ReadCalls 3 "Authority review performs no separate actor read"
+
+        let! grants =
+            actor.ListGrants(
+                {
+                    ActorId = id 1
+                    AfterCursor = None
+                    Limit = 1
+                },
+                CancellationToken.None
+            )
+
+        succeeded grants |> ignore
+        Expect.equal proxy.ReadCalls 4 "Target grant review performs no separate actor read"
+    }
+
+let private pageAdvice (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+    task {
+        let! admin = caseWorker fixture
+        do! cases admin
+        let! principal, actor = reader fixture admin
+
+        let! scoped =
+            grant
+                admin
+                (id 22)
+                principal
+                Role.CaseRegistrar
+                (GrantTarget.CaseReference "CASE-A")
+                true
+
+        acceptedAuthority scoped
+        let! readers = actor.List({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
+
+        Expect.isFalse
+            ((succeeded readers).Offers |> List.exists (fun o -> o.Definition = "OPEN"))
+            "Case-scoped registrar has no installation registration advice"
+
+        let! owners = admin.List({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
+        let offers = (succeeded owners).Offers |> List.map _.Definition
+        Expect.contains offers "OPEN" "Same-page authority supplies registration advice"
+        Expect.contains offers "authority.grants" "Authority read advice is owned by core"
+    }
+
+let private appendHistory (actor: IActorClaimsCore) =
+    task {
+        for revision in 1L .. 12L do
+            let act =
+                if revision % 2L = 1L then
+                    BusinessCommand.Close
+                else
+                    BusinessCommand.Reopen
+
+            let! result =
+                actor.Execute(
+                    request (20 + int revision) "LONG-HISTORY" revision act,
+                    CancellationToken.None
+                )
+
+            accepted result |> ignore
+
+    }
+
+let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+    task {
+        let! actor = caseWorker fixture
+        let! opened = actor.Execute(openRequest 10 "LONG-HISTORY", CancellationToken.None)
+        accepted opened |> ignore
+
+        do! appendHistory actor
+
+        let query =
+            {
+                CaseReference = "LONG-HISTORY"
+                AfterCursor = None
+                Limit = 50
+                Detail = HistoryDetail.Full
+            }
+
+        let! first = actor.History(query, CancellationToken.None)
+        let first = succeeded first
+        Expect.equal first.Entries.Length 10 "FULL effective limit is ten"
+
+        let! rest =
+            actor.History(
+                { query with
+                    AfterCursor = first.NextCursor
+                },
+                CancellationToken.None
+            )
+
+        let rest = succeeded rest
+
+        let revision =
+            function
+            | HistoryEntry.FullEntry r ->
+                match r.Scope with
+                | ReceiptScope.Case c -> c.Revision
+                | _ -> failtest "case"
+            | _ -> failtest "full"
+
+        Expect.equal
+            (rest.Entries |> List.map revision)
+            [ 11L; 12L; 13L ]
+            "Continuation follows last included row"
+
+        let! summary =
+            actor.History(
+                { query with
+                    Detail = HistoryDetail.Summary
+                },
+                CancellationToken.None
+            )
+
+        Expect.equal (succeeded summary).Entries.Length 13 "SUMMARY retains its larger capacity"
+    }
+
+let private disabledGrantTarget
+    (store: MemoryLedgerStore.Store)
+    (admin: IActorClaimsCore)
+    target
+    (query: AuthorityGrantListRequest)
+    cursor
+    =
+    task {
+        let! crossed =
+            admin.ListGrants(
+                { query with
+                    ActorId = id 1
+                    AfterCursor = cursor
+                },
+                CancellationToken.None
+            )
+
+        Expect.equal crossed (QueryOutcome.Rejected Rejection.InvalidCursor) "Cursor binds target"
+
+        let! disabled =
+            admin.ExecuteAuthority(
+                authorityRequest (id 31) target (AuthorityAct.SetEnabled false),
+                CancellationToken.None
+            )
+
+        acceptedAuthority disabled
+        let! visible = admin.ListGrants(query, CancellationToken.None)
+        Expect.isFalse (succeeded visible).Actor.Enabled "Disabled targets remain reviewable"
+        store.Instant <- instant.AddMinutes 15.0
+
+        let! expired =
+            admin.ListGrants({ query with AfterCursor = cursor }, CancellationToken.None)
+
+        Expect.equal
+            expired
+            (QueryOutcome.Rejected Rejection.InvalidCursor)
+            "Grant cursor lifetime is enforced"
+    }
+
+let private grantBinding (store: MemoryLedgerStore.Store) (fixture: Fixture) =
+    task {
+        let! admin = caseWorker fixture
+        do! cases admin
+        let! target, _ = reader fixture admin
+
+        let! added =
+            grant admin (id 30) target Role.CaseReader (GrantTarget.CaseReference "CASE-A") true
+
+        acceptedAuthority added
+
+        let! actors =
+            admin.ListActors({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
+
+        let targetId =
+            (succeeded actors).Items
+            |> List.find (fun a -> a.Principal = target)
+            |> _.ActorId
+
+        let query =
+            {
+                ActorId = targetId
+                AfterCursor = None
+                Limit = 1
+            }
+
+        let! first = admin.ListGrants(query, CancellationToken.None)
+        let first = succeeded first
+
+        Expect.equal
+            first.Items
+            [
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.CaseReference "case-A"
+                }
+            ]
+            "Case UUIDs precede installation-null within role"
+
+        let! next =
+            admin.ListGrants(
+                { query with
+                    AfterCursor = first.NextCursor
+                },
+                CancellationToken.None
+            )
+
+        Expect.equal
+            (succeeded next).Items
+            [
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+            ]
+            "NULLS LAST position is distinct"
+
+        do! disabledGrantTarget store admin target query first.NextCursor
+    }
+
+let private invalidGrantPositions =
+    [
+        GrantCursorPosition.encode "NOT_A_ROLE" None
+        GrantCursorPosition.encode "CASE_READER" (Some(Guid.Empty.ToString("D")))
+        GrantCursorPosition.encode "CASE_READER" (Some "A0000000-0000-4000-8000-000000000001")
+        "{ \"caseId\":null,\"role\":\"CASE_READER\"}"
+        "{\"caseId\":null,\"role\":\"CASE_READER\",\"extra\":false}"
+    ]
+
+
+let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+    task {
+        let! admin = caseWorker fixture
+        let! view = fixture.Store.ReadActor(owner, CancellationToken.None)
+        let view = view |> Result.defaultWith (fun _ -> failtest "Caller authority")
+        let authority = view.Actor |> Option.get
+
+        for position in invalidGrantPositions do
+            let cursor =
+                Cursors.encode
+                    cursorKey
+                    installation
+                    authority
+                    (CursorQuery.Grants authority.ActorId)
+                    view.ObservedAt
+                    position
+
+            let! refused =
+                admin.ListGrants(
+                    {
+                        ActorId = authority.ActorId
+                        AfterCursor = Some cursor
+                        Limit = 50
+                    },
+                    CancellationToken.None
+                )
+
+            Expect.equal
+                refused
+                (QueryOutcome.Rejected Rejection.InvalidCursor)
+                "An authentic envelope does not admit an invalid grant position"
+
+        let! invalidLimit =
+            admin.ListGrants(
+                {
+                    ActorId = authority.ActorId
+                    AfterCursor = None
+                    Limit = 51
+                },
+                CancellationToken.None
+            )
+
+        Expect.equal
+            invalidLimit
+            (QueryOutcome.Rejected(Rejection.PageLimitOutOfRange 50))
+            "Public grant page is bounded"
     }
 
 [<Tests>]
@@ -382,6 +654,16 @@ let tests =
     testList
         "authorized continuation pages"
         [
+            testCaseAsync
+                "signed grant positions retain primitive and semantic admission"
+                (run grantCursorRejections)
+            testCaseAsync "case pages carry same-snapshot owned advice" (run pageAdvice)
+            testCaseAsync
+                "FULL history uses ten and continues after its last included revision"
+                (run fullHistoryLimit)
+            testCaseAsync
+                "grant pages bind target preserve null ordering and review disabled targets"
+                (run grantBinding)
             testCaseAsync
                 "case continuation preserves key order and permits changed page sizes"
                 (run caseLimits)

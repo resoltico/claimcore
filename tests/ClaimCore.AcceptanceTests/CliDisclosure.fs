@@ -1,0 +1,132 @@
+module internal ClaimCore.AcceptanceTests.CliDisclosure
+
+open System
+open System.IO
+open System.Text
+open System.Text.Json
+open System.Text.Json.Nodes
+open Expecto
+open CliCalls
+
+let private original (fixture: PublishedFixture.Fixture) =
+    let source =
+        JsonNode.Parse(File.ReadAllBytes(Path.Combine(fixture.Root, "examples/01-open.json")))
+        |> nonNull
+
+    let input = source["input"] |> nonNull
+    let reference = "CLI-DISCLOSURE-" + id ()
+    input["operationId"] <- JsonValue.Create(id ())
+    input["caseReference"] <- JsonValue.Create reference
+    Encoding.UTF8.GetBytes(source.ToJsonString()), input, reference
+
+let private amend (input: JsonNode) =
+    let pending = input.DeepClone()
+    pending["operationId"] <- JsonValue.Create(id ())
+    pending["expectedRevision"] <- JsonValue.Create 1L
+    let act = pending["act"] |> nonNull
+    act["kind"] <- JsonValue.Create "AMEND_REGISTRATION"
+    let values = act["values"] |> nonNull
+    values["claimedAmount"] <- JsonValue.Create "2.0000"
+    pending
+
+let private staleReview fixture input reference =
+    let pending = amend input
+    automation fixture "case.preview" pending 0 |> require "REVIEWED" |> ignore
+
+    let close =
+        {|
+            operationId = id ()
+            caseReference = reference
+            expectedRevision = 1L
+            act = {| kind = "CLOSE" |}
+        |}
+
+    automation fixture "case.execute" close 0 |> require "ACCEPTED" |> ignore
+    let refused = automation fixture "case.execute" pending 2 |> require "REJECTED"
+
+    Expect.equal
+        (refused.GetProperty("diagnostic").GetProperty("id").GetString())
+        "CASE_REVISION_CONFLICT"
+        "Preview cannot authorize a stale write"
+
+    Expect.equal
+        (refused.GetProperty("actualRevision").GetInt64())
+        2L
+        "Current revision is authoritative"
+
+let private withheld expected reply =
+    let receipt = require expected reply
+
+    Expect.equal
+        (receipt.GetProperty("snapshot").GetProperty("tag").GetString())
+        "WITHHELD"
+        "Superseded business snapshot requires current full-history permission"
+
+    Expect.equal
+        (receipt.GetProperty("snapshot").EnumerateObject() |> Seq.length)
+        1
+        "Withheld never synthesizes or leaks business values"
+
+let private summaryHistory fixture reference =
+    let history =
+        automation
+            fixture
+            "case.history"
+            {|
+                caseReference = reference
+                detail = "SUMMARY"
+                limit = 50
+            |}
+            0
+        |> require "SUCCEEDED"
+
+    Expect.equal
+        (history.GetProperty("entries").GetArrayLength())
+        2
+        "Stale execution and replays add no accepted entries"
+
+    automation
+        fixture
+        "case.history"
+        {|
+            caseReference = reference
+            detail = "FULL"
+            limit = 50
+        |}
+        2
+    |> require "REJECTED"
+    |> ignore
+
+
+let qualify fixture =
+    let source, input, reference = original fixture
+    let accepted = run fixture fixture.Environment source 0 |> require "ACCEPTED"
+    staleReview fixture input reference
+    let target = principal fixture "SERVICE" "service"
+    setGrant fixture target "CASE_REGISTRAR" true
+    setGrant fixture target "CASE_HANDLER" false
+
+    let current =
+        automation fixture "case.get" {| caseReference = reference |} 0
+        |> require "SUCCEEDED"
+
+    Expect.equal
+        (current.GetProperty("revision").GetInt64())
+        2L
+        "Current snapshot remains disclosed"
+
+    Expect.equal
+        (current.GetProperty("historyDetails").GetArrayLength())
+        1
+        "Revoked full history disappears from scoped advice"
+
+    run fixture fixture.Environment source 0 |> withheld "ALREADY_ACCEPTED"
+    automation fixture "case.preview" input 0 |> withheld "ALREADY_ACCEPTED"
+    let operationId = accepted.GetProperty("operationId").GetString() |> nonNull
+
+    automation fixture "operation.observe" {| operationId = operationId |} 0
+    |> withheld "SUCCEEDED"
+
+    summaryHistory fixture reference
+    setGrant fixture target "CASE_HANDLER" true
+    setGrant fixture target "CASE_REGISTRAR" false

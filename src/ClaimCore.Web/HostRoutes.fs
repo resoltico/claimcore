@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Security.Claims
@@ -12,8 +14,7 @@ open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
 open Microsoft.AspNetCore.StaticFiles
 open Microsoft.Extensions.DependencyInjection
-open ClaimCore.Application
-open ClaimCore.Contracts
+open ClaimCore.Hosting
 
 module HostRoutes =
     let internal loginReturnProperties () =
@@ -41,7 +42,7 @@ module HostRoutes =
                 return
                     RouteSupport.outcome
                         "session"
-                        (OutcomeCodec.session authenticated token)
+                        (ServiceGateway.session authenticated token)
                         context
         }
 
@@ -62,7 +63,7 @@ module HostRoutes =
                         match! HttpBody.readRequest 1024 context with
                         | Error problem -> return RouteSupport.inputFailure context problem
                         | Ok bytes ->
-                            match EndpointCatalog.admitRequest "session.logout" bytes with
+                            match ServiceGateway.admit "session.logout" bytes with
                             | Error problem -> return RouteSupport.inputFailure context problem
                             | Ok _ ->
                                 do!
@@ -75,7 +76,7 @@ module HostRoutes =
                                 return
                                     RouteSupport.outcome
                                         "session.logout"
-                                        (OutcomeCodec.logout ())
+                                        (ServiceGateway.logout ())
                                         context
                 | _ -> return RouteSupport.hostFailure context HostFailure.SessionRejected
         }
@@ -104,7 +105,7 @@ module HostRoutes =
 
             if context.Request.Path.StartsWithSegments(PathString "/api") then
                 let known =
-                    EndpointCatalog.all
+                    ServiceGateway.endpoints
                     |> List.exists (fun endpoint ->
                         Some endpoint.Path = Option.ofObj context.Request.Path.Value)
 
@@ -123,12 +124,7 @@ module HostRoutes =
                         context
         }
 
-    let map
-        assets
-        configuration
-        (forActor: PrincipalKey -> IActorClaimsCore)
-        (application: WebApplication)
-        =
+    let map assets configuration (service: IProtocolService) (application: WebApplication) =
         let files = StaticFileOptions()
 
         files.OnPrepareResponse <-
@@ -137,12 +133,12 @@ module HostRoutes =
         application.UseDefaultFiles() |> ignore
         application.UseStaticFiles files |> ignore
 
-        for endpoint in EndpointCatalog.all do
+        for endpoint in ServiceGateway.endpoints do
             let handler =
                 match endpoint.Identifier with
                 | "session" -> session configuration
                 | "session.logout" -> logout configuration
-                | _ -> ApiRoutes.handle endpoint configuration forActor
+                | _ -> ApiRoutes.handle endpoint configuration service
 
             let exact (context: HttpContext) =
                 if Option.ofObj context.Request.Path.Value <> Some endpoint.Path then

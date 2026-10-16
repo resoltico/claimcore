@@ -1,48 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { writeFile } from "node:fs/promises";
-
 import { expect, test, type Page } from "@playwright/test";
 
+import { noHorizontalOverflow } from "./layout-support";
 import { reviewDraft, startOpen } from "./case-workflow";
 import { expectAccessible, login, progress } from "./session-helpers";
 
 test.use({ storageState: { cookies: [], origins: [] } });
-
-const assertNarrowLayout = async (page: Page, stage: "login" | "cases" | "zoom"): Promise<void> => {
-  const metrics = await page.evaluate(() => {
-    const { clientWidth } = document.documentElement;
-    const offenders = [...document.querySelectorAll("*")]
-      .map((element) => ({ element, rect: element.getBoundingClientRect() }))
-      .filter(({ rect }) => rect.right > clientWidth + 1)
-      .slice(0, 5)
-      .map(({ element, rect }) => ({
-        tag: element.tagName.toLowerCase(),
-        className: typeof element.className === "string" ? element.className : "",
-        left: Math.round(rect.left),
-        right: Math.round(rect.right),
-        width: Math.round(rect.width),
-      }));
-    return {
-      clientWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-      bodyWidth: Math.round(document.body.getBoundingClientRect().width),
-      offenders,
-    };
-  });
-  if (metrics.scrollWidth <= metrics.clientWidth + 1) {
-    return;
-  }
-  const safe = metrics.offenders.map(({ tag, className, left, right, width }) => {
-    const name = className.replace(/[^a-zA-Z0-9_-]/gu, "").slice(0, 40);
-    return { tag, className: name, left, right, width };
-  });
-  const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"];
-  if (engine !== undefined && ["chromium", "firefox", "webkit"].includes(engine)) {
-    const report = new URL(`../../artifacts/browser/layout-${engine}.json`, import.meta.url);
-    await writeFile(report, `${JSON.stringify({ stage, ...metrics, offenders: safe })}\n`);
-  }
-  throw new Error(`E2E_NARROW_${stage.toUpperCase()}_OVERFLOW`);
-};
 
 const openAccessibleLogin = async (page: Page): Promise<void> => {
   await progress("a11y-body-start");
@@ -62,11 +25,11 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await openAccessibleLogin(page);
   await progress("a11y-login");
   await expectAccessible(page);
-  await assertNarrowLayout(page, "login");
+  await noHorizontalOverflow(page, "login");
   await login(page);
   await progress("a11y-cases");
   await expectAccessible(page);
-  await assertNarrowLayout(page, "cases");
+  await noHorizontalOverflow(page, "cases");
   await startOpen(page, caseReference);
   await progress("a11y-editor");
   await expectAccessible(page);
@@ -93,7 +56,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
     document.documentElement.style.zoom = "2";
   });
   await progress("a11y-zoom");
-  await assertNarrowLayout(page, "zoom");
+  await noHorizontalOverflow(page, "zoom");
   await page.context().clearCookies();
   await page.reload({ waitUntil: "commit" });
   await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();

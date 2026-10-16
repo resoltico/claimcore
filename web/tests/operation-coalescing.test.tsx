@@ -7,6 +7,13 @@ import { definition, fields, digest, response, runtime } from "./service-ui.fixt
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
+  offers: ["CLOSE"].map((identifier) => ({
+    definition: identifier,
+    caseReference: null,
+    expectedRevision: null,
+    choices: [],
+  })),
+  historyDetails: ["SUMMARY", "FULL"],
   state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
 };
 
@@ -38,7 +45,20 @@ it("coalesces duplicate digest activation while retention is pending", async () 
     finish?.(
       response("case.preview", "REVIEWED", {
         requestSha256: digest,
-        review: { before: current, after: current, changes: [], context: runtime },
+        review: {
+          before: {
+            caseReference: current.caseReference,
+            revision: 1,
+            state: { tag: "LIVE", disposition: "ACTIVE", fields },
+          },
+          after: {
+            caseReference: current.caseReference,
+            revision: 2,
+            state: { tag: "LIVE", disposition: "ACTIVE", fields },
+          },
+          changes: [],
+          context: runtime,
+        },
       }),
     );
     await first;

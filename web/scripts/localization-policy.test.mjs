@@ -72,6 +72,32 @@ test("catalog admission refuses duplicate JSON keys, non-object inputs and cross
   assert.deepEqual(merged, { "ui.a": "safe" });
 });
 
+test("catalog structural admission accepts Message values and refuses malformed parts", () => {
+  const source = '{"ui.text":"safe","ui.parts":[{"literal":"Value "},{"hole":"identity"}]}';
+  assert.deepEqual(readCatalog(source), {
+    "ui.text": "safe",
+    "ui.parts": [{ literal: "Value " }, { hole: "identity" }],
+  });
+  for (const value of [
+    42,
+    null,
+    {},
+    ["literal"],
+    [{ literal: 1 }],
+    [{ hole: null }],
+    [{ literal: "safe", hole: "identity" }],
+    [{ __proto__: { literal: "safe" } }],
+  ]) {
+    assert.throws(() => readCatalog(JSON.stringify({ "ui.invalid": value })));
+  }
+  const keyed = readCatalog('{"__proto__":"safe"}');
+  assert.ok(Object.hasOwn(keyed, "__proto__"));
+  assert.equal(Object.getPrototypeOf(keyed), Object.prototype);
+  assert.throws(() => addDomain({}, keyed, "ui"));
+  const empty = readCatalog('{"ui.empty":[]}');
+  assert.throws(() => messageShape(empty["ui.empty"], "en"));
+});
+
 test("catalog changes cannot silently lose keys, arguments or their closed roles", () => {
   const en = { "ui.notice": "Request {identity}" };
   for (const altered of [

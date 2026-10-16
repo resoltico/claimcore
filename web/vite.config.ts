@@ -2,12 +2,12 @@ import { fileURLToPath } from "node:url";
 import { availableParallelism } from "node:os";
 import react from "@vitejs/plugin-react";
 import type { UserConfig } from "vite";
+import type { InlineConfig } from "vitest/node";
 import ContractFirstSequencer from "./scripts/contract-first-sequencer.mjs";
+import RequiredTestReporter from "./scripts/required-test-reporter.mjs";
 
 const testWorkers = Math.max(1, Math.min(6, Math.ceil(availableParallelism() / 3)));
 
-// Vitest 5.0.0's config declarations do not pass strict library checking. Vite-owned keys remain
-// context-checked here, and required zero-warning Vitest runs exercise the test block.
 export default {
   plugins: [react()],
   resolve: {
@@ -41,7 +41,9 @@ export default {
     pool: "vmThreads",
     include: ["tests/**/*.test.{ts,tsx}"],
     setupFiles: "./tests/setup.ts",
-    reporters: ["default"],
+    allowOnly: false,
+    retry: 0,
+    reporters: ["default", new RequiredTestReporter()],
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
@@ -49,4 +51,4 @@ export default {
       include: ["src/**/*.{ts,tsx}", "src/presentation/pseudolocalization.mjs"],
     },
   },
-} satisfies UserConfig & { test: unknown };
+} satisfies UserConfig & { test: InlineConfig };

@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
+    <Compile Include="../ProcessResolution.fs" Link="ProcessResolution.fs" />
+    <Compile Include="../ProcessSupervision.fs" Link="ProcessSupervision.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../FixtureDisposal.fs" Link="FixtureDisposal.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
@@ -11,24 +14,36 @@
     <Compile Include="FixtureFiles.fs" />
     <Compile Include="FixtureCleanup.fs" />
     <Compile Include="IdentityRealm.fs" />
+    <Compile Include="../IdentityReadiness.fs" Link="IdentityReadiness.fs" />
     <Compile Include="IdentityServer.fs" />
+    <Compile Include="IdentityReadinessTests.fs" />
+    <Compile Include="NativeNoticeManifest.fs" />
+    <Compile Include="NativeNoticeAssets.fs" />
+    <Compile Include="NativeNotices.fs" />
     <Compile Include="PublishedProcesses.fs" />
+    <Compile Include="NativeNoticeTests.fs" />
     <Compile Include="RedirectControl.fs" />
     <Compile Include="HttpsProxy.fs" />
+    <Compile Include="CommitReplyProxy.fs" />
     <Compile Include="PublishedFixture.fs" />
     <Compile Include="CliCalls.fs" />
     <Compile Include="CliSetupTests.fs" />
     <Compile Include="DifferentClient.fs" />
     <Compile Include="PublishedAssets.fs" />
     <Compile Include="RejectedDrafts.fs" />
+    <Compile Include="CliDelivery.fs" />
+    <Compile Include="CliDisclosure.fs" />
     <Compile Include="PublishedTests.fs" />
     <Compile Include="BrowserReadback.fs" />
     <Compile Include="BrowserProgress.fs" />
     <Compile Include="BrowserTests.fs" />
     <Compile Include="ProcessFailureTests.fs" />
+    <Compile Include="ProcessSupervisionTests.fs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ProcessResolutionFixture.fsx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Npgsql" />

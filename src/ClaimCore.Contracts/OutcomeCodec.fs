@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open System.Text
 open ClaimCore.Application
 open WireJson
@@ -20,6 +22,7 @@ module OutcomeCodec =
             obj
                 [
                     "items", value.Items |> List.map WireValues.summary |> array
+                    "offers", WireValues.offers value.Offers
                     "nextCursor", optional text value.NextCursor
                 ])
 
@@ -38,6 +41,15 @@ module OutcomeCodec =
             obj
                 [
                     "items", value.Items |> List.map WireValues.actor |> array
+                    "nextCursor", optional text value.NextCursor
+                ])
+
+    let grants =
+        query (fun (value: AuthorityGrantPage) ->
+            obj
+                [
+                    "actor", WireValues.actor value.Actor
+                    "items", value.Items |> List.map WireValues.grant |> array
                     "nextCursor", optional text value.NextCursor
                 ])
 
@@ -77,11 +89,21 @@ module OutcomeCodec =
 
     let logout () = tagged "SUCCEEDED" null
 
-    let encode endpoint outcome =
-        let bytes =
-            obj [ "endpoint", text endpoint; "outcome", outcome ]
-            |> fun value -> Encoding.UTF8.GetBytes(value.ToJsonString())
+    let private encodeEnvelope endpoint members =
+        let bytes = obj members |> fun value -> Encoding.UTF8.GetBytes(value.ToJsonString())
 
         match EndpointCatalog.admitResponse endpoint bytes with
         | Ok _ -> bytes
         | Error _ -> invalidArg "outcome" "The outcome does not satisfy the endpoint contract."
+
+    let encode endpoint outcome =
+        encodeEnvelope endpoint [ "endpoint", text endpoint; "outcome", outcome ]
+
+    let encodeOperation endpoint operationId outcome =
+        encodeEnvelope
+            endpoint
+            [
+                "endpoint", text endpoint
+                "operationId", uuid operationId
+                "outcome", outcome
+            ]

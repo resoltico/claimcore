@@ -7,6 +7,7 @@ type CommandDefinition =
         Label: string
         Meaning: string
         Inputs: CommandInputShape
+        ValuesMember: string option
     }
 
 module CommandDefinitions =
@@ -85,6 +86,7 @@ module CommandDefinitions =
             Label = label
             Meaning = meaning
             Inputs = inputs
+            ValuesMember = Some "values"
         }
 
     let private registrationDefinitions =
@@ -147,8 +149,31 @@ module CommandDefinitions =
                 (fields [])
         ]
 
+    let private stewardshipDefinitions =
+        [
+            definition
+                CaseActKind.Void
+                "Void case record"
+                "Block business commands while retaining the case and its history."
+                (fields [ blank "reason" ])
+            definition
+                CaseActKind.Reinstate
+                "Reinstate case record"
+                "Restore ordinary case work on a voided record."
+                (fields [ blank "reason" ])
+            definition
+                CaseActKind.Erase
+                "Erase case payload"
+                "Permanently remove business payload from the live database. WAL, backups and copies elsewhere are not erased."
+                (fields [])
+        ]
+        |> List.map (fun value -> { value with ValuesMember = None })
+
     let all =
-        registrationDefinitions @ [ correctionDefinition ] @ paymentAndStatusDefinitions
+        registrationDefinitions
+        @ [ correctionDefinition ]
+        @ paymentAndStatusDefinitions
+        @ stewardshipDefinitions
 
     let forKind kind =
         all |> List.find (fun definition -> definition.Kind = kind)

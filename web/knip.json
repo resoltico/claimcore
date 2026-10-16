@@ -4,7 +4,8 @@
     "src/**/*.{ts,tsx}",
     "tests/**/*.{ts,tsx}",
     "e2e/**/*.{ts,tsx,mjs}",
-    "scripts/**/*.mjs"
+    "scripts/**/*.mjs",
+    "../contracts/*.ts"
   ],
-  "entry": ["e2e/cli-pkce-driver.mjs"]
+  "entry": ["e2e/cli-pkce-driver.mjs", "../contracts/*.ts", "src/protocol/schema.ts"]
 }

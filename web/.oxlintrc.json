@@ -194,33 +194,33 @@
             "globals": [
               {
                 "name": "fetch",
-                "message": "Use the validated browser API boundary in src/api/service.ts."
+                "message": "Use the validated browser API boundary in src/api/transport.ts."
               },
               {
                 "name": "XMLHttpRequest",
-                "message": "Use the validated browser API boundary in src/api/service.ts."
+                "message": "Use the validated browser API boundary in src/api/transport.ts."
               },
               {
                 "name": "WebSocket",
-                "message": "Use the validated browser API boundary in src/api/service.ts."
+                "message": "Use the validated browser API boundary in src/api/transport.ts."
               },
               {
                 "name": "EventSource",
-                "message": "Use the validated browser API boundary in src/api/service.ts."
+                "message": "Use the validated browser API boundary in src/api/transport.ts."
               }
             ],
             "checkGlobalObject": true
           }
         ]
       },
-      "excludeFiles": ["src/api/service.ts"]
+      "excludeFiles": ["src/api/transport.ts"]
     },
     {
       "files": [
         "src/api/**/*.ts",
         "src/api/**/*.tsx",
-        "src/domain/**/*.ts",
-        "src/domain/**/*.tsx",
+        "src/interaction/**/*.ts",
+        "src/interaction/**/*.tsx",
         "src/hooks/**/*.ts",
         "src/hooks/**/*.tsx",
         "src/hooks/operation/operationDelivery.ts"
@@ -279,10 +279,10 @@
         ],
         "claimcore/no-presentation-import": "error"
       },
-      "excludeFiles": ["src/api/service.ts"]
+      "excludeFiles": ["src/api/transport.ts"]
     },
     {
-      "files": ["src/api/service.ts"],
+      "files": ["src/api/transport.ts"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -343,7 +343,7 @@
       }
     },
     {
-      "files": ["src/generated/**/*.ts", "src/generated/**/*.mts", "src/api/service.ts"],
+      "files": ["src/generated/**/*.ts", "src/generated/**/*.mts", "src/api/transport.ts"],
       "rules": {
         "typescript/no-unsafe-type-assertion": "off",
         "typescript/no-unnecessary-type-parameters": "off",

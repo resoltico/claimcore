@@ -99,8 +99,8 @@ jobs:
       - run: bash eng/verify.sh unit
 
   integration:
-    name: PostgreSQL ${{ matrix.major }} and web host tests
-    needs: [configuration, lint, unit, frontend]
+    name: PostgreSQL ${{ matrix.major }} store tests
+    needs: [configuration]
     strategy:
       fail-fast: true
       matrix: ${{ fromJSON(needs.configuration.outputs.postgresql) }}
@@ -115,7 +115,20 @@ jobs:
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
         with:
           node: "false"
-      - run: bash eng/verify.sh integration
+      - run: bash eng/verify.sh postgres
+
+  web:
+    name: Web host and identity tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+        with:
+          node: "false"
+      - run: bash eng/verify.sh web
 
   frontend:
     name: Frontend checks (SDK-free Node container)
@@ -126,13 +139,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Cache npm downloads for the SDK-free frontend # zizmor: ignore[cache-poisoning] -- npm verifies lockfile integrity; no build outputs cached.
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ${{ runner.temp }}/claimcore-npm-cache
+          key: frontend-npm-${{ runner.os }}-${{ hashFiles('.node-version', 'web/package-lock.json', 'deployment/Dockerfile') }}
       - name: Run frontend in the deployment Node image
         env:
           NODE_IMAGE: ${{ needs.configuration.outputs.node_image }}
         run: |
+          mkdir -p "${RUNNER_TEMP}/claimcore-npm-cache"
           docker run --rm --user "$(id -u):$(id -g)" \
             --env CI=true --env NO_COLOR=1 --env HOME=/tmp/claimcore-home \
             --env NPM_CONFIG_CACHE=/tmp/claimcore-npm-cache \
+            --volume "${RUNNER_TEMP}/claimcore-npm-cache:/tmp/claimcore-npm-cache" \
             --volume "$PWD:/workspace" --workdir /workspace "${NODE_IMAGE}" \
             bash -euo pipefail -c '
               mkdir -p "${HOME}"
@@ -149,7 +169,7 @@ jobs:
 
   acceptance:
     name: Published clients (${{ matrix.engine }}, ${{ matrix.scope }})
-    needs: [lint, unit, frontend]
+    needs: [frontend]
     strategy:
       fail-fast: true
       matrix:
@@ -167,17 +187,33 @@ jobs:
           CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ matrix.engine }}
           CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: ${{ matrix.scope }}
         run: bash eng/verify.sh browsers acceptance
-      - name: Report coverage scope
+      - name: Report browser execution
         env:
           BROWSER_ENGINE: ${{ matrix.engine }}
           BROWSER_SCOPE: ${{ matrix.scope }}
         run: |
-          printf 'Browser coverage: %s / %s. Smoke is not complete qualification.\n' "${BROWSER_ENGINE}" "${BROWSER_SCOPE}" >> "${GITHUB_STEP_SUMMARY}"
+          python3 - <<'PYTHON'
+          import json, os, pathlib
+          reports = list(pathlib.Path("artifacts/verification").glob("native.*/browser-*.json"))
+          if len(reports) != 1:
+              raise ValueError("Expected one completed browser engine report")
+          result = json.loads(reports[0].read_text())
+          if result["runId"] != reports[0].parent.name:
+              raise ValueError("Browser report belongs to another test run")
+          if result["engine"] != os.environ["BROWSER_ENGINE"] or result["scope"] != os.environ["BROWSER_SCOPE"]:
+              raise ValueError("Browser execution differs from scheduled scope")
+          if type(result["passed"]) is not int or result["passed"] < 1:
+              raise ValueError("Missing executed browser count")
+          message = f"Browser execution: {result['engine']} / {result['scope']}: {result['passed']} passed; {result['duration']}. Smoke is not complete qualification."
+          print(message)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(message + "\n")
+          PYTHON
 
   gate:
     name: Gate
     if: always()
-    needs: [configuration, lint, unit, integration, frontend, acceptance]
+    needs: [configuration, lint, unit, integration, web, frontend, acceptance]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

@@ -206,6 +206,12 @@
         "dependencies": {
           "BouncyCastle.Cryptography": "2.7.0"
         }
+      },
+      "claimcore.clientprotocol": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
       }
     }
   }

@@ -70,8 +70,17 @@ let private revocation (database: PostgresFixture.Database) =
             "Current grants are rechecked at the real database boundary"
     }
 
-type private PausedPageStore
+type internal PausedPageStore
     (inner: ILedgerStore, entered: TaskCompletionSource, release: ManualResetEventSlim) =
+    let paused select view =
+        let selected = select view
+        entered.TrySetResult() |> ignore
+
+        if not (release.Wait(TimeSpan.FromSeconds 3.0)) then
+            failtest "Page release was not signalled"
+
+        selected
+
     interface ILedgerStore with
         member _.WriteCase(principal, operationId, reference, decide, ct) =
             inner.WriteCase(principal, operationId, reference, decide, ct)
@@ -90,24 +99,43 @@ type private PausedPageStore
         member _.ReadHistory(principal, reference, select, limit, ct) =
             inner.ReadHistory(principal, reference, select, limit, ct)
 
+        member _.ListGrants(principal, target, select, limit, ct) =
+            inner.ListGrants(principal, target, paused select, limit, ct)
+
         member _.ListActors(principal, select, limit, ct) =
             inner.ListActors(principal, select, limit, ct)
 
         member _.ListCases(principal, select, limit, ct) =
-            let paused view =
-                let selected = select view
-                entered.TrySetResult() |> ignore
+            inner.ListCases(principal, paused select, limit, ct)
 
-                if not (release.Wait(TimeSpan.FromSeconds 3.0)) then
-                    failtest "Page release was not signalled"
+let private freshAdvice (actor: IActorClaimsCore) cursor current =
+    task {
+        Expect.isTrue
+            ((page current).Offers |> List.exists (fun o -> o.Definition = "OPEN"))
+            "Paused rows retain the same registrar snapshot advice"
 
-                selected
+        let! fresh = actor.List(query None 50, token)
 
-            inner.ListCases(principal, paused, limit, ct)
+        Expect.isFalse
+            ((page fresh).Offers |> List.exists (fun o -> o.Definition = "OPEN"))
+            "Fresh reader page has no OPEN advice"
+
+        let! next = actor.List(query cursor 50, token)
+
+        Expect.equal
+            next
+            (QueryOutcome.Rejected Rejection.InvalidCursor)
+            "Changed authority invalidates older continuation"
+    }
 
 let private snapshot (database: PostgresFixture.Database) =
     task {
         let! admin, principal, actor = setup database
+
+        let! promoted =
+            grant admin (id 30) principal Role.CaseRegistrar GrantTarget.Installation true
+
+        acceptedAuthority promoted
         let! first = actor.List(query None 1, token)
         let cursor = (page first).NextCursor
 
@@ -135,7 +163,7 @@ let private snapshot (database: PostgresFixture.Database) =
             do! entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
 
             let! revoked =
-                grant admin (id 5) principal Role.CaseReader GrantTarget.Installation false
+                grant admin (id 5) principal Role.CaseRegistrar GrantTarget.Installation false
 
             acceptedAuthority revoked
 
@@ -153,18 +181,12 @@ let private snapshot (database: PostgresFixture.Database) =
             [ "CASE-B"; "CASE-C" ]
             "Authorization and data share the earlier read snapshot"
 
-        let! next = actor.List(query cursor 50, token)
-
-        Expect.equal
-            next
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
-            "Fresh pages observe revoked authority"
+        do! freshAdvice actor cursor current
     }
 
 [<Tests>]
 let tests =
-    testSequenced
-    <| testList
+    testList
         "database cursor authority"
         [
             testCaseAsync

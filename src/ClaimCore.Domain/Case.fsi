@@ -20,3 +20,4 @@ module Case =
     val snapshot: CaseRecord -> CaseSnapshot
     val decide: DateOnly -> CaseRequest -> CaseRecord option -> Result<CaseRecord, CaseRefusal>
     val eligibleActs: CaseRecord -> CaseActKind list
+    val correctionActions: CaseRecord -> string -> CorrectionGroupAction list

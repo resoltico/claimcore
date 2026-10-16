@@ -21,7 +21,11 @@ requires an accepted ERASE and removes its case’s complete live payload histor
 
 ## Access review and sessions
 
-Use `authority.list` with installation OWNER or AUDITOR for current actors and grants. Registration
+Use `authority.list` with installation OWNER or AUDITOR for current actor summaries, then
+`authority.grants` for the selected actor's bounded grant pages. Follow continuations to completion;
+actor summaries do not contain a hidden complete grant set, and disabled actors remain reviewable.
+Each request checks current caller rights; pages do not constitute one frozen cross-request audit.
+Registration
 records both executor and target; for REGISTER_ACTOR they differ. Scope grants deliberately, keep
 at least one enabled human installation owner, and revoke ClaimCore grants independently of IdP
 membership. Service principals cannot receive OWNER or DATA_STEWARD. Bearer service identity comes
@@ -36,6 +40,15 @@ flow restrictions as described in [Web admission](web.md#cc-web-001).
 Browser sessions and list cursors are ephemeral. A runtime restart invalidates cursor signatures;
 expired or changed-grant cursors must be restarted. The browser retains no pending request across
 reload. Preserve exact uncertain requests through the caller’s process; never replace their ID.
+
+## Private configuration
+
+Use the [owner-private input policy](database.md#cc-db-002) on supported local filesystem
+semantics. Linux POSIX ACL masks and macOS descriptor ACLs are admitted explicitly; unrelated
+network/userspace permission models are outside that assurance. The file owner and host
+administrator remain trusted: descriptor admission does not freeze a concurrent owner rewriting
+content or permissions. Preserve matching native libraries and all notices when distributing a
+published application; [Development](development.md#first-checkout) owns supported build targets.
 
 ## Backups and restore
 

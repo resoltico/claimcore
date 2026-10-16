@@ -44,6 +44,9 @@ module internal ActorFacade =
             member _.Observe(id, token) =
                 run gate (query ()) (fun () -> core.Observe(id, token))
 
+            member _.ListGrants(request, token) =
+                run gate (query ()) (fun () -> core.ListGrants(request, token))
+
             member _.ListActors(request, token) =
                 run gate (query ()) (fun () -> core.ListActors(request, token))
         }

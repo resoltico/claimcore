@@ -1,17 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../FixtureDisposal.fs" Link="FixtureDisposal.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
     <Compile Include="PostgresFixture.fs" />
+    <Compile Include="FixtureDisposalTests.fs" />
+    <Compile Include="PostgresReadinessTests.fs" />
     <Compile Include="StoreTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="VerificationTests.fs" />
+    <Compile Include="CaseProjectionTests.fs" />
     <Compile Include="SchemaTests.fs" />
     <Compile Include="PaginationTests.fs" />
+    <Compile Include="GrantPaginationTests.fs" />
     <Compile Include="AcceptedHistoryFixtures.fs" />
     <Compile Include="../ClaimCore.WebTests/ProbeHttpsFixture.fs" Link="ProbeHttpsFixture.fs" />
     <Compile Include="../ClaimCore.WebTests/FacadeStub.fs" Link="FacadeStub.fs" />
@@ -27,6 +32,7 @@
     <Compile Include="AdministrationTests.fs" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="OwnerSchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

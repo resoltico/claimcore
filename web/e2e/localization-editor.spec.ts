@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { isResponse } from "../src/api/responseGuards";
+import { isResponse } from "@contracts/browser-contract";
 import { startOpen } from "./case-workflow";
 import {
   expectAccessible,
@@ -12,9 +12,7 @@ import {
   expectKeyboardContained,
   confirmReview,
   pauseJsonReply,
-  pauseHostReply,
-  expectInputRefusal,
-  inputRefusalText,
+  localInputRefusalText,
   reviewFrom,
   selectFormat,
   selectLanguage,
@@ -71,24 +69,18 @@ const unacceptedCase = async (page: Page, reference: string) => {
   }
 };
 const invalidCalendar = async (page: Page, requests: string[]) => {
-  const pending = await pauseHostReply(page, "case.preview", 400);
-  try {
-    await page.getByRole("button", { name: "Review changes" }).click();
-    expectInputRefusal((await pending.ready).reply);
-    await selectLanguage(page, "lv");
-    pending.release();
-    for (const language of ["lv", "ar", "en"] as const) {
-      await selectLanguage(page, language);
-      await expect(page.getByRole("alert")).toContainText(inputRefusalText[language]);
-    }
-    await expect(page.locator('input[name="incidentDate"]')).toHaveValue("2026-02-30");
-    await expect(page.locator('input[name="claimantName"]')).toHaveValue("A\u0308 / العربية");
-    expect(requests).toEqual(["POST /api/case.preview"]);
-    await expect(page.locator("section.receipt")).toHaveCount(0);
-    await expectAccessible(page);
-  } finally {
-    pending.release();
+  await page.getByRole("button", { name: "Review changes" }).click();
+  await expect(page.locator('input[name="incidentDate"]')).toBeFocused();
+  await expect(page.locator('input[name="incidentDate"]')).toHaveAttribute("aria-invalid", "true");
+  for (const language of ["lv", "ar", "en"] as const) {
+    await selectLanguage(page, language);
+    await expect(page.getByRole("alert")).toContainText(localInputRefusalText[language]);
   }
+  await expect(page.locator('input[name="incidentDate"]')).toHaveValue("2026-02-30");
+  await expect(page.locator('input[name="claimantName"]')).toHaveValue("A\u0308 / العربية");
+  expect(requests).toHaveLength(0);
+  await expect(page.locator("section.receipt")).toHaveCount(0);
+  await expectAccessible(page);
 };
 const policyRefusal = async (page: Page, requests: string[]) => {
   const name = page.locator('input[name="claimantName"]');
@@ -121,7 +113,7 @@ const policyRefusal = async (page: Page, requests: string[]) => {
       await expect(name).toHaveAttribute("aria-invalid", "true");
     }
     await expect(name).toHaveValue(authored);
-    expect(requests).toEqual(["POST /api/case.preview", "POST /api/case.preview"]);
+    expect(requests).toEqual(["POST /api/case.preview"]);
   } finally {
     pending.release();
   }

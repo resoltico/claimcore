@@ -82,8 +82,7 @@ let private repeatedInitialization (database: PostgresFixture.Database) =
 
 [<Tests>]
 let tests =
-    testSequenced
-    <| testList
+    testList
         "real commit connection loss"
         [
             for drop, landed in

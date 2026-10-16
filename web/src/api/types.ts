@@ -17,16 +17,19 @@ export type {
 export type { Receipt as OperationReceipt } from "@contracts/types";
 export type Descriptors = typeof productMetadata.descriptors;
 export type ProductMetadata = typeof productMetadata;
-export type FieldDescriptor = Descriptors["fields"][number];
+export type FieldDescriptor = Descriptors["fields"][number] | Descriptors["inputFields"][number];
 export type CommandDescriptor = Descriptors["commands"][number];
 export type CommandInputShape = CommandDescriptor["inputs"];
 export type CommandInputDescriptor =
   | Extract<CommandInputShape, { kind: "FIELDS" }>["fields"][number]
   | CorrectionGroupDescriptor["replaceFields"][number];
-export type CorrectionGroupDescriptor = Extract<
+type GeneratedCorrectionGroup = Extract<
   CommandInputShape,
   { kind: "CORRECTION_GROUPS" }
 >["groups"][number];
+export type CorrectionGroupDescriptor = Omit<GeneratedCorrectionGroup, "actions"> & {
+  readonly actions: ReadonlyArray<GeneratedCorrectionGroup["actions"][number]>;
+};
 export type CommandDraft = Omit<RequestByEndpoint["case.execute"], "act"> & {
   readonly act: Extract<
     RequestByEndpoint["case.execute"]["act"],
@@ -49,4 +52,4 @@ export type SessionSnapshot = Success<"session">;
 export type ApiResult<T> =
   | { readonly kind: "outcome"; readonly value: T; readonly status: number }
   | { readonly kind: "hostFailure"; readonly failure: HostFailure; readonly status: number }
-  | { readonly kind: "deliveryFailure"; readonly notice: Notice };
+  | { readonly kind: "deliveryFailure"; readonly notice: Notice; readonly dispatched?: boolean };

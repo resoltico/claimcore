@@ -90,7 +90,8 @@
                             ]
                           }
                         ]
-                      }
+                      },
+                      "maxItems": 50
                     },
                     "nextCursor": {
                       "oneOf": [
@@ -102,11 +103,79 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "offers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "definition": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "caseReference": {
+                            "oneOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                                "minLength": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "expectedRevision": {
+                            "oneOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "choices": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "input": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "values": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                }
+                              },
+                              "required": [
+                                "input",
+                                "values"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "definition",
+                          "caseReference",
+                          "expectedRevision",
+                          "choices"
+                        ]
+                      }
                     }
                   },
                   "required": [
                     "items",
-                    "nextCursor"
+                    "nextCursor",
+                    "offers"
                   ]
                 }
               },
@@ -364,12 +433,90 @@
               ]
             }
           ]
+        },
+        "offers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "definition": {
+                "type": "string",
+                "minLength": 1
+              },
+              "caseReference": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "choices": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "input": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "input",
+                    "values"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "definition",
+              "caseReference",
+              "expectedRevision",
+              "choices"
+            ]
+          }
+        },
+        "historyDetails": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "SUMMARY",
+              "FULL"
+            ]
+          }
         }
       },
       "required": [
         "caseReference",
         "revision",
-        "state"
+        "state",
+        "offers",
+        "historyDetails"
       ]
     },
     "CaseSnapshot": {
@@ -932,6 +1079,38 @@
             "receipt"
           ]
         }
+      ]
+    },
+    "SummaryHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "SUMMARY"
+        },
+        "change": {
+          "$ref": "#/$defs/ChangeSummary"
+        }
+      },
+      "required": [
+        "tag",
+        "change"
+      ]
+    },
+    "FullHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "FULL"
+        },
+        "receipt": {
+          "$ref": "#/$defs/CaseReceipt"
+        }
+      },
+      "required": [
+        "tag",
+        "receipt"
       ]
     },
     "Review": {
@@ -1615,6 +1794,73 @@
           "type": "string",
           "minLength": 1
         },
+        "offers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "definition": {
+                "type": "string",
+                "minLength": 1
+              },
+              "caseReference": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "choices": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "input": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "input",
+                    "values"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "definition",
+              "caseReference",
+              "expectedRevision",
+              "choices"
+            ]
+          }
+        },
         "capabilities": {
           "type": "array",
           "items": {
@@ -1637,10 +1883,11 @@
         "productVersion",
         "businessDate",
         "timeZone",
+        "offers",
         "capabilities"
       ]
     },
-    "ActorReview": {
+    "ActorSummary": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -1662,14 +1909,10 @@
               ]
             },
             "issuer": {
-              "type": "string",
-              "format": "uri",
-              "pattern": "^https://",
-              "minLength": 1
+              "type": "string"
             },
             "subject": {
-              "type": "string",
-              "minLength": 1
+              "type": "string"
             }
           },
           "required": [
@@ -1680,71 +1923,67 @@
         },
         "enabled": {
           "type": "boolean"
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "role": {
-                "enum": [
-                  "OWNER",
-                  "CASE_READER",
-                  "CASE_REGISTRAR",
-                  "CASE_HANDLER",
-                  "PAYMENT_RECORDER",
-                  "DATA_STEWARD",
-                  "AUDITOR"
-                ]
-              },
-              "scope": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "INSTALLATION"
-                      }
-                    },
-                    "required": [
-                      "kind"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "const": "CASE"
-                      },
-                      "caseReference": {
-                        "type": "string",
-                        "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                        "minLength": 1
-                      }
-                    },
-                    "required": [
-                      "kind",
-                      "caseReference"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "role",
-              "scope"
-            ]
-          }
         }
       },
       "required": [
         "actorId",
         "principal",
-        "enabled",
-        "grants"
+        "enabled"
+      ]
+    },
+    "AuthorityGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "OWNER",
+            "CASE_READER",
+            "CASE_REGISTRAR",
+            "CASE_HANDLER",
+            "PAYMENT_RECORDER",
+            "DATA_STEWARD",
+            "AUDITOR"
+          ]
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "INSTALLATION"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "CASE"
+                },
+                "caseReference": {
+                  "type": "string",
+                  "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "caseReference"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "scope"
       ]
     }
   },

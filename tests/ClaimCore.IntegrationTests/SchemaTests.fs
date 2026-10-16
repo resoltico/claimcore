@@ -143,8 +143,7 @@ let private unicodeAndPolicy (database: PostgresFixture.Database) =
 
 [<Tests>]
 let tests =
-    testSequenced
-    <| testList
+    testList
         "schema format and append-only boundaries"
         [
             testCaseAsync

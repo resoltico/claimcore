@@ -1,3 +1,4 @@
+import { transportResponse } from "./transport-response.fixtures";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { EndpointId } from "@contracts/endpoint-catalog";
@@ -40,31 +41,17 @@ export const generatedWebValue = <K extends EndpointId>(endpoint: K): ServiceRes
         ...value.outcome,
         data: {
           ...value.outcome.data,
-          entries: [
-            {
-              tag: "SUMMARY",
-              change: {
-                operationId: accepted.outcome.data.operationId,
-                position: accepted.outcome.data.position,
-                revision: accepted.outcome.data.revision,
-                act: accepted.outcome.data.act,
-                recordedAt: accepted.outcome.data.recordedAt,
-                recordedBy: accepted.outcome.data.recordedBy,
-              },
-            },
-            { tag: "FULL", receipt: accepted.outcome.data },
-          ],
+          entries: [{ tag: "FULL", receipt: accepted.outcome.data }],
         },
       },
     };
   }
   return value;
 };
-export const generatedResponse = (endpoint: EndpointId, status = 200): Response =>
-  new Response(JSON.stringify(generatedWebValue(endpoint)), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
+export const generatedResponse = (endpoint: EndpointId, status = 200): Response => {
+  const response = generatedWebValue(endpoint);
+  return transportResponse(endpoint, response.outcome.tag, response.outcome.data, status);
+};
 export const hostCases = () => [
   {
     id: "input-invalid",
@@ -81,3 +68,19 @@ export const hostCases = () => [
     },
   },
 ];
+
+export const historyVariants = () => {
+  const accepted = generatedWebValue("case.execute").outcome;
+  if (accepted.tag !== "ACCEPTED") {
+    throw new Error("Receipt fixture absent.");
+  }
+  const receipt = accepted.data;
+  const { operationId, position, revision, act, recordedAt, recordedBy } = receipt;
+  return {
+    full: { tag: "FULL" as const, receipt },
+    summary: {
+      tag: "SUMMARY" as const,
+      change: { operationId, position, revision, act, recordedAt, recordedBy },
+    },
+  };
+};

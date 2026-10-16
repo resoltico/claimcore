@@ -1,13 +1,14 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.ClientProtocol
+
 open System.Text
 open System.Text.Json
-open ClaimCore.Application
-open ClaimCore.Contracts
+open ClaimCore.ClientContract
 
 module Discovery =
     let help () =
-        "ClaimCore: help | version [--json] | describe [summary|fields [name]|commands [kind]|endpoints [id]|diagnostics] | schema <name> | call | session"
+        "ClaimCore: help | version [--json] | describe [summary|fields [name]|commands [kind]|authority [kind]|endpoints [id]|diagnostics] | schema <name> | call | session"
 
     let versionJson () =
         let identity = BuildIdentity.current
@@ -39,7 +40,7 @@ module Discovery =
             |> Option.map (fun item -> Encoding.UTF8.GetBytes(item.GetRawText()))
 
     let describe arguments =
-        let descriptors = ContractDiscovery.descriptors () |> CanonicalContract.bytes
+        let descriptors = ContractDiscovery.descriptors ()
 
         match arguments with
         | []
@@ -48,6 +49,8 @@ module Discovery =
         | [ "fields"; name ] -> select descriptors "fields" "name" (Some name)
         | [ "commands" ] -> select descriptors "commands" "kind" None
         | [ "commands"; kind ] -> select descriptors "commands" "kind" (Some kind)
+        | [ "authority" ] -> select descriptors "authorityCommands" "kind" None
+        | [ "authority"; kind ] -> select descriptors "authorityCommands" "kind" (Some kind)
         | [ "endpoints" ] -> Some(ContractDiscovery.catalogue ())
         | [ "endpoints"; id ] -> select (ContractDiscovery.catalogue ()) "endpoints" "id" (Some id)
         | [ "diagnostics" ] -> Some(ContractDiscovery.presentation ())
@@ -55,8 +58,7 @@ module Discovery =
 
     let schema arguments =
         match arguments with
-        | [ name ] -> ContractDiscovery.schema name |> Option.map CanonicalContract.bytes
+        | [ name ] -> ContractDiscovery.schema name
         | [ endpoint; direction ] when direction = "request" || direction = "response" ->
             ContractDiscovery.schema (endpoint + "." + direction)
-            |> Option.map CanonicalContract.bytes
         | _ -> None

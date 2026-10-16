@@ -1,17 +1,22 @@
 import { expect } from "vitest";
 import { localNotice } from "../src/api/notices";
-import { createDraft } from "../src/domain/metadata";
+import { createDraft } from "../src/interaction/metadata";
 import {
   initialOperation,
   operationReducer,
   type OperationState,
-} from "../src/domain/operationReducer";
+} from "../src/interaction/operationReducer";
 import { groupedCorrectionValues, digest, review } from "./service-foundation.fixtures";
 
 export const firstId = "00000000-0000-4000-8000-000000000001";
 export const secondId = "00000000-0000-4000-8000-000000000002";
 export const initial = () =>
-  initialOperation(firstId, "OPEN", { claimantName: "Synthetic A" }, "CASE-SYNTHETIC");
+  initialOperation(
+    firstId,
+    "OPEN",
+    { ...groupedCorrectionValues.registration.values, claimantName: "Synthetic A" },
+    "CASE-SYNTHETIC",
+  );
 export const begin = (state: OperationState, requestId: number) =>
   operationReducer(state, {
     type: "PREVIEWING",

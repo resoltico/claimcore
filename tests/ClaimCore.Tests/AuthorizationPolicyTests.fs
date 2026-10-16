@@ -312,6 +312,105 @@ let private reaffirmations () =
         (Case.decide today (actRequest ((Case.snapshot (paid ())).Revision) keep) (Some(paid ())))
         "All-KEEP never creates a revision"
 
+let private scopedAdvice () =
+    let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+    let snapshot = Case.snapshot (paid ())
+
+    let target =
+        ClaimCore.RecordFormat.CaseReferenceId.encode installation snapshot.Reference
+
+    let record: StoredCase = { CaseId = target; Snapshot = snapshot }
+
+    for role, expectedGroups, expectedHistory in
+        [
+            Role.CaseRegistrar, [ "registration" ], [ "SUMMARY" ]
+            Role.PaymentRecorder, [ "payment" ], [ "SUMMARY" ]
+            Role.CaseHandler, [ "registration"; "decision" ], [ "SUMMARY"; "FULL" ]
+        ] do
+        let authority =
+            actor
+                human
+                [
+                    {
+                        Role = role
+                        Scope = GrantScope.Case target
+                    }
+                ]
+
+        let advice =
+            Queries.caseRecord installation human (Some authority) record |> accepted
+
+        let correction =
+            advice.Offers |> List.find (fun value -> value.Definition = "CORRECT_CASE")
+
+        Expect.equal
+            correction.CaseReference
+            (Some snapshot.Reference)
+            "Case target bound in snapshot"
+
+        Expect.equal
+            correction.ExpectedRevision
+            (Some snapshot.Revision)
+            "Revision bound in snapshot"
+
+        Expect.equal advice.HistoryDetails expectedHistory "History reflects the actual case grant"
+
+        for choice in correction.Choices do
+            let group = choice.Input.Replace("groups.", "")
+
+            Expect.equal
+                (choice.Values <> [ "KEEP" ])
+                (List.contains group expectedGroups)
+                "Unauthorized correction groups remain required KEEP"
+
+let private absentCorrectionValues () =
+    let record = opened ()
+
+    Expect.equal
+        (Case.correctionActions record "decision")
+        [ CorrectionGroupAction.Keep ]
+        "A correction cannot introduce a missing decision"
+
+    Expect.equal
+        (Case.correctionActions record "payment")
+        [ CorrectionGroupAction.Keep ]
+        "A correction cannot introduce a missing payment"
+
+    Expect.equal
+        (Case.correctionActions (decided ()) "payment")
+        [ CorrectionGroupAction.Keep ]
+        "Decision presence does not permit introducing a payment through correction"
+
+let private noUsableCorrectionOffer () =
+    let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+    let snapshot = opened () |> apply BusinessCommand.Close |> accepted |> Case.snapshot
+
+    let target =
+        ClaimCore.RecordFormat.CaseReferenceId.encode installation snapshot.Reference
+
+    let record: StoredCase = { CaseId = target; Snapshot = snapshot }
+
+    let authority =
+        actor
+            human
+            [
+                {
+                    Role = Role.PaymentRecorder
+                    Scope = GrantScope.Case target
+                }
+            ]
+
+    let advice =
+        Queries.caseRecord installation human (Some authority) record |> accepted
+
+    Expect.isFalse
+        (List.contains CaseActKind.CorrectCase advice.AvailableActs)
+        "A payment-only actor cannot correct a record without a payment"
+
+    Expect.isFalse
+        (advice.Offers |> List.exists (fun offer -> offer.Definition = "CORRECT_CASE"))
+        "An all-KEEP form is never offered"
+
 [<Tests>]
 let tests =
     testList
@@ -330,4 +429,9 @@ let tests =
                 "correction group choices require every selected capability including reaffirmation"
                 corrections
             testCase "reaffirmations require their capability and all-KEEP refuses" reaffirmations
+            testCase "case scoped advice fixes unauthorized correction groups at KEEP" scopedAdvice
+            testCase "correction choice advice shares unary execution guards" absentCorrectionValues
+            testCase
+                "advice omits an unusable correction whose every choice is KEEP"
+                noUsableCorrectionOffer
         ]

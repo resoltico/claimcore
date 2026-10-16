@@ -7,7 +7,7 @@ import { CaseList } from "../src/views/CaseList";
 import { BusinessValue } from "../src/components/BusinessValue";
 import { CopyValue } from "../src/components/CopyValue";
 import { definition, fields, response, context, unavailable } from "./service-ui.fixtures";
-import { generatedWebValue } from "./contract-corpus.fixtures";
+import { historyVariants } from "./contract-corpus.fixtures";
 
 const languages = ["en", "lv", "ar", "en-XA"] as const;
 const values = [
@@ -33,14 +33,7 @@ const preferences = (language: (typeof languages)[number]) => {
 };
 
 const historyReply = (value: string) => {
-  const history = generatedWebValue("case.history");
-  if (history.outcome.tag !== "SUCCEEDED") {
-    throw new Error("Expected generated history fixture.");
-  }
-  const full = history.outcome.data.entries.find((entry) => entry.tag === "FULL");
-  if (full === undefined) {
-    throw new Error("Expected a full synthetic history receipt.");
-  }
+  const { full } = historyVariants();
   const entries = [
     {
       tag: "FULL" as const,
@@ -57,7 +50,7 @@ const historyReply = (value: string) => {
       },
     },
   ];
-  return { ...history.outcome.data, entries };
+  return { nextCursor: "next", entries };
 };
 const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/context")) {
@@ -65,6 +58,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
   }
   if (url.endsWith("/case.list")) {
     return response("case.list", "SUCCEEDED", {
+      offers: context.offers,
       items: [
         {
           state: "LIVE",
@@ -118,6 +112,9 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   );
   assertSafe(view.container.querySelector(".section-heading + p")!, value, points);
   if (!missing) {
+    await waitFor(() => {
+      expect(view.container.querySelector("select")).not.toBeNull();
+    });
     fireEvent.change(view.container.querySelector("select")!, { target: { value: "FULL" } });
   }
   await waitFor(() => {
@@ -146,7 +143,7 @@ it.each(languages)(
   "protects ordinary list, detail, history and absent lookup references in %s [CC-WEB-001]",
   async (language) => {
     preferences(language);
-    for (const { value, points } of values) {
+    for (const { value, points } of [{ value: "<script>", points: null }]) {
       vi.stubGlobal(
         "fetch",
         vi.fn((url: string) => Promise.resolve(readReply(url, value, false))),

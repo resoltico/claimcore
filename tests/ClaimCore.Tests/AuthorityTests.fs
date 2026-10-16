@@ -291,7 +291,20 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                 "RecordedBy attribution includes principal and actor ID"
 
             Expect.isTrue found.Enabled "Current enabled state"
-            Expect.isEmpty found.Grants "No implied grants"
+
+            let! grants =
+                actor.ListGrants(
+                    {
+                        ActorId = found.ActorId
+                        AfterCursor = None
+                        Limit = 50
+                    },
+                    CancellationToken.None
+                )
+
+            match grants with
+            | QueryOutcome.Succeeded value -> Expect.isEmpty value.Items "No implied grants"
+            | _ -> failtest "Expected grant review"
         | _ -> failtest "Owner review unavailable"
     }
 
@@ -347,11 +360,69 @@ let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             "Authority observation requires installation ReadAuthority"
     }
 
+let private offerDefinitions (actor: IActorClaimsCore) =
+    task {
+        let! context = actor.Context CancellationToken.None
+
+        match context with
+        | QueryOutcome.Succeeded value -> return value.Offers |> List.map _.Definition
+        | _ -> return failtest "Expected enabled actor context"
+    }
+
+let private contextOffers (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+    task {
+        let! admin = bootstrap fixture
+        let! offers = offerDefinitions admin
+
+        Expect.equal
+            offers
+            [
+                "REGISTER_ACTOR"
+                "SET_GRANT"
+                "SET_ENABLED"
+                "authority.list"
+                "authority.grants"
+                "operation.observe"
+            ]
+            "An owner has administration advice without case authority"
+
+        let! handler =
+            grant admin (id 2) owner Role.CaseHandler GrantTarget.Installation true
+
+        acceptedAuthority handler
+        let! opened = admin.Execute(openRequest 3 "OFFER-1", CancellationToken.None)
+        accepted opened |> ignore
+        let target = service "scoped-reader"
+        do! register admin 4 target
+
+        let! scoped =
+            grant admin (id 5) target Role.CaseRegistrar (GrantTarget.CaseReference "OFFER-1") true
+
+        acceptedAuthority scoped
+        let reader = core fixture target
+        let! offers = offerDefinitions reader
+
+        Expect.equal
+            offers
+            [ "case.list"; "case.get"; "operation.observe" ]
+            "A scoped registrar can read its case without installation OPEN advice"
+
+        let! revoked =
+            grant admin (id 6) target Role.CaseRegistrar (GrantTarget.CaseReference "OFFER-1") false
+
+        acceptedAuthority revoked
+        let! offers = offerDefinitions reader
+        Expect.isEmpty offers "A fresh context observes revocation without cached offers"
+    }
+
 [<Tests>]
 let tests =
     testList
         "authority decisions and review"
         [
+            testCaseAsync
+                "installation offers respect scope principal and revocation"
+                (run contextOffers)
             testCaseAsync "last enabled human installation owner is protected" (run lastOwner)
             testCaseAsync
                 "authority replay retains target executor and position and conflicts on changed content"

@@ -1,14 +1,21 @@
-import { deliveryOptions } from "./deliveryOptions";
-import { responseBytes, strictJsonBytes } from "./responseBytes";
-import type { ApiResult, CommandDraft, ServiceResponse } from "./types";
+import type { PreparedRequest } from "../protocol/preparedRequest";
+import { sendHttp } from "./transport";
+import { responseBytes } from "./responseBytes";
+import type { ApiResult, ServiceResponse } from "./types";
 import { withinResponseDeadline } from "./responseDeadline";
 import { localNotice } from "./notices";
-import { type EndpointId, endpoints, wireContractFingerprint } from "@contracts/endpoint-catalog";
-import { isHostFailure, isResponse } from "./responseGuards";
+import {
+  type EndpointId,
+  endpoints,
+  strictByteProfile,
+  wireContractFingerprint,
+} from "@contracts/endpoint-catalog";
+import { admitBytes } from "../protocol/schema";
+import { correlateReply, isHostFailure, isResponse } from "@contracts/browser-contract";
 export type * from "./types";
 export { isCurrentCase } from "./types";
 export { isMutationUncertain, resultNotice } from "./outcomes";
-const responseLimit = 16 * 1024 * 1024;
+const responseLimit = strictByteProfile.maximumResponseBytes;
 const readJson = async (response: Response, signal: AbortSignal): Promise<unknown> => {
   if (
     response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() !==
@@ -18,7 +25,7 @@ const readJson = async (response: Response, signal: AbortSignal): Promise<unknow
     return null;
   }
   try {
-    return strictJsonBytes(await responseBytes(response, responseLimit, signal));
+    return admitBytes(await responseBytes(response, responseLimit, signal));
   } catch {
     return null;
   }
@@ -27,9 +34,10 @@ const result = async <K extends EndpointId>(
   id: K,
   response: Response,
   signal: AbortSignal,
+  requestInput: unknown,
 ): Promise<ApiResult<ServiceResponse<K>>> => {
   const value = await readJson(response, signal);
-  if (response.status === 200 && isResponse(id, value)) {
+  if (response.status === 200 && isResponse(id, value) && correlateReply(id, requestInput, value)) {
     return { kind: "outcome", value, status: response.status };
   }
   if (isHostFailure(value, response.status)) {
@@ -43,6 +51,15 @@ const send = async <K extends EndpointId>(
   body: string | undefined,
   signal: AbortSignal,
 ): Promise<ApiResult<ServiceResponse<K>>> => {
+  if (signal.aborted) {
+    return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
+  }
+  let requestInput: unknown;
+  try {
+    requestInput = body === undefined ? {} : admitBytes(new TextEncoder().encode(body));
+  } catch {
+    return { kind: "deliveryFailure", notice: localNotice("incomplete"), dispatched: false };
+  }
   const endpoint = endpoints.find((candidate) => candidate.id === id)!;
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -55,13 +72,8 @@ const send = async <K extends EndpointId>(
     headers["Content-Type"] = "application/json";
   }
   try {
-    const response = await fetch(endpoint.path, {
-      method: endpoint.method,
-      headers,
-      body: body ?? null,
-      ...deliveryOptions(signal),
-    });
-    return await result(id, response, signal);
+    const response = await sendHttp(endpoint, headers, body, signal);
+    return await result(id, response, signal, requestInput);
   } catch {
     return { kind: "deliveryFailure", notice: localNotice("unreachable") };
   }
@@ -107,7 +119,19 @@ export const service = {
     ),
   observe: (operationId: string, token: string, signal?: AbortSignal) =>
     request("operation.observe", token, { operationId }, signal),
-  preview: (draft: CommandDraft, token: string) => request("case.preview", token, draft),
-  execute: (bytes: string, token: string) =>
-    withinResponseDeadline((owned) => send("case.execute", token, bytes, owned)),
+  authorityList: (cursor: string | null, token: string, signal?: AbortSignal) =>
+    request("authority.list", token, { ...(cursor === null ? {} : { cursor }), limit: 50 }, signal),
+  authorityGrants: (actorId: string, cursor: string | null, token: string, signal?: AbortSignal) =>
+    request(
+      "authority.grants",
+      token,
+      { actorId, ...(cursor === null ? {} : { cursor }), limit: 50 },
+      signal,
+    ),
+  authorityExecute: (prepared: PreparedRequest<"authority.execute">, token: string) =>
+    withinResponseDeadline((owned) => send(prepared.endpoint, token, prepared.bytes, owned)),
+  preview: (prepared: PreparedRequest<"case.execute">, token: string) =>
+    withinResponseDeadline((owned) => send("case.preview", token, prepared.bytes, owned)),
+  execute: (prepared: PreparedRequest<"case.execute">, token: string) =>
+    withinResponseDeadline((owned) => send(prepared.endpoint, token, prepared.bytes, owned)),
 };

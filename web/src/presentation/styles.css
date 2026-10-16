@@ -47,7 +47,8 @@
 }
 
 .review-modal,
-.operation-editor {
+.operation-editor,
+.authority-panel {
   overflow-wrap: anywhere;
 }
 

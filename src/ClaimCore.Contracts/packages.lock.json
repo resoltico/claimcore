@@ -16,6 +16,12 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
+      "claimcore.clientprotocol": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {

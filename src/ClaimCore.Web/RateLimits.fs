@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Threading
 open System.Threading.RateLimiting
@@ -8,7 +10,7 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
 open Microsoft.Extensions.DependencyInjection
-open ClaimCore.Contracts
+open ClaimCore.Hosting
 
 /// One process-wide budget, including cookie authentication and OIDC callbacks.
 type internal DynamicIngress() =

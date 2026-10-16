@@ -9,10 +9,10 @@ import type { CurrentCase, ProductMetadata } from "../../api/service";
 import { DescriptorField } from "../../components/DescriptorField";
 import {
   correctionGroupName,
-  isCorrectionValues,
+  isGroupedDraftValues,
   type CorrectionGroupName,
-} from "../../domain/metadata";
-import type { OperationEditorModel } from "./editorTypes";
+} from "../../interaction/metadata";
+import type { OperationEditorModel } from "../../interaction/editorTypes";
 
 type OperationFormProps = {
   definition: ProductMetadata;
@@ -88,7 +88,7 @@ const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "mod
 
 const AuthoringFields = ({ model }: Pick<OperationFormProps, "model">) => {
   const p = usePresentation();
-  if (isCorrectionValues(model.state.values)) {
+  if (isGroupedDraftValues(model.state.values)) {
     return null;
   }
   const { values } = model.state;
@@ -158,11 +158,14 @@ const CorrectionGroup = ({
   actions: ReadonlyArray<"KEEP" | "REPLACE" | "CLEAR">;
   fields: ReadonlyArray<OperationEditorModel["groups"][number]["fields"][number]>;
 }) => {
-  if (!isCorrectionValues(model.state.values)) {
+  if (!isGroupedDraftValues(model.state.values)) {
     return null;
   }
   const { values } = model.state;
   const value = values[name];
+  if (value === undefined) {
+    throw new Error(`The editor is missing correction group ${name}.`);
+  }
   return (
     <fieldset>
       <legend>{label}</legend>

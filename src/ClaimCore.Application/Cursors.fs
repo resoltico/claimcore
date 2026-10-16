@@ -10,6 +10,7 @@ type internal CursorQuery =
     | Cases
     | History of reference: string * detail: HistoryDetail
     | Actors
+    | Grants of actorId: Guid
 
 module internal Cursors =
     let private lifetimeTicks = TimeSpan.FromMinutes(15.0).Ticks
@@ -52,6 +53,13 @@ module internal Cursors =
                 [
                     "endpoint", CanonicalValue.String "case.list"
                     "order", CanonicalValue.String "REFERENCE_ASCENDING"
+                ]
+        | CursorQuery.Grants actorId ->
+            CanonicalValue.Object
+                [
+                    "endpoint", CanonicalValue.String "authority.grants"
+                    "actorId", CanonicalValue.String(actorId.ToString("D"))
+                    "order", CanonicalValue.String "ROLE_COLUMN_ASC_CASE_ID_ASC_NULLS_LAST"
                 ]
         | CursorQuery.Actors ->
             CanonicalValue.Object

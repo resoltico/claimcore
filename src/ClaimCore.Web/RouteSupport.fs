@@ -1,9 +1,11 @@
 namespace ClaimCore.Web
 
+open ClaimCore.ClientProtocol
+
 open System.IO
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
-open ClaimCore.Contracts
+open ClaimCore.Hosting
 
 module internal RouteSupport =
     let private dispatchKey = obj ()
@@ -31,9 +33,15 @@ module internal RouteSupport =
         | HttpInputProblem.BodyTooLarge -> hostFailure context HostFailure.BodyTooLarge
         | _ -> hostFailure context HostFailure.InputInvalid
 
-    let outcome endpoint (value: System.Text.Json.Nodes.JsonNode) context =
-        RequestLog.outcome ((value["tag"] |> nonNull).GetValue<string>()) context
-        WebWire.outcome endpoint value
+    let outcome endpoint bytes context =
+        RequestLog.outcome "SUCCEEDED" context
+        WebWire.outcome endpoint bytes
+
+    let reply (value: ServiceReply) context =
+        RequestLog.outcome value.Outcome context
+        value.OperationId |> Option.iter (fun id -> RequestLog.operation id context)
+        value.ActorId |> Option.iter (fun id -> RequestLog.actor id context)
+        WebWire.result 200 value.Bytes
 
     let handleFailures (sink: TextWriter) (context: HttpContext) (next: RequestDelegate) : Task =
         task {

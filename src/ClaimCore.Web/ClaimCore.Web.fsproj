@@ -7,6 +7,7 @@
   <ItemGroup>
     <Content Remove="wwwroot/**/*" />
     <None Remove="wwwroot/**/*" />
+    <ProjectReference Include="../ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
@@ -27,7 +28,6 @@
     <Compile Include="WireOutcomes.fs" />
     <Compile Include="RouteSupport.fs" />
     <Compile Include="RateLimits.fs" />
-    <Compile Include="ApiDispatch.fs" />
     <Compile Include="ApiRoutes.fs" />
     <Compile Include="HostRoutes.fs" />
     <Compile Include="WebProbeTransport.fs" />
@@ -37,9 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
-    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
-    <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
-    <ProjectReference Include="../ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+    <ProjectReference Include="../ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
     <ProjectReference Include="../ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
   </ItemGroup>
   <ItemGroup>

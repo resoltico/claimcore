@@ -42,13 +42,18 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     role === "CASE_HANDLER" ? 1 : 0,
   );
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
-    await refusedRead(page, "case.history", () =>
-      page
-        .getByLabel("History detail", { exact: true })
-        .selectOption("FULL")
-        .then(() => undefined),
-    );
-    await expect(page.locator(".history-list li")).toHaveCount(0);
+    await expect(page.locator('select option[value="FULL"]')).toHaveCount(0);
+    await refusedRead(page, "case.history", async () => {
+      await browserRequest(page, "/api/case.history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-ClaimCore-Antiforgery": await sessionToken(page),
+        },
+        body: JSON.stringify({ caseReference: fixture.reference, detail: "FULL", limit: 50 }),
+      });
+    });
+    await expect(page.locator(".history-list li")).toHaveCount(1);
   }
   if (scoped) {
     await page.getByRole("button", { name: "Back to cases", exact: true }).click();

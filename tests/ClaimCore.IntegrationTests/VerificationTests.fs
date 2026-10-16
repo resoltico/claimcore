@@ -599,8 +599,7 @@ let private ioFailure (database: PostgresFixture.Database) =
 
 [<Tests>]
 let tests =
-    testSequenced
-    <| testList
+    testList
         "typed ledger verification"
         [
             testCase "all seventeen finding identifiers are explicitly covered" (fun () ->

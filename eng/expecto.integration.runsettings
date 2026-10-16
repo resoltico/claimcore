@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <Expecto>
+    <!-- Each test owns a PostgreSQL cluster; overlap two without CPU-count Docker fanout.
+         Pinned YoloDev.Expecto.TestSdk 0.16.1 defaults retain fail-on-focused-tests=true,
+         join-with="." and colours=0 when omitted, matching expecto.runsettings. -->
+    <parallel-workers>2</parallel-workers>
+  </Expecto>
+</RunSettings>

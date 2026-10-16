@@ -1,9 +1,11 @@
 namespace ClaimCore.Web
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Net
 open System.Net.Sockets
-open ClaimCore.Contracts
+open ClaimCore.Hosting
 
 /// Public authority and socket binding are distinct, including through Docker port publication.
 [<NoEquality; NoComparison>]

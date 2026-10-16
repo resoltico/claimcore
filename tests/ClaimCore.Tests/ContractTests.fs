@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ContractTests
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Text
 open System.Text.Json
@@ -12,6 +14,8 @@ open ClaimCore.Contracts
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
+
+module Frames = ClaimCore.ClientContract.Frames
 
 let private bytes (value: string) = Encoding.UTF8.GetBytes value
 let private id = Guid.Parse "20000000-0000-4000-8000-000000000001"
@@ -45,7 +49,14 @@ let private authority =
     }
 
 let private admitted endpoint value =
-    OutcomeCodec.encode endpoint value
+    (if
+         endpoint = "case.preview"
+         || endpoint = "case.execute"
+         || endpoint = "authority.execute"
+     then
+         OutcomeCodec.encodeOperation endpoint id value
+     else
+         OutcomeCodec.encode endpoint value)
     |> EndpointCatalog.admitResponse endpoint
     |> accepted
 
@@ -70,6 +81,7 @@ let private exactCatalogue () =
             "operation.observe"
             "authority.execute"
             "authority.list"
+            "authority.grants"
         ]
         "Exact inventory"
 
@@ -86,17 +98,46 @@ let private exactCatalogue () =
         [ "case.execute"; "authority.execute" ]
         "Durable mutations"
 
+let private pending endpoint =
+    let definition = EndpointCatalog.tryFind endpoint |> Option.get
+
+    let input =
+        SchemaSamples.variants definition.Request
+        |> List.head
+        |> fun bytes -> JsonNode.Parse(bytes) |> nonNull
+
+    if input.AsObject().ContainsKey "operationId" then
+        input["operationId"] <- JsonValue.Create(id.ToString("D"))
+
+    if input.AsObject().ContainsKey "caseReference" then
+        input["caseReference"] <- JsonValue.Create("UNIT-001")
+
+    let frame = JsonObject()
+    frame.Add("endpoint", JsonValue.Create endpoint)
+    frame.Add("input", input)
+    frame.ToJsonString() |> bytes |> Frames.parse |> accepted
+
 let private requestAlternatives () =
     let mutable count = 0
 
     for endpoint in EndpointCatalog.all do
         for sample in SchemaSamples.variants endpoint.Request do
-            EndpointCatalog.admitRequest endpoint.Identifier sample |> accepted |> ignore
+            HttpInputSupport.parse sample (fun root ->
+                Expect.isTrue (SchemaValueValidation.verify endpoint.Request root) "Wire syntax")
+            |> accepted
+            |> ignore
+
             let frame = JsonObject()
             frame.Add("endpoint", JsonValue.Create endpoint.Identifier)
             frame.Add("input", JsonNode.Parse sample)
-            let parsed = Frames.parse (bytes (frame.ToJsonString())) |> accepted
-            Expect.equal (Frames.inputBytes parsed) sample "Exact raw input retained"
+
+            let parsed =
+                ClaimCore.ClientContract.Frames.parse (bytes (frame.ToJsonString())) |> accepted
+
+            Expect.equal
+                (ClaimCore.ClientContract.Frames.inputBytes parsed)
+                sample
+                "Exact raw input retained"
 
             Expect.isError
                 (EndpointCatalog.admitRequest endpoint.Identifier (mutate sample "extra" "x"))
@@ -104,7 +145,7 @@ let private requestAlternatives () =
 
             count <- count + 1
 
-    Expect.equal count 35 "Every case and authority act is sampled"
+    Expect.equal count 36 "Every case and authority act is sampled"
 
 let private responseAlternatives () =
     let mutable count = 0
@@ -112,12 +153,24 @@ let private responseAlternatives () =
     for endpoint in EndpointCatalog.all do
         for sample in SchemaSamples.variants endpoint.Response do
             EndpointCatalog.admitResponse endpoint.Identifier sample |> accepted |> ignore
-            let frame = Frames.result endpoint.Identifier sample |> accepted
-            Expect.isOk (Frames.decode frame) "Admitted response round-trips"
-            Expect.isError (Frames.decode (mutate frame "extra" "x")) "Closed frame"
+
+            let native =
+                ClaimCore.ClientContract.EndpointCatalog.tryFind endpoint.Identifier
+                |> Option.get
+
+            HttpInputSupport.parse sample (fun root ->
+                SchemaValueValidation.verify native.Response root)
+            |> accepted
+            |> fun valid ->
+                Expect.isTrue valid "Generated native response schema admits every server variant"
+
+            Expect.isError
+                (EndpointCatalog.admitResponse endpoint.Identifier (mutate sample "extra" "x"))
+                "Closed response"
+
             count <- count + 1
 
-    Expect.equal count 43 "Every response alternative is sampled"
+    Expect.equal count 47 "Every response alternative is sampled"
 
 let private executeOutcomes () =
     for endpoint, receipt in [ "case.execute", receipt; "authority.execute", authority ] do
@@ -130,14 +183,23 @@ let private executeOutcomes () =
                 ExecuteOutcome.Cancelled, 130
                 ExecuteOutcome.OutcomeUnknown(id, digest), 4
             ] do
-            let encoded = OutcomeCodec.encode endpoint (OutcomeCodec.execute value)
-            let frame = Frames.result endpoint encoded |> accepted |> Frames.decode |> accepted
+            let encoded = OutcomeCodec.encodeOperation endpoint id (OutcomeCodec.execute value)
+
+            let frame =
+                Frames.result (pending endpoint) encoded
+                |> accepted
+                |> Frames.decode
+                |> accepted
+
             Expect.equal (Frames.exitCode frame) exit "Shared mutation exits"
 
     for endpoint, wrong in [ "case.execute", authority; "authority.execute", receipt ] do
         Expect.throws
             (fun () ->
-                OutcomeCodec.encode endpoint (OutcomeCodec.execute (ExecuteOutcome.Accepted wrong))
+                OutcomeCodec.encodeOperation
+                    endpoint
+                    id
+                    (OutcomeCodec.execute (ExecuteOutcome.Accepted wrong))
                 |> ignore)
             "A mutation receipt must match its endpoint scope"
 
@@ -167,7 +229,7 @@ let private disclosures () =
             tag
             "Disclosure is explicit"
 
-let private queryCodecs () =
+let private currentCaseCodecs () =
     let snapshot = Case.snapshot (opened ())
 
     admitted
@@ -177,6 +239,8 @@ let private queryCodecs () =
                 {
                     Snapshot = snapshot
                     AvailableActs = [ CaseActKind.Close ]
+                    Offers = []
+                    HistoryDetails = []
                 }
         ))
     |> ignore
@@ -188,9 +252,14 @@ let private queryCodecs () =
                 {
                     Snapshot = { snapshot with View = CaseView.Erased }
                     AvailableActs = []
+                    Offers = []
+                    HistoryDetails = []
                 }
         ))
     |> ignore
+
+let private queryCodecs () =
+    currentCaseCodecs ()
 
     admitted
         "case.list"
@@ -198,6 +267,7 @@ let private queryCodecs () =
             QueryOutcome.Succeeded
                 {
                     Items = [ CaseSummary.Erased("UNIT-001", 2L) ]
+                    Offers = []
                     NextCursor = None
                 }
         ))
@@ -235,6 +305,7 @@ let private contextCodecs () =
                             TimeZoneId = "Etc/UTC"
                         }
                     Capabilities = Capabilities.all
+                    Offers = []
                 }
         ))
     |> ignore
@@ -293,6 +364,61 @@ let private diagnostics () =
             (result.GetProperty("outcome").GetProperty("data").TryGetProperty("code") |> fst)
             "No coarse refusal code"
 
+let private actionExpectations =
+    [
+        Rejection.Case(
+            CaseRefusal.InvalidInput(
+                InputTarget.Reason,
+                InputViolation.Text TextViolation.NonBlankRequired
+            )
+        ),
+        RecommendedAction.CorrectInput,
+        "CORRECT_INPUT",
+        Some "reason",
+        None
+        Rejection.PageLimitOutOfRange 50,
+        RecommendedAction.CorrectInput,
+        "CORRECT_INPUT",
+        Some "limit",
+        None
+        Rejection.InvalidCursor, RecommendedAction.ReadCurrent, "READ_CURRENT", Some "cursor", None
+        Rejection.Case(CaseRefusal.RevisionConflict 7L),
+        RecommendedAction.ReadCurrent,
+        "READ_CURRENT",
+        None,
+        Some 7L
+    ]
+
+let private actionEnums () =
+    for refusal, expected, _, _, _ in actionExpectations do
+        Expect.equal
+            refusal.Action
+            expected
+            "Input correction and current-state recovery are distinct"
+
+let private actionTokens () =
+    for refusal, _, expected, field, revision in actionExpectations do
+        let result =
+            admitted "case.get" (OutcomeCodec.currentCase (QueryOutcome.Rejected refusal))
+
+        let data = result.GetProperty("outcome").GetProperty("data")
+
+        Expect.equal
+            (data.GetProperty("recommendedAction").GetString())
+            expected
+            "Literal wire guidance"
+
+        Expect.equal
+            (data.GetProperty("field").GetString())
+            (Option.toObj field)
+            "Serialized field metadata is retained"
+
+        let encodedRevision = data.GetProperty("actualRevision").GetRawText()
+        let expectedRevision = revision |> Option.map string |> Option.defaultValue "null"
+        Expect.equal encodedRevision expectedRevision "Serialized revision metadata is retained"
+        Expect.equal refusal.Field field "Field metadata is retained"
+        Expect.equal refusal.ActualRevision revision "Revision metadata is retained"
+
 let private rejectFrames () =
     for value in
         [
@@ -331,7 +457,7 @@ let private handshakeAndFailures () =
             "Host failure round-trip"
 
     Expect.equal
-        (Frames.serviceFailure "context" HostFailure.RateLimited
+        (Frames.serviceFailure (pending "context") HostFailure.RateLimited
          |> Frames.decode
          |> accepted
          |> Frames.exitCode)
@@ -405,8 +531,9 @@ let private integerLexemes () =
     for sequence in [ 0L; SafeInteger.Maximum + 1L ] do
         Expect.throws
             (fun () ->
-                OutcomeCodec.encode
+                OutcomeCodec.encodeOperation
                     "case.execute"
+                    id
                     (OutcomeCodec.execute (
                         ExecuteOutcome.Accepted
                             { receipt with
@@ -439,6 +566,8 @@ let private retainedText () =
                     {
                         Snapshot = snapshot
                         AvailableActs = []
+                        Offers = []
+                        HistoryDetails = []
                     }
             ))
         |> ignore
@@ -488,16 +617,139 @@ let private policyHints () =
         200
         "Current policy is a nonvalidating hint"
 
+let private authorityWire kind issuer subject =
+    JsonSerializer.SerializeToUtf8Bytes
+        {|
+            operationId = id.ToString("D")
+            target =
+                {|
+                    kind = kind
+                    issuer = issuer
+                    subject = subject
+                |}
+            act = {| kind = "REGISTER_ACTOR" |}
+        |}
+
+let private principalAdmission () =
+    let requestSchema =
+        (EndpointCatalog.tryFind "authority.execute" |> Option.get).Request
+
+    let expected =
+        [
+            true, "HUMAN", "https://issuer.example/", String.replicate 512 "a"
+            false, "HUMAN", "https://issuer.example/", String.replicate 513 "a"
+            true, "HUMAN", "https://issuer.example/", String.replicate 256 "\U0001f642"
+            false, "HUMAN", "https://issuer.example/", String.replicate 257 "\U0001f642"
+            true, "SERVICE", "https://issuer.example/", String.replicate 256 "a"
+            false, "SERVICE", "https://issuer.example/", String.replicate 257 "a"
+            true,
+            "HUMAN",
+            "https://issuer.example/"
+            + String.replicate (2048 - "https://issuer.example/".Length) "a",
+            "subject"
+            false,
+            "HUMAN",
+            "https://issuer.example/"
+            + String.replicate (2049 - "https://issuer.example/".Length) "a",
+            "subject"
+            false, "HUMAN", "https://issuer.example", "subject"
+            false, "HUMAN", "https://user@issuer.example/", "subject"
+            false, "HUMAN", "https://issuer.example/?q=x", "subject"
+            false, "HUMAN", "https://issuer.example/#x", "subject"
+            false, "HUMAN", "https://issuer.example/", "\u2003"
+            true, "HUMAN", "https://issuer.example/", "Unicode \U0001f642 subject"
+        ]
+
+    for admitted, kind, issuer, subject in expected do
+        let wire = authorityWire kind issuer subject
+
+        HttpInputSupport.parse wire (fun root ->
+            Expect.isTrue
+                (SchemaValueValidation.verify requestSchema root)
+                "Generic wire syntax accepts identity text")
+        |> accepted
+        |> ignore
+
+        Expect.equal
+            (EndpointCatalog.admitRequest "authority.execute" wire |> Result.isOk)
+            admitted
+            "Only authoritative principal admission judges identity semantics"
+
+    let invalidKind = authorityWire "UNKNOWN" "https://issuer.example/" "subject"
+
+    Expect.isError
+        (EndpointCatalog.admitRequest "authority.execute" invalidKind)
+        "Closed principal kind"
+
+let private authorityFieldPresentation () =
+    use document = JsonDocument.Parse((ContractDiscovery.descriptors ()).Bytes)
+    use presentation = JsonDocument.Parse(ContractDiscovery.presentation ())
+    let root = document.RootElement
+    let fields = root.GetProperty("authorityFields").EnumerateArray() |> Seq.toList
+
+    let names =
+        fields
+        |> List.map (fun field -> field.GetProperty("name").GetString() |> nonNull)
+
+    Expect.equal
+        names.Length
+        (Set.ofList names).Count
+        "Protocol presentation identifiers are unique"
+
+    Expect.equal
+        (root.GetProperty("fields").GetArrayLength())
+        13
+        "Protocol labels add no business fields"
+
+    let applicationNames =
+        AuthorityOperationDefinitions.target.Name
+        :: (AuthorityOperationDefinitions.all
+            |> List.collect (fun definition -> definition.Inputs |> List.map _.Name))
+
+    let technicalNames =
+        [ "operationId"; "expectedRevision"; "act"; "kind"; "issuer"; "subject" ]
+
+    Expect.equal
+        (Set.ofList names)
+        (Set.ofList (technicalNames @ applicationNames))
+        "Every generic technical and owned authority input has presentation metadata"
+
+    for field in fields do
+        let name = field.GetProperty("name").GetString() |> nonNull
+        let labelId = field.GetProperty("labelId").GetString() |> nonNull
+        let label = field.GetProperty("label").GetString()
+        Expect.equal labelId ("authority.field." + name + ".label") "Stable message identifier"
+
+        let defaultLabel =
+            presentation.RootElement.GetProperty(labelId).EnumerateArray() |> Seq.head
+
+        Expect.equal
+            (defaultLabel.GetProperty("literal").GetString())
+            label
+            "Default English is projected from the same field definition"
+
+    let kind =
+        fields
+        |> List.find (fun field -> field.GetProperty("name").GetString() = "kind")
+
+    Expect.equal (kind.GetProperty("label").GetString()) "Type" "Generic kinds render a human label"
+
 [<Tests>]
 let tests =
     testList
         "service contract"
         [
+            testCase
+                "generic authority input labels come from semantic and protocol owners"
+                authorityFieldPresentation
+            testCase
+                "generic principal syntax preserves separate authoritative identity admission"
+                principalAdmission
             testCase "current text admission is exposed as a nonvalidating policy hint" policyHints
             testCase
                 "retained text passes wire rendering and reaffirmation while changed policy violations refuse"
                 retainedText
-            testCase "one catalogue defines eleven routes and both durable mutations" exactCatalogue
+            testCase "one catalogue defines twelve routes and both durable mutations" exactCatalogue
             testCase
                 "all act request alternatives preserve bytes and reject extra members"
                 requestAlternatives
@@ -511,6 +763,8 @@ let tests =
                 contextCodecs ())
             testCase "preview encodes review and replay outcomes" previewCodecs
             testCase "closed diagnostics have complete presentation and no coarse codes" diagnostics
+            testCase "input and cursor refusals retain core action guidance" actionEnums
+            testCase "input and cursor refusals retain serialized action guidance" actionTokens
             testCase "strict decoders reject malformed input and preserve copies" rejectFrames
             testCase
                 "handshake and host failure guards have rejecting controls"

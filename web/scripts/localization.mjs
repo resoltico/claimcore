@@ -19,7 +19,7 @@ const generate = process.argv.slice(2).includes("--write");
 const languages = ["en", "lv", "ar"];
 /** @type {Record<string, Record<string, import("./localization-policy.mjs").Message>>} */
 const catalogs = {};
-const domains = ["ui", "notice", "token", "field", "command", "group", "diagnostic"];
+const domains = ["ui", "notice", "token", "field", "command", "group", "authority", "diagnostic"];
 /** @param {string} language */
 const authoredDomains = (language) => (language === "en" ? ["ui", "notice", "token"] : domains);
 const expectedInputs = languages

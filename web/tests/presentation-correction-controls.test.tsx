@@ -8,6 +8,13 @@ import { preferenceKey } from "../src/presentation/preferences";
 
 const paidCase: CurrentCase = {
   ...current,
+  offers: ["CORRECT_CASE"].map((identifier) => ({
+    definition: identifier,
+    caseReference: null,
+    expectedRevision: null,
+    choices: [],
+  })),
+  historyDetails: ["SUMMARY", "FULL"],
   state: {
     ...current.state,
     availableActs: ["CORRECT_CASE"],

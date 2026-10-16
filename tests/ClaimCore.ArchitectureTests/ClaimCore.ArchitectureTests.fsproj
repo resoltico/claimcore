@@ -8,7 +8,10 @@
     <Compile Include="ProjectGraph.fs" />
     <Compile Include="NegativeFixtures.fs" />
     <Compile Include="ApiRules.fs" />
+    <Compile Include="FacadeSignatures.fs" />
     <Compile Include="ArchitectureTests.fs" />
+    <Compile Include="NativeBuildTests.fs" />
+    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />

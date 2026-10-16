@@ -24,5 +24,7 @@
   "field.paymentDate.label": "Maksājuma datums",
   "field.paymentDate.meaning": "Datums, kad nolemtā summa faktiski samaksāta pēc operatora ieraksta. Tukšs, ja nav samaksāts vai nav zināms. Tikai viens pilns maksājums; reģistrēšana neveic un neatkarīgi nepārbauda bankas pārskaitījumu.",
   "field.status.label": "Lietas statuss",
-  "field.status.meaning": "Vai lieta ir atvērta vai slēgta. Lietas slēgšana nenozīmē, ka veikts maksājums."
+  "field.status.meaning": "Vai lieta ir atvērta vai slēgta. Lietas slēgšana nenozīmē, ka veikts maksājums.",
+  "field.reason.label": "Ieraksta pārvaldības pamatojums",
+  "field.reason.meaning": "Paskaidrojiet ieraksta pārvaldības darbību."
 }

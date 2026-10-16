@@ -21,7 +21,7 @@
     "dead-code": "npm run localization:generate && knip",
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
-    "architecture:check": "npm run localization:generate && node --test scripts/boundary-policy.test.mjs scripts/type-aware-policy.test.mjs scripts/localization-policy.test.mjs",
+    "architecture:check": "npm run localization:generate && node --test scripts/boundary-policy.test.mjs scripts/type-aware-policy.test.mjs scripts/localization-policy.test.mjs scripts/module-policy.test.mjs scripts/playwright-module-policy.test.mjs scripts/required-test-reporter.test.mjs",
     "localization:generate": "node scripts/localization.mjs --write",
     "localization:check": "npm run localization:generate",
     "test:coverage": "npm run localization:generate && vitest run --coverage"

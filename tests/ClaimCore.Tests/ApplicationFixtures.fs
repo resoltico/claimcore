@@ -83,6 +83,10 @@ type AfterCaseWriteStore(inner: ILedgerStore, afterWrite: unit -> Task<unit>) =
             reads <- reads + 1
             inner.ReadHistory(principal, reference, select, limit, ct)
 
+        member _.ListGrants(principal, target, select, limit, ct) =
+            reads <- reads + 1
+            inner.ListGrants(principal, target, select, limit, ct)
+
         member _.ListActors(principal, select, limit, ct) =
             reads <- reads + 1
             inner.ListActors(principal, select, limit, ct)

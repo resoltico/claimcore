@@ -16,10 +16,17 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
+      "claimcore.clientprotocol": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.contracts": {
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application": "[0.9.0, )",
+          "ClaimCore.ClientProtocol": "[0.9.0, )",
           "ClaimCore.Domain": "[0.9.0, )",
           "ClaimCore.RecordFormat": "[0.9.0, )",
           "FSharp.Core": "[10.1.401, )"

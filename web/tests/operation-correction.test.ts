@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { commandInputs, createDraft, prefilledValues } from "../src/domain/metadata";
+import { commandInputs, createDraft, prefilledValues } from "../src/interaction/metadata";
 import { definition } from "./service-foundation.fixtures";
 
 const operationId = "00000000-0000-4000-8000-000000000001";
@@ -27,7 +27,7 @@ it("encodes every correction action explicitly and refuses an invalid registrati
       ...values,
       registration: { mode: "CLEAR", values: {} },
     }),
-  ).toThrow("Registration corrections cannot be cleared.");
+  ).toThrow("Unsupported registration correction choice.");
 });
 
 it("rejects impossible local draft shapes and keeps absent current correction values blank", () => {

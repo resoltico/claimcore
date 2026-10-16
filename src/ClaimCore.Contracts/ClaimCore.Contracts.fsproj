@@ -1,19 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Compile Include="HttpsOrigins.fs" />
-    <Compile Include="SchemaAst.fs" />
     <Compile Include="SchemaSamples.fs" />
-    <Compile Include="SchemaFailure.fs" />
-    <Compile Include="SchemaPrimitiveValidation.fs" />
-    <Compile Include="SchemaValueValidation.fs" />
-    <Compile Include="SchemaRendering.fs" />
     <Compile Include="ScalarSchemas.fs" />
     <Compile Include="CommandInputProjection.fs" />
     <Compile Include="RejectionDiagnosticSchemas.fs" />
     <Compile Include="CommandInputRendering.fs" />
     <Compile Include="DescriptorRendering.fs" />
-    <Compile Include="JsonUnicode.fs" />
-    <Compile Include="InputSupport.fs" />
     <Compile Include="ServiceInputs.fs" />
     <Compile Include="WireSchema.fs" />
     <Compile Include="RejectionPresentation.fs" />
@@ -22,16 +14,15 @@
     <Compile Include="ValueSchemas.fs" />
     <Compile Include="ResponseSchemas.fs" />
     <Compile Include="WireValues.fs" />
-    <Compile Include="HostFailures.fs" />
     <Compile Include="FrameSchemas.fs" />
     <Compile Include="DefaultPresentation.fs" />
     <Compile Include="ContractIdentity.fs" />
     <Compile Include="EndpointCatalog.fs" />
     <Compile Include="OutcomeCodec.fs" />
-    <Compile Include="Frames.fs" />
     <Compile Include="Discovery.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
     <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />

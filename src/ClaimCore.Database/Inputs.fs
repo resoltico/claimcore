@@ -63,7 +63,11 @@ module Inputs =
         | null -> invalidOp "Required private input is absent."
         | path ->
             PrivateFile.read maximum path
-            |> Result.defaultWith (fun _ -> invalidOp "Private input was refused.")
+            |> Result.defaultWith (fun failure ->
+                if failure = PrivateFileFailure.NativeAssetUnavailable then
+                    Console.Error.WriteLine PrivateFile.nativeAssetGuidance
+
+                invalidOp "Private input was refused.")
 
     let connection () =
         let value = bytes "CLAIMCORE_ADMIN_CONNECTION_FILE" 16384

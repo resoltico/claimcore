@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open ClaimCore.Application
 
 module RejectionDiagnosticSchemas =

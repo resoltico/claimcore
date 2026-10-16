@@ -21,7 +21,9 @@ module CursorRecord =
     let private text = UTF8Encoding(false, true)
     let private prefix = Encoding.ASCII.GetBytes "claimcore/cursor\n"
     let private headerSize = 43
-    let private maximumPositionBytes = 256
+
+    [<Literal>]
+    let MaximumPositionBytes = 256
 
     let private width expected (bytes: byte array) =
         not (obj.ReferenceEquals(bytes, null)) && bytes.Length = expected
@@ -45,7 +47,7 @@ module CursorRecord =
 
         let position = text.GetBytes envelope.Position
 
-        if position.Length > maximumPositionBytes then
+        if position.Length > MaximumPositionBytes then
             invalidArg (nameof envelope) "Cursor position exceeds its bound."
 
         let payload = Array.zeroCreate<byte>(headerSize + position.Length)
@@ -87,7 +89,7 @@ module CursorRecord =
 
                 if
                     length < 1
-                    || length > maximumPositionBytes
+                    || length > MaximumPositionBytes
                     || payload.Length <> headerSize + length
                     || issued < 0L
                     || issued > DateTimeOffset.MaxValue.UtcTicks

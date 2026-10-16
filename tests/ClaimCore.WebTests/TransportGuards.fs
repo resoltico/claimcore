@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.TransportGuards
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Text

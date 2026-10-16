@@ -1,17 +1,49 @@
+import { isResponse } from "@contracts/browser-contract";
+import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openCase, startOpen, startCommand } from "./case-workflow";
-import { openAuthenticated } from "./session-helpers";
+import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
 import {
   confirmReview,
   pauseJsonReply,
-  pauseHostReply,
-  expectInputRefusal,
-  inputRefusalText,
+  localInputRefusalText,
+  trackRequests,
   selectLanguage,
   ui,
 } from "./localization-support";
 
+const forgedCorrection = async (page: Page, reference: string) => {
+  const reply = await browserRequest(page, "/api/case.execute", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": await sessionToken(page),
+    },
+    body: JSON.stringify({
+      operationId: randomUUID(),
+      caseReference: reference,
+      expectedRevision: 2,
+      act: {
+        kind: "CORRECT_CASE",
+        groups: {
+          registration: { mode: "KEEP" },
+          decision: { mode: "CLEAR" },
+          payment: { mode: "KEEP" },
+        },
+      },
+    }),
+  });
+  expect(reply.status).toBe(200);
+  if (!isResponse("case.execute", reply.payload)) {
+    throw new Error("Expected typed correction refusal.");
+  }
+  const { outcome } = reply.payload;
+  expect(outcome.tag).toBe("REJECTED");
+  if (outcome.tag === "REJECTED") {
+    expect(outcome.data.diagnostic.id).toBe("CORRECTION_EXISTING_VALUE_REQUIRED");
+  }
+};
 for (const language of ["en", "lv", "ar"] as const) {
   test(`refuses localized authoring digits and currency alphabets in ${language} [CC-DOM-001]`, async ({
     page,
@@ -19,6 +51,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await openAuthenticated(page);
     await startOpen(page, `SYNTAX-${randomUUID()}`);
     await selectLanguage(page, language);
+    const requests = trackRequests(page);
     for (const [name, value] of [
       ["claimedAmount", "١٢٫٥٠"],
       ["claimedAmount", "125,50"],
@@ -26,14 +59,12 @@ for (const language of ["en", "lv", "ar"] as const) {
       ["claimedCurrency", "ĀBC"],
     ]) {
       await page.locator(`input[name="${name}"]`).fill(value!);
-      const pending = await pauseHostReply(page, "case.preview", 400);
       await page
         .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
         .click();
-      const captured = await pending.ready;
-      expectInputRefusal(captured.reply);
-      pending.release();
-      await expect(page.getByRole("alert")).toContainText(inputRefusalText[language]);
+      await expect(page.getByRole("alert")).toContainText(localInputRefusalText[language]);
+      await expect(page.locator(`input[name="${name}"]`)).toBeFocused();
+      expect(requests).toHaveLength(0);
       await expect(page.locator(`input[name="${name}"]`)).toHaveValue(value!);
       await expect(page.locator("section.receipt")).toHaveCount(0);
       await page.locator('input[name="claimedAmount"]').fill("1200.50");
@@ -41,11 +72,12 @@ for (const language of ["en", "lv", "ar"] as const) {
       await page.locator('input[name="claimedCurrency"]').fill("EUR");
     }
   });
-  test(`refuses corrections of missing recorded values in ${language} [CC-DOM-002]`, async ({
+  test(`offers KEEP for missing recorded groups and refuses forged correction in ${language} [CC-DOM-002]`, async ({
     page,
   }) => {
     await openAuthenticated(page);
-    await openCase(page, `MISSING-${randomUUID()}`);
+    const reference = `MISSING-${randomUUID()}`;
+    await openCase(page, reference);
     await startCommand(page, "Close the case");
     // Close through the existing native workflow, then try to correct an absent decision.
     const first = await pauseJsonReply(page, "case.preview");
@@ -57,17 +89,10 @@ for (const language of ["en", "lv", "ar"] as const) {
     await page.getByRole("button", { name: "Return to case" }).click();
     await startCommand(page, "Correct case facts");
     await selectLanguage(page, language);
-    await page.locator("#correction-decision-mode").selectOption("CLEAR");
-    const pending = await pauseJsonReply(page, "case.preview");
-    await page
-      .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
-      .click();
-    const captured = await pending.ready;
-    expect(captured.reply.outcome.tag).toBe("REJECTED");
-    if (captured.reply.outcome.tag === "REJECTED") {
-      expect(captured.reply.outcome.data.diagnostic.id).toBe("CORRECTION_EXISTING_VALUE_REQUIRED");
-    }
-    pending.release();
-    await expect(page.getByRole("alert")).toBeVisible();
+    const mode = page.locator("#correction-decision-mode");
+    await expect(mode).toHaveValue("KEEP");
+    await expect(mode.locator("option")).toHaveCount(1);
+    await forgedCorrection(page, reference);
+    await expect(mode).toHaveValue("KEEP");
   });
 }

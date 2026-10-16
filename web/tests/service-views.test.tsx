@@ -5,12 +5,19 @@ import type { CurrentCase } from "../src/api/service";
 import { CaseDetail } from "../src/views/CaseDetail";
 import { CaseList } from "../src/views/CaseList";
 import { Dashboard } from "../src/views/Dashboard";
-import { generatedResponse, generatedWebValue } from "./contract-corpus.fixtures";
+import { generatedResponse, historyVariants } from "./contract-corpus.fixtures";
 import { context, definition, fields, operationId, response } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
+  offers: ["CLOSE"].map((identifier) => ({
+    definition: identifier,
+    caseReference: null,
+    expectedRevision: null,
+    choices: [],
+  })),
+  historyDetails: ["SUMMARY", "FULL"],
   state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
 };
 
@@ -18,41 +25,39 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
 const queueListPages = () => {
   const fetch = vi.mocked(globalThis.fetch);
-  fetch
-    .mockResolvedValueOnce(
-      response("case.list", "SUCCEEDED", {
-        items: [
-          {
-            state: "LIVE",
-            disposition: "ACTIVE",
-            caseReference: "CASE-1",
-            revision: 1,
-            status: "OPENED",
-          },
-        ],
-        nextCursor: "next",
-      }),
-    )
-    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
-  fetch
-    .mockResolvedValueOnce(
-      response("case.list", "SUCCEEDED", {
-        items: [
-          {
-            state: "LIVE",
-            disposition: "ACTIVE",
-            caseReference: "CASE-2",
-            revision: 2,
-            status: "CLOSED",
-          },
-        ],
-        nextCursor: null,
-      }),
-    )
-    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
-  fetch
-    .mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }))
-    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
+  fetch.mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", {
+      offers: context.offers,
+      items: [
+        {
+          state: "LIVE",
+          disposition: "ACTIVE",
+          caseReference: "CASE-1",
+          revision: 1,
+          status: "OPENED",
+        },
+      ],
+      nextCursor: "next",
+    }),
+  );
+  fetch.mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", {
+      offers: context.offers,
+      items: [
+        {
+          state: "LIVE",
+          disposition: "ACTIVE",
+          caseReference: "CASE-2",
+          revision: 2,
+          status: "CLOSED",
+        },
+      ],
+      nextCursor: null,
+    }),
+  );
+  fetch.mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", { offers: context.offers, items: [], nextCursor: null }),
+  );
 };
 
 it("lists, reloads, pages, selects and opens cases through typed list outcomes", async () => {
@@ -76,16 +81,9 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
 });
 
 const historyWithTwoReceipts = () => {
-  const history = generatedWebValue("case.history");
-  if (history.outcome.tag !== "SUCCEEDED") {
-    throw new Error("Generated history fixture must be found.");
-  }
-  const full = history.outcome.data.entries.find((entry) => entry.tag === "FULL");
-  if (full === undefined) {
-    throw new Error("Generated history fixture must include a full receipt.");
-  }
+  const { full } = historyVariants();
   return {
-    ...history.outcome.data,
+    nextCursor: "next",
     entries: [
       full,
       {
@@ -137,9 +135,9 @@ it("shows current fields, server command labels, full expandable history and ret
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch
-    .mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }))
-    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
+  fetch.mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", { offers: context.offers, items: [], nextCursor: null }),
+  );
   fetch.mockResolvedValueOnce(generatedResponse("operation.observe"));
   render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
   await user.click(await screen.findByRole("button", { name: "Operations" }));
@@ -192,38 +190,36 @@ it("keeps public metadata and other panes available when a case read is refused"
 it("routes dashboard list selections and the new-case command into the typed editor", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch
-    .mockResolvedValueOnce(
-      response("case.list", "SUCCEEDED", {
-        items: [
-          {
-            state: "LIVE",
-            disposition: "ACTIVE",
-            caseReference: "CASE-1",
-            revision: 1,
-            status: "OPENED",
-          },
-        ],
-        nextCursor: null,
-      }),
-    )
-    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
-  fetch
-    .mockResolvedValueOnce(
-      response("case.list", "SUCCEEDED", {
-        items: [
-          {
-            state: "LIVE",
-            disposition: "ACTIVE",
-            caseReference: "CASE-1",
-            revision: 1,
-            status: "OPENED",
-          },
-        ],
-        nextCursor: null,
-      }),
-    )
-    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
+  fetch.mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", {
+      offers: context.offers,
+      items: [
+        {
+          state: "LIVE",
+          disposition: "ACTIVE",
+          caseReference: "CASE-1",
+          revision: 1,
+          status: "OPENED",
+        },
+      ],
+      nextCursor: null,
+    }),
+  );
+  fetch.mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", {
+      offers: context.offers,
+      items: [
+        {
+          state: "LIVE",
+          disposition: "ACTIVE",
+          caseReference: "CASE-1",
+          revision: 1,
+          status: "OPENED",
+        },
+      ],
+      nextCursor: null,
+    }),
+  );
   render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
   await user.click(await screen.findByRole("button", { name: "Open a case" }));
   expect(screen.getByRole("heading", { name: "Open a case" })).toBeVisible();

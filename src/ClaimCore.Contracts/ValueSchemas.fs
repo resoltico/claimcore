@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
@@ -18,6 +20,17 @@ module internal ValueSchemas =
                 property "timeZone" text
             ]
 
+    let operationOffer =
+        objectOf
+            [
+                property "definition" text
+                property "caseReference" (Schema.nullable reference)
+                property "expectedRevision" (Schema.nullable revision)
+                property
+                    "choices"
+                    (array (objectOf [ property "input" text; property "values" (array text) ]))
+            ]
+
     let actorContext =
         objectOf
             [
@@ -26,6 +39,7 @@ module internal ValueSchemas =
                     "businessDate"
                     (ScalarSchemas.scalar (FieldDefinitions.scalar "incidentDate"))
                 property "timeZone" text
+                property "offers" (array operationOffer)
                 property
                     "capabilities"
                     (array (Capabilities.all |> List.map Capabilities.token |> enumeration))
@@ -62,6 +76,10 @@ module internal ValueSchemas =
                 property "caseReference" reference
                 property "revision" sequence
                 property "state" (state available)
+                if available then
+                    property "offers" (array operationOffer)
+                if available then
+                    property "historyDetails" (array (enumeration [ "SUMMARY"; "FULL" ]))
             ]
 
     let record = view true
@@ -148,12 +166,9 @@ module internal ValueSchemas =
                 property "recordedBy" uuid
             ]
 
-    let history =
-        Schema.oneOf
-            [
-                tagged "SUMMARY" [ property "change" (ref "ChangeSummary") ]
-                tagged "FULL" [ property "receipt" (ref "CaseReceipt") ]
-            ]
+    let summaryHistory = tagged "SUMMARY" [ property "change" (ref "ChangeSummary") ]
+    let fullHistory = tagged "FULL" [ property "receipt" (ref "CaseReceipt") ]
+    let history = Schema.oneOf [ summaryHistory; fullHistory ]
 
     let review =
         objectOf
@@ -211,15 +226,13 @@ module internal ValueSchemas =
                 property "actorId" uuid
                 property "principal" RequestSchemas.principal
                 property "enabled" Schema.boolean
-                property
-                    "grants"
-                    (array (
-                        objectOf
-                            [
-                                property "role" (Roles.all |> List.map Roles.token |> enumeration)
-                                property "scope" RequestSchemas.scope
-                            ]
-                    ))
+            ]
+
+    let grant =
+        objectOf
+            [
+                property "role" (Roles.all |> List.map Roles.token |> enumeration)
+                property "scope" RequestSchemas.scope
             ]
 
     let definitions =
@@ -233,10 +246,13 @@ module internal ValueSchemas =
             "Receipt", receipt
             "ChangeSummary", change
             "HistoryEntry", history
+            "SummaryHistoryEntry", summaryHistory
+            "FullHistoryEntry", fullHistory
             "Review", review
             "Rejection", rejection
             "Fault", fault
             "RuntimeContext", context
             "ActorContext", actorContext
-            "ActorReview", actor
+            "ActorSummary", actor
+            "AuthorityGrant", grant
         ]

@@ -8,6 +8,8 @@ open type ArchUnitNET.Fluent.ArchRuleDefinition
 let names =
     set
         [
+            "clientAvoidsServerSemantics"
+            "httpHostAvoidsDirectSemantics"
             "onlyTheseMayReferencePostgres"
             "onlyTheseMayReferenceHosting"
             "freeOfClockFileEnvironmentRandomnessAndNetwork"
@@ -69,10 +71,32 @@ let private forbiddenCalls =
         .Or()
         .HaveFullNameMatching(@"\bSystem\.Globalization\.CultureInfo::get_Current(UI)?Culture\(")
 
+let private semanticTypes includeHosting =
+    let forbidden =
+        Types()
+            .That()
+            .ResideInAssembly(Assembly.Load "ClaimCore.Domain")
+            .Or()
+            .ResideInAssembly(Assembly.Load "ClaimCore.RecordFormat")
+            .Or()
+            .ResideInAssembly(Assembly.Load "ClaimCore.Application")
+            .Or()
+            .ResideInAssembly(Assembly.Load "ClaimCore.Contracts")
+            .Or()
+            .ResideInAssembly(Assembly.Load "ClaimCore.Postgres")
+
+    if includeHosting then
+        forbidden.Or().ResideInAssembly(Assembly.Load "ClaimCore.Hosting")
+    else
+        forbidden
+
 let rule name (subjects: IObjectProvider<IType>) =
     let clauses = Types().That().Are(subjects).Should()
 
     match name with
+    | "clientAvoidsServerSemantics"
+    | "httpHostAvoidsDirectSemantics" ->
+        clauses.NotDependOnAny(semanticTypes (name = "clientAvoidsServerSemantics")) :> IArchRule
     | "onlyTheseMayReferencePostgres" ->
         clauses.NotDependOnAny(Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Postgres"))
         :> IArchRule

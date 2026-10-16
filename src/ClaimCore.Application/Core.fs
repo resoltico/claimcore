@@ -226,6 +226,9 @@ module internal Core =
             member _.Observe(id, ct) =
                 Queries.observe store installationId principal id ct
 
+            member _.ListGrants(request, ct) =
+                Queries.grants store installationId cursorKey principal request ct
+
             member _.ListActors(request, ct) =
                 Queries.actors store installationId cursorKey principal request ct
         }

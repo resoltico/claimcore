@@ -154,8 +154,26 @@ type internal StoredActorPage =
     {
         ObservedAt: DateTimeOffset
         Actor: ActorAuthority option
-        Items: ActorReview list
+        Items: ActorSummary list
         NextAfterActorId: Guid option
+    }
+
+type internal GrantPosition = { Role: Role; CaseId: Guid option }
+
+type internal GrantReadView =
+    {
+        ObservedAt: DateTimeOffset
+        Actor: ActorAuthority option
+        Target: ActorSummary option
+    }
+
+type internal StoredGrantPage =
+    {
+        ObservedAt: DateTimeOffset
+        Actor: ActorAuthority option
+        Target: ActorSummary
+        Items: AuthorityGrant list
+        NextAfterGrant: GrantPosition option
     }
 
 type internal OperationReadView =
@@ -214,6 +232,14 @@ type internal ILedgerStore =
         limit: int *
         cancellationToken: CancellationToken ->
             Task<Result<Result<StoredActorPage, Rejection>, StoreFailure>>
+
+    abstract ListGrants:
+        principal: PrincipalKey *
+        targetActorId: Guid *
+        select: (GrantReadView -> Result<GrantPosition option, Rejection>) *
+        limit: int *
+        cancellationToken: CancellationToken ->
+            Task<Result<Result<StoredGrantPage, Rejection>, StoreFailure>>
 
     abstract ReadOperation:
         principal: PrincipalKey * operationId: Guid * cancellationToken: CancellationToken ->

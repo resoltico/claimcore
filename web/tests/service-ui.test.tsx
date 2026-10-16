@@ -8,19 +8,18 @@ import { DescriptorField } from "../src/components/DescriptorField";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
-import {
-  context,
-  definition,
-  fields,
-  operationId,
-  digest,
-  runtime,
-  response,
-} from "./service-ui.fixtures";
+import { context, definition, fields, digest, runtime, response } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
+  offers: ["CLOSE"].map((identifier) => ({
+    definition: identifier,
+    caseReference: null,
+    expectedRevision: null,
+    choices: [],
+  })),
+  historyDetails: ["SUMMARY", "FULL"],
   state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
 };
 
@@ -94,7 +93,7 @@ const acceptsOperation = async (): Promise<void> => {
   await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
   expect(await screen.findByRole("heading", { name: "Recorded change" })).toBeVisible();
-  expect(screen.getByText(`Operation ${operationId} is accepted.`)).toBeVisible();
+  expect(screen.getByText(/Operation .* is accepted\./u)).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Return to case" }));
   expect(committed).toHaveBeenCalledOnce();
 };
@@ -127,9 +126,9 @@ describe("service session lifecycle", () => {
         antiforgeryToken: "authenticated",
       }),
     );
-    fetch
-      .mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }))
-      .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
+    fetch.mockResolvedValueOnce(
+      response("case.list", "SUCCEEDED", { offers: context.offers, items: [], nextCursor: null }),
+    );
     fetch.mockResolvedValueOnce(
       response("session.logout", "SUCCEEDED", {
         authenticated: false,

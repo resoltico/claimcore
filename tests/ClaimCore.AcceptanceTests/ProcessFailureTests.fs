@@ -101,7 +101,8 @@ let private locationControls () =
         "  ✘  29 [chromium] › e2e/localization-editor.spec.ts:58:1 › private payload/title (30.0s)"
 
     let locations value =
-        Encoding.UTF8.GetBytes(value: string) |> BrowserProgress.failedLocations
+        Encoding.UTF8.GetBytes(value: string)
+        |> BrowserProgress.failedLocations [ "/repo/web/e2e/localization-editor.spec.ts" ]
 
     Expect.equal
         (locations row)
@@ -116,6 +117,7 @@ let private locationControls () =
             row.Replace(":58:1", ":0:1")
             row.Replace(":58:1", ":58:0")
             row.Replace("[chromium]", "[private-title]")
+            row.Replace("localization-editor.spec.ts", "private-credential.spec.ts")
         ] do
         Expect.isEmpty (locations changed) "Private or malformed locations are omitted"
 
@@ -126,16 +128,189 @@ let private locationControls () =
         [ "localization-editor.spec.ts:58" ]
         "Even reporter titles containing private details are never exposed"
 
-let private controls () =
-    cleanupControls ()
+let private stackControls () =
+    let files =
+        [
+            "/repo/web/e2e/session-helpers.ts"
+            "/repo/web/e2e/localization-editor.spec.ts"
+        ]
+
+    let frame = "        at openCase (/repo/web/e2e/localization-editor.spec.ts:66:3)"
+
+    let locations text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.stackLocations files
+
+    Expect.equal
+        (locations (frame + "\n" + frame + "\n        at /repo/web/e2e/session-helpers.ts:108:9"))
+        [ "localization-editor.spec.ts:66"; "session-helpers.ts:108" ]
+        "Nested helper and bare frames expose only unique source locations"
+
+    Expect.equal
+        (locations ("\u001b[31m" + frame + "\u001b[0m"))
+        (locations frame)
+        "Colors are omitted"
+
+    for changed in
+        [
+            "private payload " + frame
+            frame.Replace("/repo/", "/private/")
+            frame.Replace("/e2e/", "/e2e/../e2e/")
+            frame.Replace(".spec.ts", ".spec.ts?token=private")
+            frame.Replace(":66:3", ":0:3")
+            frame.Replace(":66:3", ":66:0")
+            frame.Replace("localization-editor.spec.ts", "private-payload.spec.ts")
+            frame.Replace("openCase (", "private\n(")
+        ] do
+        Expect.isEmpty
+            (locations changed)
+            "Unknown, malformed or private stack locations are omitted"
+
+    let many =
+        [ 1..8 ]
+        |> List.map (fun line -> frame.Replace(":66:3", $":{line}:3"))
+        |> String.concat "\n"
+
+    Expect.equal (locations many |> List.length) 5 "Public stack is bounded"
+
+let private categoryControls () =
+    let categories text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.failureCategories
+
+    let privateDetails =
+        "private-token https://private.invalid/credential claimant-body"
+
+    let errors =
+        [
+            "    Error: expect(locator).toHaveText(" + privateDetails + ") failed"
+            "    Error: E2E_AXE_LANDMARK_ONE_MAIN__REGION"
+            "    TimeoutError: " + privateDetails
+            "    Error: " + privateDetails
+            "    AssertionError: " + privateDetails
+        ]
+        |> String.concat "\n"
+
+    Expect.equal
+        (categories errors)
+        [ "ACCESSIBILITY"; "ACTION_TIMEOUT"; "ASSERTION"; "ERROR" ]
+        "Only closed categories survive private assertion, accessibility and timeout details"
+
+    Expect.equal
+        (categories ("payload Error: " + privateDetails))
+        []
+        "Unrelated text is not an error"
+
+    Expect.equal
+        (categories "    Error: E2E_AXE_RULE private-token")
+        [ "ERROR" ]
+        "Marker requires a safe suffix"
+
+    Expect.equal
+        (categories "    Test timeout of 30000ms exceeded.")
+        [ "TEST_TIMEOUT" ]
+        "Runner deadline category"
+
+let private durationControls () =
+    let row =
+        "  ✘  1 [chromium] › e2e/localization-editor.spec.ts:58:1 › private-title (30.0s)"
+
+    let duration text =
+        Encoding.UTF8.GetBytes(text: string)
+        |> BrowserProgress.failedDurations [ "/repo/web/e2e/localization-editor.spec.ts" ]
+
+    Expect.equal
+        (duration row)
+        [ "localization-editor.spec.ts:58:30.0s" ]
+        "Only safe source and duration survive"
+
+    for invalid in
+        [
+            row.Replace("30.0s", "1000000s")
+            row.Replace("30.0s", "1.1234s")
+            row.Replace("30.0s", "private-token")
+            row.Replace("localization-editor.spec.ts", "private-token.spec.ts")
+            "private " + row
+        ] do
+        Expect.isEmpty (duration invalid) "Private or unbounded duration data is omitted"
+
+let private timeoutControls () =
+    let categories text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.failureCategories
+
+    for action in
+        [
+            "    TimeoutError: private-details"
+            "    Error: locator.selectOption: Timeout 10000ms exceeded. private-details"
+        ] do
+        Expect.equal
+            (categories action)
+            [ "ACTION_TIMEOUT" ]
+            "An explicit action timeout has its own category"
+
+    Expect.equal
+        (categories "    Error: locator.selectOption: Test timeout of 30000ms exceeded.")
+        [ "TEST_TIMEOUT" ]
+        "An action interrupted by the test deadline is a test timeout"
+
+    Expect.equal
+        (categories "    Error: Timeout 10000ms exceeded.")
+        [ "TIMEOUT" ]
+        "Unclassified timeout remains generic"
+
+    Expect.isEmpty
+        (categories "private TimeoutError: private-token")
+        "Payload prefixes do not become timeout evidence"
+
+let private layoutControls () =
+    let categories text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.failureCategories
+
+    for stage in [ "LOGIN"; "CASES"; "NARROW"; "ZOOM" ] do
+        for suffix in [ ""; "_REPORT_UNAVAILABLE" ] do
+            Expect.equal
+                (categories ("    Error: E2E_LAYOUT_" + stage + "_OVERFLOW" + suffix + " \t\r\n"))
+                [ "LAYOUT" ]
+                "Every fixed stage and report-failure marker has one closed category"
+
+    for invalid in
+        [
+            "    Error: E2E_LAYOUT_PRIVATE_OVERFLOW"
+            "    Error: E2E_LAYOUT_narrow_OVERFLOW"
+            "    Error: E2E_LAYOUT_NARROW_OVERFLOW_PRIVATE"
+            "    Error: E2E_LAYOUT_NARROW_OVERFLOW_REPORT_UNAVAILABLE_PRIVATE"
+            "    Error: E2E_LAYOUT_NARROW_OVERFLOW/private-path"
+            "    Error: E2E_LAYOUT_NARROW_OVERFLOW private-claimant-body"
+            "    Error: private-token E2E_LAYOUT_NARROW_OVERFLOW"
+            "private-prefix    Error: E2E_LAYOUT_NARROW_OVERFLOW"
+            "    Error: E2E_LAYOUT_NARROW_OVERFLOW\rprivate-token"
+        ] do
+        let result = categories invalid
+
+        Expect.isFalse
+            (List.contains "LAYOUT" result)
+            "Malformed or private text is not a layout marker"
+
+        Expect.isTrue
+            (result |> List.forall ((=) "ERROR"))
+            "Only the existing generic category may survive rejected marker text"
+
+let private browserMetadataControls () =
     progressControls ()
     locationControls ()
+    stackControls ()
+    categoryControls ()
+    durationControls ()
+    timeoutControls ()
+    layoutControls ()
 
-    let deadline =
-        failure Deadline "printf synthetic-out; printf synthetic-err >&2; sleep 2" None 64 250
+let private controls () =
+    cleanupControls ()
+    browserMetadataControls ()
 
-    Expect.equal (Encoding.UTF8.GetString deadline.StandardOutput) "synthetic-out" "Deadline stdout"
-    Expect.equal (Encoding.UTF8.GetString deadline.StandardError) "synthetic-err" "Deadline stderr"
+    let deadline = failure Deadline "exec sleep 2" None 64 250
+
+    Expect.isEmpty deadline.StandardOutput "The quiet deadline child writes no stdout"
+    Expect.isEmpty deadline.StandardError "The quiet deadline child writes no stderr"
+    Expect.isFalse deadline.CleanupFailed "The owned quiet child completed cleanup"
 
     outputControls ()
 

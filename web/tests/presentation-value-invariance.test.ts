@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { createPresenter } from "../src/presentation/presenter";
-import { createDraft } from "../src/domain/metadata";
-import { freezeRequest } from "../src/domain/operationRequest";
+import { createDraft } from "../src/interaction/metadata";
+import { freezeRequest } from "../src/interaction/operationRequest";
 import { definition, operationId } from "./service-ui.fixtures";
 
 const arabicDigits = (value: string) =>

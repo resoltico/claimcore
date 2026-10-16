@@ -135,8 +135,7 @@ let private exec (database: PostgresFixture.Database) arguments =
 
 [<Tests>]
 let tests =
-    testSequenced
-    <| testList
+    testList
         "PostgreSQL administration"
         [
             testCaseAsync

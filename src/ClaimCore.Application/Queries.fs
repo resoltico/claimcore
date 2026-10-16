@@ -5,6 +5,7 @@ open System.Globalization
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
+open ClaimCore.RecordFormat
 
 module internal Queries =
     let fault =
@@ -43,20 +44,121 @@ module internal Queries =
         | Some actor when ActorAuthorization.validActor principal actor -> Ok actor
         | _ -> Error Rejection.ResourceUnavailable
 
+    let private offer definition reference revision choices : OperationOffer =
+        {
+            Definition = definition
+            CaseReference = reference
+            ExpectedRevision = revision
+            Choices = choices
+        }
+
+    let private correctionChoices principal actor resource accepted =
+        ActorAuthorization.correctionGroups
+        |> List.map (fun (group, capability) ->
+            let actions =
+                if ActorAuthorization.can principal actor capability resource then
+                    Case.correctionActions accepted group
+                else
+                    [ CorrectionGroupAction.Keep ]
+
+            {
+                Input = "groups." + group
+                Values =
+                    actions
+                    |> List.map (function
+                        | CorrectionGroupAction.Keep -> "KEEP"
+                        | CorrectionGroupAction.Replace -> "REPLACE"
+                        | CorrectionGroupAction.Clear -> "CLEAR")
+            })
+
+    let private historyDetails principal actor resource =
+        [ "SUMMARY", Capability.ReadHistory; "FULL", Capability.ReadHistoryFull ]
+        |> List.choose (fun (detail, capability) ->
+            if ActorAuthorization.can principal actor capability resource then
+                Some detail
+            else
+                None)
+
+    let private historyOffers reference details =
+        if List.isEmpty details then
+            []
+        else
+            [
+                offer
+                    "case.history"
+                    (Some reference)
+                    None
+                    [ { Input = "detail"; Values = details } ]
+            ]
+
+    let private caseOffer principal actor resource accepted (snapshot: CaseSnapshot) kind =
+        let choices =
+            if kind = CaseActKind.CorrectCase then
+                correctionChoices principal actor resource accepted
+            else
+                []
+
+        if
+            kind = CaseActKind.CorrectCase
+            && (choices |> List.forall (fun choice -> choice.Values = [ "KEEP" ]))
+        then
+            None
+        else
+            Some(
+                kind,
+                offer
+                    (CaseActKinds.token kind)
+                    (Some snapshot.Reference)
+                    (Some snapshot.Revision)
+                    choices
+            )
+
     let caseRecord installationId principal actor (record: StoredCase) =
         CaseDecisions.current installationId record
         |> Result.map (fun accepted ->
+            let resource = ResourceScope.Case record.CaseId
+
+            let acts =
+                Case.eligibleActs accepted
+                |> List.filter (ActorAuthorization.canAdvertise principal actor resource)
+
+            let details = historyDetails principal actor resource
+
+            let offered =
+                acts
+                |> List.choose (caseOffer principal actor resource accepted record.Snapshot)
+
             {
                 Snapshot = record.Snapshot
-                AvailableActs =
-                    Case.eligibleActs accepted
-                    |> List.filter (
-                        ActorAuthorization.canAdvertise
-                            principal
-                            actor
-                            (ResourceScope.Case record.CaseId)
-                    )
+                AvailableActs = offered |> List.map fst
+                Offers =
+                    (offered |> List.map snd) @ historyOffers record.Snapshot.Reference details
+                HistoryDetails = details
             })
+
+    let private installationOffers principal actor =
+        let can capability =
+            ActorAuthorization.can principal actor capability ResourceScope.Installation
+
+        [
+            if can Capability.Register then
+                yield offer "OPEN" None (Some 0L) []
+            if can Capability.ManageAuthority then
+                for definition in AuthorityOperationDefinitions.all do
+                    yield offer (RecordedAuthorityActs.token definition.Kind) None None []
+            if can Capability.ReadAuthority then
+                yield offer "authority.list" None None []
+                yield offer "authority.grants" None None []
+                yield offer "operation.observe" None None []
+            match actor with
+            | Some authority when ActorAuthorization.visibility principal authority |> Option.isSome ->
+                yield offer "case.list" None None []
+                yield offer "case.get" None None []
+
+                if not (can Capability.ReadAuthority) then
+                    yield offer "operation.observe" None None []
+            | _ -> ()
+        ]
 
     let get
         (store: ILedgerStore)
@@ -108,6 +210,7 @@ module internal Queries =
                                         EffectiveBusinessDate = calendar.DateAt view.ObservedAt
                                         TimeZoneId = calendar.TimeZoneId
                                     }
+                                Offers = installationOffers principal view.Actor
                                 Capabilities =
                                     Capabilities.all
                                     |> List.filter (fun capability ->
@@ -204,6 +307,8 @@ module internal Queries =
         : Result<CaseSummaryPage, CoreFault> =
         match currentActor principal page.Actor with
         | Error _ -> Error CoreFault.StoreIntegrityError
+        | Ok _ when page.Items.Length > ServiceLimits.MaximumPageSize ->
+            Error CoreFault.StoreIntegrityError
         | Ok actor ->
             page.Items
             |> List.map (summary installationId)
@@ -211,6 +316,7 @@ module internal Queries =
             |> Result.map (fun items ->
                 {
                     Items = items
+                    Offers = installationOffers principal page.Actor
                     NextCursor =
                         page.NextAfterReference
                         |> Option.map (fun reference ->
@@ -338,7 +444,10 @@ module internal Queries =
                         principal,
                         request.CaseReference,
                         selectHistory key installationId principal request,
-                        request.Limit,
+                        (if request.Detail = HistoryDetail.Full then
+                             min request.Limit ServiceLimits.MaximumFullHistoryPageSize
+                         else
+                             request.Limit),
                         ct
                     )
 
@@ -428,20 +537,24 @@ module internal Queries =
         : Result<ActorReviewPage, CoreFault> =
         currentActor principal page.Actor
         |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
-        |> Result.map (fun actor ->
-            {
-                Items = page.Items
-                NextCursor =
-                    page.NextAfterActorId
-                    |> Option.map (fun id ->
-                        Cursors.encode
-                            key
-                            installationId
-                            actor
-                            CursorQuery.Actors
-                            page.ObservedAt
-                            (id.ToString("D")))
-            })
+        |> Result.bind (fun actor ->
+            if page.Items.Length > ServiceLimits.MaximumPageSize then
+                Error CoreFault.StoreIntegrityError
+            else
+                Ok
+                    {
+                        Items = page.Items
+                        NextCursor =
+                            page.NextAfterActorId
+                            |> Option.map (fun id ->
+                                Cursors.encode
+                                    key
+                                    installationId
+                                    actor
+                                    CursorQuery.Actors
+                                    page.ObservedAt
+                                    (id.ToString("D")))
+                    })
 
     let actors
         (store: ILedgerStore)
@@ -469,6 +582,114 @@ module internal Queries =
                     | Ok(Error reason) -> rejected reason
                     | Ok(Ok page) ->
                         actorPage key installationId principal page
+                        |> Result.map QueryOutcome.Succeeded
+                        |> Result.defaultWith QueryOutcome.Failed
+        }
+
+    let private grantPosition =
+        function
+        | None -> Ok None
+        | Some value ->
+            match GrantCursorPosition.decode value with
+            | Ok(role, caseId) ->
+                match Roles.tryParse role, actorPosition caseId with
+                | Some role, Ok id -> Ok(Some { Role = role; CaseId = id })
+                | _ -> Error Rejection.InvalidCursor
+            | Error _ -> Error Rejection.InvalidCursor
+
+    let private selectGrants
+        key
+        installationId
+        principal
+        (request: AuthorityGrantListRequest)
+        (view: GrantReadView)
+        =
+        if
+            not (
+                ActorAuthorization.can
+                    principal
+                    view.Actor
+                    Capability.ReadAuthority
+                    ResourceScope.Installation
+            )
+        then
+            Error Rejection.ResourceUnavailable
+        else
+            match currentActor principal view.Actor, view.Target with
+            | Ok actor, Some target when target.ActorId = request.ActorId ->
+                cursor
+                    key
+                    installationId
+                    actor
+                    (CursorQuery.Grants request.ActorId)
+                    view.ObservedAt
+                    request.AfterCursor
+                |> Result.bind grantPosition
+            | _ -> Error Rejection.ResourceUnavailable
+
+    let private grantPage
+        key
+        installationId
+        principal
+        (request: AuthorityGrantListRequest)
+        (page: StoredGrantPage)
+        =
+        currentActor principal page.Actor
+        |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+        |> Result.bind (fun actor ->
+            if
+                page.Target.ActorId <> request.ActorId
+                || page.Items.Length > ServiceLimits.MaximumPageSize
+            then
+                Error CoreFault.StoreIntegrityError
+            else
+                Ok
+                    {
+                        Actor = page.Target
+                        Items = page.Items
+                        NextCursor =
+                            page.NextAfterGrant
+                            |> Option.map (fun position ->
+                                GrantCursorPosition.encode
+                                    (Roles.token position.Role)
+                                    (position.CaseId |> Option.map (fun id -> id.ToString("D")))
+                                |> Cursors.encode
+                                    key
+                                    installationId
+                                    actor
+                                    (CursorQuery.Grants request.ActorId)
+                                    page.ObservedAt)
+                    })
+
+    let grants
+        (store: ILedgerStore)
+        installationId
+        key
+        principal
+        (request: AuthorityGrantListRequest)
+        ct
+        : Task<QueryOutcome<AuthorityGrantPage>> =
+        task {
+            if not (validLimit request.Limit) then
+                return invalidLimit ()
+            elif request.ActorId = Guid.Empty then
+                return unavailable
+            else
+                let! read =
+                    store.ListGrants(
+                        principal,
+                        request.ActorId,
+                        selectGrants key installationId principal request,
+                        request.Limit,
+                        ct
+                    )
+
+                return
+                    match read with
+                    | Error error -> failure error
+                    | Ok(Error reason) -> rejected reason
+                    | Ok(Ok page) ->
+                        grantPage key installationId principal request page
                         |> Result.map QueryOutcome.Succeeded
                         |> Result.defaultWith QueryOutcome.Failed
         }

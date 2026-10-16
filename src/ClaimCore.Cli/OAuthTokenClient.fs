@@ -61,7 +61,7 @@ module OAuthTokenClient =
 
         root.TryGetProperty("token_type", &kind)
         && kind.ValueKind = JsonValueKind.String
-        && kind.GetString() = "Bearer"
+        && String.Equals(kind.GetString(), "Bearer", StringComparison.OrdinalIgnoreCase)
 
     let private positiveExpiry (root: JsonElement) =
         let mutable expiry = Unchecked.defaultof<JsonElement>

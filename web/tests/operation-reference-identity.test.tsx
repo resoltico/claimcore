@@ -10,6 +10,13 @@ import { definition, fields, digest, response, runtime } from "./service-ui.fixt
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
+  offers: ["CLOSE"].map((identifier) => ({
+    definition: identifier,
+    caseReference: null,
+    expectedRevision: null,
+    choices: [],
+  })),
+  historyDetails: ["SUMMARY", "FULL"],
   state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
 };
 

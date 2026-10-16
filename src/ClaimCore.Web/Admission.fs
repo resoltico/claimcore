@@ -7,7 +7,6 @@ open Microsoft.AspNetCore.Antiforgery
 open Microsoft.AspNetCore.Authentication
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Http
-open ClaimCore.Application
 
 [<RequireQualifiedAccess>]
 type AdmissionFailure =

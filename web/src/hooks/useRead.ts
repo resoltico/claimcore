@@ -38,6 +38,7 @@ export const useRead = <R extends EndpointOutcome, T>(
 };
 
 type PageSinks<T, P> = {
+  onDisclosureRefused: ((notice?: Notice) => void) | undefined;
   setItems: Dispatch<SetStateAction<T[]>>;
   setCursor: Dispatch<SetStateAction<string | null>>;
   setMessage: Dispatch<SetStateAction<Notice | null>>;
@@ -58,7 +59,14 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
   }
   const page = result.kind === "outcome" ? select(result.value) : null;
   if (page === null) {
-    if (isDisclosureRefused(result)) {
+    const cursorInvalid =
+      result.kind === "outcome" &&
+      result.value.outcome.tag === "REJECTED" &&
+      result.value.outcome.data.diagnostic.id === "QUERY_CURSOR_INVALID";
+    if (isDisclosureRefused(result) || cursorInvalid) {
+      if (isDisclosureRefused(result)) {
+        sinks.onDisclosureRefused?.(resultNotice(result));
+      }
       sinks.setItems([]);
       sinks.setCursor(null);
       sinks.setPage(null);
@@ -116,6 +124,7 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
 export const useRetryablePage = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
   request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<R>>,
   select: (response: R) => P | null,
+  onDisclosureRefused?: (notice?: Notice) => void,
 ) => {
   const [items, setItems] = useState<T[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -123,14 +132,22 @@ export const useRetryablePage = <R extends EndpointOutcome, T, P extends Page<T>
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState<P | null>(null);
   const sinks = useMemo(
-    () => ({ setItems, setCursor, setMessage, setLoading, setPage }),
-    [setItems, setCursor, setMessage, setLoading, setPage],
+    () => ({ setItems, setCursor, setMessage, setLoading, setPage, onDisclosureRefused }),
+    [setItems, setCursor, setMessage, setLoading, setPage, onDisclosureRefused],
   );
   const { load, abort } = usePageLoader(request, select, sinks);
 
   useEffect(() => {
-    void Promise.resolve().then(() => load(null));
-    return abort;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) {
+        void load(null);
+      }
+    });
+    return () => {
+      active = false;
+      abort();
+    };
   }, [abort, load]);
 
   return { items, cursor, message, loading, page, load };

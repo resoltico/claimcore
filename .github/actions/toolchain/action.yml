@@ -1,8 +1,7 @@
 name: ClaimCore toolchain
 description: >-
-  Prepares the exact .NET and Node toolchains this repository pins, and proves the runner is using
-  them. Every workflow that builds, tests, or inspects ClaimCore composes this action instead of
-  repeating the setup, so a new workflow cannot quietly run on a different toolchain.
+  Prepares the pinned .NET and Node toolchains and validates the supported native compiler/SDK
+  baseline. Native jobs compose this action; SDK-free frontend jobs use the pinned Node container.
 
 inputs:
   dotnet:
@@ -32,6 +31,11 @@ runs:
       uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
       with:
         global-json-file: global.json
+        cache: true
+        cache-dependency-path: |
+          src/**/packages.lock.json
+          tests/**/packages.lock.json
+          eng/**/packages.lock.json
     - if: inputs.dotnet == 'true'
       name: Require the exact .NET SDK
       shell: bash
@@ -40,10 +44,27 @@ runs:
         expected_sdk="$(sed -nE 's/^[[:space:]]*"version":[[:space:]]*"([^"]+)".*/\1/p' global.json)"
         test -n "${expected_sdk}"
         test "$(dotnet --version)" = "${expected_sdk}"
+    - if: inputs.dotnet == 'true'
+      name: Prepare and validate native compiler prerequisites
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [[ "${RUNNER_OS}" == Linux ]]; then
+          packages=()
+          command -v gcc >/dev/null || packages+=(gcc libc6-dev)
+          command -v setfacl >/dev/null || packages+=(acl)
+          if [[ ${#packages[@]} -ne 0 ]]; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y "${packages[@]}"
+          fi
+        fi
+        bash eng/build-native.sh identify "$(dotnet --info | sed -nE 's/^ *RID: *(.*)/\1/p')" "${RUNNER_TEMP}/claimcore-native-toolchain.txt"
     - if: inputs.node == 'true'
       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version-file: .node-version
+        cache: npm
+        cache-dependency-path: web/package-lock.json
     # The setup action selects a version; this proves the runner is actually running it, including
     # the npm release, which no setup input pins.
     - if: inputs.node == 'true'

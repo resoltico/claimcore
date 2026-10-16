@@ -2,12 +2,24 @@
 
 [Development](../docs/development.md) owns setup and verification. `verify.sh` runs named
 stages in order, stops at failure and shares restore/build work within one invocation. Browser
-selection is checked before any expensive work; frontend assets build once when frontend and
+selection and explicit PostgreSQL major overrides are checked before any expensive work; frontend assets build once when frontend and
 acceptance stages share an invocation. CI
-calls these same stages. `unit`, `lint` and `integration` require .NET; `frontend` requires
-Node only and consumes tracked `contracts/` artifacts. `browsers` installs the selected
-Playwright engine and its Linux dependencies; `acceptance` builds and tests published clients.
-`workflows` checks shell scripts and workflow syntax. `Check-FSharpLint.sh` retains every failure.
+calls these same stages. `unit`, `lint`, `integration`, `postgres` and `web` require .NET;
+`frontend` requires Node only and consumes tracked `contracts/` artifacts. `browsers` installs the required
+Playwright engines, including Chromium for CLI authentication, and their Linux dependencies; `acceptance` builds and tests published clients.
+`postgres` and `web` run the complete individual integration suites and restore and build only their project
+closures; `integration` sequences these stages and reuses an earlier solution build when available.
+Docker-dependent stages check the daemon before any selected expensive work. CI starts the two
+suites independently of lint/unit completion and requires every suite in `Gate`. `workflows` checks shell scripts and workflow syntax.
+`Check-FSharpLint.sh` retains every failure. With no arguments `verify.sh` selects the default;
+`--fast` must stand alone. Empty or invalid arguments refuse before tools or Docker.
+
+`build-native.sh` owns the C17 host/compiler/SDK policy, consumed by `NativeBuild.targets`.
+It builds the product HostSecurity library and separate test-only programs incrementally;
+unsupported or cross-RID compilation refuses. [Development](../docs/development.md#first-checkout)
+owns contributor prerequisites and publication limits. `licenses/native-notices.json` is the
+reviewed package/asset provenance and canonical-text owner; app publication copies this common
+superset without consulting the NuGet cache.
 
 ContractGenerator derives tracked catalogue, schemas, descriptors, corpus and client declarations
 from Contracts. Native tests check exact artifact bytes and inventory, without invoking Node.

@@ -103,7 +103,7 @@ module internal Validation =
             elif policy.RejectsControlCharacters && (value |> Seq.exists Char.IsControl) then
                 failure TextViolation.ControlCharacters
             elif
-                policy.RejectsFormattingCharacters
+                policy.RejectsForbiddenInvisibleCharacters
                 && (value.EnumerateRunes() |> Seq.exists (fun rune -> formatting rune.Value))
             then
                 failure TextViolation.FormattingCharacter

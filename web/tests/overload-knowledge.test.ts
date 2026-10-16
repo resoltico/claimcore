@@ -1,6 +1,7 @@
+import { prepareRequest } from "../src/protocol/preparedRequest";
 import { beforeEach, expect, it, vi } from "vitest";
 import { isMutationUncertain, service } from "../src/api/service";
-import { createDraft } from "../src/domain/metadata";
+import { createDraft } from "../src/interaction/metadata";
 import { operationId } from "./service-ui.fixtures";
 
 const overloaded = (executionPhase: string | null) =>
@@ -22,11 +23,11 @@ it("classifies verified overload as not started and refuses the old ambiguous bu
   const fetch = vi.mocked(globalThis.fetch);
   const draft = createDraft(operationId, "SYNTHETIC", 1, "CLOSE", {});
   fetch.mockResolvedValueOnce(overloaded("NOT_STARTED"));
-  const refused = await service.execute(JSON.stringify(draft), "token");
+  const refused = await service.execute(prepareRequest("case.execute", draft), "token");
   expect(refused).toMatchObject({ kind: "hostFailure", status: 429 });
   expect(isMutationUncertain(refused)).toBe(false);
   fetch.mockResolvedValueOnce(overloaded(null));
-  const invalid = await service.execute(JSON.stringify(draft), "token");
+  const invalid = await service.execute(prepareRequest("case.execute", draft), "token");
   expect(invalid.kind).toBe("deliveryFailure");
   expect(isMutationUncertain(invalid)).toBe(true);
 });

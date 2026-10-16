@@ -4,6 +4,31 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Security
+
+- Owner-private inputs require effective-UID ownership, regular-file type, owner-read permission and restricted mode/ACL access on supported macOS/Linux filesystems. Reads use the admitted descriptor even if its pathname is replaced; embedded NUL and malformed Unicode paths refuse before native marshalling. Previously readable files that violate these rules must be corrected before use. Missing or incompatible native assets refuse with installation guidance. See [private-input admission](docs/database.md#cc-db-002).
+
+### Changed
+
+- **Breaking for clients and native host integrations:** deploy matching service, CLI, browser assets and generated artifacts for the twelve-endpoint contract and Hosting’s protocol-only facade. Case preview/execute and authority execute envelopes echo operation IDs; CLI frames expose per-attempt `attemptKnowledge`, `resolutionEvidence` and host status/phase. Automation callers must retain exact uncertain requests and accumulated knowledge across processes: only correlated exact replay/acceptance or content-exclusion evidence resolves uncertainty; operation observation metadata does not prove content equality. See [API](docs/api.md).
+- **Breaking for read consumers:** `case.list` includes same-snapshot installation offers, `authority.list` returns actor summaries without embedded grants, and `authority.grants` pages a selected actor’s grants under current installation authority. FULL history pages contain at most 10 entries and SUMMARY pages at most 50; follow non-null continuations even after short pages. Invalid cursors support local reload without implying global access loss. Database schema, durable formats and accepted historical text are unchanged. Rebuild matching generated consumers and update pagination handling.
+- Browser forms expose core-defined business, stewardship and authority work through generated builders and complete byte decoders. Stewardship review shows the exact reason, before/after record state and erasure limits. Access refusals clear and revalidate disclosed data while preserving exact uncertain requests; advice failures provide an explicit retry. Grant review restores keyboard focus, and authority controls fit narrow panels. Latvian/Arabic additions remain machine-drafted and require native review.
+- Descriptor text-policy metadata uses `rejectsForbiddenInvisibleCharacters` in place of `rejectsFormattingCharacters`, describing the selected forbidden code points while preserving permitted joining and variation characters. Update descriptor consumers with the matching generated contract.
+- Principal wire-syntax validation is separate from authoritative identity admission in Hosting. Semantic issuer and kind-specific identity failures are evaluated after authentication and return `INPUT_INVALID` / HTTP 400 / `NOT_STARTED` (CLI exit 3); wire decoding does not promise identity admission.
+- **For source builds and redistribution:** building or publishing applications, and building tests that consume native components, requires the supported C17 compiler/SDK in [Development](docs/development.md). Preserve the complete framework-dependent publish directory, including the matching HostSecurity native library, reviewed notices and apphost provenance. Cross-RID, self-contained, trimmed and single-file publication are refused. Frontend-only commands require neither .NET nor the native compiler.
+
+### Fixed
+
+- CLI OAuth bearer token types and parsed JSON media types accept protocol-defined casing variants while token bytes, JSON member names, identifiers, status binding and response correlation remain exact.
+- Ledger verification rejects duplicate case-projection identities even when the row count matches reconstructed history, reporting `CASE_PROJECTION`.
+- Browser preference saves persist a versioned record containing only language and display-format preferences, excluding unrelated supplied properties.
+
+### Internal
+
+- ClientProtocol separates generic admission, correlation and delivery policy from server semantics. Generated catalogues/builders/complete decoders, evaluated project and facade checks, exact artifact inventory and transitive frontend import checks enforce the component boundaries; published CLI output excludes server semantic assemblies.
+- PostgreSQL verification overlaps at most two isolated database-backed cases, uses 250 ms readiness polling and starts independently of lint/unit jobs. Separate `postgres` and `web` stages build only their selected project closures; dependency-download caches retain locked installs and audits. PR browser qualification is eleven-case Chromium smoke; complete Chromium, Firefox and WebKit qualification remains separate, with every scheduled suite required by `Gate`.
+- Test processes retain a native session/group anchor through ordinary descendant teardown, preserve bounded output and original failures, and report incomplete cleanup. Fixture teardown attempts all owned resources and retains cleanup failures; private layout-report storage failures preserve the `LAYOUT` category. Browser unit completion refuses focused, skipped, pending and retried runs. Empty verification stages and mixed `--fast` invocations refuse before tools or Docker.
+
 ## [0.9.0] - 2026-10-15
 
 ### Security

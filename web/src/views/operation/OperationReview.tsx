@@ -1,3 +1,4 @@
+import { lifecycleMessageKey } from "../LifecycleStatus";
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { CheckboxButton, CheckboxField } from "react-aria-components/Checkbox";
@@ -5,7 +6,7 @@ import { BusinessValue } from "../../components/BusinessValue";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
 import type { Review, CommandDraft, FieldDescriptor } from "../../api/service";
 import { AccessibleModal } from "../../components/AccessibleModal";
-import type { OperationEditorModel } from "./editorTypes";
+import type { OperationEditorModel } from "../../interaction/editorTypes";
 
 const ReviewValues = ({
   review,
@@ -54,6 +55,37 @@ const ReviewIdentity = ({ draft, digest }: { draft: CommandDraft; digest: string
       </p>
       <p>{p.text("ui.operationDigest", { operationId: draft.operationId, digest })}</p>
     </>
+  );
+};
+
+const ReviewOperation = ({ model }: { model: OperationEditorModel }) => {
+  const p = usePresentation();
+  const draft = model.state.exposedRequest!;
+  const review = model.state.review!;
+  return (
+    <section aria-label={p.commandLabel(draft.act.kind)}>
+      <h3>{p.commandLabel(draft.act.kind)}</h3>
+      <p>{p.commandMeaning(draft.act.kind)}</p>
+      <dl className="review-values">
+        {model.fields.map(({ field }) => {
+          const value: unknown = Object.entries(draft.act).find(
+            ([name]) => name === field.name,
+          )?.[1];
+          return typeof value === "string" ? (
+            <div key={field.name}>
+              <dt>{p.fieldLabel(field.name)}</dt>
+              <dd>
+                <BusinessValue value={value} field={field} />
+              </dd>
+            </div>
+          ) : null;
+        })}
+      </dl>
+      {review.before === null ? null : (
+        <p>{p.text("ui.before", { value: p.text(lifecycleMessageKey(review.before.state)) })}</p>
+      )}
+      <p>{p.text("ui.after", { value: p.text(lifecycleMessageKey(review.after.state)) })}</p>
+    </section>
   );
 };
 
@@ -121,6 +153,7 @@ export const OperationReview = ({
     >
       <>
         <ReviewIdentity draft={model.state.exposedRequest} digest={model.state.requestSha256} />
+        <ReviewOperation model={model} />
         <ReviewValues review={model.state.review} fields={fields} />
         <ReviewConfirmation model={model} />
         <ReviewActions model={model} />

@@ -101,31 +101,17 @@ const CaseHeading = ({ mayOpen, onOpen }: { mayOpen: boolean; onOpen: () => void
 };
 
 const useCaseList = (token: string) => {
-  const [mayOpen, setMayOpen] = useState(false);
   const request = useCallback(
-    async (cursor: string | null, signal: AbortSignal) => {
-      const [page, context] = await Promise.all([
-        service.list(cursor, 50, token, signal),
-        service.context(token, signal),
-      ]);
-      if (!signal.aborted) {
-        setMayOpen(
-          context.kind === "outcome" &&
-            context.value.outcome.tag === "SUCCEEDED" &&
-            context.value.outcome.data.capabilities.includes("REGISTER"),
-        );
-      }
-      return page;
-    },
+    (cursor: string | null, signal: AbortSignal) => service.list(cursor, 50, token, signal),
     [token],
   );
-  const { items, cursor, message, loading, load } = useRetryablePage<
+  const page = useRetryablePage<
     ServiceResponse<"case.list">,
     CaseSummary,
     NonNullable<ReturnType<typeof casePage>>
   >(request, casePage);
-
-  return { items, cursor, message, loading, load, mayOpen };
+  const mayOpen = page.page?.offers.some((offer) => offer.definition === "OPEN") ?? false;
+  return { ...page, mayOpen };
 };
 
 export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {

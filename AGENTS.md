@@ -26,7 +26,7 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   and only then reads authority, the operation ID and the case. Nothing that a decision depends
   on is read before the lock.
 - The store locks, loads, calls one pure decision function and persists its result. It never
-  decides. Domain, RecordFormat, Application and Contracts perform no I/O and read no clock,
+  decides. Domain, RecordFormat, Application, ClientProtocol and Contracts perform no I/O and read no clock,
   time zone, environment or randomness; the instant and the payload nonce arrive in the locked
   view.
 - An operation is its caller-chosen ID plus its RFC 8785 canonical request content. While request content
@@ -54,7 +54,7 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   Current snapshots require case read; superseded snapshots require full history in the same
   locked/read context, including replay, execution, preview and observation.
 - `ClaimCore.Hosting` is the only case-work composition root. Only Hosting and Database
-  reference `ClaimCore.Postgres`; only Web references Hosting. The browser and CLI are
+  reference `ClaimCore.Postgres`; only Web references Hosting. Web uses Hosting/ClientProtocol/HostSecurity; CLI uses ClientProtocol/HostSecurity with a generated native catalogue. The browser and CLI are
   authenticated HTTPS clients of one generated contract and never database peers.
   `ClaimCore.Database` is owner administration and serves no case work.
 - The installation stores one immutable canonical IANA business time zone. Business dates derive

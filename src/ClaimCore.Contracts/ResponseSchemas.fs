@@ -1,6 +1,9 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open WireSchema
+open ClaimCore.Application
 
 module internal ResponseSchemas =
     let private ref = Schema.reference
@@ -28,12 +31,66 @@ module internal ResponseSchemas =
             @ refusal
         )
 
+    let private bounded schema =
+        Schema.array schema None (Some ServiceLimits.MaximumPageSize)
+
     let private page name schema =
         query (
-            objectOf [ property name (array schema); property "nextCursor" (Schema.nullable text) ]
+            objectOf
+                [ property name (bounded schema); property "nextCursor" (Schema.nullable text) ]
         )
 
-    let outcome =
+    let private caseList =
+        query (
+            objectOf
+                [
+                    property "items" (bounded ValueSchemas.summary)
+                    property "nextCursor" (Schema.nullable text)
+                    property "offers" (array ValueSchemas.operationOffer)
+                ]
+        )
+
+    let private history =
+        let entries =
+            Schema.oneOf
+                [
+                    Schema.array
+                        (ref "SummaryHistoryEntry")
+                        (Some 1)
+                        (Some ServiceLimits.MaximumPageSize)
+                    Schema.array
+                        (ref "FullHistoryEntry")
+                        (Some 1)
+                        (Some ServiceLimits.MaximumFullHistoryPageSize)
+                    Schema.array (ref "HistoryEntry") (Some 0) (Some 0)
+                ]
+
+        query (
+            objectOf [ property "entries" entries; property "nextCursor" (Schema.nullable text) ]
+        )
+
+    let private grants =
+        query (
+            objectOf
+                [
+                    property "actor" (ref "ActorSummary")
+                    property "items" (bounded (ref "AuthorityGrant"))
+                    property "nextCursor" (Schema.nullable text)
+                ]
+        )
+
+    let private queryOutcome =
+        function
+        | "context" -> Some(query (ref "ActorContext"))
+        | "case.get" -> Some(query (ref "CaseView"))
+        | "case.list" -> Some(caseList)
+        | "case.history" -> Some(history)
+        | "operation.observe" -> Some(query (ref "Receipt"))
+        | "authority.list" -> Some(page "items" (ref "ActorSummary"))
+        | "authority.grants" -> Some(grants)
+        | _ -> None
+
+    let private nonQueryOutcome =
         function
         | "session" ->
             result
@@ -45,12 +102,6 @@ module internal ResponseSchemas =
                         property "antiforgeryToken" (Schema.nullable text)
                     ])
         | "session.logout" -> result "SUCCEEDED" Schema.nullValue
-        | "context" -> query (ref "ActorContext")
-        | "case.get" -> query (ref "CaseView")
-        | "case.list" -> page "items" ValueSchemas.summary
-        | "case.history" -> page "entries" (ref "HistoryEntry")
-        | "operation.observe" -> query (ref "Receipt")
-        | "authority.list" -> page "items" (ref "ActorReview")
         | "case.preview" ->
             Schema.oneOf (
                 [
@@ -66,5 +117,35 @@ module internal ResponseSchemas =
         | "authority.execute" -> execute "AuthorityReceipt"
         | _ -> invalidArg "endpoint" "Unknown endpoint."
 
+    let outcome endpoint =
+        match queryOutcome endpoint with
+        | Some schema -> schema
+        | None -> nonQueryOutcome endpoint
+
     let envelope endpoint =
-        objectOf [ property "endpoint" (token endpoint); property "outcome" (outcome endpoint) ]
+        objectOf
+            [
+                property "endpoint" (token endpoint)
+                if
+                    endpoint = "case.preview"
+                    || endpoint = "case.execute"
+                    || endpoint = "authority.execute"
+                then
+                    property "operationId" uuid
+                property "outcome" (outcome endpoint)
+            ]
+
+    let receiptScope endpoint =
+        let rec scopes schema =
+            match schema with
+            | ReferenceSchema "CaseReceipt" -> [ "CASE" ]
+            | ReferenceSchema "AuthorityReceipt" -> [ "AUTHORITY" ]
+            | ObjectSchema value ->
+                value.Properties |> List.collect (fun property -> scopes property.Schema)
+            | OneOfSchema alternatives -> alternatives |> List.collect scopes
+            | _ -> []
+
+        match outcome endpoint |> scopes |> List.distinct with
+        | [ scope ] -> scope
+        | [] -> "NONE"
+        | _ -> invalidArg "endpoint" "Receipt scope is ambiguous."

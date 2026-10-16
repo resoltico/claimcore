@@ -1,7 +1,7 @@
 # Browser and HTTPS host
 
-Web authenticates OIDC authorization-code PKCE sessions and bearer clients, binds their
-principal to the actor-bound core, and renders typed outcomes. Domain/Application own decisions.
+Web authenticates OIDC authorization-code PKCE sessions and bearer clients, then supplies verified
+subject facts to Hosting’s protocol service. Hosting binds the actor core and renders typed outcomes. Domain/Application own decisions.
 The browser calls the generated contract using cookie credentials, antiforgery and its
 fingerprint. It has no database credentials or durable operation store.
 
@@ -29,7 +29,8 @@ revision and state; history exposes metadata without snapshots. Command advertis
 advice. The service locks and revalidates execution. The browser offers English, Latvian and
 Arabic with independent date/number formats and right-to-left Arabic layout. Latvian and Arabic
 catalogues are machine-drafted and require native-language review. Pseudolocalization supports
-layout checks. Stewardship and authority management use the API or CLI.
+layout checks. Authority form selects and non-checkbox inputs size to their panel while checkboxes
+retain native dimensions. Stewardship and authority management are reachable browser operations, using core offers and generated forms.
 
 Bearer tokens require an admitted issuer/audience and `JWT` or `at+jwt` type. The CLI client is
 human and requires `sub`. Other verified clients identify services by client ID; matching single
@@ -43,8 +44,35 @@ only in access tokens, never ID tokens. Classification by `azp`/`client_id` iden
 it does not prove which OAuth grant produced a token. These IdP flow restrictions are part of the
 deployment trust contract and prevent user tokens from inheriting a shared service actor’s grants.
 
-The browser consumes tracked contract types/descriptors and validates strict bounded JSON plus
-required endpoint/outcome shapes. Missing or unusable mutation receipt data remains uncertain
+The browser consumes tracked generated types/descriptors, request builders and complete response schemas.
+Its production decoder starts with bounded strict UTF-8 bytes and preserves integer lexical checks. Missing or unusable mutation receipt data remains uncertain
 and preserves the original retry identity/content. WITHHELD snapshots show
 metadata without fields; ERASED is distinct. Country display hints use localized names where known,
 accept syntactically valid unassigned codes, and explain `ZZ` without imposing membership policy.
+
+Case stewardship uses the preview/review/execute flow. The confirmation dialog names the
+prepared act, shows its exact authored reason and authoritative before/after record state, and repeats
+the owned act meaning, including live-database erasure limits. These values remain separate from
+the thirteen business fields. Authority actions use local exact-request
+review and authoritative execute; there is no authority preview endpoint. Confirmation is a local
+consent action, with human/service, last-owner and grant rules enforced by Application. ERASE removes
+live database payload history and does not reach WAL, backups or copies. Display preferences and RTL
+never change request bytes. Operation lookup remains independent from pending-content confirmation.
+
+Interaction modules own local state, focus, consent, exact pending bytes and accumulated delivery
+knowledge while the page remains alive. A retry failure cannot clear earlier uncertainty; correlated
+exact acceptance/replay or content-exclusion evidence is needed. `src/api/transport.ts` owns networking behind the service facade;
+interaction/transport do not import views. Access refusal and session replacement clear stale server
+disclosures. Authority refusals invalidate context, offers and actor listings together, then independently
+revalidate current read and management rights. A refusal during revalidation clears both caches and
+waits for explicit reload; exact authored pending requests and uncertainty remain separate.
+Case lists derive OPEN advice from their own returned page. Actor review loads grant pages only
+for the selected actor and renders that page's current target header. Actor/token/disclosure changes
+abort and clear selected reads without remounting pending authority operations. Unselected actors
+cause no grant requests; partial pages expose load-more/end state and explicit fresh reload.
+An invalid cursor clears only its local page/advice, without inferring global privilege loss.
+Authority advice read failures remain visible with an explicit retry. Fresh authoring requires
+a successful nonempty offer set; retrying advice does not discard or replace a prepared request.
+Generated protocol purity follows the resolved transitive import closure, including JavaScript
+modules, and rejects React, locale, clock, randomness and I/O dependencies. Generated TypeScript
+is included in the normal type-aware lint stage.

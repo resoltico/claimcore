@@ -6,7 +6,7 @@ import { NoticeView } from "../../presentation/Message";
 import type { ProductMetadata, CaseReceipt } from "../../api/service";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import { ReceiptFields } from "../../components/ReceiptFields";
-import type { OperationEditorModel } from "./editorTypes";
+import type { OperationEditorModel } from "../../interaction/editorTypes";
 
 type CommandChangeProps = { model: OperationEditorModel; onClose: () => void };
 

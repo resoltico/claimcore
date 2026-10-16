@@ -1,11 +1,13 @@
 {
-  "wireFingerprint": "6c34a27d2c4edd28cebaab0b8e9ee3650615289d662ed7b20ee00afb69f1ff19",
+  "wireFingerprint": "21373e3587aaf51f32b86f76e9787ac752551e5aaca16502e725355afe05eff1",
   "endpoints": [
     {
       "id": "session",
       "method": "GET",
       "path": "/api/session",
       "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "NONE",
       "requestSchema": "endpoint.session.request.schema.json",
       "responseSchema": "endpoint.session.response.schema.json"
     },
@@ -14,6 +16,8 @@
       "method": "POST",
       "path": "/api/session.logout",
       "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "NONE",
       "requestSchema": "endpoint.session.logout.request.schema.json",
       "responseSchema": "endpoint.session.logout.response.schema.json"
     },
@@ -22,6 +26,8 @@
       "method": "POST",
       "path": "/api/context",
       "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "NONE",
       "requestSchema": "endpoint.context.request.schema.json",
       "responseSchema": "endpoint.context.response.schema.json"
     },
@@ -30,6 +36,8 @@
       "method": "POST",
       "path": "/api/case.get",
       "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "NONE",
       "requestSchema": "endpoint.case.get.request.schema.json",
       "responseSchema": "endpoint.case.get.response.schema.json"
     },
@@ -38,6 +46,8 @@
       "method": "POST",
       "path": "/api/case.list",
       "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "NONE",
       "requestSchema": "endpoint.case.list.request.schema.json",
       "responseSchema": "endpoint.case.list.response.schema.json"
     },
@@ -46,6 +56,8 @@
       "method": "POST",
       "path": "/api/case.history",
       "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "NONE",
       "requestSchema": "endpoint.case.history.request.schema.json",
       "responseSchema": "endpoint.case.history.response.schema.json"
     },
@@ -54,6 +66,8 @@
       "method": "POST",
       "path": "/api/case.preview",
       "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "CASE",
       "requestSchema": "endpoint.case.preview.request.schema.json",
       "responseSchema": "endpoint.case.preview.response.schema.json"
     },
@@ -62,6 +76,8 @@
       "method": "POST",
       "path": "/api/case.execute",
       "mutates": true,
+      "acceptingScope": "CASE",
+      "receiptScope": "CASE",
       "requestSchema": "endpoint.case.execute.request.schema.json",
       "responseSchema": "endpoint.case.execute.response.schema.json"
     },
@@ -70,6 +86,8 @@
       "method": "POST",
       "path": "/api/operation.observe",
       "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "NONE",
       "requestSchema": "endpoint.operation.observe.request.schema.json",
       "responseSchema": "endpoint.operation.observe.response.schema.json"
     },
@@ -78,6 +96,8 @@
       "method": "POST",
       "path": "/api/authority.execute",
       "mutates": true,
+      "acceptingScope": "AUTHORITY",
+      "receiptScope": "AUTHORITY",
       "requestSchema": "endpoint.authority.execute.request.schema.json",
       "responseSchema": "endpoint.authority.execute.response.schema.json"
     },
@@ -86,8 +106,20 @@
       "method": "POST",
       "path": "/api/authority.list",
       "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "NONE",
       "requestSchema": "endpoint.authority.list.request.schema.json",
       "responseSchema": "endpoint.authority.list.response.schema.json"
+    },
+    {
+      "id": "authority.grants",
+      "method": "POST",
+      "path": "/api/authority.grants",
+      "mutates": false,
+      "acceptingScope": "NONE",
+      "receiptScope": "NONE",
+      "requestSchema": "endpoint.authority.grants.request.schema.json",
+      "responseSchema": "endpoint.authority.grants.response.schema.json"
     }
   ]
 }

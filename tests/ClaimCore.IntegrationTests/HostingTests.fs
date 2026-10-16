@@ -81,8 +81,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
 [<Tests>]
 let tests =
-    testSequenced
-    <| testList
+    testList
         "runtime composition"
         [
             testCaseAsync

@@ -1,3 +1,4 @@
+import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -16,12 +17,9 @@ import {
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
-it("keeps missing case lookup and non-full history entries out of case presentation", async () => {
+it("does not request history or commands for a missing case", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(response("case.get", "REJECTED", unavailable));
-  fetch.mockResolvedValueOnce(
-    response("case.history", "SUCCEEDED", { entries: [{ tag: "SUMMARY" }], nextCursor: null }),
-  );
   render(
     <CaseDetail
       token="token"
@@ -32,8 +30,9 @@ it("keeps missing case lookup and non-full history entries out of case presentat
       onCommand={vi.fn()}
     />,
   );
-  expect(await screen.findByRole("heading", { name: "Case history" })).toBeVisible();
   expect(await screen.findByText("The requested resource is unavailable.")).toBeVisible();
+  expect(screen.queryByRole("heading", { name: "Case history" })).toBeNull();
+  expect(fetch).toHaveBeenCalledTimes(1);
   expect(screen.queryByRole("heading", { name: "Available actions" })).toBeNull();
 });
 
@@ -43,6 +42,13 @@ it("keeps a failed history page request-local without erasing current case data"
     response("case.get", "SUCCEEDED", {
       caseReference: fields.caseReference,
       revision: 1,
+      offers: [].map((identifier) => ({
+        definition: identifier,
+        caseReference: null,
+        expectedRevision: null,
+        choices: [],
+      })),
+      historyDetails: ["SUMMARY", "FULL"],
       state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: [] },
     }),
   );
@@ -63,16 +69,24 @@ it("keeps a failed history page request-local without erasing current case data"
   expect(await screen.findByRole("alert")).toBeVisible();
 });
 
-it("shows a typed unavailable history refusal while preserving readable current fields", async () => {
+const readableCurrent = () =>
+  response("case.get", "SUCCEEDED", {
+    caseReference: fields.caseReference,
+    revision: 1,
+    offers: [],
+    historyDetails: ["SUMMARY", "FULL"],
+    state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: [] },
+  });
+
+it("shows a typed unavailable history refusal after revalidating readable current fields", async () => {
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(
-    response("case.get", "SUCCEEDED", {
-      caseReference: fields.caseReference,
-      revision: 1,
-      state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: [] },
-    }),
-  );
+  let release: ((value: Response) => void) | undefined;
+  const revalidation = new Promise<Response>((resolve) => {
+    release = resolve;
+  });
+  fetch.mockResolvedValueOnce(readableCurrent());
   fetch.mockResolvedValueOnce(response("case.history", "REJECTED", unavailable));
+  fetch.mockReturnValueOnce(revalidation);
   render(
     <CaseDetail
       token="token"
@@ -83,11 +97,20 @@ it("shows a typed unavailable history refusal while preserving readable current 
       onCommand={vi.fn()}
     />,
   );
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+  await waitFor(() => {
+    expect(screen.queryByRole("region", { name: "current case" })).toBeNull();
+  });
+  await act(async () => {
+    release?.(readableCurrent());
+    await revalidation;
+  });
   expect(await screen.findByRole("region", { name: "current case" })).toBeVisible();
   expect(screen.getByRole("heading", { name: "Case history" })).toBeVisible();
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "The requested resource is unavailable.",
-  );
+  expect(screen.getByRole("alert")).toHaveTextContent("The requested resource is unavailable.");
+  expect(fetch.mock.calls[2]?.[0]).toBe("/api/case.get");
 });
 
 it("reports absent and malformed operation observations without leaving stale receipts", async () => {
@@ -144,9 +167,9 @@ it("focuses and describes invalid operation identity then clears the stale error
 });
 
 it("requires an exact nonempty reference without silently trimming lookup [CC-WEB-001]", async () => {
-  vi.mocked(globalThis.fetch)
-    .mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }))
-    .mockResolvedValueOnce(response("context", "SUCCEEDED", context));
+  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", { offers: context.offers, items: [], nextCursor: null }),
+  );
   const selected = vi.fn();
   const user = userEvent.setup();
   render(<CaseList token="token" onSelect={selected} onOpen={vi.fn()} />);
@@ -155,5 +178,5 @@ it("requires an exact nonempty reference without silently trimming lookup [CC-WE
   await user.type(screen.getByLabelText("Handler's case reference (exact)"), " REF ");
   await user.click(find);
   expect(selected).toHaveBeenCalledWith(" REF ");
-  expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 });

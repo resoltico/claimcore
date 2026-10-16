@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open ClaimCore.Application
 open ClaimCore.Domain
 
@@ -29,8 +31,7 @@ module internal WireSchema =
     let timestamp =
         Schema.string
             (Some "date-time")
-            (Some
-                "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\+00:00$")
+            (Some ProtocolProfile.CanonicalTimestampPattern)
             (Some 33)
             (Some 33)
 

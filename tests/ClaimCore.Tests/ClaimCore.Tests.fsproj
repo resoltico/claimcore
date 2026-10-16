@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="../../contracts/ContractExtensionFixture.fs" Link="ContractExtensionFixture.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
@@ -42,6 +43,7 @@
     <Compile Include="DisclosureTests.fs" />
     <Compile Include="PaginationTests.fs" />
     <Compile Include="ContractTests.fs" />
+    <Compile Include="ResponseBudgetTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="ContractSnapshotTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
@@ -49,13 +51,19 @@
     <Compile Include="TokenLifetimeTests.fs" />
     <Compile Include="CliTransportFixture.fs" />
     <Compile Include="CliTransportTests.fs" />
+    <Compile Include="ClientProtocolTests.fs" />
+    <Compile Include="ClientDecoderConformanceTests.fs" />
+    <Compile Include="ContractExtensionTests.fs" />
     <Compile Include="CliReplyLossTests.fs" />
     <Compile Include="CliFrameTests.fs" />
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
+    <Compile Include="../ProcessResolution.fs" Link="ProcessResolution.fs" />
+    <Compile Include="../ProcessSupervision.fs" Link="ProcessSupervision.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="VerificationStageTests.fs" />
     <Compile Include="DocumentationChecks.fs" />
     <Compile Include="DocumentationTests.fs" />
+    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />

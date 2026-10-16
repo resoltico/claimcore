@@ -2,14 +2,13 @@ import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../api/notices";
 import { Button } from "react-aria-components/Button";
-import { useCallback } from "react";
-import type { CurrentCase, Descriptors, ServiceResponse } from "../api/service";
-import { isCurrentCase, service } from "../api/service";
+import type { CurrentCase, Descriptors } from "../api/service";
+import { isCurrentCase } from "../api/service";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { ReferenceSummary } from "../components/ReferenceSummary";
 import { CopyValue } from "../components/CopyValue";
-import { isBusinessCommand, type CommandKind } from "../domain/metadata";
-import { useRead } from "../hooks/useRead";
+import { isCaseAct, type CommandKind } from "../interaction/metadata";
+import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
 
@@ -21,9 +20,6 @@ type CaseDetailProps = {
   onBack: () => void;
   onCommand: (current: CurrentCase, command: CommandKind) => void;
 };
-
-const caseLookup = (response: ServiceResponse<"case.get">) =>
-  response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
 
 const AvailableCommands = ({
   current,
@@ -38,20 +34,23 @@ const AvailableCommands = ({
     <section aria-labelledby="commands-title">
       <h2 id="commands-title">{p.text("ui.availableCommands")}</h2>
       <div className="actions">
-        {current.state.availableActs.filter(isBusinessCommand).map((command) => (
-          <Button
-            key={command}
-            onPress={() => {
-              onCommand(command);
-            }}
-            aria-label={p.text("ui.commandDescription", {
-              label: p.commandLabel(command),
-              meaning: p.commandMeaning(command),
-            })}
-          >
-            {p.commandLabel(command)}
-          </Button>
-        ))}
+        {current.offers
+          .map((offer) => offer.definition)
+          .filter(isCaseAct)
+          .map((command) => (
+            <Button
+              key={command}
+              onPress={() => {
+                onCommand(command);
+              }}
+              aria-label={p.text("ui.commandDescription", {
+                label: p.commandLabel(command),
+                meaning: p.commandMeaning(command),
+              })}
+            >
+              {p.commandLabel(command)}
+            </Button>
+          ))}
       </div>
     </section>
   );
@@ -120,19 +119,14 @@ const CaseHeader = ({
   );
 };
 
-export const CaseDetail = ({
+const CaseDisclosure = ({
   token,
   caseReference,
-  reloadSignal,
   definition,
   onBack,
   onCommand,
 }: CaseDetailProps) => {
-  const get = useCallback(
-    (signal: AbortSignal) => service.get(caseReference, token, signal),
-    [caseReference, token],
-  );
-  const current = useRead(get, caseLookup, `${caseReference}:${reloadSignal}`);
+  const current = useCaseDisclosure(caseReference, token);
   const state = current.value;
   const lookup = state !== null && isCurrentCase(state) ? state : null;
   return (
@@ -148,12 +142,22 @@ export const CaseDetail = ({
           {state.caseReference} · {state.revision}
         </p>
       ) : null}
-      <CaseHistory
-        key={`${caseReference}:${reloadSignal}`}
-        token={token}
-        caseReference={caseReference}
-        fields={definition.fields}
-      />
+      {current.historyModes.length ? (
+        <CaseHistory
+          token={token}
+          caseReference={caseReference}
+          fields={definition.fields}
+          modes={current.historyModes}
+          onDisclosureRefused={current.revalidate}
+        />
+      ) : null}
     </section>
   );
 };
+
+export const CaseDetail = (props: CaseDetailProps) => (
+  <CaseDisclosure
+    key={JSON.stringify([props.caseReference, props.token, props.reloadSignal])}
+    {...props}
+  />
+);

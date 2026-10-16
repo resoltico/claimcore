@@ -1,5 +1,5 @@
 import type { Notice } from "../../api/notices";
-import type { CorrectionGroupName } from "../../domain/metadata";
+import type { CorrectionGroupName } from "../../interaction/metadata";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 

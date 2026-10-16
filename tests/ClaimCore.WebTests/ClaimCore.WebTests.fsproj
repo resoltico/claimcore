@@ -23,6 +23,7 @@
     <Compile Include="BindingAdmissionTests.fs" />
     <Compile Include="ProbeTransportTests.fs" />
     <Compile Include="IdentityRealm.fs" />
+    <Compile Include="../IdentityReadiness.fs" Link="SharedIdentityReadiness.fs" />
     <Compile Include="IdentityReadiness.fs" />
     <Compile Include="IdentityReadinessTests.fs" />
     <Compile Include="IdentityServer.fs" />
@@ -37,6 +38,7 @@
     <Compile Include="TransportGuards.fs" />
     <Compile Include="HostTransportTests.fs" />
     <Compile Include="RequestLogTests.fs" />
+    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />

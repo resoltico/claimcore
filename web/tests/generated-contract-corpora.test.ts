@@ -1,6 +1,6 @@
 import { it, expect } from "vitest";
 import { endpoints } from "@contracts/endpoint-catalog";
-import { isResponse, isObject } from "../src/api/responseGuards";
+import { isResponse, isObject } from "@contracts/browser-contract";
 import { corpusCases, generatedWebValue } from "./contract-corpus.fixtures";
 
 const ordinal = (left: string, right: string): number => {
@@ -44,7 +44,11 @@ it("mutation guards require usable receipts and exact endpoint scope rather than
     { ...accepted.outcome.data, scope: "AUTHORITY" },
   ]) {
     expect(
-      isResponse("case.execute", { endpoint: "case.execute", outcome: { tag: "ACCEPTED", data } }),
+      isResponse("case.execute", {
+        endpoint: "case.execute",
+        operationId: "11111111-1111-4111-8111-111111111111",
+        outcome: { tag: "ACCEPTED", data },
+      }),
     ).toBe(false);
   }
   expect(isResponse("authority.execute", accepted)).toBe(false);
