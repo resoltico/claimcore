@@ -84,8 +84,7 @@ type Observation = {
   latest: Map<Endpoint, Request>;
   armed: boolean;
   closed: boolean;
-  phase: string;
-  picker: string;
+  snapshot: { phase: string; picker: string };
   advice: Advice;
   stage: AuthorityStage;
   timings: Map<AuthorityStage, { elapsed: number; budget: number }>;
@@ -174,9 +173,9 @@ const recordTiming = (state: Observation) => {
 const reportFailure = (state: Observation) => {
   const ended = state.clock();
   const lines = [
-    `E2E_AUTHORITY_PHASE ${state.phase}`,
+    `E2E_AUTHORITY_PHASE ${state.snapshot.phase}`,
     `E2E_AUTHORITY_ADVICE ${state.advice.kind} ${state.advice.count}`,
-    `E2E_AUTHORITY_PICKER ${state.picker}`,
+    `E2E_AUTHORITY_PICKER ${state.snapshot.picker}`,
   ];
   for (const [stage, value] of state.timings) {
     lines.push(`E2E_AUTHORITY_BODY_TIMING ${stage} ${value.elapsed} ${value.budget}`);
@@ -204,8 +203,7 @@ const createObservation = (
   latest: new Map(),
   armed: false,
   closed: false,
-  phase: "UNAVAILABLE",
-  picker: "UNOBSERVED UNOBSERVED",
+  snapshot: { phase: "UNAVAILABLE", picker: "UNOBSERVED UNOBSERVED" },
   advice: { kind: "UNOBSERVED", count: 0 },
   stage: "OPEN_CASE",
   timings: new Map(),
@@ -238,11 +236,7 @@ export const observeAuthorityRefresh = (page: Page, info?: Pick<TestInfo, "timeo
       state.stage = stage;
       recordTiming(state);
       if (stage === "REGISTER_ACTOR" || stage === "NEXT_GRANT") {
-        const { phase, picker } = await authoritySnapshot(page);
-        if (phase !== "UNAVAILABLE") {
-          state.phase = phase;
-          state.picker = picker;
-        }
+        state.snapshot = await authoritySnapshot(page);
       }
     },
     finish: (report: boolean) => {

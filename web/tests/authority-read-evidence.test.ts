@@ -158,7 +158,7 @@ it("retains one preselection pair and entry time when the DOM changes before fai
   expect(evaluate).toHaveBeenCalledOnce();
 });
 
-it("keeps the last complete snapshot pair when the next sample is unavailable", async () => {
+it("does not attribute a registration snapshot to an unavailable next-grant sample", async () => {
   const { page, evaluate } = pageFixture();
   const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
   const evidence = observeAuthorityRefresh(page);
@@ -167,8 +167,8 @@ it("keeps the last complete snapshot pair when the next sample is unavailable", 
   await evidence.stage("NEXT_GRANT");
   evidence.finish(true);
   const lines = log.mock.calls.flatMap(([line]) => String(line).split("\n"));
-  expect(lines).toContain("E2E_AUTHORITY_PHASE USABLE_PICKER");
-  expect(lines).toContain("E2E_AUTHORITY_PICKER ENABLED GRANT");
+  expect(lines).toContain("E2E_AUTHORITY_PHASE UNAVAILABLE");
+  expect(lines).toContain("E2E_AUTHORITY_PICKER UNOBSERVED UNOBSERVED");
   expect(lines.join()).not.toContain("Closed private page");
   expect(evaluate).toHaveBeenCalledTimes(2);
 });
