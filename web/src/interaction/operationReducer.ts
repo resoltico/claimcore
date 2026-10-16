@@ -1,7 +1,7 @@
 import { accumulateKnowledge } from "../protocol/delivery";
 import { prepareRequest } from "../protocol/preparedRequest";
 import type { CommandKind, DraftValues } from "./metadata";
-import { isCorrectionValues } from "./metadata";
+import { isGroupedDraftValues } from "./metadata";
 import { freezeRequest } from "./operationRequest";
 import type { CompletionResponse, EditingAction } from "./operationReducerTypes";
 import type { OperationAction, OperationState } from "./operationState";
@@ -37,7 +37,7 @@ const reset = (
 });
 const edit = (state: OperationState, action: Extract<OperationAction, { type: "EDIT" }>) =>
   !editable(state) ||
-  isCorrectionValues(state.values) ||
+  isGroupedDraftValues(state.values) ||
   state.values[action.field] === action.value
     ? state
     : reset(
@@ -49,11 +49,15 @@ const editCorrection = (
   state: OperationState,
   action: Extract<OperationAction, { type: "EDIT_CORRECTION" }>,
 ) => {
-  if (!editable(state) || !isCorrectionValues(state.values)) {
+  if (!editable(state) || !isGroupedDraftValues(state.values)) {
     return state;
   }
   const group = state.values[action.group];
-  if (group.mode !== "REPLACE" || group.values[action.field] === action.value) {
+  if (
+    group === undefined ||
+    group.mode !== "REPLACE" ||
+    group.values[action.field] === action.value
+  ) {
     return state;
   }
   return reset(
@@ -69,11 +73,11 @@ const setCorrectionMode = (
   state: OperationState,
   action: Extract<OperationAction, { type: "SET_CORRECTION_MODE" }>,
 ) => {
-  if (!editable(state) || !isCorrectionValues(state.values)) {
+  if (!editable(state) || !isGroupedDraftValues(state.values)) {
     return state;
   }
   const group = state.values[action.group];
-  if (group.mode === action.mode) {
+  if (group === undefined || group.mode === action.mode) {
     return state;
   }
   return reset(

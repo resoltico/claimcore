@@ -320,3 +320,79 @@ it.each([
     expect(logout).toHaveBeenCalledOnce();
   },
 );
+const authorityReceipt = () => {
+  const accepted = generatedWebValue("authority.execute");
+  if (accepted.outcome.tag !== "ACCEPTED") {
+    throw new Error("Missing authority receipt fixture");
+  }
+  return accepted.outcome.data;
+};
+const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
+  const receipt = authorityReceipt();
+  return vi
+    .spyOn(service, "authorityExecute")
+    .mockImplementationOnce((prepared) =>
+      Promise.resolve(
+        first === "lost"
+          ? {
+              kind: "deliveryFailure",
+              notice: { kind: "local", reason: "unreachable" },
+            }
+          : {
+              kind: "outcome",
+              status: 200,
+              value: {
+                endpoint: "authority.execute",
+                operationId: prepared.input.operationId,
+                outcome: {
+                  tag: "OUTCOME_UNKNOWN",
+                  data: {
+                    operationId: prepared.input.operationId,
+                    requestSha256: "a".repeat(64),
+                  },
+                },
+              },
+            },
+      ),
+    )
+    .mockImplementation((prepared) =>
+      Promise.resolve({
+        kind: "outcome",
+        status: 200,
+        value: {
+          endpoint: "authority.execute",
+          operationId: prepared.input.operationId,
+          outcome: {
+            tag: "ALREADY_ACCEPTED",
+            data: {
+              ...receipt,
+              operationId: prepared.input.operationId,
+              act: prepared.input.act.kind,
+            },
+          },
+        },
+      }),
+    );
+};
+it.each(["lost", "unknown"] as const)(
+  "removes the obsolete %s attempt alert after exact authority replay acceptance",
+  async (first) => {
+    vi.spyOn(service, "context").mockResolvedValue(success("context"));
+    vi.spyOn(service, "authorityList").mockResolvedValue(success("authority.list"));
+    const execute = authorityRecoveryDelivery(first);
+    render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
+    await prepare();
+    fireEvent.click(screen.getByRole("button", { name: "Submit operation" }));
+    const retry = await screen.findByRole("button", { name: "Retry the same operation" });
+    expect(screen.getByRole("alert")).toBeVisible();
+    const [pending] = execute.mock.calls[0]!;
+    fireEvent.click(retry);
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(pending.input.operationId);
+    expect(screen.queryByRole("button", { name: "Retry the same operation" })).toBeNull();
+    expect(execute.mock.calls[1]![0]).toBe(pending);
+    expect(execute.mock.calls[1]![0].bytes).toBe(pending.bytes);
+  },
+);

@@ -124,6 +124,11 @@ it.each(["failed", "conflict", "replay"] as const)(
     expect(view.result.current.uncertain).toBe(next === "failed");
     expect(send.mock.calls[1]![0]).toBe(pending);
     expect(view.result.current.prepared).toBe(next === "replay" ? null : pending);
+    if (next === "replay") {
+      expect(view.result.current.notice).toBeNull();
+    } else {
+      expect(view.result.current.notice).not.toBeNull();
+    }
     send.mockRestore();
   },
 );

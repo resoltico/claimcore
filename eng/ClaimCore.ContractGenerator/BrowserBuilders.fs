@@ -15,18 +15,24 @@ export type FlatDraftValues = Record<string, string>;
 export type CorrectionGroupName = CorrectionGroupDescriptor["name"];
 export type CorrectionMode = "KEEP" | "REPLACE" | "CLEAR";
 type CorrectionGroupValues = { mode: CorrectionMode; values: FlatDraftValues };
-export type CorrectionDraftValues = Record<CorrectionGroupName, CorrectionGroupValues>;
-export type DraftValues = FlatDraftValues | CorrectionDraftValues;
+export type GroupedDraftValues = Record<string, CorrectionGroupValues>;
+export type DraftValues = FlatDraftValues | GroupedDraftValues;
 export type CommandKind = CommandDescriptor["kind"];
 
-export const isCorrectionValues = (values: unknown, names: ReadonlyArray<string> = []): values is CorrectionDraftValues =>
+const isFlatValues = (value: unknown): value is FlatDraftValues =>
+  typeof value === "object" && value !== null && !Array.isArray(value) &&
+  Object.values(value).every((entry) => typeof entry === "string");
+const isGroupValues = (value: unknown): value is CorrectionGroupValues =>
+  typeof value === "object" && value !== null && !Array.isArray(value) &&
+  "mode" in value && (value.mode === "KEEP" || value.mode === "REPLACE" || value.mode === "CLEAR") &&
+  "values" in value && isFlatValues(value.values);
+export const isGroupedDraftValues = (values: unknown): values is GroupedDraftValues =>
   typeof values === "object" &&
-  values !== null &&
-  names.every((name) => Object.hasOwn(values, name)) &&
+  values !== null && !Array.isArray(values) &&
   Object.values(values).length > 0 &&
-  Object.values(values).every(
-    (value) => typeof value === "object" && value !== null && "mode" in value && "values" in value,
-  );
+  Object.values(values).every(isGroupValues);
+export const hasRequiredCorrectionGroups = (values: unknown, names: ReadonlyArray<string>): values is GroupedDraftValues =>
+  isGroupedDraftValues(values) && names.every((name) => Object.hasOwn(values, name));
 
 export const createDraft = (
   operationId: string,
@@ -40,11 +46,11 @@ export const createDraft = (
   const {inputs} = definition;
   let act: object;
   if (inputs.kind === "CORRECTION_GROUPS") {
-    if (!isCorrectionValues(values, inputs.groups.map((group) => group.name))) {throw new Error(`${command} requires grouped values.`);}
+    if (!hasRequiredCorrectionGroups(values, inputs.groups.map((group) => group.name))) {throw new Error(`${command} requires grouped values.`);}
     const groups = Object.fromEntries(
       inputs.groups.map((group) => {
         const draft = values[group.name];
-        if (!group.actions.some((action) => action === draft.mode))
+        if (draft === undefined || !group.actions.some((action) => action === draft.mode))
           {throw new Error(`Unsupported ${group.name} correction choice.`);}
         return [
           group.name,
@@ -64,7 +70,7 @@ export const createDraft = (
     );
     act = { kind: command, groups };
   } else {
-    if (isCorrectionValues(values)) {throw new Error(`${command} requires flat values.`);}
+    if (isGroupedDraftValues(values)) {throw new Error(`${command} requires flat values.`);}
     const fields = Object.fromEntries(
       inputs.fields.map((input) => [input.fieldName, values[input.fieldName] ?? ""]),
     );

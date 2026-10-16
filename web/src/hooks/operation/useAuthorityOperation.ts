@@ -105,6 +105,7 @@ const executeAuthority = async (
   ) {
     state.setValues({ operationId: crypto.randomUUID() });
     state.setReceipt(result.value.outcome.data.operationId);
+    state.setNotice(null);
     state.setBytes(null);
     invalidateDisclosure(true);
     return;

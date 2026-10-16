@@ -11,7 +11,8 @@ import type {
 } from "../api/service";
 
 import {
-  isCorrectionValues,
+  isGroupedDraftValues,
+  hasRequiredCorrectionGroups,
   type FlatDraftValues,
   type DraftValues,
   type CommandKind,
@@ -19,7 +20,8 @@ import {
 } from "@contracts/request-builders";
 export {
   createDraft,
-  isCorrectionValues,
+  isGroupedDraftValues,
+  hasRequiredCorrectionGroups,
   type DraftValues,
   type CommandKind,
   type CorrectionGroupName,
@@ -123,7 +125,7 @@ export const prefilledValues = (
     ]),
   );
   if (
-    !isCorrectionValues(
+    !hasRequiredCorrectionGroups(
       grouped,
       shape.groups.map((group) => group.name),
     )
@@ -138,19 +140,19 @@ const flatValuesChanged = (values: FlatDraftValues, baseline: FlatDraftValues): 
   Object.entries(values).some(([field, value]) => baseline[field] !== value);
 
 export const isDirty = (values: DraftValues, baseline: DraftValues): boolean => {
-  if (isCorrectionValues(values)) {
+  if (isGroupedDraftValues(values)) {
     return (
-      !isCorrectionValues(baseline) ||
+      !isGroupedDraftValues(baseline) ||
       Object.keys(values).length !== Object.keys(baseline).length ||
-      Object.keys(values).some((name) => {
-        const group = correctionGroupName(name);
+      Object.entries(values).some(([name, group]) => {
+        const previous = baseline[name];
         return (
-          baseline[group] === undefined ||
-          values[group].mode !== baseline[group].mode ||
-          flatValuesChanged(values[group].values, baseline[group].values)
+          previous === undefined ||
+          group.mode !== previous.mode ||
+          flatValuesChanged(group.values, previous.values)
         );
       })
     );
   }
-  return isCorrectionValues(baseline) || flatValuesChanged(values, baseline);
+  return isGroupedDraftValues(baseline) || flatValuesChanged(values, baseline);
 };

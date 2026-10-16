@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CurrentCase } from "../src/api/service";
-import { createDraft, isCorrectionValues, prefilledValues } from "../src/interaction/metadata";
+import { createDraft, isGroupedDraftValues, prefilledValues } from "../src/interaction/metadata";
 import { caseFields, definition } from "./service-foundation.fixtures";
 import { correctionSerializations } from "./correction-serialization.fixtures";
 
@@ -24,13 +24,17 @@ for (const status of ["OPENED", "CLOSED"] as const) {
           },
         };
         const values = prefilledValues(definition, "CORRECT_CASE", current);
-        if (!isCorrectionValues(values)) {
+        if (!isGroupedDraftValues(values)) {
           throw new Error("Expected grouped correction inputs.");
         }
-        values.registration.mode = registration;
-        values.registration.values["claimantName"] = "Synthetic replacement";
-        values.registration.values["claimedAmount"] = "1.0000";
-        values.decision = {
+        const registrationValues = values["registration"];
+        if (registrationValues === undefined) {
+          throw new Error("Expected registration inputs.");
+        }
+        registrationValues.mode = registration;
+        registrationValues.values["claimantName"] = "Synthetic replacement";
+        registrationValues.values["claimedAmount"] = "1.0000";
+        values["decision"] = {
           mode: decision,
           values: {
             paymentDecisionDate: "2026-09-03",
@@ -38,7 +42,7 @@ for (const status of ["OPENED", "CLOSED"] as const) {
             payableCurrency: "EUR",
           },
         };
-        values.payment = { mode: payment, values: { paymentDate: "2026-09-04" } };
+        values["payment"] = { mode: payment, values: { paymentDate: "2026-09-04" } };
         const request = createDraft(
           "00000000-0000-4000-8000-000000000001",
           "CASE-SERIALIZATION",

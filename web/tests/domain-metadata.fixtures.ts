@@ -5,12 +5,17 @@ import {
   correctionGroupName,
   createDraft,
   isCorrectionGroupName,
-  isCorrectionValues,
+  isGroupedDraftValues,
+  hasRequiredCorrectionGroups,
   isDirty,
   prefilledValues,
 } from "../src/interaction/metadata";
 import { freezeRequest } from "../src/interaction/operationRequest";
-import { caseFields, groupedCorrectionValues } from "./service-foundation.fixtures";
+import {
+  caseFields,
+  groupedCorrectionValues,
+  definition as productDefinition,
+} from "./service-foundation.fixtures";
 
 const replaceField = {
   fieldName: "claimantName",
@@ -61,10 +66,26 @@ const expectGroupNames = () => {
   }
   expect(isCorrectionGroupName("other")).toBe(false);
   expect(() => correctionGroupName("other")).toThrow(/Unknown correction group other\./u);
-  expect(isCorrectionValues({ registration: keep, decision: keep, payment: keep })).toBe(true);
-  expect(isCorrectionValues({ registration: keep, decision: keep })).toBe(false);
-  expect(isCorrectionValues({ decision: keep, payment: keep })).toBe(false);
-  expect(isCorrectionValues({ registration: keep, payment: keep })).toBe(false);
+  expect(isGroupedDraftValues({ additionalGroup: keep })).toBe(true);
+  expect(isGroupedDraftValues([])).toBe(false);
+  expect(isGroupedDraftValues({ additionalGroup: { mode: "OTHER", values: {} } })).toBe(false);
+  expect(isGroupedDraftValues({ additionalGroup: { mode: "KEEP", values: { amount: 1 } } })).toBe(
+    false,
+  );
+  const { inputs } = commandFor(productDefinition, "CORRECT_CASE");
+  if (inputs.kind !== "CORRECTION_GROUPS") {
+    throw new Error("Missing owned correction groups.");
+  }
+  const names = inputs.groups.map((group) => group.name);
+  expect(
+    hasRequiredCorrectionGroups({ registration: keep, decision: keep, payment: keep }, names),
+  ).toBe(true);
+  expect(hasRequiredCorrectionGroups({ registration: keep, decision: keep }, names)).toBe(false);
+  expect(hasRequiredCorrectionGroups({ decision: keep, payment: keep }, names)).toBe(false);
+  expect(hasRequiredCorrectionGroups({ registration: keep, payment: keep }, names)).toBe(false);
+  expect(() =>
+    createDraft("op", "CASE-1", 1, "CORRECT_CASE", { registration: keep, decision: keep }),
+  ).toThrow(/requires grouped values/u);
 };
 
 const expectPrefill = () => {
