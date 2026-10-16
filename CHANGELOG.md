@@ -4,6 +4,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-17
+
 ### Security
 
 - Owner-private inputs require effective-UID ownership, regular-file type, owner-read permission and restricted mode/ACL access on supported macOS/Linux filesystems. Reads use the admitted descriptor even if its pathname is replaced; embedded NUL and malformed Unicode paths refuse before native marshalling. Previously readable files that violate these rules must be corrected before use. Missing or incompatible native assets refuse with installation guidance. See [private-input admission](docs/database.md#cc-db-002).
