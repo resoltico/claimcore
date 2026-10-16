@@ -182,7 +182,8 @@ let qualifyBearers
                     alterHeader "RS256" "ID" token
                 ]
 
-        do! Task.Delay(TimeSpan.FromSeconds(17.))
+        // The synthetic host has zero JWT clock skew; prior boundary checks consume part of the TTL.
+        do! Task.Delay(expiryDelay DateTimeOffset.UtcNow token)
         let! expired = bearerRequest local token
 
         if expired <> 401 then

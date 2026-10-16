@@ -4,6 +4,8 @@ open System
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
 open System.Text
+open System.Net.Http
+open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open DotNet.Testcontainers.Builders
@@ -55,6 +57,20 @@ let private serverCertificate (root: X509Certificate2) =
 
 let private secret () =
     RandomNumberGenerator.GetBytes 24 |> Convert.ToHexStringLower
+
+// A readiness prerequisite only; the published host still performs authoritative metadata admission.
+let internal metadataMatches issuer (bytes: ReadOnlyMemory<byte>) =
+    try
+        use document = JsonDocument.Parse bytes
+
+        if document.RootElement.ValueKind <> JsonValueKind.Object then
+            false
+        else
+            match document.RootElement.TryGetProperty "issuer" with
+            | true, value when value.ValueKind = JsonValueKind.String -> value.GetString() = issuer
+            | _ -> false
+    with :? JsonException ->
+        false
 
 type Identity(origin: string) =
     let root = rootCertificate ()
@@ -140,7 +156,18 @@ type Identity(origin: string) =
                     |> List.toArray
             |}
 
-    member _.Start(token: CancellationToken) = container.StartAsync token
+    member this.Start(http: HttpClient, token: CancellationToken) =
+        task {
+            do! container.StartAsync token
+            let issuer = this.Issuer
+
+            do!
+                ClaimCore.TestSupport.IdentityReadiness.wait
+                    http
+                    (Uri(issuer + "/.well-known/openid-configuration"))
+                    (metadataMatches issuer)
+                    token
+        }
 
     interface IAsyncDisposable with
         member _.DisposeAsync() =

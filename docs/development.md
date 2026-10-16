@@ -24,6 +24,7 @@ within one invocation; a later acceptance stage reuses the frontend stage's succ
 | `frontend`    | Node only: locked install, audit, formatting, lint, types, unit tests, Knip, licenses, build and notices |
 | `workflows`   | ShellCheck and pinned Actionlint container; Docker required                                              |
 | `integration` | .NET build, isolated PostgreSQL and Web/identity-provider tests; Docker required                         |
+| `postgres` / `web` | Independent complete PostgreSQL or Web/identity suite; restores and builds only its project closure; Docker required |
 | `browsers`    | Locked npm install and Playwright browser/dependency installation                                        |
 | `acceptance`  | Published service/CLI and browser tests; .NET, Node, Docker and installed browsers required              |
 
@@ -45,8 +46,12 @@ validates engine/scope selection before any restore, build or browser installati
 includes Chromium for shared CLI PKCE authentication when Firefox or WebKit specifications are
 selected; this prerequisite does not add Chromium specifications to that selected-engine run.
 
-CI runs native and frontend checks in parallel, then starts expensive fixtures after their
-prerequisites succeed. PRs and merge queues run Chromium smoke; main/tag pushes and a manual
+CI runs native and frontend checks in parallel. PostgreSQL and Web/identity suites use separate
+runners after native prerequisites succeed; neither waits for unrelated frontend checks. PostgreSQL
+keeps its baseline-major matrix and fail-fast cancellation. `Gate` requires both native integration
+jobs as well as frontend and acceptance. The local `integration` stage still runs both suites in
+order with one shared solution build; use `postgres` or `web` for a complete individual suite.
+PRs and merge queues run Chromium smoke; main/tag pushes and a manual
 CI dispatch with `full_browser_qualification` enabled run all specifications in an isolated
 three-engine matrix. A failed engine cancels sibling jobs; `Gate` requires every scheduled job
 to succeed. Thus a green PR `Gate` proves its advertised smoke scope, not full browser coverage.
@@ -60,9 +65,18 @@ in an SDK stage.
 The integration CI matrix derives every major from `db/postgresql-baseline.json` and passes it
 as `CLAIMCORE_TEST_POSTGRES_MAJOR`. Both integration and published acceptance fixtures select
 that exact listed major and pinned image. Unset selects the first listed entry for deterministic
-local use; blank, malformed and unlisted overrides are refused before resources are created.
+local use; blank, malformed and unlisted overrides are refused by stage preflight before restore or
+build. The shell preflight checks exact numeric major declarations; fixtures still own complete JSON
+and pinned-image validation before resources are created.
 The selector does not qualify a new major: adding support still requires actual execution and
 reviewed evidence for that entry.
+
+The PostgreSQL stage uses [bounded runner settings](../eng/expecto.integration.runsettings) to
+overlap at most two independent test cases. Each owns a fresh pinned PostgreSQL cluster; role
+changes, schema corruption and shutdown tests cannot affect another case. Operations inside a
+case retain their sequence and transaction boundaries. Direct PostgreSQL test invocations must
+pass `-- --settings=eng/expecto.integration.runsettings` to retain this resource bound. Other
+native suites keep their existing runner settings.
 
 Local runs sequence the selected engines in one native test case and stop before creating a later
 engine fixture when an earlier engine fails. Successful default execution requires all three

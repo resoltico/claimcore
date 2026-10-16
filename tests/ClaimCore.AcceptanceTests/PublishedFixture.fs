@@ -88,6 +88,27 @@ let private webEnvironment
 
     values
 
+let private startPrerequisites (postgres: PostgreSqlContainer) (identity: IdentityServer.Identity) =
+    task {
+        use startup = new CancellationTokenSource(TimeSpan.FromMinutes 3.)
+        use identityHttp = client identity.Root
+        identityHttp.MaxResponseContentBufferSize <- 65536L
+
+        let ready (start: CancellationToken -> Task) =
+            task {
+                try
+                    do! start startup.Token
+                with error ->
+                    startup.Cancel()
+                    return raise error
+            }
+
+        let databaseReady = ready (fun token -> postgres.StartAsync token)
+        let identityReady = ready (fun token -> identity.Start(identityHttp, token) :> Task)
+        // Await both tasks even on refusal before fixture teardown disposes their containers.
+        do! Task.WhenAll([| databaseReady :> Task; identityReady :> Task |])
+    }
+
 let private initialize
     directory
     (postgres: PostgreSqlContainer)
@@ -179,8 +200,7 @@ type Fixture() =
             cli <- PublishedProcesses.publish root directory "ClaimCore.Cli"
             admin <- PublishedProcesses.publish root directory "ClaimCore.Database"
             webBinary <- PublishedProcesses.publish root directory "ClaimCore.Web"
-            do! postgres.StartAsync()
-            do! identity.Start(CancellationToken.None)
+            do! startPrerequisites postgres identity
             let! runtime = initialize directory postgres identity admin adminEnvironment
             let settings = NpgsqlConnectionStringBuilder(File.ReadAllText runtime)
             let relay = new CommitReplyProxy.Proxy(settings.Host |> nonNull, settings.Port)

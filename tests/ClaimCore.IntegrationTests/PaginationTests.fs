@@ -163,8 +163,7 @@ let private snapshot (database: PostgresFixture.Database) =
 
 [<Tests>]
 let tests =
-    testSequenced
-    <| testList
+    testList
         "database cursor authority"
         [
             testCaseAsync

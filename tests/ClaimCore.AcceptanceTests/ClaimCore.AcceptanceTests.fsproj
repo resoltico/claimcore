@@ -11,7 +11,9 @@
     <Compile Include="FixtureFiles.fs" />
     <Compile Include="FixtureCleanup.fs" />
     <Compile Include="IdentityRealm.fs" />
+    <Compile Include="../IdentityReadiness.fs" Link="IdentityReadiness.fs" />
     <Compile Include="IdentityServer.fs" />
+    <Compile Include="IdentityReadinessTests.fs" />
     <Compile Include="PublishedProcesses.fs" />
     <Compile Include="RedirectControl.fs" />
     <Compile Include="HttpsProxy.fs" />

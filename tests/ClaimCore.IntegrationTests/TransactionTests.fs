@@ -111,8 +111,7 @@ let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandle
 
 [<Tests>]
 let tests =
-    testSequenced
-    <| testList
+    testList
         "PostgreSQL transactions"
         [
             testCaseAsync

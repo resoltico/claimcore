@@ -2,12 +2,15 @@
 
 [Development](../docs/development.md) owns setup and verification. `verify.sh` runs named
 stages in order, stops at failure and shares restore/build work within one invocation. Browser
-selection is checked before any expensive work; frontend assets build once when frontend and
+selection and explicit PostgreSQL major overrides are checked before any expensive work; frontend assets build once when frontend and
 acceptance stages share an invocation. CI
-calls these same stages. `unit`, `lint` and `integration` require .NET; `frontend` requires
-Node only and consumes tracked `contracts/` artifacts. `browsers` installs the selected
+calls these same stages. `unit`, `lint`, `integration`, `postgres` and `web` require .NET;
+`frontend` requires Node only and consumes tracked `contracts/` artifacts. `browsers` installs the selected
 Playwright engine and its Linux dependencies; `acceptance` builds and tests published clients.
-`workflows` checks shell scripts and workflow syntax. `Check-FSharpLint.sh` retains every failure.
+`postgres` and `web` run the complete individual integration suites and restore and build only their project
+closures; `integration` retains both suites and a shared solution build. CI runs the two suites on
+separate runners and requires both in `Gate`. `workflows` checks shell scripts and workflow syntax.
+`Check-FSharpLint.sh` retains every failure.
 
 ContractGenerator derives tracked catalogue, schemas, descriptors, corpus and client declarations
 from Contracts. Native tests check exact artifact bytes and inventory, without invoking Node.

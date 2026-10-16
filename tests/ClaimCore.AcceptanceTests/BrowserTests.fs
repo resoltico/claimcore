@@ -73,7 +73,7 @@ let private report minimum engine (result: ClaimCore.TestSupport.BoundedProcessR
     Console.WriteLine($"Published {engine} ({scope}): {count} passed; {duration}")
 
 let private completionControls () =
-    for minimum, underFloor in [ 9, "8 passed"; 127, "126 passed" ] do
+    for minimum, underFloor in [ 9, "8 passed"; 129, "128 passed" ] do
         let complete = $"{minimum} passed (4.7m)"
 
         for incomplete in
@@ -230,7 +230,7 @@ let private qualifyEngine engine =
             0
             ("Published browser scope " + engine + "; private logs: " + output)
 
-        report (if smoke then 9 else 127) engine result
+        report (if smoke then 9 else 129) engine result
         BrowserReadback.qualify fixture output
         fixture.Complete()
     }

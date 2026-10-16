@@ -99,8 +99,8 @@ jobs:
       - run: bash eng/verify.sh unit
 
   integration:
-    name: PostgreSQL ${{ matrix.major }} and web host tests
-    needs: [configuration, lint, unit, frontend]
+    name: PostgreSQL ${{ matrix.major }} store tests
+    needs: [configuration, lint, unit]
     strategy:
       fail-fast: true
       matrix: ${{ fromJSON(needs.configuration.outputs.postgresql) }}
@@ -115,7 +115,21 @@ jobs:
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
         with:
           node: "false"
-      - run: bash eng/verify.sh integration
+      - run: bash eng/verify.sh postgres
+
+  web:
+    name: Web host and identity tests
+    needs: [lint, unit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+        with:
+          node: "false"
+      - run: bash eng/verify.sh web
 
   frontend:
     name: Frontend checks (SDK-free Node container)
@@ -177,7 +191,7 @@ jobs:
   gate:
     name: Gate
     if: always()
-    needs: [configuration, lint, unit, integration, frontend, acceptance]
+    needs: [configuration, lint, unit, integration, web, frontend, acceptance]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
