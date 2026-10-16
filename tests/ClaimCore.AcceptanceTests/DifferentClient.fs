@@ -6,35 +6,56 @@ open System.Collections.Generic
 open System.IO
 open Expecto
 
-let private copySource (fixture: PublishedFixture.Fixture) =
-    let directory = Path.Combine(fixture.Directory, "client-source")
-    Directory.CreateDirectory directory |> ignore
+let private copySourceFile (root: string) directory relative =
+    let target = Path.Combine(directory, relative)
+    Directory.CreateDirectory(Path.GetDirectoryName target |> nonNull) |> ignore
+    File.Copy(Path.Combine(root, relative), target)
+
+let private copyProject root directory project =
+    let relative = Path.Combine("src", project)
+    let source = Path.Combine(root, relative)
+
+    for path in Directory.GetFiles source do
+        let name = Path.GetFileName path |> nonNull
+
+        if
+            List.contains (Path.GetExtension path) [ ".fs"; ".fsi"; ".fsproj" ]
+            || name = "packages.lock.json"
+        then
+            copySourceFile root directory (Path.Combine(relative, name))
+
+let private copyNotices root directory =
+    let relative = "eng/licenses/native-notices.json"
+    let manifest = NativeNoticeManifest.read (Path.Combine(root, relative))
+    copySourceFile root directory relative
+
+    for notice in manifest.Texts do
+        copySourceFile root directory (Path.Combine("eng/licenses", notice.File))
+
+let private copySource root parent =
+    let directory = Path.Combine(parent, "client-source")
 
     for name in
         [
             "global.json"
             "Directory.Build.props"
+            "Directory.Build.targets"
             "Directory.Packages.props"
             "NuGet.Config"
+            "LICENSE"
+            "src/Directory.Build.props"
+            "eng/NativeBuild.targets"
+            "eng/build-native.sh"
+            "src/ClaimCore.HostSecurity/native/private_file.c"
+            "src/ClaimCore.HostSecurity/native/private_file.h"
+            "contracts/ClientContract.fs"
         ] do
-        File.Copy(Path.Combine(fixture.Root, name), Path.Combine(directory, name))
+        copySourceFile root directory name
 
     for project in [ "ClaimCore.Cli"; "ClaimCore.ClientProtocol"; "ClaimCore.HostSecurity" ] do
-        let source = Path.Combine(fixture.Root, "src", project)
-        let target = Path.Combine(directory, "src", project)
-        Directory.CreateDirectory target |> ignore
+        copyProject root directory project
 
-        for path in Directory.GetFiles(source) do
-            File.Copy(path, Path.Combine(target, Path.GetFileName(path) |> nonNull))
-
-    let contracts = Path.Combine(directory, "contracts")
-    Directory.CreateDirectory contracts |> ignore
-
-    File.Copy(
-        Path.Combine(fixture.Root, "contracts/ClientContract.fs"),
-        Path.Combine(contracts, "ClientContract.fs")
-    )
-
+    copyNotices root directory
     directory
 
 let private differentIdentity directory =
@@ -56,7 +77,7 @@ let private differentIdentity directory =
     )
 
 let qualify (fixture: PublishedFixture.Fixture) =
-    let directory = copySource fixture
+    let directory = copySource fixture.Root fixture.Directory
     differentIdentity directory
     let output = Path.Combine(fixture.Directory, "different-client")
 
@@ -87,6 +108,8 @@ let qualify (fixture: PublishedFixture.Fixture) =
         built.ExitCode
         0
         "Compile a client with a different contract identity; see owned fixture build logs"
+
+    NativeNotices.qualify fixture.Root output "ClaimCore.Cli" |> ignore
 
     let result =
         ProcessRunner.dotnet

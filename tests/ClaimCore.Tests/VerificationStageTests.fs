@@ -15,11 +15,7 @@ let private executable directory name source =
         UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
     )
 
-let private start directory platform engine stages =
-    let commands = Path.Combine(directory, "commands")
-    File.WriteAllText(commands, "")
-    File.WriteAllText(commands + ".docker", "")
-
+let private commandStubs directory =
     executable
         directory
         "npm"
@@ -35,7 +31,19 @@ let private start directory platform engine stages =
         "docker"
         "printf '%s\\n' \"$*\" >> \"$CLAIMCORE_TEST_COMMANDS_FILE.docker\"\nif [ \"${CLAIMCORE_TEST_FAIL_DOCKER:-}\" = true ]; then exit 19; fi\n"
 
+    executable
+        directory
+        "shellcheck"
+        "printf 'shellcheck %s\\n' \"$*\" >> \"$CLAIMCORE_TEST_COMMANDS_FILE\"\nif [ \"${CLAIMCORE_TEST_FAIL_COMMAND:-}\" = \"shellcheck $*\" ]; then exit 19; fi\n"
+
     executable directory "uname" "printf '%s\\n' \"$CLAIMCORE_TEST_PLATFORM\"\n"
+
+let private start directory platform engine stages =
+    let commands = Path.Combine(directory, "commands")
+    File.WriteAllText(commands, "")
+    File.WriteAllText(commands + ".docker", "")
+
+    commandStubs directory
 
     let config =
         ProcessStartInfo(
@@ -108,6 +116,10 @@ let private orderedStages directory =
         if stages = [ "--fast" ] then
             Expect.isEmpty (File.ReadAllLines(commands + ".docker")) "Fast needs no Docker"
         else if stages.IsEmpty then
+            Expect.isTrue
+                (actual |> List.exists _.StartsWith("shellcheck "))
+                "Default workflow lint uses the fixture command"
+
             Expect.isTrue
                 ((File.ReadAllLines(commands + ".docker")).Length > 0)
                 "Default includes Docker"
