@@ -233,6 +233,7 @@ export const observeAuthorityRefresh = (page: Page, info?: Pick<TestInfo, "timeo
   page.on("requestfailed", failed);
   return {
     stage: async (stage: AuthorityStage) => {
+      state.snapshot = { phase: "UNAVAILABLE", picker: "UNOBSERVED UNOBSERVED" };
       state.stage = stage;
       recordTiming(state);
       if (stage === "REGISTER_ACTOR" || stage === "NEXT_GRANT") {

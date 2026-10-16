@@ -172,3 +172,22 @@ it("does not attribute a registration snapshot to an unavailable next-grant samp
   expect(lines.join()).not.toContain("Closed private page");
   expect(evaluate).toHaveBeenCalledTimes(2);
 });
+
+it.each(["CASE_GRANT", "NEXT_GRANT"] as const)(
+  "entering %s clears the prior snapshot before any new sample completes",
+  async (stage) => {
+    const { page, evaluate } = pageFixture();
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const evidence = observeAuthorityRefresh(page);
+    await evidence.stage("REGISTER_ACTOR");
+    const sample = Promise.withResolvers<unknown>();
+    evaluate.mockImplementationOnce(() => sample.promise);
+    const entering = evidence.stage(stage);
+    evidence.finish(true);
+    const lines = log.mock.calls.flatMap(([line]) => String(line).split("\n"));
+    expect(lines).toContain("E2E_AUTHORITY_PHASE UNAVAILABLE");
+    expect(lines).toContain("E2E_AUTHORITY_PICKER UNOBSERVED UNOBSERVED");
+    sample.resolve({ phase: "USABLE_PICKER", picker: "ENABLED GRANT" });
+    await entering;
+  },
+);
