@@ -96,12 +96,14 @@ let stackLocations codeFiles bytes =
 let failureCategories bytes =
     Regex.Matches(
         plain bytes,
-        @"(?m)^[ \t]+(?:(?<accessibility>Error: E2E_AXE_[A-Z0-9_]{1,200}[ \t]*\r?$)|(?<assertion>AssertionError:|Error: expect\()|(?<testTimeout>(?:Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: )?Test timeout of [1-9][0-9]{0,7}ms exceeded\.)|(?<actionTimeout>TimeoutError:|Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<timeout>(?:Error: )?Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<error>Error:))",
+        @"(?m)^[ \t]+(?:(?<accessibility>Error: E2E_AXE_[A-Z0-9_]{1,200}[ \t]*\r?$)|(?<layout>Error: E2E_LAYOUT_(?:LOGIN|CASES|NARROW|ZOOM)_OVERFLOW(?:_REPORT_UNAVAILABLE)?[ \t]*\r?$)|(?<assertion>AssertionError:|Error: expect\()|(?<testTimeout>(?:Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: )?Test timeout of [1-9][0-9]{0,7}ms exceeded\.)|(?<actionTimeout>TimeoutError:|Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<timeout>(?:Error: )?Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<error>Error:))",
         RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
     )
     |> Seq.map (fun row ->
         if row.Groups["accessibility"].Success then
             "ACCESSIBILITY"
+        elif row.Groups["layout"].Success then
+            "LAYOUT"
         elif row.Groups["assertion"].Success then
             "ASSERTION"
         elif row.Groups["testTimeout"].Success then

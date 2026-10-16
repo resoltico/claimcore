@@ -1,5 +1,3 @@
-import { writeFile } from "node:fs/promises";
-
 import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
 import type { EndpointId } from "@contracts/endpoint-catalog";
 import { endpoints } from "@contracts/endpoint-catalog";
@@ -180,69 +178,7 @@ export const localInputRefusalText = {
   lv: "Aizpildiet šo ievadi vajadzīgajā formātā.",
   ar: "أكمل هذا الحقل بالتنسيق المطلوب.",
 } as const;
-const collectLayoutMetrics = () => {
-  const { clientWidth } = document.documentElement;
-  const offenders = [...document.querySelectorAll("*")]
-    .map((element) => ({ element, rect: element.getBoundingClientRect() }))
-    .filter(({ rect }) => rect.left < -1 || rect.right > clientWidth + 1)
-    .slice(0, 5)
-    .map(({ element, rect }) => ({
-      tag: element.tagName.toLowerCase(),
-      className: typeof element.className === "string" ? element.className : "",
-      left: Math.round(rect.left),
-      right: Math.round(rect.right),
-      width: Math.round(rect.width),
-    }));
-  const scrollable = [...document.querySelectorAll("*")]
-    .filter(
-      (element) =>
-        element !== document.documentElement &&
-        element !== document.body &&
-        element.scrollWidth > element.clientWidth + 1,
-    )
-    .sort((left, right) => right.scrollWidth - left.scrollWidth)
-    .slice(0, 10)
-    .map((element) => ({
-      tag: element.tagName.toLowerCase(),
-      className: typeof element.className === "string" ? element.className : "",
-      clientWidth: element.clientWidth,
-      scrollWidth: element.scrollWidth,
-    }));
-  return {
-    clientWidth,
-    scrollWidth: document.documentElement.scrollWidth,
-    offenders,
-    scrollable,
-  };
-};
-export const noHorizontalOverflow = async (page: Page, stage: "narrow" | "zoom"): Promise<void> => {
-  const metrics = await page.evaluate(collectLayoutMetrics);
-  if (metrics.scrollWidth <= metrics.clientWidth + 1) {
-    return;
-  }
-  const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"];
-  if (engine !== undefined && ["chromium", "firefox", "webkit"].includes(engine)) {
-    const report = new URL(
-      `../../artifacts/browser/localization-layout-${engine}.json`,
-      import.meta.url,
-    );
-    const offenders = metrics.offenders.map(({ tag, className, left, right, width }) => ({
-      tag,
-      className: className.replace(/[^a-zA-Z0-9_-]/gu, "").slice(0, 40),
-      left,
-      right,
-      width,
-    }));
-    const scrollable = metrics.scrollable.map(({ tag, className, clientWidth, scrollWidth }) => ({
-      tag,
-      className: className.replace(/[^a-zA-Z0-9_-]/gu, "").slice(0, 40),
-      clientWidth,
-      scrollWidth,
-    }));
-    await writeFile(report, `${JSON.stringify({ stage, ...metrics, offenders, scrollable })}\n`);
-  }
-  throw new Error(`E2E_LOCALIZATION_${stage.toUpperCase()}_OVERFLOW`);
-};
+export { noHorizontalOverflow } from "./layout-support";
 
 export const expectKeyboardContained = async (page: Page, dialog: Locator): Promise<void> => {
   await dialog.getByRole("checkbox").focus();

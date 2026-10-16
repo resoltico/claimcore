@@ -260,6 +260,39 @@ let private timeoutControls () =
         (categories "private TimeoutError: private-token")
         "Payload prefixes do not become timeout evidence"
 
+let private layoutControls () =
+    let categories text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.failureCategories
+
+    for stage in [ "LOGIN"; "CASES"; "NARROW"; "ZOOM" ] do
+        for suffix in [ ""; "_REPORT_UNAVAILABLE" ] do
+            Expect.equal
+                (categories ("    Error: E2E_LAYOUT_" + stage + "_OVERFLOW" + suffix + " \t\r\n"))
+                [ "LAYOUT" ]
+                "Every fixed stage and report-failure marker has one closed category"
+
+    for invalid in
+        [
+            "    Error: E2E_LAYOUT_PRIVATE_OVERFLOW"
+            "    Error: E2E_LAYOUT_narrow_OVERFLOW"
+            "    Error: E2E_LAYOUT_NARROW_OVERFLOW_PRIVATE"
+            "    Error: E2E_LAYOUT_NARROW_OVERFLOW_REPORT_UNAVAILABLE_PRIVATE"
+            "    Error: E2E_LAYOUT_NARROW_OVERFLOW/private-path"
+            "    Error: E2E_LAYOUT_NARROW_OVERFLOW private-claimant-body"
+            "    Error: private-token E2E_LAYOUT_NARROW_OVERFLOW"
+            "private-prefix    Error: E2E_LAYOUT_NARROW_OVERFLOW"
+            "    Error: E2E_LAYOUT_NARROW_OVERFLOW\rprivate-token"
+        ] do
+        let result = categories invalid
+
+        Expect.isFalse
+            (List.contains "LAYOUT" result)
+            "Malformed or private text is not a layout marker"
+
+        Expect.isTrue
+            (result |> List.forall ((=) "ERROR"))
+            "Only the existing generic category may survive rejected marker text"
+
 let private browserMetadataControls () =
     progressControls ()
     locationControls ()
@@ -267,6 +300,7 @@ let private browserMetadataControls () =
     categoryControls ()
     durationControls ()
     timeoutControls ()
+    layoutControls ()
 
 let private controls () =
     cleanupControls ()

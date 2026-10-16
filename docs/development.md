@@ -96,7 +96,10 @@ complete engine suites.
 
 Browser workers remain serial within each fixture because tests change shared actor grants and
 redirect state. Parallelism comes from isolated engine runners. Retries are disabled. Failures
-retain private evidence; successful fixtures remove their resources. Never target an existing
+retain private evidence; successful fixtures remove their resources. Horizontal overflow retains a
+fixed `LAYOUT` failure category even if writing its numeric/tag/class report fails. Reports use a
+fixed basename in the failing test's private output directory with mode `0600`; measurement
+errors remain distinct from report-storage failures. Never target an existing
 evaluation stack. Tracked contract artifacts are reviewed with their F# producer; generated
 localizations/assets, private inputs and reports stay ignored. Only remove resources created
 by the current run. CSS has formatting and browser accessibility/layout checks, with no dedicated
