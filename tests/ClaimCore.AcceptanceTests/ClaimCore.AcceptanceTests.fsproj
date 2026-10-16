@@ -15,12 +15,15 @@
     <Compile Include="PublishedProcesses.fs" />
     <Compile Include="RedirectControl.fs" />
     <Compile Include="HttpsProxy.fs" />
+    <Compile Include="CommitReplyProxy.fs" />
     <Compile Include="PublishedFixture.fs" />
     <Compile Include="CliCalls.fs" />
     <Compile Include="CliSetupTests.fs" />
     <Compile Include="DifferentClient.fs" />
     <Compile Include="PublishedAssets.fs" />
     <Compile Include="RejectedDrafts.fs" />
+    <Compile Include="CliDelivery.fs" />
+    <Compile Include="CliDisclosure.fs" />
     <Compile Include="PublishedTests.fs" />
     <Compile Include="BrowserReadback.fs" />
     <Compile Include="BrowserProgress.fs" />
@@ -29,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Npgsql" />

@@ -48,6 +48,30 @@ let publish root directory name =
 
     let result = run 120_000 (start "dotnet" args (Dictionary<string, string>())) None
     Expect.equal result.ExitCode 0 ("Publish " + name)
+
+    if name = "ClaimCore.Cli" then
+        let forbidden =
+            [
+                "ClaimCore.Domain"
+                "ClaimCore.RecordFormat"
+                "ClaimCore.Application"
+                "ClaimCore.Contracts"
+                "ClaimCore.Hosting"
+                "ClaimCore.Postgres"
+            ]
+
+        for assembly in forbidden do
+            Expect.isFalse
+                (File.Exists(Path.Combine(output, assembly + ".dll")))
+                ("Published client excludes " + assembly)
+
+        let dependencies = File.ReadAllText(Path.Combine(output, name + ".deps.json"))
+
+        for assembly in forbidden do
+            Expect.isFalse
+                (dependencies.Contains(assembly, StringComparison.Ordinal))
+                ("Resolved client closure excludes " + assembly)
+
     Path.Combine(output, name + ".dll")
 
 type Web(binary, environment, directory) =

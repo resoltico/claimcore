@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliTransportTests
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Net.Http
@@ -10,6 +12,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Cli
 open ClaimCore.Contracts
+open ClaimCore.ClientContract
 open CliTransportFixture
 
 let private resultExits () =
@@ -35,13 +38,30 @@ let private resultExits () =
                 |> Option.ofObj
                 |> Option.get
 
+            let invocation = frame endpoint.Identifier
+
+            let body =
+                if
+                    endpoint.Identifier = "authority.execute"
+                    && (tag = "ACCEPTED" || tag = "ALREADY_ACCEPTED")
+                then
+                    let value = System.Text.Json.Nodes.JsonNode.Parse(body) |> nonNull
+
+                    let receipt =
+                        value["outcome"] |> nonNull |> fun outcome -> outcome["data"] |> nonNull
+
+                    receipt["act"] <- System.Text.Json.Nodes.JsonValue.Create("REGISTER_ACTOR")
+                    Encoding.UTF8.GetBytes(value.ToJsonString())
+                else
+                    body
+
             use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
-            let reply = send handler (frame endpoint.Identifier)
+            let reply = send handler invocation
 
             Expect.equal
                 reply.ExitCode
                 (Map.tryFind tag expected |> Option.defaultValue 0)
-                "Outcome selects exit"
+                ("Outcome selects exit for " + endpoint.Identifier + " " + tag)
 
             Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
             seen <- Set.add tag seen

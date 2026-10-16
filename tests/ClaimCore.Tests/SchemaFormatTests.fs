@@ -1,5 +1,7 @@
 module ClaimCore.Tests.SchemaFormatTests
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Text.Json
 open Expecto

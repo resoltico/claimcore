@@ -11,8 +11,8 @@ import {
   correctionGroupName,
   isCorrectionValues,
   type CorrectionGroupName,
-} from "../../domain/metadata";
-import type { OperationEditorModel } from "./editorTypes";
+} from "../../interaction/metadata";
+import type { OperationEditorModel } from "../../interaction/editorTypes";
 
 type OperationFormProps = {
   definition: ProductMetadata;

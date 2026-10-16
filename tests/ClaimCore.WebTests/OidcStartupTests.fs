@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.OidcStartupTests
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Net
 open System.Net.Http

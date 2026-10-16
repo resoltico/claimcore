@@ -16,5 +16,11 @@
   "command.CLOSE.label": "إغلاق الملف",
   "command.CLOSE.meaning": "تعيين حالة الملف إلى مغلق. الإغلاق لا يعني حصول أي دفع.",
   "command.REOPEN.label": "إعادة فتح الملف",
-  "command.REOPEN.meaning": "تعيين حالة الملف إلى مفتوح مع الاحتفاظ ببقية الحقول والسجل."
+  "command.REOPEN.meaning": "تعيين حالة الملف إلى مفتوح مع الاحتفاظ ببقية الحقول والسجل.",
+  "command.VOID.label": "إبطال سجل القضية",
+  "command.VOID.meaning": "إيقاف عمليات القضية مع الاحتفاظ بالقضية وسجلها.",
+  "command.REINSTATE.label": "إعادة سجل القضية",
+  "command.REINSTATE.meaning": "استعادة العمل المعتاد في سجل قضية مبطل.",
+  "command.ERASE.label": "محو محتوى القضية",
+  "command.ERASE.meaning": "إزالة محتوى الأعمال نهائياً من قاعدة البيانات الحية. لا تُمحى سجلات WAL أو النسخ الاحتياطية أو النسخ الأخرى."
 }

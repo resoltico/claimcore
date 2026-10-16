@@ -9,7 +9,7 @@ import {
 } from "./localization-support";
 import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
 import { endpoints } from "@contracts/endpoint-catalog";
-import { isResponse } from "../src/api/responseGuards";
+import { isResponse } from "@contracts/browser-contract";
 import type { ServiceResponse } from "../src/api/types";
 import type { Language } from "../src/presentation/preferences";
 

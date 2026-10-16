@@ -1,9 +1,11 @@
 namespace ClaimCore.Web
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
-open ClaimCore.Contracts
+open ClaimCore.Hosting
 open ClaimCore.HostSecurity
 
 module internal TlsCertificate =

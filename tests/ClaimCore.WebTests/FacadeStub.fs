@@ -98,6 +98,7 @@ let description =
                 TimeZoneId = "Etc/UTC"
             }
         Capabilities = Capabilities.all
+        Offers = []
     }
 
 type Facade() =
@@ -148,6 +149,8 @@ type Facade() =
                     {
                         Snapshot = view reference
                         AvailableActs = []
+                        Offers = []
+                        HistoryDetails = []
                     })
 
         member this.List(_, _) =

@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open System.Globalization
 open ClaimCore.Application
 open ClaimCore.Domain

@@ -79,7 +79,7 @@ semantic lint stage.
 A migration is a new numbered SQL file under db/migrations. Migration bytes shipped by a release
 are immutable.
 Update readers/writers and prove atomic application, exact prefix/checksum admission and refusal
-of unsupported history. An endpoint is one catalogue entry with schemas, typed core operation,
+of unsupported history. An endpoint is one catalogue entry with accepting/receipt scope, schemas, typed core operation,
 codec/rendering and every outcome/host-failure test. Regenerate tracked artifacts and review their diff.
 A command field belongs to Domain validation and RecordFormat encoding, then its authoritative
 contract projection, consumers and independent tests. Do not add adapter-only rules or fields.
@@ -106,3 +106,10 @@ verify with `dotnet restore ClaimCore.slnx --locked-mode`. An explicit audit is
 `dotnet list ClaimCore.slnx package --vulnerable --include-transitive --no-restore`.
 The testing platform's telemetry packages are library dependencies; SDK and platform telemetry
 remain disabled in CI.
+
+The generator stages and validates the complete owned artifact set before replacement. Its tracked
+inventory permits removal of obsolete generated outputs; unexpected content is refused, never deleted.
+Build the generator from Contracts/ClientProtocol independently of CLI, then compile clients from the
+tracked outputs. `contracts/ClientContract.fs` is compiled into CLI and `browser-contract.ts` is consumed
+by the browser. Neither normal build invokes generation. Final verification includes published CLI
+closure/discovery with server assemblies absent and complete positive/negative byte corpora.

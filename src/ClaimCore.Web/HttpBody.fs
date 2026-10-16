@@ -1,12 +1,14 @@
 namespace ClaimCore.Web
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Threading
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
-open ClaimCore.Contracts
+open ClaimCore.Hosting
 
 /// HTTP allocation and transport failure handling; pure payload decoding belongs to Contracts.
 module HttpBody =

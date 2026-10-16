@@ -1,10 +1,12 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Threading
 open System.Threading.Tasks
-open ClaimCore.Contracts
+open ClaimCore.ClientContract
 
 type private RemoteSessionHolder() =
     let mutable session: RemoteAccessSession option = None
@@ -63,9 +65,20 @@ type RemoteFrameProcessor
             match Frames.parse bytes with
             | Error _ -> Some(CliReply.protocol "INVALID_FRAME")
             | Ok frame ->
+                delivery.Prepare frame
+
                 Some(
                     invoke frame (fun () -> delivery.BeforeDispatch frame) stopped
                     |> fun (value: Task<CliReply>) -> value.GetAwaiter().GetResult()
+                    |> fun reply ->
+                        let decoded =
+                            Frames.decode reply.Bytes
+                            |> Result.defaultWith (fun _ -> invalidOp "Invalid local reply.")
+
+                        let knowledge =
+                            decoded.GetProperty("attemptKnowledge").GetString() |> nonNull
+
+                        CliReply.forAttempt frame knowledge reply
                 )
 
     new(input, output, errors) =

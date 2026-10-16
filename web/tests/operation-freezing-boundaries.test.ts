@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
-import { createDraft } from "../src/domain/metadata";
-import { freezeRequest } from "../src/domain/operationRequest";
-import { initialOperation, operationReducer } from "../src/domain/operationReducer";
+import { createDraft } from "../src/interaction/metadata";
+import { freezeRequest } from "../src/interaction/operationRequest";
+import { initialOperation, operationReducer } from "../src/interaction/operationReducer";
 import { firstId, secondId, refused, begin, reviewed } from "./operation-identity.fixtures";
 import { groupedCorrectionValues } from "./service-foundation.fixtures";
 

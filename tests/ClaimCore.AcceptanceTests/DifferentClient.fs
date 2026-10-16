@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.DifferentClient
 
+open ClaimCore.ClientProtocol
+
 open System.Collections.Generic
 open System.IO
 open Expecto
@@ -17,15 +19,7 @@ let private copySource (fixture: PublishedFixture.Fixture) =
         ] do
         File.Copy(Path.Combine(fixture.Root, name), Path.Combine(directory, name))
 
-    for project in
-        [
-            "ClaimCore.Cli"
-            "ClaimCore.Contracts"
-            "ClaimCore.Application"
-            "ClaimCore.Domain"
-            "ClaimCore.RecordFormat"
-            "ClaimCore.HostSecurity"
-        ] do
+    for project in [ "ClaimCore.Cli"; "ClaimCore.ClientProtocol"; "ClaimCore.HostSecurity" ] do
         let source = Path.Combine(fixture.Root, "src", project)
         let target = Path.Combine(directory, "src", project)
         Directory.CreateDirectory target |> ignore
@@ -33,17 +27,32 @@ let private copySource (fixture: PublishedFixture.Fixture) =
         for path in Directory.GetFiles(source) do
             File.Copy(path, Path.Combine(target, Path.GetFileName(path) |> nonNull))
 
+    let contracts = Path.Combine(directory, "contracts")
+    Directory.CreateDirectory contracts |> ignore
+
+    File.Copy(
+        Path.Combine(fixture.Root, "contracts/ClientContract.fs"),
+        Path.Combine(contracts, "ClientContract.fs")
+    )
+
     directory
 
 let private differentIdentity directory =
-    let catalog = Path.Combine(directory, "src/ClaimCore.Contracts/EndpointCatalog.fs")
+    let catalog = Path.Combine(directory, "contracts/ClientContract.fs")
     let text = File.ReadAllText catalog
-    let marker = "writer.WriteString(\"id\", endpoint.Identifier)"
-    Expect.isTrue (text.Contains marker) "Mismatch fixture reaches compiled catalogue metadata"
+    let marker = "let fingerprint = WireContractFingerprint.create \""
+    let start = text.IndexOf(marker, System.StringComparison.Ordinal)
+
+    Expect.isGreaterThanOrEqual
+        start
+        0
+        "Mismatch fixture reaches the client-safe compiled fingerprint"
+
+    let valueStart = start + marker.Length
 
     File.WriteAllText(
         catalog,
-        text.Replace(marker, "writer.WriteString(\"id\", endpoint.Identifier + \"-synthetic\")")
+        text.Remove(valueStart, 64).Insert(valueStart, String.replicate 64 "0")
     )
 
 let qualify (fixture: PublishedFixture.Fixture) =
@@ -68,7 +77,16 @@ let qualify (fixture: PublishedFixture.Fixture) =
             (PublishedProcesses.start "dotnet" args (Dictionary<string, string>()))
             None
 
-    Expect.equal built.ExitCode 0 "Compile a client with a different contract identity"
+    FixtureFiles.write fixture.Directory "different-client-build.stdout.log" built.StandardOutput
+    |> ignore
+
+    FixtureFiles.write fixture.Directory "different-client-build.stderr.log" built.StandardError
+    |> ignore
+
+    Expect.equal
+        built.ExitCode
+        0
+        "Compile a client with a different contract identity; see owned fixture build logs"
 
     let result =
         ProcessRunner.dotnet

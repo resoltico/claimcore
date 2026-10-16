@@ -2,7 +2,7 @@ import type { RequestByEndpoint } from "@contracts/types";
 import { readFile } from "node:fs/promises";
 import { type Page } from "@playwright/test";
 
-import { isResponse } from "../src/api/responseGuards";
+import { isResponse } from "@contracts/browser-contract";
 import { endpoints } from "@contracts/endpoint-catalog";
 import { browserRequest, progress, sessionToken } from "./session-helpers";
 

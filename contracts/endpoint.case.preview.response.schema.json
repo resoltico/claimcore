@@ -10,6 +10,13 @@
         "endpoint": {
           "const": "case.preview"
         },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+          "minLength": 36,
+          "maxLength": 36
+        },
         "outcome": {
           "oneOf": [
             {
@@ -113,6 +120,7 @@
       },
       "required": [
         "endpoint",
+        "operationId",
         "outcome"
       ]
     },
@@ -309,12 +317,90 @@
               ]
             }
           ]
+        },
+        "offers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "definition": {
+                "type": "string",
+                "minLength": 1
+              },
+              "caseReference": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "choices": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "input": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "input",
+                    "values"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "definition",
+              "caseReference",
+              "expectedRevision",
+              "choices"
+            ]
+          }
+        },
+        "historyDetails": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "SUMMARY",
+              "FULL"
+            ]
+          }
         }
       },
       "required": [
         "caseReference",
         "revision",
-        "state"
+        "state",
+        "offers",
+        "historyDetails"
       ]
     },
     "CaseSnapshot": {
@@ -1560,6 +1646,73 @@
           "type": "string",
           "minLength": 1
         },
+        "offers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "definition": {
+                "type": "string",
+                "minLength": 1
+              },
+              "caseReference": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "choices": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "input": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "input",
+                    "values"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "definition",
+              "caseReference",
+              "expectedRevision",
+              "choices"
+            ]
+          }
+        },
         "capabilities": {
           "type": "array",
           "items": {
@@ -1582,6 +1735,7 @@
         "productVersion",
         "businessDate",
         "timeZone",
+        "offers",
         "capabilities"
       ]
     },
@@ -1607,14 +1761,10 @@
               ]
             },
             "issuer": {
-              "type": "string",
-              "format": "uri",
-              "pattern": "^https://",
-              "minLength": 1
+              "type": "string"
             },
             "subject": {
-              "type": "string",
-              "minLength": 1
+              "type": "string"
             }
           },
           "required": [

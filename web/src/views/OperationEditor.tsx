@@ -5,7 +5,7 @@ import { useOperationEditor } from "../hooks/operation/useOperationEditor";
 import { AcceptedOperation, CommandChangeDialog } from "./operation/OperationDialogs";
 import { OperationForm } from "./operation/OperationForm";
 import { OperationReview } from "./operation/OperationReview";
-import type { OperationEditorModel, OperationEditorProps } from "./operation/editorTypes";
+import type { OperationEditorModel, OperationEditorProps } from "../interaction/editorTypes";
 
 const useEditorFocus = (
   model: OperationEditorModel,
@@ -57,6 +57,23 @@ const UnknownOperation = ({ model }: { model: OperationEditorModel }) => {
   );
 };
 
+const DisclosureRefused = ({
+  model,
+  onClose,
+}: {
+  model: OperationEditorModel;
+  onClose: () => void;
+}) => {
+  const p = usePresentation();
+  return (
+    <section role="alert">
+      <NoticeView value={model.state.message!} />
+      <button type="button" onClick={onClose}>
+        {p.text("ui.backToCase")}
+      </button>
+    </section>
+  );
+};
 const OperationEditorLayout = ({
   props,
   model,
@@ -70,6 +87,9 @@ const OperationEditorLayout = ({
   useEditorFocus(model, section, previewButtonRef);
   if (model.state.delivery === "OUTCOME_UNKNOWN") {
     return <UnknownOperation model={model} />;
+  }
+  if (model.state.disclosureRefused) {
+    return <DisclosureRefused model={model} onClose={props.onClose} />;
   }
   if (model.receipt !== null) {
     return (

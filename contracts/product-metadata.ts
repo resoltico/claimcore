@@ -59,7 +59,7 @@ export const productMetadata = { descriptors: {
           "requiresNonBlank": true,
           "rejectsSurroundingWhitespace": true,
           "rejectsControlCharacters": true,
-          "rejectsFormattingCharacters": true
+          "rejectsForbiddenInvisibleCharacters": true
         }
       }
     },
@@ -80,7 +80,7 @@ export const productMetadata = { descriptors: {
           "requiresNonBlank": true,
           "rejectsSurroundingWhitespace": true,
           "rejectsControlCharacters": true,
-          "rejectsFormattingCharacters": true
+          "rejectsForbiddenInvisibleCharacters": true
         }
       }
     },
@@ -195,6 +195,9 @@ export const productMetadata = { descriptors: {
       "kind": "OPEN",
       "label": "Open a case",
       "meaning": "Register the incident, claimant, insurer and amount claimed.",
+      "labelId": "command.OPEN.label",
+      "meaningId": "command.OPEN.meaning",
+      "valuesMember": "values",
       "inputs": {
         "kind": "FIELDS",
         "fields": [
@@ -233,6 +236,9 @@ export const productMetadata = { descriptors: {
       "kind": "AMEND_REGISTRATION",
       "label": "Amend registration",
       "meaning": "Replace the initial facts. The handler\u0027s case reference remains unchanged.",
+      "labelId": "command.AMEND_REGISTRATION.label",
+      "meaningId": "command.AMEND_REGISTRATION.meaning",
+      "valuesMember": "values",
       "inputs": {
         "kind": "FIELDS",
         "fields": [
@@ -278,6 +284,9 @@ export const productMetadata = { descriptors: {
       "kind": "CORRECT_CASE",
       "label": "Correct case facts",
       "meaning": "Correct recorded details on a case with a decision, payment or closed status. All changes are recorded together. Clearing a payment date does not refund money.",
+      "labelId": "command.CORRECT_CASE.label",
+      "meaningId": "command.CORRECT_CASE.meaning",
+      "valuesMember": "values",
       "inputs": {
         "kind": "CORRECTION_GROUPS",
         "groups": [
@@ -378,6 +387,9 @@ export const productMetadata = { descriptors: {
       "kind": "DECIDE",
       "label": "Record payment decision",
       "meaning": "Record or replace the decided amount and currency. This does not send money.",
+      "labelId": "command.DECIDE.label",
+      "meaningId": "command.DECIDE.meaning",
+      "valuesMember": "values",
       "inputs": {
         "kind": "FIELDS",
         "fields": [
@@ -403,6 +415,9 @@ export const productMetadata = { descriptors: {
       "kind": "WITHDRAW_DECISION",
       "label": "Withdraw payment decision",
       "meaning": "Clear the unpaid decision while preserving its history.",
+      "labelId": "command.WITHDRAW_DECISION.label",
+      "meaningId": "command.WITHDRAW_DECISION.meaning",
+      "valuesMember": "values",
       "inputs": {
         "kind": "FIELDS",
         "fields": []
@@ -412,6 +427,9 @@ export const productMetadata = { descriptors: {
       "kind": "RECORD_PAYMENT",
       "label": "Record actual payment",
       "meaning": "Record the date the full decided amount was actually paid. This does not execute or verify a transfer.",
+      "labelId": "command.RECORD_PAYMENT.label",
+      "meaningId": "command.RECORD_PAYMENT.meaning",
+      "valuesMember": "values",
       "inputs": {
         "kind": "FIELDS",
         "fields": [
@@ -426,6 +444,9 @@ export const productMetadata = { descriptors: {
       "kind": "CLEAR_PAYMENT",
       "label": "Correct an erroneous payment record",
       "meaning": "Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains.",
+      "labelId": "command.CLEAR_PAYMENT.label",
+      "meaningId": "command.CLEAR_PAYMENT.meaning",
+      "valuesMember": "values",
       "inputs": {
         "kind": "FIELDS",
         "fields": []
@@ -435,6 +456,9 @@ export const productMetadata = { descriptors: {
       "kind": "CLOSE",
       "label": "Close the case",
       "meaning": "Close the case. Closing does not mean that payment was made.",
+      "labelId": "command.CLOSE.label",
+      "meaningId": "command.CLOSE.meaning",
+      "valuesMember": "values",
       "inputs": {
         "kind": "FIELDS",
         "fields": []
@@ -444,10 +468,209 @@ export const productMetadata = { descriptors: {
       "kind": "REOPEN",
       "label": "Reopen the case",
       "meaning": "Reopen the case, preserving its details and history.",
+      "labelId": "command.REOPEN.label",
+      "meaningId": "command.REOPEN.meaning",
+      "valuesMember": "values",
       "inputs": {
         "kind": "FIELDS",
         "fields": []
       }
+    },
+    {
+      "kind": "VOID",
+      "label": "Void case record",
+      "meaning": "Block business commands while retaining the case and its history.",
+      "labelId": "command.VOID.label",
+      "meaningId": "command.VOID.meaning",
+      "valuesMember": null,
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": [
+          {
+            "fieldName": "reason",
+            "prefill": "BLANK"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "REINSTATE",
+      "label": "Reinstate case record",
+      "meaning": "Restore ordinary case work on a voided record.",
+      "labelId": "command.REINSTATE.label",
+      "meaningId": "command.REINSTATE.meaning",
+      "valuesMember": null,
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": [
+          {
+            "fieldName": "reason",
+            "prefill": "BLANK"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "ERASE",
+      "label": "Erase case payload",
+      "meaning": "Permanently remove business payload from the live database. WAL, backups and copies elsewhere are not erased.",
+      "labelId": "command.ERASE.label",
+      "meaningId": "command.ERASE.meaning",
+      "valuesMember": null,
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": []
+      }
+    }
+  ],
+  "inputFields": [
+    {
+      "name": "reason",
+      "label": "Stewardship reason",
+      "meaning": "Explain the record stewardship action.",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "policy": {
+          "maximumCharacters": 200,
+          "requiresNonBlank": true,
+          "rejectsSurroundingWhitespace": true,
+          "rejectsControlCharacters": true,
+          "rejectsForbiddenInvisibleCharacters": true
+        }
+      }
+    }
+  ],
+  "authorityTarget": {
+    "fieldName": "target",
+    "label": "Actor principal",
+    "primitive": "PRINCIPAL",
+    "path": [
+      "target"
+    ]
+  },
+  "authorityCommands": [
+    {
+      "kind": "REGISTER_ACTOR",
+      "label": "Register actor",
+      "meaning": "Register a principal without granting case or administration capabilities.",
+      "labelId": "authority.REGISTER_ACTOR.label",
+      "meaningId": "authority.REGISTER_ACTOR.meaning",
+      "inputs": []
+    },
+    {
+      "kind": "SET_GRANT",
+      "label": "Set actor grant",
+      "meaning": "Grant or revoke a role at installation or case scope.",
+      "labelId": "authority.SET_GRANT.label",
+      "meaningId": "authority.SET_GRANT.meaning",
+      "inputs": [
+        {
+          "fieldName": "role",
+          "label": "Role",
+          "primitive": "ROLE",
+          "path": [
+            "act",
+            "role"
+          ]
+        },
+        {
+          "fieldName": "scope",
+          "label": "Grant scope",
+          "primitive": "SCOPE",
+          "path": [
+            "act",
+            "scope"
+          ]
+        },
+        {
+          "fieldName": "active",
+          "label": "Grant active",
+          "primitive": "BOOLEAN",
+          "path": [
+            "act",
+            "active"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "SET_ENABLED",
+      "label": "Set actor enabled",
+      "meaning": "Enable or disable an actor. The final enabled human owner remains protected.",
+      "labelId": "authority.SET_ENABLED.label",
+      "meaningId": "authority.SET_ENABLED.meaning",
+      "inputs": [
+        {
+          "fieldName": "enabled",
+          "label": "Actor enabled",
+          "primitive": "BOOLEAN",
+          "path": [
+            "act",
+            "enabled"
+          ]
+        }
+      ]
+    }
+  ],
+  "authorityFields": [
+    {
+      "name": "operationId",
+      "label": "Operation ID",
+      "labelId": "authority.field.operationId.label"
+    },
+    {
+      "name": "expectedRevision",
+      "label": "Expected revision",
+      "labelId": "authority.field.expectedRevision.label"
+    },
+    {
+      "name": "act",
+      "label": "Operation",
+      "labelId": "authority.field.act.label"
+    },
+    {
+      "name": "kind",
+      "label": "Type",
+      "labelId": "authority.field.kind.label"
+    },
+    {
+      "name": "issuer",
+      "label": "Identity issuer",
+      "labelId": "authority.field.issuer.label"
+    },
+    {
+      "name": "subject",
+      "label": "Subject or client ID",
+      "labelId": "authority.field.subject.label"
+    },
+    {
+      "name": "target",
+      "label": "Actor principal",
+      "labelId": "authority.field.target.label"
+    },
+    {
+      "name": "role",
+      "label": "Role",
+      "labelId": "authority.field.role.label"
+    },
+    {
+      "name": "scope",
+      "label": "Grant scope",
+      "labelId": "authority.field.scope.label"
+    },
+    {
+      "name": "active",
+      "label": "Grant active",
+      "labelId": "authority.field.active.label"
+    },
+    {
+      "name": "enabled",
+      "label": "Actor enabled",
+      "labelId": "authority.field.enabled.label"
     }
   ],
   "statuses": [
@@ -796,4 +1019,4 @@ export const productMetadata = { descriptors: {
     "maximumPageSize": 50,
     "requestByteLimit": 65536
   }
-}, productVersion: "0.9.0", wireFingerprint: "6c34a27d2c4edd28cebaab0b8e9ee3650615289d662ed7b20ee00afb69f1ff19" } as const;
+}, productVersion: "0.9.0", wireFingerprint: "af898b414e939d6a996a6944c8f9c9dcfa6816e45d6ed222c15db5d9707244df" } as const;

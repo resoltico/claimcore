@@ -3,7 +3,7 @@ import type { CaseFields, CommandDraft, CaseReceipt } from "../src/api/types";
 import { expect, type Page } from "@playwright/test";
 import { startCommand } from "./case-workflow";
 import { browserRequest, sessionToken } from "./session-helpers";
-import { isResponse } from "../src/api/responseGuards";
+import { isResponse } from "@contracts/browser-contract";
 import { endpoints } from "@contracts/endpoint-catalog";
 import { selectLanguage } from "./localization-support";
 import type { Language } from "../src/presentation/preferences";

@@ -5,7 +5,7 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 
 import { wireContractFingerprint } from "@contracts/endpoint-catalog";
-import { isHostFailure, isResponse } from "../src/api/responseGuards";
+import { isHostFailure, isResponse } from "@contracts/browser-contract";
 import { retainResponseBodies } from "./response-bodies";
 
 type BrowserReply = Readonly<{

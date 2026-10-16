@@ -5,6 +5,7 @@ open System.Globalization
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
+open ClaimCore.RecordFormat
 
 module internal Queries =
     let fault =
@@ -43,20 +44,120 @@ module internal Queries =
         | Some actor when ActorAuthorization.validActor principal actor -> Ok actor
         | _ -> Error Rejection.ResourceUnavailable
 
+    let private offer definition reference revision choices : OperationOffer =
+        {
+            Definition = definition
+            CaseReference = reference
+            ExpectedRevision = revision
+            Choices = choices
+        }
+
+    let private correctionChoices principal actor resource accepted =
+        ActorAuthorization.correctionGroups
+        |> List.map (fun (group, capability) ->
+            let actions =
+                if ActorAuthorization.can principal actor capability resource then
+                    Case.correctionActions accepted group
+                else
+                    [ CorrectionGroupAction.Keep ]
+
+            {
+                Input = "groups." + group
+                Values =
+                    actions
+                    |> List.map (function
+                        | CorrectionGroupAction.Keep -> "KEEP"
+                        | CorrectionGroupAction.Replace -> "REPLACE"
+                        | CorrectionGroupAction.Clear -> "CLEAR")
+            })
+
+    let private historyDetails principal actor resource =
+        [ "SUMMARY", Capability.ReadHistory; "FULL", Capability.ReadHistoryFull ]
+        |> List.choose (fun (detail, capability) ->
+            if ActorAuthorization.can principal actor capability resource then
+                Some detail
+            else
+                None)
+
+    let private historyOffers reference details =
+        if List.isEmpty details then
+            []
+        else
+            [
+                offer
+                    "case.history"
+                    (Some reference)
+                    None
+                    [ { Input = "detail"; Values = details } ]
+            ]
+
+    let private caseOffer principal actor resource accepted (snapshot: CaseSnapshot) kind =
+        let choices =
+            if kind = CaseActKind.CorrectCase then
+                correctionChoices principal actor resource accepted
+            else
+                []
+
+        if
+            kind = CaseActKind.CorrectCase
+            && (choices |> List.forall (fun choice -> choice.Values = [ "KEEP" ]))
+        then
+            None
+        else
+            Some(
+                kind,
+                offer
+                    (CaseActKinds.token kind)
+                    (Some snapshot.Reference)
+                    (Some snapshot.Revision)
+                    choices
+            )
+
     let caseRecord installationId principal actor (record: StoredCase) =
         CaseDecisions.current installationId record
         |> Result.map (fun accepted ->
+            let resource = ResourceScope.Case record.CaseId
+
+            let acts =
+                Case.eligibleActs accepted
+                |> List.filter (ActorAuthorization.canAdvertise principal actor resource)
+
+            let details = historyDetails principal actor resource
+
+            let offered =
+                acts
+                |> List.choose (caseOffer principal actor resource accepted record.Snapshot)
+
             {
                 Snapshot = record.Snapshot
-                AvailableActs =
-                    Case.eligibleActs accepted
-                    |> List.filter (
-                        ActorAuthorization.canAdvertise
-                            principal
-                            actor
-                            (ResourceScope.Case record.CaseId)
-                    )
+                AvailableActs = offered |> List.map fst
+                Offers =
+                    (offered |> List.map snd) @ historyOffers record.Snapshot.Reference details
+                HistoryDetails = details
             })
+
+    let private installationOffers principal actor =
+        let can capability =
+            ActorAuthorization.can principal actor capability ResourceScope.Installation
+
+        [
+            if can Capability.Register then
+                yield offer "OPEN" None (Some 0L) []
+            if can Capability.ManageAuthority then
+                for definition in AuthorityOperationDefinitions.all do
+                    yield offer (RecordedAuthorityActs.token definition.Kind) None None []
+            if can Capability.ReadAuthority then
+                yield offer "authority.list" None None []
+                yield offer "operation.observe" None None []
+            match actor with
+            | Some authority when ActorAuthorization.visibility principal authority |> Option.isSome ->
+                yield offer "case.list" None None []
+                yield offer "case.get" None None []
+
+                if not (can Capability.ReadAuthority) then
+                    yield offer "operation.observe" None None []
+            | _ -> ()
+        ]
 
     let get
         (store: ILedgerStore)
@@ -108,6 +209,7 @@ module internal Queries =
                                         EffectiveBusinessDate = calendar.DateAt view.ObservedAt
                                         TimeZoneId = calendar.TimeZoneId
                                     }
+                                Offers = installationOffers principal view.Actor
                                 Capabilities =
                                     Capabilities.all
                                     |> List.filter (fun capability ->

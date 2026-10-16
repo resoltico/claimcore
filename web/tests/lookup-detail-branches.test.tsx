@@ -43,6 +43,13 @@ it("keeps a failed history page request-local without erasing current case data"
     response("case.get", "SUCCEEDED", {
       caseReference: fields.caseReference,
       revision: 1,
+      offers: [].map((identifier) => ({
+        definition: identifier,
+        caseReference: null,
+        expectedRevision: null,
+        choices: [],
+      })),
+      historyDetails: ["SUMMARY", "FULL"],
       state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: [] },
     }),
   );
@@ -69,6 +76,13 @@ it("shows a typed unavailable history refusal while preserving readable current 
     response("case.get", "SUCCEEDED", {
       caseReference: fields.caseReference,
       revision: 1,
+      offers: [].map((identifier) => ({
+        definition: identifier,
+        caseReference: null,
+        expectedRevision: null,
+        choices: [],
+      })),
+      historyDetails: ["SUMMARY", "FULL"],
       state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: [] },
     }),
   );

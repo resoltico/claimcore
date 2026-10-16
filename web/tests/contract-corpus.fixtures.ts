@@ -1,3 +1,4 @@
+import { transportResponse } from "./transport-response.fixtures";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { EndpointId } from "@contracts/endpoint-catalog";
@@ -60,11 +61,10 @@ export const generatedWebValue = <K extends EndpointId>(endpoint: K): ServiceRes
   }
   return value;
 };
-export const generatedResponse = (endpoint: EndpointId, status = 200): Response =>
-  new Response(JSON.stringify(generatedWebValue(endpoint)), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
+export const generatedResponse = (endpoint: EndpointId, status = 200): Response => {
+  const response = generatedWebValue(endpoint);
+  return transportResponse(endpoint, response.outcome.tag, response.outcome.data, status);
+};
 export const hostCases = () => [
   {
     id: "input-invalid",

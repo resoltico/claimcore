@@ -1,55 +1,48 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Net
 open System.Net.Http
 open System.Net.Http.Headers
 open System.Threading
 open System.Threading.Tasks
-open ClaimCore.Contracts
+open ClaimCore.ClientContract
 
 module RemoteServiceCall =
     [<Literal>]
-    let MaximumResponseBytes = 16 * 1024 * 1024
+    let MaximumResponseBytes = ProtocolProfile.MaximumResponseBytes
 
-    let private invalid mutates =
-        let reply = CliReply.protocol "INVALID_RESPONSE"
-        if mutates then CliReply.unknown reply else reply
+    let private invalid frame =
+        CliReply.protocol "INVALID_RESPONSE"
+        |> CliReply.forAttempt frame (DeliveryPolicy.missing true (Frames.endpoint frame).Mutates)
 
     let internal readResponse frame (response: HttpResponseMessage) cancelled =
         task {
-            let endpoint = Frames.endpoint frame
-
             let media =
                 response.Content.Headers.ContentType |> Option.ofObj |> Option.map _.MediaType
 
             if media <> Some "application/json" then
-                return invalid endpoint.Mutates
+                return invalid frame
             else
                 do! response.Content.LoadIntoBufferAsync(int64 MaximumResponseBytes, cancelled)
                 let! bytes = response.Content.ReadAsByteArrayAsync cancelled
 
                 if bytes.Length > MaximumResponseBytes then
-                    return invalid endpoint.Mutates
+                    return invalid frame
                 elif response.StatusCode = HttpStatusCode.OK then
                     return
-                        Frames.result endpoint.Identifier bytes
+                        Frames.result frame bytes
                         |> Result.map CliReply.admitted
-                        |> Result.defaultWith (fun _ -> invalid endpoint.Mutates)
+                        |> Result.defaultWith (fun _ -> invalid frame)
                 else
                     match HostFailures.decode bytes with
                     | Ok reason when HostFailures.status reason = int response.StatusCode ->
-                        let reply =
-                            Frames.serviceFailure endpoint.Identifier reason |> CliReply.admitted
+                        let reply = Frames.serviceFailure frame reason |> CliReply.admitted
 
-                        return
-                            if
-                                endpoint.Mutates && HostFailures.phase reason <> Some "NOT_STARTED"
-                            then
-                                CliReply.unknown reply
-                            else
-                                reply
-                    | _ -> return invalid endpoint.Mutates
+                        return reply
+                    | _ -> return invalid frame
         }
 
     let send
@@ -98,5 +91,7 @@ module RemoteServiceCall =
             | :? IO.IOException
             | :? InvalidOperationException ->
                 let reply = CliReply.local ClientFailure.Unavailable
-                return if endpoint.Mutates then CliReply.unknown reply else reply
+
+                return
+                    CliReply.forAttempt frame (DeliveryPolicy.missing true endpoint.Mutates) reply
         }

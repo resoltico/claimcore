@@ -8,9 +8,8 @@ import {
   isCorrectionValues,
   isDirty,
   prefilledValues,
-  type DraftValues,
-} from "../src/domain/metadata";
-import { freezeRequest } from "../src/domain/operationRequest";
+} from "../src/interaction/metadata";
+import { freezeRequest } from "../src/interaction/operationRequest";
 import { caseFields, groupedCorrectionValues } from "./service-foundation.fixtures";
 
 const replaceField = {
@@ -35,6 +34,13 @@ const definition = {
 const current: CurrentCase = {
   caseReference: caseFields.caseReference,
   revision: 1,
+  offers: [].map((identifier) => ({
+    definition: identifier,
+    caseReference: null,
+    expectedRevision: null,
+    choices: [],
+  })),
+  historyDetails: ["SUMMARY", "FULL"],
   state: { tag: "LIVE", disposition: "ACTIVE", fields: caseFields, availableActs: [] },
 };
 const keep = { mode: "KEEP" as const, values: {} };
@@ -56,15 +62,9 @@ const expectGroupNames = () => {
   expect(isCorrectionGroupName("other")).toBe(false);
   expect(() => correctionGroupName("other")).toThrow(/Unknown correction group other\./u);
   expect(isCorrectionValues({ registration: keep, decision: keep, payment: keep })).toBe(true);
-  expect(isCorrectionValues({ registration: keep, decision: keep } as unknown as DraftValues)).toBe(
-    false,
-  );
-  expect(isCorrectionValues({ decision: keep, payment: keep } as unknown as DraftValues)).toBe(
-    false,
-  );
-  expect(isCorrectionValues({ registration: keep, payment: keep } as unknown as DraftValues)).toBe(
-    false,
-  );
+  expect(isCorrectionValues({ registration: keep, decision: keep })).toBe(false);
+  expect(isCorrectionValues({ decision: keep, payment: keep })).toBe(false);
+  expect(isCorrectionValues({ registration: keep, payment: keep })).toBe(false);
 };
 
 const expectPrefill = () => {

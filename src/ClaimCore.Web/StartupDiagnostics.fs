@@ -80,7 +80,7 @@ type WebStartupProblem =
     | AssetsMissing
     | UnsupportedInvocation
     | UnexpectedFailure
-    | RuntimeOpen of ClaimCore.Application.RuntimeOpenFault
+    | RuntimeOpen of string
 
 exception WebStartupException of WebStartupProblem
 

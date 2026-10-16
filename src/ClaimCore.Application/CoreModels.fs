@@ -13,10 +13,21 @@ type RuntimeContext =
         TimeZoneId: string
     }
 
+type InputChoiceOffer = { Input: string; Values: string list }
+
+type OperationOffer =
+    {
+        Definition: string
+        CaseReference: string option
+        ExpectedRevision: int64 option
+        Choices: InputChoiceOffer list
+    }
+
 type ActorContext =
     {
         Runtime: RuntimeContext
         Capabilities: Capability list
+        Offers: OperationOffer list
     }
 
 /// Admission vocabulary shared by persistence and the composition root.
@@ -71,6 +82,8 @@ type CaseReadModel =
     {
         Snapshot: CaseSnapshot
         AvailableActs: CaseActKind list
+        Offers: OperationOffer list
+        HistoryDetails: string list
     }
 
 [<RequireQualifiedAccess>]

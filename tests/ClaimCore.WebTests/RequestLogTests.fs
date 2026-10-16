@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.RequestLogTests
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Net.Http
 open System.Text

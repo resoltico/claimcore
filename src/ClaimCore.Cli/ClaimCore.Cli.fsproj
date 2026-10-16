@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../contracts/ClientContract.fs" Link="ClientContract.fs" />
+    <Compile Include="BuildIdentity.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ClientFailures.fs" />
     <Compile Include="PrivateInputs.fs" />
@@ -18,10 +20,9 @@
     <Compile Include="FrameDelivery.fs" />
     <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="Program.fs" />
+    <ProjectReference Include="../ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
-    <ProjectReference Include="../ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
   </ItemGroup>
 </Project>

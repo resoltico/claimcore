@@ -9,6 +9,13 @@ import { generatedResponse } from "./contract-corpus.fixtures";
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
+  offers: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"].map((identifier) => ({
+    definition: identifier,
+    caseReference: null,
+    expectedRevision: null,
+    choices: [],
+  })),
+  historyDetails: ["SUMMARY", "FULL"],
   state: {
     tag: "LIVE",
     fields,

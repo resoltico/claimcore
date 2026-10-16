@@ -4,6 +4,7 @@ export type LocalNoticeReason =
   | "responseTimeout"
   | "unreachable"
   | "incomplete"
+  | "invalidInput"
   | "cancelled"
   | "definitionMismatch"
   | "invalidSession"

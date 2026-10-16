@@ -1,5 +1,7 @@
 module ClaimCore.Web.Program
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Net.Http
@@ -15,12 +17,10 @@ open Microsoft.AspNetCore.Server.Kestrel.Core
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Hosting
-open ClaimCore.Application
-open ClaimCore.Contracts
 open ClaimCore.Hosting
 
 let private help () =
-    printfn "ClaimCore.Web %s — HTTPS human interface" BuildIdentity.current.Version
+    printfn "ClaimCore.Web %s — HTTPS human interface" ServiceIdentity.version
     printfn "  ClaimCore.Web                 Start the configured HTTPS host"
     printfn "  ClaimCore.Web help            Show this configuration-free help"
     printfn "  ClaimCore.Web version         Show the compiled product version"
@@ -42,15 +42,14 @@ let private help () =
 
 let private writeVersion () =
     let output = Console.OpenStandardOutput()
-    let value = BuildIdentity.current
 
     output.Write(
         System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
             {|
-                product = value.Product
-                version = value.Version
-                assemblyVersion = value.AssemblyVersion
-                fileVersion = value.FileVersion
+                product = ServiceIdentity.product
+                version = ServiceIdentity.version
+                assemblyVersion = ServiceIdentity.assemblyVersion
+                fileVersion = ServiceIdentity.fileVersion
             |}
     )
 
@@ -132,11 +131,11 @@ let private requireTrustedConnection
 
 let private openRuntime (configuration: WebConfiguration) (ct: CancellationToken) =
     task {
-        let! opened = Runtime.openConnection configuration.ConnectionString ct
+        let! opened = ServiceRuntime.openConnection configuration.ConnectionString ct
 
         match opened with
         | Ok value -> return value
-        | Error ClaimCore.Application.RuntimeOpenFault.Cancelled when ct.IsCancellationRequested ->
+        | Error "Cancelled" when ct.IsCancellationRequested ->
             return raise (OperationCanceledException(ct))
         | Error reason -> return WebStartupDiagnostics.refuse (WebStartupProblem.RuntimeOpen reason)
     }
@@ -162,7 +161,7 @@ let private configuredBuilder assets (configuration: WebConfiguration) oidc =
 let private configureRoutes
     assets
     (configuration: WebConfiguration)
-    (runtime: IRuntime)
+    (runtime: IServiceRuntime)
     (application: WebApplication)
     =
     application.Use(
@@ -202,10 +201,10 @@ let private configureRoutes
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
 
-    HostRoutes.map assets configuration (fun principal -> runtime.Actor principal) application
+    HostRoutes.map assets configuration runtime.Service application
 
 
-let private runtimeLifetime (runtime: IRuntime) =
+let private runtimeLifetime (runtime: IServiceRuntime) =
     { new IAsyncDisposable with
         member _.DisposeAsync() =
             ValueTask(
@@ -269,7 +268,7 @@ let private dispatch arguments =
         0
     | [ "version" ]
     | [ "--version" ] ->
-        printfn "%s" BuildIdentity.current.Version
+        printfn "%s" ServiceIdentity.version
         0
     | [ "version"; "--json" ] -> writeVersion ()
     | _ -> WebStartupDiagnostics.refuse WebStartupProblem.UnsupportedInvocation

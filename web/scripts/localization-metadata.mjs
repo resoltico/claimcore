@@ -12,7 +12,7 @@ export const businessMessages = (descriptors) => {
       result[key] = [{ literal: descriptor[part] }];
     }
   };
-  for (const field of descriptors["fields"]) {
+  for (const field of [...descriptors["fields"], ...(descriptors["inputFields"] ?? [])]) {
     add("field", field.name, field);
   }
   for (const command of descriptors["commands"]) {

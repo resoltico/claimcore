@@ -43,7 +43,6 @@
   "ui.lifecyclePrivacy": "Privacy phase: {value}",
   "ui.lifecycleActive": "Active",
   "ui.lifecycleVoided": "Voided as a data-entry error",
-  "ui.lifecycleVoidApproval": "Voiding this case requires two distinct approvals and does not reverse a payment.",
   "ui.backToCases": "Back to cases",
   "ui.exactReference": "{label} (exact): {reference}",
   "ui.unchangedUntilSubmit": "Review is advisory. The case changes only when the operation is accepted.",
@@ -137,5 +136,17 @@
   "ui.countryUnassigned": "No country name is available for {code}. Check the intended code.",
   "ui.countryUnknown": "Unknown or international",
   "ui.snapshotWithheld": "The recorded fields are withheld under your current access rights.",
-  "ui.authorityReceipt": "Authority act {act} for actor {actor}."
+  "ui.authorityReceipt": "Authority act {act} for actor {actor}.",
+  "ui.authority": "Authority",
+  "ui.reviewExactRequest": "Review exact request",
+  "ui.confirmExactRequest": "I confirm this exact request.",
+  "ui.submitOperation": "Submit operation",
+  "ui.actor": "Actor",
+  "ui.actors": "Actors and grants",
+  "ui.principal": "Principal",
+  "ui.enabled": "Enabled",
+  "ui.yes": "Yes",
+  "ui.no": "No",
+  "ui.reloadActors": "Reload actors",
+  "ui.moreActors": "More actors"
 }

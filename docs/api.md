@@ -45,13 +45,30 @@ reject duplicate members, invalid UTF-8, malformed scalars, invalid UUID/revisio
 nesting/bytes. Wire-format failures are host refusals before Domain validation; they do not
 produce business-field rejections. Typed endpoint outcomes use HTTP 200; host failures carry
 their own HTTP status and an optional `executionPhase`. Server responses undergo full schema validation;
-browser guards check endpoint, outcome and required consumed shapes. Malformed mutation replies
+both clients validate complete generated endpoint schemas from bounded strict response bytes. Malformed mutation replies
 retain exact delivery uncertainty.
 
 Tracked [contract artifacts](../contracts/catalog.json) are generated from F# contract definitions.
 The fingerprint covers canonical framed catalogue metadata without its identity field, all schemas,
-descriptors and default English; derived TypeScript, corpus and the fingerprint itself are excluded.
+complete descriptors, default English, delivery/correlation policy and the strict-byte profile; derived TypeScript, corpus and the fingerprint itself are excluded.
 [Development](development.md) owns generation and freshness checks.
+
+Case preview/execute and authority execute response envelopes echo the admitted request operation ID,
+including refusals. Clients correlate that ID and receipt scope/act, case resource identity and promised
+revision before using the reply. ASCII reference identity permits case differences without rewriting
+accepted spelling. Observation correlates the queried ID but cannot prove pending request content:
+only exact execute or preview replay confirms that content. A specifically correlated idempotency
+conflict proves CONTENT_EXCLUDED; other refusals do not resolve earlier uncertainty.
+
+Principal wire syntax is deliberately generic Unicode text plus HUMAN/SERVICE kind. Canonical issuer
+and kind-specific identity admission remain Application-owned and run in Hosting before ledger dispatch;
+invalid identities return INPUT_INVALID/400/NOT_STARTED. The CLI no longer rejects those semantic
+identity failures before authentication; the authenticated host failure carries exit 3. Decoding wire syntax never promises principal admission.
+
+Deploy matching service, CLI, browser assets and generated artifacts together. The response envelopes,
+CLI frame format and interaction advice are a coordinated breaking contract change; there is no dual
+parser or compatibility endpoint. Existing installations retain their schema, durable bytes and private
+state. Rebuild client integrations and update frame consumers before switching the service.
 
 <a id="cc-cli-001"></a>
 
@@ -64,7 +81,9 @@ process-local authentication session. Each input frame is limited to 128 KiB; re
 limited to 16 MiB. Input is strict UTF-8 and replies are validated against the generated contract.
 Preview is advisory; execution revalidates locked state.
 
-Discovery needs no credentials:
+Discovery needs no credentials. `describe authority [kind]` exposes the Application-owned
+authority definitions alongside case command discovery:
+
 
 ```sh
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- help
@@ -107,3 +126,13 @@ Host failures carry an HTTP status and an optional `executionPhase`. `NOT_STARTE
 dispatch; `STARTED_UNCONFIRMED` preserves mutation uncertainty. A null phase does not establish
 rejection. `CONTRACT_MISMATCH` is `NOT_STARTED`; reload before authoring a different request.
 No pending request is stored by the service.
+
+Every CLI reply explicitly carries per-invocation `attemptKnowledge`, endpoint/operation identity
+when available, resolution evidence and the typed/host/local result. Host status and execution phase
+are retained. NOT_SENT, READ_SUCCEEDED, READ_FAILED, ACCEPTED, NOT_ACCEPTED and UNCONFIRMED
+are client delivery knowledge; server OUTCOME_UNKNOWN still means lost commit confirmation.
+The automation caller retains prior unresolved knowledge and the original request across processes.
+A later pre-dispatch failure, authorization refusal or NOT_STARTED result cannot resolve its earlier
+uncertainty. The CLI stores no cross-process pending state. Output failure after a dispatched mutation
+uses exit 4 when confirmation could not be safely delivered; read/pre-dispatch output failures do not.
+If both output streams fail, only the nonzero exit can remain available.

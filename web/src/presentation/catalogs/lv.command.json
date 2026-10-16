@@ -16,5 +16,11 @@
   "command.CLOSE.label": "Slēgt lietu",
   "command.CLOSE.meaning": "Iestatīt lietas statusu SLĒGTA. Slēgšana nenozīmē maksājumu.",
   "command.REOPEN.label": "Atvērt lietu atkārtoti",
-  "command.REOPEN.meaning": "Iestatīt lietas statusu ATVĒRTA, saglabājot pārējos laukus un vēsturi."
+  "command.REOPEN.meaning": "Iestatīt lietas statusu ATVĒRTA, saglabājot pārējos laukus un vēsturi.",
+  "command.VOID.label": "Anulēt lietas ierakstu",
+  "command.VOID.meaning": "Bloķēt lietas darbības, saglabājot lietu un tās vēsturi.",
+  "command.REINSTATE.label": "Atjaunot lietas ierakstu",
+  "command.REINSTATE.meaning": "Atjaunot parasto darbu ar anulētu lietas ierakstu.",
+  "command.ERASE.label": "Dzēst lietas saturu",
+  "command.ERASE.meaning": "Neatgriezeniski dzēst darījuma saturu no aktīvās datubāzes. WAL, rezerves kopijas un kopijas citur netiek dzēstas."
 }

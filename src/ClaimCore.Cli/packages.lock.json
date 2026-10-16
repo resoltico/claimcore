@@ -8,24 +8,7 @@
         "resolved": "10.1.401",
         "contentHash": "/lvOK51KD8IangBYkfDVna3/HrE/r4VUnX3dI01KDspctoYXmind3POeoYkqWKeXHwiKlf6Hc9TxwSnoSCWcjw=="
       },
-      "claimcore.application": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Domain": "[0.9.0, )",
-          "ClaimCore.RecordFormat": "[0.9.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.contracts": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.9.0, )",
-          "ClaimCore.Domain": "[0.9.0, )",
-          "ClaimCore.RecordFormat": "[0.9.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.domain": {
+      "claimcore.clientprotocol": {
         "type": "Project",
         "dependencies": {
           "FSharp.Core": "[10.1.401, )"
@@ -34,13 +17,6 @@
       "claimcore.hostsecurity": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.recordformat": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Domain": "[0.9.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       }

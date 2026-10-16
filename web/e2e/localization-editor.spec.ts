@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { isResponse } from "../src/api/responseGuards";
+import { isResponse } from "@contracts/browser-contract";
 import { startOpen } from "./case-workflow";
 import {
   expectAccessible,

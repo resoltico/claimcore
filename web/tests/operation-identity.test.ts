@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { localNotice } from "../src/api/notices";
-import { createDraft } from "../src/domain/metadata";
-import { operationReducer, initialOperation } from "../src/domain/operationReducer";
+import { createDraft } from "../src/interaction/metadata";
+import { operationReducer, initialOperation } from "../src/interaction/operationReducer";
 import { groupedCorrectionValues, review, digest } from "./service-foundation.fixtures";
 import {
   begin,

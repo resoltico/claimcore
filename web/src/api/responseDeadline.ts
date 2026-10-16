@@ -16,6 +16,10 @@ export const withinResponseDeadline = async <T>(
   if (callerSignal?.aborted === true) {
     cancel();
   }
+  if (controller.signal.aborted) {
+    callerSignal?.removeEventListener("abort", cancel);
+    return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
+  }
   let timer: ReturnType<typeof setTimeout> | undefined;
   const expired = new Promise<ApiResult<T>>((resolve) => {
     timer = setTimeout(() => {

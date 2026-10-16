@@ -29,8 +29,14 @@ let private model =
             )
             .Build())
 
-let private actualGraph () =
-    projects.Value |> Map.map (fun _ path -> Manifest.references path)
+let private resolvedGraph =
+    lazy
+        (projects.Value
+         |> Map.map (fun _ path ->
+             Manifest.references path |> ignore
+             Manifest.evaluatedReferences path))
+
+let private actualGraph () = resolvedGraph.Value
 
 let private reject action fragment =
     let error =
@@ -45,6 +51,107 @@ let private reject action fragment =
 
 let private graphTests =
     [
+        testCase "imported project edges are evaluated and refused" (fun () ->
+            let directory = System.IO.Directory.CreateTempSubdirectory("claimcore-edges-")
+
+            try
+                let file name =
+                    System.IO.Path.Combine(directory.FullName, name)
+
+                System.IO.File.WriteAllText(
+                    file "forbidden.props",
+                    "<Project><ItemGroup><ProjectReference Include=\"ClaimCore.Application.fsproj\" /></ItemGroup></Project>"
+                )
+
+                System.IO.File.WriteAllText(file "ClaimCore.Application.fsproj", "<Project />")
+
+                System.IO.File.WriteAllText(
+                    file "client.fsproj",
+                    "<Project><Import Project=\"forbidden.props\" /></Project>"
+                )
+
+                let edges = Manifest.evaluatedReferences (file "client.fsproj")
+
+                Expect.equal
+                    edges
+                    (Set.singleton "ClaimCore.Application")
+                    "Imported edge is visible"
+
+                let changed = actualGraph () |> Map.add "ClaimCore.Cli" edges
+
+                reject
+                    (fun () -> ProjectGraph.check contract.Value changed)
+                    "ClaimCore.Cli projectGraph"
+            finally
+                directory.Delete true)
+        testCase "client protocol facade signatures hide semantic types" (fun () ->
+            typeof<ClaimCore.Hosting.IServiceRuntime>.Assembly.GetExportedTypes()
+            |> Array.toList
+            |> FacadeSignatures.check
+
+            reject
+                (fun () -> FacadeSignatures.check [ typeof<SemanticFacade> ])
+                "Semantic facade type")
+        testCase "compiler reference paths match the permitted product graph" (fun () ->
+            let product = contract.Value.Projects.Keys |> Set.ofSeq
+
+            for KeyValue(name, allowed) in contract.Value.Projects do
+                let resolved =
+                    Manifest.resolvedReferences projects.Value[name] |> Set.intersect product
+
+                let forbidden = Set.difference resolved allowed
+                Expect.isEmpty forbidden (name + " resolved compiler references"))
+        testCase "imported assembly references reach compiler resolution" (fun () ->
+            let directory =
+                System.IO.Directory.CreateTempSubdirectory("claimcore-assembly-edges-")
+
+            try
+                let file name =
+                    System.IO.Path.Combine(directory.FullName, name)
+
+                let assembly = typeof<ClaimCore.Application.PrincipalKey>.Assembly.Location
+
+                System.IO.File.WriteAllText(
+                    file "forbidden.props",
+                    "<Project><ItemGroup><Reference Include=\"ClaimCore.Application\"><HintPath>"
+                    + assembly
+                    + "</HintPath></Reference></ItemGroup></Project>"
+                )
+
+                System.IO.File.WriteAllText(
+                    file "client.fsproj",
+                    "<Project><Import Project=\"forbidden.props\" /><Target Name=\"ResolveReferences\"><ItemGroup><ReferencePath Include=\"@(Reference->'%(HintPath)')\" /></ItemGroup></Target></Project>"
+                )
+
+                let resolved = Manifest.resolvedReferences (file "client.fsproj")
+
+                Expect.equal
+                    resolved
+                    (Set.singleton "ClaimCore.Application")
+                    "Imported compiler edge visible"
+
+                let forbidden = Set.difference resolved contract.Value.Projects["ClaimCore.Cli"]
+                Expect.equal forbidden resolved "Client restriction rejects imported assembly"
+            finally
+                directory.Delete true)
+        testCase "compiled CLI has no semantic assembly dependency" (fun () ->
+            let references = Assembly.Load("ClaimCore.Cli").GetReferencedAssemblies()
+
+            let forbidden =
+                set
+                    [
+                        "ClaimCore.Domain"
+                        "ClaimCore.Application"
+                        "ClaimCore.RecordFormat"
+                        "ClaimCore.Contracts"
+                        "ClaimCore.Hosting"
+                        "ClaimCore.Postgres"
+                    ]
+
+            for item in references do
+                Expect.isFalse
+                    (Set.contains (item.Name |> nonNull) forbidden)
+                    "Client assembly closure edge")
         testCase
             "[CC-ARCH-001] declared project references equal the manifest in both directions"
             (fun () -> ProjectGraph.check contract.Value (actualGraph ()))
@@ -107,6 +214,8 @@ let private positiveRules =
                     if
                         name = "freeOfClockFileEnvironmentRandomnessAndNetwork"
                         || name = "recordFormatAvoidsFrameworkSerialization"
+                        || name = "clientAvoidsServerSemantics"
+                        || name = "httpHostAvoidsDirectSemantics"
                     then
                         Set.contains project selected
                     elif
@@ -129,6 +238,8 @@ let private positiveRules =
 
 let private negativeRules =
     [
+        "clientAvoidsServerSemantics", typeof<SemanticFacade>
+        "httpHostAvoidsDirectSemantics", typeof<SemanticFacade>
         "onlyTheseMayReferencePostgres", typeof<PostgresReference>
         "onlyTheseMayReferenceHosting", typeof<HostingReference>
         "onlyTheseMayUseTimeZoneInfo", typeof<TimeZoneCall>
@@ -141,7 +252,7 @@ let private negativeRules =
         "freeOfClockFileEnvironmentRandomnessAndNetwork", typeof<NetworkCall>
     ]
     |> List.map (fun (name, fixture) ->
-        testCase ("compiled negative " + fixture.Name) (fun () ->
+        testCase ("compiled negative " + name + " " + fixture.Name) (fun () ->
             let subjects = Types().That().HaveFullName(fixture.FullName |> nonNull)
 
             Expect.isFalse

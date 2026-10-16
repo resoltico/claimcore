@@ -101,3 +101,21 @@ it("cancels unread protocol-refused bodies without awaiting a hostile cancellati
   expect(refused).toHaveBeenCalledOnce();
   expect(vi.getTimerCount()).toBe(0);
 });
+
+it("a caller cancelled before handoff never invokes work and is NOT_SENT", async () => {
+  const signal = new AbortController();
+  signal.abort();
+  const work = vi.fn(() =>
+    Promise.resolve({
+      kind: "deliveryFailure" as const,
+      notice: { kind: "local" as const, reason: "unreachable" as const },
+    }),
+  );
+  const result = await withinResponseDeadline(work, signal.signal);
+  expect(work).not.toHaveBeenCalled();
+  expect(result).toMatchObject({
+    kind: "deliveryFailure",
+    dispatched: false,
+    notice: { reason: "cancelled" },
+  });
+});

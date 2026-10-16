@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect } from "@playwright/test";
 import { test } from "./redirect-response";
 import { openCase, startCommand, reviewDraft } from "./case-workflow";
-import { isResponse } from "../src/api/responseGuards";
+import { isResponse } from "@contracts/browser-contract";
 import type { ServiceResponse } from "../src/api/types";
 import { openAuthenticated } from "./session-helpers";
 

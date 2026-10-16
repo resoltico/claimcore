@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 
-import { isResponse } from "../src/api/responseGuards";
+import { isResponse } from "@contracts/browser-contract";
 import type { ServiceResponse } from "../src/api/types";
 import { progress } from "./session-helpers";
 

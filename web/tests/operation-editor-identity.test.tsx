@@ -1,3 +1,4 @@
+import { fillRegistrationInputs } from "./registration-inputs.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -84,6 +85,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
     .mockResolvedValueOnce(refusedResponse())
     .mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(null, "OPEN"));
+  fillRegistrationInputs({ claimantName: "Synthetic A" });
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
@@ -91,11 +93,12 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
     "This operation ID belongs to different command content. Do not reuse it.",
   );
   const claimant = screen.getByLabelText("Claimant name", { exact: true });
+  await user.clear(claimant);
   await user.type(claimant, "Synthetic B");
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("A non-blank value is required.");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
-  expect(sentDraft(0).act.values["claimantName"]).toBe("");
+  expect(sentDraft(0).act.values["claimantName"]).toBe("Synthetic A");
   expect(sentDraft(2).act.values["claimantName"]).toBe("Synthetic B");
 });
 
@@ -104,6 +107,13 @@ it("retries the frozen request after delivery loss despite a changed current rev
   const current: CurrentCase = {
     caseReference: fields.caseReference,
     revision: 1,
+    offers: ["CLOSE"].map((identifier) => ({
+      definition: identifier,
+      caseReference: null,
+      expectedRevision: null,
+      choices: [],
+    })),
+    historyDetails: ["SUMMARY", "FULL"],
     state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
   };
   vi.mocked(globalThis.fetch)
@@ -133,6 +143,8 @@ const paidCase: CurrentCase = {
     paymentDate: "2026-09-04",
   }.caseReference,
   revision: 1,
+  offers: [{ definition: "CORRECT_CASE", caseReference: null, expectedRevision: 1, choices: [] }],
+  historyDetails: ["SUMMARY", "FULL"],
   state: {
     tag: "LIVE",
     fields: {

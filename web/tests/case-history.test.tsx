@@ -18,6 +18,12 @@ const historyVariants = () => {
   return { summary, full };
 };
 
+const expectHistoryRequest = (body: unknown) => {
+  if (typeof body !== "string") {
+    throw new Error("Synthetic history input must be JSON text.");
+  }
+  expect(JSON.parse(body)).toMatchObject({ detail: "SUMMARY", caseReference: "CASE-1", limit: 50 });
+};
 it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY and FULL [CC-WEB-001]", async () => {
   const { summary, full } = historyVariants();
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((_url, init) => {
@@ -38,20 +44,17 @@ it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY a
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(
-    <CaseHistory token="token" caseReference="CASE-1" fields={definition.descriptors.fields} />,
+    <CaseHistory
+      token="token"
+      caseReference="CASE-1"
+      fields={definition.descriptors.fields}
+      modes={["SUMMARY", "FULL"]}
+    />,
   );
   await waitFor(() => {
     expect(view.container.querySelectorAll(".history-list li")).toHaveLength(1);
   });
-  const firstBody = fetch.mock.calls[0]?.[1]?.body;
-  if (typeof firstBody !== "string") {
-    throw new Error("Synthetic history input must be JSON text.");
-  }
-  expect(JSON.parse(firstBody)).toMatchObject({
-    detail: "SUMMARY",
-    caseReference: "CASE-1",
-    limit: 50,
-  });
+  expectHistoryRequest(fetch.mock.calls[0]?.[1]?.body);
   expect(view.container.querySelector(".history-list details")).toBeNull();
   expect(view.container.querySelector(".case-fields")).toBeNull();
   expect(screen.getByRole("combobox", { name: "History detail" })).toBeVisible();

@@ -5,7 +5,7 @@ import { BusinessValue } from "../../components/BusinessValue";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
 import type { Review, CommandDraft, FieldDescriptor } from "../../api/service";
 import { AccessibleModal } from "../../components/AccessibleModal";
-import type { OperationEditorModel } from "./editorTypes";
+import type { OperationEditorModel } from "../../interaction/editorTypes";
 
 const ReviewValues = ({
   review,

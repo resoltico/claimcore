@@ -26,7 +26,7 @@ module FieldDefinitions =
                         RequiresNonBlank = true
                         RejectsSurroundingWhitespace = true
                         RejectsControlCharacters = true
-                        RejectsFormattingCharacters = true
+                        RejectsForbiddenInvisibleCharacters = true
                     }
         }
 

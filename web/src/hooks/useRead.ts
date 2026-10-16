@@ -38,6 +38,7 @@ export const useRead = <R extends EndpointOutcome, T>(
 };
 
 type PageSinks<T, P> = {
+  onDisclosureRefused: (() => void) | undefined;
   setItems: Dispatch<SetStateAction<T[]>>;
   setCursor: Dispatch<SetStateAction<string | null>>;
   setMessage: Dispatch<SetStateAction<Notice | null>>;
@@ -59,6 +60,7 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
   const page = result.kind === "outcome" ? select(result.value) : null;
   if (page === null) {
     if (isDisclosureRefused(result)) {
+      sinks.onDisclosureRefused?.();
       sinks.setItems([]);
       sinks.setCursor(null);
       sinks.setPage(null);
@@ -116,6 +118,7 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
 export const useRetryablePage = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
   request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<R>>,
   select: (response: R) => P | null,
+  onDisclosureRefused?: () => void,
 ) => {
   const [items, setItems] = useState<T[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -123,8 +126,8 @@ export const useRetryablePage = <R extends EndpointOutcome, T, P extends Page<T>
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState<P | null>(null);
   const sinks = useMemo(
-    () => ({ setItems, setCursor, setMessage, setLoading, setPage }),
-    [setItems, setCursor, setMessage, setLoading, setPage],
+    () => ({ setItems, setCursor, setMessage, setLoading, setPage, onDisclosureRefused }),
+    [setItems, setCursor, setMessage, setLoading, setPage, onDisclosureRefused],
   );
   const { load, abort } = usePageLoader(request, select, sinks);
 

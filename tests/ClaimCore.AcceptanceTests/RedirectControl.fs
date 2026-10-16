@@ -4,6 +4,10 @@ open System.IO
 open System.Text.Json
 open System.Text.Json.Nodes
 
+// Synthetic proxy modes remain confined to this owned HTTPS fixture.
+let lostResponse = -1
+let beforeDispatchFailure = -2
+
 [<NoEquality; NoComparison>]
 type Armed =
     {

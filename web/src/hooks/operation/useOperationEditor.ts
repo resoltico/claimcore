@@ -7,19 +7,19 @@ import {
   correctionGroups,
   isCorrectionGroupName,
   isDirty,
-  isBusinessCommand,
+  isCaseAct,
   prefilledValues,
   type CommandKind,
-} from "../../domain/metadata";
-import { editable, initialOperation, operationReducer } from "../../domain/operationReducer";
+} from "../../interaction/metadata";
+import { editable, initialOperation, operationReducer } from "../../interaction/operationReducer";
 import type {
   EditorActions,
   EditorMetadata,
   EditorState,
   OperationEditorModel,
   OperationEditorProps,
-} from "../../views/operation/editorTypes";
-import { isLocked, nextOperationId } from "../../views/operation/editorSupport";
+} from "../../interaction/editorTypes";
+import { isLocked, nextOperationId } from "../../interaction/editorSupport";
 
 const initialValues = (props: OperationEditorProps) =>
   prefilledValues(props.definition.descriptors, props.initialCommand, props.current ?? null);
@@ -134,7 +134,7 @@ const useEditorActions = (props: OperationEditorProps, state: EditorState): Edit
       submitting.current = true;
       try {
         await sendSubmit({
-          bytes: state.state.requestBytes,
+          prepared: state.state.prepared,
           token: props.token,
           dispatch: state.dispatch,
           requestId: nextRequestId(),
@@ -149,7 +149,23 @@ const useEditorActions = (props: OperationEditorProps, state: EditorState): Edit
 const metadata = (props: OperationEditorProps, state: EditorState): EditorMetadata => {
   const command = commandFor(props.definition.descriptors, state.state.command);
   const fields = commandInputs(props.definition.descriptors, state.state.command);
-  const groups = correctionGroups(props.definition.descriptors, state.state.command);
+  const commandOffer = props.current?.offers.find(
+    (item) => item.definition === state.state.command,
+  );
+  const groups = correctionGroups(props.definition.descriptors, state.state.command).map(
+    ({ group, fields: groupFields }) => {
+      const choices = commandOffer?.choices.find((item) => item.input === `groups.${group.name}`);
+      return {
+        group: {
+          ...group,
+          actions: group.actions.filter(
+            (action) => choices === undefined || choices.values.includes(action),
+          ),
+        },
+        fields: groupFields,
+      };
+    },
+  );
   const referenceField = props.definition.descriptors.fields.find(
     (field) => field.name === "caseReference",
   );
@@ -159,7 +175,7 @@ const metadata = (props: OperationEditorProps, state: EditorState): EditorMetada
     fields,
     groups,
     referenceField,
-    available: props.current?.state.availableActs.filter(isBusinessCommand) ?? [
+    available: props.current?.offers.map((offer) => offer.definition).filter(isCaseAct) ?? [
       props.initialCommand,
     ],
     locked: isLocked(state.state.delivery),

@@ -6,7 +6,7 @@ import { endpoints } from "@contracts/endpoint-catalog";
 import type { ServiceResponse } from "../src/api/types";
 import type { HostFailure } from "@contracts/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
-import { isHostFailure, isResponse } from "../src/api/responseGuards";
+import { isHostFailure, isResponse } from "@contracts/browser-contract";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };

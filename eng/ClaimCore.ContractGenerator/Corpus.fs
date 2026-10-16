@@ -1,5 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
+open ClaimCore.ClientProtocol
+
 open System.Text
 open System.Text.Json.Nodes
 open ClaimCore.Contracts
@@ -16,21 +18,29 @@ module Corpus =
 
     let private admitted endpoint direction bytes =
         if direction = "request" then
-            EndpointCatalog.admitRequest endpoint bytes |> Result.isOk
+            let definition = EndpointCatalog.tryFind endpoint |> Option.get
+
+            HttpInputSupport.parse bytes (fun root ->
+                SchemaValueValidation.verify definition.Request root)
+            |> Result.defaultValue false
         else
             EndpointCatalog.admitResponse endpoint bytes |> Result.isOk
 
     let private cases endpoint direction document =
+        let admitted bytes =
+            HttpInputSupport.parse bytes (SchemaValueValidation.verify document)
+            |> Result.defaultValue false
+
         SchemaSamples.variants document
         |> List.mapi (fun index bytes ->
-            if not (admitted endpoint direction bytes) then
+            if not (admitted bytes) then
                 invalidOp ("Invalid synthetic sample for " + endpoint + " " + direction)
 
             let invalid = JsonNode.Parse(bytes) |> nonNull
             invalid.AsObject().Add("unexpected", JsonValue.Create true)
             let invalidBytes = invalid.ToJsonString() |> Encoding.UTF8.GetBytes
 
-            if admitted endpoint direction invalidBytes then
+            if admitted invalidBytes then
                 invalidOp "Unknown-member negative control was admitted."
 
             [
@@ -82,16 +92,20 @@ module Corpus =
                     ("reference-" + string valid + "-" + string index)
                     bytes))
 
-    let bytes () =
+    let private rendered values =
         let items = JsonArray()
-        referenceCases () |> List.iter (fun value -> items.Add value)
-
-        EndpointCatalog.all
-        |> List.collect (fun e ->
-            cases e.Identifier "request" e.Request
-            @ cases e.Identifier "response" e.Response)
-        |> List.iter (fun value -> items.Add(value))
-
+        values |> List.iter (fun value -> items.Add(value))
         let result = JsonObject()
         result.Add("cases", items)
         result.ToJsonString() + "\n" |> Encoding.UTF8.GetBytes
+
+    let private endpointCases (endpoints: Endpoint list) =
+        endpoints
+        |> List.collect (fun endpoint ->
+            cases endpoint.Identifier "request" endpoint.Request
+            @ cases endpoint.Identifier "response" endpoint.Response)
+
+    let forEndpoints endpoints = endpointCases endpoints |> rendered
+
+    let bytes () =
+        referenceCases () @ endpointCases EndpointCatalog.all |> rendered

@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Security.Cryptography
 open System.Text.Json

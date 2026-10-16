@@ -2,8 +2,9 @@ import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useState } from "react";
 import type { CurrentCase, ProductMetadata, CaseReceipt } from "../api/service";
-import type { CommandKind } from "../domain/metadata";
+import type { CommandKind } from "../interaction/metadata";
 import { productMetadata } from "@contracts/product-metadata";
+import { AuthorityPanel } from "./AuthorityPanel";
 import { CaseDetail } from "./CaseDetail";
 import { CaseList } from "./CaseList";
 import { OperationEditor } from "./OperationEditor";
@@ -47,12 +48,12 @@ const DashboardNav = ({
 }: {
   active: string;
   locked: boolean;
-  navigate: (next: "cases" | "operations") => void;
+  navigate: (next: "cases" | "operations" | "authority") => void;
 }) => {
   const p = usePresentation();
   return (
     <nav aria-label={p.text("ui.primary")}>
-      {(["cases", "operations"] as const).map((item) => (
+      {(["cases", "operations", "authority"] as const).map((item) => (
         <Button
           key={item}
           onPress={() => {
@@ -141,6 +142,9 @@ const DashboardContent = (props: ContentProps) => {
       />
     );
   }
+  if (props.active === "authority") {
+    return <AuthorityPanel token={props.token} onLockChange={props.setLocked} />;
+  }
   if (props.active === "operations") {
     return <OperationLookup token={props.token} definition={definition} />;
   }
@@ -157,12 +161,12 @@ const DashboardContent = (props: ContentProps) => {
 };
 
 const useDashboardNavigation = () => {
-  const [active, setActive] = useState<"cases" | "operations">("cases");
+  const [active, setActive] = useState<"cases" | "operations" | "authority">("cases");
   const [selectedReference, setSelectedReference] = useState<string | null>(null);
   const [operation, setOperation] = useState<OperationTarget | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [locked, setLocked] = useState(false);
-  const navigate = (next: "cases" | "operations"): void => {
+  const navigate = (next: "cases" | "operations" | "authority"): void => {
     if (!locked && operation === null) {
       setActive(next);
       setSelectedReference(null);

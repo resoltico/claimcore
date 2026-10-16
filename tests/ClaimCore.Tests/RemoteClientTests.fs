@@ -1,5 +1,7 @@
 module ClaimCore.Tests.RemoteClientTests
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Security.Cryptography
 open System.Text

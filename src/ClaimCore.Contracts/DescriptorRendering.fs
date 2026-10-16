@@ -1,10 +1,13 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Buffers
 open System.Text
 open System.Text.Json
 open ClaimCore.Application
+open ClaimCore.RecordFormat
 open ClaimCore.Domain
 
 module internal ContractJson =
@@ -20,6 +23,26 @@ module internal ContractJson =
             Bytes = bytes
         }
 
+/// Presentation names for protocol structure, separate from the thirteen business fields.
+module internal ProtocolFieldPresentation =
+    let authorityFields =
+        [
+            yield "operationId", "Operation ID"
+            yield "expectedRevision", "Expected revision"
+            yield "act", "Operation"
+            yield "kind", "Type"
+            yield "issuer", "Identity issuer"
+            yield "subject", "Subject or client ID"
+            let target = AuthorityOperationDefinitions.target
+            yield target.Name, target.Label
+
+            for definition in AuthorityOperationDefinitions.all do
+                for input in definition.Inputs do
+                    yield input.Name, input.Label
+        ]
+        |> List.distinct
+        |> List.map (fun (name, label) -> name, label, "authority.field." + name + ".label")
+
 module ContractDescriptors =
     let private textPolicy (writer: Utf8JsonWriter) (value: TextAdmissionPolicy) =
         writer.WriteStartObject()
@@ -27,7 +50,12 @@ module ContractDescriptors =
         writer.WriteBoolean("requiresNonBlank", value.RequiresNonBlank)
         writer.WriteBoolean("rejectsSurroundingWhitespace", value.RejectsSurroundingWhitespace)
         writer.WriteBoolean("rejectsControlCharacters", value.RejectsControlCharacters)
-        writer.WriteBoolean("rejectsFormattingCharacters", value.RejectsFormattingCharacters)
+
+        writer.WriteBoolean(
+            "rejectsForbiddenInvisibleCharacters",
+            value.RejectsForbiddenInvisibleCharacters
+        )
+
         writer.WriteEndObject()
 
     let private text (writer: Utf8JsonWriter) (value: ScalarTextConstraints) =
@@ -100,7 +128,96 @@ module ContractDescriptors =
             writer.WriteString("kind", CaseActKinds.token command.Kind)
             writer.WriteString("label", command.Label)
             writer.WriteString("meaning", command.Meaning)
+            writer.WriteString("labelId", "command." + CaseActKinds.token command.Kind + ".label")
+
+            writer.WriteString(
+                "meaningId",
+                "command." + CaseActKinds.token command.Kind + ".meaning"
+            )
+
+            match command.ValuesMember with
+            | Some name -> writer.WriteString("valuesMember", name)
+            | None -> writer.WriteNull("valuesMember")
+
             CommandInputRendering.write writer command.Inputs
+            writer.WriteEndObject()
+
+        writer.WriteEndArray()
+
+    let private inputFields (writer: Utf8JsonWriter) =
+        writer.WritePropertyName("inputFields")
+        writer.WriteStartArray()
+        writer.WriteStartObject()
+        writer.WriteString("name", "reason")
+        writer.WriteString("label", "Stewardship reason")
+        writer.WriteString("meaning", "Explain the record stewardship action.")
+        writer.WritePropertyName("scalar")
+        writer.WriteStartObject()
+        scalar writer (FieldDefinitions.scalar "reason")
+        writer.WriteEndObject()
+        writer.WriteEndObject()
+        writer.WriteEndArray()
+
+    let private authorityPrimitive =
+        function
+        | AuthorityInputPrimitive.Principal -> "PRINCIPAL"
+        | AuthorityInputPrimitive.Role -> "ROLE"
+        | AuthorityInputPrimitive.Scope -> "SCOPE"
+        | AuthorityInputPrimitive.Boolean -> "BOOLEAN"
+
+    let private authorityInput (writer: Utf8JsonWriter) prefix (input: AuthorityInputDefinition) =
+        writer.WriteStartObject()
+        writer.WriteString("fieldName", input.Name)
+        writer.WriteString("label", input.Label)
+        writer.WriteString("primitive", authorityPrimitive input.Primitive)
+        writer.WritePropertyName("path")
+        writer.WriteStartArray()
+
+        for part in prefix @ [ input.Name ] do
+            writer.WriteStringValue(part: string)
+
+        writer.WriteEndArray()
+        writer.WriteEndObject()
+
+    let private authorityFields (writer: Utf8JsonWriter) =
+        writer.WritePropertyName("authorityFields")
+        writer.WriteStartArray()
+
+        for name, label, labelId in ProtocolFieldPresentation.authorityFields do
+            writer.WriteStartObject()
+            writer.WriteString("name", name)
+            writer.WriteString("label", label)
+            writer.WriteString("labelId", labelId)
+            writer.WriteEndObject()
+
+        writer.WriteEndArray()
+
+    let private authority (writer: Utf8JsonWriter) =
+        writer.WritePropertyName("authorityTarget")
+        authorityInput writer [] AuthorityOperationDefinitions.target
+        writer.WritePropertyName("authorityCommands")
+        writer.WriteStartArray()
+
+        for definition in AuthorityOperationDefinitions.all do
+            writer.WriteStartObject()
+            writer.WriteString("kind", RecordedAuthorityActs.token definition.Kind)
+            writer.WriteString("label", definition.Label)
+            writer.WriteString("meaning", definition.Meaning)
+
+            writer.WriteString(
+                "labelId",
+                "authority." + RecordedAuthorityActs.token definition.Kind + ".label"
+            )
+
+            writer.WriteString(
+                "meaningId",
+                "authority." + RecordedAuthorityActs.token definition.Kind + ".meaning"
+            )
+
+            writer.WritePropertyName("inputs")
+            writer.WriteStartArray()
+            definition.Inputs |> List.iter (authorityInput writer [ "act" ])
+            writer.WriteEndArray()
             writer.WriteEndObject()
 
         writer.WriteEndArray()
@@ -132,6 +249,9 @@ module ContractDescriptors =
             writer.WriteStartObject()
             fields writer
             commands writer
+            inputFields writer
+            authority writer
+            authorityFields writer
             writer.WritePropertyName("statuses")
             writer.WriteStartArray()
             CaseStatuses.all |> List.iter (CaseStatuses.token >> writer.WriteStringValue)

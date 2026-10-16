@@ -35,9 +35,21 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- cal
 ```
 
 Erasure retains the case reference and revision 9. Every historical snapshot for that
-case is erased from the live database; ledger metadata remains. This does not delete backups or copies elsewhere.
+case is erased from the live database; ledger metadata remains. This does not delete WAL, backups or copies elsewhere.
 Fixed example identities deliberately support exact replay in one fresh installation.
 Do not change their request bytes to retry an uncertain operation.
+
+Every output frame includes `attemptKnowledge`, `resolutionEvidence`, `endpoint` and
+`operationId` (nullable when no request was admitted). Read `attemptKnowledge` together with
+the process exit: `ACCEPTED` confirms exact submitted content; `UNCONFIRMED` requires preserving
+the original frame and retrying it unchanged. The frame describes one CLI attempt. An automation
+caller must retain earlier `UNCONFIRMED` knowledge across new processes: a later `NOT_SENT`,
+`NOT_ACCEPTED`, read result or ordinary refusal cannot resolve that earlier attempt. Only correlated
+`CONTENT_ACCEPTED` evidence from exact execute/preview replay confirms content; correlated
+`CONTENT_EXCLUDED` proves that different content under the immutable ID was refused.
+`operation.observe` reports retained acceptance metadata and cannot prove the pending content
+matches it. Host failures retain their HTTP `status` and `executionPhase`; `NOT_STARTED` describes
+that attempt alone. See the [delivery contract](../docs/api.md).
 
 Published acceptance executes these same files through the published CLI with fresh
 Testcontainers PostgreSQL and Keycloak. It verifies receipts, replay, the final case,

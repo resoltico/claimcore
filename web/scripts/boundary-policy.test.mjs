@@ -24,7 +24,7 @@ const boundaryRules =
   /no-restricted-globals|no-restricted-imports|no-presentation-import|no-danger/u;
 const stateFiles = [
   "src/api/outcomes.ts",
-  "src/domain/operationReducer.ts",
+  "src/interaction/operationReducer.ts",
   "src/hooks/useOperation.ts",
   "src/hooks/operation/operationDelivery.ts",
 ];
@@ -46,7 +46,7 @@ for (const path of ["src/App.tsx", ...stateFiles]) {
 
 test("only the validated API module may use browser networking", async () => {
   await assertEach(
-    "src/api/service.ts",
+    "src/api/transport.ts",
     ['fetch("/api");', "new WebSocket('wss://localhost');"],
     false,
   );
@@ -62,7 +62,7 @@ for (const path of stateFiles) {
 
 test("presentation code may use locale access and the validated API keeps its network ownership", async () => {
   await assertEach("src/presentation/format.ts", ["new Intl.NumberFormat();"], false);
-  await assertEach("src/api/service.ts", localeCode.slice(3), true);
+  await assertEach("src/api/transport.ts", localeCode.slice(3), true);
 });
 
 test("ordinary local identifiers are not falsely rejected", async () => {

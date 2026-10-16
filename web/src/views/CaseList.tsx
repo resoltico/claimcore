@@ -112,7 +112,7 @@ const useCaseList = (token: string) => {
         setMayOpen(
           context.kind === "outcome" &&
             context.value.outcome.tag === "SUCCEEDED" &&
-            context.value.outcome.data.capabilities.includes("REGISTER"),
+            context.value.outcome.data.offers.some((offer) => offer.definition === "OPEN"),
         );
       }
       return page;

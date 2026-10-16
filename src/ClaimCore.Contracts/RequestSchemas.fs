@@ -1,7 +1,10 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.RecordFormat
 open WireSchema
 
 module internal RequestSchemas =
@@ -11,8 +14,8 @@ module internal RequestSchemas =
         objectOf
             [
                 property "kind" (enumeration [ "HUMAN"; "SERVICE" ])
-                property "issuer" (Schema.string (Some "uri") (Some "^https://") (Some 1) None)
-                property "subject" text
+                property "issuer" (Schema.string None None None None)
+                property "subject" (Schema.string None None None None)
             ]
 
     let scope =
@@ -28,21 +31,6 @@ module internal RequestSchemas =
             property "limit" (Schema.integer (Some 1L) (Some(int64 ServiceLimits.MaximumPageSize)))
         ]
 
-    let private stewardship =
-        [ "VOID"; "REINSTATE"; "ERASE" ]
-        |> List.map (fun kind ->
-            objectOf (
-                [ property "kind" (token kind) ]
-                @ (if kind = "ERASE" then
-                       []
-                   else
-                       [
-                           property
-                               "reason"
-                               (FieldDefinitions.scalar "reason" |> ScalarSchemas.scalar)
-                       ])
-            ))
-
     let caseRequest =
         objectOf
             [
@@ -51,26 +39,28 @@ module internal RequestSchemas =
                 property "expectedRevision" revision
                 property
                     "act"
-                    (Schema.oneOf (
-                        (CommandDefinitions.all |> List.map CommandInputProjection.payload)
-                        @ stewardship
-                    ))
+                    (CommandDefinitions.all
+                     |> List.map CommandInputProjection.payload
+                     |> Schema.oneOf)
             ]
+
+    let authorityPrimitive =
+        function
+        | AuthorityInputPrimitive.Principal -> principal
+        | AuthorityInputPrimitive.Role -> Roles.all |> List.map Roles.token |> enumeration
+        | AuthorityInputPrimitive.Scope -> scope
+        | AuthorityInputPrimitive.Boolean -> Schema.boolean
 
     let authorityRequest =
         let act =
-            [
-                objectOf [ property "kind" (token "REGISTER_ACTOR") ]
-                objectOf
-                    [ property "kind" (token "SET_ENABLED"); property "enabled" Schema.boolean ]
-                objectOf
-                    [
-                        property "kind" (token "SET_GRANT")
-                        property "role" (Roles.all |> List.map Roles.token |> enumeration)
-                        property "scope" scope
-                        property "active" Schema.boolean
-                    ]
-            ]
+            AuthorityOperationDefinitions.all
+            |> List.map (fun definition ->
+                objectOf (
+                    property "kind" (token (RecordedAuthorityActs.token definition.Kind))
+                    :: (definition.Inputs
+                        |> List.map (fun input ->
+                            property input.Name (authorityPrimitive input.Primitive)))
+                ))
             |> Schema.oneOf
 
         objectOf [ property "operationId" uuid; property "target" principal; property "act" act ]

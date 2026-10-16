@@ -20,7 +20,10 @@ let private expectText name maximum =
         Expect.isTrue policy.RequiresNonBlank "Nonblank admission"
         Expect.isTrue policy.RejectsSurroundingWhitespace "Surrounding whitespace admission"
         Expect.isTrue policy.RejectsControlCharacters "Control character admission"
-        Expect.isTrue policy.RejectsFormattingCharacters "Explicit formatting character admission"
+
+        Expect.isTrue
+            policy.RejectsForbiddenInvisibleCharacters
+            "Explicit formatting character admission"
     | _ -> failtest (name + " must be a text scalar.")
 
 let private expectFields kind expected =
@@ -172,10 +175,10 @@ let private correctionGroupDetails groups =
         group.ReplaceFields |> List.map (fun field -> field.FieldName, field.Prefill))
 
 let private commandInventoryTest =
-    testCase "all nine command definitions are the sole command inventory" (fun () ->
+    testCase "all twelve case act definitions are the sole command inventory" (fun () ->
         Expect.equal
             (CommandDefinitions.all |> List.map (fun definition -> definition.Kind))
-            CaseActKinds.business
+            CaseActKinds.all
             "Exact command order")
 
 let private commandPrefillTest =

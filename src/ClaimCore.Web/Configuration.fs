@@ -1,14 +1,15 @@
 namespace ClaimCore.Web
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Net
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
 open System.Globalization
-open ClaimCore.Application
 open ClaimCore.HostSecurity
-open ClaimCore.Contracts
+open ClaimCore.Hosting
 
 [<NoEquality; NoComparison>]
 type WebAdmissionLimits =
@@ -73,8 +74,8 @@ module Configuration =
             MaximumJsonBytes =
                 boundedInt
                     WebSetting.JsonLimit
-                    ServiceLimits.RequestByteLimit
-                    ServiceLimits.RequestByteLimit
+                    ServiceGateway.requestByteLimit
+                    ServiceGateway.requestByteLimit
             CorePermitLimit = boundedInt WebSetting.CorePermits 4 4
             CoreQueueLimit = boundedInt WebSetting.CoreQueue 16 16
             LoginPermitLimit = boundedInt WebSetting.LoginPermits 5 5

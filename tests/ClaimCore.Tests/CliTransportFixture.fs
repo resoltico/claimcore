@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliTransportFixture
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Net
@@ -10,6 +12,7 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Cli
 open ClaimCore.Contracts
+open ClaimCore.ClientContract
 
 let bytes (text: string) = Encoding.UTF8.GetBytes text
 

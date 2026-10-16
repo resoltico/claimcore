@@ -10,5 +10,6 @@
   "notice.accepted": "Pieņemta precīzā operācija {operationId}.",
   "notice.cancelled": "Šis pieprasījums tika atcelts. Atcelšana nenoskaidro agrāko mēģinājumu iznākumu.",
   "notice.outcomeUnknown": "Darbības rezultāts nav zināms. Atkārtojiet tieši to pašu darbību.",
-  "notice.unknownDiagnostic": "Saņemta neatbalstīta diagnostika."
+  "notice.unknownDiagnostic": "Saņemta neatbalstīta diagnostika.",
+  "notice.invalidInput": "Aizpildiet šo ievadi vajadzīgajā formātā."
 }

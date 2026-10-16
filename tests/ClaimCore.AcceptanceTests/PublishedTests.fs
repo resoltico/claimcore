@@ -131,7 +131,15 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
         "ERASED"
         "Erased state"
 
-    Expect.equal (tombstone.EnumerateObject() |> Seq.length) 3 "Reference, revision, state only"
+    Expect.equal
+        (tombstone.EnumerateObject() |> Seq.length)
+        5
+        "Erased reference, revision, state and current advice"
+
+    Expect.equal
+        (tombstone.GetProperty("offers").GetArrayLength())
+        1
+        "Only authorized retained history is offered"
 
     erasedHistory fixture
 
@@ -243,6 +251,8 @@ let private qualify () =
         do! fixture.Start()
         PublishedAssets.qualify fixture
         setup fixture
+        CliDelivery.qualify fixture
+        CliDisclosure.qualify fixture
         inputBoundaries fixture
         RejectedDrafts.qualify fixture
         let position = walkthrough fixture

@@ -1,13 +1,18 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../src/api/service";
-import { commandFor, commandInputs, prefilledValues, createDraft } from "../src/domain/metadata";
+import {
+  commandFor,
+  commandInputs,
+  prefilledValues,
+  createDraft,
+} from "../src/interaction/metadata";
 import { fields, definition } from "./service-ui.fixtures";
 import { endpoints, wireContractFingerprint } from "@contracts/endpoint-catalog";
 import { generatedResponse } from "./contract-corpus.fixtures";
 describe("core command metadata", () => {
-  it("describes all nine commands and registration inputs", () => {
+  it("describes all twelve commands and registration inputs", () => {
     expect(definition.descriptors.fields).toHaveLength(13);
-    expect(definition.descriptors.commands).toHaveLength(9);
+    expect(definition.descriptors.commands).toHaveLength(12);
     expect(commandFor(definition.descriptors, "OPEN").kind).toBe("OPEN");
     expect(
       commandInputs(definition.descriptors, "AMEND_REGISTRATION").map((x) => x.field.name),
@@ -24,6 +29,13 @@ describe("core command metadata", () => {
       prefilledValues(definition.descriptors, "AMEND_REGISTRATION", {
         caseReference: fields.caseReference,
         revision: 1,
+        offers: [].map((identifier) => ({
+          definition: identifier,
+          caseReference: null,
+          expectedRevision: null,
+          choices: [],
+        })),
+        historyDetails: ["SUMMARY", "FULL"],
         state: { tag: "LIVE", disposition: "ACTIVE", fields, availableActs: [] },
       }),
     ).toMatchObject({ claimantName: fields.claimantName });

@@ -9,21 +9,42 @@ identity, authorization and outcomes; the store executes pure decisions against 
 ### CC-ARCH-001 — Component graph and compiled boundaries
 
 [The architecture manifest](../config/architecture.json) owns direct project references in both
-directions. Domain, RecordFormat, Application and Contracts call no clock, file, environment,
-randomness or network APIs. Only Hosting and Database reference Postgres; only Web references
+directions. Domain, RecordFormat, Application, ClientProtocol and Contracts call no clock, file,
+environment, randomness or network APIs. Only Hosting and Database reference Postgres; only Web references
 Hosting. These referencer rules concern other projects, not a component's own types.
 TimeZoneInfo belongs only to Hosting, Database and Postgres. Compiled negative fixtures prove
-each rule rejects a forbidden dependency or call. Internals grants name a permitted referencer
+each rule rejects a forbidden dependency or call. Evaluated
+MSBuild reference items include imported edges. Published-client closure and facade signature
+checks cover the client boundary; frontend resolved-import guards cover renderer/interaction/
+transport dependencies. These controls reject specified violations, not every expressible semantic
+copy. Internals grants name a permitted referencer
 or an actual test project. Test projects reference only product or tooling projects.
 
-RecordFormat owns durable byte encodings. Contracts owns the eleven-endpoint catalogue,
-request/response schemas, strict codecs, fingerprint and generated client types. HostSecurity
+RecordFormat owns durable byte encodings. Contracts owns the endpoint catalogue, typed bindings
+and core-derived interaction definitions.
+ClientProtocol owns generic strict byte/schema admission, correlation and finite delivery policy,
+without core dependencies. ContractGenerator projects the same definitions into tracked native
+catalogue values and executable browser schemas/builders; complete inventory and byte checks
+reject missing, extra and stale outputs. Structural JSON Schema alone does not express the
+fingerprinted byte profile (UTF-8, duplicate names, Unicode, numeric lexemes and bounds). HostSecurity
 admits private files.
 Postgres owns transactions, projection persistence, schema administration and verification.
-Hosting owns case-work composition and runtime lifetime. Web binds authenticated principals;
-Cli delivers generated-contract frames; Database is the separate owner administration process.
+Hosting owns case-work composition, typed protocol dispatch and runtime lifetime. Its public service
+accepts verified subject facts and opaque admitted inputs and returns encoded replies with safe audit
+metadata. The typed runtime and actor factory remain internal to Hosting. Web references Hosting,
+ClientProtocol and HostSecurity; CLI references only
+ClientProtocol and HostSecurity. The published CLI excludes server semantic assemblies. Web verifies
+HTTP identity and transport admission; Hosting binds the principal and invokes the actor core.
+Hosting omits F# cross-assembly optimization data so the host compiler cannot import typed
+dispatch implementation through a protocol signature. CLI delivers generated-contract frames;
+Database is the separate owner administration process.
 Database references Application to validate principals and render shared ledger/authority values,
 so it does not duplicate their definitions. ContractGenerator derives artifacts from Contracts.
+
+The additional protocol library and generated catalogues remove parallel client wire and operation
+maps while retaining explicit F# decisions and one PostgreSQL ledger. Server-rendered interaction
+would require another interaction protocol or draft state; crosscompilation would add a runtime and
+toolchain for logic the structured CLI does not need. No database schema or durable encoding changes.
 
 #### Durable records
 
@@ -95,6 +116,11 @@ A receipt contains attribution ActorId and metadata; its snapshot is DISCLOSED, 
 A current snapshot requires ReadCase; a superseded one requires ReadHistoryFull. Execute, replay,
 preview-ALREADY_ACCEPTED, observation and history apply that rule in their locked/read context;
 there is no post-commit authority fetch. Authorize before revealing identity replay or conflict.
+
+Core-returned installation and case offers are advice from the same authority/read snapshot.
+They carry operation definitions, target/revision bindings, permitted correction choices and scoped
+history detail. Unauthorized correction groups remain required KEEP inputs. Preview evaluates
+combinations; execution rechecks current locked authority and state. No offer is an authorization token.
 
 <a id="cc-app-001"></a>
 

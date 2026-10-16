@@ -1363,14 +1363,10 @@
                       ]
                     },
                     "issuer": {
-                      "type": "string",
-                      "format": "uri",
-                      "pattern": "^https://",
-                      "minLength": 1
+                      "type": "string"
                     },
                     "subject": {
-                      "type": "string",
-                      "minLength": 1
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -1391,22 +1387,6 @@
                       },
                       "required": [
                         "kind"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "kind": {
-                          "const": "SET_ENABLED"
-                        },
-                        "enabled": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [
-                        "kind",
-                        "enabled"
                       ]
                     },
                     {
@@ -1470,6 +1450,22 @@
                         "role",
                         "scope",
                         "active"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "SET_ENABLED"
+                        },
+                        "enabled": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "enabled"
                       ]
                     }
                   ]

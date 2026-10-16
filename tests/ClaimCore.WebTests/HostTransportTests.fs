@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.HostTransportTests
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Net.Http
 open System.Text
@@ -16,6 +18,10 @@ open ClaimCore.WebTests.TestServerFixture
 let private body name =
     if name = "case.preview" || name = "case.execute" then
         Array.copy commandInput
+    elif name = "authority.execute" then
+        Encoding.UTF8.GetBytes(
+            $"""{{"operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER_ACTOR"}}}}"""
+        )
     else
         EndpointCatalog.tryFind name
         |> Option.get
@@ -164,6 +170,11 @@ let private outcomes () =
                 use payload = parse response
 
                 Expect.equal
+                    (payload.RootElement.GetProperty("operationId").GetGuid())
+                    operationId
+                    "Every outcome, including refusal, echoes admitted request identity"
+
+                Expect.equal
                     (payload.RootElement.GetProperty("outcome").GetProperty("tag").GetString())
                     tag
                     "Outcome identity"
@@ -231,11 +242,71 @@ let private readiness () =
         Expect.equal actual 405 "Readiness is GET only"
         Expect.isEmpty host.Facade.Calls "Health has no actor facade"
 
+let private principalAdmission () =
+    loggedIn true (fun host token ->
+        task {
+            let schema = (EndpointCatalog.tryFind "authority.execute" |> Option.get).Request
+
+            let target kind issuer subject =
+                System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
+                    {|
+                        operationId = operationId
+                        target =
+                            {|
+                                kind = kind
+                                issuer = issuer
+                                subject = subject
+                            |}
+                        act = {| kind = "REGISTER_ACTOR" |}
+                    |}
+
+            let samples =
+                [
+                    "HUMAN", "https://ISSUER.example.test/realm", "person"
+                    "HUMAN", "https://issuer.example.test/realm?x=1", "person"
+                    "HUMAN", "https://user@issuer.example.test/realm", "person"
+                    "HUMAN", "https://issuer.example.test/realm#part", "person"
+                    "HUMAN", "https://issuer.example.test/realm", " "
+                    "HUMAN", "https://issuer.example.test/realm", String.replicate 257 "🙂"
+                    "SERVICE", "https://issuer.example.test/realm", String.replicate 257 "x"
+                    "HUMAN", "https://issuer.example.test/" + String.replicate 2048 "x", "person"
+                ]
+
+            for kind, issuer, subject in samples do
+                let input = target kind issuer subject
+                let admitted = HttpInputSupport.parse input (SchemaValueValidation.verify schema)
+
+                Expect.equal
+                    admitted
+                    (Ok true)
+                    "Generic wire syntax does not claim identity admission"
+
+                let! status, response = host.Call("authority.execute", input, token)
+                Expect.equal status 400 "Typed principal refusal occurs before core dispatch"
+                use failure = JsonDocument.Parse response
+
+                Expect.equal
+                    (failure.RootElement.GetProperty("code").GetString())
+                    "INPUT_INVALID"
+                    "Defined failure"
+
+                Expect.equal
+                    (failure.RootElement.GetProperty("executionPhase").GetString())
+                    "NOT_STARTED"
+                    "No dispatch"
+
+            Expect.isEmpty host.Facade.Calls "Identity failure never invokes the actor core"
+            Expect.isNone host.Facade.Principal "Identity failure never creates an actor facade"
+        })
+
 [<Tests>]
 let tests =
     testList
         "HTTP service"
         [
+            testCase
+                "generic wire principal syntax is separate from authoritative pre-dispatch admission"
+                principalAdmission
             testCase
                 "authority execution preserves mutation cancellation semantics"
                 authorityCancellation

@@ -1,7 +1,9 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.ClientProtocol
+
 open System
-open ClaimCore.Contracts
+open ClaimCore.ClientContract
 
 [<RequireQualifiedAccess>]
 type RemoteClientMode =

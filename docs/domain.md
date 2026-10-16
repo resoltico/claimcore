@@ -88,8 +88,9 @@ carried to a new payable amount. A successful correction writes one complete rev
 writes neither current state nor accepted history.
 
 Domain derives command eligibility from current state. Actor-bound current views filter that advice
-through Application's current resource authorization; installation context advertises `REGISTER` only
-when that actor may create a case. A case-scoped editing grant does not imply installation creation.
+through Application's current resource authorization; installation context offers `OPEN` only
+when that actor may create a case. Correction offers fix unauthorized groups at KEEP and
+case-scoped history advice reflects the same resource authority. A case-scoped editing grant does not imply installation creation.
 Execution revalidates the command against authoritative state, current authority and expected
 revision. An advertised command is advisory, not commit authority; adapters do not add another
 action policy.

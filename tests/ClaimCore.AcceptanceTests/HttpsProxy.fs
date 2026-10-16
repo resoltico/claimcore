@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.HttpsProxy
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Net
 open System.Net.Http
@@ -64,6 +66,15 @@ let private relay
             control.Original None
             context.Response.StatusCode <- armed |> Option.defaultValue 200
             context.Response.Headers.Location <- "/__synthetic/redirect-destination"
+        elif armed = Some RedirectControl.beforeDispatchFailure then
+            control.Original None
+            context.Response.StatusCode <- HostFailures.status HostFailure.BeforeDispatchFailed
+            context.Response.ContentType <- "application/json"
+
+            do!
+                context.Response.Body.WriteAsync(
+                    HostFailures.encode HostFailure.BeforeDispatchFailed
+                )
         else
             use request = request backend context
 
@@ -80,9 +91,13 @@ let private relay
             | Some status ->
                 let! bytes = response.Content.ReadAsByteArrayAsync(context.RequestAborted)
                 control.Original(Some bytes)
-                context.Response.StatusCode <- status
-                context.Response.Headers.Location <- "/__synthetic/redirect-destination"
-                context.Response.ContentLength <- Nullable 0L
+
+                if status = RedirectControl.lostResponse then
+                    context.Abort()
+                else
+                    context.Response.StatusCode <- status
+                    context.Response.Headers.Location <- "/__synthetic/redirect-destination"
+                    context.Response.ContentLength <- Nullable 0L
             | None ->
                 context.Response.StatusCode <- int response.StatusCode
                 do! response.Content.CopyToAsync(context.Response.Body, context.RequestAborted)

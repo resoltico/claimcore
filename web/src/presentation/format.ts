@@ -1,3 +1,4 @@
+import { isAmountText, isGregorianDate } from "../protocol/scalars";
 import type { FieldDescriptor } from "../api/service";
 import type { DisplayLocale } from "./preferences";
 
@@ -13,7 +14,7 @@ export const exactInteger = (value: string, locale: DisplayLocale): string => {
 };
 /** Format only validated canonical decimal text; never round it or pass it through Number. */
 export const exactAmount = (value: string, locale: DisplayLocale): string => {
-  if (!/^(0|[1-9][0-9]{0,17})(\.[0-9]{1,4})?$/u.test(value)) {
+  if (!isAmountText(value)) {
     return value;
   }
   const [whole = "", fraction] = value.split(".");
@@ -29,25 +30,8 @@ export const exactAmount = (value: string, locale: DisplayLocale): string => {
     integer + separator + Array.from(fraction, (digit) => digits[digit.charCodeAt(0) - 48]).join("")
   );
 };
-const calendarCarrier = (value: string): Date | null => {
-  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/u.test(value)) {
-    return null;
-  }
-  const year = Number(value.slice(0, 4));
-  const month = Number(value.slice(5, 7));
-  const day = Number(value.slice(8, 10));
-  if (year === 0) {
-    return null;
-  }
-  const date = new Date(0);
-  date.setUTCFullYear(year, month - 1, day);
-  date.setUTCHours(0, 0, 0, 0);
-  return date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-    ? date
-    : null;
-};
+const calendarCarrier = (value: string): Date | null =>
+  isGregorianDate(value) ? new Date(`${value}T00:00:00.000Z`) : null;
 export const calendarDate = (value: string, locale: DisplayLocale): string => {
   const date = calendarCarrier(value);
   if (date === null) {

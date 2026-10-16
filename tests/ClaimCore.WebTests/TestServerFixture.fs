@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.TestServerFixture
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.IO
 open System.Net
@@ -153,12 +155,12 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
         HostRoutes.map
             assets
             (configuration certificate)
-            (fun principal ->
+            (ClaimCore.Hosting.ServiceGateway.bind (fun principal ->
                 facade.Principal <- Some principal
 
                 match forActor with
                 | Some factory -> factory principal
-                | None -> facade.ActorCore)
+                | None -> facade.ActorCore))
             application
 
         application.StartAsync().GetAwaiter().GetResult()

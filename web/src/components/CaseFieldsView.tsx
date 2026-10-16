@@ -11,8 +11,8 @@ type CaseFieldsViewProps = {
   fields: ReadonlyArray<FieldDescriptor>;
   context: string;
 };
-const valueFor = (fields: CaseFields, name: keyof CaseFields): string | null =>
-  fields[name] ?? null;
+const valueFor = (fields: CaseFields, name: string): string | null =>
+  Object.entries(fields).find(([key]) => key === name)?.[1] ?? null;
 const acceptedSummary = (
   p: Presentation,
   values: CaseFields,

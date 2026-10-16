@@ -143,6 +143,7 @@ type Fixture() =
     let certificate = FixtureFiles.certificate ()
     let http = client certificate
     let mutable web: PublishedProcesses.Web option = None
+    let mutable commitProxy: CommitReplyProxy.Proxy option = None
     let proxy = new HttpsProxy.Proxy(origin, backend, certificate, http, directory)
     let mutable completed = false
     let mutable cli = ""
@@ -163,6 +164,11 @@ type Fixture() =
     member _.Http = http
     member _.Environment = serviceEnvironment
 
+    member _.ArmCommitReplyLoss() =
+        commitProxy
+        |> Option.defaultWith (fun () -> invalidOp "The owned database proxy is not started.")
+        |> _.Arm()
+
     member _.Administration arguments =
         ProcessRunner.dotnet 60_000 admin arguments adminEnvironment None
 
@@ -176,11 +182,20 @@ type Fixture() =
             do! postgres.StartAsync()
             do! identity.Start(CancellationToken.None)
             let! runtime = initialize directory postgres identity admin adminEnvironment
+            let settings = NpgsqlConnectionStringBuilder(File.ReadAllText runtime)
+            let relay = new CommitReplyProxy.Proxy(settings.Host |> nonNull, settings.Port)
+            commitProxy <- Some relay
+            settings.Host <- "127.0.0.1"
+            settings.Port <- relay.Port
+            settings.SslMode <- SslMode.Disable
+
+            let proxiedRuntime =
+                FixtureFiles.text directory "proxied-runtime.connection" settings.ConnectionString
 
             let pfx =
                 FixtureFiles.write directory "web.pfx" (certificate.Export(X509ContentType.Pfx))
 
-            webSettings <- webEnvironment directory origin identity runtime pfx
+            webSettings <- webEnvironment directory origin identity proxiedRuntime pfx
             webSettings["CLAIMCORE_WEB_LISTEN_PORT"] <- string (Uri(backend).Port)
             let values = webSettings
             let host = new PublishedProcesses.Web(webBinary, values, directory)
@@ -238,6 +253,9 @@ type Fixture() =
                                         .AsTask()
                                         .GetAwaiter()
                                         .GetResult())
+                                (fun () ->
+                                    commitProxy
+                                    |> Option.iter (fun value -> (value :> IDisposable).Dispose()))
                                 (fun () ->
                                     postgres.DisposeAsync().AsTask().GetAwaiter().GetResult())
                                 http.Dispose

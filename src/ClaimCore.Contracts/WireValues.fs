@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open System
 open System.Globalization
 open System.Text.Json.Nodes
@@ -84,12 +86,34 @@ module internal WireValues =
                 "state", state None value.View
             ]
 
+    let private offers (values: OperationOffer list) =
+        values
+        |> List.map (fun value ->
+            obj
+                [
+                    "definition", text value.Definition
+                    "caseReference", optional text value.CaseReference
+                    "expectedRevision", optional revision value.ExpectedRevision
+                    "choices",
+                    value.Choices
+                    |> List.map (fun choice ->
+                        obj
+                            [
+                                "input", text choice.Input
+                                "values", choice.Values |> List.map text |> array
+                            ])
+                    |> array
+                ])
+        |> array
+
     let record (value: CaseReadModel) =
         obj
             [
                 "caseReference", text value.Snapshot.Reference
                 "revision", revision value.Snapshot.Revision
                 "state", state (Some value.AvailableActs) value.Snapshot.View
+                "offers", offers value.Offers
+                "historyDetails", value.HistoryDetails |> List.map text |> array
             ]
 
     let position (value: LedgerPosition) =
@@ -177,6 +201,7 @@ module internal WireValues =
             context value.Runtime
             @ [
                 "capabilities", value.Capabilities |> List.map (Capabilities.token >> text) |> array
+                "offers", offers value.Offers
             ]
         )
 

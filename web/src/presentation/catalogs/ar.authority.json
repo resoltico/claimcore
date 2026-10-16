@@ -1,0 +1,19 @@
+{
+  "authority.REGISTER_ACTOR.label": "تسجيل جهة",
+  "authority.REGISTER_ACTOR.meaning": "تسجيل هوية دون منح صلاحيات القضايا أو الإدارة.",
+  "authority.SET_ENABLED.label": "تعيين تفعيل الجهة",
+  "authority.SET_ENABLED.meaning": "تفعيل جهة أو تعطيلها. يظل آخر مالك بشري مفعّل محمياً.",
+  "authority.SET_GRANT.label": "تعيين صلاحية الجهة",
+  "authority.SET_GRANT.meaning": "منح دور أو سحبه على مستوى التثبيت أو القضية.",
+  "authority.field.act.label": "العملية",
+  "authority.field.active.label": "الصلاحية نشطة",
+  "authority.field.enabled.label": "الجهة مفعّلة",
+  "authority.field.expectedRevision.label": "المراجعة المتوقعة",
+  "authority.field.issuer.label": "مُصدر الهوية",
+  "authority.field.kind.label": "النوع",
+  "authority.field.operationId.label": "معرّف العملية",
+  "authority.field.role.label": "الدور",
+  "authority.field.scope.label": "نطاق الصلاحية",
+  "authority.field.subject.label": "معرّف المستخدم أو العميل",
+  "authority.field.target.label": "هوية الجهة"
+}

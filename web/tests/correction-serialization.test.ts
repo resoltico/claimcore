@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CurrentCase } from "../src/api/service";
-import { createDraft, isCorrectionValues, prefilledValues } from "../src/domain/metadata";
+import { createDraft, isCorrectionValues, prefilledValues } from "../src/interaction/metadata";
 import { caseFields, definition } from "./service-foundation.fixtures";
 import { correctionSerializations } from "./correction-serialization.fixtures";
 
@@ -12,6 +12,10 @@ for (const status of ["OPENED", "CLOSED"] as const) {
         const current: CurrentCase = {
           caseReference: "CASE-SERIALIZATION",
           revision: 4,
+          offers: [
+            { definition: "CORRECT_CASE", caseReference: null, expectedRevision: 4, choices: [] },
+          ],
+          historyDetails: ["SUMMARY", "FULL"],
           state: {
             tag: "LIVE",
             disposition: "ACTIVE",

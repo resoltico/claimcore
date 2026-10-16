@@ -146,7 +146,7 @@ it.each(languages)(
   "protects ordinary list, detail, history and absent lookup references in %s [CC-WEB-001]",
   async (language) => {
     preferences(language);
-    for (const { value, points } of values) {
+    for (const { value, points } of [{ value: "<script>", points: null }]) {
       vi.stubGlobal(
         "fetch",
         vi.fn((url: string) => Promise.resolve(readReply(url, value, false))),

@@ -77,11 +77,29 @@ const Entry = ({
   );
 };
 
+const HistoryEntries = ({
+  items,
+  fields,
+}: {
+  items: ReadonlyArray<HistoryEntry>;
+  fields: ReadonlyArray<FieldDescriptor>;
+}) => (
+  <ol className="history-list">
+    {items.map((entry) => (
+      <li key={entry.tag === "FULL" ? entry.receipt.operationId : entry.change.operationId}>
+        <Entry entry={entry} fields={fields} />
+      </li>
+    ))}
+  </ol>
+);
+
 type HistoryMode = "SUMMARY" | "FULL";
 const HistoryModePicker = ({
   detail,
   onChange,
+  modes,
 }: {
+  modes: ReadonlyArray<HistoryMode>;
   detail: HistoryMode;
   onChange: (mode: HistoryMode) => void;
 }) => {
@@ -96,45 +114,48 @@ const HistoryModePicker = ({
           onChange(event.target.value === "FULL" ? "FULL" : "SUMMARY");
         }}
       >
-        <option value="SUMMARY">{p.text("ui.summaryHistory")}</option>
-        <option value="FULL">{p.text("ui.fullHistory")}</option>
+        {modes.map((mode) => (
+          <option key={mode} value={mode}>
+            {p.text(mode === "FULL" ? "ui.fullHistory" : "ui.summaryHistory")}
+          </option>
+        ))}
       </select>
     </label>
   );
 };
 
+const summaryModes: ReadonlyArray<HistoryMode> = ["SUMMARY"];
 export const CaseHistory = ({
   token,
   caseReference,
   fields,
+  modes = summaryModes,
+  onDisclosureRefused,
 }: {
+  modes?: ReadonlyArray<HistoryMode>;
+  onDisclosureRefused?: () => void;
   token: string;
   caseReference: string;
   fields: ReadonlyArray<FieldDescriptor>;
 }) => {
   const p = usePresentation();
   const [detail, setDetail] = useState<"SUMMARY" | "FULL">("SUMMARY");
+  const requestedDetail = modes.includes(detail) ? detail : (modes[0] ?? "SUMMARY");
   const request = useCallback(
     (cursor: string | null, signal: AbortSignal) =>
-      service.history({ caseReference, cursor, limit: 50, detail }, token, signal),
-    [caseReference, token, detail],
+      service.history({ caseReference, cursor, limit: 50, detail: requestedDetail }, token, signal),
+    [caseReference, token, requestedDetail],
   );
   const { items, cursor, message, loading, load } = useRetryablePage<
     ServiceResponse<"case.history">,
     HistoryEntry
-  >(request, historyPage);
+  >(request, historyPage, onDisclosureRefused);
   return (
     <section aria-labelledby="history-title">
       <h2 id="history-title">{p.text("ui.acceptedHistory")}</h2>
-      <HistoryModePicker detail={detail} onChange={setDetail} />
+      <HistoryModePicker detail={requestedDetail} onChange={setDetail} modes={modes} />
       <p>{p.text("ui.historyHint")}</p>
-      <ol className="history-list">
-        {items.map((entry) => (
-          <li key={entry.tag === "FULL" ? entry.receipt.operationId : entry.change.operationId}>
-            <Entry entry={entry} fields={fields} />
-          </li>
-        ))}
-      </ol>
+      <HistoryEntries items={items} fields={fields} />
       {message === null ? null : (
         <p className="error" role="alert">
           <NoticeView value={message} />

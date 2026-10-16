@@ -1,3 +1,4 @@
+import { transportResponse } from "./transport-response.fixtures";
 import { wireContractFingerprint } from "@contracts/endpoint-catalog";
 export { productMetadata as definition } from "@contracts/product-metadata";
 export { caseFields as fields, operationId, digest, review } from "./service-foundation.fixtures";
@@ -19,12 +20,13 @@ const fixtureData = (endpoint: string, data: unknown): unknown => {
   return data;
 };
 export const response = (endpoint: string, tag: string, data: unknown, status = 200): Response =>
-  new Response(JSON.stringify({ endpoint, outcome: { tag, data: fixtureData(endpoint, data) } }), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
+  transportResponse(endpoint, tag, fixtureData(endpoint, data), status);
 
-export const context = { ...runtime, capabilities: ["REGISTER"] };
+export const context = {
+  ...runtime,
+  capabilities: ["REGISTER"],
+  offers: [{ definition: "OPEN", caseReference: null, expectedRevision: null, choices: [] }],
+};
 
 export const unavailable = {
   diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },

@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open ClaimCore.Domain
 
 /// Projects the one Domain command-input descriptor into both discovery metadata and exact request
@@ -41,7 +43,20 @@ module internal CommandInputProjection =
             if inputs.IsEmpty then
                 Schema.objectOf false [ kind ]
             else
-                Schema.objectOf false [ kind; Schema.property "values" (values inputs) true ]
+                match definition.ValuesMember with
+                | Some memberName ->
+                    Schema.objectOf false [ kind; Schema.property memberName (values inputs) true ]
+                | None ->
+                    Schema.objectOf
+                        false
+                        (kind
+                         :: (inputs
+                             |> List.map (fun input ->
+                                 Schema.property
+                                     input.FieldName
+                                     (FieldDefinitions.scalar input.FieldName
+                                      |> ScalarSchemas.scalar)
+                                     true)))
         | CommandInputShape.CorrectionGroups groups ->
             let groupedValues =
                 groups

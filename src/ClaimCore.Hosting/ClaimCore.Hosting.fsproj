@@ -1,12 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Keep F# cross-assembly optimization from exposing typed dispatch through the protocol facade. -->
+    <OtherFlags>$(OtherFlags) --nooptimizationdata</OtherFlags>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="BusinessCalendar.fs" />
     <Compile Include="AdmissionGate.fs" />
     <Compile Include="ActorFacade.fs" />
+    <Compile Include="ServiceGateway.fs" />
     <Compile Include="Runtime.fs" />
+    <Compile Include="ServiceRuntime.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+    <ProjectReference Include="../ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />

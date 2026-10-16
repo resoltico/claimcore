@@ -199,11 +199,24 @@ const assertDiagnosticShape = (message, args, id) => {
     throw new Error(`Diagnostic parameters differ: ${id}`);
   }
 };
+/** @param {import("./tooling-types.mjs").JsonRecord} descriptors */
+const authorityKeys = (descriptors) => {
+  /** @type {Array<{kind:string}>} */
+  const commands = descriptors["authorityCommands"] ?? [];
+  /** @type {Array<{labelId:string}>} */
+  const fields = descriptors["authorityFields"] ?? [];
+  return [
+    ...fields.map((field) => field.labelId),
+    ...commands.flatMap((command) =>
+      ["label", "meaning"].map((part) => `authority.${command.kind}.${part}`),
+    ),
+  ];
+};
 /** @param {Record<string, Message>} catalog @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {Record<string, Record<string, unknown>>} requirements */
 export const validateCoverage = (catalog, descriptors, requirements) => {
   /** @type {string[]} */
   const keys = [];
-  for (const field of descriptors["fields"]) {
+  for (const field of [...descriptors["fields"], ...(descriptors["inputFields"] ?? [])]) {
     for (const s of ["label", "meaning"]) {
       keys.push(`field.${field.name}.${s}`);
     }
@@ -218,6 +231,7 @@ export const validateCoverage = (catalog, descriptors, requirements) => {
       }
     }
   }
+  keys.push(...authorityKeys(descriptors));
   for (const [id, args] of Object.entries(requirements)) {
     const key = `diagnostic.${id}`;
     keys.push(key);
@@ -226,7 +240,9 @@ export const validateCoverage = (catalog, descriptors, requirements) => {
   if (keys.some((k) => !Object.hasOwn(catalog, k))) {
     throw new Error("Catalog omits authoritative metadata.");
   }
-  const owned = Object.keys(catalog).filter((k) => /^(field|command|group|diagnostic)\./u.test(k));
+  const owned = Object.keys(catalog).filter((k) =>
+    /^(field|command|group|authority|diagnostic)\./u.test(k),
+  );
   if (owned.some((k) => !keys.includes(k))) {
     throw new Error("Catalog contains obsolete metadata.");
   }

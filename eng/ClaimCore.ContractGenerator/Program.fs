@@ -13,10 +13,5 @@ let private outputDirectory arguments =
 [<EntryPoint>]
 let main arguments =
     let output = outputDirectory arguments
-    Directory.CreateDirectory output |> ignore
-
-    ContractArtifacts.all ()
-    |> List.iter (fun artifact ->
-        File.WriteAllBytes(Path.Combine(output, artifact.Name), artifact.Bytes))
-
+    ContractArtifacts.all () |> ArtifactPublication.publish output
     0

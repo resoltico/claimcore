@@ -1,5 +1,7 @@
 namespace ClaimCore.Contracts
 
+open ClaimCore.ClientProtocol
+
 open WireSchema
 
 module internal ResponseSchemas =
@@ -67,4 +69,27 @@ module internal ResponseSchemas =
         | _ -> invalidArg "endpoint" "Unknown endpoint."
 
     let envelope endpoint =
-        objectOf [ property "endpoint" (token endpoint); property "outcome" (outcome endpoint) ]
+        objectOf
+            [
+                property "endpoint" (token endpoint)
+                if
+                    endpoint = "case.preview"
+                    || endpoint = "case.execute"
+                    || endpoint = "authority.execute"
+                then
+                    property "operationId" uuid
+                property "outcome" (outcome endpoint)
+            ]
+
+    let receiptScope endpoint =
+        let rec scopes schema =
+            match schema with
+            | ReferenceSchema "CaseReceipt" -> ["CASE"]
+            | ReferenceSchema "AuthorityReceipt" -> ["AUTHORITY"]
+            | ObjectSchema value -> value.Properties |> List.collect (fun property -> scopes property.Schema)
+            | OneOfSchema alternatives -> alternatives |> List.collect scopes
+            | _ -> []
+        match outcome endpoint |> scopes |> List.distinct with
+        | [scope] -> scope
+        | [] -> "NONE"
+        | _ -> invalidArg "endpoint" "Receipt scope is ambiguous."

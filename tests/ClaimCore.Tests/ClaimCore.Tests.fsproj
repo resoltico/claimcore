@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="../../contracts/ContractExtensionFixture.fs" Link="ContractExtensionFixture.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
@@ -49,6 +50,8 @@
     <Compile Include="TokenLifetimeTests.fs" />
     <Compile Include="CliTransportFixture.fs" />
     <Compile Include="CliTransportTests.fs" />
+    <Compile Include="ClientProtocolTests.fs" />
+    <Compile Include="ContractExtensionTests.fs" />
     <Compile Include="CliReplyLossTests.fs" />
     <Compile Include="CliFrameTests.fs" />
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
@@ -56,6 +59,7 @@
     <Compile Include="VerificationStageTests.fs" />
     <Compile Include="DocumentationChecks.fs" />
     <Compile Include="DocumentationTests.fs" />
+    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />

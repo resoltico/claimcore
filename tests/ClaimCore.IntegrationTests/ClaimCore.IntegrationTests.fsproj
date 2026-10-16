@@ -27,6 +27,7 @@
     <Compile Include="AdministrationTests.fs" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="OwnerSchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
