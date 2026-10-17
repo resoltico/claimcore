@@ -1019,4 +1019,4 @@ export const productMetadata = { descriptors: {
     "maximumPageSize": 50,
     "requestByteLimit": 65536
   }
-}, productVersion: "0.9.0", wireFingerprint: "21373e3587aaf51f32b86f76e9787ac752551e5aaca16502e725355afe05eff1" } as const;
+}, productVersion: "0.10.0", wireFingerprint: "21373e3587aaf51f32b86f76e9787ac752551e5aaca16502e725355afe05eff1" } as const;
