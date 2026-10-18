@@ -1,12 +1,12 @@
 namespace ClaimCore.RecordFormat
 
-/// A format number changes only with its durable bytes.
+/// A format number identifies one byte grammar and its admissible value set.
 module RecordVersions =
     [<Literal>]
-    let CaseRequest = 4
+    let CaseRequest = 5
 
     [<Literal>]
-    let Snapshot = 3
+    let Snapshot = 4
 
     [<Literal>]
     let Authority = 2

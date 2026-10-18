@@ -126,16 +126,16 @@ let private formats () =
         let authority =
             root.GetProperty "authorityRecord" |> fun item -> text item "canonicalUtf8"
 
-        for format in [ "0"; "1"; "99"; "4.0"; "4e0"; "\"4\"" ] do
+        for format in [ "0"; "1"; "99"; "5.0"; "5e0"; "\"5\"" ] do
             Expect.isError
                 (RequestRecord.decode
                     65536
-                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":4", "\"format\":" + format))))
+                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":5", "\"format\":" + format))))
                 "Unknown or noninteger format refuses"
 
         Expect.isError
             (CaseRecord.decodeSnapshot (
-                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":3", "\"format\":2"))
+                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":4", "\"format\":2"))
             ))
             "No old snapshot reinterpretation"
 
@@ -150,8 +150,8 @@ let tests =
     testList
         "canonical durable records"
         [
-            testCase "format-4 requests reproduce independent bytes and meaning" requests
-            testCase "format-3 snapshots reproduce independent bytes and meaning" snapshot
+            testCase "format-5 requests reproduce independent bytes and meaning" requests
+            testCase "format-4 snapshots reproduce independent bytes and meaning" snapshot
             testCase "format-2 authority requests reproduce independent bytes and meaning" authority
             testCase "unknown formats and noninteger format lexemes refuse" formats
         ]

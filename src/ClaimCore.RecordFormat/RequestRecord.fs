@@ -3,7 +3,7 @@ namespace ClaimCore.RecordFormat
 open System.Text.Json
 open ClaimCore.Domain
 
-/// The same case-request codec serves the wire envelope and format-4 durable records.
+/// Case-request parsing and canonical encoding.
 module RequestRecord =
     let private registrationGroup (value: JsonElement) =
         let path = "$.act.groups.registration"
