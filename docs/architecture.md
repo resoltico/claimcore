@@ -65,7 +65,7 @@ or request-preparation store. [Operations](operations.md) defines the limits of 
 
 [RecordVersions](../src/ClaimCore.RecordFormat/Versions.fs) owns durable format identifiers.
 A format number identifies one byte grammar and its admissible value set, and decoders dispatch explicitly by format.
-Before 1.0.0, releases may explicitly refuse older installations untouched. From 1.0.0, readers
+Before 1.0.0, releases may explicitly replace the baseline and refuse older installations untouched. From 1.0.0, readers
 must retain every format a release wrote and schema changes require forward migrations.
 [Database admission](database.md#cc-db-001) refuses unsupported installations without conversion.
 

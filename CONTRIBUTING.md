@@ -7,8 +7,8 @@ Domain/Application own rules and authority, RecordFormat owns durable encodings,
 wire definitions and typed binding, ClientProtocol owns generic admission/delivery, Postgres owns
 persistence and Hosting owns runtime composition and protocol dispatch. Clients consume tracked
 generated catalogues, builders and complete decoders; keep client release artifacts coordinated. Keep affected
-consumers, locks, tests and documentation together. Add a migration rather than changing bytes
-shipped by a release. Tests use synthetic data and owned isolated fixtures; preserve existing installations and
+consumers, locks, tests and documentation together. Follow the [database compatibility policy](docs/architecture.md#durable-records)
+for schema changes. Tests use synthetic data and owned isolated fixtures; preserve existing installations and
 private state. Report executed commands separately from inspection, including failures and limits.
 
 The owner reviews and merges changes. The required pull-request check is `Gate`; green CI is

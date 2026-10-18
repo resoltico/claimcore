@@ -44,7 +44,7 @@ owner privileges. Runtime credentials are separately admitted with no schema-own
 Initialization atomically installs the baseline and immutable canonical IANA business zone.
 Repeated initialization requires the same zone. Unsupported namespaces or migration histories
 are refused untouched. There is no adoption, reset or conversion of existing installations.
-Migrations are numbered forward-only scripts. Migration bytes shipped by a release are immutable.
+Migrations are numbered forward-only scripts, subject to the [baseline compatibility policy](architecture.md#durable-records).
 Opening requires history to be exactly the checksum-bound prefix of the shipped scripts.
 
 Provision-owner bootstraps only an empty authority with its stable operation ID. Database outputs are
