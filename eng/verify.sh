@@ -132,7 +132,7 @@ lint() {
 unit() {
   build_native
   # Native freshness tests check the complete tracked contracts/ inventory and exact bytes.
-  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 339
+  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 342
   dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
     --configuration Debug --no-restore -p:Optimize=false
   tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 43 Debug 15m
@@ -163,7 +163,7 @@ integration() {
 
 postgres() {
   build_native tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
-  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 121 Release 20m eng/expecto.integration.runsettings
+  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 123 Release 20m eng/expecto.integration.runsettings
 }
 
 web() {
