@@ -122,13 +122,13 @@ module FieldDefinitions =
                 BusinessField.ClaimantName
                 "Claimant name"
                 "Name of the person or company making the claim."
-                (ScalarRule.Text(text 200))
+                (ScalarRule.Text(text TextAdmission.MaximumCharacters))
                 false
             field
                 BusinessField.InsurerName
                 "Responsible insurer"
                 "Insurer recorded by the claims handler as responsible for this claim."
-                (ScalarRule.Text(text 200))
+                (ScalarRule.Text(text TextAdmission.MaximumCharacters))
                 false
             field
                 BusinessField.ClaimedAmount
@@ -199,7 +199,7 @@ module FieldDefinitions =
 
     let scalar =
         function
-        | InputField.Reason -> ScalarRule.Text(text 200)
+        | InputField.Reason -> ScalarRule.Text(text TextAdmission.MaximumCharacters)
         | InputField.Business field -> (forField field).Scalar
 
     /// Core-owned scalar projection in the same order as the thirteen-field definition.

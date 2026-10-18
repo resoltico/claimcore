@@ -125,6 +125,19 @@ let private changedHash (value: byte array) =
     copy[0] <- copy[0] ^^^ 1uy
     copy
 
+let private changedCaseMetadata otherId case =
+    [
+        { case with CaseId = otherId }
+        { case with Revision = 2L }
+        { case with
+            Act = (CaseActKind.Business BusinessActKind.Close)
+        }
+        { case with
+            BusinessDate = case.BusinessDate.AddDays 1
+        }
+    ]
+
+
 let private allMetadataFields () =
     withVectors (fun vectors ->
         let entry = metadata vectors.Head
@@ -158,17 +171,7 @@ let private allMetadataFields () =
                 }
             ]
 
-        let scopes =
-            [
-                { case with CaseId = otherId }
-                { case with Revision = 2L }
-                { case with
-                    Act = (CaseActKind.Business BusinessActKind.Close)
-                }
-                { case with
-                    BusinessDate = case.BusinessDate.AddDays 1
-                }
-            ]
+        let scopes = changedCaseMetadata otherId case
 
         let original = LedgerEntry.hash entry
 

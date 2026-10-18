@@ -38,6 +38,11 @@ let private formatBoundaries () =
         Expect.isError (format value) "New requests cannot exceed the byte grammar"
 
 let private admissionInsideFormat () =
+    Expect.isLessThanOrEqual
+        (4 * TextAdmission.MaximumCharacters)
+        TextFormat.MaximumFreeTextBytes
+        "Every admitted scalar sequence fits the permanent byte bound"
+
     let name = String.replicate 200 "😀"
 
     let input =

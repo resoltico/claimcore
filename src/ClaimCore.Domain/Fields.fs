@@ -17,21 +17,25 @@ type BusinessField =
     | Status
 
 module BusinessField =
-    let token =
-        function
-        | BusinessField.IncidentDate -> "incidentDate"
-        | BusinessField.IncidentNotificationDate -> "incidentNotificationDate"
-        | BusinessField.IncidentCountry -> "incidentCountry"
-        | BusinessField.ClaimantName -> "claimantName"
-        | BusinessField.InsurerName -> "insurerName"
-        | BusinessField.ClaimedAmount -> "claimedAmount"
-        | BusinessField.ClaimedCurrency -> "claimedCurrency"
-        | BusinessField.CaseReference -> "caseReference"
-        | BusinessField.PaymentDecisionDate -> "paymentDecisionDate"
-        | BusinessField.PayableAmount -> "payableAmount"
-        | BusinessField.PayableCurrency -> "payableCurrency"
-        | BusinessField.PaymentDate -> "paymentDate"
-        | BusinessField.Status -> "status"
+    let all =
+        [
+            BusinessField.IncidentDate, "incidentDate"
+            BusinessField.IncidentNotificationDate, "incidentNotificationDate"
+            BusinessField.IncidentCountry, "incidentCountry"
+            BusinessField.ClaimantName, "claimantName"
+            BusinessField.InsurerName, "insurerName"
+            BusinessField.ClaimedAmount, "claimedAmount"
+            BusinessField.ClaimedCurrency, "claimedCurrency"
+            BusinessField.CaseReference, "caseReference"
+            BusinessField.PaymentDecisionDate, "paymentDecisionDate"
+            BusinessField.PayableAmount, "payableAmount"
+            BusinessField.PayableCurrency, "payableCurrency"
+            BusinessField.PaymentDate, "paymentDate"
+            BusinessField.Status, "status"
+        ]
+
+    let token field =
+        all |> List.find (fst >> (=) field) |> snd
 
 [<RequireQualifiedAccess>]
 type CorrectionGroup =
@@ -60,3 +64,7 @@ module InputField =
 module TextFormat =
     [<Literal>]
     let MaximumFreeTextBytes = 1024
+
+module TextAdmission =
+    [<Literal>]
+    let MaximumCharacters = 200

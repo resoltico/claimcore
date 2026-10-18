@@ -131,6 +131,18 @@ module private BusinessState =
                 }
         }
 
+    let private recordPayment date progress =
+        match progress with
+        | PaymentProgress.Decided decision -> Ok(PaymentProgress.Paid(decision, date))
+        | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
+        | PaymentProgress.Paid _ -> Error CaseRefusal.PaymentAlreadyRecorded
+
+    let private clearPayment progress =
+        match progress with
+        | PaymentProgress.Paid(decision, _) -> Ok(PaymentProgress.Decided decision)
+        | PaymentProgress.Undecided
+        | PaymentProgress.Decided _ -> Error CaseRefusal.PaymentNotRecorded
+
     let private change command (claim: Claim) =
         match command with
         | ValidatedCommand.Open _ -> Error CaseRefusal.AlreadyExists
@@ -163,23 +175,11 @@ module private BusinessState =
                     Progress = PaymentProgress.Undecided
                 }
         | ValidatedCommand.RecordPayment date ->
-            match claim.Progress with
-            | PaymentProgress.Decided decision ->
-                Ok
-                    { claim with
-                        Progress = PaymentProgress.Paid(decision, date)
-                    }
-            | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
-            | PaymentProgress.Paid _ -> Error CaseRefusal.PaymentAlreadyRecorded
+            recordPayment date claim.Progress
+            |> Result.map (fun progress -> { claim with Progress = progress })
         | ValidatedCommand.ClearPayment ->
-            match claim.Progress with
-            | PaymentProgress.Paid(decision, _) ->
-                Ok
-                    { claim with
-                        Progress = PaymentProgress.Decided decision
-                    }
-            | PaymentProgress.Undecided
-            | PaymentProgress.Decided _ -> Error CaseRefusal.PaymentNotRecorded
+            clearPayment claim.Progress
+            |> Result.map (fun progress -> { claim with Progress = progress })
 
     let transition today kind command claim =
         result {

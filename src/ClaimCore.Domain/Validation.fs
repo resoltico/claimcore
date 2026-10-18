@@ -38,23 +38,31 @@ module internal Validation =
             RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
         )
 
-    let private scalarField =
-        function
-        | InputTarget.IncidentDate -> InputField.Business BusinessField.IncidentDate
-        | InputTarget.IncidentNotificationDate ->
-            InputField.Business BusinessField.IncidentNotificationDate
-        | InputTarget.IncidentCountry -> InputField.Business BusinessField.IncidentCountry
-        | InputTarget.ClaimantName -> InputField.Business BusinessField.ClaimantName
-        | InputTarget.InsurerName -> InputField.Business BusinessField.InsurerName
-        | InputTarget.ClaimedAmount -> InputField.Business BusinessField.ClaimedAmount
-        | InputTarget.ClaimedCurrency -> InputField.Business BusinessField.ClaimedCurrency
-        | InputTarget.CaseReference -> InputField.Business BusinessField.CaseReference
-        | InputTarget.PaymentDecisionDate -> InputField.Business BusinessField.PaymentDecisionDate
-        | InputTarget.PayableAmount -> InputField.Business BusinessField.PayableAmount
-        | InputTarget.PayableCurrency -> InputField.Business BusinessField.PayableCurrency
-        | InputTarget.PaymentDate -> InputField.Business BusinessField.PaymentDate
-        | InputTarget.Reason -> InputField.Reason
-        | _ -> invalidArg "field" "The diagnostic target has no scalar definition."
+    let private scalarFields =
+        Map.ofList
+            [
+                InputTarget.IncidentDate, InputField.Business BusinessField.IncidentDate
+                InputTarget.IncidentNotificationDate,
+                InputField.Business BusinessField.IncidentNotificationDate
+                InputTarget.IncidentCountry, InputField.Business BusinessField.IncidentCountry
+                InputTarget.ClaimantName, InputField.Business BusinessField.ClaimantName
+                InputTarget.InsurerName, InputField.Business BusinessField.InsurerName
+                InputTarget.ClaimedAmount, InputField.Business BusinessField.ClaimedAmount
+                InputTarget.ClaimedCurrency, InputField.Business BusinessField.ClaimedCurrency
+                InputTarget.CaseReference, InputField.Business BusinessField.CaseReference
+                InputTarget.PaymentDecisionDate,
+                InputField.Business BusinessField.PaymentDecisionDate
+                InputTarget.PayableAmount, InputField.Business BusinessField.PayableAmount
+                InputTarget.PayableCurrency, InputField.Business BusinessField.PayableCurrency
+                InputTarget.PaymentDate, InputField.Business BusinessField.PaymentDate
+                InputTarget.Reason, InputField.Reason
+            ]
+
+    let private scalarField field =
+        scalarFields
+        |> Map.tryFind field
+        |> Option.defaultWith (fun () ->
+            invalidArg "field" "The diagnostic target has no scalar definition.")
 
     let private textGrammar field =
         match field with
@@ -80,7 +88,8 @@ module internal Validation =
              || field = InputTarget.Reason)
             && Encoding.UTF8.GetByteCount value > TextFormat.MaximumFreeTextBytes
         then
-            failure (TextViolation.TooLong TextFormat.MaximumFreeTextBytes)
+            // More than 1,024 UTF-8 bytes needs at least 257 scalars, beyond current input admission.
+            failure (TextViolation.TooLong TextAdmission.MaximumCharacters)
         elif textGrammar field |> Option.exists (fun pattern -> not (matches pattern value)) then
             failure (
                 if field = InputTarget.CaseReference then
