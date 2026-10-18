@@ -186,20 +186,15 @@ module internal Core =
                                 )
         }
 
-    /// Hosting owns the single ephemeral key for the runtime; every facade shares its bytes.
+    /// Every facade authorizes each read against current authoritative state.
     let create
         installationId
         (store: ILedgerStore)
         (calendar: IBusinessCalendar)
-        (cursorKey: byte array)
         principal
         : IActorClaimsCore =
-        if
-            installationId = Guid.Empty
-            || obj.ReferenceEquals(cursorKey, null)
-            || cursorKey.Length <> 32
-        then
-            invalidArg (nameof cursorKey) "Use an admitted installation and a 32-byte cursor key."
+        if installationId = Guid.Empty then
+            invalidArg (nameof installationId) "Use an admitted installation."
 
         { new IActorClaimsCore with
             member _.Context ct =
@@ -218,17 +213,17 @@ module internal Core =
                 Queries.get store installationId principal reference ct
 
             member _.List(request, ct) =
-                Queries.list store installationId cursorKey principal request ct
+                Queries.list store installationId principal request ct
 
             member _.History(request, ct) =
-                Queries.history store installationId cursorKey principal request ct
+                Queries.history store installationId principal request ct
 
             member _.Observe(id, ct) =
                 Queries.observe store installationId principal id ct
 
             member _.ListGrants(request, ct) =
-                Queries.grants store installationId cursorKey principal request ct
+                Queries.grants store principal request ct
 
             member _.ListActors(request, ct) =
-                Queries.actors store installationId cursorKey principal request ct
+                Queries.actors store principal request ct
         }

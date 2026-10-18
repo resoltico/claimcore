@@ -93,12 +93,12 @@ read snapshot. Identity-provider membership and a database role grant no case au
 Only humans receive OWNER or DATA_STEWARD; at least one enabled human installation owner
 must remain. OWNER is authority administration and does not by itself grant case work.
 Absent, inaccessible and erased-beyond-view cases or operations have the same public refusal.
-Cursors carry a bounded HMAC-authenticated envelope. One ephemeral Hosting runtime key is shared
-by its actor facades; restart invalidates it. The envelope binds installation, principal, actor ID
-and enabled state, all sorted/deduplicated grants, endpoint, normalized query/resource/detail/order
-and continuation. Page size is excluded so callers may change limits. MAC verification precedes
-position use; the same REPEATABLE READ snapshot supplies authority and database time. Validity is
-issued ≤ database now < expiry, with a 15-minute lifetime. Tokens confer no rights.
+Cursors are unpadded canonical base64url JSON keysets owned by Application. They carry a
+folded reference, revision, actor UUID or grant position, with endpoint and resource bindings.
+They have no secret, MAC, issue time, expiry or authority binding and survive runtime restarts.
+Every page authorizes in its own read snapshot before decoding the position. Sharing or
+editing a valid position conveys no rights; page size and history detail may change after
+independent authorization.
 
 | Preset             | Capabilities                                                    |
 | ------------------ | --------------------------------------------------------------- |
@@ -116,7 +116,7 @@ Correction checks every requested REPLACE/CLEAR group, including unchanged reaff
 Installation ReadAuthority is required for actor listing, selected-actor grant paging and authority
 observation; case grants do not supply it. Public actor summaries exclude grants; selected grant
 pages load a bounded target header and grant rows in one REPEATABLE READ snapshot. Complete caller
-grants remain internal authorization and cursor-binding inputs, including when caller equals target. Human-only grants are enforced on their target as well as their executor.
+grants remain internal authorization inputs, including when caller equals target. Human-only grants are enforced on their target as well as their executor.
 
 A receipt contains attribution ActorId and metadata; its snapshot is DISCLOSED, WITHHELD or ERASED.
 A current snapshot requires ReadCase; a superseded one requires ReadHistoryFull. Execute, replay,

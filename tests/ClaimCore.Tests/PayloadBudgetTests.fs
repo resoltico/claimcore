@@ -62,7 +62,7 @@ let private encodedHistory count disclosure =
         QueryOutcome.Succeeded
             {
                 Entries = List.replicate count (HistoryEntry.FullEntry(receipt disclosure))
-                NextCursor = Some(String('A', CursorRecord.MaximumTokenCharacters))
+                NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
             }
     )
     |> OutcomeCodec.encode "case.history"
@@ -124,7 +124,7 @@ let private boundedAuthority () =
             QueryOutcome.Succeeded
                 {
                     Items = List.replicate count actor
-                    NextCursor = Some(String('A', CursorRecord.MaximumTokenCharacters))
+                    NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                 }
         )
         |> OutcomeCodec.encode "authority.list"
@@ -135,7 +135,7 @@ let private boundedAuthority () =
                 {
                     Actor = actor
                     Items = List.replicate count grant
-                    NextCursor = Some(String('A', CursorRecord.MaximumTokenCharacters))
+                    NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                 }
         )
         |> OutcomeCodec.encode "authority.grants"

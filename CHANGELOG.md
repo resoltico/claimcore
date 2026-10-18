@@ -11,6 +11,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Removed
 
+- Signed pagination envelopes and the runtime cursor key. Plain canonical keysets survive restarts, elapsed time and unrelated grant changes; each page still authorizes before decoding its cursor.
+
 - The C compiler requirement, private-file native library, test process supervisor and publication-mode refusal guards. Published apphosts and redistributed packages retain reviewed third-party notices. Framework-dependent publication remains the qualified mode.
 
 ### Changed

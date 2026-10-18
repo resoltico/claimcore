@@ -150,7 +150,7 @@ let private snapshot (database: PostgresFixture.Database) =
                 database.Fixture.InstallationId
                 (store :> ILedgerStore)
                 database.Fixture.Calendar
-                cursorKey
+
                 principal
 
         let reading =

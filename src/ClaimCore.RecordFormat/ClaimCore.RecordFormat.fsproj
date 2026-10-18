@@ -4,8 +4,6 @@
     <Compile Include="FormatLimits.fs" />
     <Compile Include="CanonicalJson.fs" />
     <Compile Include="Json.fs" />
-    <Compile Include="CursorRecord.fs" />
-    <Compile Include="GrantCursorPosition.fs" />
     <Compile Include="RequestRecord.fs" />
     <Compile Include="CaseRecord.fs" />
     <Compile Include="AuthorityRecord.fs" />

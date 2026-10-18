@@ -20,7 +20,6 @@ type internal Fixture =
 let internal id n =
     Guid.Parse(sprintf "80000000-0000-4000-8000-%012d" n)
 
-let internal cursorKey = [| 0uy .. 31uy |]
 
 let internal request n reference revision command : CaseRequest =
     {
@@ -77,7 +76,7 @@ let internal disclosedFields receipt =
     | _ -> failtest "Expected disclosed live fields."
 
 let internal core fixture principal =
-    Core.create fixture.InstallationId fixture.Store fixture.Calendar cursorKey principal
+    Core.create fixture.InstallationId fixture.Store fixture.Calendar principal
 
 let internal bootstrap fixture =
     task {

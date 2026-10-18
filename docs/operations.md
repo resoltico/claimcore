@@ -38,8 +38,7 @@ with service accounts disabled. Put the API audience in access tokens only, neve
 flow restrictions as described in [Web admission](web.md#cc-web-001).
 
 Browser session protection keys persist in the required key-ring directory. Treat the directory
-as a secret outside database backups; Linux key XML is unencrypted. List cursors still use ephemeral signatures;
-expired or changed-grant cursors must be restarted. The browser retains no pending request across
+as a secret outside database backups; Linux key XML is unencrypted. Plain list cursors survive restarts and have no expiry; every page rechecks current authority. The browser retains no pending request across
 reload. Preserve exact uncertain requests through the caller’s process; never replace their ID.
 
 ## Private configuration

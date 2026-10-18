@@ -1,0 +1,72 @@
+{
+ "accepted": [
+  {
+   "endpoint": "case.list",
+   "canonicalJson": "{\"after\":\"DEMO-0050\",\"kind\":\"CASES\",\"v\":1}",
+   "token": "eyJhZnRlciI6IkRFTU8tMDA1MCIsImtpbmQiOiJDQVNFUyIsInYiOjF9",
+   "tokenLength": 56
+  },
+  {
+   "endpoint": "case.history",
+   "canonicalJson": "{\"after\":50,\"case\":\"DEMO-0001\",\"kind\":\"HISTORY\",\"v\":1}",
+   "token": "eyJhZnRlciI6NTAsImNhc2UiOiJERU1PLTAwMDEiLCJraW5kIjoiSElTVE9SWSIsInYiOjF9",
+   "tokenLength": 72
+  },
+  {
+   "endpoint": "authority.list",
+   "canonicalJson": "{\"after\":\"a0000000-0000-4000-8000-000000000050\",\"kind\":\"ACTORS\",\"v\":1}",
+   "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImtpbmQiOiJBQ1RPUlMiLCJ2IjoxfQ",
+   "tokenLength": 94
+  },
+  {
+   "endpoint": "authority.grants",
+   "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"caseId\":\"dd9e7559-4cf5-8dbb-9b29-5c312d9d2e92\",\"role\":\"CASE_HANDLER\"},\"kind\":\"GRANTS\",\"v\":1}",
+   "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImNhc2VJZCI6ImRkOWU3NTU5LTRjZjUtOGRiYi05YjI5LTVjMzEyZDlkMmU5MiIsInJvbGUiOiJDQVNFX0hBTkRMRVIifSwia2luZCI6IkdSQU5UUyIsInYiOjF9",
+   "tokenLength": 200
+  },
+  {
+   "endpoint": "authority.grants",
+   "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"caseId\":null,\"role\":\"OWNER\"},\"kind\":\"GRANTS\",\"v\":1}",
+   "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImNhc2VJZCI6bnVsbCwicm9sZSI6Ik9XTkVSIn0sImtpbmQiOiJHUkFOVFMiLCJ2IjoxfQ",
+   "tokenLength": 146
+  }
+ ],
+ "refused": [
+  {
+   "name": "padding",
+   "token": "eyJhZnRlciI6IkRFTU8tMDA1MCIsImtpbmQiOiJDQVNFUyIsInYiOjF9="
+  },
+  {
+   "name": "non-canonical member order",
+   "token": "eyJ2IjoxLCJraW5kIjoiQ0FTRVMiLCJhZnRlciI6IkRFTU8tMDA1MCJ9"
+  },
+  {
+   "name": "unknown member",
+   "token": "eyJhZnRlciI6IkRFTU8tMDA1MCIsImtpbmQiOiJDQVNFUyIsInYiOjEsIngiOjF9"
+  },
+  {
+   "name": "wrong version",
+   "token": "eyJhZnRlciI6IkRFTU8tMDA1MCIsImtpbmQiOiJDQVNFUyIsInYiOjJ9"
+  },
+  {
+   "name": "kind for another endpoint (used on case.list)",
+   "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImtpbmQiOiJBQ1RPUlMiLCJ2IjoxfQ"
+  },
+  {
+   "name": "history cursor for another case (used on DEMO-0002)",
+   "token": "eyJhZnRlciI6NTAsImNhc2UiOiJERU1PLTAwMDEiLCJraW5kIjoiSElTVE9SWSIsInYiOjF9"
+  },
+  {
+   "name": "folded reference not uppercase",
+   "token": "eyJhZnRlciI6ImRlbW8tMDA1MCIsImtpbmQiOiJDQVNFUyIsInYiOjF9"
+  },
+  {
+   "name": "revision zero",
+   "token": "eyJhZnRlciI6MCwiY2FzZSI6IkRFTU8tMDAwMSIsImtpbmQiOiJISVNUT1JZIiwidiI6MX0"
+  },
+  {
+   "name": "standard base64 alphabet",
+   "token": "eyJhZnRlciI6IkRFTU8tMDA1MD8+Iiwia2luZCI6IkNBU0VTIiwidiI6MX0"
+  }
+ ]
+}

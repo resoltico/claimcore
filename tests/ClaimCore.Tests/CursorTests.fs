@@ -1,163 +1,169 @@
 module ClaimCore.Tests.CursorTests
 
 open System
+open System.IO
+open System.Text
+open System.Text.Json
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
-open ClaimCore.Tests.Fixtures
+open ClaimCore.TestSupport
 
-let private key = [| 0uy .. 31uy |]
-let private installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
-let private instant = DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
+let private text name (value: JsonElement) =
+    value.GetProperty(name: string).GetString() |> nonNull
 
-let private principal =
-    PrincipalKey.human "https://issuer.example/" "reader" |> accepted
+let private actor = Guid.Parse "a0000000-0000-4000-8000-000000000001"
 
-let private actor: ActorAuthority =
-    {
-        ActorId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
-        Principal = principal
-        Enabled = true
-        Grants =
-            [
-                {
-                    Role = Role.CaseHandler
-                    Scope = GrantScope.Installation
-                }
-                {
-                    Role = Role.Auditor
-                    Scope = GrantScope.Case(Guid.Parse "c0000000-0000-4000-8000-000000000001")
-                }
-            ]
-    }
+let private token (json: string) =
+    Convert
+        .ToBase64String(Encoding.UTF8.GetBytes json)
+        .TrimEnd('=')
+        .Replace('+', '-')
+        .Replace('/', '_')
 
-let private query = CursorQuery.History("Demo-1", HistoryDetail.Full)
+let private examples action =
+    use fixture =
+        JsonDocument.Parse(
+            File
+                .ReadAllBytes(
+                    Path.Combine(RepositoryRoot.find (), "tests/fixtures/cursor-examples.json")
+                )
+                .AsMemory()
+        )
 
-let private token () =
-    Cursors.encode key installation actor query instant "42"
+    action fixture.RootElement
 
-let private decode current query time token =
-    Cursors.decode key installation current query time token
+let private accepted () =
+    examples (fun fixture ->
+        for sample in fixture.GetProperty("accepted").EnumerateArray() do
+            let encoded = text "token" sample
+            use json = JsonDocument.Parse(text "canonicalJson" sample)
+            let position = json.RootElement.GetProperty "after"
 
-let private lifetime () =
-    let value = token ()
+            let actual =
+                match text "endpoint" sample with
+                | "case.list" ->
+                    let expected = position.GetString() |> nonNull
 
-    for time in [ instant; instant.AddTicks(TimeSpan.FromMinutes(15.0).Ticks - 1L) ] do
-        Expect.equal (decode actor query time value) (Ok "42") "Valid lifetime"
+                    Expect.equal
+                        (Cursors.decodeCases encoded)
+                        (Ok expected)
+                        "Independent case position"
 
-    for time in [ instant.AddTicks(-1L); instant.AddMinutes(15.0); instant.AddDays(1.0) ] do
-        Expect.equal
-            (decode actor query time value)
-            (Error Rejection.InvalidCursor)
-            "Future-issued or expired cursor refuses"
+                    Cursors.encodeCases expected
+                | "case.history" ->
+                    Expect.equal
+                        (Cursors.decodeHistory "demo-0001" encoded)
+                        (Ok(position.GetInt64()))
+                        "Independent history position"
 
-    let maximum = DateTimeOffset.MaxValue
-    let last = Cursors.encode key installation actor query maximum "42"
+                    Cursors.encodeHistory "DEMO-0001" (position.GetInt64())
+                | "authority.list" ->
+                    let expected = Guid.Parse(position.GetString() |> nonNull)
 
-    Expect.equal
-        (decode actor query maximum last)
-        (Ok "42")
-        "Expiry arithmetic does not overflow at the calendar bound"
+                    Expect.equal
+                        (Cursors.decodeActors encoded)
+                        (Ok expected)
+                        "Independent actor position"
 
-let private bindings () =
-    let value = token ()
-    let other = PrincipalKey.human "https://issuer.example/" "other" |> accepted
+                    Cursors.encodeActors expected
+                | "authority.grants" ->
+                    let caseId = position.GetProperty "caseId"
 
-    let variants =
+                    let expected =
+                        {
+                            Role = Roles.tryParse (text "role" position) |> Option.get
+                            CaseId =
+                                if caseId.ValueKind = JsonValueKind.Null then
+                                    None
+                                else
+                                    Some(Guid.Parse(caseId.GetString() |> nonNull))
+                        }
+
+                    Expect.equal
+                        (Cursors.decodeGrants actor encoded)
+                        (Ok expected)
+                        "Independent grant position"
+
+                    Cursors.encodeGrants actor expected
+                | _ -> failtest "Unknown fixture endpoint"
+
+            Expect.equal actual encoded "Encoder reproduces committed owner bytes")
+
+let private refused () =
+    examples (fun fixture ->
+        for sample in fixture.GetProperty("refused").EnumerateArray() do
+            let name = text "name" sample
+            let encoded = text "token" sample
+
+            let decoded =
+                if name.StartsWith("history cursor", StringComparison.Ordinal) then
+                    Cursors.decodeHistory "DEMO-0002" encoded |> Result.map string
+                elif name = "revision zero" then
+                    Cursors.decodeHistory "DEMO-0001" encoded |> Result.map string
+                else
+                    Cursors.decodeCases encoded
+
+            Expect.equal decoded (Error Rejection.InvalidCursor) name)
+
+let private boundaries () =
+    for value in [ ""; "!"; "A"; String('A', 513) ] do
+        Expect.equal (Cursors.decodeCases value) (Error Rejection.InvalidCursor) "Token bounds"
+
+    for json in
         [
-            { actor with
-                ActorId = Guid.Parse "a0000000-0000-4000-8000-000000000002"
-            }
-            { actor with Principal = other }
-            { actor with Enabled = false }
-            { actor with Grants = [] }
-            { actor with
-                Grants =
-                    {
-                        Role = Role.CaseReader
-                        Scope = GrantScope.Case(Guid.Parse "c0000000-0000-4000-8000-000000000002")
-                    }
-                    :: actor.Grants
-            }
-        ]
-
-    for changed in variants do
-        Expect.equal
-            (decode changed query instant value)
-            (Error Rejection.InvalidCursor)
-            "Full authority identity is bound"
-
-    for changed in
-        [
-            CursorQuery.Cases
-            CursorQuery.Actors
-            CursorQuery.History("Demo-2", HistoryDetail.Full)
-            CursorQuery.History("Demo-1", HistoryDetail.Summary)
+            "{\"after\":\"DEMO\",\"kind\":\"CASES\",\"v\":1.0}"
+            "{\"after\":\"DEMO\",\"after\":\"DEMO\",\"kind\":\"CASES\",\"v\":1}"
+            "{\"after\":\"\\ud800\",\"kind\":\"CASES\",\"v\":1}"
         ] do
         Expect.equal
-            (decode actor changed instant value)
+            (Cursors.decodeCases (token json))
             (Error Rejection.InvalidCursor)
-            "Endpoint, resource, detail and order context is bound"
+            "Strict canonical JSON"
 
-    Expect.equal
-        (decode actor (CursorQuery.History("DEMO-1", HistoryDetail.Full)) instant value)
-        (Ok "42")
-        "Resource references normalize by ASCII identity"
+    for role, caseId in
+        [
+            "UNKNOWN", "null"
+            "OWNER", "\"00000000-0000-0000-0000-000000000000\""
+            "CASE_READER", "\"A0000000-0000-4000-8000-000000000001\""
+        ] do
+        let raw =
+            $"{{\"actor\":\"{actor:D}\",\"after\":{{\"caseId\":{caseId},\"role\":\"{role}\"}},\"kind\":\"GRANTS\",\"v\":1}}"
 
-    let anotherInstallation = Guid.Parse "90000000-0000-4000-8000-000000000002"
-
-    Expect.equal
-        (Cursors.decode key anotherInstallation actor query instant value)
-        (Error Rejection.InvalidCursor)
-        "Installation is bound"
-
-    Expect.equal
-        (Cursors.decode (Array.rev key) installation actor query instant value)
-        (Error Rejection.InvalidCursor)
-        "Runtime restart invalidates prior cursors"
-
-let private grantSet () =
-    let value = token ()
-
-    let reordered =
-        { actor with
-            Grants = List.rev actor.Grants @ actor.Grants
-        }
-
-    Expect.equal
-        (Cursors.encode key installation reordered query instant "42")
-        value
-        "Sorted deduplicated full grants have one binding"
-
-    Expect.equal
-        (decode reordered query instant value)
-        (Ok "42")
-        "Ordering and duplicates do not change authority"
-
-    let disabled = { actor with Enabled = false }
-
-    Expect.isFalse
-        (ActorAuthorization.can
-            principal
-            (Some disabled)
-            Capability.ReadHistoryFull
-            (ResourceScope.Case(Guid.Parse "c0000000-0000-4000-8000-000000000001")))
-        "Tokens grant no read rights"
-
-    for malformed in [ ""; value + "="; String.replicate 513 "A"; "not.a.cursor" ] do
         Expect.equal
-            (decode actor query instant malformed)
+            (Cursors.decodeGrants actor (token raw))
             (Error Rejection.InvalidCursor)
-            "Malformed envelope refuses"
+            "Admitted role and UUID only"
+
+let private maximum () =
+    let reference = String('"', 80)
+    let encoded = Cursors.encodeHistory reference Revision.Maximum
+    Expect.isLessThan encoded.Length 512 "Largest escaped history position fits"
+
+    Expect.equal
+        (Cursors.decodeHistory reference encoded)
+        (Ok Revision.Maximum)
+        "Maximum safe revision"
+
+    Expect.equal
+        (Cursors.decodeHistory "OTHER" encoded)
+        (Error Rejection.InvalidCursor)
+        "Resource binding"
+
+    let grant = Cursors.encodeGrants actor { Role = Role.Owner; CaseId = None }
+
+    Expect.equal
+        (Cursors.decodeGrants (Guid.NewGuid()) grant)
+        (Error Rejection.InvalidCursor)
+        "Actor binding"
 
 [<Tests>]
 let tests =
     testList
-        "snapshot-bound cursors"
+        "plain canonical keysets"
         [
-            testCase
-                "issued time and the exact fifteen-minute lifetime use the supplied database instant"
-                lifetime
-            testCase "principal, actor, all grants, query and installation bind the cursor" bindings
-            testCase "grant-set normalization is stable and cursors confer no rights" grantSet
+            testCase "owner accepted examples" accepted
+            testCase "owner refused examples" refused
+            testCase "strict token and value boundaries" boundaries
+            testCase "maximum positions and target binding" maximum
         ]

@@ -14,8 +14,8 @@
     <Compile Include="AuthorityOperationDefinitions.fs" />
     <Compile Include="ServiceLimits.fs" />
     <Compile Include="AuthorityRequests.fs" />
-    <Compile Include="Cursors.fs" />
     <Compile Include="LedgerStorePort.fs" />
+    <Compile Include="Cursors.fs" />
     <Compile Include="LedgerEntries.fs" />
     <Compile Include="CaseDecisions.fs" />
     <Compile Include="AuthorityDecisions.fs" />

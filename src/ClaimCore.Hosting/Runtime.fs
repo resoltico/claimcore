@@ -1,7 +1,6 @@
 namespace ClaimCore.Hosting
 
 open System
-open System.Security.Cryptography
 open System.Threading.Tasks
 open System.Threading
 open ClaimCore.Application
@@ -16,7 +15,6 @@ type internal IRuntime =
 
 type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBusinessCalendar) =
     let gate = AdmissionGate(fun () -> storage.Dispose())
-    let cursorKey = RandomNumberGenerator.GetBytes 32
 
     interface IRuntime with
         member _.Actor principal =
@@ -24,7 +22,7 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
                 storage.Installation.InstallationId
                 (ClaimCore.Postgres.Runtime.store storage)
                 calendar
-                cursorKey
+
                 principal
             |> ActorFacade.bind gate
 

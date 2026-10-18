@@ -50,7 +50,7 @@ let private proxyCore (database: PostgresFixture.Database) source =
             database.Fixture.InstallationId
             store
             database.Fixture.Calendar
-            cursorKey
+
             database.Fixture.Owner
 
     actor
