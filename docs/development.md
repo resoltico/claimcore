@@ -144,7 +144,7 @@ changing the test runner's environment. The quiet-deadline control uses a 250 ms
 ## Changes
 
 A migration is a new numbered SQL file under db/migrations. Migration bytes shipped by a release
-are immutable.
+are immutable, except that a pre-1.0 release may replace the baseline and refuse older installations untouched.
 Update readers/writers and prove atomic application, exact prefix/checksum admission and refusal
 of unsupported history. An endpoint is one catalogue entry with accepting/receipt scope, schemas, typed core operation,
 codec/rendering and every outcome/host-failure test. Regenerate tracked artifacts and review their diff.

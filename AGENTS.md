@@ -34,8 +34,8 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   snapshot disclosure; different content under a used ID is refused; a rejection records nothing.
   `OUTCOME_UNKNOWN` means a commit confirmation was lost and nothing else. Never infer that a
   commit failed, mint a replacement ID, or rebase a request.
-- RecordFormat owns every byte-stable encoding and its canonical JSON writer. A format's number
-  changes only when its bytes change. Format dispatch selects supported readers. Before 1.0.0, a release may
+- RecordFormat owns every byte-stable encoding and its canonical JSON writer. A format number identifies one byte grammar and its admissible value set; it changes when either
+  changes. Format dispatch selects supported readers. Before 1.0.0, a release may
   explicitly refuse older installations untouched. From 1.0.0, keep reading every format a release
   wrote and ship migrations instead of refusing installations. The entry hash covers the salted
   payload commitment and never the payload, so erasure
@@ -62,7 +62,8 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   `TimeZoneInfo.Local` or a host default.
 - The schema is an ordered, forward-only list of migrations in `db/migrations/`. A change ships
   as a new numbered script with its readers, writers, tests and documentation. Never edit a migration
-  shipped by a release. A database whose history is not exactly a prefix of that list is refused
+  shipped by a release. Before 1.0.0, a release may instead replace the baseline and refuse older
+  installations untouched. A database whose history is not exactly a prefix of that list is refused
   untouched. Supported PostgreSQL majors and minimum minors live in `db/postgresql-baseline.json`;
   qualify every listed major against its pinned image.
 - The trust model and the non-goals in [operations](docs/operations.md) are part of the design.

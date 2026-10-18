@@ -131,7 +131,7 @@ be replayed as retained requests. Its physical limits are in [Operations](operat
 - Incident country is exactly two uppercase ASCII letters. This checks syntax, not ISO membership;
   `ZZ` means unknown/international. Localized country names are advisory display hints.
 - Retained business text is non-empty and excludes NUL, unpaired surrogates and Unicode
-  noncharacters as permanent format invariants. New name assertions contain 1–200 Unicode
+  noncharacters as permanent format invariants and follows the [permanent byte bounds](architecture.md#durable-records). New name assertions contain 1–200 Unicode
   scalars, no surrounding whitespace,
   controls, line/paragraph separators, or the forbidden invisible/directional characters described
   by the [shared Domain text policy](../src/ClaimCore.Domain/Validation.fs). Names and stewardship

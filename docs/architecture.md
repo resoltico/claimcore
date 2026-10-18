@@ -64,10 +64,17 @@ are derived views, not independent acceptance evidence. Reads need no second acc
 or request-preparation store. [Operations](operations.md) defines the limits of this trust model.
 
 [RecordVersions](../src/ClaimCore.RecordFormat/Versions.fs) owns durable format identifiers.
-A format number changes only when its bytes change, and decoders dispatch explicitly by format.
+A format number identifies one byte grammar and its admissible value set, and decoders dispatch explicitly by format.
 Before 1.0.0, releases may explicitly refuse older installations untouched. From 1.0.0, readers
 must retain every format a release wrote and schema changes require forward migrations.
 [Database admission](database.md#cc-db-001) refuses unsupported installations without conversion.
+
+Case requests use format 5 and snapshots format 4. Free-text names and stewardship reasons
+have a permanent bound of 1,024 UTF-8 bytes, inside a 32,768-byte framed payload bound.
+Authority, ledger-entry and case-identity formats remain 2. The independent Python oracle
+under [tests/fixtures/oracle](../tests/fixtures/oracle/generate_vectors.py) owns regression vectors.
+The replaced baseline refuses installations created by software through 0.10.0 untouched;
+keep those installations with their matching software.
 
 <a id="cc-run-001"></a>
 
@@ -152,9 +159,7 @@ exact replay returns the original acceptance metadata with snapshot disclosure e
 current locked/read context. Different content under the same ID is refused. OUTCOME_UNKNOWN
 means a commit confirmation was lost. It does not prove rejection and never permits rebasing or
 replacement identity. Erased request content cannot be replayed. Reads use one REPEATABLE READ snapshot. Public actor and grant pages are bounded at 50 rows;
-FULL history uses an Application-owned capacity of 10 while SUMMARY remains 50. The
-RecordFormat payload bound and independent worst-escaping codec controls establish the FULL page's
-wire budget. A continuation follows the last included row; a short page is not necessarily terminal.
+Both history details use the [API page limit](api.md). Permanent field bounds and the independently computed worst-escaping page budget keep FULL pages within the response limit. A continuation follows the last included row; a short page is not necessarily terminal.
 
 Verification folds permanent record and authority invariants, compares projections and checks
 chain/commitments. It does not replay today’s capability matrix or admission rules against history.

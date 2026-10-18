@@ -48,8 +48,7 @@ Use an actor ID returned by `authority.list` in the CLI frame (the ID below is s
 }
 ```
 
-`case.history` returns uniform SUMMARY or FULL entries. SUMMARY pages contain at most 50 entries;
-FULL pages contain at most 10 to keep supported retained snapshots inside the response byte limit.
+`case.history` returns uniform SUMMARY or FULL entries. Both details allow pages of up to 50 entries.
 The server can return fewer entries than requested. Only `nextCursor: null` establishes the end:
 follow a non-null cursor even after a short page. This capacity does not change accepted text,
 truncate history or reduce historical disclosure requirements.
@@ -115,7 +114,7 @@ The CLI calls HTTPS with authorization-code/PKCE or client credentials and recei
 credential. `call` reads one `{"endpoint":...,"input":...}` JSON document from stdin, which may
 span multiple lines. `session` reads one complete frame per line as NDJSON and reuses its
 process-local authentication session. Each input frame is limited to 128 KiB; responses are
-limited to 16 MiB. Input is strict UTF-8 and replies are validated against the generated contract.
+limited to 4 MiB. Input is strict UTF-8 and replies are validated against the generated contract.
 Preview is advisory; execution revalidates locked state.
 
 Discovery needs no credentials. `describe authority [kind]` exposes the Application-owned

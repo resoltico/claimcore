@@ -4,6 +4,15 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking for installations:** the replaced baseline refuses installations from software through 0.10.0 untouched. Keep them with their matching software; no conversion is supplied. Case request format 5 and snapshot format 4 bound business names and stewardship reasons to 1,024 UTF-8 bytes and framed payloads to 32,768 bytes. See [durable records](docs/architecture.md#durable-records).
+- **Breaking for API and CLI consumers:** FULL history pages now allow 50 entries, matching SUMMARY, and the client response limit is 4 MiB. The diagnostic vocabulary excludes unreachable input and stored-state errors; regenerate matching consumers.
+
+### Internal
+
+- Domain field, correction-group and business/stewardship act definitions use closed types. Retained snapshot failures have a distinct record-violation type. Durable-format regression vectors now include their independent Python oracle.
+
 ## [0.10.0] - 2026-10-17
 
 ### Security
