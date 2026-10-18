@@ -102,25 +102,31 @@ module ActorAuthorization =
     let private ordinaryActs =
         Map.ofList
             [
-                CaseActKind.Open, Capability.Register
-                CaseActKind.AmendRegistration, Capability.Register
-                CaseActKind.Decide, Capability.Decide
-                CaseActKind.WithdrawDecision, Capability.Decide
-                CaseActKind.RecordPayment, Capability.RecordPayment
-                CaseActKind.ClearPayment, Capability.RecordPayment
-                CaseActKind.Close, Capability.Close
-                CaseActKind.Reopen, Capability.Close
-                CaseActKind.Void, Capability.Steward
-                CaseActKind.Reinstate, Capability.Steward
-                CaseActKind.Erase, Capability.Steward
+                (CaseActKind.Business BusinessActKind.Open), Capability.Register
+                (CaseActKind.Business BusinessActKind.AmendRegistration), Capability.Register
+                (CaseActKind.Business BusinessActKind.Decide), Capability.Decide
+                (CaseActKind.Business BusinessActKind.WithdrawDecision), Capability.Decide
+                (CaseActKind.Business BusinessActKind.RecordPayment), Capability.RecordPayment
+                (CaseActKind.Business BusinessActKind.ClearPayment), Capability.RecordPayment
+                (CaseActKind.Business BusinessActKind.Close), Capability.Close
+                (CaseActKind.Business BusinessActKind.Reopen), Capability.Close
+                (CaseActKind.Stewardship StewardshipActKind.Void), Capability.Steward
+                (CaseActKind.Stewardship StewardshipActKind.Reinstate), Capability.Steward
+                (CaseActKind.Stewardship StewardshipActKind.Erase), Capability.Steward
             ]
 
     let correctionGroups =
         [
-            "registration", Capability.Register
-            "decision", Capability.Decide
-            "payment", Capability.RecordPayment
+            CorrectionGroup.Registration, Capability.Register
+            CorrectionGroup.Decision, Capability.Decide
+            CorrectionGroup.Payment, Capability.RecordPayment
         ]
+
+    let correctionCapability =
+        function
+        | CorrectionGroup.Registration -> Capability.Register
+        | CorrectionGroup.Decision -> Capability.Decide
+        | CorrectionGroup.Payment -> Capability.RecordPayment
 
     let private correctionCapabilities = correctionGroups |> List.map snd
 
@@ -131,18 +137,18 @@ module ActorAuthorization =
             [
                 match correction.Registration with
                 | RegistrationCorrection.Keep -> ()
-                | _ -> yield (correctionGroups |> List.find (fst >> (=) "registration") |> snd)
+                | _ -> yield correctionCapability CorrectionGroup.Registration
                 match correction.Decision with
                 | DecisionCorrection.Keep -> ()
-                | _ -> yield (correctionGroups |> List.find (fst >> (=) "decision") |> snd)
+                | _ -> yield correctionCapability CorrectionGroup.Decision
                 match correction.Payment with
                 | PaymentCorrection.Keep -> ()
-                | _ -> yield (correctionGroups |> List.find (fst >> (=) "payment") |> snd)
+                | _ -> yield correctionCapability CorrectionGroup.Payment
             ]
         | act -> [ ordinaryActs[CaseActs.kind act] ]
 
     let canAdvertise principal actor resource kind =
-        if kind = CaseActKind.CorrectCase then
+        if kind = (CaseActKind.Business BusinessActKind.CorrectCase) then
             correctionCapabilities
             |> List.exists (fun capability -> can principal actor capability resource)
         else

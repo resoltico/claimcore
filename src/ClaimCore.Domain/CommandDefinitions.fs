@@ -7,19 +7,18 @@ type CommandDefinition =
         Label: string
         Meaning: string
         Inputs: CommandInputShape
-        ValuesMember: string option
     }
 
 module CommandDefinitions =
     let private registrationFields =
         [
-            "incidentDate"
-            "incidentNotificationDate"
-            "incidentCountry"
-            "claimantName"
-            "insurerName"
-            "claimedAmount"
-            "claimedCurrency"
+            (InputField.Business BusinessField.IncidentDate)
+            (InputField.Business BusinessField.IncidentNotificationDate)
+            (InputField.Business BusinessField.IncidentCountry)
+            (InputField.Business BusinessField.ClaimantName)
+            (InputField.Business BusinessField.InsurerName)
+            (InputField.Business BusinessField.ClaimedAmount)
+            (InputField.Business BusinessField.ClaimedCurrency)
         ]
 
     let private blank fieldName : FieldInputDefinition =
@@ -31,7 +30,10 @@ module CommandDefinitions =
     let private current fieldName : FieldInputDefinition =
         {
             FieldName = fieldName
-            Prefill = PrefillSource.CurrentField fieldName
+            Prefill =
+                match fieldName with
+                | InputField.Business field -> PrefillSource.CurrentField field
+                | InputField.Reason -> PrefillSource.Blank
         }
 
     let private fields values = CommandInputShape.Fields values
@@ -49,13 +51,13 @@ module CommandDefinitions =
         CommandInputShape.CorrectionGroups
             [
                 correctionGroup
-                    "registration"
+                    CorrectionGroup.Registration
                     "Registration"
                     "Keep the current registration details or replace all seven details together."
                     [ CorrectionGroupAction.Keep; CorrectionGroupAction.Replace ]
                     (registrationFields |> List.map current)
                 correctionGroup
-                    "decision"
+                    CorrectionGroup.Decision
                     "Payment decision"
                     "Keep the current payment decision, replace its date, amount and currency together, or clear the decision."
                     [
@@ -64,12 +66,12 @@ module CommandDefinitions =
                         CorrectionGroupAction.Clear
                     ]
                     [
-                        current "paymentDecisionDate"
-                        current "payableAmount"
-                        current "payableCurrency"
+                        current (InputField.Business BusinessField.PaymentDecisionDate)
+                        current (InputField.Business BusinessField.PayableAmount)
+                        current (InputField.Business BusinessField.PayableCurrency)
                     ]
                 correctionGroup
-                    "payment"
+                    CorrectionGroup.Payment
                     "Payment record"
                     "Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money."
                     [
@@ -77,7 +79,7 @@ module CommandDefinitions =
                         CorrectionGroupAction.Replace
                         CorrectionGroupAction.Clear
                     ]
-                    [ current "paymentDate" ]
+                    [ current (InputField.Business BusinessField.PaymentDate) ]
             ]
 
     let private definition kind label meaning inputs =
@@ -86,18 +88,17 @@ module CommandDefinitions =
             Label = label
             Meaning = meaning
             Inputs = inputs
-            ValuesMember = Some "values"
         }
 
     let private registrationDefinitions =
         [
             definition
-                CaseActKind.Open
+                (CaseActKind.Business BusinessActKind.Open)
                 "Open a case"
                 "Register the incident, claimant, insurer and amount claimed."
                 (registrationFields |> List.map blank |> fields)
             definition
-                CaseActKind.AmendRegistration
+                (CaseActKind.Business BusinessActKind.AmendRegistration)
                 "Amend registration"
                 "Replace the initial facts. The handler's case reference remains unchanged."
                 (registrationFields |> List.map current |> fields)
@@ -105,7 +106,7 @@ module CommandDefinitions =
 
     let private correctionDefinition =
         definition
-            CaseActKind.CorrectCase
+            (CaseActKind.Business BusinessActKind.CorrectCase)
             "Correct case facts"
             "Correct recorded details on a case with a decision, payment or closed status. All changes are recorded together. Clearing a payment date does not refund money."
             correctionGroups
@@ -113,37 +114,37 @@ module CommandDefinitions =
     let private paymentAndStatusDefinitions =
         [
             definition
-                CaseActKind.Decide
+                (CaseActKind.Business BusinessActKind.Decide)
                 "Record payment decision"
                 "Record or replace the decided amount and currency. This does not send money."
                 (fields
                     [
-                        current "paymentDecisionDate"
-                        current "payableAmount"
-                        current "payableCurrency"
+                        current (InputField.Business BusinessField.PaymentDecisionDate)
+                        current (InputField.Business BusinessField.PayableAmount)
+                        current (InputField.Business BusinessField.PayableCurrency)
                     ])
             definition
-                CaseActKind.WithdrawDecision
+                (CaseActKind.Business BusinessActKind.WithdrawDecision)
                 "Withdraw payment decision"
                 "Clear the unpaid decision while preserving its history."
                 (fields [])
             definition
-                CaseActKind.RecordPayment
+                (CaseActKind.Business BusinessActKind.RecordPayment)
                 "Record actual payment"
                 "Record the date the full decided amount was actually paid. This does not execute or verify a transfer."
-                (fields [ blank "paymentDate" ])
+                (fields [ blank (InputField.Business BusinessField.PaymentDate) ])
             definition
-                CaseActKind.ClearPayment
+                (CaseActKind.Business BusinessActKind.ClearPayment)
                 "Correct an erroneous payment record"
                 "Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains."
                 (fields [])
             definition
-                CaseActKind.Close
+                (CaseActKind.Business BusinessActKind.Close)
                 "Close the case"
                 "Close the case. Closing does not mean that payment was made."
                 (fields [])
             definition
-                CaseActKind.Reopen
+                (CaseActKind.Business BusinessActKind.Reopen)
                 "Reopen the case"
                 "Reopen the case, preserving its details and history."
                 (fields [])
@@ -152,22 +153,21 @@ module CommandDefinitions =
     let private stewardshipDefinitions =
         [
             definition
-                CaseActKind.Void
+                (CaseActKind.Stewardship StewardshipActKind.Void)
                 "Void case record"
                 "Block business commands while retaining the case and its history."
-                (fields [ blank "reason" ])
+                (fields [ blank InputField.Reason ])
             definition
-                CaseActKind.Reinstate
+                (CaseActKind.Stewardship StewardshipActKind.Reinstate)
                 "Reinstate case record"
                 "Restore ordinary case work on a voided record."
-                (fields [ blank "reason" ])
+                (fields [ blank InputField.Reason ])
             definition
-                CaseActKind.Erase
+                (CaseActKind.Stewardship StewardshipActKind.Erase)
                 "Erase case payload"
                 "Permanently remove business payload from the live database. WAL, backups and copies elsewhere are not erased."
                 (fields [])
         ]
-        |> List.map (fun value -> { value with ValuesMember = None })
 
     let all =
         registrationDefinitions

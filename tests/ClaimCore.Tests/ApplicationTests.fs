@@ -497,7 +497,12 @@ let private failedProjection (store: MemoryLedgerStore.Store) (fixture: Fixture)
                     view.PayloadNonce
                     (id 1)
                     (id 99)
-                    (StoredScope.Case(id 99, 1L, CaseActKind.Erase, DateOnly(2026, 9, 7)))
+                    (StoredScope.Case(
+                        id 99,
+                        1L,
+                        (CaseActKind.Stewardship StewardshipActKind.Erase),
+                        DateOnly(2026, 9, 7)
+                    ))
                     [| 1uy |]
                     Array.empty
 

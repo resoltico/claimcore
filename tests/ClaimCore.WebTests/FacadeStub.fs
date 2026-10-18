@@ -70,7 +70,7 @@ let receipt id reference =
                 {
                     Reference = reference
                     Revision = 1L
-                    Act = CaseActKind.Open
+                    Act = (CaseActKind.Business BusinessActKind.Open)
                     Snapshot = SnapshotDisclosure.Disclosed (view reference).View
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)

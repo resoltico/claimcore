@@ -35,7 +35,13 @@ module internal Verification =
                 let! cases = CaseFold.apply state.Cases entry id revision act payload
 
                 let human =
-                    List.contains act [ CaseActKind.Void; CaseActKind.Reinstate; CaseActKind.Erase ]
+                    List.contains
+                        act
+                        [
+                            (CaseActKind.Stewardship StewardshipActKind.Void)
+                            (CaseActKind.Stewardship StewardshipActKind.Reinstate)
+                            (CaseActKind.Stewardship StewardshipActKind.Erase)
+                        ]
 
                 do! AuthorityFold.executor state.Actors entry human false
                 return cases, state.Actors

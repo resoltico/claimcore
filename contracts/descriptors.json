@@ -690,16 +690,6 @@
       "parameters": []
     },
     {
-      "id": "INPUT_TEXT_TOO_SHORT",
-      "parameters": [
-        {
-          "name": "minimumCharacters",
-          "minimum": 0,
-          "maximum": 2147483647
-        }
-      ]
-    },
-    {
       "id": "INPUT_TEXT_TOO_LONG",
       "parameters": [
         {
@@ -757,10 +747,6 @@
       "parameters": []
     },
     {
-      "id": "INPUT_AMOUNT_NOT_REPRESENTABLE",
-      "parameters": []
-    },
-    {
       "id": "COMMAND_OPERATION_ID_REQUIRED",
       "parameters": []
     },
@@ -769,31 +755,7 @@
       "parameters": []
     },
     {
-      "id": "STATE_STORED_REVISION_RANGE",
-      "parameters": []
-    },
-    {
       "id": "REVISION_EXHAUSTED",
-      "parameters": []
-    },
-    {
-      "id": "STATE_CASE_REFERENCE_MISMATCH",
-      "parameters": []
-    },
-    {
-      "id": "STATE_TRANSITION_MISMATCH",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_EXACT_FIELDS_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "COMMAND_GROUPED_CORRECTION_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_COMPLETE_DECISION_REQUIRED",
       "parameters": []
     },
     {
@@ -802,18 +764,6 @@
     },
     {
       "id": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_PAYMENT_DECISION_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
       "parameters": []
     },
     {

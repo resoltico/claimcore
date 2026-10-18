@@ -5,7 +5,7 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private chronology field =
-    CaseRefusal.InvalidInput(field, InputViolation.Date DateViolation.ChronologicalOrder)
+    RecordViolation.InvalidScalar(field, InputViolation.Date DateViolation.ChronologicalOrder)
 
 let private snapshots =
     testCase "[CC-DOM-001] restoration refuses invalid paid and chronological states" (fun () ->
@@ -16,7 +16,7 @@ let private snapshots =
                 { (viewFields original) with
                     PayableAmount = Some "0"
                 },
-                CaseRefusal.ZeroDecisionCannotBePaid
+                RecordViolation.InvalidProgress
                 { (viewFields original) with
                     PaymentDecisionDate = Some "2026-08-02"
                 },

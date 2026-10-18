@@ -13,7 +13,7 @@ module internal CommandInputProjection =
         fields
         |> List.map (fun input ->
             Schema.property
-                input.FieldName
+                (InputField.token input.FieldName)
                 (FieldDefinitions.scalar input.FieldName |> ScalarSchemas.scalar)
                 true)
         |> Schema.objectOf false
@@ -43,17 +43,17 @@ module internal CommandInputProjection =
             if inputs.IsEmpty then
                 Schema.objectOf false [ kind ]
             else
-                match definition.ValuesMember with
-                | Some memberName ->
-                    Schema.objectOf false [ kind; Schema.property memberName (values inputs) true ]
-                | None ->
+                match definition.Kind with
+                | CaseActKind.Business _ ->
+                    Schema.objectOf false [ kind; Schema.property "values" (values inputs) true ]
+                | CaseActKind.Stewardship _ ->
                     Schema.objectOf
                         false
                         (kind
                          :: (inputs
                              |> List.map (fun input ->
                                  Schema.property
-                                     input.FieldName
+                                     (InputField.token input.FieldName)
                                      (FieldDefinitions.scalar input.FieldName
                                       |> ScalarSchemas.scalar)
                                      true)))
@@ -61,7 +61,10 @@ module internal CommandInputProjection =
             let groupedValues =
                 groups
                 |> List.map (fun group ->
-                    Schema.property group.Name (correctionGroupValue group) true)
+                    Schema.property
+                        (CorrectionGroup.token group.Name)
+                        (correctionGroupValue group)
+                        true)
                 |> Schema.objectOf false
 
             Schema.objectOf false [ kind; Schema.property "groups" groupedValues true ]

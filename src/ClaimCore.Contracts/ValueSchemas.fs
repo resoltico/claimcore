@@ -16,7 +16,9 @@ module internal ValueSchemas =
                 property "productVersion" text
                 property
                     "businessDate"
-                    (ScalarSchemas.scalar (FieldDefinitions.scalar "incidentDate"))
+                    (ScalarSchemas.scalar (
+                        FieldDefinitions.scalar (InputField.Business BusinessField.IncidentDate)
+                    ))
                 property "timeZone" text
             ]
 
@@ -37,7 +39,9 @@ module internal ValueSchemas =
                 property "productVersion" text
                 property
                     "businessDate"
-                    (ScalarSchemas.scalar (FieldDefinitions.scalar "incidentDate"))
+                    (ScalarSchemas.scalar (
+                        FieldDefinitions.scalar (InputField.Business BusinessField.IncidentDate)
+                    ))
                 property "timeZone" text
                 property "offers" (array operationOffer)
                 property
@@ -51,7 +55,7 @@ module internal ValueSchemas =
             let schema = ScalarSchemas.scalar field.Scalar
 
             property
-                field.Name
+                (BusinessField.token field.Name)
                 (if field.AllowsAbsence then
                      Schema.nullable schema
                  else
@@ -182,7 +186,9 @@ module internal ValueSchemas =
                             [
                                 property
                                     "field"
-                                    (FieldDefinitions.all |> List.map _.Name |> enumeration)
+                                    (FieldDefinitions.all
+                                     |> List.map (_.Name >> BusinessField.token)
+                                     |> enumeration)
                                 property "before" (Schema.nullable text)
                                 property "after" (Schema.nullable text)
                             ]

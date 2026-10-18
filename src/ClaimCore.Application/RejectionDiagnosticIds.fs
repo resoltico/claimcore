@@ -6,7 +6,6 @@ type RejectionDiagnosticId =
     | TextRequired
     | MalformedUnicode
     | SurroundingWhitespace
-    | TextTooShort
     | TextTooLong
     | ControlCharacters
     | CalendarDateRequired
@@ -14,21 +13,11 @@ type RejectionDiagnosticId =
     | FutureDate
     | DecimalFormat
     | CurrencyFormat
-    | AmountNotRepresentable
     | EmptyOperationId
     | ExpectedRevisionOutOfRange
-    | StoredRevisionOutOfRange
     | RevisionExhausted
-    | CaseReferenceMismatch
-    | StateTransitionMismatch
-    | ExactInputsRequired
-    | GroupedCorrectionRequired
-    | CompleteDecisionRequired
     | PaymentClearRequired
     | PaymentAcknowledgementRequired
-    | PaymentDecisionRequired
-    | ReplacementFieldsRequired
-    | RegistrationCannotBeCleared
     | CaseNotFound
     | CaseAlreadyExists
     | RevisionConflict
@@ -81,7 +70,6 @@ module RejectionDiagnosticIds =
             RejectionDiagnosticId.TextRequired, "INPUT_TEXT_REQUIRED"
             RejectionDiagnosticId.MalformedUnicode, "INPUT_MALFORMED_UNICODE"
             RejectionDiagnosticId.SurroundingWhitespace, "INPUT_SURROUNDING_WHITESPACE"
-            RejectionDiagnosticId.TextTooShort, "INPUT_TEXT_TOO_SHORT"
             RejectionDiagnosticId.TextTooLong, "INPUT_TEXT_TOO_LONG"
             RejectionDiagnosticId.ControlCharacters, "INPUT_CONTROL_CHARACTERS"
             RejectionDiagnosticId.FormattingCharacter, "TEXT_FORMATTING_CHARACTER"
@@ -96,32 +84,20 @@ module RejectionDiagnosticIds =
             RejectionDiagnosticId.FutureDate, "INPUT_FUTURE_DATE"
             RejectionDiagnosticId.DecimalFormat, "INPUT_DECIMAL_FORMAT"
             RejectionDiagnosticId.CurrencyFormat, "INPUT_CURRENCY_FORMAT"
-            RejectionDiagnosticId.AmountNotRepresentable, "INPUT_AMOUNT_NOT_REPRESENTABLE"
         ]
 
     let private command =
         [
             RejectionDiagnosticId.EmptyOperationId, "COMMAND_OPERATION_ID_REQUIRED"
             RejectionDiagnosticId.ExpectedRevisionOutOfRange, "COMMAND_EXPECTED_REVISION_RANGE"
-            RejectionDiagnosticId.StoredRevisionOutOfRange, "STATE_STORED_REVISION_RANGE"
             RejectionDiagnosticId.RevisionExhausted, "REVISION_EXHAUSTED"
-            RejectionDiagnosticId.CaseReferenceMismatch, "STATE_CASE_REFERENCE_MISMATCH"
-            RejectionDiagnosticId.StateTransitionMismatch, "STATE_TRANSITION_MISMATCH"
-            RejectionDiagnosticId.ExactInputsRequired, "INPUT_EXACT_FIELDS_REQUIRED"
-            RejectionDiagnosticId.GroupedCorrectionRequired, "COMMAND_GROUPED_CORRECTION_REQUIRED"
         ]
 
     let private correction =
         [
-            RejectionDiagnosticId.CompleteDecisionRequired, "CORRECTION_COMPLETE_DECISION_REQUIRED"
             RejectionDiagnosticId.PaymentClearRequired, "CORRECTION_PAYMENT_CLEAR_REQUIRED"
             RejectionDiagnosticId.PaymentAcknowledgementRequired,
             "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
-            RejectionDiagnosticId.PaymentDecisionRequired, "CORRECTION_PAYMENT_DECISION_REQUIRED"
-            RejectionDiagnosticId.ReplacementFieldsRequired,
-            "CORRECTION_REPLACEMENT_FIELDS_REQUIRED"
-            RejectionDiagnosticId.RegistrationCannotBeCleared,
-            "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN"
         ]
 
     let private case =
@@ -179,7 +155,6 @@ module RejectionDiagnosticIds =
 
     let parameters =
         function
-        | RejectionDiagnosticId.TextTooShort -> [ parameter "minimumCharacters" 0 ]
         | RejectionDiagnosticId.TextTooLong -> [ parameter "maximumCharacters" 0 ]
         | RejectionDiagnosticId.DecimalFormat ->
             [ parameter "maximumIntegerDigits" 1; parameter "maximumFractionalDigits" 0 ]

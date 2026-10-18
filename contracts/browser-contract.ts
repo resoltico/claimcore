@@ -1192,21 +1192,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -1240,35 +1230,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -1391,14 +1352,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -2989,21 +2944,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -3037,35 +2982,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -3188,14 +3104,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -4838,21 +4748,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -4886,35 +4786,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -5037,14 +4908,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -6696,21 +6561,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -6744,35 +6599,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -6895,14 +6721,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -8715,21 +8535,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -8763,35 +8573,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -8914,14 +8695,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -10637,21 +10412,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -10685,35 +10450,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -10836,14 +10572,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -13079,21 +12809,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -13127,35 +12847,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -13278,14 +12969,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -15541,21 +15226,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -15589,35 +15264,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -15740,14 +15386,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -17401,21 +17041,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -17449,35 +17079,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -17600,14 +17201,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -19441,21 +19036,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -19489,35 +19074,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -19640,14 +19196,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -21329,21 +20879,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -21377,35 +20917,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -21528,14 +21039,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",
@@ -23229,21 +22734,11 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                     "INPUT_DATE_ORDER",
                     "INPUT_FUTURE_DATE",
                     "INPUT_CURRENCY_FORMAT",
-                    "INPUT_AMOUNT_NOT_REPRESENTABLE",
                     "COMMAND_OPERATION_ID_REQUIRED",
                     "COMMAND_EXPECTED_REVISION_RANGE",
-                    "STATE_STORED_REVISION_RANGE",
                     "REVISION_EXHAUSTED",
-                    "STATE_CASE_REFERENCE_MISMATCH",
-                    "STATE_TRANSITION_MISMATCH",
-                    "INPUT_EXACT_FIELDS_REQUIRED",
-                    "COMMAND_GROUPED_CORRECTION_REQUIRED",
-                    "CORRECTION_COMPLETE_DECISION_REQUIRED",
                     "CORRECTION_PAYMENT_CLEAR_REQUIRED",
                     "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-                    "CORRECTION_PAYMENT_DECISION_REQUIRED",
-                    "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-                    "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
                     "CASE_NOT_FOUND",
                     "CASE_ALREADY_EXISTS",
                     "CASE_REVISION_CONFLICT",
@@ -23277,35 +22772,6 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {}
-                }
-              },
-              "required": [
-                "id",
-                "parameters"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "enum": [
-                    "INPUT_TEXT_TOO_SHORT"
-                  ]
-                },
-                "parameters": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "minimumCharacters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    }
-                  },
-                  "required": [
-                    "minimumCharacters"
-                  ]
                 }
               },
               "required": [
@@ -23428,14 +22894,8 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                 "payableAmount",
                 "payableCurrency",
                 "paymentDate",
-                "status",
                 "operationId",
                 "expectedRevision",
-                "revision",
-                "act",
-                "fields",
-                "registration",
-                "decision",
                 "payment",
                 "reason",
                 "limit",

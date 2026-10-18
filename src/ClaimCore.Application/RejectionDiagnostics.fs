@@ -5,7 +5,6 @@ open ClaimCore.Domain
 [<RequireQualifiedAccess>]
 type DiagnosticParameters =
     | None
-    | MinimumCharacters of int
     | MaximumCharacters of int
     | DecimalDigits of maximumIntegerDigits: int * maximumFractionalDigits: int
     | MaximumPageSize of int
@@ -32,10 +31,6 @@ module RejectionDiagnostics =
         | TextViolation.NonBlankRequired -> simple RejectionDiagnosticId.TextRequired
         | TextViolation.MalformedUnicode -> simple RejectionDiagnosticId.MalformedUnicode
         | TextViolation.SurroundingWhitespace -> simple RejectionDiagnosticId.SurroundingWhitespace
-        | TextViolation.TooShort minimum ->
-            create
-                RejectionDiagnosticId.TextTooShort
-                (DiagnosticParameters.MinimumCharacters minimum)
         | TextViolation.TooLong maximum ->
             create
                 RejectionDiagnosticId.TextTooLong
@@ -58,36 +53,19 @@ module RejectionDiagnostics =
                 RejectionDiagnosticId.DecimalFormat
                 (DiagnosticParameters.DecimalDigits(integer, fraction))
         | AmountViolation.CurrencyFormat -> simple RejectionDiagnosticId.CurrencyFormat
-        | AmountViolation.NotRepresentable -> simple RejectionDiagnosticId.AmountNotRepresentable
 
     let private command =
         function
         | ActViolation.EmptyOperationId -> simple RejectionDiagnosticId.EmptyOperationId
         | ActViolation.ExpectedRevisionOutOfRange ->
             simple RejectionDiagnosticId.ExpectedRevisionOutOfRange
-        | ActViolation.StoredRevisionOutOfRange ->
-            simple RejectionDiagnosticId.StoredRevisionOutOfRange
-        | ActViolation.CaseReferenceMismatch -> simple RejectionDiagnosticId.CaseReferenceMismatch
-        | ActViolation.StateTransitionMismatch ->
-            simple RejectionDiagnosticId.StateTransitionMismatch
-        | ActViolation.ExactInputsRequired -> simple RejectionDiagnosticId.ExactInputsRequired
-        | ActViolation.GroupedCorrectionRequired ->
-            simple RejectionDiagnosticId.GroupedCorrectionRequired
 
     let private correction =
         function
-        | CorrectionViolation.CompleteDecisionRequired ->
-            simple RejectionDiagnosticId.CompleteDecisionRequired
         | CorrectionViolation.PaymentClearRequired ->
             simple RejectionDiagnosticId.PaymentClearRequired
         | CorrectionViolation.PaymentAcknowledgementRequired ->
             simple RejectionDiagnosticId.PaymentAcknowledgementRequired
-        | CorrectionViolation.PaymentDecisionRequired ->
-            simple RejectionDiagnosticId.PaymentDecisionRequired
-        | CorrectionViolation.ReplacementFieldsRequired ->
-            simple RejectionDiagnosticId.ReplacementFieldsRequired
-        | CorrectionViolation.RegistrationCannotBeCleared ->
-            simple RejectionDiagnosticId.RegistrationCannotBeCleared
 
     let private input =
         function
@@ -151,7 +129,6 @@ module RejectionDiagnostics =
     let values (diagnostic: RejectionDiagnostic) =
         match diagnostic.Parameters with
         | DiagnosticParameters.None -> []
-        | DiagnosticParameters.MinimumCharacters value -> [ "minimumCharacters", value ]
         | DiagnosticParameters.MaximumCharacters value -> [ "maximumCharacters", value ]
         | DiagnosticParameters.DecimalDigits(integer, fraction) ->
             [ "maximumIntegerDigits", integer; "maximumFractionalDigits", fraction ]

@@ -3,8 +3,7 @@ namespace ClaimCore.Domain
 /// Describes an existing business field; descriptors are not additional claim entries.
 type FieldDefinition =
     {
-        Name: string
-        NativeName: string
+        Name: BusinessField
         Label: string
         Meaning: string
         Scalar: ScalarRule
@@ -86,10 +85,9 @@ module FieldDefinitions =
 
     let private status = ScalarRule.CaseStatus { AllowedValues = CaseStatuses.all }
 
-    let private field name nativeName label meaning scalar allowsAbsence =
+    let private field name label meaning scalar allowsAbsence =
         {
             Name = name
-            NativeName = nativeName
             Label = label
             Meaning = meaning
             Scalar = scalar
@@ -99,22 +97,19 @@ module FieldDefinitions =
     let private incidentFields =
         [
             field
-                "incidentDate"
-                "IncidentDate"
+                BusinessField.IncidentDate
                 "Incident date"
                 "Date on which the incident occurred."
                 calendarDate
                 false
             field
-                "incidentNotificationDate"
-                "IncidentNotificationDate"
+                BusinessField.IncidentNotificationDate
                 "Incident notification date (FNOL)"
                 "Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified."
                 calendarDate
                 false
             field
-                "incidentCountry"
-                "IncidentCountry"
+                BusinessField.IncidentCountry
                 "Country of incident (ISO alpha-2 code)"
                 "Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international."
                 (ScalarRule.Text(token "[A-Z]{2}"))
@@ -124,29 +119,25 @@ module FieldDefinitions =
     let private registrationPartiesAndClaim =
         [
             field
-                "claimantName"
-                "ClaimantName"
+                BusinessField.ClaimantName
                 "Claimant name"
                 "Name of the person or company making the claim."
                 (ScalarRule.Text(text 200))
                 false
             field
-                "insurerName"
-                "InsurerName"
+                BusinessField.InsurerName
                 "Responsible insurer"
                 "Insurer recorded by the claims handler as responsible for this claim."
                 (ScalarRule.Text(text 200))
                 false
             field
-                "claimedAmount"
-                "ClaimedAmount"
+                BusinessField.ClaimedAmount
                 "Amount claimed"
                 "Amount requested by the claimant."
                 amount
                 false
             field
-                "claimedCurrency"
-                "ClaimedCurrency"
+                BusinessField.ClaimedCurrency
                 "Currency of claimed amount"
                 "Currency in which the amount is claimed."
                 currency
@@ -156,8 +147,7 @@ module FieldDefinitions =
     let private caseIdentity =
         [
             field
-                "caseReference"
-                "CaseReference"
+                BusinessField.CaseReference
                 "Handler's case reference"
                 "Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained."
                 (ScalarRule.Text(token "[!-~]{1,80}"))
@@ -167,36 +157,31 @@ module FieldDefinitions =
     let private decisionPaymentAndStatus =
         [
             field
-                "paymentDecisionDate"
-                "PaymentDecisionDate"
+                BusinessField.PaymentDecisionDate
                 "Payment decision date"
                 "Date when this claims handler decided the amount to be paid. Not recorded until a decision is made."
                 calendarDate
                 true
             field
-                "payableAmount"
-                "PayableAmount"
+                BusinessField.PayableAmount
                 "Amount to be paid"
                 "Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount."
                 amount
                 true
             field
-                "payableCurrency"
-                "PayableCurrency"
+                BusinessField.PayableCurrency
                 "Currency of amount to be paid"
                 "Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency."
                 currency
                 true
             field
-                "paymentDate"
-                "PaymentDate"
+                BusinessField.PaymentDate
                 "Payment date"
                 "Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer."
                 calendarDate
                 true
             field
-                "status"
-                "Status"
+                BusinessField.Status
                 "Case status"
                 "Whether the case is open or closed. Closing a case does not mean that payment was made."
                 status
@@ -209,34 +194,29 @@ module FieldDefinitions =
         @ caseIdentity
         @ decisionPaymentAndStatus
 
-    /// Unknown field keys are programmer errors; no user input chooses validation budgets.
-    let forName name =
-        all
-        |> List.tryFind (fun field -> field.Name = name)
-        |> Option.defaultWith (fun () -> invalidArg "name" "The field is not declared.")
+    let forField field =
+        all |> List.find (fun definition -> definition.Name = field)
 
-    /// The scalar definition is the single source for Domain validation and semantic discovery.
-    let scalar name =
-        if name = "reason" then
-            ScalarRule.Text(text 200)
-        else
-            (forName name).Scalar
+    let scalar =
+        function
+        | InputField.Reason -> ScalarRule.Text(text 200)
+        | InputField.Business field -> (forField field).Scalar
 
     /// Core-owned scalar projection in the same order as the thirteen-field definition.
     /// Values stay exact text; adapters choose layout, not interpretation or calculations.
     let values (fields: CaseFields) =
         [
-            "incidentDate", Some fields.IncidentDate
-            "incidentNotificationDate", Some fields.IncidentNotificationDate
-            "incidentCountry", Some fields.IncidentCountry
-            "claimantName", Some fields.ClaimantName
-            "insurerName", Some fields.InsurerName
-            "claimedAmount", Some fields.ClaimedAmount
-            "claimedCurrency", Some fields.ClaimedCurrency
-            "caseReference", Some fields.CaseReference
-            "paymentDecisionDate", fields.PaymentDecisionDate
-            "payableAmount", fields.PayableAmount
-            "payableCurrency", fields.PayableCurrency
-            "paymentDate", fields.PaymentDate
-            "status", Some(CaseStatuses.token fields.Status)
+            BusinessField.IncidentDate, Some fields.IncidentDate
+            BusinessField.IncidentNotificationDate, Some fields.IncidentNotificationDate
+            BusinessField.IncidentCountry, Some fields.IncidentCountry
+            BusinessField.ClaimantName, Some fields.ClaimantName
+            BusinessField.InsurerName, Some fields.InsurerName
+            BusinessField.ClaimedAmount, Some fields.ClaimedAmount
+            BusinessField.ClaimedCurrency, Some fields.ClaimedCurrency
+            BusinessField.CaseReference, Some fields.CaseReference
+            BusinessField.PaymentDecisionDate, fields.PaymentDecisionDate
+            BusinessField.PayableAmount, fields.PayableAmount
+            BusinessField.PayableCurrency, fields.PayableCurrency
+            BusinessField.PaymentDate, fields.PaymentDate
+            BusinessField.Status, Some(CaseStatuses.token fields.Status)
         ]

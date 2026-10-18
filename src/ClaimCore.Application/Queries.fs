@@ -62,7 +62,7 @@ module internal Queries =
                     [ CorrectionGroupAction.Keep ]
 
             {
-                Input = "groups." + group
+                Input = "groups." + CorrectionGroup.token group
                 Values =
                     actions
                     |> List.map (function
@@ -93,13 +93,13 @@ module internal Queries =
 
     let private caseOffer principal actor resource accepted (snapshot: CaseSnapshot) kind =
         let choices =
-            if kind = CaseActKind.CorrectCase then
+            if kind = (CaseActKind.Business BusinessActKind.CorrectCase) then
                 correctionChoices principal actor resource accepted
             else
                 []
 
         if
-            kind = CaseActKind.CorrectCase
+            kind = (CaseActKind.Business BusinessActKind.CorrectCase)
             && (choices |> List.forall (fun choice -> choice.Values = [ "KEEP" ]))
         then
             None

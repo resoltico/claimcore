@@ -691,16 +691,6 @@ export const productMetadata = { descriptors: {
       "parameters": []
     },
     {
-      "id": "INPUT_TEXT_TOO_SHORT",
-      "parameters": [
-        {
-          "name": "minimumCharacters",
-          "minimum": 0,
-          "maximum": 2147483647
-        }
-      ]
-    },
-    {
       "id": "INPUT_TEXT_TOO_LONG",
       "parameters": [
         {
@@ -758,10 +748,6 @@ export const productMetadata = { descriptors: {
       "parameters": []
     },
     {
-      "id": "INPUT_AMOUNT_NOT_REPRESENTABLE",
-      "parameters": []
-    },
-    {
       "id": "COMMAND_OPERATION_ID_REQUIRED",
       "parameters": []
     },
@@ -770,31 +756,7 @@ export const productMetadata = { descriptors: {
       "parameters": []
     },
     {
-      "id": "STATE_STORED_REVISION_RANGE",
-      "parameters": []
-    },
-    {
       "id": "REVISION_EXHAUSTED",
-      "parameters": []
-    },
-    {
-      "id": "STATE_CASE_REFERENCE_MISMATCH",
-      "parameters": []
-    },
-    {
-      "id": "STATE_TRANSITION_MISMATCH",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_EXACT_FIELDS_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "COMMAND_GROUPED_CORRECTION_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_COMPLETE_DECISION_REQUIRED",
       "parameters": []
     },
     {
@@ -803,18 +765,6 @@ export const productMetadata = { descriptors: {
     },
     {
       "id": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_PAYMENT_DECISION_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_REPLACEMENT_FIELDS_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_REGISTRATION_CLEAR_FORBIDDEN",
       "parameters": []
     },
     {
@@ -1019,4 +969,4 @@ export const productMetadata = { descriptors: {
     "maximumPageSize": 50,
     "requestByteLimit": 65536
   }
-}, productVersion: "0.10.0", wireFingerprint: "21373e3587aaf51f32b86f76e9787ac752551e5aaca16502e725355afe05eff1" } as const;
+}, productVersion: "0.10.0", wireFingerprint: "1c3ce3cff503654a0541dd7f385f05306ea1de1b673f02e61e1de38ad34c3a3d" } as const;

@@ -199,7 +199,7 @@ type QueryOutcome<'value> =
 
 type FieldDiff =
     {
-        FieldName: string
+        FieldName: BusinessField
         Before: string option
         After: string option
     }

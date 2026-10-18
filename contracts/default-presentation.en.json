@@ -304,11 +304,6 @@
       "literal": "Use an integer revision from 0 through 9007199254740991."
     }
   ],
-  "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
-    {
-      "literal": "Supply all three tagged correction groups."
-    }
-  ],
   "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [
     {
       "literal": "Use a non-empty UUID."
@@ -334,11 +329,6 @@
       "literal": "The store is unavailable. Retry."
     }
   ],
-  "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
-    {
-      "literal": "Decision date, payable amount and payable currency must be present together or all absent."
-    }
-  ],
   "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
     {
       "literal": "A correction can only replace or clear a value already recorded on this case."
@@ -357,21 +347,6 @@
   "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
     {
       "literal": "Clearing a paid decision requires clearing the payment record."
-    }
-  ],
-  "diagnostic.CORRECTION_PAYMENT_DECISION_REQUIRED": [
-    {
-      "literal": "A payment record requires a complete payment decision."
-    }
-  ],
-  "diagnostic.CORRECTION_REGISTRATION_CLEAR_FORBIDDEN": [
-    {
-      "literal": "Registration cannot be cleared."
-    }
-  ],
-  "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
-    {
-      "literal": "Use REPLACE with every declared field."
     }
   ],
   "diagnostic.HOST_ANTIFORGERYREJECTED": [
@@ -454,11 +429,6 @@
       "literal": "This role requires a human principal."
     }
   ],
-  "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
-    {
-      "literal": "The decimal amount cannot be represented exactly."
-    }
-  ],
   "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
     {
       "literal": "Use one valid calendar date in YYYY-MM-DD format."
@@ -506,11 +476,6 @@
       "literal": " fractional digits; no sign or exponent."
     }
   ],
-  "diagnostic.INPUT_EXACT_FIELDS_REQUIRED": [
-    {
-      "literal": "Supply each declared command input exactly once, with no extra fields."
-    }
-  ],
   "diagnostic.INPUT_FUTURE_DATE": [
     {
       "literal": "A future date cannot record an event that has already occurred."
@@ -537,17 +502,6 @@
     },
     {
       "hole": "maximumCharacters"
-    },
-    {
-      "literal": " Unicode characters."
-    }
-  ],
-  "diagnostic.INPUT_TEXT_TOO_SHORT": [
-    {
-      "literal": "The value must contain at least "
-    },
-    {
-      "hole": "minimumCharacters"
     },
     {
       "literal": " Unicode characters."
@@ -592,21 +546,6 @@
   "diagnostic.REVISION_EXHAUSTED": [
     {
       "literal": "The case has reached its final revision."
-    }
-  ],
-  "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
-    {
-      "literal": "The loaded case does not match this command."
-    }
-  ],
-  "diagnostic.STATE_STORED_REVISION_RANGE": [
-    {
-      "literal": "Stored revisions must be integers from 1 through 9007199254740991."
-    }
-  ],
-  "diagnostic.STATE_TRANSITION_MISMATCH": [
-    {
-      "literal": "The state guard and payment transition disagree."
     }
   ],
   "diagnostic.TEXT_FORMATTING_CHARACTER": [

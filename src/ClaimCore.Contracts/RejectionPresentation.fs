@@ -8,7 +8,6 @@ open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 type DiagnosticHole =
-    | MinimumCharacters
     | MaximumCharacters
     | MaximumIntegerDigits
     | MaximumFractionalDigits
@@ -47,8 +46,6 @@ module RejectionPresentation =
             "A future date cannot record an event that has already occurred."
             RejectionDiagnosticId.CurrencyFormat,
             "Use three uppercase ASCII letters (A–Z) for the currency identifier."
-            RejectionDiagnosticId.AmountNotRepresentable,
-            "The decimal amount cannot be represented exactly."
         ]
 
     let private command =
@@ -56,32 +53,15 @@ module RejectionPresentation =
             RejectionDiagnosticId.EmptyOperationId, "Use a non-empty UUID."
             RejectionDiagnosticId.ExpectedRevisionOutOfRange,
             "Use an integer revision from 0 through 9007199254740991."
-            RejectionDiagnosticId.StoredRevisionOutOfRange,
-            "Stored revisions must be integers from 1 through 9007199254740991."
             RejectionDiagnosticId.RevisionExhausted, "The case has reached its final revision."
-            RejectionDiagnosticId.CaseReferenceMismatch,
-            "The loaded case does not match this command."
-            RejectionDiagnosticId.StateTransitionMismatch,
-            "The state guard and payment transition disagree."
-            RejectionDiagnosticId.ExactInputsRequired,
-            "Supply each declared command input exactly once, with no extra fields."
-            RejectionDiagnosticId.GroupedCorrectionRequired,
-            "Supply all three tagged correction groups."
         ]
 
     let private correction =
         [
-            RejectionDiagnosticId.CompleteDecisionRequired,
-            "Decision date, payable amount and payable currency must be present together or all absent."
             RejectionDiagnosticId.PaymentClearRequired,
             "Clearing a paid decision requires clearing the payment record."
             RejectionDiagnosticId.PaymentAcknowledgementRequired,
             "Replacing a paid decision requires explicit payment reaffirmation or clearing the payment record."
-            RejectionDiagnosticId.PaymentDecisionRequired,
-            "A payment record requires a complete payment decision."
-            RejectionDiagnosticId.ReplacementFieldsRequired,
-            "Use REPLACE with every declared field."
-            RejectionDiagnosticId.RegistrationCannotBeCleared, "Registration cannot be cleared."
         ]
 
     let private case =
@@ -92,9 +72,9 @@ module RejectionPresentation =
             "Read the current case before making a changed request."
             RejectionDiagnosticId.CaseClosed,
             "This action cannot change a closed case. Use "
-            + action CaseActKind.CorrectCase
+            + action (CaseActKind.Business BusinessActKind.CorrectCase)
             + " for factual corrections while keeping its status, or "
-            + action CaseActKind.Reopen
+            + action (CaseActKind.Business BusinessActKind.Reopen)
             + " when you intend to resume ordinary case work."
             RejectionDiagnosticId.AlreadyClosed, "The case is already closed."
             RejectionDiagnosticId.AlreadyOpened, "The case is already open."
@@ -103,9 +83,9 @@ module RejectionPresentation =
     let private progress =
         [
             RejectionDiagnosticId.AmendmentRequiresUndecided,
-            action CaseActKind.AmendRegistration
+            action (CaseActKind.Business BusinessActKind.AmendRegistration)
             + " requires an undecided case. Use "
-            + action CaseActKind.CorrectCase
+            + action (CaseActKind.Business BusinessActKind.CorrectCase)
             + " to correct recorded registration while keeping its decision."
             RejectionDiagnosticId.CorrectionNoChanges,
             "Choose at least one factual correction that changes the current case."
@@ -115,11 +95,11 @@ module RejectionPresentation =
             RejectionDiagnosticId.PaymentAlreadyRecorded, "ClaimCore records one full payment."
             RejectionDiagnosticId.PaymentNotRecorded, "There is no payment record to clear."
             RejectionDiagnosticId.DecisionAlreadyPaid,
-            action CaseActKind.Decide
+            action (CaseActKind.Business BusinessActKind.Decide)
             + " and "
-            + action CaseActKind.WithdrawDecision
+            + action (CaseActKind.Business BusinessActKind.WithdrawDecision)
             + " cannot change a paid decision. Use "
-            + action CaseActKind.CorrectCase
+            + action (CaseActKind.Business BusinessActKind.CorrectCase)
             + " for a factual correction, with explicit payment reaffirmation or clearing when replacing a paid decision."
             RejectionDiagnosticId.ZeroDecisionCannotBePaid, "A zero decision is not a payment."
         ]
@@ -157,12 +137,6 @@ module RejectionPresentation =
         let hole = DiagnosticTextPart.Hole
 
         match identifier with
-        | RejectionDiagnosticId.TextTooShort ->
-            [
-                literal "The value must contain at least "
-                hole DiagnosticHole.MinimumCharacters
-                literal " Unicode characters."
-            ]
         | RejectionDiagnosticId.TextTooLong ->
             [
                 literal "The value must not exceed "
@@ -187,7 +161,6 @@ module RejectionPresentation =
 
     let holeName =
         function
-        | DiagnosticHole.MinimumCharacters -> "minimumCharacters"
         | DiagnosticHole.MaximumCharacters -> "maximumCharacters"
         | DiagnosticHole.MaximumIntegerDigits -> "maximumIntegerDigits"
         | DiagnosticHole.MaximumFractionalDigits -> "maximumFractionalDigits"
@@ -195,7 +168,6 @@ module RejectionPresentation =
 
     let private holeValue parameters hole =
         match hole, parameters with
-        | DiagnosticHole.MinimumCharacters, DiagnosticParameters.MinimumCharacters value
         | DiagnosticHole.MaximumCharacters, DiagnosticParameters.MaximumCharacters value
         | DiagnosticHole.MaximumPageSize, DiagnosticParameters.MaximumPageSize value ->
             integer value

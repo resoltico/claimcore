@@ -24,7 +24,10 @@ module internal WireSchema =
     let tagged tag properties =
         objectOf (property "tag" (token tag) :: properties)
 
-    let reference = FieldDefinitions.scalar "caseReference" |> ScalarSchemas.scalar
+    let reference =
+        FieldDefinitions.scalar (InputField.Business BusinessField.CaseReference)
+        |> ScalarSchemas.scalar
+
     let command = CaseActKinds.all |> List.map CaseActKinds.token |> enumeration
     let disposition = enumeration [ "ACTIVE"; "VOIDED" ]
 

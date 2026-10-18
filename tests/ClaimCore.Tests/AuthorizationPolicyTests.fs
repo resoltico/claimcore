@@ -367,17 +367,17 @@ let private absentCorrectionValues () =
     let record = opened ()
 
     Expect.equal
-        (Case.correctionActions record "decision")
+        (Case.correctionActions record CorrectionGroup.Decision)
         [ CorrectionGroupAction.Keep ]
         "A correction cannot introduce a missing decision"
 
     Expect.equal
-        (Case.correctionActions record "payment")
+        (Case.correctionActions record CorrectionGroup.Payment)
         [ CorrectionGroupAction.Keep ]
         "A correction cannot introduce a missing payment"
 
     Expect.equal
-        (Case.correctionActions (decided ()) "payment")
+        (Case.correctionActions (decided ()) CorrectionGroup.Payment)
         [ CorrectionGroupAction.Keep ]
         "Decision presence does not permit introducing a payment through correction"
 
@@ -404,7 +404,7 @@ let private noUsableCorrectionOffer () =
         Queries.caseRecord installation human (Some authority) record |> accepted
 
     Expect.isFalse
-        (List.contains CaseActKind.CorrectCase advice.AvailableActs)
+        (List.contains (CaseActKind.Business BusinessActKind.CorrectCase) advice.AvailableActs)
         "A payment-only actor cannot correct a record without a payment"
 
     Expect.isFalse

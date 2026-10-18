@@ -4,7 +4,7 @@ open System
 open Expecto
 open ClaimCore.Domain
 
-let private scalar name = (FieldDefinitions.forName name).Scalar
+let private scalar name = (FieldDefinitions.forField name).Scalar
 
 let private expectText name maximum =
     match scalar name with
@@ -24,7 +24,7 @@ let private expectText name maximum =
         Expect.isTrue
             policy.RejectsForbiddenInvisibleCharacters
             "Explicit formatting character admission"
-    | _ -> failtest (name + " must be a text scalar.")
+    | _ -> failtest (BusinessField.token name + " must be a text scalar.")
 
 let private expectFields kind expected =
     let definition = CommandDefinitions.forKind kind
@@ -37,20 +37,21 @@ let private expectFields kind expected =
             "Ordered semantic inputs"
     | CommandInputShape.CorrectionGroups _ -> failtest "Expected an ordered scalar input shape."
 
-let private blank fieldName = fieldName, PrefillSource.Blank
+let private blank fieldName =
+    InputField.Business fieldName, PrefillSource.Blank
 
 let private current fieldName =
-    fieldName, PrefillSource.CurrentField fieldName
+    InputField.Business fieldName, PrefillSource.CurrentField fieldName
 
 let private registrationFields =
     [
-        "incidentDate"
-        "incidentNotificationDate"
-        "incidentCountry"
-        "claimantName"
-        "insurerName"
-        "claimedAmount"
-        "claimedCurrency"
+        BusinessField.IncidentDate
+        BusinessField.IncidentNotificationDate
+        BusinessField.IncidentCountry
+        BusinessField.ClaimantName
+        BusinessField.InsurerName
+        BusinessField.ClaimedAmount
+        BusinessField.ClaimedCurrency
     ]
 
 let private textAndDateRuleTests =
@@ -58,11 +59,14 @@ let private textAndDateRuleTests =
         "text and date scalar descriptors"
         [
             testCase "text descriptors own every text validation constraint" (fun () ->
-                expectText "claimantName" 200
-                expectText "insurerName" 200
+                expectText BusinessField.ClaimantName 200
+                expectText BusinessField.InsurerName 200
 
                 for name, expected in
-                    [ "incidentCountry", "[A-Z]{2}"; "caseReference", "[!-~]{1,80}" ] do
+                    [
+                        BusinessField.IncidentCountry, "[A-Z]{2}"
+                        BusinessField.CaseReference, "[!-~]{1,80}"
+                    ] do
                     let constraints = scalar name |> ScalarRules.textConstraints
                     Expect.equal constraints.Format.Grammar (Some expected) "Permanent syntax"
 
@@ -72,17 +76,17 @@ let private textAndDateRuleTests =
             testCase "date descriptors define exact Gregorian input range" (fun () ->
                 for name in
                     [
-                        "incidentDate"
-                        "incidentNotificationDate"
-                        "paymentDecisionDate"
-                        "paymentDate"
+                        BusinessField.IncidentDate
+                        BusinessField.IncidentNotificationDate
+                        BusinessField.PaymentDecisionDate
+                        BusinessField.PaymentDate
                     ] do
                     match scalar name with
                     | ScalarRule.CalendarDate rule ->
                         Expect.equal rule.ExactFormat "yyyy-MM-dd" "Exact format"
                         Expect.equal rule.Minimum DateOnly.MinValue "Lower bound"
                         Expect.equal rule.Maximum DateOnly.MaxValue "Upper bound"
-                    | _ -> failtest (name + " must be a calendar-date scalar."))
+                    | _ -> failtest (BusinessField.token name + " must be a calendar-date scalar."))
         ]
 
 let private numericAndStatusRuleTests =
@@ -90,7 +94,7 @@ let private numericAndStatusRuleTests =
         "numeric and status scalar descriptors"
         [
             testCase "amount and currency descriptors own the existing exact grammars" (fun () ->
-                for name in [ "claimedAmount"; "payableAmount" ] do
+                for name in [ BusinessField.ClaimedAmount; BusinessField.PayableAmount ] do
                     match scalar name with
                     | ScalarRule.Amount rule ->
                         Expect.equal
@@ -102,9 +106,9 @@ let private numericAndStatusRuleTests =
                         Expect.equal rule.Grammar "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?" "Grammar"
                         Expect.equal rule.MaximumIntegerDigits 18 "Whole-digit bound"
                         Expect.equal rule.MaximumFractionalDigits 4 "Fractional-digit bound"
-                    | _ -> failtest (name + " must be an amount scalar.")
+                    | _ -> failtest (BusinessField.token name + " must be an amount scalar.")
 
-                for name in [ "claimedCurrency"; "payableCurrency" ] do
+                for name in [ BusinessField.ClaimedCurrency; BusinessField.PayableCurrency ] do
                     match scalar name with
                     | ScalarRule.Currency rule ->
                         Expect.equal
@@ -115,9 +119,9 @@ let private numericAndStatusRuleTests =
                         Expect.isNone rule.Text.Policy "No admission-only currency syntax"
                         Expect.equal rule.Grammar "[A-Z]{3}" "Grammar"
                         Expect.equal rule.ExactCharacters 3 "Exact length"
-                    | _ -> failtest (name + " must be a currency scalar."))
+                    | _ -> failtest (BusinessField.token name + " must be a currency scalar."))
             testCase "status descriptor is the closed Domain status vocabulary" (fun () ->
-                match scalar "status" with
+                match scalar BusinessField.Status with
                 | ScalarRule.CaseStatus rule ->
                     Expect.equal rule.AllowedValues CaseStatuses.all "No renderer-owned status"
                 | _ -> failtest "status must be a case-status scalar.")
@@ -144,27 +148,27 @@ let private scalarOwnershipTests =
 
 let private expectedCorrectionGroups =
     [
-        ("registration",
+        (CorrectionGroup.Registration,
          [ CorrectionGroupAction.Keep; CorrectionGroupAction.Replace ],
          (registrationFields |> List.map current))
-        ("decision",
+        (CorrectionGroup.Decision,
          [
              CorrectionGroupAction.Keep
              CorrectionGroupAction.Replace
              CorrectionGroupAction.Clear
          ],
          [
-             current "paymentDecisionDate"
-             current "payableAmount"
-             current "payableCurrency"
+             current BusinessField.PaymentDecisionDate
+             current BusinessField.PayableAmount
+             current BusinessField.PayableCurrency
          ])
-        ("payment",
+        (CorrectionGroup.Payment,
          [
              CorrectionGroupAction.Keep
              CorrectionGroupAction.Replace
              CorrectionGroupAction.Clear
          ],
-         [ current "paymentDate" ])
+         [ current BusinessField.PaymentDate ])
     ]
 
 let private correctionGroupDetails groups =
@@ -183,26 +187,36 @@ let private commandInventoryTest =
 
 let private commandPrefillTest =
     testCase "command inputs have exact ordered prefill sources" (fun () ->
-        expectFields CaseActKind.Open (registrationFields |> List.map blank)
-        expectFields CaseActKind.AmendRegistration (registrationFields |> List.map current)
+        expectFields
+            (CaseActKind.Business BusinessActKind.Open)
+            (registrationFields |> List.map blank)
 
         expectFields
-            CaseActKind.Decide
+            (CaseActKind.Business BusinessActKind.AmendRegistration)
+            (registrationFields |> List.map current)
+
+        expectFields
+            (CaseActKind.Business BusinessActKind.Decide)
             [
-                current "paymentDecisionDate"
-                current "payableAmount"
-                current "payableCurrency"
+                current BusinessField.PaymentDecisionDate
+                current BusinessField.PayableAmount
+                current BusinessField.PayableCurrency
             ]
 
-        expectFields CaseActKind.WithdrawDecision []
-        expectFields CaseActKind.RecordPayment [ blank "paymentDate" ]
-        expectFields CaseActKind.ClearPayment []
-        expectFields CaseActKind.Close []
-        expectFields CaseActKind.Reopen [])
+        expectFields (CaseActKind.Business BusinessActKind.WithdrawDecision) []
+
+        expectFields
+            (CaseActKind.Business BusinessActKind.RecordPayment)
+            [ blank BusinessField.PaymentDate ]
+
+        expectFields (CaseActKind.Business BusinessActKind.ClearPayment) []
+        expectFields (CaseActKind.Business BusinessActKind.Close) []
+        expectFields (CaseActKind.Business BusinessActKind.Reopen) [])
 
 let private correctionGroupMetadataTest =
     testCase "CORRECT_CASE describes required tagged groups and replacement fields" (fun () ->
-        let definition = CommandDefinitions.forKind CaseActKind.CorrectCase
+        let definition =
+            CommandDefinitions.forKind (CaseActKind.Business BusinessActKind.CorrectCase)
 
         match definition.Inputs with
         | CommandInputShape.Fields _ -> failtest "CORRECT_CASE requires grouped inputs."
@@ -226,8 +240,13 @@ let private derivedFieldsAreNotCommandInputsTest =
     testCase "case reference and derived status are never command inputs" (fun () ->
         let inputs = authoredInputFields ()
 
-        Expect.isFalse (Set.contains "caseReference" inputs) "Immutable target is separate"
-        Expect.isFalse (Set.contains "status" inputs) "Status is core-derived")
+        Expect.isFalse
+            (Set.contains (InputField.Business BusinessField.CaseReference) inputs)
+            "Immutable target is separate"
+
+        Expect.isFalse
+            (Set.contains (InputField.Business BusinessField.Status) inputs)
+            "Status is core-derived")
 
 let private commandInputTests =
     testList

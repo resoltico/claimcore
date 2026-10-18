@@ -60,7 +60,7 @@ module internal WireValues =
 
     let private fields value =
         FieldDefinitions.values value
-        |> List.map (fun (key, value) -> key, optional text value)
+        |> List.map (fun (key, value) -> BusinessField.token key, optional text value)
         |> obj
 
     let private state available =
@@ -215,7 +215,7 @@ module internal WireValues =
                  |> List.map (fun value ->
                      obj
                          [
-                             "field", text value.FieldName
+                             "field", text (BusinessField.token value.FieldName)
                              "before", optional text value.Before
                              "after", optional text value.After
                          ])

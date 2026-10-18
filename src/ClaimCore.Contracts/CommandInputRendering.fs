@@ -10,13 +10,13 @@ open ClaimCore.Domain
 module internal CommandInputRendering =
     let private field (writer: Utf8JsonWriter) (input: FieldInputDefinition) =
         writer.WriteStartObject()
-        writer.WriteString("fieldName", input.FieldName)
+        writer.WriteString("fieldName", InputField.token input.FieldName)
 
         match input.Prefill with
         | PrefillSource.Blank -> writer.WriteString("prefill", "BLANK")
         | PrefillSource.CurrentField fieldName ->
             writer.WriteString("prefill", "CURRENT_FIELD")
-            writer.WriteString("currentField", fieldName)
+            writer.WriteString("currentField", BusinessField.token fieldName)
 
         writer.WriteEndObject()
 
@@ -45,7 +45,7 @@ module internal CommandInputRendering =
             groups
             |> List.iter (fun group ->
                 writer.WriteStartObject()
-                writer.WriteString("name", group.Name)
+                writer.WriteString("name", CorrectionGroup.token group.Name)
                 writer.WriteString("label", group.Label)
                 writer.WriteString("meaning", group.Meaning)
                 writer.WritePropertyName("actions")

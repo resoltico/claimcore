@@ -62,13 +62,17 @@ module internal CaseCorrections =
     let availableActions progress group =
         let present =
             match group with
-            | "registration" -> true
-            | "decision" -> decisionChoice progress ValidatedDecisionCorrection.Clear |> Result.isOk
-            | "payment" -> paymentChoice progress ValidatedPaymentCorrection.Clear |> Result.isOk
-            | _ -> invalidArg "group" "Unknown correction group."
+            | CorrectionGroup.Registration -> true
+            | CorrectionGroup.Decision ->
+                decisionChoice progress ValidatedDecisionCorrection.Clear |> Result.isOk
+            | CorrectionGroup.Payment ->
+                paymentChoice progress ValidatedPaymentCorrection.Clear |> Result.isOk
 
         let definition =
-            match (CommandDefinitions.forKind CaseActKind.CorrectCase).Inputs with
+            match
+                (CommandDefinitions.forKind (CaseActKind.Business BusinessActKind.CorrectCase))
+                    .Inputs
+            with
             | CommandInputShape.CorrectionGroups groups ->
                 groups |> List.find (fun value -> value.Name = group)
             | _ -> invalidOp "Correction requires explicit groups."

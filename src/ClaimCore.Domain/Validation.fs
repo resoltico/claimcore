@@ -38,11 +38,29 @@ module internal Validation =
             RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
         )
 
+    let private scalarField =
+        function
+        | InputTarget.IncidentDate -> InputField.Business BusinessField.IncidentDate
+        | InputTarget.IncidentNotificationDate ->
+            InputField.Business BusinessField.IncidentNotificationDate
+        | InputTarget.IncidentCountry -> InputField.Business BusinessField.IncidentCountry
+        | InputTarget.ClaimantName -> InputField.Business BusinessField.ClaimantName
+        | InputTarget.InsurerName -> InputField.Business BusinessField.InsurerName
+        | InputTarget.ClaimedAmount -> InputField.Business BusinessField.ClaimedAmount
+        | InputTarget.ClaimedCurrency -> InputField.Business BusinessField.ClaimedCurrency
+        | InputTarget.CaseReference -> InputField.Business BusinessField.CaseReference
+        | InputTarget.PaymentDecisionDate -> InputField.Business BusinessField.PaymentDecisionDate
+        | InputTarget.PayableAmount -> InputField.Business BusinessField.PayableAmount
+        | InputTarget.PayableCurrency -> InputField.Business BusinessField.PayableCurrency
+        | InputTarget.PaymentDate -> InputField.Business BusinessField.PaymentDate
+        | InputTarget.Reason -> InputField.Reason
+        | _ -> invalidArg "field" "The diagnostic target has no scalar definition."
+
     let private textGrammar field =
         match field with
         | InputTarget.CaseReference
         | InputTarget.IncidentCountry ->
-            FieldDefinitions.scalar (InputTargets.token field)
+            FieldDefinitions.scalar (scalarField field)
             |> ScalarRules.textConstraints
             |> _.Format.Grammar
         | _ -> None
@@ -56,6 +74,13 @@ module internal Validation =
             failure TextViolation.NonBlankRequired
         elif not (UnicodeText.isPersisted value) then
             failure TextViolation.MalformedUnicode
+        elif
+            (field = InputTarget.ClaimantName
+             || field = InputTarget.InsurerName
+             || field = InputTarget.Reason)
+            && Encoding.UTF8.GetByteCount value > TextFormat.MaximumFreeTextBytes
+        then
+            failure (TextViolation.TooLong TextFormat.MaximumFreeTextBytes)
         elif textGrammar field |> Option.exists (fun pattern -> not (matches pattern value)) then
             failure (
                 if field = InputTarget.CaseReference then
@@ -85,8 +110,7 @@ module internal Validation =
     /// Called only after format validation, when a value is newly asserted.
     let admission field (value: string) =
         let constraints =
-            FieldDefinitions.scalar (InputTargets.token field)
-            |> ScalarRules.textConstraints
+            FieldDefinitions.scalar (scalarField field) |> ScalarRules.textConstraints
 
         let failure violation =
             invalid field (InputViolation.Text violation)
@@ -120,7 +144,7 @@ module internal Validation =
         }
 
     let date field (value: string) =
-        match FieldDefinitions.scalar (InputTargets.token field) with
+        match FieldDefinitions.scalar (scalarField field) with
         | ScalarRule.CalendarDate constraints ->
             match
                 DateOnly.TryParseExact(
@@ -157,8 +181,8 @@ module internal Validation =
             let! currency = text currencyField rawCurrency
 
             match
-                FieldDefinitions.scalar (InputTargets.token amountField),
-                FieldDefinitions.scalar (InputTargets.token currencyField)
+                FieldDefinitions.scalar (scalarField amountField),
+                FieldDefinitions.scalar (scalarField currencyField)
             with
             | ScalarRule.Amount amountRule, ScalarRule.Currency currencyRule ->
                 if not (matches amountRule.Grammar valueText) then
@@ -175,19 +199,16 @@ module internal Validation =
                     return!
                         invalid currencyField (InputViolation.Amount AmountViolation.CurrencyFormat)
                 else
-                    match
-                        Decimal.TryParse(
-                            valueText,
-                            NumberStyles.AllowDecimalPoint,
-                            CultureInfo.InvariantCulture
-                        )
-                    with
-                    | true, value -> return { Value = value; Currency = currency }
-                    | _ ->
-                        return!
-                            invalid
-                                amountField
-                                (InputViolation.Amount AmountViolation.NotRepresentable)
+                    return
+                        {
+                            Value =
+                                Decimal.Parse(
+                                    valueText,
+                                    NumberStyles.AllowDecimalPoint,
+                                    CultureInfo.InvariantCulture
+                                )
+                            Currency = currency
+                        }
             | _ ->
                 return
                     invalidArg

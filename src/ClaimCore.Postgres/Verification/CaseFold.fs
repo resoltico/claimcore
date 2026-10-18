@@ -26,12 +26,14 @@ module internal CaseFold =
 
         match act, disposition with
         | _ when erased -> Error(divergence (Some sequence) VerificationFinding.DispositionSequence)
-        | CaseActKind.Void, Disposition.Active -> Ok Disposition.Voided
-        | CaseActKind.Reinstate, Disposition.Voided -> Ok Disposition.Active
-        | CaseActKind.Void, Disposition.Voided
-        | CaseActKind.Reinstate, Disposition.Active ->
+        | (CaseActKind.Stewardship StewardshipActKind.Void), Disposition.Active ->
+            Ok Disposition.Voided
+        | (CaseActKind.Stewardship StewardshipActKind.Reinstate), Disposition.Voided ->
+            Ok Disposition.Active
+        | (CaseActKind.Stewardship StewardshipActKind.Void), Disposition.Voided
+        | (CaseActKind.Stewardship StewardshipActKind.Reinstate), Disposition.Active ->
             Error(divergence (Some sequence) VerificationFinding.DispositionSequence)
-        | CaseActKind.Erase, _ -> Ok disposition
+        | (CaseActKind.Stewardship StewardshipActKind.Erase), _ -> Ok disposition
         | _, Disposition.Voided ->
             Error(divergence (Some sequence) VerificationFinding.DispositionSequence)
         | _ -> Ok Disposition.Active
@@ -66,7 +68,7 @@ module internal CaseFold =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.HistoryStart
-                    ((previous.IsNone) = (act = CaseActKind.Open))
+                    ((previous.IsNone) = (act = (CaseActKind.Business BusinessActKind.Open)))
 
             let! disposition = nextDisposition entry.Sequence previous act
             let reference = previous |> Option.bind _.Reference
@@ -93,11 +95,11 @@ module internal CaseFold =
                         Snapshot = snapshot
                         Reference = reference
                         Disposition = disposition
-                        Erased = act = CaseActKind.Erase
+                        Erased = act = (CaseActKind.Stewardship StewardshipActKind.Erase)
                         MissingPayloadAt = missing
                         PresentPayloadAt = present
                         ErasedAt =
-                            if act = CaseActKind.Erase then
+                            if act = (CaseActKind.Stewardship StewardshipActKind.Erase) then
                                 Some entry.Sequence
                             else
                                 None

@@ -106,8 +106,8 @@ module ContractDescriptors =
 
         for field in FieldDefinitions.all do
             writer.WriteStartObject()
-            writer.WriteString("name", field.Name)
-            writer.WriteString("nativeName", field.NativeName)
+            writer.WriteString("name", BusinessField.token field.Name)
+            writer.WriteString("nativeName", string field.Name)
             writer.WriteString("label", field.Label)
             writer.WriteString("meaning", field.Meaning)
             writer.WriteBoolean("allowsAbsence", field.AllowsAbsence)
@@ -135,9 +135,9 @@ module ContractDescriptors =
                 "command." + CaseActKinds.token command.Kind + ".meaning"
             )
 
-            match command.ValuesMember with
-            | Some name -> writer.WriteString("valuesMember", name)
-            | None -> writer.WriteNull("valuesMember")
+            match command.Kind with
+            | CaseActKind.Business _ -> writer.WriteString("valuesMember", "values")
+            | CaseActKind.Stewardship _ -> writer.WriteNull("valuesMember")
 
             CommandInputRendering.write writer command.Inputs
             writer.WriteEndObject()
@@ -153,7 +153,7 @@ module ContractDescriptors =
         writer.WriteString("meaning", "Explain the record stewardship action.")
         writer.WritePropertyName("scalar")
         writer.WriteStartObject()
-        scalar writer (FieldDefinitions.scalar "reason")
+        scalar writer (FieldDefinitions.scalar InputField.Reason)
         writer.WriteEndObject()
         writer.WriteEndObject()
         writer.WriteEndArray()

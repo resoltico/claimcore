@@ -65,7 +65,12 @@ let internal seed (database: PostgresFixture.Database) claimant =
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
         let scope =
-            StoredScope.Case(id, 1L, CaseActKind.Open, fixture.Calendar.DateAt view.ObservedAt)
+            StoredScope.Case(
+                id,
+                1L,
+                (CaseActKind.Business BusinessActKind.Open),
+                fixture.Calendar.DateAt view.ObservedAt
+            )
 
         let entry =
             LedgerEntries.create

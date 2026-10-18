@@ -31,7 +31,7 @@ let private receipt =
                 {
                     Reference = "UNIT-001"
                     Revision = 1L
-                    Act = CaseActKind.Open
+                    Act = (CaseActKind.Business BusinessActKind.Open)
                     Snapshot = SnapshotDisclosure.Disclosed (Case.snapshot (opened ())).View
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
@@ -238,7 +238,7 @@ let private currentCaseCodecs () =
             QueryOutcome.Succeeded
                 {
                     Snapshot = snapshot
-                    AvailableActs = [ CaseActKind.Close ]
+                    AvailableActs = [ (CaseActKind.Business BusinessActKind.Close) ]
                     Offers = []
                     HistoryDetails = []
                 }

@@ -35,7 +35,7 @@ module internal VerificationPayload =
                      && CaseActs.kind request.Act = act
                      && CaseReferenceId.encode installationId request.CaseReference = id)
 
-            if act = CaseActKind.Erase then
+            if act = (CaseActKind.Stewardship StewardshipActKind.Erase) then
                 do!
                     require
                         (Some entry.Sequence)
