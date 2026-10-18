@@ -141,11 +141,30 @@ let private unicodeAndPolicy (database: PostgresFixture.Database) =
             "Projection dates parse independently of server DateStyle"
     }
 
+let private textByteBounds (database: PostgresFixture.Database) =
+    task {
+        let! _ = populated database
+
+        for value in [ String('a', 1024); String.replicate 256 "😀"; String(char 1, 1024) ] do
+            do!
+                sql
+                    database
+                    "UPDATE claimcore.cases SET claimant_name=$1,insurer_name=$1"
+                    [| box value |]
+
+        for value in [ String('a', 1025); String.replicate 257 "😀" ] do
+            do! rejected database "UPDATE claimcore.cases SET claimant_name=$1" [| box value |]
+            do! rejected database "UPDATE claimcore.cases SET insurer_name=$1" [| box value |]
+    }
+
 [<Tests>]
 let tests =
     testList
         "schema format and append-only boundaries"
         [
+            testCaseAsync
+                "names enforce permanent UTF-8 byte bounds independently of admission"
+                (run textByteBounds)
             testCaseAsync
                 "all runtime and owner SQLSTATE controls and state assertions execute"
                 (run structuralScenarios)

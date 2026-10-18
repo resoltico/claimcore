@@ -9,10 +9,13 @@
 --
 -- Integer domains: sequences and revisions are 1 .. 2^53-1 so every value is an exact JSON
 -- number in every client (I-JSON, RFC 7493). Checks below encode format invariants only:
--- shape, typed ranges and state invariants. Admission policy (text length, whitespace,
--- invisible or directional characters, dates not in the future) belongs to Domain and is
--- applied to newly asserted values only; it is deliberately absent here so that a later
--- policy change never invalidates accepted rows.
+-- shape, typed ranges, permanent byte bounds and state invariants. Admission policy (character
+-- counts, whitespace, invisible or directional characters, dates not in the future) belongs to
+-- Domain and is applied to newly asserted values only; it is deliberately absent here so that a
+-- later policy change never invalidates accepted rows.
+--
+-- Permanent byte bounds (RecordFormat FormatLimits): free business text is at most 1024 UTF-8
+-- bytes; a ledger payload (framed request plus snapshot) is at most 32768 bytes.
 
 CREATE SCHEMA claimcore;
 REVOKE ALL ON SCHEMA claimcore FROM PUBLIC;
@@ -97,7 +100,7 @@ CREATE TABLE claimcore.ledger (
     CONSTRAINT ledger_payload_shape CHECK (
         (payload IS NULL AND payload_nonce IS NULL)
         OR (payload IS NOT NULL AND payload_nonce IS NOT NULL
-            AND octet_length(payload) BETWEEN 9 AND 262144
+            AND octet_length(payload) BETWEEN 9 AND 32768
             AND octet_length(payload_nonce) = 32)
     ),
     -- Authority rows have NULL revision and therefore never collide here.
@@ -273,6 +276,7 @@ CREATE TABLE claimcore.cases (
     ),
     CONSTRAINT text_present CHECK (
         claimant_name <> '' AND insurer_name <> ''
+        AND octet_length(claimant_name) <= 1024 AND octet_length(insurer_name) <= 1024
         AND claimcore.is_interchange_text(claimant_name)
         AND claimcore.is_interchange_text(insurer_name)
     ),
@@ -325,6 +329,10 @@ CREATE TABLE claimcore.grants (
 );
 
 CREATE INDEX grants_case ON claimcore.grants (case_id) WHERE case_id IS NOT NULL;
+
+-- Resource-scoped authority reads load an actor's installation grants (case_id IS NULL) and its
+-- grants on the one case a request targets, never the actor's whole grant set.
+CREATE INDEX grants_actor_case ON claimcore.grants (actor_id, case_id);
 
 -- ---------------------------------------------------------------------------------------------
 -- Runtime privileges: least privilege for the one role the service connects as. It can append to
