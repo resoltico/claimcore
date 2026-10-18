@@ -115,18 +115,19 @@ module ActorAuthorization =
                 (CaseActKind.Stewardship StewardshipActKind.Erase), Capability.Steward
             ]
 
-    let correctionGroups =
-        [
-            CorrectionGroup.Registration, Capability.Register
-            CorrectionGroup.Decision, Capability.Decide
-            CorrectionGroup.Payment, Capability.RecordPayment
-        ]
-
     let correctionCapability =
         function
         | CorrectionGroup.Registration -> Capability.Register
         | CorrectionGroup.Decision -> Capability.Decide
         | CorrectionGroup.Payment -> Capability.RecordPayment
+
+    let correctionGroups =
+        [
+            CorrectionGroup.Registration
+            CorrectionGroup.Decision
+            CorrectionGroup.Payment
+        ]
+        |> List.map (fun group -> group, correctionCapability group)
 
     let private correctionCapabilities = correctionGroups |> List.map snd
 
