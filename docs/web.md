@@ -18,6 +18,12 @@ outcome. Durable execution continues despite an abandoned HTTP caller; loss of c
 is uncertain. Request logs contain only endpoint, outcome, status, durationMs, actorId and
 operationId. Exception diagnostics contain type and method stack, never exception messages.
 
+`CLAIMCORE_WEB_KEY_RING_DIRECTORY` is required and must name an existing absolute directory
+without group or other write permission. The host persists ASP.NET data-protection keys there
+under application name `ClaimCore.Web`. Reuse this directory after restart so session cookies
+and antiforgery tokens remain readable. A different directory cannot read them. Protect the
+key ring as a secret; its Linux XML files are unencrypted, and it is outside database backups.
+
 The editor freezes one draft identity and serialized request for review/execution. Editing
 an exposed request creates a fresh identity. Unknown delivery retains one pending request for
 retries of the same bytes while the page is alive; a closed/reloaded page retains no pending

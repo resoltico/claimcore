@@ -1,4 +1,4 @@
-module internal ClaimCore.AcceptanceTests.NativeNoticeManifest
+module internal ClaimCore.AcceptanceTests.ThirdPartyNoticeManifest
 
 open System
 open System.IO
@@ -6,7 +6,7 @@ open System.Security.Cryptography
 open System.Text.Json
 
 let refuse () =
-    invalidOp "Native publication notice coverage refused."
+    invalidOp "Third-party publication notice coverage refused."
 
 let require condition =
     if not condition then
@@ -62,9 +62,7 @@ type Package =
 
 type Host =
     {
-        Sdk: string
-        Version: string
-        Packs: string list
+        Assets: string list
         Texts: string list
     }
 
@@ -73,7 +71,6 @@ type Manifest =
         Texts: Text list
         Packages: Package list
         Host: Host
-        Native: string list
     }
 
 let private notice (value: JsonElement) =
@@ -108,20 +105,17 @@ let private package (value: JsonElement) =
     }
 
 let private host (value: JsonElement) =
-    fields [ "sdk"; "version"; "revision"; "packs"; "texts" ] value
-    text "revision" value |> ignore
+    fields [ "assets"; "texts" ] value
 
     {
-        Sdk = text "sdk" value
-        Version = text "version" value
-        Packs = strings "packs" value
+        Assets = strings "assets" value |> List.map filename
         Texts = strings "texts" value |> List.map filename
     }
 
 let read path =
     use document = JsonDocument.Parse(File.ReadAllBytes(path).AsMemory())
     let root = document.RootElement
-    fields [ "format"; "scope"; "texts"; "packages"; "host"; "native" ] root
+    fields [ "format"; "scope"; "texts"; "packages"; "host" ] root
     require (root.GetProperty("format").GetInt32() = 1)
     text "scope" root |> ignore
 
@@ -130,14 +124,6 @@ let read path =
 
     let packages =
         root.GetProperty("packages").EnumerateArray() |> Seq.map package |> Seq.toList
-
-    let native = root.GetProperty "native"
-    fields [ "project"; "assets"; "license" ] native
-
-    require (
-        text "project" native = "ClaimCore.HostSecurity"
-        && text "license" native = "LICENSE"
-    )
 
     require (
         not texts.IsEmpty
@@ -159,7 +145,6 @@ let read path =
         Texts = texts
         Packages = packages
         Host = host
-        Native = strings "assets" native |> List.map filename
     }
 
 let exactFile expected actual =
@@ -169,11 +154,11 @@ let exactFile expected actual =
 let delivered root directory =
     let owner = Path.Combine(root, "eng/licenses")
     let output = Path.Combine(directory, "licenses")
-    let manifest = read (Path.Combine(owner, "native-notices.json"))
+    let manifest = read (Path.Combine(owner, "third-party-notices.json"))
 
     exactFile
-        (Path.Combine(owner, "native-notices.json"))
-        (Path.Combine(output, "native-notices.json"))
+        (Path.Combine(owner, "third-party-notices.json"))
+        (Path.Combine(output, "third-party-notices.json"))
 
     for entry in manifest.Texts do
         let source = Path.Combine(owner, entry.File)

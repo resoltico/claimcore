@@ -195,7 +195,7 @@ let private connectionGuards
         let path = privateText directory "bad-connection" settings.ConnectionString
         let! failed = invoke binary path principal [ "head" ] 3
         Expect.equal (tag failed) "FAILED" "Authentication failure reveals no provider detail"
-        File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.GroupRead)
+        File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.GroupWrite)
         let! _ = invoke binary path principal [ "head" ] 2
         File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
         settings.Host <- "external.invalid"

@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "scope": "Reviewed common notice superset for framework-dependent ClaimCore applications. Applies only to components actually distributed; records acknowledge source/license review and do not resolve dependencies. Runtime/package bundles are retained complete. Canonical source LF bundle texts differ only in line endings from reviewed NuGet CRLF bundles. SDK host bundle is distinct and retained separately. IdentityModel package-declared revision is retained; its unavailable source revision was not inspected, and complete license was reviewed at release tag 8.19.2. Original HostSecurity C uses platform system libraries and includes no upstream implementation code. Platform shared frameworks and container base redistribution are separate inputs.",
+  "scope": "Reviewed notices for redistributed packages and apphosts. Platform shared frameworks and container images are separate redistribution inputs.",
   "texts": [
     {
       "file": "Microsoft-MIT.txt",
@@ -246,27 +246,15 @@
     }
   ],
   "host": {
-    "sdk": "10.0.401",
-    "version": "10.0.12",
-    "revision": "95017c711e6afc1085133d440e42b4bd78155701",
-    "packs": [
-      "Microsoft.NETCore.App.Host.linux-x64",
-      "Microsoft.NETCore.App.Host.linux-arm64",
-      "Microsoft.NETCore.App.Host.osx-x64",
-      "Microsoft.NETCore.App.Host.osx-arm64"
+    "assets": [
+      "ClaimCore.Cli",
+      "ClaimCore.Database",
+      "ClaimCore.Web"
     ],
     "texts": [
       "DotNet-Foundation-MIT.txt",
       "Runtime-NOTICES.txt",
       "SDK-Host-NOTICES.txt"
     ]
-  },
-  "native": {
-    "project": "ClaimCore.HostSecurity",
-    "assets": [
-      "libclaimcore_hostsecurity.so",
-      "libclaimcore_hostsecurity.dylib"
-    ],
-    "license": "LICENSE"
   }
 }

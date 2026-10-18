@@ -96,6 +96,9 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   separately from source inspection. Keep generated reports and private local state in ignored
   paths, never tracked source.
 
+- Private inputs are absolute, regular files with no other-access bits and no group write or
+  execute bits, read from the admitted handle; there is no native code in the product or its tests.
+
 ## Name by meaning, not incidental development history
 
 Name files, directories and identifiers for their responsibility, behavior or domain concept, using the project's idioms. Keep terminology consistent within a context and make necessary distinctions between contexts explicit.

@@ -1,8 +1,8 @@
-module internal ClaimCore.AcceptanceTests.NativeNotices
+module internal ClaimCore.AcceptanceTests.ThirdPartyNotices
 
 open System
 open System.IO
-open NativeNoticeManifest
+open ThirdPartyNoticeManifest
 
 let private runtimeFile (path: string) =
     let extension = Path.GetExtension path
@@ -22,13 +22,11 @@ let private explained name known (relative: string) =
 
 let qualify root directory name =
     let manifest = delivered root directory
-    let assets = NativeNoticeAssets.graph root directory name manifest
-    let native = NativeNoticeAssets.host directory name manifest
+    let assets = ThirdPartyNoticeAssets.graph root directory name manifest
+    let native = ThirdPartyNoticeAssets.host directory name manifest
 
     let notices =
-        "apphost-provenance.json"
-        :: "native-notices.json"
-        :: (manifest.Texts |> List.map _.File)
+        "third-party-notices.json" :: (manifest.Texts |> List.map _.File)
         |> List.map (fun file -> "licenses/" + file)
 
     let known =

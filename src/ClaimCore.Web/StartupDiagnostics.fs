@@ -6,6 +6,7 @@ open System.Text.Json
 type WebSetting =
     | ConnectionFile
     | CertificatePath
+    | KeyRingDirectory
     | Origin
     | ListenAddress
     | ListenPort
@@ -27,6 +28,7 @@ module WebSettings =
     let private entries =
         [
             WebSetting.ConnectionFile, "CLAIMCORE_CONNECTION_FILE"
+            WebSetting.KeyRingDirectory, "CLAIMCORE_WEB_KEY_RING_DIRECTORY"
             WebSetting.CertificatePath, "CLAIMCORE_WEB_CERTIFICATE_PATH"
             WebSetting.Origin, "CLAIMCORE_WEB_ORIGIN"
             WebSetting.ListenAddress, "CLAIMCORE_WEB_LISTEN_ADDRESS"
@@ -52,6 +54,7 @@ module WebSettings =
         [
             WebSetting.ConnectionFile
             WebSetting.CertificatePath
+            WebSetting.KeyRingDirectory
             WebSetting.OidcIssuer
             WebSetting.OidcClientId
             WebSetting.OidcClientSecretFile

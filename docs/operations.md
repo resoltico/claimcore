@@ -37,18 +37,19 @@ with service accounts disabled. Put the API audience in access tokens only, neve
 `azp`/`client_id` classification does not establish the grant type; operators must maintain these
 flow restrictions as described in [Web admission](web.md#cc-web-001).
 
-Browser sessions and list cursors are ephemeral. A runtime restart invalidates cursor signatures;
+Browser session protection keys persist in the required key-ring directory. Treat the directory
+as a secret outside database backups; Linux key XML is unencrypted. List cursors still use ephemeral signatures;
 expired or changed-grant cursors must be restarted. The browser retains no pending request across
 reload. Preserve exact uncertain requests through the caller’s process; never replace their ID.
 
 ## Private configuration
 
-Use the [owner-private input policy](database.md#cc-db-002) on supported local filesystem
-semantics. Linux POSIX ACL masks and macOS descriptor ACLs are admitted explicitly; unrelated
-network/userspace permission models are outside that assurance. The file owner and host
-administrator remain trusted: descriptor admission does not freeze a concurrent owner rewriting
-content or permissions. Preserve matching native libraries and all notices when distributing a
-published application; [Development](development.md#first-checkout) owns supported build targets.
+Use the [private-input policy](database.md#cc-db-002) on supported local filesystem mode
+semantics. Group read is permitted; group write/execute and all other-user access are refused.
+Ownership and ACLs are not inspected. The file owner and host administrator remain trusted:
+admission does not freeze concurrent changes to content or permissions. Preserve all notices
+when distributing a published application; [Development](development.md#first-checkout) owns
+qualified publication modes.
 
 ## Backups and restore
 

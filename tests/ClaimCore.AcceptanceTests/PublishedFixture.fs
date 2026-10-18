@@ -74,6 +74,8 @@ let private webEnvironment
         [
             "CLAIMCORE_CONNECTION_FILE", connection
             "CLAIMCORE_WEB_CERTIFICATE_PATH", certificate
+            "CLAIMCORE_WEB_KEY_RING_DIRECTORY",
+            Directory.CreateDirectory(Path.Combine(directory, "key-ring")).FullName
             "CLAIMCORE_WEB_ORIGIN", origin
             "CLAIMCORE_OIDC_ISSUER", identity.Issuer
             "CLAIMCORE_OIDC_CLIENT_ID", "web"

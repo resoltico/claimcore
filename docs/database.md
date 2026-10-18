@@ -9,25 +9,19 @@ help and version. Discovery opens no database.
 ### CC-DB-002 — Private owner inputs precede database access
 
 The two settings are `CLAIMCORE_ADMIN_CONNECTION_FILE` and `CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE`.
-Connections and owner identity are owner-private regular files. HostSecurity opens once with
-read-only, no-follow, nonblocking and close-on-exec flags, then checks and reads that same
-admitted descriptor. It requires effective-UID ownership, owner-read permission and no group/other
-mode bits. Unsupported platforms, final-component symlinks, foreign ownership, group/other
-permissions, embedded-NUL, malformed-Unicode or relative paths, oversized or malformed files are refused. Parent
-components and hard links have no additional admission rule.
+Private inputs use managed HostSecurity admission on Linux and macOS. Paths must be absolute,
+valid UTF-8 and contain no NUL. Symbolic links are followed, including secret-volume links.
+Both the path mode before opening and the opened handle's mode must forbid all other-user
+access and group write/execute; group read is allowed (for example `0600`, `0640` or `0440`).
+The open runs on a worker with a two-second bound; a blocked open is refused as not regular.
+The opened handle must be seekable, its length must fit the caller's bound, and the bytes are
+read from that same handle. Callers clear the returned buffer after use.
 
-On Linux/glibc filesystems with [POSIX ACL semantics](https://man7.org/linux/man-pages/man5/acl.5.html),
-group-class access is bounded by the mode mask: zero group mode bits
-prevent named-user/group grants, while owner permissions remain separately checked. On macOS,
-descriptor ACL inspection ignores inherit-only entries and admits denies, empty allows and
-canonical owner-UUID allows; other applicable nonempty allows, unknown fields or inspection/owner
-mapping failures refuse. ACL absence requires successful descriptor metadata/property inspection.
-These are supported filesystem semantics, not protection from a privileged host administrator.
-Synchronous filesystem and owner-directory calls have no universal hard deadline.
+There is no ownership or ACL inspection. Filesystem mode semantics and the host administrator
+are trusted; admission does not freeze concurrent changes to file content or permissions.
+Unsupported platforms, directories, missing files, malformed paths and oversized files refuse.
+No native library or C compiler is required.
 
-The C17 library and matching application must be distributed together. Missing, unloadable or
-wrong-architecture assets refuse before database access and emit fixed nonsecret installation
-guidance on stderr. See [native build prerequisites](development.md#first-checkout).
 The principal file has exactly `operationId`, `issuer` and `subject`; `operationId` is a stable
 nonzero canonical UUID. Provisioning validates one human principal through Application and is
 exact-operation idempotent.

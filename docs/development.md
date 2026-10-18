@@ -10,26 +10,15 @@ Restore locked NuGet inputs and build the solution with .NET. Run `npm --prefix 
 and `npm --prefix web run build` for frontend assets. Ordinary .NET builds do not invoke npm;
 frontend consumers use the tracked `contracts/` artifacts and require no .NET process.
 
-Building or publishing applications, and building tests that consume native components, requires the C17 toolchain enforced by [build-native.sh](../eng/build-native.sh):
-macOS Command Line Tools with Apple Clang 17+, macOS SDK 15+ and deployment target 14.0;
-or Linux with GCC 13+ and glibc development headers. Only matching native `osx-x64`,
-`osx-arm64`, `linux-x64` and `linux-arm64` hosts/targets are supported. Cross-RID builds,
-Windows and musl are refused; use the matching host instead. Linux private-file tests additionally
-require `setfacl` from the `acl` package. CI prepares these prerequisites; Docker builds use the
-pinned GCC/Bookworm compiler and headers stage declared in [Dockerfile](../deployment/Dockerfile).
-Compiler, SDK, flags, source and header inputs participate in incremental native builds.
-Normal builds and framework-dependent `publish --no-build --no-restore` carry the HostSecurity
-library into all three applications. Preserve the complete publish directory. Trimming,
-single-file and self-contained publication are outside the reviewed notice coverage and refused.
+Build and publication use managed .NET code; no C compiler or platform SDK is required.
+Private inputs are supported on Linux and macOS under the [private-input policy](database.md#cc-db-002).
+Framework-dependent publication with an apphost is qualified. Preserve the complete publish
+directory. Self-contained, trimmed and single-file publications are not qualified.
 
 Shared application items copy the reviewed notice superset and manifest from
-[eng/licenses](../eng/licenses/native-notices.json), plus SDK-resolved apphost provenance.
-Acceptance checks selected dependency/runtime/resource assets and actual recursive publication
-contents against this review, including native assets and the apphost outside `.deps.json`.
-Package-declared and reviewed source revisions are distinguished where an upstream declared
-revision is unavailable; the review does not claim inaccessible contents were inspected.
-Source archives include the native sources/headers, build plumbing and canonical notices;
-there is no binary-only source dependency.
+[eng/licenses](../eng/licenses/third-party-notices.json). Acceptance checks dependency,
+runtime/resource assets and the recursive publish inventory, including the listed apphost.
+Platform shared frameworks and container images remain separate redistribution inputs.
 
 ## Verification stages
 
@@ -84,9 +73,9 @@ to succeed. Thus a green PR `Gate` proves its advertised smoke scope, not full b
 Complete qualification remains separate evidence required for delivery and source releases.
 The frontend CI job executes inside the pinned Node image derived from the deployment Dockerfile,
 with a writable temporary home. It refuses an executable `dotnet` before running frontend checks;
-the hosted runner's preinstalled SDK is outside that container. Format/lint, unit, PostgreSQL and Web/identity jobs prepare .NET and native compiler toolchains without Node. Published-client acceptance also uses Node.
+the hosted runner's preinstalled SDK is outside that container. Format/lint, unit, PostgreSQL and Web/identity jobs prepare .NET without Node. Published-client acceptance also uses Node.
 The container build likewise builds frontend assets in a Node stage and publishes applications
-in a .NET SDK plus pinned C compiler stage.
+in the pinned .NET SDK stage.
 
 CI toolchain jobs cache NuGet packages and npm downloads using the tracked lockfiles. The
 SDK-free frontend container mounts a download-only npm cache keyed by its pinned toolchain,
@@ -130,16 +119,13 @@ semantic lint stage.
 
 ## Test process lifetime
 
-The test-only native supervisor starts a session before launching the target and remains its
-process-group anchor until teardown. Anonymous control/status pipes distinguish target exit,
-signal and exec failure; controller EOF also triggers teardown. Managed bounded readers preserve
-partial evidence and original failure identity. Cleanup has its own bound and observes group
-absence after the anchor exits; failed or incomplete cleanup is reported, never inferred from
-target exit. Ordinary descendants in the inherited group are covered. Deliberate session/daemon
-escape is outside this fixture contract. The supervisor and its resolution probes never ship in
-product outputs. Executable resolution follows the supported .NET Unix behavior before launch,
-including controller PATH/cwd semantics; isolated child tests qualify that behavior without
-changing the test runner's environment. The quiet-deadline control uses a 250 ms deadline and 64-byte per-stream output bound.
+Test processes start directly with managed APIs. Bounded readers retain partial stdout and
+stderr without placing their contents in public failure text. Failure teardown calls
+`Process.Kill(entireProcessTree: true)` and observes process exit and reader completion within
+a separate two-second bound. Cleanup failures remain explicit alongside the original failure.
+This relies on the runtime's process-tree discovery; deliberately detached processes and
+children reparented after their launcher exits are outside that mechanism's guarantees.
+The quiet-deadline control uses a 250 ms deadline and a 64-byte per-stream output bound.
 
 ## Changes
 

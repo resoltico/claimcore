@@ -4,6 +4,15 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Security
+
+- Private-file admission now uses managed APIs, allows group read and follows symbolic links. It checks path and handle modes, bounds blocked opens to two seconds, and no longer inspects ownership or ACLs. See [private inputs](docs/database.md#cc-db-002).
+- Web now requires `CLAIMCORE_WEB_KEY_RING_DIRECTORY`, an existing protected absolute directory. Persisted keys preserve session cookies and antiforgery tokens across restarts. Treat the key ring as a secret outside database backups; Linux key XML is unencrypted.
+
+### Removed
+
+- The C compiler requirement, private-file native library, test process supervisor and publication-mode refusal guards. Published apphosts and redistributed packages retain reviewed third-party notices. Framework-dependent publication remains the qualified mode.
+
 ### Changed
 
 - **Breaking for installations:** the replaced baseline refuses installations from software through 0.10.0 untouched. Keep them with their matching software; no conversion is supplied. Case request format 5 and snapshot format 4 bound business names and stewardship reasons to 1,024 UTF-8 bytes and framed payloads to 32,768 bytes. See [durable records](docs/architecture.md#durable-records).

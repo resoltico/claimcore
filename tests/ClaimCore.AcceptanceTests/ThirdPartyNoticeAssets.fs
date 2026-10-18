@@ -1,9 +1,9 @@
-module internal ClaimCore.AcceptanceTests.NativeNoticeAssets
+module internal ClaimCore.AcceptanceTests.ThirdPartyNoticeAssets
 
 open System
 open System.IO
 open System.Text.Json
-open NativeNoticeManifest
+open ThirdPartyNoticeManifest
 
 type Asset =
     {
@@ -140,22 +140,7 @@ let graph root directory name (manifest: Manifest) =
     found |> Seq.toList
 
 let host directory name (manifest: Manifest) =
-    use document =
-        JsonDocument.Parse(
-            File.ReadAllText(Path.Combine(directory, "licenses/apphost-provenance.json"))
-        )
-
-    let record = document.RootElement
-    fields [ "sdk"; "pack"; "version"; "rid" ] record
-    let rid = text "rid" record
-
-    require (
-        text "sdk" record = manifest.Host.Sdk
-        && text "version" record = manifest.Host.Version
-    )
-
-    require (text "pack" record = "Microsoft.NETCore.App.Host." + rid)
-    require (Set.contains (text "pack" record) (Set.ofList manifest.Host.Packs))
+    require (List.contains name manifest.Host.Assets)
     require (File.Exists(Path.Combine(directory, name)))
 
     use runtime =
@@ -166,16 +151,4 @@ let host directory name (manifest: Manifest) =
     let options = runtime.RootElement.GetProperty "runtimeOptions"
     let mutable included = Unchecked.defaultof<JsonElement>
     require (not (options.TryGetProperty("includedFrameworks", &included)))
-
-    let native =
-        if rid.StartsWith("osx-", StringComparison.Ordinal) then
-            "libclaimcore_hostsecurity.dylib"
-        else
-            "libclaimcore_hostsecurity.so"
-
-    require (
-        List.contains native manifest.Native
-        && File.Exists(Path.Combine(directory, native))
-    )
-
-    native
+    name

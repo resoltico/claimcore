@@ -1,6 +1,6 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
-  <!-- Shipped applications retain one reviewed native notice superset beside the repository license. -->
+  <!-- Shipped applications retain one reviewed third-party notice superset beside the repository license. -->
   <ItemGroup Condition="'$(IsShippedApplication)' == 'true'">
     <None
       Include="$(MSBuildThisFileDirectory)../LICENSE"
@@ -8,32 +8,9 @@
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest" />
     <None
-      Include="$(MSBuildThisFileDirectory)../eng/licenses/*.txt;$(MSBuildThisFileDirectory)../eng/licenses/native-notices.json"
+      Include="$(MSBuildThisFileDirectory)../eng/licenses/*.txt;$(MSBuildThisFileDirectory)../eng/licenses/third-party-notices.json"
       Link="licenses/%(Filename)%(Extension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
-  <Target Name="RecordAppHostNoticeProvenance"
-          BeforeTargets="AssignTargetPaths"
-          DependsOnTargets="ResolveFrameworkReferences"
-          Condition="'$(IsShippedApplication)' == 'true'">
-    <Error Condition="'$(UseAppHost)' != 'true' Or '$(SelfContained)' == 'true' Or '$(PublishTrimmed)' == 'true' Or '$(PublishSingleFile)' == 'true'"
-           Text="Native notice coverage requires framework-dependent publishing with an apphost, without trimming or single-file bundling." />
-    <PropertyGroup>
-      <_NoticeHostDirectory>@(ResolvedAppHostPack->'%(PackageDirectory)')</_NoticeHostDirectory>
-      <_NoticeHostVersion>$([System.IO.Path]::GetFileName('$(_NoticeHostDirectory)'))</_NoticeHostVersion>
-      <_NoticeHostPack>$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('$(_NoticeHostDirectory)'))))</_NoticeHostPack>
-      <_NoticeHostRid>@(ResolvedAppHostPack->'%(RuntimeIdentifier)')</_NoticeHostRid>
-      <_NoticeHostFile>$(IntermediateOutputPath)apphost-provenance.json</_NoticeHostFile>
-    </PropertyGroup>
-    <Error Condition="'$(_NoticeHostDirectory)' == '' Or '$(_NoticeHostRid)' == '' Or '$(NETCoreSdkVersion)' == ''"
-           Text="The SDK did not resolve an apphost pack for native notice review." />
-    <WriteLinesToFile File="$(_NoticeHostFile)"
-      Lines="{&quot;sdk&quot;:&quot;$(NETCoreSdkVersion)&quot;,&quot;pack&quot;:&quot;$(_NoticeHostPack)&quot;,&quot;version&quot;:&quot;$(_NoticeHostVersion)&quot;,&quot;rid&quot;:&quot;$(_NoticeHostRid)&quot;}"
-      Overwrite="true" WriteOnlyWhenDifferent="true" Encoding="UTF-8" />
-    <ItemGroup>
-      <None Include="$(_NoticeHostFile)" Link="licenses/apphost-provenance.json"
-            CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    </ItemGroup>
-  </Target>
 </Project>

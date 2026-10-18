@@ -47,6 +47,7 @@ let limits =
 
 let configuration certificate =
     {
+        KeyRingDirectory = DirectoryInfo(Path.GetTempPath())
         Binding = WebBindings.create origin "127.0.0.1" 5443
         ConnectionString = "synthetic-not-opened"
         Certificate = certificate

@@ -25,8 +25,8 @@ let private copyProject root directory project =
             copySourceFile root directory (Path.Combine(relative, name))
 
 let private copyNotices root directory =
-    let relative = "eng/licenses/native-notices.json"
-    let manifest = NativeNoticeManifest.read (Path.Combine(root, relative))
+    let relative = "eng/licenses/third-party-notices.json"
+    let manifest = ThirdPartyNoticeManifest.read (Path.Combine(root, relative))
     copySourceFile root directory relative
 
     for notice in manifest.Texts do
@@ -39,15 +39,10 @@ let private copySource root parent =
         [
             "global.json"
             "Directory.Build.props"
-            "Directory.Build.targets"
             "Directory.Packages.props"
             "NuGet.Config"
             "LICENSE"
             "src/Directory.Build.props"
-            "eng/NativeBuild.targets"
-            "eng/build-native.sh"
-            "src/ClaimCore.HostSecurity/native/private_file.c"
-            "src/ClaimCore.HostSecurity/native/private_file.h"
             "contracts/ClientContract.fs"
         ] do
         copySourceFile root directory name
@@ -109,7 +104,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
         0
         "Compile a client with a different contract identity; see owned fixture build logs"
 
-    NativeNotices.qualify fixture.Root output "ClaimCore.Cli" |> ignore
+    ThirdPartyNotices.qualify fixture.Root output "ClaimCore.Cli" |> ignore
 
     let result =
         ProcessRunner.dotnet

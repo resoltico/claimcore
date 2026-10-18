@@ -22,6 +22,7 @@ uuid() {
 }
 project="claimcore-$(openssl rand -hex 8)"
 mkdir -m 700 "${configuration}"
+mkdir -m 700 "${configuration}/key-ring"
 for directory in postgres identity identity/realm web administration; do mkdir -m 755 "${configuration}/${directory}"; done
 openssl req -x509 -newkey rsa:3072 -nodes -sha256 -days 365 -subj '/CN=ClaimCore local evaluation CA' \
   -addext 'basicConstraints=critical,CA:TRUE' -addext 'keyUsage=critical,keyCertSign,cRLSign' \
@@ -67,6 +68,7 @@ JSON
 cat >"${configuration}/web.env" <<ENV
 CLAIMCORE_CONNECTION_FILE=/etc/claimcore/runtime/runtime.connection
 CLAIMCORE_WEB_CERTIFICATE_PATH=/etc/claimcore/runtime/server.pfx
+CLAIMCORE_WEB_KEY_RING_DIRECTORY=/var/lib/claimcore/key-ring
 CLAIMCORE_WEB_ORIGIN=https://localhost:${web_port}
 CLAIMCORE_WEB_LISTEN_ADDRESS=0.0.0.0
 CLAIMCORE_WEB_LISTEN_PORT=5443
@@ -79,12 +81,13 @@ CLAIMCORE_OIDC_CLI_CLIENT_ID=claimcore-cli
 CLAIMCORE_OIDC_CA_CERT_FILE=/etc/claimcore/runtime/ca.pem
 ENV
 printf 'CLAIMCORE_CONFIG_DIR=%s\nCLAIMCORE_COMPOSE_PROJECT=%s\nCLAIMCORE_BUSINESS_ZONE=%s\nCLAIMCORE_HOST_PORT=%s\nCLAIMCORE_IDENTITY_PORT=%s\n' "${configuration}" "${project}" "${zone}" "${web_port}" "${identity_port}" >"${configuration}/compose.env"
-# Private files must belong to their container user on Linux as well as Docker Desktop.
+printf 'CLAIMCORE_UID=%s\nCLAIMCORE_GID=%s\n' "$(id -u)" "$(id -g)" >>"${configuration}/compose.env"
+# ClaimCore runs as the configuring user; only PostgreSQL/Keycloak require different owners.
 # Only this newly created directory is mounted. The helper has no network or persistent data.
 docker run --rm --name "${project}-permissions" --label claimcore.configuration="${project}" \
   --network none --read-only --mount "type=bind,source=${configuration},target=/config" \
   --user 0 --entrypoint /bin/sh postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722 \
-  -c 'set -eu; chown -R 999:999 /config/postgres; chown -R 1000:1000 /config/identity; chown -R 1654:1654 /config/web /config/administration'
+  -c 'set -eu; chown -R 999:999 /config/postgres; chown -R 1000:1000 /config/identity'
 unset owner_password runtime_password web_secret service_secret owner_login
 printf 'Created fresh local configuration. Username: owner. Password: %s/owner-login.password\n' "${configuration}"
 printf 'Trust %s/ca.pem in your browser. Leaf certificates expire after 30 days.\n' "${configuration}"

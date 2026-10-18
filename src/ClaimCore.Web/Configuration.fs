@@ -34,6 +34,7 @@ type OidcConfiguration =
 [<NoEquality; NoComparison>]
 type WebConfiguration =
     {
+        KeyRingDirectory: DirectoryInfo
         Binding: WebBinding
         ConnectionString: string
         Certificate: X509Certificate2
@@ -175,6 +176,7 @@ module Configuration =
     let load () =
         let sessionIdle, sessionAbsolute = sessionLifetimes ()
         let configuredEndpoint = binding ()
+        let keyRingDirectory = required WebSetting.KeyRingDirectory |> SessionKeys.admit
 
         let configuredConnection =
             privateConnection
@@ -192,6 +194,7 @@ module Configuration =
                     (required WebSetting.CertificatePath)
 
             {
+                KeyRingDirectory = keyRingDirectory
                 Binding = configuredEndpoint
                 ConnectionString = configuredConnection
                 Certificate = configuredCertificate
