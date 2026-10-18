@@ -421,7 +421,7 @@ let private pageAdvice (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
 let private appendHistory (actor: IActorClaimsCore) =
     task {
-        for revision in 1L .. 12L do
+        for revision in 1L .. 52L do
             let act =
                 if revision % 2L = 1L then
                     BusinessCommand.Close
@@ -456,7 +456,7 @@ let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! first = actor.History(query, CancellationToken.None)
         let first = succeeded first
-        Expect.equal first.Entries.Length 10 "FULL effective limit is ten"
+        Expect.equal first.Entries.Length 50 "FULL shares the public page capacity"
 
         let! rest =
             actor.History(
@@ -478,7 +478,7 @@ let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             (rest.Entries |> List.map revision)
-            [ 11L; 12L; 13L ]
+            [ 51L; 52L; 53L ]
             "Continuation follows last included row"
 
         let! summary =
@@ -489,7 +489,7 @@ let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                 CancellationToken.None
             )
 
-        Expect.equal (succeeded summary).Entries.Length 13 "SUMMARY retains its larger capacity"
+        Expect.equal (succeeded summary).Entries.Length 50 "SUMMARY shares the public page capacity"
     }
 
 let private disabledGrantTarget
@@ -659,7 +659,7 @@ let tests =
                 (run grantCursorRejections)
             testCaseAsync "case pages carry same-snapshot owned advice" (run pageAdvice)
             testCaseAsync
-                "FULL history uses ten and continues after its last included revision"
+                "FULL history uses fifty and continues after its last included revision"
                 (run fullHistoryLimit)
             testCaseAsync
                 "grant pages bind target preserve null ordering and review disabled targets"

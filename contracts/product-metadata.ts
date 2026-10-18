@@ -969,4 +969,4 @@ export const productMetadata = { descriptors: {
     "maximumPageSize": 50,
     "requestByteLimit": 65536
   }
-}, productVersion: "0.10.0", wireFingerprint: "1c3ce3cff503654a0541dd7f385f05306ea1de1b673f02e61e1de38ad34c3a3d" } as const;
+}, productVersion: "0.10.0", wireFingerprint: "3d17ce916c8cab9d54772b7f8dbe748dfe0b911f409c0eae0668a7cd09e6f192" } as const;

@@ -34,7 +34,7 @@ let private admits endpoint direction (bytes: byte array) =
 let private independentByteCases () =
     use document = fixture "tests/fixtures/client-byte-conformance.json"
     let cases = document.RootElement.GetProperty("cases").EnumerateArray() |> Seq.toList
-    Expect.equal cases.Length 48 "Independent byte cases cannot disappear silently"
+    Expect.equal cases.Length 50 "Independent byte cases cannot disappear silently"
 
     for sample in cases do
         Expect.equal

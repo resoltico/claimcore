@@ -8,7 +8,7 @@ module ProtocolProfile =
     let MaximumDepth = 32
 
     [<Literal>]
-    let MaximumResponseBytes = 16 * 1024 * 1024
+    let MaximumResponseBytes = 4 * 1024 * 1024
 
     [<Literal>]
     let MaximumInvocationBytes = 128 * 1024

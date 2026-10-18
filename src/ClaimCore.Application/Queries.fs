@@ -444,10 +444,7 @@ module internal Queries =
                         principal,
                         request.CaseReference,
                         selectHistory key installationId principal request,
-                        (if request.Detail = HistoryDetail.Full then
-                             min request.Limit ServiceLimits.MaximumFullHistoryPageSize
-                         else
-                             request.Limit),
+                        request.Limit,
                         ct
                     )
 

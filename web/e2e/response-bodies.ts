@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-const responseBytes = 16 * 1024 * 1024;
+const responseBytes = 4 * 1024 * 1024;
 
 const configured = new WeakMap<Page, Promise<void>>();
 

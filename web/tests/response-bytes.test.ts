@@ -64,7 +64,7 @@ it("observes rejected source cancellation while releasing the reader and preserv
 });
 
 it("uses the full JSON allowance independently of content length", async () => {
-  const limit = 16 * 1024 * 1024;
+  const limit = 4 * 1024 * 1024;
   expect(
     await responseBytes(new Response("{}".padEnd(limit, " ")), limit, new AbortController().signal),
   ).toHaveLength(limit);

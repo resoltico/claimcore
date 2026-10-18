@@ -39,7 +39,7 @@ const admitted = (sample: ByteCase): boolean => {
 };
 
 it("runs independent positive and negative raw byte cases through production browser decoders", () => {
-  expect(samples).toHaveLength(48);
+  expect(samples).toHaveLength(50);
   for (const sample of samples) {
     expect(admitted(sample), sample.id).toBe(sample.valid);
   }

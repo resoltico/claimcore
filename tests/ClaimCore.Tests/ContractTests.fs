@@ -432,7 +432,7 @@ let private rejectFrames () =
         ] do
         Expect.isError (Frames.parse (bytes value)) "Malformed, duplicate and unknown refuse"
 
-    for blob in [ [| 0xffuy |]; Array.zeroCreate<byte>(16 * 1024 * 1024 + 1) ] do
+    for blob in [ [| 0xffuy |]; Array.zeroCreate<byte>(4 * 1024 * 1024 + 1) ] do
         Expect.isError (Frames.parse blob) "UTF8 and byte bounds"
 
     let original = bytes "{ \"endpoint\":\"context\", \"input\":{} }"

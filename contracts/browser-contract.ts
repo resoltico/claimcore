@@ -9207,7 +9207,7 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
                             "$ref": "#/$defs/FullHistoryEntry"
                           },
                           "minItems": 1,
-                          "maxItems": 10
+                          "maxItems": 50
                         },
                         {
                           "type": "array",

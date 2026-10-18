@@ -61,7 +61,7 @@ module internal ResponseSchemas =
                     Schema.array
                         (ref "FullHistoryEntry")
                         (Some 1)
-                        (Some ServiceLimits.MaximumFullHistoryPageSize)
+                        (Some ServiceLimits.MaximumPageSize)
                     Schema.array (ref "HistoryEntry") (Some 0) (Some 0)
                 ]
 

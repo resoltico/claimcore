@@ -44,7 +44,7 @@
     <Compile Include="DisclosureTests.fs" />
     <Compile Include="PaginationTests.fs" />
     <Compile Include="ContractTests.fs" />
-    <Compile Include="ResponseBudgetTests.fs" />
+    <Compile Include="PayloadBudgetTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="ContractSnapshotTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
