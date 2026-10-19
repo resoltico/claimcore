@@ -1,3 +1,4 @@
+import type { AttemptKnowledge, ResolutionEvidence } from "../protocol/delivery";
 import { accumulateKnowledge } from "../protocol/delivery";
 import { prepareRequest } from "../protocol/preparedRequest";
 import type { CommandKind, DraftValues } from "./metadata";
@@ -22,7 +23,7 @@ const reset = (
   operationId,
   command,
   values,
-  requestSha256: null,
+
   requestBytes: null,
   prepared: null,
   review: null,
@@ -129,8 +130,8 @@ const beginPreview = (
   };
 };
 const completionKnowledge = (state: OperationState, action: CompletionResponse): string => {
-  let attempt = "NOT_ACCEPTED";
-  let evidence = "NONE";
+  let attempt: AttemptKnowledge = "NOT_ACCEPTED";
+  let evidence: ResolutionEvidence = "NONE";
   if (action.type === "ACCEPTED") {
     attempt = "ACCEPTED";
     evidence = "CONTENT_ACCEPTED";
@@ -174,7 +175,7 @@ const complete = (state: OperationState, action: CompletionResponse): OperationS
     unresolved,
     disclosureRefused: action.disclosureRefused === true,
     review: null,
-    requestSha256: null,
+
     pending: null,
     message: action.message,
     fieldError: action.field === null ? null : { name: action.field, message: action.message },
@@ -207,7 +208,7 @@ const transition = (
             ...state,
             delivery: "REVIEWING",
             review: action.review,
-            requestSha256: action.requestSha256,
+
             pending: null,
           }
         : state;
@@ -215,7 +216,7 @@ const transition = (
       return submit(state, action.requestId);
     case "RETURN_TO_EDIT":
       return state.delivery === "REVIEWING"
-        ? { ...state, delivery: "EDITING", review: null, requestSha256: null, pending: null }
+        ? { ...state, delivery: "EDITING", review: null, pending: null }
         : state;
     case "RESET_MESSAGE":
       return { ...state, message: null };

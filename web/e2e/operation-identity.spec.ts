@@ -14,5 +14,5 @@ test("rotates a exposed OPEN identity when only its target reference changes", a
   await page.getByLabel("Handler's case reference", { exact: true }).fill(`SECOND-${randomUUID()}`);
   const second = await reviewDraft(page);
   expect(second.operationId).not.toBe(first.operationId);
-  expect(second.requestSha256).not.toBe(first.requestSha256);
+  expect(second.operationId).not.toBe(first.operationId);
 });

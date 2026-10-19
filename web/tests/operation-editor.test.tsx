@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "./presentation-test-support";
 import { editor, previewReply } from "./presentation-state.fixtures";
 import { generatedResponse } from "./contract-corpus.fixtures";
-import { response, operationId, digest } from "./service-ui.fixtures";
+import { response, operationId } from "./service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 const reviewAndConfirm = async () => {
   const user = userEvent.setup();
@@ -34,7 +34,7 @@ it.each(["lost", "unknown", "malformed"] as const)(
       vi.mocked(fetch).mockRejectedValueOnce(new Error("Synthetic loss"));
     } else if (mode === "unknown") {
       vi.mocked(fetch).mockResolvedValueOnce(
-        response("case.execute", "OUTCOME_UNKNOWN", { operationId, requestSha256: digest }),
+        response("case.execute", "OUTCOME_UNKNOWN", { operationId }),
       );
     }
     if (mode === "malformed") {

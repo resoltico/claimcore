@@ -1,4 +1,4 @@
-import { isResponse } from "@contracts/browser-contract";
+import { isResponse } from "../src/protocol/client";
 import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";

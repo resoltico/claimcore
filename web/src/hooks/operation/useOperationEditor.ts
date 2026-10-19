@@ -149,17 +149,16 @@ const useEditorActions = (props: OperationEditorProps, state: EditorState): Edit
 const metadata = (props: OperationEditorProps, state: EditorState): EditorMetadata => {
   const command = commandFor(props.definition.descriptors, state.state.command);
   const fields = commandInputs(props.definition.descriptors, state.state.command);
-  const commandOffer = props.current?.offers.find(
-    (item) => item.definition === state.state.command,
-  );
+  const commandOffer = props.current?.advice.acts.find((item) => item.act === state.state.command);
   const groups = correctionGroups(props.definition.descriptors, state.state.command).map(
     ({ group, fields: groupFields }) => {
-      const choices = commandOffer?.choices.find((item) => item.input === `groups.${group.name}`);
+      const choices =
+        commandOffer?.act === "CORRECT_CASE" ? commandOffer.correction[group.name] : undefined;
       return {
         group: {
           ...group,
           actions: group.actions.filter(
-            (action) => choices === undefined || choices.values.includes(action),
+            (action) => choices === undefined || choices.includes(action),
           ),
         },
         fields: groupFields,
@@ -175,7 +174,7 @@ const metadata = (props: OperationEditorProps, state: EditorState): EditorMetada
     fields,
     groups,
     referenceField,
-    available: props.current?.offers.map((offer) => offer.definition).filter(isCaseAct) ?? [
+    available: props.current?.advice.acts.map((offer) => offer.act).filter(isCaseAct) ?? [
       props.initialCommand,
     ],
     locked: isLocked(state.state.delivery),

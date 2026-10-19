@@ -1,7 +1,7 @@
 import { it, expect } from "vitest";
 import { resultNotice } from "../src/api/service";
 import { createPresenter } from "../src/presentation/presenter";
-import type { Fault } from "@contracts/types";
+import type { Fault } from "@contracts/client";
 it("diagnostics remain typed and never expose server prose", () => {
   const fault: Fault = {
     diagnostic: { id: "CORE_STORE_UNAVAILABLE", parameters: {} },

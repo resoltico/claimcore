@@ -7,5 +7,10 @@
     "scripts/**/*.mjs",
     "../contracts/*.ts"
   ],
-  "entry": ["e2e/cli-pkce-driver.mjs", "../contracts/*.ts", "src/protocol/schema.ts"]
+  "entry": [
+    "e2e/cli-pkce-driver.mjs",
+    "e2e/deployment-qualification.mjs",
+    "../contracts/*.ts",
+    "src/protocol/schema.ts"
+  ]
 }

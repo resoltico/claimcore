@@ -33,10 +33,9 @@ export const groupedCorrectionValues = {
   payment: { mode: "KEEP" as const, values: {} },
 };
 
-import { productMetadata } from "@contracts/product-metadata";
+import { productMetadata } from "../src/protocol/productMetadata";
 export const definition = productMetadata.descriptors;
 export const operationId = "10000000-0000-4000-8000-000000000001";
-export const digest = "a".repeat(64);
 export const review: Review = {
   before: null,
   after: {

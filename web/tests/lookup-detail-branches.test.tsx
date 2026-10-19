@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -42,14 +43,9 @@ it("keeps a failed history page request-local without erasing current case data"
     response("case.get", "SUCCEEDED", {
       caseReference: fields.caseReference,
       revision: 1,
-      offers: [].map((identifier) => ({
-        definition: identifier,
-        caseReference: null,
-        expectedRevision: null,
-        choices: [],
-      })),
-      historyDetails: ["SUMMARY", "FULL"],
-      state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: [] },
+      advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
+
+      state: { tag: "LIVE", fields, disposition: "ACTIVE" },
     }),
   );
   fetch.mockResolvedValueOnce(
@@ -73,9 +69,9 @@ const readableCurrent = () =>
   response("case.get", "SUCCEEDED", {
     caseReference: fields.caseReference,
     revision: 1,
-    offers: [],
-    historyDetails: ["SUMMARY", "FULL"],
-    state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: [] },
+    advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
+
+    state: { tag: "LIVE", fields, disposition: "ACTIVE" },
   });
 
 it("shows a typed unavailable history refusal after revalidating readable current fields", async () => {

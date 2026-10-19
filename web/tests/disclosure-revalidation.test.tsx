@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "./presentation-test-support";
@@ -6,11 +7,9 @@ import { definition, fields, response, unavailable } from "./service-ui.fixtures
 const context = {
   caseReference: fields.caseReference,
   revision: 1,
-  historyDetails: ["SUMMARY", "FULL"],
-  offers: [
-    { definition: "CLOSE", caseReference: fields.caseReference, expectedRevision: 1, choices: [] },
-  ],
-  state: { tag: "LIVE", disposition: "ACTIVE", fields, availableActs: ["CLOSE"] },
+
+  advice: { acts: caseOffers(["CLOSE"]), history: ["SUMMARY", "FULL"] },
+  state: { tag: "LIVE", disposition: "ACTIVE", fields },
 };
 const sessionRefusal = () =>
   new Response(
@@ -51,7 +50,7 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
           ? response("case.get", "REJECTED", unavailable)
           : response("case.get", "SUCCEEDED", {
               ...context,
-              historyDetails: revoked ? ["SUMMARY"] : ["SUMMARY", "FULL"],
+              advice: { ...context.advice, history: revoked ? ["SUMMARY"] : ["SUMMARY", "FULL"] },
             }),
       );
     }),

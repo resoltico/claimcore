@@ -1,7 +1,7 @@
 import { transportResponse } from "./transport-response.fixtures";
-import { wireContractFingerprint } from "@contracts/endpoint-catalog";
-export { productMetadata as definition } from "@contracts/product-metadata";
-export { caseFields as fields, operationId, digest, review } from "./service-foundation.fixtures";
+import { wireContractFingerprint } from "@contracts/client";
+export { productMetadata as definition } from "../src/protocol/productMetadata";
+export { caseFields as fields, operationId, review } from "./service-foundation.fixtures";
 export const runtime = {
   productVersion: "0.8.0",
   businessDate: "2026-09-09",
@@ -25,7 +25,8 @@ export const response = (endpoint: string, tag: string, data: unknown, status = 
 export const context = {
   ...runtime,
   capabilities: ["REGISTER"],
-  offers: [{ definition: "OPEN", caseReference: null, expectedRevision: null, choices: [] }],
+  views: ["CASES", "AUTHORITY", "OPERATIONS"],
+  offers: [{ kind: "OPEN", expectedRevision: 0 }],
 };
 
 export const unavailable = {

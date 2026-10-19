@@ -1,4 +1,4 @@
-import { productMetadata } from "@contracts/product-metadata";
+import { productMetadata } from "../protocol/productMetadata";
 import type {
   CaseFields,
   CurrentCase,
@@ -17,7 +17,7 @@ import {
   type DraftValues,
   type CommandKind,
   type CorrectionGroupName,
-} from "@contracts/request-builders";
+} from "./drafts";
 export {
   createDraft,
   isGroupedDraftValues,
@@ -26,7 +26,7 @@ export {
   type CommandKind,
   type CorrectionGroupName,
   type CorrectionMode,
-} from "@contracts/request-builders";
+} from "./drafts";
 export const isCaseAct = (value: string): value is CommandKind =>
   productMetadata.descriptors.commands.some((command) => command.kind === value);
 

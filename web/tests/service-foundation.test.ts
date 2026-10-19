@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../src/api/service";
 import {
@@ -7,7 +8,7 @@ import {
   createDraft,
 } from "../src/interaction/metadata";
 import { fields, definition } from "./service-ui.fixtures";
-import { endpoints, wireContractFingerprint } from "@contracts/endpoint-catalog";
+import { endpoints, wireContractFingerprint } from "@contracts/client";
 import { generatedResponse } from "./contract-corpus.fixtures";
 describe("core command metadata", () => {
   it("describes all twelve commands and registration inputs", () => {
@@ -29,14 +30,9 @@ describe("core command metadata", () => {
       prefilledValues(definition.descriptors, "AMEND_REGISTRATION", {
         caseReference: fields.caseReference,
         revision: 1,
-        offers: [].map((identifier) => ({
-          definition: identifier,
-          caseReference: null,
-          expectedRevision: null,
-          choices: [],
-        })),
-        historyDetails: ["SUMMARY", "FULL"],
-        state: { tag: "LIVE", disposition: "ACTIVE", fields, availableActs: [] },
+        advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
+
+        state: { tag: "LIVE", disposition: "ACTIVE", fields },
       }),
     ).toMatchObject({ claimantName: fields.claimantName });
     expect(createDraft("id", "reference", 1, "CLOSE", {})).toEqual({

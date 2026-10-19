@@ -110,7 +110,7 @@ const useCaseList = (token: string) => {
     CaseSummary,
     NonNullable<ReturnType<typeof casePage>>
   >(request, casePage);
-  const mayOpen = page.page?.offers.some((offer) => offer.definition === "OPEN") ?? false;
+  const mayOpen = page.page?.offers.some((offer) => offer.kind === "OPEN") ?? false;
   return { ...page, mayOpen };
 };
 

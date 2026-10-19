@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { openCase, startCommand, reviewDraft } from "./case-workflow";
-import { isResponse } from "@contracts/browser-contract";
+import { isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/api/types";
 
 const dropFirstReply = async (

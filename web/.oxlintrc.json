@@ -341,15 +341,6 @@
       "rules": {
         "no-await-in-loop": "off"
       }
-    },
-    {
-      "files": ["src/generated/**/*.ts", "src/generated/**/*.mts", "src/api/transport.ts"],
-      "rules": {
-        "typescript/no-unsafe-type-assertion": "off",
-        "typescript/no-unnecessary-type-parameters": "off",
-        "typescript/array-type": "off"
-      },
-      "plugins": ["typescript"]
     }
   ],
   "extends": ["../config/oxlint.json"]

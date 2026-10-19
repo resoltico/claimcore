@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "./presentation-test-support";
@@ -9,18 +10,15 @@ import { generatedResponse } from "./contract-corpus.fixtures";
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
-  offers: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"].map((identifier) => ({
-    definition: identifier,
-    caseReference: null,
-    expectedRevision: null,
-    choices: [],
-  })),
-  historyDetails: ["SUMMARY", "FULL"],
+  advice: {
+    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"]),
+    history: ["SUMMARY", "FULL"],
+  },
+
   state: {
     tag: "LIVE",
     fields,
     disposition: "ACTIVE",
-    availableActs: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"],
   },
 };
 const expectAuthoringDisabled = () => {

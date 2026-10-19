@@ -1,7 +1,7 @@
 import { transportResponse } from "./transport-response.fixtures";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { EndpointId } from "@contracts/endpoint-catalog";
+import type { EndpointId } from "@contracts/client";
 import type { ServiceResponse } from "../src/api/types";
 const directory = resolve(import.meta.dirname, "../../contracts");
 export const readUnknown = (file: string): unknown =>
@@ -16,7 +16,7 @@ export type CorpusCase = {
   value: unknown;
 };
 export const corpusCases = (): CorpusCase[] => {
-  const raw = readUnknown("endpoint-corpus.json");
+  const raw = readUnknown("corpus.json");
   if (!isObject(raw) || !Array.isArray(raw["cases"])) {
     throw new Error("Corpus absent.");
   }

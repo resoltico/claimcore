@@ -6,7 +6,7 @@ import type { Notice } from "../api/notices";
 type CaseView = Extract<ServiceResponse<"case.get">["outcome"], { tag: "SUCCEEDED" }>["data"];
 type Disclosure = {
   value: CaseView | null;
-  historyModes: CaseView["historyDetails"];
+  historyModes: CaseView["advice"]["history"];
   message: Notice | null;
   loading: boolean;
 };
@@ -39,7 +39,7 @@ export const useCaseDisclosure = (caseReference: string, token: string) => {
       setCurrent((previous) => ({
         value,
         historyModes:
-          value?.historyDetails ?? (isDisclosureRefused(result) ? [] : previous.historyModes),
+          value?.advice.history ?? (isDisclosureRefused(result) ? [] : previous.historyModes),
         message: value === null ? resultNotice(result) : null,
         loading: false,
       }));

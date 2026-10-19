@@ -1,14 +1,18 @@
 import type { SchemaDocument, SchemaNode } from "./schema";
 export type FormValues = Readonly<Record<string, string | boolean>>;
 export const resolveSchema = (document: SchemaDocument, node: SchemaNode): SchemaNode => {
-  if (node.$ref === undefined) {
-    return node;
+  if (node.$ref !== undefined) {
+    const resolved = document.components?.schemas[node.$ref.replace("#/components/schemas/", "")];
+    if (resolved === undefined) {
+      throw new Error("Unknown schema reference.");
+    }
+    return resolveSchema(document, resolved);
   }
-  const resolved = document.$defs?.[node.$ref.replace("#/$defs/", "")];
-  if (resolved === undefined) {
-    throw new Error("Unknown schema reference.");
+  if (node.oneOf?.every((branch) => Object.hasOwn(branch, "const")) === true) {
+    const { oneOf, ...rest } = node;
+    return { ...rest, enum: oneOf.map((branch) => branch.const) };
   }
-  return resolveSchema(document, resolved);
+  return node;
 };
 export const unionSelector = (document: SchemaDocument, schema: SchemaNode): string => {
   const branches =
@@ -34,10 +38,11 @@ export const selectedSchema = (
   }
   const selector = unionSelector(document, resolved);
   const selected = values[`${path}.${selector}`];
-  return (
+  return resolveSchema(
+    document,
     resolved.oneOf.find(
       (branch) => resolveSchema(document, branch).properties?.[selector]?.const === selected,
-    ) ?? resolved.oneOf[0]!
+    ) ?? resolved.oneOf[0]!,
   );
 };
 export const formValue = (

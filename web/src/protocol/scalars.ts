@@ -1,4 +1,4 @@
-import { productMetadata } from "@contracts/product-metadata";
+import { productMetadata } from "./productMetadata";
 import { isGregorianDate } from "./schema";
 const amount = productMetadata.descriptors.fields
   .map((field) => field.scalar)

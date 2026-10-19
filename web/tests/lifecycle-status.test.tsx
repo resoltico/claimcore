@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { it, expect } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import { LifecycleStatus } from "../src/views/LifecycleStatus";
@@ -8,14 +9,9 @@ it("renders active voided and erased states from the accepted case view", () => 
       value={{
         caseReference: fields.caseReference,
         revision: 1,
-        offers: [].map((identifier) => ({
-          definition: identifier,
-          caseReference: null,
-          expectedRevision: null,
-          choices: [],
-        })),
-        historyDetails: ["SUMMARY", "FULL"],
-        state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: [] },
+        advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
+
+        state: { tag: "LIVE", fields, disposition: "ACTIVE" },
       }}
     />,
   );
@@ -25,14 +21,9 @@ it("renders active voided and erased states from the accepted case view", () => 
       value={{
         caseReference: fields.caseReference,
         revision: 2,
-        offers: [].map((identifier) => ({
-          definition: identifier,
-          caseReference: null,
-          expectedRevision: null,
-          choices: [],
-        })),
-        historyDetails: ["SUMMARY", "FULL"],
-        state: { tag: "LIVE", fields, disposition: "VOIDED", availableActs: [] },
+        advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
+
+        state: { tag: "LIVE", fields, disposition: "VOIDED" },
       }}
     />,
   );
@@ -43,8 +34,7 @@ it("renders active voided and erased states from the accepted case view", () => 
         state: { tag: "ERASED" },
         caseReference: "CASE-1",
         revision: 3,
-        offers: [],
-        historyDetails: ["SUMMARY"],
+        advice: { acts: caseOffers([]), history: ["SUMMARY"] },
       }}
     />,
   );

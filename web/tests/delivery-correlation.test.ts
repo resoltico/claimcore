@@ -4,10 +4,10 @@ import {
   accumulateKnowledge,
   resolutionEvidence,
 } from "../src/protocol/delivery";
-import { correlateReply } from "@contracts/browser-contract";
+import { correlateReply } from "../src/protocol/client";
 import { corpusCases, generatedWebValue } from "./contract-corpus.fixtures";
 import type { ApiResult, EndpointOutcome } from "../src/api/types";
-import { endpoints } from "@contracts/endpoint-catalog";
+import { endpoints } from "@contracts/client";
 const accepted = generatedWebValue("case.execute");
 const receipt = () => {
   if (accepted.outcome.tag !== "ACCEPTED") {
@@ -92,7 +92,7 @@ it("accumulates unresolved attempts until exact content evidence, while observat
     "READ_SUCCEEDED",
     "READ_FAILED",
     "UNCONFIRMED",
-  ]) {
+  ] as const) {
     expect(accumulateKnowledge("UNCONFIRMED", attempt, "NONE")).toBe("UNCONFIRMED");
   }
   expect(accumulateKnowledge("UNCONFIRMED", "ACCEPTED", "CONTENT_ACCEPTED")).toBe("ACCEPTED");

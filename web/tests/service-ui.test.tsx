@@ -1,3 +1,5 @@
+import { stubDashboardContext } from "./dashboard-context.fixtures";
+import { caseOffers } from "./case-advice.fixtures";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,19 +10,14 @@ import { DescriptorField } from "../src/components/DescriptorField";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
-import { context, definition, fields, digest, runtime, response } from "./service-ui.fixtures";
+import { context, definition, fields, runtime, response } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
-  offers: ["CLOSE"].map((identifier) => ({
-    definition: identifier,
-    caseReference: null,
-    expectedRevision: null,
-    choices: [],
-  })),
-  historyDetails: ["SUMMARY", "FULL"],
-  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
+  advice: { acts: caseOffers(["CLOSE"]), history: ["SUMMARY", "FULL"] },
+
+  state: { tag: "LIVE", fields, disposition: "ACTIVE" },
 };
 
 describe("metadata-driven descriptor rendering", () => {
@@ -57,7 +54,6 @@ const acceptsOperation = async (): Promise<void> => {
   fetch.mockImplementationOnce(
     previewForRequest(
       response("case.preview", "REVIEWED", {
-        requestSha256: digest,
         review: {
           before: {
             caseReference: fields.caseReference,
@@ -107,6 +103,9 @@ describe("metadata-driven operation acceptance", () => {
 });
 
 describe("service session lifecycle", () => {
+  beforeEach(() => {
+    stubDashboardContext();
+  });
   beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
   it("offers OIDC sign-in, then hydrates an authenticated return and signs out", async () => {

@@ -1,3 +1,5 @@
+import { stubDashboardContext } from "./dashboard-context.fixtures";
+import { caseOffers } from "./case-advice.fixtures";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -11,17 +13,15 @@ import { context, definition, fields, operationId, response } from "./service-ui
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
-  offers: ["CLOSE"].map((identifier) => ({
-    definition: identifier,
-    caseReference: null,
-    expectedRevision: null,
-    choices: [],
-  })),
-  historyDetails: ["SUMMARY", "FULL"],
-  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
+  advice: { acts: caseOffers(["CLOSE"]), history: ["SUMMARY", "FULL"] },
+
+  state: { tag: "LIVE", fields, disposition: "ACTIVE" },
 };
 
-beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+beforeEach(() => {
+  vi.stubGlobal("fetch", vi.fn());
+  stubDashboardContext();
+});
 
 const queueListPages = () => {
   const fetch = vi.mocked(globalThis.fetch);

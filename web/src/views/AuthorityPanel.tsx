@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { productMetadata } from "@contracts/product-metadata";
+import { productMetadata } from "../protocol/productMetadata";
 import { isDisclosureRefused } from "../api/outcomes";
 import { resultNotice, service, type ServiceResponse } from "../api/service";
 import { AuthorityGrants } from "./AuthorityGrants";
@@ -7,7 +7,7 @@ import { AuthorityListing } from "./AuthorityListing";
 import { AccessibleModal } from "../components/AccessibleModal";
 import { ProtocolSummary } from "../components/ProtocolSummary";
 import { ProtocolFields } from "../components/ProtocolFields";
-import { selectedSchema } from "../protocol/forms";
+import { selectedSchema, resolveSchema } from "../protocol/forms";
 import type { Notice } from "../api/notices";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
@@ -19,7 +19,7 @@ import {
 } from "../hooks/operation/useAuthorityOperation";
 const contextData = (response: ServiceResponse<"context">) =>
   response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
-const authorityFields = document.$defs?.["root"]?.properties ?? {};
+const authorityFields = resolveSchema(document, document).properties ?? {};
 type Command = (typeof productMetadata.descriptors.authorityCommands)[number];
 type FormProps = { model: AuthorityOperation; offered: ReadonlyArray<Command> };
 const AuthorityPicker = ({ model, offered }: FormProps) => {
@@ -235,7 +235,10 @@ const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityO
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const context = useAuthorityContext(token, model);
   const offered = productMetadata.descriptors.authorityCommands.filter(
-    (command) => context.value?.offers.some((offer) => offer.definition === command.kind) === true,
+    (command) =>
+      context.value?.offers.some(
+        (offer) => offer.kind === "AUTHORITY_ACT" && offer.act === command.kind,
+      ) === true,
   );
   return (
     <>
@@ -253,9 +256,7 @@ const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityO
       />
       <AuthorityListing
         token={token}
-        mayReadGrants={
-          context.value?.offers.some((offer) => offer.definition === "authority.grants") === true
-        }
+        mayReadGrants={context.value?.views.includes("AUTHORITY") === true}
         onSelect={setSelectedActorId}
         onDisclosureRefused={refused}
         onDisclosureRestored={restored}

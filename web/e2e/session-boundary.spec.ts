@@ -2,7 +2,7 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { wireContractFingerprint } from "@contracts/endpoint-catalog";
+import { wireContractFingerprint } from "@contracts/client";
 import { login, logout } from "./session-helpers";
 
 test.use({ storageState: { cookies: [], origins: [] } });

@@ -1,3 +1,4 @@
+import { installationOffers } from "./installation-advice.fixtures";
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
@@ -27,12 +28,7 @@ const context = (): ApiResult<ServiceResponse<"context">> => {
         ...value.outcome,
         data: {
           ...value.outcome.data,
-          offers: ["REGISTER_ACTOR", "SET_GRANT", "SET_ENABLED"].map((definition) => ({
-            definition,
-            caseReference: null,
-            expectedRevision: null,
-            choices: [],
-          })),
+          offers: installationOffers(["REGISTER_ACTOR", "SET_GRANT", "SET_ENABLED"]),
         },
       },
     },

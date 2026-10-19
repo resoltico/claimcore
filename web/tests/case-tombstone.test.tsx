@@ -10,6 +10,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
         state: { tag: "ERASED" },
         caseReference: "ERASED-1",
         revision: 4,
+        advice: { acts: [], history: ["SUMMARY"] },
       }),
     )
     .mockResolvedValueOnce(

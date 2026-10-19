@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { startOpen } from "./case-workflow";
-import { wireContractFingerprint } from "@contracts/endpoint-catalog";
+import { wireContractFingerprint } from "@contracts/client";
 
 test("a real contract refusal prompts reload without replaying the draft [CC-WEB-001]", async ({
   page,

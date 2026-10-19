@@ -12,7 +12,6 @@
   "diagnostic.CASE_DECISION_ALREADY_PAID": "“Reģistrēt izmaksas lēmumu” un “Atsaukt izmaksas lēmumu” nevar mainīt apmaksātu lēmumu. Izmantojiet “Labot lietas faktus” faktu labošanai; aizstājot apmaksātu lēmumu, maksājums ir skaidri jāapstiprina atkārtoti vai jādzēš tā ieraksts.",
   "diagnostic.CASE_DECISION_REQUIRED": "Vispirms reģistrējiet izmaksas lēmumu.",
   "diagnostic.CASE_ERASED": "Šī lieta ir dzēsta.",
-  "diagnostic.CASE_NOT_FOUND": "Lietas numurs nav atrasts.",
   "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": "ClaimCore reģistrē vienu pilnu maksājumu.",
   "diagnostic.CASE_PAYMENT_NOT_RECORDED": "Nav maksājuma ieraksta, ko dzēst.",
   "diagnostic.CASE_REVISION_CONFLICT": "Pirms mainīta pieprasījuma veidošanas nolasiet pašreizējo lietu.",

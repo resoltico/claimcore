@@ -1,9 +1,12 @@
 import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { CurrentCase, ProductMetadata, CaseReceipt } from "../api/service";
 import type { CommandKind } from "../interaction/metadata";
-import { productMetadata } from "@contracts/product-metadata";
+import { service, type ServiceResponse } from "../api/service";
+import { useRead } from "../hooks/useRead";
+import { NoticeView } from "../presentation/Message";
+import { productMetadata } from "../protocol/productMetadata";
 import { AuthorityPanel } from "./AuthorityPanel";
 import { CaseDetail } from "./CaseDetail";
 import { CaseList } from "./CaseList";
@@ -45,26 +48,30 @@ const DashboardNav = ({
   active,
   locked,
   navigate,
+  views,
 }: {
   active: string;
+  views: ReadonlyArray<string>;
   locked: boolean;
   navigate: (next: "cases" | "operations" | "authority") => void;
 }) => {
   const p = usePresentation();
   return (
     <nav aria-label={p.text("ui.primary")}>
-      {(["cases", "operations", "authority"] as const).map((item) => (
-        <Button
-          key={item}
-          onPress={() => {
-            navigate(item);
-          }}
-          isDisabled={locked}
-          aria-pressed={active === item}
-        >
-          {p.text(`ui.${item}`)}
-        </Button>
-      ))}
+      {(["cases", "operations", "authority"] as const)
+        .filter((item) => views.includes(item.toUpperCase()))
+        .map((item) => (
+          <Button
+            key={item}
+            onPress={() => {
+              navigate(item);
+            }}
+            isDisabled={locked}
+            aria-pressed={active === item}
+          >
+            {p.text(`ui.${item}`)}
+          </Button>
+        ))}
     </nav>
   );
 };
@@ -191,16 +198,38 @@ const useDashboardNavigation = () => {
   };
 };
 
+const contextData = (reply: ServiceResponse<"context">) =>
+  reply.outcome.tag === "SUCCEEDED" ? reply.outcome.data : null;
+
 export const Dashboard = ({ token, onLogout }: DashboardProps) => {
   const navigation = useDashboardNavigation();
   const definition = productMetadata;
+  const requestContext = useCallback(
+    (signal: AbortSignal) => service.context(token, signal),
+    [token],
+  );
+  const context = useRead(requestContext, contextData, token);
+  const views: ReadonlyArray<string> = context.value?.views ?? [];
+  const active = views.includes(navigation.active.toUpperCase())
+    ? navigation.active
+    : (["cases", "authority", "operations"] as const).find((item) =>
+        views.includes(item.toUpperCase()),
+      );
   const locked = navigation.locked || navigation.operation !== null;
 
   return (
     <main className="app-shell">
       <Header definition={definition} locked={locked} onLogout={onLogout} />
-      <DashboardNav active={navigation.active} locked={locked} navigate={navigation.navigate} />
-      <DashboardContent {...navigation} token={token} definition={definition} />
+      <DashboardNav
+        active={active ?? ""}
+        locked={locked}
+        navigate={navigation.navigate}
+        views={views}
+      />
+      {context.message === null ? null : <NoticeView value={context.message} />}
+      {active === undefined ? null : (
+        <DashboardContent {...navigation} active={active} token={token} definition={definition} />
+      )}
     </main>
   );
 };

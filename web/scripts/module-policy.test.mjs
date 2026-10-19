@@ -10,7 +10,7 @@ function files(directory) {
     if (item.isDirectory()) {
       return files(join(directory, item.name));
     }
-    if (/\.(ts|tsx|js|mjs)$/u.test(item.name)) {
+    if (/\.(ts|tsx|js|mjs|json)$/u.test(item.name)) {
       return [join(directory, item.name)];
     }
     return [];
@@ -137,5 +137,18 @@ test("protocol purity follows indirect helpers and JavaScript modules", () => {
       {},
     ),
     [],
+  );
+});
+
+test("protocol JSON imports require inventoried valid data", () => {
+  const code = 'import data from "../../../contracts/openapi.json" with {type:"json"};';
+  const file = "src/protocol/client.ts";
+  assert.deepEqual(moduleViolations({ [file]: code, "../contracts/openapi.json": "{}" }, {}), []);
+  assert.notEqual(moduleViolations({ [file]: code }, {}).length, 0);
+  assert.throws(() =>
+    moduleViolations(
+      { [file]: code, "../contracts/openapi.json": "export const execute=()=>{};" },
+      {},
+    ),
   );
 });

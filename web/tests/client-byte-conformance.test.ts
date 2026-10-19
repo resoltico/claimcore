@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, it } from "vitest";
-import { decodeResponse, isRequest } from "@contracts/browser-contract";
-import type { EndpointId } from "@contracts/endpoint-catalog";
+import { decodeResponse, isRequest } from "../src/protocol/client";
+import type { EndpointId } from "@contracts/client";
 import { admitBytes, validateSchema } from "../src/protocol/schema";
 
 type ByteCase = {

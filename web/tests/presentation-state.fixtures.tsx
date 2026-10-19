@@ -1,22 +1,18 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
 import type { CommandDraft, CurrentCase } from "../src/api/service";
 import { PresentationControls } from "../src/presentation/PresentationControls";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields, digest, response, runtime } from "./service-ui.fixtures";
+import { definition, fields, response, runtime } from "./service-ui.fixtures";
 
 export const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
-  offers: ["CLOSE"].map((identifier) => ({
-    definition: identifier,
-    caseReference: null,
-    expectedRevision: null,
-    choices: [],
-  })),
-  historyDetails: ["SUMMARY", "FULL"],
-  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
+  advice: { acts: caseOffers(["CLOSE"]), history: ["SUMMARY", "FULL"] },
+
+  state: { tag: "LIVE", fields, disposition: "ACTIVE" },
 };
 export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>> = {}) => (
   <>
@@ -44,7 +40,6 @@ export const draftAt = (index: number): CommandDraft => {
 export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
   return response("case.preview", "REVIEWED", {
-    requestSha256: digest,
     review: {
       before: {
         caseReference: fields.caseReference,

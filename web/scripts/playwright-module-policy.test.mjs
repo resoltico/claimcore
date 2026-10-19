@@ -19,17 +19,9 @@ const discover = (cwd, args) =>
 const fixture = (directory) => {
   const target = join(directory, "web");
   mkdirSync(join(target, "e2e"), { recursive: true });
-  mkdirSync(join(target, "src/protocol"), { recursive: true });
-  mkdirSync(join(target, "src/api"), { recursive: true });
-  copyFileSync(join(web, "src/api/responseBytes.ts"), join(target, "src/api/responseBytes.ts"));
   mkdirSync(join(directory, "contracts"));
   symlinkSync(join(web, "node_modules"), join(target, "node_modules"), "dir");
-  for (const name of ["browser-contract.ts", "endpoint-catalog.ts"]) {
-    copyFileSync(join(repository, "contracts", name), join(directory, "contracts", name));
-  }
-  for (const name of ["schema.ts", "strictJson.ts", "jsonMemberNames.ts"]) {
-    copyFileSync(join(web, "src/protocol", name), join(target, "src/protocol", name));
-  }
+  copyFileSync(join(repository, "contracts/client.ts"), join(directory, "contracts/client.ts"));
   writeFileSync(join(target, "package.json"), JSON.stringify({ type: "module", private: true }));
   writeFileSync(
     join(target, "tsconfig.json"),
@@ -41,20 +33,14 @@ const fixture = (directory) => {
   );
   writeFileSync(
     join(target, "e2e/protocol.spec.ts"),
-    'import {isRequest} from "../../contracts/browser-contract"; import {strictJsonBytes} from "../src/api/responseBytes"; import {test,expect} from "@playwright/test"; test("generated protocol module",()=>{expect(isRequest("case.list",strictJsonBytes(new TextEncoder().encode(JSON.stringify({limit:1}))))).toBe(true);});',
+    'import {endpoints} from "../../contracts/client"; import {test,expect} from "@playwright/test"; test("generated protocol data",()=>{expect(endpoints.some(endpoint=>endpoint.id==="case.list")).toBe(true);});',
   );
   return target;
 };
-test("generated browser modules require their emitted ESM package boundary", () => {
+test("generated ESM data loads from its tracked package and missing exports refuse", () => {
   const directory = mkdtempSync(join(tmpdir(), "claimcore-module-boundary-"));
   try {
     const target = fixture(directory);
-    const missing = discover(target, []);
-    assert.equal(missing.status, 1);
-    assert.match(
-      missing.stdout + missing.stderr,
-      /SyntaxError:.*(?:does not provide an export|Cannot use import statement outside a module)/u,
-    );
     copyFileSync(
       join(repository, "contracts/package.json"),
       join(directory, "contracts/package.json"),
@@ -62,6 +48,10 @@ test("generated browser modules require their emitted ESM package boundary", () 
     const present = discover(target, []);
     assert.equal(present.status, 0, present.stderr);
     assert.match(present.stdout, /Total: 1 test in 1 file/u);
+    writeFileSync(join(directory, "contracts/client.ts"), "export {};\n");
+    const missing = discover(target, []);
+    assert.equal(missing.status, 1);
+    assert.match(missing.stdout + missing.stderr, /does not provide an export|undefined/u);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

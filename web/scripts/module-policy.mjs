@@ -19,6 +19,10 @@ function walk(value, visit) {
 }
 /** @param {string} file @param {string} source */
 function imports(file, source) {
+  if (file.endsWith(".json")) {
+    JSON.parse(source);
+    return [];
+  }
   const { program, errors } = parseSync(file, source);
   if (errors.length) {
     throw new Error(`Cannot inspect ${file}`);
@@ -160,6 +164,9 @@ export function moduleViolations(sources, aliases) {
 }
 /** @param {string} file @param {string} source @returns {string[]} */
 function platformViolations(file, source) {
+  if (file.endsWith(".json")) {
+    return [];
+  }
   const { program } = parseSync(file, source);
   /** @type {string[]} */
   const failures = [];

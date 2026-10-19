@@ -43,7 +43,7 @@ const ReviewValues = ({
   );
 };
 
-const ReviewIdentity = ({ draft, digest }: { draft: CommandDraft; digest: string }) => {
+const ReviewIdentity = ({ draft }: { draft: CommandDraft }) => {
   const p = usePresentation();
   return (
     <>
@@ -53,8 +53,66 @@ const ReviewIdentity = ({ draft, digest }: { draft: CommandDraft; digest: string
           values={{ reference: draft.caseReference, revision: p.integer(draft.expectedRevision) }}
         />
       </p>
-      <p>{p.text("ui.operationDigest", { operationId: draft.operationId, digest })}</p>
+      <p>
+        <code>{draft.operationId}</code>
+      </p>
     </>
+  );
+};
+
+const authoredFields = (act: CommandDraft["act"]): Readonly<Record<string, string>> => {
+  if ("values" in act) {
+    return act.values;
+  }
+  if ("reason" in act) {
+    return { reason: act.reason };
+  }
+  if (act.kind === "CORRECT_CASE") {
+    return Object.fromEntries(
+      Object.values(act.groups).flatMap((group) =>
+        group.mode === "REPLACE" ? Object.entries(group.values) : [],
+      ),
+    );
+  }
+  return {};
+};
+const AuthoredFields = ({ model }: { model: OperationEditorModel }) => {
+  const p = usePresentation();
+  const values = authoredFields(model.state.exposedRequest!.act);
+  const fields = [
+    ...model.fields.map(({ field }) => field),
+    ...model.groups.flatMap((group) => group.fields),
+  ];
+  return (
+    <dl className="review-values">
+      {fields.map((field) => {
+        const value = values[field.name];
+        return value === undefined ? null : (
+          <div key={field.name}>
+            <dt>{p.fieldLabel(field.name)}</dt>
+            <dd>
+              <BusinessValue value={value} field={field} />
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
+  );
+};
+const AuthoredCorrectionModes = ({ act }: { act: CommandDraft["act"] }) => {
+  const p = usePresentation();
+  if (act.kind !== "CORRECT_CASE") {
+    return null;
+  }
+  return (
+    <dl className="review-values">
+      {Object.entries(act.groups).map(([name, group]) => (
+        <div key={name}>
+          <dt>{p.groupLabel(name)}</dt>
+          <dd>{p.token(group.mode)}</dd>
+        </div>
+      ))}
+    </dl>
   );
 };
 
@@ -66,21 +124,8 @@ const ReviewOperation = ({ model }: { model: OperationEditorModel }) => {
     <section aria-label={p.commandLabel(draft.act.kind)}>
       <h3>{p.commandLabel(draft.act.kind)}</h3>
       <p>{p.commandMeaning(draft.act.kind)}</p>
-      <dl className="review-values">
-        {model.fields.map(({ field }) => {
-          const value: unknown = Object.entries(draft.act).find(
-            ([name]) => name === field.name,
-          )?.[1];
-          return typeof value === "string" ? (
-            <div key={field.name}>
-              <dt>{p.fieldLabel(field.name)}</dt>
-              <dd>
-                <BusinessValue value={value} field={field} />
-              </dd>
-            </div>
-          ) : null;
-        })}
-      </dl>
+      <AuthoredFields model={model} />
+      <AuthoredCorrectionModes act={draft.act} />
       {review.before === null ? null : (
         <p>{p.text("ui.before", { value: p.text(lifecycleMessageKey(review.before.state)) })}</p>
       )}
@@ -133,11 +178,7 @@ export const OperationReview = ({
   fields: ReadonlyArray<FieldDescriptor>;
 }) => {
   const p = usePresentation();
-  if (
-    model.state.review === null ||
-    model.state.exposedRequest === null ||
-    model.state.requestSha256 === null
-  ) {
+  if (model.state.review === null || model.state.exposedRequest === null) {
     return null;
   }
   return (
@@ -152,7 +193,7 @@ export const OperationReview = ({
       }}
     >
       <>
-        <ReviewIdentity draft={model.state.exposedRequest} digest={model.state.requestSha256} />
+        <ReviewIdentity draft={model.state.exposedRequest} />
         <ReviewOperation model={model} />
         <ReviewValues review={model.state.review} fields={fields} />
         <ReviewConfirmation model={model} />

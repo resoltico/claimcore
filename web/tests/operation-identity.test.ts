@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { localNotice } from "../src/api/notices";
 import { createDraft } from "../src/interaction/metadata";
 import { operationReducer, initialOperation } from "../src/interaction/operationReducer";
-import { groupedCorrectionValues, review, digest } from "./service-foundation.fixtures";
+import { groupedCorrectionValues, review } from "./service-foundation.fixtures";
 import {
   begin,
   initial,
@@ -60,9 +60,7 @@ it("unknown delivery preserves exact request bytes and refuses edits while permi
 });
 it("late responses and illegal transitions cannot replace the current operation", () => {
   const working = begin(initial(), 2);
-  expect(
-    operationReducer(working, { type: "REVIEWED", requestId: 1, requestSha256: digest, review }),
-  ).toBe(working);
+  expect(operationReducer(working, { type: "REVIEWED", requestId: 1, review })).toBe(working);
   expect(operationReducer(initial(), { type: "SUBMITTING", requestId: 1 })).toEqual(initial());
   const foreign = createDraft(secondId, "different", 0, "OPEN", {});
   const fresh = initial();

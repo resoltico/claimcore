@@ -12,7 +12,6 @@
   "diagnostic.CASE_DECISION_ALREADY_PAID": "لا يمكن لـ«تسجيل قرار الدفع» و«سحب قرار الدفع» تغيير قرار تم دفعه. استخدم «تصحيح وقائع الملف» للتصحيح، مع إعادة تأكيد الدفع صراحةً أو مسح سجله عند استبدال قرار تم دفعه.",
   "diagnostic.CASE_DECISION_REQUIRED": "سجّل قرار الدفع أولًا.",
   "diagnostic.CASE_ERASED": "تم محو هذا الملف.",
-  "diagnostic.CASE_NOT_FOUND": "لم يتم العثور على مرجع الملف.",
   "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": "يسجّل ClaimCore دفعة كاملة واحدة.",
   "diagnostic.CASE_PAYMENT_NOT_RECORDED": "لا يوجد سجل دفع لمسحه.",
   "diagnostic.CASE_REVISION_CONFLICT": "اقرأ الملف الحالي قبل إنشاء طلب معدّل.",

@@ -1,9 +1,9 @@
 import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
-import type { EndpointId } from "@contracts/endpoint-catalog";
-import { endpoints } from "@contracts/endpoint-catalog";
+import type { EndpointId } from "@contracts/client";
+import { endpoints } from "@contracts/client";
 import type { ServiceResponse } from "../src/api/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
-import { isHostFailure, isResponse } from "@contracts/browser-contract";
+import { isHostFailure, isResponse } from "../src/protocol/client";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
@@ -83,11 +83,7 @@ export const reviewFrom = (
     throw new Error("Missing operation identity.");
   }
   const { operationId } = draft;
-  const { requestSha256 } = value.outcome.data;
-  if (requestSha256 === null) {
-    throw new Error("E2E_LOCALIZATION_EXACT_DIGEST_MISSING");
-  }
-  return { operationId, requestSha256 };
+  return { operationId };
 };
 const deferred = <T>() => {
   let resolve: (value: T) => void = () => undefined;

@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { historyVariants } from "./contract-corpus.fixtures";
 import { act } from "@testing-library/react";
@@ -28,9 +29,9 @@ const readable = (historyDetails = ["SUMMARY", "FULL"]) =>
   response("case.get", "SUCCEEDED", {
     caseReference: fields.caseReference,
     revision: 1,
-    offers: [],
-    historyDetails,
-    state: { tag: "LIVE", disposition: "ACTIVE", fields, availableActs: [] },
+    advice: { acts: caseOffers([]), history: historyDetails },
+
+    state: { tag: "LIVE", disposition: "ACTIVE", fields },
   });
 const pageEntry = (entry: Extract<HistoryEntry, { tag: "SUMMARY" }>, page: number) => ({
   tag: entry.tag,

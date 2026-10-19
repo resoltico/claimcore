@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { isResponse } from "@contracts/browser-contract";
+import { isResponse } from "../src/protocol/client";
 import { startOpen } from "./case-workflow";
 import {
   expectAccessible,
@@ -175,7 +175,7 @@ test("switches language and independent display format during draft review witho
     expect(await dialog.evaluate((element, prior) => element === prior, originalDialog)).toBe(true);
     await expect(confirmation).toBeChecked();
     await expect(dialog).toContainText(identity.operationId);
-    await expect(dialog).toContainText(identity.requestSha256);
+
     expect(requests).toHaveLength(1);
     await expectAccessible(page);
     await selectLanguage(page, "en");

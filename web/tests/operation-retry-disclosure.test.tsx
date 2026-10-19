@@ -4,7 +4,7 @@ import { act } from "@testing-library/react";
 import { render, screen } from "./presentation-test-support";
 import { current, deferredResponse, draftAt, editor } from "./presentation-state.fixtures";
 import { generatedWebValue } from "./contract-corpus.fixtures";
-import { digest, fields, response, runtime, unavailable } from "./service-ui.fixtures";
+import { fields, response, runtime, unavailable } from "./service-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 const refusal = (kind: "access" | "session") =>
@@ -34,7 +34,6 @@ const disclosedCurrent = {
 };
 const preview = () =>
   response("case.preview", "REVIEWED", {
-    requestSha256: digest,
     review: {
       before: disclosedCurrent,
       after: {
@@ -110,7 +109,7 @@ it.each(["access", "session"] as const)(
     expectPendingOnly(locked);
     expect(screen.getByRole("button", { name: "Retry the same operation" })).toBeDisabled();
     await act(async () => {
-      pending.resolve(response("case.execute", "OUTCOME_UNKNOWN", { requestSha256: digest }));
+      pending.resolve(response("case.execute", "OUTCOME_UNKNOWN", {}));
       await pending.promise;
     });
     expect(screen.getByRole("button", { name: "Retry the same operation" })).not.toBeDisabled();

@@ -34,12 +34,11 @@ const success = <K extends "context" | "authority.list">(
           ...value.outcome,
           data: {
             ...value.outcome.data,
+            views: ["CASES", "AUTHORITY", "OPERATIONS"],
             offers: [
               {
-                definition: "REGISTER_ACTOR",
-                caseReference: null,
-                expectedRevision: null,
-                choices: [],
+                kind: "AUTHORITY_ACT",
+                act: "REGISTER_ACTOR",
               },
             ],
           },
@@ -291,7 +290,7 @@ it.each([
       return Promise.resolve(unavailable());
     });
     render(<Dashboard token="synthetic-token" onLogout={logout} />);
-    await user.click(screen.getByRole("button", { name: "Authority" }));
+    await user.click(await screen.findByRole("button", { name: "Authority" }));
     if (reviewed) {
       await prepare();
       await user.click(screen.getByRole("button", { name: "Submit operation" }));
@@ -302,7 +301,7 @@ it.each([
       await user.click(screen.getByRole("button", { name: "Reload actors" }));
     }
     await waitFor(() => {
-      expect(context).toHaveBeenCalledTimes(2);
+      expect(context).toHaveBeenCalledTimes(3);
     });
     if (returned) {
       await user.click(screen.getByRole("button", { name: "Back to cases" }));
@@ -347,7 +346,6 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
                   tag: "OUTCOME_UNKNOWN",
                   data: {
                     operationId: prepared.input.operationId,
-                    requestSha256: "a".repeat(64),
                   },
                 },
               },

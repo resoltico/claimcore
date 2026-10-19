@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { fillRegistrationInputs } from "./registration-inputs.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
 import { render, screen, waitFor } from "./presentation-test-support";
@@ -5,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase, Rejection } from "../src/api/service";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields, digest, response, runtime } from "./service-ui.fixtures";
+import { definition, fields, response, runtime } from "./service-ui.fixtures";
 
 type SentDraft = {
   operationId: string;
@@ -36,7 +37,6 @@ const editor = (current: CurrentCase | null, initialCommand: "OPEN" | "CLOSE" | 
 
 const preparedResponse = () =>
   response("case.preview", "REVIEWED", {
-    requestSha256: digest,
     review: {
       before: null,
       after: {
@@ -107,14 +107,9 @@ it("retries the frozen request after delivery loss despite a changed current rev
   const current: CurrentCase = {
     caseReference: fields.caseReference,
     revision: 1,
-    offers: ["CLOSE"].map((identifier) => ({
-      definition: identifier,
-      caseReference: null,
-      expectedRevision: null,
-      choices: [],
-    })),
-    historyDetails: ["SUMMARY", "FULL"],
-    state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
+    advice: { acts: caseOffers(["CLOSE"]), history: ["SUMMARY", "FULL"] },
+
+    state: { tag: "LIVE", fields, disposition: "ACTIVE" },
   };
   vi.mocked(globalThis.fetch)
     .mockRejectedValueOnce(new Error("Synthetic delivery loss"))
@@ -143,8 +138,8 @@ const paidCase: CurrentCase = {
     paymentDate: "2026-09-04",
   }.caseReference,
   revision: 1,
-  offers: [{ definition: "CORRECT_CASE", caseReference: null, expectedRevision: 1, choices: [] }],
-  historyDetails: ["SUMMARY", "FULL"],
+  advice: { acts: caseOffers(["CORRECT_CASE"]), history: ["SUMMARY", "FULL"] },
+
   state: {
     tag: "LIVE",
     fields: {
@@ -155,7 +150,6 @@ const paidCase: CurrentCase = {
       paymentDate: "2026-09-04",
     },
     disposition: "ACTIVE",
-    availableActs: ["CORRECT_CASE"],
   },
 };
 

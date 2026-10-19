@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "./presentation-test-support";
@@ -8,16 +9,11 @@ import { preferenceKey } from "../src/presentation/preferences";
 
 const paidCase: CurrentCase = {
   ...current,
-  offers: ["CORRECT_CASE"].map((identifier) => ({
-    definition: identifier,
-    caseReference: null,
-    expectedRevision: null,
-    choices: [],
-  })),
-  historyDetails: ["SUMMARY", "FULL"],
+  advice: { acts: caseOffers(["CORRECT_CASE"]), history: ["SUMMARY", "FULL"] },
+
   state: {
     ...current.state,
-    availableActs: ["CORRECT_CASE"],
+
     fields: {
       ...current.state.fields,
       paymentDecisionDate: "2026-09-03",

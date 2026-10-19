@@ -1,4 +1,4 @@
-import { wireContractFingerprint } from "@contracts/endpoint-catalog";
+import { wireContractFingerprint } from "@contracts/client";
 import { localNotice } from "../api/notices";
 import type { Notice } from "../api/notices";
 import { useCallback, useEffect, useRef, useState } from "react";

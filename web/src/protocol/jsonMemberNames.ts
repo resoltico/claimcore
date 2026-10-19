@@ -1,4 +1,4 @@
-import { strictByteProfile } from "@contracts/endpoint-catalog";
+import { strictByteProfile } from "@contracts/client";
 // JSON.parse owns grammar; this pass retains duplicate-member information it would discard.
 const stringEnd = (text: string, start: number): number => {
   for (let at = start + 1; at < text.length; at += 1) {

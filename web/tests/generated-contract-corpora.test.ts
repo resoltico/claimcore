@@ -1,6 +1,6 @@
 import { it, expect } from "vitest";
-import { endpoints } from "@contracts/endpoint-catalog";
-import { isResponse, isObject } from "@contracts/browser-contract";
+import { endpoints } from "@contracts/client";
+import { isResponse, isObject } from "../src/protocol/client";
 import { corpusCases, generatedWebValue } from "./contract-corpus.fixtures";
 
 const ordinal = (left: string, right: string): number => {
