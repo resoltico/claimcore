@@ -9,6 +9,14 @@ open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.IntegrationTests.VerificationSupport
 
+let private httpRequest request =
+    // This test authors a wire body from a retained Domain request; production has distinct codecs.
+    let node =
+        System.Text.Json.Nodes.JsonNode.Parse(RequestRecord.encode request) |> nonNull
+
+    node.AsObject().Remove("format") |> ignore
+    System.Text.Encoding.UTF8.GetBytes(node.ToJsonString())
+
 let private outcome (bytes: byte array) =
     use document = JsonDocument.Parse bytes
     document.RootElement.GetProperty("outcome").Clone()
@@ -80,8 +88,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
         let reaffirm =
             request 11 "HISTORICAL-1" 1L (BusinessCommand.AmendRegistration values)
 
-        let! status, response =
-            host.Call("case.execute", RequestRecord.encodeWire reaffirm, csrf)
+        let! status, response = host.Call("case.execute", httpRequest reaffirm, csrf)
 
         Expect.equal status 200 "Reaffirmation passes intake and response validation"
 
@@ -100,8 +107,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
                         ClaimantName = name + "B"
                     })
 
-        let! status, response =
-            host.Call("case.execute", RequestRecord.encodeWire changed, csrf)
+        let! status, response = host.Call("case.execute", httpRequest changed, csrf)
 
         Expect.equal status 200 "Admission refusal stays a typed outcome"
         let refusal = outcome response

@@ -92,23 +92,14 @@ module internal LedgerAdministration =
                 | _ -> return invalidOp "Ledger head is absent."
             })
 
-    let private provisionResult operationId principal result =
+    let private provisionResult operationId result =
         match result with
         | Ok(LedgerWriteResult.Appended receipt) -> ExecuteOutcome.Accepted receipt
         | Ok(LedgerWriteResult.Replayed receipt) -> ExecuteOutcome.AlreadyAccepted receipt
         | Ok(LedgerWriteResult.Refused reason) -> ExecuteOutcome.Rejected reason
         | Ok(LedgerWriteResult.Failed fault) -> ExecuteOutcome.Failed fault
         | Error StoreFailure.Cancelled -> ExecuteOutcome.Cancelled
-        | Error StoreFailure.CommitOutcomeUnknown ->
-            let bytes =
-                AuthorityRequests.provisionRecord operationId principal
-                |> ClaimCore.RecordFormat.AuthorityRecord.encode
-
-            ExecuteOutcome.OutcomeUnknown(
-                operationId,
-                ClaimCore.RecordFormat.LedgerEntry.requestDigest bytes
-                |> Convert.ToHexStringLower
-            )
+        | Error StoreFailure.CommitOutcomeUnknown -> ExecuteOutcome.OutcomeUnknown operationId
         | Error StoreFailure.SchemaMismatch -> ExecuteOutcome.Failed CoreFault.SchemaMismatch
         | Error StoreFailure.Internal -> ExecuteOutcome.Failed CoreFault.InternalError
         | Error StoreFailure.Integrity -> ExecuteOutcome.Failed CoreFault.StoreIntegrityError
@@ -143,7 +134,7 @@ module internal LedgerAdministration =
                     cancellationToken
                 )
 
-            return provisionResult operationId principal result
+            return provisionResult operationId result
         }
 
 [<RequireQualifiedAccess>]

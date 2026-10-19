@@ -61,7 +61,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
         let id = CaseReferenceId.encode fixture.InstallationId snapshot.Reference
 
         let actor =
-            view.Actor
+            view.Actor.Actor
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
         let scope =

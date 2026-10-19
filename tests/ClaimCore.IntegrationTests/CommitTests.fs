@@ -137,7 +137,7 @@ let tests =
 
                                 Expect.isTrue
                                     (match result with
-                                     | ExecuteOutcome.OutcomeUnknown(id, _) ->
+                                     | ExecuteOutcome.OutcomeUnknown id ->
                                          id = operation.OperationId
                                      | _ -> false)
                                     "Lost commit reply stays unknown"

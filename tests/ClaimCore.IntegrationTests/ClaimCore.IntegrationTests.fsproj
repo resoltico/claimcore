@@ -35,12 +35,11 @@
     <None Include="../fixtures/0001_baseline.v0.10.0.sql" Link="0001_baseline.v0.10.0.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="OwnerSchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
-    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />

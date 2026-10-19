@@ -94,7 +94,7 @@ let private waiter (database: PostgresFixture.Database) settings =
 let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandler =
     match result with
     | Ok {
-             Actor = Some actor
+             Actor = ({ Actor = Some _ } as authority)
              Case = Some {
                              Snapshot = {
                                             View = ClaimCore.Domain.CaseView.Live(fields, _)
@@ -102,7 +102,7 @@ let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandle
                          }
          } ->
         Expect.equal
-            (actor.Grants |> List.exists (fun grant -> grant.Role = Role.CaseHandler))
+            (List.contains Role.CaseHandler authority.Installation)
             hasHandler
             "Authority belongs to this snapshot"
 
