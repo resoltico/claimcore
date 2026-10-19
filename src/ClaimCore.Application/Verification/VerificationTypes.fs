@@ -1,7 +1,6 @@
-namespace ClaimCore.Postgres
+namespace ClaimCore.Application
 
 open System
-open ClaimCore.Application
 open ClaimCore.Domain
 
 /// A position independently retained by an operator or returned in an accepted receipt.
@@ -99,7 +98,6 @@ module internal VerificationChecks =
         try
             Ok(read ())
         with
-        | :? RecordCorruptException
         | :? InvalidOperationException
         | :? InvalidCastException
         | :? ArgumentException

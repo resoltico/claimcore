@@ -30,7 +30,8 @@ fingerprinted byte profile (UTF-8, duplicate names, Unicode, numeric lexemes and
 admits private files with managed path/handle mode checks and a bounded open under the
 [private-input policy](database.md#cc-db-002). Test process capture and teardown use managed
 process APIs and are not a product dependency.
-Postgres owns transactions, projection persistence, schema administration and verification.
+Postgres owns transactions, projection persistence, schema administration and verification reads.
+Application owns the pure ledger, authority, erasure, projection and checkpoint verification folds.
 Hosting owns case-work composition, typed protocol dispatch and runtime lifetime. Its public service
 accepts verified subject facts and opaque admitted inputs and returns encoded replies with safe audit
 metadata. The typed runtime and actor factory remain internal to Hosting. Web references Hosting,

@@ -1,9 +1,8 @@
-namespace ClaimCore.Postgres
+namespace ClaimCore.Application
 
 open System
-open ClaimCore.Application
 open ClaimCore.Domain
-open ClaimCore.Postgres.VerificationChecks
+open ClaimCore.Application.VerificationChecks
 
 type internal CaseHistory =
     {

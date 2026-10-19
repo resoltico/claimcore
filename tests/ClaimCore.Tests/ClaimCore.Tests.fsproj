@@ -9,6 +9,7 @@
     <Compile Include="PropertyHarness.fs" />
     <Compile Include="PropertyHarnessTests.fs" />
     <Compile Include="Fixtures.fs" />
+    <Compile Include="VerificationFoldTests.fs" />
     <Compile Include="ScalarPropertyTests.fs" />
     <Compile Include="TransitionOracle.fs" />
     <Compile Include="TransitionPropertyTests.fs" />

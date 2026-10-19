@@ -1,9 +1,8 @@
-namespace ClaimCore.Postgres
+namespace ClaimCore.Application
 
 open System
-open ClaimCore.Application
 open ClaimCore.RecordFormat
-open ClaimCore.Postgres.VerificationChecks
+open ClaimCore.Application.VerificationChecks
 
 /// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
@@ -18,7 +17,7 @@ module internal AuthorityFold =
         && PrincipalKey.isHuman actor.Principal
         && List.contains ownerGrant actor.Grants
 
-    let executor actors (entry: StoredEntry) human ownerRequired =
+    let executor (actors: Map<Guid, ActorAuthority>) (entry: StoredEntry) human ownerRequired =
         result {
             let! actor =
                 Map.tryFind entry.ActorId actors
@@ -46,7 +45,7 @@ module internal AuthorityFold =
         |> Result.mapError (fun _ ->
             divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
-    let private target actors (entry: StoredEntry) id principal =
+    let private target (actors: Map<Guid, ActorAuthority>) (entry: StoredEntry) id principal =
         result {
             let! actor =
                 Map.tryFind id actors
@@ -61,7 +60,13 @@ module internal AuthorityFold =
             return actor
         }
 
-    let private register actors (entry: StoredEntry) id principal provision =
+    let private register
+        (actors: Map<Guid, ActorAuthority>)
+        (entry: StoredEntry)
+        id
+        principal
+        provision
+        =
         result {
             do!
                 require
@@ -135,7 +140,15 @@ module internal AuthorityFold =
                 }
         }
 
-    let private action installationId caseExists actors (entry: StoredEntry) id principal request =
+    let private action
+        installationId
+        caseExists
+        (actors: Map<Guid, ActorAuthority>)
+        (entry: StoredEntry)
+        id
+        principal
+        request
+        =
         match request.Act with
         | RecordedAuthorityAct.ProvisionOwner -> register actors entry id principal true
         | RecordedAuthorityAct.RegisterActor -> register actors entry id principal false
@@ -151,7 +164,7 @@ module internal AuthorityFold =
     let apply
         installationId
         caseExists
-        actors
+        (actors: Map<Guid, ActorAuthority>)
         (entry: StoredEntry)
         (request: AuthorityRequestRecord)
         =

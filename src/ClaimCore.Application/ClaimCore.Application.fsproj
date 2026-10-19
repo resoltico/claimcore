@@ -21,6 +21,12 @@
     <Compile Include="AuthorityDecisions.fs" />
     <Compile Include="Queries.fs" />
     <Compile Include="Core.fs" />
+    <Compile Include="Verification/VerificationTypes.fs" />
+    <Compile Include="Verification/AuthorityFold.fs" />
+    <Compile Include="Verification/VerificationPayload.fs" />
+    <Compile Include="Verification/CaseFold.fs" />
+    <Compile Include="Verification/ProjectionVerification.fs" />
+    <Compile Include="Verification/LedgerVerification.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
