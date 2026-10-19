@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CliTransportFixture
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -8,25 +8,62 @@ open System.Net
 open System.Net.Http
 open System.Net.Http.Headers
 open System.Text
+open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Cli
-open ClaimCore.Contracts
-open ClaimCore.ClientContract
 
 let bytes (text: string) = Encoding.UTF8.GetBytes text
 
+let samples file endpoint =
+    let root = ClaimCore.TestSupport.RepositoryRoot.find ()
+
+    use document =
+        JsonDocument.Parse(File.ReadAllBytes(Path.Combine(root, "tests", "fixtures", file)))
+
+    document.RootElement.GetProperty("cases").EnumerateArray()
+    |> Seq.filter (fun item -> item.GetProperty("endpoint").GetString() = endpoint)
+    |> Seq.map (fun item -> item.GetProperty("value").GetRawText() |> bytes)
+    |> Seq.toList
+
 let frame endpoint =
-    let definition = EndpointCatalog.tryFind endpoint |> Option.get
-
     let input =
-        SchemaSamples.variants definition.Request
-        |> List.head
-        |> Encoding.UTF8.GetString
+        match endpoint with
+        | "session"
+        | "session.logout"
+        | "context" -> bytes "{}"
+        | _ -> samples "wire-request-examples.json" endpoint |> List.head
 
-    bytes ($"{{\"endpoint\":\"{endpoint}\",\"input\":{input}}}")
-    |> Frames.parse
+    use document = JsonDocument.Parse(ReadOnlyMemory<byte> input)
+    let input = JsonSerializer.SerializeToUtf8Bytes document.RootElement
+
+    bytes ($"{{\"endpoint\":\"{endpoint}\",\"input\":{Encoding.UTF8.GetString input}}}")
+    |> Frames.admit
     |> Result.defaultWith (fun _ -> failwith "Fixture frame refused.")
+
+let frameEndpoint invocation =
+    Frames.request invocation |> WireRequest.endpoint
+
+let frameBytes invocation =
+    bytes (
+        $"{{\"endpoint\":\"{Endpoint.id (frameEndpoint invocation)}\",\"input\":{Encoding.UTF8.GetString(Frames.inputBytes invocation)}}}"
+    )
+
+let result invocation body =
+    Replies.decode (frameEndpoint invocation) body
+    |> Result.bind (fun reply ->
+        if Correlation.matches (Frames.request invocation) reply then
+            Ok reply
+        else
+            Error { Path = "$"; Reason = "CORRELATION" })
+
+let replyJson encoded =
+    Frames.decode encoded
+    |> Result.defaultWith (fun _ -> failwith "Invalid reply.")
+    |> ignore
+
+    use document = JsonDocument.Parse(ReadOnlyMemory<byte> encoded)
+    document.RootElement.Clone()
 
 let response status body =
     let message = new HttpResponseMessage(enum<HttpStatusCode> status)

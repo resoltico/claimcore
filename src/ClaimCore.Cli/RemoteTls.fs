@@ -1,6 +1,6 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.Net.Http
@@ -8,7 +8,6 @@ open System.Net.Security
 open System.Security.Cryptography.X509Certificates
 open System.Text
 open ClaimCore.HostSecurity
-open ClaimCore.ClientContract
 
 /// System trust is the default. An explicit owner-private PEM root replaces it only for a
 /// local synthetic endpoint. Hostname matching remains mandatory. The isolated custom-root

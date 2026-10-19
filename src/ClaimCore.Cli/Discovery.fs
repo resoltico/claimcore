@@ -1,10 +1,9 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System.Text
 open System.Text.Json
-open ClaimCore.ClientContract
 
 module Discovery =
     let help () =

@@ -1,12 +1,11 @@
 module ClaimCore.Cli.Program
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.Text
 open System.Threading
 open System.Runtime.InteropServices
-open ClaimCore.ClientContract
 
 let private writeBytes (bytes: byte array) =
     let output = Console.OpenStandardOutput()

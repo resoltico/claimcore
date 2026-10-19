@@ -1,6 +1,6 @@
 module ClaimCore.Tests.RemoteClientTests
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.Security.Cryptography
@@ -14,7 +14,6 @@ open Duende.IdentityModel.OidcClient
 open System.Text
 open Expecto
 open ClaimCore.Cli
-open ClaimCore.Contracts
 open ClaimCore.Application
 
 let private validConfiguration () =

@@ -1,12 +1,11 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
 open System.Threading
 open System.Threading.Tasks
-open ClaimCore.ClientContract
 
 type private RemoteSessionHolder() =
     let mutable session: RemoteAccessSession option = None
@@ -55,15 +54,15 @@ module private FrameInvocation =
 
 type RemoteFrameProcessor
     private (input: Stream, output: Stream, errors: Stream, invoke, owned: IDisposable) =
-    let delivery = FrameDelivery(output, errors)
+    let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
 
     let interpret frame stopped =
         match frame with
         | InputFrame.EndOfInput -> None
-        | InputFrame.TooLarge -> Some(CliReply.protocol "INVALID_FRAME")
+        | InputFrame.TooLarge -> Some(CliReply.protocol ProtocolFailure.InvalidFrame)
         | InputFrame.Bytes bytes ->
-            match Frames.parse bytes with
-            | Error _ -> Some(CliReply.protocol "INVALID_FRAME")
+            match Frames.admit bytes with
+            | Error _ -> Some(CliReply.protocol ProtocolFailure.InvalidFrame)
             | Ok frame ->
                 delivery.Prepare frame
 
@@ -75,8 +74,7 @@ type RemoteFrameProcessor
                             Frames.decode reply.Bytes
                             |> Result.defaultWith (fun _ -> invalidOp "Invalid local reply.")
 
-                        let knowledge =
-                            decoded.GetProperty("attemptKnowledge").GetString() |> nonNull
+                        let knowledge = (Frames.metadata decoded).AttemptKnowledge
 
                         CliReply.forAttempt frame knowledge reply
                 )
