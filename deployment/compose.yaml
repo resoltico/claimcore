@@ -26,6 +26,8 @@ services:
       - start
       - --db=dev-file
       - --health-enabled=true
+      - --http-management-scheme=http
+      - --http-management-host=127.0.0.1
       - --http-enabled=false
       - --https-port=${CLAIMCORE_IDENTITY_PORT:-5444}
       - --https-certificate-file=/etc/claimcore-identity/server.pem
@@ -41,6 +43,20 @@ services:
       - identity-data:/opt/keycloak/data
       - ${CLAIMCORE_CONFIG_DIR}/identity:/etc/claimcore-identity:ro
       - ${CLAIMCORE_CONFIG_DIR}/identity/realm:/opt/keycloak/data/import:ro
+    healthcheck:
+      test:
+        - CMD
+        - /bin/bash
+        - -ec
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000;
+          printf 'HEAD /health/ready HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3;
+          read -r protocol status remainder <&3;
+          [[ "$$protocol" == HTTP/1.* && "$$status" == 200 ]]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 30s
     restart: unless-stopped
 
   administration:
@@ -78,15 +94,16 @@ services:
     volumes:
       - ${CLAIMCORE_CONFIG_DIR}/web:/etc/claimcore/runtime:ro
       - web-key-ring:/var/lib/claimcore/key-ring
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     depends_on:
       administration:
-    user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
         condition: service_completed_successfully
       identity:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: [CMD, dotnet, ClaimCore.Web.dll, probe, ready]
       interval: 5s

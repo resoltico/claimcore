@@ -23,17 +23,17 @@ Platform shared frameworks and container images remain separate redistribution i
 ## Verification stages
 
 `bash eng/verify.sh` with no arguments runs the complete local gate. Named stages run independently or in order,
-for example `bash eng/verify.sh unit frontend`; `--fast` runs native lint, unit/architecture and
+for example `bash eng/verify.sh unit frontend`; `--fast` runs F# lint, unit/architecture and
 frontend checks without Docker and must be its only argument. Explicit empty arguments,
 unknown stages and `--fast` mixed with other arguments refuse with exit 64 before invoking tools
-or Docker. Restore, native build and frontend asset build work are shared
+or Docker. Restore, .NET build and frontend asset build work are shared
 within one invocation; a later acceptance stage reuses the frontend stage's successful asset build.
 Stages requiring Docker check the daemon before any selected restore, build or browser download.
 
 | Stage              | Coverage and prerequisites                                                                                           |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------- |
 | `lint`             | .NET restore, F# formatting and lint                                                                                 |
-| `unit`             | .NET build, native/property and unoptimized architecture tests; tracked contract freshness                           |
+| `unit`             | .NET build, core/property and unoptimized architecture tests; tracked contract freshness                           |
 | `frontend`         | Node only: locked install, audit, formatting, lint, types, unit tests, Knip, licenses, build and notices             |
 | `workflows`        | ShellCheck and pinned Actionlint container; Docker required                                                          |
 | `integration`      | Isolated PostgreSQL and Web/identity-provider tests; builds their project closures; Docker required                  |
@@ -49,7 +49,11 @@ filtered run is iteration evidence and cannot establish the complete gate. Nativ
 TRX results and adjacent sanitized browser-engine count/duration summaries in unique ignored directories
 under `artifacts/verification/`; later runs do not overwrite earlier failure evidence.
 
-Acceptance owns fresh labelled PostgreSQL/Keycloak and published processes. By default it runs
+Acceptance owns fresh labelled PostgreSQL/Keycloak and published processes. Its fresh Compose
+qualification also executes the real configuration producer, starts a uniquely named project,
+signs in the provisioned human owner, restarts Web and reuses the original cookie and antiforgery
+token. It removes only that project’s containers, volumes, network and automatically named images.
+Private failure evidence is retained; a file-admission stub is not deployment qualification. By default it runs
 every specification on Chromium, Firefox and WebKit. Set `CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE`
 to exactly `chromium`, `firefox` or `webkit` for one engine. Set
 `CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE=smoke` with an explicit engine for the short smoke selection;
@@ -62,7 +66,7 @@ selected; this prerequisite does not add Chromium specifications to that selecte
 CI starts independent checks in parallel. PostgreSQL waits only for baseline configuration, Web/identity
 starts independently, and acceptance waits only for frontend qualification. Native test jobs restore
 and build their selected inputs. PostgreSQL keeps its baseline-major matrix and fail-fast cancellation.
-`Gate` requires every native, frontend and acceptance job. The local `integration` stage runs
+`Gate` requires every .NET, frontend and acceptance job. The local `integration` stage runs
 both suites in order and builds their project closures; an earlier solution build is reused. Use
 `postgres` or `web` for a complete individual suite.
 PRs and merge queues run eleven-case Chromium smoke, including authority uncertainty and
@@ -98,11 +102,11 @@ overlap at most two independent test cases. Each database-backed case owns a fre
 changes, schema corruption and shutdown tests cannot affect another case. Operations inside a
 case retain their sequence and transaction boundaries. Direct PostgreSQL test invocations must
 pass `-- --settings=eng/expecto.integration.runsettings` to retain this resource bound. Other
-native suites use the general runner settings. PostgreSQL readiness retains both protocol and
+.NET suites use the general runner settings. PostgreSQL readiness retains both protocol and
 mapped-port checks, polls each every 250 ms, and bounds the protocol phase to 60 seconds; the
 mapped-port phase retains the Npgsql connection timeout.
 
-Local runs sequence the selected engines in one native test case and stop before creating a later
+Local runs sequence the selected engines in one published-process test case and stop before creating a later
 engine fixture when an earlier engine fails. Successful default execution requires all three
 complete engine suites.
 
@@ -162,12 +166,24 @@ remain disabled in CI.
 
 ## Generated contracts and boundary verification
 
-The generator stages and validates the complete owned artifact set before replacement. Its tracked
-inventory permits removal of obsolete generated outputs; unexpected content is refused, never deleted.
-Build the generator from Contracts/ClientProtocol independently of CLI, then compile clients from the
-tracked outputs. `contracts/ClientContract.fs` is compiled into CLI and `browser-contract.ts` is consumed
-by the browser. Neither normal build invokes generation. Final verification includes published CLI
-closure/discovery with server assemblies absent and complete positive/negative byte corpora.
+The generator stages and validates its complete owned directory before replacement. It emits
+exactly the OpenAPI contract, TypeScript client types, descriptors, CLI frame schema, delivery and
+correlation vectors, byte corpus and TypeScript package metadata. Missing, stale and extra files
+refuse freshness checks. Run:
+
+```sh
+dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts
+```
+
+Review the generated diff with the typed Wire/Application/Domain change. The generator builds
+independently of CLI and references only Wire, Domain and Application. CLI embeds `openapi.json`
+and `descriptors.json`; the browser imports `client.ts` and interprets OpenAPI component schemas.
+Neither ordinary build invokes generation, and web commands never invoke .NET. Wire response
+round trips and a separately implemented JSON Schema 2020-12 validator check the byte corpus;
+an independent parser checks OpenAPI 3.1. Committed Python-generated fixtures bind F# to independent
+oracles; generated vectors bind TypeScript delivery and correlation to F#. Never regenerate the
+regression fixtures from the implementation under test. Published CLI closure/discovery runs with
+server assemblies absent.
 
 Browser unit qualification forbids focused runs and rejects runner-reported skipped, todo, pending,
 interrupted or retried outcomes. The completion reporter is tested against the actual runner,

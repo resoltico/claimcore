@@ -7,7 +7,7 @@ open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 open CliCalls
 
 let private arm (fixture: PublishedFixture.Fixture) status =
@@ -39,12 +39,32 @@ let private field (name: string) (reply: JsonElement) =
     reply.GetProperty(name).GetString() |> nonNull
 
 /// This is the automation caller's state. Each CLI process only reports its own attempt.
+let private knowledge token =
+    Codec.decode 128 Frames.knowledge (JsonSerializer.SerializeToUtf8Bytes(token: string))
+    |> Result.defaultWith (fun _ -> failtest "Unknown attempt token")
+
+let private accumulated token =
+    if token = "CONTENT_EXCLUDED" then
+        AccumulatedKnowledge.ContentExcluded
+    else
+        AccumulatedKnowledge.Known(knowledge token)
+
 let private retain prior expected attempt evidence reply =
     Expect.equal (field "attemptKnowledge" reply) attempt "Published per-attempt knowledge"
     Expect.equal (field "resolutionEvidence" reply) evidence "Published content evidence"
-    let next = DeliveryPolicy.accumulate prior attempt evidence
-    Expect.equal next expected "Caller accumulation preserves unresolved earlier delivery"
-    next
+
+    let resolution =
+        Codec.decode 128 Frames.evidence (JsonSerializer.SerializeToUtf8Bytes(evidence: string))
+        |> Result.defaultWith (fun _ -> failtest "Unknown evidence token")
+
+    let next = Delivery.accumulate (accumulated prior) (knowledge attempt) resolution
+
+    Expect.equal
+        next
+        (accumulated expected)
+        "Caller accumulation preserves unresolved earlier delivery"
+
+    expected
 
 let private oneAcceptance fixture reference =
     let page =

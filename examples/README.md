@@ -1,7 +1,9 @@
 # Synthetic case walkthrough
 
 Run against a fresh synthetic installation with matching published service and CLI binaries.
-The CLI is an authenticated HTTPS client. It receives no database connection file.
+The CLI is an authenticated HTTPS client using the [OpenAPI contract](../contracts/openapi.json).
+It receives no database connection file. The Web service requires a persisted protected key-ring
+directory; use the [fresh setup](../docs/getting-started.md) to create it.
 
 Configure `CLAIMCORE_SERVICE_URL`, `CLAIMCORE_OIDC_ISSUER`, `CLAIMCORE_OIDC_CLIENT_ID`
 and `CLAIMCORE_CLI_AUTH_MODE` as described by `ClaimCore.Cli help`. For automation, supply

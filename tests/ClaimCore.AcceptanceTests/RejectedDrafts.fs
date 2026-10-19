@@ -21,12 +21,12 @@ let qualify (fixture: PublishedFixture.Fixture) =
     let before = fixture.Administration [ "head" ]
     Expect.equal before.ExitCode 0 "Read accepted head before refusals"
 
-    for field, value in
+    for field, value, diagnostic in
         [
-            "incidentDate", "2026-02-30"
-            "claimedAmount", "١٢٫٥٠"
-            "claimedCurrency", "ĀBC"
-            "claimantName", ""
+            "incidentDate", "2026-02-30", "INPUT_CALENDAR_DATE_REQUIRED"
+            "claimedAmount", "١٢٫٥٠", "INPUT_DECIMAL_FORMAT"
+            "claimedCurrency", "ĀBC", "INPUT_CURRENCY_FORMAT"
+            "claimantName", "", "INPUT_TEXT_REQUIRED"
         ] do
         let input = input fixture field value
 
@@ -35,8 +35,20 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
             Expect.equal
                 (reply.GetProperty("kind").GetString())
-                "protocolFailure"
-                "Permanent malformed format refuses before transport"
+                "result"
+                "Malformed business input reaches the typed refusal"
+
+            let rejection = require "REJECTED" reply
+
+            Expect.equal
+                (rejection.GetProperty("field").GetString())
+                field
+                "Field guidance is retained"
+
+            Expect.equal
+                (rejection.GetProperty("diagnostic").GetProperty("id").GetString())
+                diagnostic
+                "Application owns format refusal"
 
     for value, diagnostic in
         [ " ", "INPUT_TEXT_REQUIRED"; String.replicate 201 "x", "INPUT_TEXT_TOO_LONG" ] do

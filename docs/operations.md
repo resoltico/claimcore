@@ -14,6 +14,9 @@ reach old row versions, WAL, replicas, logs, exports or backups. Retained refere
 identify a person. Operators own retention, physical disposal and privacy decisions outside
 this live-database act. VOID preserves all history and is not erasure.
 
+Authority history is never erased, including the principals’ issuer and subject and executor/target
+attribution. Case erasure does not erase actor identities or grants.
+
 The append-only guard permits only case payload clearing; it is an integrity guard, not protection
 against a hostile trusted owner. A schema owner can clear payload without recording ERASE under
 that exception; verification detects missing payload without an accepted erasure. Runtime erasure
@@ -35,21 +38,37 @@ Before registering a SERVICE principal, restrict its confidential IdP client to 
 and disable interactive/user grant paths. The human CLI client is public authorization-code/PKCE,
 with service accounts disabled. Put the API audience in access tokens only, never ID tokens.
 `azp`/`client_id` classification does not establish the grant type; operators must maintain these
-flow restrictions as described in [Web admission](web.md#cc-web-001).
+flow restrictions. [Web admission](web.md#cc-web-001) owns token classification and technical checks.
 
-Browser session protection keys persist in the required key-ring directory, but server-side
-session tickets remain process-local and are lost on restart. Treat the key directory
-as a secret outside database backups; Linux key XML is unencrypted. Plain list cursors survive restarts and have no expiry; every page rechecks current authority. The browser retains no pending request across
-reload. Preserve exact uncertain requests through the caller’s process; never replace their ID.
+The local [Compose configuration](../deployment/compose.yaml) keeps the Web root filesystem read-only
+and supplies bounded ephemeral `/tmp` for framework staging. Only the protected key-ring volume
+persists session material; temporary staging is outside database backups.
+
+Browser session protection keys and encrypted server-side session tickets persist in the required
+key-ring directory. Tickets live in its private `sessions` subdirectory and survive a Web restart
+with their original idle and absolute deadlines. Logout deletes the ticket. A backward clock
+step that predates the last persisted activity refuses that session. The cookie contains only a
+protected random lookup key; identity and tokens are not stored in browser storage. Protect the
+whole directory, including tickets, and do not share it between concurrently running Web
+processes: multiple-instance session coordination is not qualified. Treat the key directory
+as a secret outside database backups; Linux key XML is unencrypted. Preserve, back up and rotate
+this directory separately from database backups, with the same care as the client secret.
+Pagination follows the [API contract](api.md). The browser retains no pending request across reload. Preserve exact uncertain requests through the caller’s process; never replace their ID.
 
 ## Private configuration
 
-Use the [private-input policy](database.md#cc-db-002) on supported local filesystem mode
-semantics. Group read is permitted; group write/execute and all other-user access are refused.
-Ownership and ACLs are not inspected. The file owner and host administrator remain trusted:
-admission does not freeze concurrent changes to content or permissions. Preserve all notices
-when distributing a published application; [Development](development.md#first-checkout) owns
-qualified publication modes.
+Private inputs are absolute paths with valid UTF-8 and no NUL, supported on Linux and macOS.
+Symbolic links are followed, including Kubernetes secret-volume links. Path mode is checked before
+opening; read-only open runs on a worker bounded to two seconds, so a blocked open refuses as not
+regular. The opened handle must be seekable and satisfy the same mode policy: no other-user access
+and no group write or execute. Group read is allowed, including `0640` and `0440`. Its length must
+fit the caller's bound, all bytes come from that admitted handle, and the caller clears buffers.
+Directories, missing or oversized files and malformed paths refuse. There is no native code.
+
+Ownership and ACLs are not inspected. Filesystem mode semantics, the file owner and the host
+administrator remain trusted; admission does not freeze concurrent changes to contents or
+permissions. Preserve all notices when distributing a published application;
+[Development](development.md#first-checkout) owns qualified publication modes.
 
 ## Backups and restore
 

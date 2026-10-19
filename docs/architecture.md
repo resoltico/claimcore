@@ -9,7 +9,7 @@ identity, authorization and outcomes; the store executes pure decisions against 
 ### CC-ARCH-001 — Component graph and compiled boundaries
 
 [The architecture manifest](../config/architecture.json) owns direct project references in both
-directions. Domain, RecordFormat, Application, ClientProtocol and Contracts call no clock, file,
+directions. Domain, RecordFormat, Application and Wire call no clock, file,
 environment, randomness or network APIs. Only Hosting and Database reference Postgres; only Web references
 Hosting. These referencer rules concern other projects, not a component's own types.
 TimeZoneInfo belongs only to Hosting, Database and Postgres. Compiled negative fixtures prove
@@ -20,29 +20,27 @@ transport dependencies. These controls reject specified violations, not every ex
 copy. Internals grants name a permitted referencer
 or an actual test project. Test projects reference only product or tooling projects.
 
-RecordFormat owns durable byte encodings. Contracts owns the endpoint catalogue, typed bindings
-and core-derived interaction definitions.
-ClientProtocol owns generic strict byte/schema admission, correlation and finite delivery policy,
-without core dependencies. ContractGenerator projects the same definitions into tracked native
-catalogue values and executable browser schemas/builders; complete inventory and byte checks
-reject missing, extra and stale outputs. Structural JSON Schema alone does not express the
-fingerprinted byte profile (UTF-8, duplicate names, Unicode, numeric lexemes and bounds). HostSecurity
-admits private files with managed path/handle mode checks and a bounded open under the
-[private-input policy](database.md#cc-db-002). Test process capture and teardown use managed
-process APIs and are not a product dependency.
-Postgres owns transactions, projection persistence, schema administration and verification reads.
-Application owns the pure ledger, authority, erasure, projection and checkpoint verification folds.
-Hosting owns case-work composition, typed protocol dispatch and runtime lifetime. Its public service
-accepts verified subject facts and opaque admitted inputs and returns encoded replies with safe audit
-metadata. The typed runtime and actor factory remain internal to Hosting. Web references Hosting,
-ClientProtocol and HostSecurity; CLI references only
-ClientProtocol and HostSecurity. The published CLI excludes server semantic assemblies. Web verifies
-HTTP identity and transport admission; Hosting binds the principal and invokes the actor core.
-Hosting omits F# cross-assembly optimization data so the host compiler cannot import typed
-dispatch implementation through a protocol signature. CLI delivers generated-contract frames;
-Database is the separate owner administration process.
-Database references Application to validate principals and render shared ledger/authority values,
-so it does not duplicate their definitions. ContractGenerator derives artifacts from Contracts.
+RecordFormat owns durable bytes and supports only its versioned record readers and writers.
+Wire references no ClaimCore project. Its typed codecs supply request/reply readers, writers and
+schemas for all twelve endpoints. It also owns typed delivery, correlation and CLI frames.
+The OpenAPI contract derives from those codecs; the [API contract](api.md) owns the wire profile,
+fingerprint and tracked artifacts. ContractGenerator references Wire, Domain and Application to
+emit that contract and presentation descriptors. Generated TypeScript types support ordinary
+request object literals; clients have no generated builders or native F# catalogue.
+
+HostSecurity admits private files using managed APIs under the
+[private-input policy](operations.md#private-configuration). Test process capture and teardown use
+managed process APIs and are not a product dependency. Postgres owns transactions, scoped reads,
+projection persistence, schema administration and verification reads. Application owns pure ledger,
+authority, erasure, projection and checkpoint verification folds.
+
+Hosting is the case-work composition root. Its public service accepts verified subject facts and a
+Wire request, maps to Application, invokes the actor core and returns a typed Wire reply. Web owns
+HTTP authentication, admission, encoding and safe audit logging. Web references Hosting, Wire and
+HostSecurity; CLI references Wire and HostSecurity and embeds generated discovery artifacts.
+The published CLI excludes server semantic assemblies. Hosting exposes no Domain/Application
+objects through its public facade and needs no optimization-data suppression. Database is the
+separate owner administration process; it references Application for shared identities and outcomes.
 
 #### Durable records
 
@@ -116,8 +114,13 @@ correction; RecordPayment covers payment/clear and payment correction; Close cov
 Correction checks every requested REPLACE/CLEAR group, including unchanged reaffirmations.
 Installation ReadAuthority is required for actor listing, selected-actor grant paging and authority
 observation; case grants do not supply it. Public actor summaries exclude grants; selected grant
-pages load a bounded target header and grant rows in one REPEATABLE READ snapshot. Complete caller
-grants remain internal authorization inputs, including when caller equals target. Human-only grants are enforced on their target as well as their executor.
+pages load a bounded target header and grant rows in one REPEATABLE READ snapshot. Caller authority loads installation grants and the case scopes that can influence that decision.
+A case request loads its target and, if a reused operation ID belongs to another case, that
+accepted entry’s scope: at most two cases. Identity authorization and receipt disclosure use
+those scopes in the same locked transaction or read snapshot. Context checks assigned
+visibility with EXISTS; list pages use a role-parameterized semi-join and never collect all
+assigned case IDs or grants. Authority review loads caller installation grants independently
+from the bounded selected-actor page, including when caller equals target. Human-only grants are enforced on their target as well as their executor.
 
 A receipt contains attribution ActorId and metadata; its snapshot is DISCLOSED, WITHHELD or ERASED.
 A current snapshot requires ReadCase; a superseded one requires ReadHistoryFull. Execute, replay,

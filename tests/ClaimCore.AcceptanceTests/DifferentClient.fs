@@ -1,6 +1,6 @@
 module internal ClaimCore.AcceptanceTests.DifferentClient
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System.Collections.Generic
 open System.IO
@@ -43,33 +43,26 @@ let private copySource root parent =
             "NuGet.Config"
             "LICENSE"
             "src/Directory.Build.props"
-            "contracts/ClientContract.fs"
+            "contracts/descriptors.json"
+            "contracts/openapi.json"
         ] do
         copySourceFile root directory name
 
-    for project in [ "ClaimCore.Cli"; "ClaimCore.ClientProtocol"; "ClaimCore.HostSecurity" ] do
+    for project in [ "ClaimCore.Cli"; "ClaimCore.Wire"; "ClaimCore.HostSecurity" ] do
         copyProject root directory project
 
     copyNotices root directory
     directory
 
 let private differentIdentity directory =
-    let catalog = Path.Combine(directory, "contracts/ClientContract.fs")
-    let text = File.ReadAllText catalog
-    let marker = "let fingerprint = WireContractFingerprint.create \""
-    let start = text.IndexOf(marker, System.StringComparison.Ordinal)
-
-    Expect.isGreaterThanOrEqual
-        start
-        0
-        "Mismatch fixture reaches the client-safe compiled fingerprint"
-
-    let valueStart = start + marker.Length
-
-    File.WriteAllText(
-        catalog,
-        text.Remove(valueStart, 64).Insert(valueStart, String.replicate 64 "0")
-    )
+    let source = Path.Combine(directory, "src/ClaimCore.Wire/OpenApi.fs")
+    let original = File.ReadAllText source
+    let marker = "text writer \"version\" \"1\""
+    Expect.stringContains original marker "Mismatch fixture reaches the emitted contract identity"
+    File.WriteAllText(source, original.Replace(marker, "text writer \"version\" \"fixture\""))
+    let resource = Path.Combine(directory, "contracts/openapi.json")
+    let original = File.ReadAllText resource
+    File.WriteAllText(resource, original.Replace("\"version\": \"1\"", "\"version\": \"fixture\""))
 
 let qualify (fixture: PublishedFixture.Fixture) =
     let directory = copySource fixture.Root fixture.Directory

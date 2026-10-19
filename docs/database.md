@@ -9,18 +9,9 @@ help and version. Discovery opens no database.
 ### CC-DB-002 — Private owner inputs precede database access
 
 The two settings are `CLAIMCORE_ADMIN_CONNECTION_FILE` and `CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE`.
-Private inputs use managed HostSecurity admission on Linux and macOS. Paths must be absolute,
-valid UTF-8 and contain no NUL. Symbolic links are followed, including secret-volume links.
-Both the path mode before opening and the opened handle's mode must forbid all other-user
-access and group write/execute; group read is allowed (for example `0600`, `0640` or `0440`).
-The open runs on a worker with a two-second bound; a blocked open is refused as not regular.
-The opened handle must be seekable, its length must fit the caller's bound, and the bytes are
-read from that same handle. Callers clear the returned buffer after use.
-
-There is no ownership or ACL inspection. Filesystem mode semantics and the host administrator
-are trusted; admission does not freeze concurrent changes to file content or permissions.
-Unsupported platforms, directories, missing files, malformed paths and oversized files refuse.
-No native library or C compiler is required.
+Private inputs use the managed [private-input policy](operations.md#private-configuration) on
+Linux and macOS. Admission finishes before a connection is opened. Unsupported platforms and
+inadmissible files refuse; no native library or C compiler is required.
 
 The principal file has exactly `operationId`, `issuer` and `subject`; `operationId` is a stable
 nonzero canonical UUID. Provisioning validates one human principal through Application and is

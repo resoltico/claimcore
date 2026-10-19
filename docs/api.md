@@ -1,6 +1,6 @@
 # Service and CLI contract
 
-The [endpoint catalogue](../contracts/catalog.json) defines twelve endpoints, their strict wire
+The [OpenAPI 3.1 contract](../contracts/openapi.json) defines twelve endpoints, their strict wire
 schemas and one shared fingerprint. `session` is GET; the others are POST to the literal
 `/api/<endpoint>` path, including dots in names such as `/api/case.execute`. Session bootstrap is
 anonymous; remaining operations require an authenticated principal. Case and authority work also
@@ -36,8 +36,8 @@ accumulated rows from successive requests are not one frozen snapshot. Execution
 `authority.list` returns actor ID, principal and enabled state, without nested grants. Use
 `authority.grants` with `actorId`, optional `cursor` and `limit` to review that actor's grants.
 Both reads require current installation ReadAuthority; disabled targets remain reviewable.
-The grant page returns its current actor header and at most 50 grants. Continuations bind the
-caller, complete caller authority, endpoint and target; grants may evolve between requests.
+The grant page returns its current actor header and at most 50 grants. Continuations bind the endpoint and target resource, with no identity, authority or time binding.
+Grants may evolve between requests; every page authorizes in its own read snapshot.
 A successful reply must echo the requested actor ID in its actor header.
 Use an actor ID returned by `authority.list` in the CLI frame (the ID below is synthetic):
 
@@ -68,24 +68,37 @@ The two execute endpoints use `ACCEPTED`, `ALREADY_ACCEPTED`, `REJECTED`, `FAILE
 and `OUTCOME_UNKNOWN`. A refusal records nothing. Preview returns `REVIEWED`, `ALREADY_ACCEPTED`
 or an explicit refusal/failure; it never
 accepts a new operation. Reads, including operation observation, return `SUCCEEDED` or an explicit
-refusal/failure. Absent and inaccessible resources share `RESOURCE_UNAVAILABLE`.
+refusal/failure. Absent and inaccessible resources share `ACCESS_RESOURCE_UNAVAILABLE`.
 
 Case receipts retain the original acceptance metadata. Their snapshots are `DISCLOSED`,
 `WITHHELD` or `ERASED` under current access; replay does not grant historical snapshot access.
 
-Schemas close objects and tags and check permanent format invariants. Business admission policy
-is evaluated only by Domain on newly asserted values, preserving old accepted text. Strict codecs
-reject duplicate members, invalid UTF-8, malformed scalars, invalid UUID/revision values and excess
-nesting/bytes. Wire-format failures are host refusals before Domain validation; they do not
-produce business-field rejections. Typed endpoint outcomes use HTTP 200; host failures carry
-their own HTTP status and an optional `executionPhase`. Server responses undergo full schema validation;
-both clients validate complete generated endpoint schemas from bounded strict response bytes. Malformed mutation replies
-retain exact delivery uncertainty.
+Schemas close objects and tags. Strict byte admission rejects duplicate decoded member names,
+invalid UTF-8 and Unicode, numeric lexemes outside the safe integer profile, invalid technical
+UUID/revision shapes, and excess nesting/bytes. Request business values remain strings: an invalid
+business date, amount, currency, country, reference or asserted text reaches Application/Domain and
+returns typed `REJECTED` with field guidance, HTTP 200 and CLI exit 2. A shape error remains a
+host `INPUT_INVALID` / HTTP 400 / `NOT_STARTED` refusal. Accepted response values obey permanent
+record formats; today's admission policy never invalidates retained history. Web encodes the typed
+reply directly. The CLI decodes with the Wire codec and the browser interprets the generated
+OpenAPI component schemas from bounded strict bytes. Malformed mutation replies preserve exact
+request identity and delivery uncertainty.
 
-Tracked [contract artifacts](../contracts/catalog.json) are generated from F# contract definitions.
-The fingerprint covers canonical framed catalogue metadata without its identity field, all schemas,
-complete descriptors, default English, delivery/correlation policy and the strict-byte profile; derived TypeScript, corpus and the fingerprint itself are excluded.
-[Development](development.md) owns generation and freshness checks.
+The fingerprint is lowercase SHA-256 of the exact deterministic bytes of `openapi.json`. It covers
+wire shape and the declared byte profile, excluding labels, glossary, English messages, descriptors,
+product version and generated client text. Presentation-only changes do not change the fingerprint.
+The generated inventory is `openapi.json`, `client.ts`, `descriptors.json`, `cli-frame.schema.json`,
+`delivery-vectors.json`, `correlation-vectors.json`, `corpus.json` and the TypeScript package metadata.
+[Development](development.md#generated-contracts-and-boundary-verification) owns generation and
+freshness checks. The [descriptors](../contracts/descriptors.json) carry presentation and typed advice
+vocabularies. `context.views` advertises `CASES`, `AUTHORITY` and `OPERATIONS`; installation offers
+contain only OPEN or an authority act. A case record has `advice.acts` and `advice.history`; correction
+choices belong only to CORRECT_CASE. Endpoint names and duplicated `state.availableActs`, `offers`
+and `historyDetails` are absent from case advice. Execution always rechecks current authority.
+
+Pagination uses [plain canonical keysets](architecture.md#cc-auth-001). Editing or sharing a cursor
+conveys no access. Both history details allow 50 rows and complete client replies are bounded to
+4 MiB; continuations remain required after short pages.
 
 Case preview/execute and authority execute response envelopes echo the admitted request operation ID,
 including refusals. Clients correlate that ID and receipt scope/act, case resource identity and promised
@@ -161,7 +174,8 @@ for the isolated human-owner flow. Tokens remain process-local.
 
 ### CC-CLI-003 — Mutation uncertainty after dispatch
 
-Exit 0 is success; 2 is protocol/business refusal; 3 is definite local/service failure;
+Exit 0 is success; 2 is invocation/protocol or typed business refusal (including malformed business
+strings); 3 is definite local/service failure;
 4 is dispatched mutation with uncertain delivery; 130 is cancellation. Invocation/root failures
 use 64/70. An uncertain retry retains operation ID, expected revision and exact request bytes.
 `session` stops on 4 or 130 and on an oversized frame; it cannot let a later result mask uncertainty.

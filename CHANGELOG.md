@@ -6,27 +6,33 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Security
 
-- Private-file admission now uses managed APIs, allows group read and follows symbolic links. It checks path and handle modes, bounds blocked opens to two seconds, and no longer inspects ownership or ACLs. See [private inputs](docs/database.md#cc-db-002).
-- Web now requires `CLAIMCORE_WEB_KEY_RING_DIRECTORY`, an existing protected absolute directory. Cryptographic keys persist across restarts; server-side session tickets remain process-local. Treat the key ring as a secret outside database backups; Linux key XML is unencrypted.
-
-### Removed
-
-- Signed pagination envelopes and the runtime cursor key. Plain canonical keysets survive restarts, elapsed time and unrelated grant changes; each page still authorizes before decoding its cursor.
-
-- The C compiler requirement, private-file native library, test process supervisor and publication-mode refusal guards. Published apphosts and redistributed packages retain reviewed third-party notices. Framework-dependent publication remains the qualified mode.
+- Managed private-input admission permits group read and follows secret-volume symbolic links. Path and handle modes forbid other-user access and group write/execute; blocked opens are bounded to two seconds. Ownership and ACLs are no longer inspected. See [private inputs](docs/operations.md#private-configuration).
+- Web requires `CLAIMCORE_WEB_KEY_RING_DIRECTORY`, an existing protected absolute directory. Data-protection keys and encrypted private server-side session tickets persist across restarts with their original deadlines and logout revocation. Use one Web process per ticket directory; concurrent sharing is not qualified. Protect this secret outside database backups; Linux key XML is unencrypted. The read-only Compose Web host supplies bounded ephemeral `/tmp` for framework key staging.
 
 ### Changed
 
-- **Breaking for installations:** the replaced baseline refuses installations from software through 0.10.0 untouched. Keep them with their matching software; no conversion is supplied. Case request format 5 and snapshot format 4 bound business names and stewardship reasons to 1,024 UTF-8 bytes and framed payloads to 32,768 bytes. See [durable records](docs/architecture.md#durable-records).
-- **Breaking for API and CLI consumers:** FULL history pages now allow 50 entries, matching SUMMARY, and the client response limit is 4 MiB. The diagnostic vocabulary excludes unreachable input and stored-state errors; regenerate matching consumers.
+- **Breaking for integrators:** the service, CLI and browser share a generated OpenAPI 3.1 contract and typed Wire codecs. Deploy matching clients and artifacts. The fingerprint is SHA-256 of the exact OpenAPI bytes and excludes presentation, descriptors and product version. Labels or translations alone no longer change contract identity. CLI discovery reads embedded OpenAPI/descriptors; browser requests are typed object literals.
+- **Breaking for malformed business input:** invalid business strings now reach Application/Domain and return typed `REJECTED`, field guidance, HTTP 200 and CLI exit 2. Structural or technical identity errors remain host refusals. The public vocabulary removes unreachable input/stored-state diagnostics, including the privacy-hidden `CASE_NOT_FOUND`; unexpected programming failures use `CORE_INTERNAL_ERROR` with `STOP_AND_INVESTIGATE`.
+- **Breaking for advice consumers:** `context.views` advertises allowed navigation. Installation offers contain OPEN or an authority act; case records expose `advice.acts` and `advice.history`, with correction choices only on CORRECT_CASE. Case `state.availableActs`, endpoint-named offers and `historyDetails` are removed.
+- **Breaking for read consumers:** SUMMARY and FULL history pages allow up to 50 entries; responses are bounded to 4 MiB. Plain canonical pagination keysets survive restarts and have no expiry or authority binding. Every page independently authorizes before decoding its cursor; sharing a cursor grants no access.
+- **Breaking for installations:** the replaced baseline refuses installations created by software through 0.10.0 untouched. Preserve them with their matching software; no conversion is supplied. Case request format 5 and snapshot format 4 add the permanent free-text and payload bounds in [durable records](docs/architecture.md#durable-records).
+- CLI discovery, PKCE/state processing and token requests use Duende.IdentityModel and Duende.IdentityModel.OidcClient with default discovery policy, explicit local trust roots and access-token-only consumption. Provider-advertised pushed authorization requests are supported. The loopback adapter and conservative process-local token reuse remain ClaimCore-owned.
+
+### Removed
+
+- Native private-file code, the test process supervisor, C compiler/SDK prerequisites and publication-mode refusal guards. Managed process cleanup observes teardown failures; detached or reparented descendants remain outside its guarantee. Preserve the complete framework-dependent publish directory and reviewed notices; other publication modes are unqualified.
+- HMAC cursor envelopes and runtime cursor secrets, generated F# client catalogues, generated request builders and the synthetic contract extension. The real command catalogue supplies rendering/submission coverage.
+
+### Fixed
+
+- Local Compose waits for identity-provider readiness before starting Web, avoiding early OIDC startup refusal while the provider is still initializing. The management health listener is confined to container loopback; public identity traffic remains HTTPS.
 
 ### Internal
 
-- CLI discovery, PKCE/state processing and token requests use the maintained Duende clients. The loopback adapter, explicit local trust roots and conservative process-local token reuse remain ClaimCore-owned. Provider-advertised pushed authorization requests are supported; default discovery policy refuses endpoints outside the issuer base URL.
-
-- Ledger verification folds and finding definitions now live in Application and have pure rejection tests for every finding. Postgres supplies typed records from one read snapshot; verification output and finding precedence remain unchanged.
-
-- Domain field, correction-group and business/stewardship act definitions use closed types. Retained snapshot failures have a distinct record-violation type. Durable-format regression vectors now include their independent Python oracle.
+- Domain fields, correction groups, business/stewardship acts and Application advice use closed types. Retained snapshot failures have a separate record-violation type; durable codecs expose versioned records only.
+- Authority loads installation and requested case roles, plus the accepted operation’s case scope when identity privacy requires a second case. Case listing uses an assigned-grant semi-join rather than loading every case grant. Authorization remains Application-owned and is rechecked in the same locked/read context.
+- Pure Application folds own ledger, authority, erasure, projection and checkpoint verification. Postgres streams typed rows from one read snapshot; findings, precedence and operator exit codes remain unchanged.
+- The reduced generated contract set includes independent byte-corpus conformance and OpenAPI parser checks. Committed Python oracles bind durable-format, delivery and correlation fixtures; generated vectors bind browser policies to F#.
 
 ## [0.10.0] - 2026-10-17
 

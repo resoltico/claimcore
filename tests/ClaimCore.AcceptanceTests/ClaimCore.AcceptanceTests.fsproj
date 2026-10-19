@@ -35,11 +35,12 @@
     <Compile Include="BrowserReadback.fs" />
     <Compile Include="BrowserProgress.fs" />
     <Compile Include="BrowserTests.fs" />
+    <Compile Include="DeploymentConfigurationTests.fs" />
     <Compile Include="ProcessFailureTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Npgsql" />
