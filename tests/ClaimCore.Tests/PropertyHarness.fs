@@ -8,6 +8,23 @@ open Expecto
 open Hedgehog
 open Hedgehog.FSharp
 
+let wireId endpoint response =
+    let direction = if response then "REPLY" else "REQUEST"
+
+    "CC-PROP-WIRE-"
+    + direction
+    + "-"
+    + (ClaimCore.Wire.Endpoint.id endpoint).Replace('.', '-').ToUpperInvariant()
+    + "-001"
+
+let private wirePropertyIds =
+    [
+        for endpoint in ClaimCore.Wire.Endpoint.all do
+            yield wireId endpoint false
+            yield wireId endpoint true
+    ]
+    |> Set.ofList
+
 let private propertyIds =
     set
         [
@@ -70,7 +87,7 @@ let private requireComplete propertyId report =
     | GaveUp -> failtest (failureText propertyId report)
 
 let run propertyId (property: Property<bool>) =
-    if not (Set.contains propertyId propertyIds) then
+    if not (Set.contains propertyId (Set.union propertyIds wirePropertyIds)) then
         invalidArg (nameof propertyId) "Use one registered property ID."
 
     let executable = Property.falseToFailure property

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Compile Include="../../contracts/ContractExtensionFixture.fs" Link="ContractExtensionFixture.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
@@ -12,6 +11,10 @@
     <Compile Include="WireCodecTests.fs" />
     <Compile Include="WireDeliveryTests.fs" />
     <Compile Include="WireRequestTests.fs" />
+    <Compile Include="OpenApiConformanceTests.fs" />
+    <Compile Include="WireResponseTests.fs" />
+    <Compile Include="WireRoundTripPropertyTests.fs" />
+    <Compile Include="WireCorrelationTests.fs" />
     <Compile Include="VerificationFoldTests.fs" />
     <Compile Include="ScalarPropertyTests.fs" />
     <Compile Include="TransitionOracle.fs" />
@@ -44,6 +47,8 @@
     <Compile Include="OperationAuthorityScopeTests.fs" />
     <Compile Include="CursorTests.fs" />
     <Compile Include="ApplicationTests.fs" />
+    <Compile Include="DiagnosticReachabilityTests.fs" />
+    <Compile Include="ProtocolMappingTests.fs" />
     <Compile Include="AuthorityTests.fs" />
     <Compile Include="DisclosureTests.fs" />
     <Compile Include="PaginationTests.fs" />
@@ -56,9 +61,8 @@
     <Compile Include="TokenLifetimeTests.fs" />
     <Compile Include="CliTransportFixture.fs" />
     <Compile Include="CliTransportTests.fs" />
-    <Compile Include="ClientProtocolTests.fs" />
+    <Compile Include="ClientInteractionTests.fs" />
     <Compile Include="ClientDecoderConformanceTests.fs" />
-    <Compile Include="ContractExtensionTests.fs" />
     <Compile Include="CliReplyLossTests.fs" />
     <Compile Include="CliFrameTests.fs" />
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
@@ -66,12 +70,10 @@
     <Compile Include="VerificationStageTests.fs" />
     <Compile Include="DocumentationChecks.fs" />
     <Compile Include="DocumentationTests.fs" />
-    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
@@ -82,6 +84,8 @@
   <ItemGroup>
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
     <PackageReference Include="Hedgehog" />
+    <PackageReference Include="Microsoft.OpenApi" />
+    <PackageReference Include="JsonSchema.Net" />
     <PackageReference Include="Markdig" />
   </ItemGroup>
 </Project>
