@@ -1,6 +1,6 @@
 module ClaimCore.Web.Program
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -82,8 +82,8 @@ let private configureKestrel (configuration: WebConfiguration) (builder: WebAppl
         ))
     |> ignore
 
-let private configureAntiforgery directory (services: IServiceCollection) =
-    SessionKeys.configure directory services
+let private configureAntiforgery directory idle (services: IServiceCollection) =
+    SessionKeys.configure directory idle services
 
     services.AddAntiforgery(fun options ->
         options.HeaderName <- "X-ClaimCore-Antiforgery"
@@ -142,7 +142,7 @@ let private configuredBuilder assets (configuration: WebConfiguration) oidc =
 
     builder.Logging.ClearProviders() |> ignore
     configureKestrel configuration builder
-    configureAntiforgery configuration.KeyRingDirectory builder.Services
+    configureAntiforgery configuration.KeyRingDirectory configuration.SessionIdle builder.Services
 
     AuthMiddleware.configure
         oidc

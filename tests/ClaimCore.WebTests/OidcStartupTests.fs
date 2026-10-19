@@ -1,6 +1,6 @@
 module ClaimCore.WebTests.OidcStartupTests
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.Net
@@ -10,7 +10,6 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Web
-open ClaimCore.Contracts
 
 type private SuspendedContent() =
     inherit HttpContent()

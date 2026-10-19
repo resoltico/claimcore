@@ -1,6 +1,6 @@
 namespace ClaimCore.Web
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.Diagnostics
@@ -82,9 +82,10 @@ module internal RequestLog =
         task {
             if context.Request.Path.StartsWithSegments(PathString "/api") then
                 let endpoint =
-                    ServiceGateway.endpoints
-                    |> List.tryFind (fun e -> Some e.Path = Option.ofObj context.Request.Path.Value)
-                    |> Option.map _.Identifier
+                    Endpoint.all
+                    |> List.tryFind (fun e ->
+                        Some(Endpoint.path e) = Option.ofObj context.Request.Path.Value)
+                    |> Option.map Endpoint.id
                     |> Option.defaultValue "unknown"
 
                 let value = start endpoint context

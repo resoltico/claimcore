@@ -17,7 +17,7 @@ type Fixture
     interface IDisposable with
         member _.Dispose() = (store :> IDisposable).Dispose()
 
-let create issuer =
+let createFor issuer subject =
     task {
         // Synthetic business time follows registration dates and has ledger microsecond precision.
         let instant = DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero)
@@ -28,8 +28,7 @@ let create issuer =
                 {
                     Store = store :> ILedgerStore
                     InstallationId = id 500
-                    Owner =
-                        PrincipalKey.human issuer "synthetic-owner" |> Result.defaultWith invalidOp
+                    Owner = PrincipalKey.human issuer subject |> Result.defaultWith invalidOp
                     Calendar =
                         { new IBusinessCalendar with
                             member _.TimeZoneId = "Etc/UTC"
@@ -68,3 +67,5 @@ let create issuer =
             (store :> IDisposable).Dispose()
             return raise error
     }
+
+let create issuer = createFor issuer "synthetic-owner"

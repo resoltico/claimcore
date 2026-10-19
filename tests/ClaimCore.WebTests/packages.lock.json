@@ -369,26 +369,10 @@
       "claimcore.cli": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.ClientProtocol": "[0.10.0, )",
           "ClaimCore.HostSecurity": "[0.10.0, )",
+          "ClaimCore.Wire": "[0.10.0, )",
           "Duende.IdentityModel": "[8.1.0, )",
           "Duende.IdentityModel.OidcClient": "[7.1.1, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.clientprotocol": {
-        "type": "Project",
-        "dependencies": {
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.contracts": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.10.0, )",
-          "ClaimCore.ClientProtocol": "[0.10.0, )",
-          "ClaimCore.Domain": "[0.10.0, )",
-          "ClaimCore.RecordFormat": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -402,10 +386,9 @@
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application": "[0.10.0, )",
-          "ClaimCore.ClientProtocol": "[0.10.0, )",
-          "ClaimCore.Contracts": "[0.10.0, )",
           "ClaimCore.Domain": "[0.10.0, )",
           "ClaimCore.Postgres": "[0.10.0, )",
+          "ClaimCore.Wire": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -435,12 +418,18 @@
       "claimcore.web": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.ClientProtocol": "[0.10.0, )",
           "ClaimCore.HostSecurity": "[0.10.0, )",
           "ClaimCore.Hosting": "[0.10.0, )",
+          "ClaimCore.Wire": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.13, )"
+        }
+      },
+      "claimcore.wire": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
         }
       },
       "Duende.IdentityModel": {

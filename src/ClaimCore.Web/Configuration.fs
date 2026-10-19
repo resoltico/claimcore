@@ -1,6 +1,6 @@
 namespace ClaimCore.Web
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -75,8 +75,8 @@ module Configuration =
             MaximumJsonBytes =
                 boundedInt
                     WebSetting.JsonLimit
-                    ServiceGateway.requestByteLimit
-                    ServiceGateway.requestByteLimit
+                    Limits.MaximumRequestBytes
+                    Limits.MaximumRequestBytes
             CorePermitLimit = boundedInt WebSetting.CorePermits 4 4
             CoreQueueLimit = boundedInt WebSetting.CoreQueue 16 16
             LoginPermitLimit = boundedInt WebSetting.LoginPermits 5 5

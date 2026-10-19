@@ -14,13 +14,21 @@ type private TicketEntry =
         AbsoluteExpiry: DateTimeOffset
         AbsoluteLifetime: TimeSpan
         Started: int64
-        mutable LastActivity: int64
+        LastActivity: int64
+        LastActivityInstant: DateTimeOffset
+        InactiveAtStart: TimeSpan
     }
 
 /// The browser cookie contains only a protected random lookup key. The ticket and its identity
 /// remain server-side and expire at the earlier of idle and absolute deadlines.
 [<Sealed>]
-type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProvider) =
+type internal OidcTicketStore
+    (
+        idle: TimeSpan,
+        absolute: TimeSpan,
+        ?timeProvider: TimeProvider,
+        ?persistence: TicketPersistence
+    ) =
     do
         if idle <= TimeSpan.Zero || absolute < idle then
             invalidArg (nameof idle) "OIDC session lifetimes must be positive and ordered."
@@ -34,9 +42,12 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
 
     let expired instant timestamp (entry: TicketEntry) =
         let age = clock.GetElapsedTime(entry.Started, timestamp)
-        let inactive = clock.GetElapsedTime(entry.LastActivity, timestamp)
 
-        entry.AbsoluteExpiry <= instant
+        let inactive =
+            entry.InactiveAtStart + clock.GetElapsedTime(entry.LastActivity, timestamp)
+
+        entry.LastActivityInstant > instant
+        || entry.AbsoluteExpiry <= instant
         || age < TimeSpan.Zero
         || inactive < TimeSpan.Zero
         || age >= entry.AbsoluteLifetime
@@ -49,11 +60,42 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
             if cursor = Some entry.Node then
                 cursor <- entry.Node.Next |> Option.ofObj
 
+            persistence |> Option.iter (fun storage -> storage.Remove key)
             nodes.Remove entry.Node
             tickets.Remove key |> ignore
 
             if cursor.IsNone then
                 cursor <- nodes.First |> Option.ofObj
+
+    let persist key entry =
+        persistence
+        |> Option.iter (fun storage ->
+            storage.Write(key, entry.Ticket, entry.AbsoluteExpiry, entry.LastActivityInstant))
+
+    do
+        persistence
+        |> Option.iter (fun storage ->
+            let instant, timestamp = clock.GetUtcNow(), clock.GetTimestamp()
+
+            for key, ticket, expiry, activity in storage.Load() do
+                if activity <= instant && expiry > instant && instant - activity < idle then
+                    tickets.Add(
+                        key,
+                        {
+                            Node = nodes.AddLast key
+                            Ticket = ticket
+                            AbsoluteExpiry = expiry
+                            AbsoluteLifetime = min absolute (expiry - instant)
+                            Started = timestamp
+                            LastActivity = timestamp
+                            LastActivityInstant = activity
+                            InactiveAtStart = instant - activity
+                        }
+                    )
+                else
+                    storage.Remove key
+
+            cursor <- nodes.First |> Option.ofObj)
 
     let sweep quota excluded instant timestamp =
         let count = min quota nodes.Count
@@ -100,6 +142,9 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
                 if tickets.Count >= 10000 then
                     invalidOp "The OIDC session store is full."
 
+                persistence
+                |> Option.iter (fun storage -> storage.Write(key, ticket, absoluteExpiry, instant))
+
                 tickets.Add(
                     key,
                     {
@@ -109,8 +154,11 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
                         AbsoluteLifetime = absoluteExpiry - instant
                         Started = timestamp
                         LastActivity = timestamp
+                        LastActivityInstant = instant
+                        InactiveAtStart = TimeSpan.Zero
                     }
                 )
+
 
                 if cursor.IsNone then
                     cursor <- nodes.First |> Option.ofObj)
@@ -124,7 +172,10 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
                 sweep 32 (Some key) instant timestamp
 
                 match entry with
-                | Some value -> tickets[key] <- { value with Ticket = ticket }
+                | Some value ->
+                    let renewed = { value with Ticket = ticket }
+                    persist key renewed
+                    tickets[key] <- renewed
                 | None -> ())
 
             Task.CompletedTask
@@ -139,8 +190,16 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
 
                     match found with
                     | Some entry ->
-                        entry.LastActivity <- timestamp
-                        entry.Ticket
+                        let touched =
+                            { entry with
+                                LastActivity = timestamp
+                                LastActivityInstant = instant
+                                InactiveAtStart = TimeSpan.Zero
+                            }
+
+                        persist key touched
+                        tickets[key] <- touched
+                        touched.Ticket
                     | None -> Unchecked.defaultof<AuthenticationTicket>)
 
             Task.FromResult(ticket)

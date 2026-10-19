@@ -2,7 +2,9 @@ namespace ClaimCore.Web
 
 open System
 open System.IO
+open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.DataProtection
+open Microsoft.Extensions.Options
 open Microsoft.Extensions.DependencyInjection
 
 module SessionKeys =
@@ -28,9 +30,22 @@ module SessionKeys =
         | :? UnauthorizedAccessException
         | :? PlatformNotSupportedException -> invalid ()
 
-    let configure (directory: DirectoryInfo) (services: IServiceCollection) =
+    let configure (directory: DirectoryInfo) idle (services: IServiceCollection) =
         services
             .AddDataProtection()
             .SetApplicationName("ClaimCore.Web")
             .PersistKeysToFileSystem(directory)
+        |> ignore
+
+        services.AddSingleton<IPostConfigureOptions<CookieAuthenticationOptions>>(fun provider ->
+            let protection = provider.GetRequiredService<IDataProtectionProvider>()
+            let storage = TicketPersistence(directory, protection)
+
+            PostConfigureOptions<CookieAuthenticationOptions>(
+                "Cookies",
+                fun options ->
+                    options.SessionStore <-
+                        OidcTicketStore(idle, options.ExpireTimeSpan, persistence = storage)
+            )
+            :> IPostConfigureOptions<CookieAuthenticationOptions>)
         |> ignore
