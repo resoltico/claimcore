@@ -1,195 +1,181 @@
 module ClaimCore.Tests.ContractSnapshotTests
 
-open ClaimCore.ClientProtocol
-
 open System
 open System.IO
+open System.Security.Cryptography
 open System.Text
+open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Contracts
+open ClaimCore.Wire
 open ClaimCore.ContractGeneration
 
 let private bytes (value: string) = Encoding.UTF8.GetBytes value
 
-let private command =
-    "dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts"
-
 let private expected () =
     ContractArtifacts.all ()
-    |> List.map (fun value -> value.Name, value.Bytes)
+    |> List.map (fun artifact -> artifact.Name, artifact.Bytes)
     |> Map.ofList
 
-let private compare expected actual =
-    let names values = values |> Map.keys |> Set.ofSeq
-    let inventory = Set.union (names expected) (names actual)
-
-    inventory
-    |> Set.toList
-    |> List.filter (fun name -> Map.tryFind name expected <> Map.tryFind name actual)
+let private differences expected actual =
+    Set.union (expected |> Map.keys |> Set.ofSeq) (actual |> Map.keys |> Set.ofSeq)
+    |> Set.filter (fun name -> Map.tryFind name expected <> Map.tryFind name actual)
 
 let private freshness () =
     let directory =
         Path.Combine(ClaimCore.TestSupport.RepositoryRoot.find (), "contracts")
 
     let entries = Directory.GetFileSystemEntries directory
-
-    Expect.isTrue
-        (entries |> Array.forall File.Exists)
-        "Contract inventory contains regular files only"
+    Expect.isTrue (entries |> Array.forall File.Exists) "Only regular artifacts are delivered"
 
     let actual =
         entries
         |> Array.map (fun path -> Path.GetFileName path |> nonNull, File.ReadAllBytes path)
         |> Map.ofArray
 
-    Expect.isEmpty (compare (expected ()) actual) ("Regenerate and review: " + command)
+    Expect.isEmpty
+        (differences (expected ()) actual)
+        "Regenerate: dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts"
 
-let private negativeControls () =
+    Expect.equal (actual.Count) 8 "Seven contract artifacts and the package marker"
+
+let private controls () =
     let original = expected ()
     let name = original |> Map.keys |> Seq.head
 
     for changed in
         [
             Map.remove name original
-            Map.add "validators.stale.mjs" (bytes "stale") original
+            Map.add "stale.json" (bytes "stale") original
             Map.add name (bytes "changed") original
         ] do
-        Expect.isNonEmpty (compare original changed) "Missing, extra and changed files refuse"
+        Expect.isNonEmpty
+            (differences original changed)
+            "Missing extra and changed bytes are detected"
 
-let private independentIdentity () =
-    let inputs =
-        [ "a.json", bytes "{\"z\":1,\"a\":\"🙂\"}"; "b.json", bytes "[true,null]" ]
+let private fingerprint () =
+    let emitted = expected ()
+    let openapi = Map.find "openapi.json" emitted
+    let hash = SHA256.HashData openapi |> Convert.ToHexStringLower
+    Expect.equal Fingerprint.value hash "Fingerprint is SHA-256 of emitted OpenAPI bytes"
 
-    Expect.equal
-        (ContractIdentity.preimage inputs |> Encoding.UTF8.GetString)
-        "{\"inputs\":[{\"name\":\"a.json\",\"value\":{\"a\":\"🙂\",\"z\":1}},{\"name\":\"b.json\",\"value\":[true,null]}],\"purpose\":\"claimcore/wire-contract\"}"
-        "Independent canonical frame"
+    Expect.stringContains
+        (Map.find "client.ts" emitted |> Encoding.UTF8.GetString)
+        hash
+        "Browser binds the same fingerprint"
 
-    Expect.equal
-        (ContractIdentity.fingerprint inputs)
-        "a1fc39291ed809c551ed29df655982b6395f120b1eafb3b2e676f928958e2923"
-        "Python hashlib oracle"
-
-    Expect.throws
-        (fun () -> ContractIdentity.preimage (inputs @ [ List.head inputs ]) |> ignore)
-        "Duplicate identity names refuse"
-
-let private identitySensitivity () =
-    let inputs = EndpointCatalog.identityInputs ()
-    let original = ContractIdentity.fingerprint inputs
-
-    Expect.equal
-        original
-        (WireContractFingerprint.value EndpointCatalog.fingerprint)
-        "Single identity"
-
-    let names = inputs |> List.map fst
-
-    Expect.equal
-        names.Length
-        33
-        "Metadata, descriptors, default English, schemas and strict-byte/delivery profiles"
-
-    for name in
-        [
-            "endpoint.authority.grants.request.schema.json"
-            "endpoint.authority.grants.response.schema.json"
-        ] do
-        Expect.contains names name "Selected grant schemas participate in identity"
-
-    Expect.isFalse
-        (names
-         |> List.exists (fun name ->
-             name.EndsWith(".ts", StringComparison.Ordinal)
-             || name = "endpoint-corpus.json"
-             || name = "catalog.json"))
-        "Derived outputs and self excluded"
-
-    for name, _ in inputs do
-        let changed =
-            inputs
-            |> List.map (fun (candidate, value) ->
-                if candidate = name then
-                    candidate, bytes "null"
-                else
-                    candidate, value)
-
-        Expect.notEqual
-            (ContractIdentity.fingerprint changed)
-            original
-            ("Identity includes " + name)
+    let root = JsonNode.Parse(openapi) |> nonNull
+    root["info"] <- JsonNode.Parse("""{"title":"ClaimCore","version":"changed"}""")
 
     Expect.notEqual
-        (ContractIdentity.fingerprint (List.rev inputs))
+        (SHA256.HashData(bytes (root.ToJsonString())) |> Convert.ToHexStringLower)
+        hash
+        "Contract byte changes alter identity"
+
+let private presentationIndependence () =
+    let original = Fingerprint.value
+    let descriptors = JsonNode.Parse(ContractDocuments.descriptors ()) |> nonNull
+    let firstField = (descriptors["fields"] |> nonNull).AsArray()[0] |> nonNull
+    firstField["label"] <- JsonValue.Create "Different English label"
+    firstField["meaning"] <- JsonValue.Create "Different English meaning"
+
+    descriptors["diagnostics"] <-
+        JsonNode.Parse(
+            """{"diagnostic.CORE_INTERNAL_ERROR":[{"literal":"Different presentation"}]}"""
+        )
+
+    Expect.notEqual
+        (bytes (descriptors.ToJsonString()))
+        (ContractDocuments.descriptors ())
+        "Presentation control actually changed"
+
+    let artifacts =
+        expected () |> Map.add "descriptors.json" (bytes (descriptors.ToJsonString()))
+
+    let changedIdentity =
+        Map.find "openapi.json" artifacts |> SHA256.HashData |> Convert.ToHexStringLower
+
+    Expect.equal
+        changedIdentity
         original
-        "Framed inventory order matters"
+        "Changing English labels and meanings leaves contract identity unchanged"
+
+    Expect.equal
+        Fingerprint.value
+        changedIdentity
+        "The runtime fingerprint hashes exactly the contract artifact"
+
+    let originalArtifacts = expected ()
+    Expect.equal (expected ()) originalArtifacts "Generation is deterministic"
 
 let private safePublication () =
     let directory = Directory.CreateTempSubdirectory("claimcore-contract-publication-")
     let output = Path.Combine(directory.FullName, "contracts")
-    let artifact name content = { Name = name; Bytes = bytes content }
 
-    let publish values =
-        values
-        |> ArtifactPublication.withInventory
-        |> ArtifactPublication.publish output
+    let artifact content =
+        {
+            Name = "current.json"
+            Bytes = bytes content
+        }
 
     try
-        publish [ artifact "obsolete.json" "old" ]
-        publish [ artifact "current.json" "current" ]
-
-        Expect.isFalse
-            (File.Exists(Path.Combine(output, "obsolete.json")))
-            "Owned obsolete output removed"
+        ArtifactPublication.publish output [ artifact "first" ]
+        ArtifactPublication.publish output [ artifact "second" ]
 
         Expect.equal
             (File.ReadAllText(Path.Combine(output, "current.json")))
-            "current"
-            "New output complete"
+            "second"
+            "Owned bytes atomically replaced"
 
         File.WriteAllText(Path.Combine(output, "user.txt"), "preserve")
 
         Expect.throws
-            (fun () -> publish [ artifact "replacement.json" "replacement" ])
-            "Unexpected user content refuses replacement"
+            (fun () -> ArtifactPublication.publish output [ artifact "third" ])
+            "Unexpected content refuses"
 
         Expect.equal
             (File.ReadAllText(Path.Combine(output, "current.json")))
-            "current"
-            "Previous set retained"
+            "second"
+            "Previous set survives refusal"
 
         Expect.equal
             (File.ReadAllText(Path.Combine(output, "user.txt")))
             "preserve"
-            "User content retained"
+            "Unowned content survives refusal"
     finally
         directory.Delete true
 
-let private repeatedGeneration () =
-    let first = expected ()
-    Expect.equal (expected ()) first "All generated bytes are deterministic"
+let private producedNames () =
+    let directory = Directory.CreateTempSubdirectory("claimcore-contract-names-")
+    let output = Path.Combine(directory.FullName, "contracts")
 
-    Expect.throws
-        (fun () ->
-            ArtifactPublication.withInventory [ { Name = "../escape"; Bytes = [||] } ]
-            |> ignore)
-        "Artifact names cannot escape their directory"
+    try
+        Expect.throws
+            (fun () -> ArtifactPublication.publish output [ { Name = "../escape"; Bytes = [||] } ])
+            "Names cannot escape"
+
+        let repeated = { Name = "a.json"; Bytes = [||] }
+
+        Expect.throws
+            (fun () -> ArtifactPublication.publish output [ repeated; repeated ])
+            "Duplicate names refuse"
+
+        Expect.isFalse (Directory.Exists output) "Rejected output never created"
+    finally
+        directory.Delete true
 
 [<Tests>]
 let tests =
     testList
         "tracked contract artifacts"
         [
-            testCase "atomic publication removes only owned obsolete files" safePublication
             testCase
-                "generation is deterministic and names stay within the output"
-                repeatedGeneration
-            testCase "tracked inventory and bytes equal in-memory generation" freshness
-            testCase "freshness rejects missing extra and stale bytes" negativeControls
+                "publication replaces owned outputs and preserves unexpected content"
+                safePublication
+            testCase "produced names are unique and stay within the output" producedNames
+            testCase "tracked exact inventory and bytes equal generation" freshness
+            testCase "freshness rejects missing extra and stale bytes" controls
+            testCase "fingerprint covers emitted OpenAPI bytes and binds TypeScript" fingerprint
             testCase
-                "fingerprint matches an independent canonical frame and digest"
-                independentIdentity
-            testCase
-                "fingerprint covers every nonderived input without self reference"
-                identitySensitivity
+                "presentation stays outside deterministic Wire identity"
+                presentationIndependence
         ]

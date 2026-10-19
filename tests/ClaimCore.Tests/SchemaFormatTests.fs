@@ -1,103 +1,78 @@
 module ClaimCore.Tests.SchemaFormatTests
 
-open ClaimCore.ClientProtocol
-
 open System
 open System.Text.Json
 open Expecto
-open ClaimCore.Contracts
+open ClaimCore.Wire
 
-let private verifies schema value =
-    use document = JsonDocument.Parse(JsonSerializer.Serialize(value: string))
+let private admits codec (value: string) =
+    Codec.decode 4096 codec (JsonSerializer.SerializeToUtf8Bytes value)
+    |> Result.isOk
 
-    SchemaValueValidation.verify
-        {
-            Identifier = "synthetic-format"
-            Title = "Synthetic format boundary"
-            Root = schema
-            Definitions = []
-        }
-        document.RootElement
+let private timestamps () =
+    for raw in [ "2026-10-05T03:00:00.000000Z"; "2024-02-29T03:00:00.123456Z" ] do
+        Expect.isTrue (admits Codec.instant raw) "UTC microsecond form accepted"
 
-let private timestamp = Schema.string (Some "date-time") None None None
-
-let private rejectsIncompleteTimestamps () =
-    for value in
-        [
-            "10/5/2026"
-            "2026-10-05"
-            "2026-10-05T03:00:00"
-            "Mon, 05 Oct 2026 03:00:00 GMT"
-            " 2026-10-05T03:00:00.0000000+00:00 "
-            "2026-10-05T03:00Z"
-            "2026-02-29T03:00:00Z"
-            "2026-10-05T25:00:00Z"
-        ] do
-        Expect.isFalse (verifies timestamp value) "Incomplete or invalid timestamp refused"
-
-let private acceptsExplicitInstants () =
-    for value in
+    for raw in
         [
             "2026-10-05T03:00:00Z"
-            "2026-10-05t03:00:00z"
-            "2026-10-05T03:00:00.1+05:30"
-            "2026-10-05T03:00:00.1234567-05:30"
-            "2024-02-29T03:00:00.0000000+00:00"
+            "2026-10-05t03:00:00.000000z"
+            "2026-10-05T03:00:00.0000000+00:00"
+            "2026-10-05T03:00:00.000000+00:00"
+            "2026-02-29T03:00:00.000000Z"
+            "2026-10-05T25:00:00.000000Z"
         ] do
-        Expect.isTrue (verifies timestamp value) "Representable explicit RFC 3339 instant accepted"
+        Expect.isFalse (admits Codec.instant raw) "Other spellings and invalid instants refuse"
 
-let private canonicalWireRestrictionRemains () =
-    let canonical =
-        Schema.string
-            (Some "date-time")
-            (Some "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{7}\\+00:00$")
-            (Some 33)
-            (Some 33)
+let private calendar () =
+    for raw in [ "2024-02-29"; "0001-01-01"; "9999-12-31" ] do
+        Expect.isTrue (admits ResponseScalars.date raw) "Permanent valid dates accepted"
 
-    Expect.isTrue
-        (verifies canonical "2026-10-05T03:00:00.0000000+00:00")
-        "Canonical UTC timestamp accepted"
+    for raw in [ "0000-01-01"; "2026-02-29"; "2026-04-31"; "2026-10-05\n"; "2026-1-01" ] do
+        Expect.isFalse
+            (admits ResponseScalars.date raw)
+            "Impossible dates and loose spellings refuse"
 
-    Expect.isFalse
-        (verifies canonical "2026-10-05T03:00:00Z")
-        "A format-valid value cannot bypass stricter schema constraints"
-
-let private referenceParity () =
+let private references () =
     for expected, values in
         [
             true, [ "Demo-1"; String.replicate 80 "A"; "!~<>\"" ]
             false, [ ""; "a b"; "é"; String.replicate 81 "A"; "a\u0000b"; "a\n" ]
         ] do
         for value in values do
-            let json =
-                JsonSerializer.Serialize {| caseReference = value |}
-                |> System.Text.Encoding.UTF8.GetBytes
-
             Expect.equal
-                (EndpointCatalog.admitRequest "case.get" json |> Result.isOk)
+                (admits ResponseScalars.reference value)
                 expected
-                "Wire format"
+                "Accepted history has permanent reference grammar"
 
             Expect.equal
                 (ClaimCore.Domain.CaseReference.validate value |> Result.isOk)
                 expected
-                "Domain format"
+                "Permanent format matches Domain"
+
+let private businessAdmission () =
+    for reference in [ ""; "a b"; "é" ] do
+        let raw = JsonSerializer.SerializeToUtf8Bytes {| caseReference = reference |}
+
+        Expect.isOk
+            (Admission.admit Endpoint.CaseGet raw)
+            "Business format reaches typed Application refusal"
+
+    for raw in [ "0"; "123456789012345678.1234" ] do
+        Expect.isTrue (admits ResponseScalars.amount raw) "Permanent decimal grammar"
+
+    for raw in [ "-1"; "01"; "1e2"; "1234567890123456789"; "1.12345" ] do
+        Expect.isFalse (admits ResponseScalars.amount raw) "Amounts cannot leave durable grammar"
 
 [<Tests>]
 let tests =
     testList
-        "schema scalar formats"
+        "wire scalar formats"
         [
+            testCase "instants use exact UTC microsecond spelling" timestamps
+            testCase "calendar dates exist and have exact spelling" calendar
+            testCase "accepted references preserve printable ASCII identity" references
             testCase
-                "[CC-DOM-001] projected reference guard preserves printable ASCII identity"
-                referenceParity
-            testCase
-                "date-time refuses implicit calendar and local-zone inputs"
-                rejectsIncompleteTimestamps
-            testCase
-                "date-time accepts explicit representable RFC 3339 instants"
-                acceptsExplicitInstants
-            testCase
-                "format validation preserves canonical wire restrictions"
-                canonicalWireRestrictionRemains
+                "business request admission and accepted response grammars are distinct"
+                businessAdmission
         ]
