@@ -1,26 +1,28 @@
-namespace ClaimCore.Contracts
-
-open ClaimCore.ClientProtocol
+#if CONTRACT_GENERATION
+namespace ClaimCore.ContractGeneration.Presentation
+#else
+namespace ClaimCore.Hosting.Presentation
+#endif
 
 open System.Globalization
 open ClaimCore.Application
 open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
-type DiagnosticHole =
+type internal DiagnosticHole =
     | MaximumCharacters
     | MaximumIntegerDigits
     | MaximumFractionalDigits
     | MaximumPageSize
 
 [<RequireQualifiedAccess>]
-type DiagnosticTextPart =
+type internal DiagnosticTextPart =
     | Literal of string
     | Hole of DiagnosticHole
 
 /// The existing English presentation belongs to the outward adapter, never to core meaning.
-/// Native rendering and build-only catalog projection share literal text and closed parameter holes.
-module RejectionPresentation =
+/// Host rendering and build-only catalog projection share literal text and closed parameter holes.
+module internal RejectionPresentation =
     let private action kind =
         "“" + (CommandDefinitions.forKind kind).Label + "”"
 
@@ -66,7 +68,6 @@ module RejectionPresentation =
 
     let private case =
         [
-            RejectionDiagnosticId.CaseNotFound, "The case reference was not found."
             RejectionDiagnosticId.CaseAlreadyExists, "The case reference already exists."
             RejectionDiagnosticId.RevisionConflict,
             "Read the current case before making a changed request."
@@ -106,8 +107,7 @@ module RejectionPresentation =
 
     let private operation =
         [
-            RejectionDiagnosticId.InvalidCursor,
-            "Use one current opaque case-list cursor returned by ClaimCore."
+            RejectionDiagnosticId.InvalidCursor, "Use one pagination cursor returned by ClaimCore."
             RejectionDiagnosticId.IdempotencyConflict,
             "This operation ID belongs to different command content. Do not reuse it."
             RejectionDiagnosticId.CaseVoided, "This case is voided."

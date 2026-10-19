@@ -1,10 +1,12 @@
-namespace ClaimCore.Contracts
-
-open ClaimCore.ClientProtocol
+#if CONTRACT_GENERATION
+namespace ClaimCore.ContractGeneration.Presentation
+#else
+namespace ClaimCore.Hosting.Presentation
+#endif
 
 open ClaimCore.Application
 
-module CoreFaultPresentation =
+module internal CoreFaultPresentation =
     let render =
         function
         | CoreFault.InternalError -> "An internal error occurred. Stop and investigate."

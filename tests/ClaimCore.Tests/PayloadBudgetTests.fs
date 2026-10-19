@@ -3,10 +3,9 @@ module ClaimCore.Tests.PayloadBudgetTests
 open System
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Contracts
+open ClaimCore.Hosting
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
-open ClaimCore.ClientProtocol
 
 let private id = Guid.Parse "d0000000-0000-4000-8000-000000000001"
 let private reference = String('"', 80)
@@ -58,14 +57,14 @@ let private receipt disclosure : OperationReceipt =
     }
 
 let private encodedHistory count disclosure =
-    OutcomeCodec.history (
+    OutcomeMapping.caseHistory (
         QueryOutcome.Succeeded
             {
                 Entries = List.replicate count (HistoryEntry.FullEntry(receipt disclosure))
                 NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
             }
     )
-    |> OutcomeCodec.encode "case.history"
+    |> ClaimCore.Wire.Replies.encode
 
 let private fullHistoryBudget () =
     let accepted = snapshot TextFormat.MaximumFreeTextBytes
@@ -84,10 +83,10 @@ let private fullHistoryBudget () =
 
     Expect.isLessThan
         bound
-        ProtocolProfile.MaximumResponseBytes
+        ClaimCore.Wire.Limits.MaximumResponseBytes
         "All fifty entries fit the response limit"
 
-    Expect.equal ProtocolProfile.MaximumResponseBytes 4194304 "Public response limit"
+    Expect.equal ClaimCore.Wire.Limits.MaximumResponseBytes 4194304 "Public response limit"
     Expect.equal FormatLimits.MaximumPayloadBytes 32768 "Permanent framed payload bound"
 
     Expect.throws
@@ -120,17 +119,17 @@ let private boundedAuthority () =
     let actor, grant = authorityFixture ()
 
     let actors count =
-        OutcomeCodec.actors (
+        OutcomeMapping.authorityList (
             QueryOutcome.Succeeded
                 {
                     Items = List.replicate count actor
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                 }
         )
-        |> OutcomeCodec.encode "authority.list"
+        |> ClaimCore.Wire.Replies.encode
 
     let grants count =
-        OutcomeCodec.grants (
+        OutcomeMapping.authorityGrants (
             QueryOutcome.Succeeded
                 {
                     Actor = actor
@@ -138,16 +137,16 @@ let private boundedAuthority () =
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                 }
         )
-        |> OutcomeCodec.encode "authority.grants"
+        |> ClaimCore.Wire.Replies.encode
 
     Expect.isLessThan
         (actors 50).Length
-        ProtocolProfile.MaximumResponseBytes
+        ClaimCore.Wire.Limits.MaximumResponseBytes
         "Maximal admitted actor headers fit"
 
     Expect.isLessThan
         (grants 50).Length
-        ProtocolProfile.MaximumResponseBytes
+        ClaimCore.Wire.Limits.MaximumResponseBytes
         "Maximal scoped grants and target header fit"
 
     Expect.throws (fun () -> actors 51 |> ignore) "Actor overproduction refuses, never truncates"

@@ -37,7 +37,7 @@ module Replies =
         | ExecuteOutcome.Rejected _ -> tag "REFUSED" 2
         | ExecuteOutcome.Failed _ -> tag "FAILED" 3
         | ExecuteOutcome.Cancelled -> tag "CANCELLED" 3
-        | ExecuteOutcome.OutcomeUnknown(operationId, _) ->
+        | ExecuteOutcome.OutcomeUnknown operationId ->
             encode
                 {|
                     tag = "OUTCOME_UNKNOWN"
