@@ -7,5 +7,15 @@
     <Compile Include="Requests.fs" />
     <Compile Include="RequestCodecs.fs" />
     <Compile Include="Admission.fs" />
+    <Compile Include="Responses.fs" />
+    <Compile Include="ResponseScalars.fs" />
+    <Compile Include="ResponseCodecs.fs" />
+    <Compile Include="Replies.fs" />
+    <Compile Include="Correlation.fs" />
+    <Compile Include="HostFailures.fs" />
+    <Compile Include="HttpsOrigins.fs" />
+    <Compile Include="Frames.fs" />
+    <Compile Include="OpenApi.fs" />
+    <Compile Include="Fingerprint.fs" />
   </ItemGroup>
 </Project>

@@ -38,3 +38,25 @@ module Admission =
         | WireRequest.OperationObserve value -> Codec.encode RequestCodecs.observeRequest value
         | WireRequest.AuthorityGrants value -> Codec.encode RequestCodecs.grantsRequest value
         | WireRequest.AuthorityExecute value -> Codec.encode RequestCodecs.authorityRequest value
+
+    let schema =
+        function
+        | Endpoint.Session
+        | Endpoint.SessionLogout
+        | Endpoint.Context -> RequestCodecs.empty.Schema, RequestCodecs.empty.Definitions
+        | Endpoint.CaseGet ->
+            RequestCodecs.caseGetRequest.Schema, RequestCodecs.caseGetRequest.Definitions
+        | Endpoint.CaseList
+        | Endpoint.AuthorityList ->
+            RequestCodecs.pageRequest.Schema, RequestCodecs.pageRequest.Definitions
+        | Endpoint.CaseHistory ->
+            RequestCodecs.historyRequest.Schema, RequestCodecs.historyRequest.Definitions
+        | Endpoint.CasePreview
+        | Endpoint.CaseExecute ->
+            RequestCodecs.caseRequest.Schema, RequestCodecs.caseRequest.Definitions
+        | Endpoint.OperationObserve ->
+            RequestCodecs.observeRequest.Schema, RequestCodecs.observeRequest.Definitions
+        | Endpoint.AuthorityGrants ->
+            RequestCodecs.grantsRequest.Schema, RequestCodecs.grantsRequest.Definitions
+        | Endpoint.AuthorityExecute ->
+            RequestCodecs.authorityRequest.Schema, RequestCodecs.authorityRequest.Definitions

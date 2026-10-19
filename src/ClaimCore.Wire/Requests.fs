@@ -152,3 +152,11 @@ module WireRequest =
         | WireRequest.AuthorityList _ -> Endpoint.AuthorityList
         | WireRequest.AuthorityGrants _ -> Endpoint.AuthorityGrants
         | WireRequest.AuthorityExecute _ -> Endpoint.AuthorityExecute
+
+    let operationId =
+        function
+        | WireRequest.CasePreview value
+        | WireRequest.CaseExecute value -> Some value.OperationId
+        | WireRequest.AuthorityExecute value -> Some value.OperationId
+        | WireRequest.OperationObserve value -> Some value.OperationId
+        | _ -> None

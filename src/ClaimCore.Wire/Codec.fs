@@ -11,7 +11,7 @@ open System.Text.Json
 [<RequireQualifiedAccess>]
 type Schema =
     | Object of properties: (string * Schema) list * optionalMembers: string list
-    | Array of items: Schema * maxItems: int
+    | Array of items: Schema * minItems: int * maxItems: int
     | String of
         pattern: string option *
         format: string option *
@@ -176,8 +176,8 @@ module Codec =
                     Some
                         "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
                     Some "uuid",
-                    None,
-                    None
+                    Some 36,
+                    Some 36
                 )
             Definitions = Map.empty
         }
@@ -256,8 +256,8 @@ module Codec =
                 Schema.String(
                     Some "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
                     Some "date-time",
-                    None,
-                    None
+                    Some 27,
+                    Some 27
                 )
             Definitions = Map.empty
         }
@@ -322,7 +322,7 @@ module Codec =
                     writer.WriteStartArray()
                     values |> List.iter (codec.Write writer)
                     writer.WriteEndArray()
-            Schema = Schema.Array(codec.Schema, maxItems)
+            Schema = Schema.Array(codec.Schema, 0, maxItems)
             Definitions = codec.Definitions
         }
 
@@ -332,6 +332,43 @@ module Codec =
             Schema = Schema.Ref name
             Definitions = Map.add name codec.Schema codec.Definitions
         }
+
+    let map read write (codec: Codec<'T>) : Codec<'U> =
+        {
+            Read = fun path element -> codec.Read path element |> Result.map read
+            Write = fun writer value -> codec.Write writer (write value)
+            Schema = codec.Schema
+            Definitions = codec.Definitions
+        }
+
+    let constrained schema accepts (codec: Codec<'T>) =
+        { codec with
+            Read =
+                fun path element ->
+                    codec.Read path element
+                    |> Result.bind (fun value ->
+                        if accepts value then
+                            Ok value
+                        else
+                            fail path "value outside its wire grammar")
+            Write =
+                fun writer value ->
+                    if not (accepts value) then
+                        invalidArg (nameof value) "Value outside its wire grammar."
+
+                    codec.Write writer value
+            Schema = schema
+        }
+
+    let boundedList minimum maximum codec =
+        if minimum < 0 || maximum < minimum then
+            invalidArg (nameof minimum) "Use ordered array bounds."
+
+        list maximum codec
+        |> constrained (Schema.Array(codec.Schema, minimum, maximum)) (fun values ->
+            List.length values >= minimum)
+
+    let constant token : Codec<unit> = enumeration [ (), token ]
 
     // ----- closed records -----------------------------------------------------------------
 
@@ -566,6 +603,47 @@ module Codec =
                 |> Map.add name (Schema.OneOf(cases |> List.map _.VariantSchema, None))
         }
 
+    let rec private literalTokens =
+        function
+        | Schema.Const token -> [ token ]
+        | Schema.OneOf(variants, None) -> variants |> List.collect literalTokens
+        | _ -> invalidArg "codec" "A discriminator requires closed string tokens."
+
+    let private discriminatorMapping propertyName definitions =
+        function
+        | Schema.Ref name ->
+            match Map.find name definitions with
+            | Schema.Object(properties, _) ->
+                properties
+                |> List.find (fst >> (=) propertyName)
+                |> snd
+                |> literalTokens
+                |> List.map (fun token -> token, name)
+            | _ -> invalidArg "codec" "A discriminator branch must be a named object."
+        | _ -> invalidArg "codec" "A discriminator branch must be named."
+
+    /// Derives tag mappings from the same fixed or enumerated member used by each branch codec.
+    let discriminated propertyName (codec: Codec<'T>) =
+        match codec.Schema with
+        | Schema.Ref name ->
+            match Map.find name codec.Definitions with
+            | Schema.OneOf(variants, None) ->
+                let mapping =
+                    variants |> List.collect (discriminatorMapping propertyName codec.Definitions)
+
+                if (mapping |> List.map fst |> Set.ofList).Count <> mapping.Length then
+                    invalidArg "codec" "Discriminator tokens must select one branch."
+
+                { codec with
+                    Definitions =
+                        Map.add
+                            name
+                            (Schema.OneOf(variants, Some(propertyName, mapping)))
+                            codec.Definitions
+                }
+            | _ -> invalidArg "codec" "A discriminator requires a named choice."
+        | _ -> invalidArg "codec" "A discriminator requires a named choice."
+
     // ----- bytes --------------------------------------------------------------------------
 
     let encode (codec: Codec<'T>) (value: 'T) : byte array =
@@ -636,10 +714,11 @@ module Codec =
         match schema with
         | Schema.Object(properties, optionalMembers) ->
             objectSchema prefix writer properties optionalMembers
-        | Schema.Array(items, maximum) ->
+        | Schema.Array(items, minimum, maximum) ->
             WriterProfile.writeMember writer "type" "array"
             writer.WritePropertyName "items"
             writeSchema prefix writer items
+            writer.WriteNumber("minItems", minimum)
             writer.WriteNumber("maxItems", maximum)
         | Schema.String(pattern, format, minimum, maximum) ->
             WriterProfile.writeMember writer "type" "string"
