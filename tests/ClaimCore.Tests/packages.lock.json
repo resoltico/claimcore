@@ -40,11 +40,26 @@
           "TypeShape": "9.0.0"
         }
       },
+      "JsonSchema.Net": {
+        "type": "Direct",
+        "requested": "[9.4.1, )",
+        "resolved": "9.4.1",
+        "contentHash": "7Nh0XyIse3a5nsc1nJJTECZVjxqHVE5jANGEPpQc2H+/M7u2sLueL93X6ZUuJLkLYy/pYzFmJhKYEpVIctaUZw==",
+        "dependencies": {
+          "JsonPointer.Net": "7.0.3"
+        }
+      },
       "Markdig": {
         "type": "Direct",
         "requested": "[1.4.0, )",
         "resolved": "1.4.0",
         "contentHash": "lLhaiI/mNDTNzgLqnmknhf4LjgTqOAyjx5+GNz0X3AxYMxUhmFppF2WVMdER+SDqwhE5wUF1pzs/cuLwFxs7xA=="
+      },
+      "Microsoft.OpenApi": {
+        "type": "Direct",
+        "requested": "[3.10.2, )",
+        "resolved": "3.10.2",
+        "contentHash": "qzg4a3WmgQm28Azaporbnsu+KHA+vq5sgpQQFLiJgB06Rra2S+kzGAU7pzUB8/UIwZJCSCY2JEE/M5e0hQ2K8w=="
       },
       "Microsoft.Testing.Extensions.TrxReport": {
         "type": "Direct",
@@ -66,6 +81,25 @@
           "FSharp.Core": "7.0.200",
           "Microsoft.Testing.Extensions.VSTestBridge": "2.3.3",
           "Microsoft.Testing.Platform.MSBuild": "2.3.3"
+        }
+      },
+      "Humanizer.Core": {
+        "type": "Transitive",
+        "resolved": "3.0.10",
+        "contentHash": "yZIhtw8sYuvsONzQbZxWpR60tMWYHXoo0DL6nyOqSFiU5POjBTSEyWFpTQtJEZuy+oqiYTXKXY/Mjx7KnqIQFw=="
+      },
+      "Json.More.Net": {
+        "type": "Transitive",
+        "resolved": "3.0.1",
+        "contentHash": "fRctF2J2SILYG6wqP21drmeEODmCVkVQ/b3MndDu2fT1swfySyUgq7ePCk+aENGlDcIm05fyfjh9vcuqDEfv3w=="
+      },
+      "JsonPointer.Net": {
+        "type": "Transitive",
+        "resolved": "7.0.3",
+        "contentHash": "It/10weZ3oA+BGL+Gqyw9M6wsi4Tc16vWwU+u7x6LBwty57Y3aUh7bfcn2VWAzgVTAfGuCPb5KUpsH6IFjR08A==",
+        "dependencies": {
+          "Humanizer.Core": "3.0.10",
+          "Json.More.Net": "3.0.1"
         }
       },
       "Microsoft.ApplicationInsights": {
@@ -232,34 +266,19 @@
       "claimcore.cli": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.ClientProtocol": "[0.10.0, )",
           "ClaimCore.HostSecurity": "[0.10.0, )",
+          "ClaimCore.Wire": "[0.10.0, )",
           "Duende.IdentityModel": "[8.1.0, )",
           "Duende.IdentityModel.OidcClient": "[7.1.1, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.clientprotocol": {
-        "type": "Project",
-        "dependencies": {
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.contractgenerator": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.ClientProtocol": "[0.10.0, )",
-          "ClaimCore.Contracts": "[0.10.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.contracts": {
-        "type": "Project",
-        "dependencies": {
           "ClaimCore.Application": "[0.10.0, )",
-          "ClaimCore.ClientProtocol": "[0.10.0, )",
           "ClaimCore.Domain": "[0.10.0, )",
-          "ClaimCore.RecordFormat": "[0.10.0, )",
+          "ClaimCore.Wire": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -273,10 +292,9 @@
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application": "[0.10.0, )",
-          "ClaimCore.ClientProtocol": "[0.10.0, )",
-          "ClaimCore.Contracts": "[0.10.0, )",
           "ClaimCore.Domain": "[0.10.0, )",
           "ClaimCore.Postgres": "[0.10.0, )",
+          "ClaimCore.Wire": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
