@@ -9,7 +9,7 @@ identity_port="${4:-5444}"
 [[ $# -le 4 && "${configuration}" == /* && ! -e "${configuration}" && ! -L "${configuration}" ]] || {
   printf 'Use a new absolute configuration directory.\n' >&2; exit 2;
 }
-[[ "${configuration}" != *$'\n'* && "${zone}" =~ ^[A-Za-z0-9_+/-]+$ ]] || exit 2
+[[ "${configuration}" != *$'\n'* && "${configuration}" != *$'\r'* && "${zone}" =~ ^[A-Za-z0-9_+/-]+$ ]] || exit 2
 for port in "${web_port}" "${identity_port}"; do
   [[ "${port}" =~ ^[1-9][0-9]{0,4}$ && "${port}" -le 65535 ]] || exit 2
 done
@@ -80,17 +80,23 @@ CLAIMCORE_OIDC_API_AUDIENCE=claimcore-api
 CLAIMCORE_OIDC_CLI_CLIENT_ID=claimcore-cli
 CLAIMCORE_OIDC_CA_CERT_FILE=/etc/claimcore/runtime/ca.pem
 ENV
-printf 'CLAIMCORE_CONFIG_DIR=%s\nCLAIMCORE_COMPOSE_PROJECT=%s\nCLAIMCORE_BUSINESS_ZONE=%s\nCLAIMCORE_HOST_PORT=%s\nCLAIMCORE_IDENTITY_PORT=%s\n' "${configuration}" "${project}" "${zone}" "${web_port}" "${identity_port}" >"${configuration}/compose.env"
+# Escape dotenv syntax and interpolation while retaining the exact host path.
+dotenv_configuration="${configuration//\\/\\\\}"
+dotenv_configuration="${dotenv_configuration//\"/\\\"}"
+dotenv_configuration="${dotenv_configuration//\$/\$\$}"
+printf 'CLAIMCORE_CONFIG_DIR="%s"\n' "${dotenv_configuration}" >"${configuration}/compose.env"
+printf 'CLAIMCORE_COMPOSE_PROJECT=%s\nCLAIMCORE_BUSINESS_ZONE=%s\nCLAIMCORE_HOST_PORT=%s\nCLAIMCORE_IDENTITY_PORT=%s\n' "${project}" "${zone}" "${web_port}" "${identity_port}" >>"${configuration}/compose.env"
 claimcore_uid="$(id -u)"
 claimcore_gid="$(id -g)"
 printf 'CLAIMCORE_UID=%s\nCLAIMCORE_GID=%s\n' "${claimcore_uid}" "${claimcore_gid}" >>"${configuration}/compose.env"
 # ClaimCore runs as the configuring user; only PostgreSQL/Keycloak require different owners.
 # Only this newly created directory is mounted. The helper has no network or persistent data.
+mount_configuration="${configuration//\"/\"\"}"
 docker run --rm --name "${project}-permissions" --label claimcore.configuration="${project}" \
-  --network none --read-only --mount "type=bind,source=${configuration},target=/config" \
+  --network none --read-only --mount "type=bind,\"source=${mount_configuration}\",target=/config" \
   --user 0 --entrypoint /bin/sh postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722 \
   -c 'set -eu; chown -R 999:999 /config/postgres; chown -R 1000:1000 /config/identity'
 unset owner_password runtime_password web_secret service_secret owner_login
 printf 'Created fresh local configuration. Username: owner. Password: %s/owner-login.password\n' "${configuration}"
 printf 'Trust %s/ca.pem in your browser. Leaf certificates expire after 30 days.\n' "${configuration}"
-printf 'Start: docker compose --env-file "%s/compose.env" -f deployment/compose.yaml up --build -d\n' "${configuration}"
+printf 'Start in Bash: docker compose --env-file %q -f deployment/compose.yaml up --build -d\n' "${configuration}/compose.env"

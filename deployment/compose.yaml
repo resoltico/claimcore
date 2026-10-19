@@ -11,7 +11,12 @@ services:
     command: [postgres, -c, ssl=on, -c, ssl_cert_file=/etc/claimcore-postgres/server.pem, -c, ssl_key_file=/etc/claimcore-postgres/server.key]
     volumes:
       - postgres-data:/var/lib/postgresql
-      - ${CLAIMCORE_CONFIG_DIR:?}/postgres:/etc/claimcore-postgres:ro
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}/postgres
+        target: /etc/claimcore-postgres
+        read_only: true
+        bind:
+          create_host_path: false
       - ./postgres-roles.sh:/docker-entrypoint-initdb.d/10-claimcore-roles.sh:ro
     healthcheck:
       test: [CMD, pg_isready, -h, 127.0.0.1, -U, claimcore_owner, -d, claimcore]
@@ -41,8 +46,18 @@ services:
       - 127.0.0.1:${CLAIMCORE_IDENTITY_PORT:-5444}:${CLAIMCORE_IDENTITY_PORT:-5444}
     volumes:
       - identity-data:/opt/keycloak/data
-      - ${CLAIMCORE_CONFIG_DIR}/identity:/etc/claimcore-identity:ro
-      - ${CLAIMCORE_CONFIG_DIR}/identity/realm:/opt/keycloak/data/import:ro
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/identity
+        target: /etc/claimcore-identity
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/identity/realm
+        target: /opt/keycloak/data/import
+        read_only: true
+        bind:
+          create_host_path: false
     healthcheck:
       test:
         - CMD
@@ -72,7 +87,12 @@ services:
       CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/owner.connection
       CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE: /etc/claimcore/owner.principal
     volumes:
-      - ${CLAIMCORE_CONFIG_DIR}/administration:/etc/claimcore:ro
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/administration
+        target: /etc/claimcore
+        read_only: true
+        bind:
+          create_host_path: false
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
@@ -92,7 +112,12 @@ services:
     ports:
       - 127.0.0.1:${CLAIMCORE_HOST_PORT:-5443}:5443
     volumes:
-      - ${CLAIMCORE_CONFIG_DIR}/web:/etc/claimcore/runtime:ro
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/web
+        target: /etc/claimcore/runtime
+        read_only: true
+        bind:
+          create_host_path: false
       - web-key-ring:/var/lib/claimcore/key-ring
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777

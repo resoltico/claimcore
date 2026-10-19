@@ -8,7 +8,7 @@ import process from "node:process";
 import { chromium } from "@playwright/test";
 
 const [root, owned] = process.argv.slice(2);
-const configuration = path.join(owned, "configuration");
+const configuration = path.join(owned, "configuration $CLAIMCORE_QA_PATH # :, \" \\\' end\\");
 const composeFile = path.join(root, "deployment/compose.yaml");
 const cleanupImage = JSON.parse(
   readFileSync(path.join(root, "db/postgresql-baseline.json"), "utf8"),
@@ -239,7 +239,7 @@ const cleanup = () => {
       "none",
       "--read-only",
       "--mount",
-      `type=bind,source=${configuration},target=/config`,
+      `type=bind,"source=${configuration.replaceAll('"', '""')}",target=/config`,
       "--user",
       "0",
       "--entrypoint",

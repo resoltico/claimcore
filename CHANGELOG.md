@@ -26,6 +26,7 @@ Notable changes to this project are documented in this file. The format is based
 ### Fixed
 
 - Local Compose waits for identity-provider readiness before starting Web, avoiding early OIDC startup refusal while the provider is still initializing. The management health listener is confined to container loopback; public identity traffic remains HTTPS.
+- Local configuration paths retain dollar signs, quotes, backslashes, spaces, commas and colons through Compose interpolation, bind mounts and the printed Bash start command. Carriage returns and line feeds are refused before creating configuration inputs.
 
 ### Internal
 

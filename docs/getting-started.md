@@ -38,7 +38,9 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- sch
 
 Choose an absolute configuration path that does not exist, an IANA business time zone,
 and two unused loopback ports. The example uses 7443 and 7444. The time zone becomes immutable
-at initialization. Do not reuse an existing database, configuration directory or volume.
+at initialization. Paths containing carriage returns or line feeds are refused before creation;
+other path characters remain literal in the generated Compose inputs and printed Bash command.
+Do not reuse an existing database, configuration directory or volume.
 
 ```sh
 claimcore_config="$HOME/claimcore-first-run-config"
