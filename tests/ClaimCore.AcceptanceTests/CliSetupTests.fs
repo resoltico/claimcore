@@ -32,18 +32,19 @@ let private failureEvidence () =
             "driver-refused-after-private-marker", "unknown"
             "callback-observed\nprivate-marker", "unknown"
             "unavailable", "unavailable"
+            "not-applicable", "not-applicable"
         ] do
-        let evidence = CliSetupEvidence.describe stage failure
+        let evidence = CliInvocationEvidence.describe stage failure
         Expect.stringContains evidence ("authStage=" + expected + ";") "Closed stage"
         Expect.stringContains evidence "validReplyFrames=1;" "Only complete typed frames count"
         Expect.stringContains evidence "kind=Deadline; cleanupFailed=True" "Original failure"
         Expect.isFalse (evidence.Contains "private-marker") "No captured content is disclosed"
 
-let private requireOriginal writer path (failure: BoundedProcessFailure) =
+let private requireOriginal writer progress (failure: BoundedProcessFailure) =
     let mutable observed: exn option = None
 
     try
-        CliSetupEvidence.run writer path (fun () -> raise failure)
+        CliInvocationEvidence.run writer progress (fun () -> raise failure)
     with error ->
         observed <- Some error
 
@@ -61,22 +62,30 @@ let private retainedFailure () =
             [ "password-filled\n", "password-filled"; String('x', 129), "unknown" ] do
             File.WriteAllText(path, source)
             use writer = new StringWriter()
-            requireOriginal writer path failure
+            requireOriginal writer (Some path) failure
             Expect.stringContains (writer.ToString()) ("authStage=" + expected) "Safe file evidence"
 
         File.Delete path
         use writer = new StringWriter()
-        requireOriginal writer path failure
+        requireOriginal writer (Some path) failure
         Expect.stringContains (writer.ToString()) "authStage=unavailable;" "Missing progress"
+        writer.GetStringBuilder().Clear() |> ignore
+        requireOriginal writer None failure
+
+        Expect.stringContains
+            (writer.ToString())
+            "authStage=not-applicable;"
+            "Automation has no browser"
+
         writer.Dispose()
-        requireOriginal writer path failure
+        requireOriginal writer (Some path) failure
     finally
         Directory.Delete(directory, true)
 
 [<Tests>]
 let evidenceTests =
     testList
-        "published CLI setup failure evidence"
+        "published CLI invocation failure evidence"
         [
             testCase "closed stages and complete frames exclude private content" failureEvidence
             testCase

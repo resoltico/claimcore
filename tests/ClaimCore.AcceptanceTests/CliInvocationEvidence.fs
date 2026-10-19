@@ -1,4 +1,4 @@
-module internal ClaimCore.AcceptanceTests.CliSetupEvidence
+module internal ClaimCore.AcceptanceTests.CliInvocationEvidence
 
 open System.IO
 open System.Text
@@ -24,7 +24,12 @@ let private safeStage (source: string) =
     let value = source.Trim()
     let prefix = "driver-refused-after-"
 
-    if value = "unknown" || value = "unavailable" || Set.contains value stages then
+    if
+        value = "unknown"
+        || value = "unavailable"
+        || value = "not-applicable"
+        || Set.contains value stages
+    then
         value
     elif value.StartsWith(prefix, System.StringComparison.Ordinal) then
         let stage = value.Substring(prefix.Length)
@@ -68,14 +73,15 @@ let private replyCount (source: byte array) =
     |> snd
 
 let internal describe stage (failure: BoundedProcessFailure) =
-    $"CLI setup evidence: authStage={safeStage stage}; validReplyFrames={replyCount failure.StandardOutput}; stdoutBytes={failure.StandardOutput.Length}; stderrBytes={failure.StandardError.Length}; kind={failure.Kind}; cleanupFailed={failure.CleanupFailed}."
+    $"CLI invocation evidence: authStage={safeStage stage}; validReplyFrames={replyCount failure.StandardOutput}; stdoutBytes={failure.StandardOutput.Length}; stderrBytes={failure.StandardError.Length}; kind={failure.Kind}; cleanupFailed={failure.CleanupFailed}."
 
 let internal run (diagnostics: TextWriter) progress invoke =
     try
         invoke ()
     with :? BoundedProcessFailure as failure ->
         try
-            diagnostics.WriteLine(describe (readStage progress) failure)
+            let stage = progress |> Option.map readStage |> Option.defaultValue "not-applicable"
+            diagnostics.WriteLine(describe stage failure)
         with
         | :? IOException
         | :? System.ObjectDisposedException -> ()
