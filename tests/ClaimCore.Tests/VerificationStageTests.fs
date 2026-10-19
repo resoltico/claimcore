@@ -219,7 +219,7 @@ let private sharedBuild directory =
 
         Expect.stringContains
             execution
-            "--minimum-expected-tests=27"
+            "--minimum-expected-tests=28"
             "Independent acceptance discovery floor"
 
 let private failedBuild directory =

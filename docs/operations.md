@@ -40,6 +40,10 @@ with service accounts disabled. Put the API audience in access tokens only, neve
 `azp`/`client_id` classification does not establish the grant type; operators must maintain these
 flow restrictions. [Web admission](web.md#cc-web-001) owns token classification and technical checks.
 
+The evaluation identity container has a 2 GiB memory limit; Keycloak sizes its heap within that
+container budget. Docker also needs capacity for PostgreSQL, Web and image builds. This is an
+evaluation budget, not production sizing.
+
 The local [Compose configuration](../deployment/compose.yaml) keeps the Web root filesystem read-only
 and supplies bounded ephemeral `/tmp` for framework staging. Only the protected key-ring volume
 persists session material; temporary staging is outside database backups.

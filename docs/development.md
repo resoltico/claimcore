@@ -49,8 +49,12 @@ filtered run is iteration evidence and cannot establish the complete gate. Nativ
 TRX results and adjacent sanitized browser-engine count/duration summaries in unique ignored directories
 under `artifacts/verification/`; later runs do not overwrite earlier failure evidence.
 
-Acceptance owns fresh labelled PostgreSQL/Keycloak and published processes. Its fresh Compose
-qualification also executes the real configuration producer, starts a uniquely named project,
+Acceptance owns fresh labelled PostgreSQL/Keycloak and published processes. Heavy Compose
+qualification runs sequentially with the native CLI walkthrough and browser fixtures. Tests
+exercise concurrent operations within their own fixtures. Identity containers use explicit memory budgets in the
+[fixture](../tests/ClaimCore.AcceptanceTests/IdentityServer.fs) and
+[local Compose configuration](../deployment/compose.yaml), so JVM heap sizing follows a container
+budget rather than the Docker host. The fresh Compose qualification also executes the real configuration producer, starts a uniquely named project,
 signs in the provisioned human owner, restarts Web and reuses the original cookie and antiforgery
 token. It removes only that project’s containers, volumes, network and automatically named images.
 Private failure evidence is retained; a file-admission stub is not deployment qualification. By default it runs
