@@ -132,7 +132,7 @@ lint() {
 unit() {
   build_native
   # Native freshness tests check the complete tracked contracts/ inventory and exact bytes.
-  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 402
+  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 411
   dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
     --configuration Debug --no-restore -p:Optimize=false
   tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 41 Debug 15m
@@ -200,7 +200,7 @@ acceptance() {
   build_native
   build_frontend
   # One native case sequences every selected engine and stops before starting a later engine after a failure.
-  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 19 Release 40m
+  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 28 Release 40m
 }
 
 for stage in "${stages[@]}"; do

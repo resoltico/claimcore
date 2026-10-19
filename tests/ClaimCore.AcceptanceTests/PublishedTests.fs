@@ -182,6 +182,23 @@ let private verify (fixture: PublishedFixture.Fixture) (position: JsonElement) =
 
     Expect.equal rejected.ExitCode 5 "Wrong checkpoint is verification divergence"
 
+let private requireWrongStateDelivery
+    (environment: System.Collections.Generic.IReadOnlyDictionary<string, string>)
+    =
+    let progress = environment["CLAIMCORE_CLI_TEST_PROGRESS_FILE"]
+    let timer = System.Diagnostics.Stopwatch.StartNew()
+    let mutable stage = CliInvocationEvidence.readStage progress
+
+    while stage <> "wrong-state-delivered" && timer.Elapsed < TimeSpan.FromSeconds 5. do
+        System.Threading.Thread.Sleep 10
+        stage <- CliInvocationEvidence.readStage progress
+
+    Expect.equal
+        stage
+        "wrong-state-delivered"
+        ("The provider-issued code must reach the wrong-state control; browserReturn="
+         + CliInvocationEvidence.browserReturn (Some progress))
+
 let private inputBoundaries fixture =
     let malformed =
         Encoding.UTF8.GetBytes "{\"endpoint\":\"case.list\",\"input\":{\"limit\":1},\"extra\":true}"
@@ -204,12 +221,11 @@ let private inputBoundaries fixture =
 
     Expect.equal (tag refused) "REJECTED" "Reader cannot execute"
 
-    let wrongState =
-        run
-            fixture
-            (interactiveEnvironment fixture "synthetic-owner" "wrong-state")
-            (frame "case.list" {| limit = 1 |})
-            3
+    let environment = interactiveEnvironment fixture "synthetic-owner" "wrong-state"
+
+    let wrongState = run fixture environment (frame "case.list" {| limit = 1 |}) 3
+
+    requireWrongStateDelivery environment
 
     Expect.equal
         (wrongState.GetProperty("kind").GetString())

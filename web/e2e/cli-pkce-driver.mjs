@@ -1,8 +1,32 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import http from "node:http";
 import process from "node:process";
 import { URL, URLSearchParams } from "node:url";
 import { chromium } from "@playwright/test";
+import {
+  browserReturn,
+  browserCompletion,
+  callbackAddress,
+  isAuthorizationResponse,
+} from "./cli-browser-return.mjs";
+
+const progressFile = process.env.CLAIMCORE_CLI_TEST_PROGRESS_FILE;
+const retainCompletion = (completion) => {
+  try {
+    if (progressFile) {
+      const temporary = `${progressFile}.closed.tmp`;
+      writeFileSync(temporary, `${completion}\n`, { mode: 0o600, flag: "wx" });
+      renameSync(temporary, `${progressFile}.closed`);
+    }
+  } catch {
+    process.exitCode = 1;
+  }
+};
+const refuseLaunch = () => {
+  retainCompletion("not-started");
+  process.exit(2);
+};
+let completion = "not-started";
 
 let authorization;
 let redirect;
@@ -11,16 +35,13 @@ try {
   const supplied = authorization.searchParams.get("redirect_uri");
   redirect = supplied === null ? undefined : new URL(supplied);
 } catch {
-  process.exit(2);
+  refuseLaunch();
 }
 const pushed = authorization.searchParams.has("request_uri");
-const callbackAddress = (url) =>
-  url.protocol === "http:" && url.hostname === "127.0.0.1" && url.pathname === "/";
 const mode = process.env.CLAIMCORE_CLI_TEST_AUTH_MODE;
 const credentialsFile = process.env.CLAIMCORE_CLI_TEST_CREDENTIALS_FILE;
 const issuerText = process.env.CLAIMCORE_CLI_TEST_ISSUER;
 const publicClientId = process.env.CLAIMCORE_CLI_TEST_PUBLIC_CLIENT_ID;
-const progressFile = process.env.CLAIMCORE_CLI_TEST_PROGRESS_FILE;
 let currentStage = "start";
 const progress = (stage) => {
   currentStage = stage;
@@ -34,7 +55,7 @@ let issuer;
 try {
   issuer = new URL(issuerText ?? "");
 } catch {
-  process.exit(2);
+  refuseLaunch();
 }
 
 if (
@@ -50,17 +71,17 @@ if (
   !credentialsFile ||
   (mode !== "valid" && mode !== "wrong-state")
 ) {
-  process.exit(2);
+  refuseLaunch();
 }
 
 let credentials;
 try {
   credentials = JSON.parse(readFileSync(credentialsFile, "utf8"));
 } catch {
-  process.exit(2);
+  refuseLaunch();
 }
 if (!Array.isArray(credentials.users) || credentials.users.length < 1) {
-  process.exit(2);
+  refuseLaunch();
 }
 
 const selectedUsername = process.env.CLAIMCORE_CLI_TEST_USERNAME;
@@ -73,7 +94,7 @@ if (
   typeof selectedUser.username !== "string" ||
   typeof selectedUser.password !== "string"
 ) {
-  process.exit(2);
+  refuseLaunch();
 }
 
 const deliverCallback = (address) =>
@@ -94,6 +115,7 @@ const requestWrongState = () => {
 };
 
 const login = async (page) => {
+  progress("authorization-navigation-started");
   await page.goto(authorization.toString());
   progress("authorization-opened");
   if ((await page.locator('input[name="username"]').count()) !== 1) {
@@ -123,11 +145,15 @@ const rejectCallbackState = async (context) => {
     if (location !== undefined) {
       const callback = new URL(location, route.request().url());
       if (callbackAddress(callback)) {
+        if (
+          !isAuthorizationResponse(response.url(), response.status(), callback, issuer, redirect)
+        ) {
+          throw new Error("Synthetic provider did not issue an authorization code response.");
+        }
         redirect = new URL(callback.origin);
         callback.searchParams.set("state", "wrong-state");
         await deliverCallback(callback);
         delivered = true;
-        progress("wrong-state-delivered");
         await route.fulfill({
           status: 200,
           contentType: "text/plain",
@@ -141,27 +167,60 @@ const rejectCallbackState = async (context) => {
   return () => delivered;
 };
 
+const retainReturn = async (observation, page, error, connected) => {
+  try {
+    if (progressFile) {
+      writeFileSync(
+        `${progressFile}.return`,
+        JSON.stringify(await observation.report(page, error, connected)),
+        {
+          mode: 0o600,
+        },
+      );
+    }
+  } catch {
+    // Evidence storage must not replace the original synthetic browser failure.
+  }
+};
+
 const run = async () => {
   // Only the disposable synthetic browser ignores its fixture certificate. CLI HTTPS validates
   // its explicit CA. Inspect the provider redirect because routes do not intercept redirect hops.
-  const browser = await chromium.launch({ headless: true });
-  progress("browser-launched");
+  const observation = browserReturn(issuer, redirect);
+  let browser;
+  let page;
   try {
+    browser = await chromium.launch({ headless: true });
+    progress("browser-launched");
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
+    progress("context-created");
     const wrongStateDelivered = await rejectCallbackState(context);
-    const page = await context.newPage();
+    page = await context.newPage();
+    progress("page-created");
+    observation.observe(page);
     await login(page);
     if (mode === "wrong-state") {
       if (!wrongStateDelivered()) {
         throw new Error("Synthetic state control was not delivered.");
       }
+      progress("wrong-state-delivered");
     } else {
       await page.waitForURL((url) => callbackAddress(url));
       progress("callback-observed");
     }
     await context.close();
+  } catch (error) {
+    const remembered = observation.callbackOrigin();
+    if (redirect === undefined && remembered !== undefined) {
+      redirect = new URL(remembered);
+    }
+    await retainReturn(observation, page, error, browser?.isConnected());
+    throw error;
   } finally {
-    await browser.close();
+    completion = await browserCompletion(browser);
+    if (completion === "failed") {
+      process.exitCode = 1;
+    }
   }
 };
 
@@ -178,4 +237,6 @@ try {
   }
   // Never write the authorization URL, callback code, credential, or provider content to logs.
   process.exitCode = 1;
+} finally {
+  retainCompletion(completion);
 }

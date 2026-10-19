@@ -24,8 +24,12 @@
     <Compile Include="HttpsProxy.fs" />
     <Compile Include="CommitReplyProxy.fs" />
     <Compile Include="PublishedFixture.fs" />
+    <Compile Include="CliBrowserReturnEvidence.fs" />
+    <Compile Include="CliInvocationEvidence.fs" />
+    <Compile Include="CliDriverCompletion.fs" />
     <Compile Include="CliCalls.fs" />
     <Compile Include="CliSetupTests.fs" />
+    <Compile Include="CliDriverCompletionTests.fs" />
     <Compile Include="DifferentClient.fs" />
     <Compile Include="PublishedAssets.fs" />
     <Compile Include="RejectedDrafts.fs" />

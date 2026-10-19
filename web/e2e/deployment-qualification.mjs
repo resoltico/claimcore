@@ -85,6 +85,20 @@ const rejectUnstartedIdentity = () => {
     1,
   );
 };
+const qualifyIdentityMemory = () => {
+  const identity = compose("ps", "--quiet", "identity").trim();
+  if (!/^[a-f0-9]{64}$/u.test(identity)) {
+    throw new Error("The owned identity container was not uniquely selected.");
+  }
+  const memory = command(
+    "docker",
+    ["inspect", "--format", "{{.HostConfig.Memory}}", identity],
+    60_000,
+  ).trim();
+  if (memory !== "2147483648") {
+    throw new Error("The owned identity container does not retain its memory bound.");
+  }
+};
 const port = () =>
   new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -261,6 +275,7 @@ if (process.argv[4] === "cleanup") {
   process.exit(failed ? 1 : 0);
 }
 try {
+  progress("configure");
   const webPort = await port();
   let identityPort = await port();
   while (identityPort === webPort) {
@@ -282,6 +297,7 @@ try {
   rejectUnstartedIdentity();
   progress("build-and-start");
   compose("up", "--build", "--detach", "--wait", "--wait-timeout", "240");
+  qualifyIdentityMemory();
   const ca = readFileSync(path.join(configuration, "ca.pem"));
   const origin = `https://localhost:${webPort}`;
   await awaitReady(origin, ca);

@@ -43,9 +43,24 @@ let parse code (result: ProcessRunner.Result) =
     deliveryFields code reply
     reply
 
+let private invoke
+    (fixture: PublishedFixture.Fixture)
+    (environment: IReadOnlyDictionary<string, string>)
+    arguments
+    source
+    expected
+    =
+    let progress =
+        match environment.TryGetValue "CLAIMCORE_CLI_TEST_PROGRESS_FILE" with
+        | true, path -> Some path
+        | _ -> None
+
+    CliDriverCompletion.run 90_000 Console.Error progress expected (fun () ->
+        CliInvocationEvidence.run expected Console.Error progress (fun () ->
+            ProcessRunner.dotnet 90_000 fixture.Cli arguments environment (Some source)))
+
 let run (fixture: PublishedFixture.Fixture) environment source code =
-    ProcessRunner.dotnet 90_000 fixture.Cli [ "call" ] environment (Some source)
-    |> parse code
+    invoke fixture environment [ "call" ] source code |> parse code
 
 let automation fixture endpoint input code =
     run fixture fixture.Environment (frame endpoint input) code
@@ -58,7 +73,10 @@ let interactiveEnvironment (fixture: PublishedFixture.Fixture) username mode =
     values["CLAIMCORE_CLI_TEST_AUTH_MODE"] <- mode
 
     values["CLAIMCORE_CLI_TEST_PROGRESS_FILE"] <-
-        Path.Combine(fixture.Directory, "cli-auth-" + mode + ".progress")
+        Path.Combine(
+            fixture.Directory,
+            "cli-auth-" + mode + "-" + Guid.NewGuid().ToString("N") + ".progress"
+        )
 
     values["CLAIMCORE_CLI_TEST_USERNAME"] <- username
 
@@ -219,5 +237,5 @@ let setup fixture =
 
     let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
 
-    ProcessRunner.dotnet 90_000 fixture.Cli [ "session" ] environment (Some source)
+    invoke fixture environment [ "session" ] source 0
     |> requireAcceptedReplies frames.Length

@@ -77,17 +77,22 @@ module internal LoopbackTransport =
             let mutable complete = false
             let mutable reading = true
 
-            while reading && not complete && count < buffer.Length do
-                let! received = stream.ReadAsync(one.AsMemory(), cancelled)
+            try
+                while reading && not complete && count < buffer.Length do
+                    let! received = stream.ReadAsync(one.AsMemory(), cancelled)
 
-                if received = 0 then
-                    reading <- false
-                else
-                    buffer[count] <- one[0]
-                    count <- count + 1
+                    if received = 0 then
+                        reading <- false
+                    else
+                        buffer[count] <- one[0]
+                        count <- count + 1
 
-                    complete <-
-                        count >= 4 && buffer[count - 4 .. count - 1] = [| 13uy; 10uy; 13uy; 10uy |]
+                        complete <-
+                            count >= 4
+                            && buffer[count - 4 .. count - 1] = [| 13uy; 10uy; 13uy; 10uy |]
+            with
+            | :? IO.IOException when count = 0 -> ()
+            | :? OperationCanceledException when count > 0 -> ()
 
             if
                 complete
@@ -95,9 +100,25 @@ module internal LoopbackTransport =
                 && (buffer[.. count - 1]
                     |> Array.forall (fun c -> c = 13uy || c = 10uy || (c >= 32uy && c <= 126uy)))
             then
-                return Ok(Encoding.ASCII.GetString(buffer, 0, count))
+                return Ok(Some(Encoding.ASCII.GetString(buffer, 0, count)))
+            elif count = 0 then
+                return Ok None
             else
                 return Error "OIDC_CALLBACK_INVALID"
+        }
+
+    let readConnection (stream: NetworkStream) (cancelled: CancellationToken) =
+        task {
+            // A browser's idle preconnection must not consume the one callback.
+            use deadline = CancellationTokenSource.CreateLinkedTokenSource cancelled
+            deadline.CancelAfter(TimeSpan.FromSeconds 2.)
+
+            try
+                let! result = readHeaders stream deadline.Token
+                cancelled.ThrowIfCancellationRequested()
+                return result
+            with :? OperationCanceledException when not cancelled.IsCancellationRequested ->
+                return Ok None
         }
 
     let respond (stream: NetworkStream) accepted cancelled =
@@ -122,6 +143,30 @@ module internal LoopbackTransport =
             do! stream.FlushAsync(cancelled)
         }
 
+    let readCallback (listener: TcpListener) host cancelled =
+        task {
+            let mutable result = None
+
+            while result.IsNone do
+                use! client = listener.AcceptTcpClientAsync(cancelled)
+                use stream = client.GetStream()
+                let! request = readConnection stream cancelled
+
+                let parsed =
+                    match request with
+                    | Ok None -> None
+                    | Ok(Some source) -> Some(parseRequest host source)
+                    | Error reason -> Some(Error reason)
+
+                match parsed with
+                | None -> ()
+                | Some callback ->
+                    do! respond stream (Result.isOk callback) cancelled
+                    result <- Some callback
+
+            return result.Value
+        }
+
 /// One IPv4 loopback callback. OAuth state, issuer and PKCE validation belong to OidcClient.
 type internal LoopbackBrowser() =
     let listener = new TcpListener(IPAddress.Loopback, 0)
@@ -136,11 +181,7 @@ type internal LoopbackBrowser() =
             deadline.CancelAfter(TimeSpan.FromMinutes 2.)
 
             try
-                use! client = listener.AcceptTcpClientAsync(deadline.Token)
-                use stream = client.GetStream()
-                let! request = LoopbackTransport.readHeaders stream deadline.Token
-                let parsed = request |> Result.bind (LoopbackTransport.parseRequest host)
-                do! LoopbackTransport.respond stream (Result.isOk parsed) deadline.Token
+                let! parsed = LoopbackTransport.readCallback listener host deadline.Token
 
                 match parsed with
                 | Ok response ->

@@ -89,7 +89,9 @@ type Identity(origin: string) =
             .WithName("claimcore-identity-test-" + runId)
             .WithLabel("claimcore.test", "identity")
             .WithLabel("claimcore.test-run", runId)
-            .WithCreateParameterModifier(fun parameters -> parameters.User <- "0")
+            .WithCreateParameterModifier(fun parameters ->
+                parameters.User <- "0"
+                (nonNull parameters.HostConfig).Memory <- 2L * 1024L * 1024L * 1024L)
             .WithTmpfsMount("/opt/keycloak/data/h2")
             .WithPortBinding(8443, true)
             .WithEnvironment("KC_BOOTSTRAP_ADMIN_USERNAME", "synthetic-admin")
