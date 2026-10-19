@@ -7,6 +7,7 @@ import { expect, type BrowserContext, type Page } from "@playwright/test";
 import { wireContractFingerprint } from "@contracts/client";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import { retainResponseBodies } from "./response-bodies";
+import { observeOidcSubmission, providerFailure } from "./oidc-provider-evidence.mjs";
 
 type BrowserReply = Readonly<{
   status: number;
@@ -161,6 +162,8 @@ const awaitOidcReturn = async (
   page: Page,
   applicationOrigin: string,
   callbackStatus: () => number,
+  submitted: ReturnType<typeof observeOidcSubmission>,
+  issuerOrigin: string,
 ): Promise<void> => {
   try {
     await page.waitForURL((url) => url.origin === applicationOrigin && url.pathname === "/", {
@@ -169,32 +172,47 @@ const awaitOidcReturn = async (
     });
   } catch {
     const current = new URL(page.url());
+    let location = "other";
+    if (current.origin === applicationOrigin) {
+      location = "app";
+    } else if (current.origin === issuerOrigin) {
+      location = "issuer";
+    }
+    const snapshot = { callbackStatus: callbackStatus(), location, submission: submitted() };
+    const provider = location === "issuer" ? await providerFailure(page) : "none";
+    const evidence = { ...snapshot, provider };
     const safeFile = process.env["CLAIMCORE_WEB_E2E_SAFE_FAILURE_FILE"];
     if (safeFile !== undefined) {
       if (!isAbsolute(safeFile)) {
         throw new Error("Safe failure path must be absolute.");
       }
-      await writeFile(
-        safeFile,
-        `${JSON.stringify({ callbackStatus: callbackStatus(), origin: current.origin, pathname: current.pathname })}\n`,
-        { mode: 0o600 },
-      );
+      await writeFile(safeFile, `${JSON.stringify(evidence)}\n`, { mode: 0o600 });
     }
-    const originClass = current.origin === applicationOrigin ? "app" : "issuer";
-    const pathClass = current.pathname.replace(/[^a-z0-9]+/giu, "-").slice(0, 80);
-    await progress(`oidc-return-failed-${callbackStatus()}-${originClass}-${pathClass}`);
-    throw new Error(`E2E_OIDC_RETURN_${callbackStatus()}_${current.origin}${current.pathname}`);
+    const category = `${snapshot.callbackStatus}_${location}_${provider}_${snapshot.submission.status}_${snapshot.submission.credentialMatch}`;
+    await progress(`oidc-return-failed-${category}`);
+    throw new Error(`E2E_OIDC_RETURN_${category}`);
   }
 };
 
-const trackOidcCallback = (page: Page) => {
+const trackOidcCallback = (page: Page, applicationOrigin: string) => {
   let callbackStatus = 0;
   page.on("response", (response) => {
-    if (new URL(response.url()).pathname === "/signin-oidc") {
+    const url = new URL(response.url());
+    if (url.origin === applicationOrigin && url.pathname === "/signin-oidc") {
       callbackStatus = response.status();
     }
   });
   return () => callbackStatus;
+};
+
+const fillOidcCredentials = async (
+  page: Page,
+  owner: Readonly<{ username: string; password: string }>,
+): Promise<void> => {
+  await page.locator('input[name="username"]').fill(owner.username);
+  await progress("oidc-username-filled");
+  await page.locator('input[name="password"]').fill(owner.password);
+  await progress("oidc-password-filled");
 };
 
 export const login = async (
@@ -234,14 +252,13 @@ export const login = async (
     return;
   }
   await progress("oidc-navigation");
-  await page.locator('input[name="username"]').fill(owner.username);
-  await progress("oidc-username-filled");
-  await page.locator('input[name="password"]').fill(owner.password);
-  await progress("oidc-password-filled");
-  const callbackStatus = trackOidcCallback(page);
+  const issuerOrigin = new URL(page.url()).origin;
+  const submitted = observeOidcSubmission(page, issuerOrigin, owner);
+  await fillOidcCredentials(page, owner);
+  const callbackStatus = trackOidcCallback(page, applicationOrigin);
   await page.locator('input[type="submit"], button[type="submit"]').first().click();
   await progress("oidc-submitted");
-  await awaitOidcReturn(page, applicationOrigin, callbackStatus);
+  await awaitOidcReturn(page, applicationOrigin, callbackStatus, submitted, issuerOrigin);
   await progress("oidc-callback-returned");
   await expect(authenticated).toBeVisible();
   await progress("login-ready");

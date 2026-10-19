@@ -1,5 +1,5 @@
 import { URL } from "node:url";
-import { clearTimeout, setTimeout } from "node:timers";
+import { providerFailure } from "./oidc-provider-evidence.mjs";
 
 const parsed = (value, base) => {
   try {
@@ -51,38 +51,6 @@ const networks = new Map([
   ["net::ERR_CERT_COMMON_NAME_INVALID", "tls"],
   ["net::ERR_SSL_PROTOCOL_ERROR", "tls"],
 ]);
-const providerMessages = new Map([
-  ["invalid username or password.", "credentials"],
-  ["cookie not found. please make sure cookies are enabled in your browser.", "cookie"],
-  ["action expired. please continue with login now.", "expired"],
-  ["expired code. please login again.", "expired"],
-  ["your login attempt timed out. login will start from the beginning.", "expired"],
-  ["account is disabled, contact your administrator.", "disabled"],
-]);
-const providerClass = async (page) => {
-  if (page === undefined) {
-    return "none";
-  }
-  let timer;
-  try {
-    const messages = await Promise.race([
-      page.locator("#input-error, .kc-feedback-text, #kc-error-message p").allTextContents(),
-      new Promise((resolve) => {
-        timer = setTimeout(() => resolve(undefined), 1000);
-      }),
-    ]);
-    if (messages === undefined) {
-      return "other";
-    }
-    const present = messages.map((text) => text.trim().replaceAll(/\s+/gu, " ").toLowerCase());
-    const message = present.find((text) => text.length > 0);
-    return message === undefined ? "none" : (providerMessages.get(message) ?? "other");
-  } catch {
-    return "other";
-  } finally {
-    clearTimeout(timer);
-  }
-};
 
 const responseFacts = (value, issuer, state, target) => {
   const url = parsed(value.url());
@@ -180,7 +148,7 @@ export const browserReturn = (issuer, expectedCallback) => {
         response: state.response,
         network: state.network === "none" ? networkFromError(error) : state.network,
       };
-      const provider = snapshot.location === "issuer" ? await providerClass(page) : "none";
+      const provider = snapshot.location === "issuer" ? await providerFailure(page) : "none";
       return { ...snapshot, provider, failure };
     },
   };
