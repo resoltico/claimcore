@@ -81,22 +81,22 @@ let private literalMount directory =
 let private literalComposePaths directory (document: JsonDocument) =
     for service in document.RootElement.GetProperty("services").EnumerateObject() do
         for volume in service.Value.GetProperty("volumes").EnumerateArray() do
-            if
-                volume.GetProperty("type").GetString() = "bind"
-                && volume.GetProperty("target").GetString()
-                   <> "/docker-entrypoint-initdb.d/10-claimcore-roles.sh"
-            then
-                let source = volume.GetProperty("source").GetString() |> nonNull
-
-                Expect.isTrue
-                    (source
-                        .Replace("$$", "$")
-                        .StartsWith(configuration directory + "/", StringComparison.Ordinal))
-                    "Compose rendering preserves each exact host path"
-
+            if volume.GetProperty("type").GetString() = "bind" then
                 Expect.isFalse
                     (volume.GetProperty("bind").GetProperty("create_host_path").GetBoolean())
                     "Structured bind mounts preserve colons at Docker's API boundary"
+
+                if
+                    volume.GetProperty("target").GetString()
+                    <> "/docker-entrypoint-initdb.d/10-claimcore-roles.sh"
+                then
+                    let source = volume.GetProperty("source").GetString() |> nonNull
+
+                    Expect.isTrue
+                        (source
+                            .Replace("$$", "$")
+                            .StartsWith(configuration directory + "/", StringComparison.Ordinal))
+                        "Compose rendering preserves each exact host path"
 
 let private composePaths directory =
     async {

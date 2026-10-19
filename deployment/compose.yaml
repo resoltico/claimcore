@@ -17,7 +17,12 @@ services:
         read_only: true
         bind:
           create_host_path: false
-      - ./postgres-roles.sh:/docker-entrypoint-initdb.d/10-claimcore-roles.sh:ro
+      - type: bind
+        source: ./postgres-roles.sh
+        target: /docker-entrypoint-initdb.d/10-claimcore-roles.sh
+        read_only: true
+        bind:
+          create_host_path: false
     healthcheck:
       test: [CMD, pg_isready, -h, 127.0.0.1, -U, claimcore_owner, -d, claimcore]
       interval: 2s
