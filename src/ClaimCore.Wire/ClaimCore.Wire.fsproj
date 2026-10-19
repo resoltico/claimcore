@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="Strict.fs" />
+    <Compile Include="Codec.fs" />
+    <Compile Include="Endpoint.fs" />
+    <Compile Include="Delivery.fs" />
+  </ItemGroup>
+</Project>

@@ -304,6 +304,12 @@
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.12, )"
         }
       },
+      "claimcore.wire": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
         "type": "CentralTransitive",
         "requested": "[10.0.12, )",

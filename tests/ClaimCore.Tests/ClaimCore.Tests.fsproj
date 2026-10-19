@@ -9,6 +9,8 @@
     <Compile Include="PropertyHarness.fs" />
     <Compile Include="PropertyHarnessTests.fs" />
     <Compile Include="Fixtures.fs" />
+    <Compile Include="WireCodecTests.fs" />
+    <Compile Include="WireDeliveryTests.fs" />
     <Compile Include="VerificationFoldTests.fs" />
     <Compile Include="ScalarPropertyTests.fs" />
     <Compile Include="TransitionOracle.fs" />
@@ -63,6 +65,7 @@
     <Compile Include="DocumentationChecks.fs" />
     <Compile Include="DocumentationTests.fs" />
     <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />

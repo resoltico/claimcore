@@ -301,6 +301,12 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
+      "claimcore.wire": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "Npgsql": {
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",

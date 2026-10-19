@@ -1,0 +1,2809 @@
+{
+ "purpose": "Golden delivery vectors from the ClaimCore 0.10.0 policy tables; regenerate with python3 -I delivery_oracle.py",
+ "knowledge": [
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "knowledge": "READ_SUCCEEDED"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "knowledge": "READ_SUCCEEDED"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "knowledge": "READ_SUCCEEDED"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "knowledge": "READ_SUCCEEDED"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "knowledge": "READ_SUCCEEDED"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "knowledge": "READ_SUCCEEDED"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REVIEWED"
+   },
+   "knowledge": "READ_SUCCEEDED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "ALREADY_ACCEPTED"
+   },
+   "knowledge": "ACCEPTED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "UNCONFIRMED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "UNCONFIRMED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "UNCONFIRMED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "ACCEPTED"
+   },
+   "knowledge": "ACCEPTED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "ALREADY_ACCEPTED"
+   },
+   "knowledge": "ACCEPTED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "OUTCOME_UNKNOWN"
+   },
+   "knowledge": "UNCONFIRMED"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "knowledge": "READ_SUCCEEDED"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "UNCONFIRMED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "UNCONFIRMED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "UNCONFIRMED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "ACCEPTED"
+   },
+   "knowledge": "ACCEPTED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "ALREADY_ACCEPTED"
+   },
+   "knowledge": "ACCEPTED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "knowledge": "NOT_ACCEPTED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "OUTCOME_UNKNOWN"
+   },
+   "knowledge": "UNCONFIRMED"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "knowledge": "READ_SUCCEEDED"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "knowledge": "NOT_SENT"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "knowledge": "READ_SUCCEEDED"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "knowledge": "READ_FAILED"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "knowledge": "READ_FAILED"
+  }
+ ],
+ "evidence": [
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "session.logout",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "context",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.get",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.history",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REVIEWED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "ALREADY_ACCEPTED"
+   },
+   "evidence": "CONTENT_ACCEPTED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "evidence": "CONTENT_EXCLUDED"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.preview",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "ACCEPTED"
+   },
+   "evidence": "CONTENT_ACCEPTED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "ALREADY_ACCEPTED"
+   },
+   "evidence": "CONTENT_ACCEPTED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "evidence": "CONTENT_EXCLUDED"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "case.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "OUTCOME_UNKNOWN"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "operation.observe",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "ACCEPTED"
+   },
+   "evidence": "CONTENT_ACCEPTED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "ALREADY_ACCEPTED"
+   },
+   "evidence": "CONTENT_ACCEPTED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "evidence": "CONTENT_EXCLUDED"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.execute",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "OUTCOME_UNKNOWN"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.list",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "NOT_DISPATCHED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "DISPATCHED_WITHOUT_REPLY"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "NOT_STARTED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": "STARTED_UNCONFIRMED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "HOST_FAILURE",
+    "phase": null
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "SUCCEEDED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "OPERATION_CONTENT_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "CASE_REVISION_CONFLICT"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "REJECTED",
+    "diagnostic": "ACCESS_RESOURCE_UNAVAILABLE"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "FAILED"
+   },
+   "evidence": "NONE"
+  },
+  {
+   "endpoint": "authority.grants",
+   "attempt": {
+    "kind": "OUTCOME",
+    "tag": "CANCELLED"
+   },
+   "evidence": "NONE"
+  }
+ ],
+ "accumulate": [
+  {
+   "prior": "NOT_SENT",
+   "attempt": "NOT_SENT",
+   "evidence": "NONE",
+   "result": "NOT_SENT"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "NONE",
+   "result": "READ_SUCCEEDED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "READ_FAILED",
+   "evidence": "NONE",
+   "result": "READ_FAILED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "ACCEPTED",
+   "evidence": "NONE",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "NONE",
+   "result": "NOT_ACCEPTED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "UNCONFIRMED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_SENT",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "NOT_SENT",
+   "evidence": "NONE",
+   "result": "NOT_SENT"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "NONE",
+   "result": "READ_SUCCEEDED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "READ_FAILED",
+   "evidence": "NONE",
+   "result": "READ_FAILED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "ACCEPTED",
+   "evidence": "NONE",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "NONE",
+   "result": "NOT_ACCEPTED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_SUCCEEDED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "NOT_SENT",
+   "evidence": "NONE",
+   "result": "NOT_SENT"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "NONE",
+   "result": "READ_SUCCEEDED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "READ_FAILED",
+   "evidence": "NONE",
+   "result": "READ_FAILED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "ACCEPTED",
+   "evidence": "NONE",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "NONE",
+   "result": "NOT_ACCEPTED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "READ_FAILED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "NOT_SENT",
+   "evidence": "NONE",
+   "result": "NOT_SENT"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "NONE",
+   "result": "READ_SUCCEEDED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "READ_FAILED",
+   "evidence": "NONE",
+   "result": "READ_FAILED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "ACCEPTED",
+   "evidence": "NONE",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "NONE",
+   "result": "NOT_ACCEPTED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "ACCEPTED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "NOT_SENT",
+   "evidence": "NONE",
+   "result": "NOT_SENT"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "NONE",
+   "result": "READ_SUCCEEDED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "READ_FAILED",
+   "evidence": "NONE",
+   "result": "READ_FAILED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "ACCEPTED",
+   "evidence": "NONE",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "NONE",
+   "result": "NOT_ACCEPTED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "NOT_ACCEPTED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "NOT_SENT",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "READ_FAILED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "ACCEPTED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "UNCONFIRMED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "NOT_SENT",
+   "evidence": "NONE",
+   "result": "NOT_SENT"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "NOT_SENT",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "NONE",
+   "result": "READ_SUCCEEDED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "READ_SUCCEEDED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "READ_FAILED",
+   "evidence": "NONE",
+   "result": "READ_FAILED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "READ_FAILED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "ACCEPTED",
+   "evidence": "NONE",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "NONE",
+   "result": "NOT_ACCEPTED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "NOT_ACCEPTED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "NONE",
+   "result": "UNCONFIRMED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_ACCEPTED",
+   "result": "ACCEPTED"
+  },
+  {
+   "prior": "CONTENT_EXCLUDED",
+   "attempt": "UNCONFIRMED",
+   "evidence": "CONTENT_EXCLUDED",
+   "result": "CONTENT_EXCLUDED"
+  }
+ ]
+}

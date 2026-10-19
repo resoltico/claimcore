@@ -11,6 +11,7 @@
     <Compile Include="FacadeSignatures.fs" />
     <Compile Include="ArchitectureTests.fs" />
     <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />

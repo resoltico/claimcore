@@ -132,7 +132,7 @@ lint() {
 unit() {
   build_native
   # Native freshness tests check the complete tracked contracts/ inventory and exact bytes.
-  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 354
+  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 363
   dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
     --configuration Debug --no-restore -p:Optimize=false
   tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 40 Debug 15m
