@@ -109,7 +109,6 @@
 **/blob-report
 **/playwright/.auth
 **/playwright/.cache
-**/web/src/generated
 **/web/src/presentation/generated
 
 # Reviewed credential-free policies required by the locked npm producers.

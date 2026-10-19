@@ -81,8 +81,6 @@ let private semanticTypes includeHosting =
             .Or()
             .ResideInAssembly(Assembly.Load "ClaimCore.Application")
             .Or()
-            .ResideInAssembly(Assembly.Load "ClaimCore.Contracts")
-            .Or()
             .ResideInAssembly(Assembly.Load "ClaimCore.Postgres")
 
     if includeHosting then

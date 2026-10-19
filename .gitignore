@@ -83,7 +83,6 @@ Desktop.ini
 .ruff_cache/
 
 # Browser build output; authoritative generated contract artifacts are tracked in contracts/.
-/web/src/generated/
 
 # Private credential inputs
 *.secret
