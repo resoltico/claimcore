@@ -6,6 +6,7 @@ open System
 open System.Security.Cryptography
 open System.Net
 open System.Net.Http
+open System.Net.Sockets
 open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
@@ -219,6 +220,165 @@ let private callbackTransport () =
             (LoopbackTransport.parseRequest host invalid)
             "Only one exact loopback host and GET root"
 
+let private withListener action =
+    task {
+        let listener = new TcpListener(IPAddress.Loopback, 0)
+        listener.Start()
+        use deadline = new CancellationTokenSource(TimeSpan.FromSeconds 8.)
+        let endpoint = listener.LocalEndpoint :?> IPEndPoint
+
+        try
+            return! action listener endpoint deadline.Token
+        finally
+            listener.Stop()
+    }
+
+let private withCallback action =
+    withListener (fun listener endpoint cancelled ->
+        action
+            endpoint
+            (LoopbackTransport.readCallback listener (string endpoint) cancelled)
+            cancelled)
+
+let private sendCallback (endpoint: IPEndPoint) source cancelled =
+    task {
+        use client = new TcpClient()
+        do! client.ConnectAsync(endpoint.Address, endpoint.Port, cancelled)
+        use stream = client.GetStream()
+        let bytes = Encoding.ASCII.GetBytes(source: string)
+        do! stream.WriteAsync(bytes.AsMemory(), cancelled)
+        client.Client.Shutdown SocketShutdown.Send
+        use reply = new System.IO.MemoryStream()
+        do! stream.CopyToAsync(reply, cancelled)
+        return Encoding.ASCII.GetString(reply.ToArray())
+    }
+
+let private callbackRequest endpoint =
+    $"GET /?code=synthetic&state=opaque HTTP/1.1\r\nHost: {endpoint}\r\n\r\n"
+
+let private unusedConnections idle =
+    withCallback (fun endpoint pending cancelled ->
+        task {
+            use unused = new TcpClient()
+            do! unused.ConnectAsync(endpoint.Address, endpoint.Port, cancelled)
+
+            if not idle then
+                unused.Dispose()
+
+            let sending = sendCallback endpoint (callbackRequest endpoint) cancelled
+            let! result = pending
+            let! response = sending
+            Expect.isOk result "An unused connection does not consume the one callback"
+            Expect.isTrue (response.StartsWith("HTTP/1.1 200 OK")) "Actual callback succeeds"
+        })
+
+let private malformedConnection partial =
+    withCallback (fun endpoint pending cancelled ->
+        task {
+            let request =
+                if partial then
+                    "GET / HTTP/1.1\r\n"
+                else
+                    "POST / HTTP/1.1\r\n\r\n"
+
+            let sending = sendCallback endpoint request cancelled
+            let! result = pending
+            let! response = sending
+            Expect.isError result "An attempted malformed callback remains a refusal"
+            Expect.isTrue (response.StartsWith("HTTP/1.1 400 Bad Request")) "Refusal response"
+        })
+
+type private ObservedNetworkStream(socket, received: TaskCompletionSource<unit>) =
+    inherit NetworkStream(socket, false)
+
+    override _.ReadAsync(buffer, cancelled) =
+        let pending = base.ReadAsync(buffer, cancelled)
+
+        ValueTask<int>(
+            task {
+                let! count = pending
+
+                if count > 0 then
+                    received.TrySetResult() |> ignore
+
+                return count
+            }
+        )
+
+let private resetHeaders partial (listener: TcpListener) (endpoint: IPEndPoint) cancelled =
+    task {
+        use client = new TcpClient()
+        do! client.ConnectAsync(endpoint.Address, endpoint.Port, cancelled)
+        use! accepted = listener.AcceptTcpClientAsync(cancelled)
+
+        let received =
+            TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        use stream = new ObservedNetworkStream(accepted.Client, received)
+        let pending = LoopbackTransport.readHeaders stream cancelled
+
+        if partial then
+            do! client.GetStream().WriteAsync(ReadOnlyMemory [| byte 'G' |], cancelled)
+            do! received.Task.WaitAsync(cancelled)
+
+        client.LingerState <- LingerOption(true, 0)
+        client.Dispose()
+
+        try
+            let! result = pending
+
+            if partial then
+                Expect.isError result "A reset after received header bytes cannot be ignored"
+            else
+                Expect.equal result (Ok None) "An unused reset socket has no callback"
+        with :? System.IO.IOException when partial ->
+            ()
+    }
+
+let private resetConnection partial =
+    withListener (fun listener endpoint cancelled ->
+        task {
+            do! resetHeaders partial listener endpoint cancelled
+
+            if not partial then
+                let pending = LoopbackTransport.readCallback listener (string endpoint) cancelled
+                let sending = sendCallback endpoint (callbackRequest endpoint) cancelled
+                let! result = pending
+                let! response = sending
+                Expect.isOk result "The actual callback follows an unused reset connection"
+                Expect.isTrue (response.StartsWith("HTTP/1.1 200 OK")) "Actual callback succeeds"
+        })
+
+let private cancelledCallback idle =
+    task {
+        let listener = new TcpListener(IPAddress.Loopback, 0)
+        listener.Start()
+        use deadline = new CancellationTokenSource()
+        use client = new TcpClient()
+
+        try
+            if idle then
+                let endpoint = listener.LocalEndpoint :?> IPEndPoint
+                do! client.ConnectAsync(endpoint.Address, endpoint.Port)
+
+            let watch = System.Diagnostics.Stopwatch.StartNew()
+            let pending = LoopbackTransport.readCallback listener "127.0.0.1" deadline.Token
+            deadline.CancelAfter(TimeSpan.FromMilliseconds 100.)
+
+            try
+                let! _ = pending
+                failtest "Overall cancellation must terminate callback admission"
+            with :? OperationCanceledException ->
+                ()
+
+            Expect.isLessThan
+                watch.Elapsed
+                (TimeSpan.FromSeconds 1.)
+                "Overall cancellation interrupts accepting and idle header reads"
+        finally
+            listener.Stop()
+    }
+
 [<Tests>]
 let tests =
     testList
@@ -235,4 +395,20 @@ let tests =
             testCase "library owns PKCE and callback state validation" libraryPkce
             testCase "typed token data is bounded and redacted" tokenParts
             testCase "loopback transport binds one exact host" callbackTransport
+            testTask "an idle connection cannot monopolize the loopback callback" {
+                do! unusedConnections true
+            }
+            testTask "an empty closed connection does not consume the loopback callback" {
+                do! unusedConnections false
+            }
+            testTask "partial callback EOF is refused" { do! malformedConnection true }
+            testTask "a complete malformed callback is refused" { do! malformedConnection false }
+            testTask "an unused reset connection does not consume a callback" {
+                do! resetConnection false
+            }
+            testTask "a reset after a header byte cannot be ignored" { do! resetConnection true }
+            testTask "overall cancellation ends callback admission and idle header reads" {
+                do! cancelledCallback false
+                do! cancelledCallback true
+            }
         ]

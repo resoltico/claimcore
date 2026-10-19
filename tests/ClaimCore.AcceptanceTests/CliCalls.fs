@@ -219,5 +219,8 @@ let setup fixture =
 
     let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
 
-    ProcessRunner.dotnet 90_000 fixture.Cli [ "session" ] environment (Some source)
+    CliSetupEvidence.run
+        Console.Error
+        (Path.Combine(fixture.Directory, "cli-auth-valid.progress"))
+        (fun () -> ProcessRunner.dotnet 90_000 fixture.Cli [ "session" ] environment (Some source))
     |> requireAcceptedReplies frames.Length

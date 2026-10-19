@@ -1,8 +1,88 @@
 module ClaimCore.AcceptanceTests.CliSetupTests
 
 open System.Text
+open System
+open System.IO
 open Expecto
 open ClaimCore.AcceptanceTests.CliCalls
+open ClaimCore.TestSupport
+open ClaimCore.Wire
+
+let private failureEvidence () =
+    let meta =
+        {
+            OperationId = None
+            AttemptKnowledge = AttemptKnowledge.NotSent
+            ResolutionEvidence = ResolutionEvidence.NoEvidence
+        }
+
+    let encoded =
+        Frames.encode (FrameReply.LocalFailure(meta, None, LocalFailure.Internal))
+
+    let output =
+        Array.concat [ encoded; [| 10uy |]; Encoding.UTF8.GetBytes("private-marker\n"); encoded ]
+
+    let failure =
+        BoundedProcessFailure(Deadline, output, Encoding.UTF8.GetBytes("private-marker"), true)
+
+    for stage, expected in
+        [
+            "callback-observed\n", "callback-observed"
+            "driver-refused-after-password-filled", "driver-refused-after-password-filled"
+            "driver-refused-after-private-marker", "unknown"
+            "callback-observed\nprivate-marker", "unknown"
+            "unavailable", "unavailable"
+        ] do
+        let evidence = CliSetupEvidence.describe stage failure
+        Expect.stringContains evidence ("authStage=" + expected + ";") "Closed stage"
+        Expect.stringContains evidence "validReplyFrames=1;" "Only complete typed frames count"
+        Expect.stringContains evidence "kind=Deadline; cleanupFailed=True" "Original failure"
+        Expect.isFalse (evidence.Contains "private-marker") "No captured content is disclosed"
+
+let private requireOriginal writer path (failure: BoundedProcessFailure) =
+    let mutable observed: exn option = None
+
+    try
+        CliSetupEvidence.run writer path (fun () -> raise failure)
+    with error ->
+        observed <- Some error
+
+    Expect.isTrue
+        (observed |> Option.exists (fun value -> obj.ReferenceEquals(value, failure)))
+        "Evidence must preserve the original process failure"
+
+let private retainedFailure () =
+    let directory = FixtureFiles.directory ()
+    let path = Path.Combine(directory, "progress")
+    let failure = BoundedProcessFailure(Deadline, [||], [||], false)
+
+    try
+        for source, expected in
+            [ "password-filled\n", "password-filled"; String('x', 129), "unknown" ] do
+            File.WriteAllText(path, source)
+            use writer = new StringWriter()
+            requireOriginal writer path failure
+            Expect.stringContains (writer.ToString()) ("authStage=" + expected) "Safe file evidence"
+
+        File.Delete path
+        use writer = new StringWriter()
+        requireOriginal writer path failure
+        Expect.stringContains (writer.ToString()) "authStage=unavailable;" "Missing progress"
+        writer.Dispose()
+        requireOriginal writer path failure
+    finally
+        Directory.Delete(directory, true)
+
+[<Tests>]
+let evidenceTests =
+    testList
+        "published CLI setup failure evidence"
+        [
+            testCase "closed stages and complete frames exclude private content" failureEvidence
+            testCase
+                "bounded file evidence and writer failures preserve the original failure"
+                retainedFailure
+        ]
 
 [<Tests>]
 let tests =

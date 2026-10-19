@@ -26,6 +26,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- CLI loopback authentication releases idle TCP connections so a browser's valid callback can proceed within the existing overall deadline. OAuth state and PKCE validation remain library-owned.
 - Local Compose waits for identity-provider readiness before starting Web, avoiding early OIDC startup refusal while the provider is still initializing. The management health listener is confined to container loopback; public identity traffic remains HTTPS.
 - Checkout and local configuration paths retain dollar signs, quotes, backslashes, spaces, commas and colons through Compose interpolation, bind mounts and the printed Bash start command. Carriage returns and line feeds are refused before creating configuration inputs.
 
