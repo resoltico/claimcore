@@ -222,6 +222,30 @@ type internal Store(instant: DateTimeOffset) =
     let mutable forcedHead: LedgerHead option = None
     let actor principal = Map.tryFind principal state.Actors
 
+    let authority principal ids =
+        let all = actor principal |> AuthorityView.ofActor
+        let cases = all.Cases |> Map.filter (fun id _ -> List.contains id ids)
+
+        let readable roles =
+            roles
+            |> List.exists (fun role ->
+                ActorAuthorization.readRoles principal |> List.contains role)
+
+        let valid roles =
+            PrincipalKey.isHuman principal
+            || roles |> List.forall (Roles.requiresHuman >> not)
+
+        { all with
+            Cases = cases
+            HasAssignedCases =
+                all.Cases |> Map.exists (fun _ roles -> readable roles && valid roles)
+        }
+
+    let operationCases entry =
+        match entry |> Option.map (fun (entry: StoredEntry) -> entry.Scope) with
+        | Some(StoredScope.Case(id, _, _, _)) -> [ id ]
+        | _ -> []
+
     let case reference =
         Map.tryFind (CaseReference.key reference) state.Cases
 
@@ -336,6 +360,15 @@ type internal Store(instant: DateTimeOffset) =
     member _.HeadOverride
         with set value = forcedHead <- value
 
+    member _.ReplaceCaseSnapshot(reference, snapshot) =
+        let key = CaseReference.key reference
+        let original = state.Cases[key]
+
+        state <-
+            { state with
+                Cases = state.Cases |> Map.add key { original with Snapshot = snapshot }
+            }
+
     member _.DecisionCalls = calls
     member _.Entries = state.Entries |> List.map copyEntry
     member _.Cases = state.Cases |> Map.values |> Seq.toList
@@ -359,7 +392,11 @@ type internal Store(instant: DateTimeOffset) =
                             Head = head ()
                             ObservedAt = observedAt
                             PayloadNonce = nonce ()
-                            Actor = actor principal
+                            Actor =
+                                authority
+                                    principal
+                                    ((case reference |> Option.map _.CaseId |> Option.toList)
+                                     @ operationCases (operation id))
                             ExistingOperation = operation id
                             Case = case reference
                         }
@@ -380,9 +417,22 @@ type internal Store(instant: DateTimeOffset) =
                             Head = head ()
                             ObservedAt = observedAt
                             PayloadNonce = nonce ()
-                            Actor = actor principal
+                            Actor =
+                                authority
+                                    principal
+                                    ((reference
+                                      |> Option.bind case
+                                      |> Option.map _.CaseId
+                                      |> Option.toList)
+                                     @ operationCases (operation id))
                             ExistingOperation = operation id
-                            Target = actor target
+                            Target =
+                                authority
+                                    target
+                                    (reference
+                                     |> Option.bind case
+                                     |> Option.map _.CaseId
+                                     |> Option.toList)
                             TargetCase = reference |> Option.bind case
                             EnabledHumanOwners = owners ()
                             ActorCount = state.Actors.Count
@@ -395,7 +445,11 @@ type internal Store(instant: DateTimeOffset) =
                 Ok
                     {
                         ObservedAt = observedAt
-                        Actor = actor principal
+                        Actor =
+                            authority
+                                principal
+                                ((case reference |> Option.map _.CaseId |> Option.toList)
+                                 @ operationCases (id |> Option.bind operation))
                         ExistingOperation = id |> Option.bind operation
                         Case = case reference
                     })
@@ -405,7 +459,7 @@ type internal Store(instant: DateTimeOffset) =
                 Ok
                     {
                         ObservedAt = observedAt
-                        Actor = actor principal
+                        Actor = authority principal []
                     })
 
         member _.ReadOperation(principal, id, ct) =
@@ -425,7 +479,7 @@ type internal Store(instant: DateTimeOffset) =
                 Ok
                     {
                         ObservedAt = observedAt
-                        Actor = actor principal
+                        Actor = authority principal (operationCases entry)
                         Entry = entry
                         Case = current
                     })
@@ -435,7 +489,10 @@ type internal Store(instant: DateTimeOffset) =
                 let view: HistoryReadView =
                     {
                         ObservedAt = observedAt
-                        Actor = actor principal
+                        Actor =
+                            authority
+                                principal
+                                (case reference |> Option.map _.CaseId |> Option.toList)
                         Case = case reference
                     }
 
@@ -456,12 +513,12 @@ type internal Store(instant: DateTimeOffset) =
                             }
                     ))
 
-        member _.ListCases(principal, select, limit, ct) =
+        member _.ListCases(principal, readRoles, select, limit, ct) =
             locked ct (fun () ->
                 let view: ActorReadView =
                     {
                         ObservedAt = observedAt
-                        Actor = actor principal
+                        Actor = authority principal []
                     }
 
                 match select view with
@@ -473,7 +530,14 @@ type internal Store(instant: DateTimeOffset) =
                         |> Seq.filter (fun record ->
                             (match selection.Visibility with
                              | CaseVisibility.Every -> true
-                             | CaseVisibility.Only ids -> List.contains record.CaseId ids)
+                             | CaseVisibility.Assigned ->
+                                 let scoped = authority principal [ record.CaseId ]
+
+                                 ActorAuthorization.validActor principal scoped
+                                 && (scoped.Cases
+                                     |> Map.tryFind record.CaseId
+                                     |> Option.defaultValue []
+                                     |> List.exists (fun role -> List.contains role readRoles)))
                             && (selection.AfterReference
                                 |> Option.forall (fun after ->
                                     referenceOrder record.Snapshot.Reference after > 0)))
@@ -508,7 +572,7 @@ type internal Store(instant: DateTimeOffset) =
                 let view: ActorReadView =
                     {
                         ObservedAt = observedAt
-                        Actor = actor principal
+                        Actor = authority principal []
                     }
 
                 match select view with
@@ -560,7 +624,7 @@ type internal Store(instant: DateTimeOffset) =
                 let view: GrantReadView =
                     {
                         ObservedAt = observedAt
-                        Actor = actor principal
+                        Actor = authority principal []
                         Target = target |> Option.map reviewActor
                     }
 

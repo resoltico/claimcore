@@ -7,6 +7,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.RecordFormat
+open ClaimCore.Hosting
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.Tests.ApplicationFixtures
 
@@ -80,7 +81,12 @@ let private respelledOpening =
     }"""
 
 let private decodeWire (text: string) =
-    RequestRecord.decodeWire 131072 (Text.Encoding.UTF8.GetBytes text)
+    ClaimCore.Wire.Admission.admit
+        ClaimCore.Wire.Endpoint.CaseExecute
+        (Text.Encoding.UTF8.GetBytes text)
+    |> Result.map (function
+        | ClaimCore.Wire.WireRequest.CaseExecute value -> RequestMapping.caseRequest value
+        | _ -> failtest "Expected a case execution request")
     |> Result.defaultWith (fun _ -> failtest "Synthetic raw request must decode")
 
 let private rawWireReplay (store: MemoryLedgerStore.Store) (fixture: Fixture) =
@@ -173,15 +179,9 @@ let private unknownCommit (store: MemoryLedgerStore.Store) (fixture: Fixture) =
             let! uncertain = actor.Execute(original, CancellationToken.None)
 
             match uncertain with
-            | ExecuteOutcome.OutcomeUnknown(operationId, hash) ->
+            | ExecuteOutcome.OutcomeUnknown operationId ->
                 Expect.equal operationId original.OperationId "Original identity"
 
-                Expect.equal
-                    hash
-                    (RequestRecord.encode original
-                     |> LedgerEntry.requestDigest
-                     |> Convert.ToHexStringLower)
-                    "Original canonical content"
             | _ -> failtest "Lost confirmation relabeled"
 
             let! result = actor.Execute(original, CancellationToken.None)
@@ -216,7 +216,7 @@ let private previewAdvice (store: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! preview = actor.Preview(original, CancellationToken.None)
 
         match preview with
-        | PreviewOutcome.Reviewed(review, _) -> Expect.isNone review.Before "Advisory initial state"
+        | PreviewOutcome.Reviewed review -> Expect.isNone review.Before "Advisory initial state"
         | _ -> failtest "Preview failed"
 
         Expect.equal store.Entries.Length 3 "Preview stores nothing"

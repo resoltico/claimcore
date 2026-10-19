@@ -12,6 +12,13 @@ type PrincipalKey =
     | HumanPrincipal of issuer: string * subject: string
     | ServicePrincipal of issuer: string * clientId: string
 
+type PrincipalDescription =
+    {
+        Kind: string
+        Issuer: string
+        Subject: string
+    }
+
 module PrincipalKey =
     let private issuer value =
         try
@@ -72,6 +79,15 @@ module PrincipalKey =
             Subject = subject
         }
 
+    let description principal : PrincipalDescription =
+        let kind, issuer, subject = storageParts principal
+
+        {
+            Kind = kind
+            Issuer = issuer
+            Subject = subject
+        }
+
     let internal fromStorage kind issuerValue stableValue =
         match kind with
         | "HUMAN" -> human issuerValue stableValue
@@ -107,6 +123,66 @@ type ActorAuthority =
         Enabled: bool
         Grants: ActorGrant list
     }
+
+type Actor =
+    {
+        ActorId: Guid
+        Principal: PrincipalKey
+        Enabled: bool
+    }
+
+/// Only roles that can influence this decision are loaded. Operation identity may add a second case.
+type AuthorityView =
+    {
+        Actor: Actor option
+        Installation: Role list
+        Cases: Map<Guid, Role list>
+        HasAssignedCases: bool
+    }
+
+module AuthorityView =
+    let empty =
+        {
+            Actor = None
+            Installation = []
+            Cases = Map.empty
+            HasAssignedCases = false
+        }
+
+    let ofActor (actor: ActorAuthority option) =
+        match actor with
+        | None -> empty
+        | Some actor ->
+            let installation =
+                actor.Grants
+                |> List.choose (fun grant ->
+                    if grant.Scope = GrantScope.Installation then
+                        Some grant.Role
+                    else
+                        None)
+
+            let cases =
+                actor.Grants
+                |> List.choose (fun grant ->
+                    match grant.Scope with
+                    | GrantScope.Case id -> Some(id, grant.Role)
+                    | _ -> None)
+                |> List.groupBy fst
+                |> List.map (fun (id, grants) -> id, grants |> List.map snd)
+                |> Map.ofList
+
+            {
+                Actor =
+                    Some
+                        {
+                            ActorId = actor.ActorId
+                            Principal = actor.Principal
+                            Enabled = actor.Enabled
+                        }
+                Installation = installation
+                Cases = cases
+                HasAssignedCases = false
+            }
 
 [<RequireQualifiedAccess>]
 type GrantTarget =

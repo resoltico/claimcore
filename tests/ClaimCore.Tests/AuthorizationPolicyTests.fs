@@ -119,12 +119,22 @@ let private matrix () =
                             expectedPermission role capabilities principal scope resource capability
 
                         Expect.equal
-                            (ActorAuthorization.can principal (Some current) capability resource)
+                            (ActorAuthorization.can
+                                principal
+                                (AuthorityView.ofActor (Some current))
+                                capability
+                                resource)
                             expected
                             "Independent role, principal and scope expectation"
 
     for token in [ "CASE_EDITOR"; "case_handler"; "" ] do
         Expect.isNone (Roles.tryParse token) "Unsupported role names refuse"
+
+let private invalidPrincipals () =
+    for value in [ String([| char 0xD800 |]); "a\u0000b"; "a\ufdd0b"; "a\uffffb" ] do
+        Expect.isError
+            (PrincipalKey.human "https://issuer.example/" value)
+            "Identity text has permanent Unicode bounds"
 
 let private invalidActors () =
     let current =
@@ -147,13 +157,17 @@ let private invalidActors () =
         Expect.isFalse
             (ActorAuthorization.can
                 human
-                (Some invalid)
+                (AuthorityView.ofActor (Some invalid))
                 Capability.ReadCase
                 (ResourceScope.Case caseId))
             "Invalid actor grants no rights"
 
     Expect.isFalse
-        (ActorAuthorization.can human None Capability.ReadCase (ResourceScope.Case caseId))
+        (ActorAuthorization.can
+            human
+            AuthorityView.empty
+            Capability.ReadCase
+            (ResourceScope.Case caseId))
         "Absent actor grants no rights"
 
     let scoped =
@@ -169,15 +183,12 @@ let private invalidActors () =
     Expect.isFalse
         (ActorAuthorization.can
             human
-            (Some scoped)
+            (AuthorityView.ofActor (Some scoped))
             Capability.ReadAuthority
             ResourceScope.Installation)
         "Case-scoped audit does not enumerate the installation"
 
-    for value in [ String([| char 0xD800 |]); "a\u0000b"; "a\ufdd0b"; "a\uffffb" ] do
-        Expect.isError
-            (PrincipalKey.human "https://issuer.example/" value)
-            "Identity text has permanent Unicode bounds"
+    invalidPrincipals ()
 
 let private ordinaryActs () =
     let cases =
@@ -213,7 +224,11 @@ let private correctionMasks =
         true, true, true, [ Capability.Register; Capability.Decide; Capability.RecordPayment ]
     ]
 
-let private replacementCorrection registrationChanged decisionChanged paymentChanged =
+let private replacementCorrection
+    registrationChanged
+    decisionChanged
+    paymentChanged
+    : CaseCorrection =
     {
         Registration =
             (if registrationChanged then
@@ -293,7 +308,7 @@ let private reaffirmations () =
     Expect.isFalse
         (ActorAuthorization.canAct
             human
-            (Some handler)
+            (AuthorityView.ofActor (Some handler))
             (ResourceScope.Case caseId)
             paymentReaffirmation)
         "An unchanged payment assertion still requires payment authority"
@@ -338,28 +353,33 @@ let private scopedAdvice () =
                 ]
 
         let advice =
-            Queries.caseRecord installation human (Some authority) record |> accepted
+            Queries.caseRecord installation human (AuthorityView.ofActor (Some authority)) record
+            |> accepted
 
-        let correction =
-            advice.Offers |> List.find (fun value -> value.Definition = "CORRECT_CASE")
+        let expected, correction =
+            advice.Advice.Acts
+            |> List.pick (function
+                | CaseActOffer.CorrectCase(expected, choices) -> Some(expected, choices)
+                | _ -> None)
 
-        Expect.equal
-            correction.CaseReference
-            (Some snapshot.Reference)
-            "Case target bound in snapshot"
+        Expect.equal expected snapshot.Revision "Revision bound in snapshot"
 
-        Expect.equal
-            correction.ExpectedRevision
-            (Some snapshot.Revision)
-            "Revision bound in snapshot"
+        let history =
+            advice.Advice.History
+            |> List.map (function
+                | HistoryDetail.Summary -> "SUMMARY"
+                | HistoryDetail.Full -> "FULL")
 
-        Expect.equal advice.HistoryDetails expectedHistory "History reflects the actual case grant"
+        Expect.equal history expectedHistory "History reflects the actual case grant"
 
-        for choice in correction.Choices do
-            let group = choice.Input.Replace("groups.", "")
-
+        for group, values in
+            [
+                "registration", correction.Registration
+                "decision", correction.Decision
+                "payment", correction.Payment
+            ] do
             Expect.equal
-                (choice.Values <> [ "KEEP" ])
+                (values <> [ CorrectionGroupAction.Keep ])
                 (List.contains group expectedGroups)
                 "Unauthorized correction groups remain required KEEP"
 
@@ -401,14 +421,14 @@ let private noUsableCorrectionOffer () =
             ]
 
     let advice =
-        Queries.caseRecord installation human (Some authority) record |> accepted
+        Queries.caseRecord installation human (AuthorityView.ofActor (Some authority)) record
+        |> accepted
 
     Expect.isFalse
-        (List.contains (CaseActKind.Business BusinessActKind.CorrectCase) advice.AvailableActs)
-        "A payment-only actor cannot correct a record without a payment"
-
-    Expect.isFalse
-        (advice.Offers |> List.exists (fun offer -> offer.Definition = "CORRECT_CASE"))
+        (advice.Advice.Acts
+         |> List.exists (function
+             | CaseActOffer.CorrectCase _ -> true
+             | _ -> false))
         "An all-KEEP form is never offered"
 
 [<Tests>]

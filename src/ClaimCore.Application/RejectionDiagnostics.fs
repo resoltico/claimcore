@@ -102,7 +102,7 @@ module RejectionDiagnostics =
     let private domain =
         function
         | CaseRefusal.InvalidInput(_, value) -> input value
-        | CaseRefusal.NotFound -> simple RejectionDiagnosticId.CaseNotFound
+        | CaseRefusal.NotFound -> simple RejectionDiagnosticId.ResourceUnavailable
         | CaseRefusal.AlreadyExists -> simple RejectionDiagnosticId.CaseAlreadyExists
         | CaseRefusal.RevisionConflict _ -> simple RejectionDiagnosticId.RevisionConflict
         | CaseRefusal.ClosedCase -> simple RejectionDiagnosticId.CaseClosed

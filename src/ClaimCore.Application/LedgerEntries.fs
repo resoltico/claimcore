@@ -317,7 +317,13 @@ module internal LedgerEntries =
             | StoredScope.Case(id, revision, act, _), content ->
                 caseReceipt validated.InstallationId principal actor current id revision act content
             | StoredScope.Authority(target, act), EntryContent.Authority _ ->
-                Ok(ReceiptScope.Authority { TargetActorId = target; Act = act })
+                Ok(
+                    ReceiptScope.Authority
+                        {
+                            TargetActorId = target
+                            Act = AuthorityKinds.fromRecord act
+                        }
+                )
             | _ -> Error CoreFault.StoreIntegrityError
 
         scope

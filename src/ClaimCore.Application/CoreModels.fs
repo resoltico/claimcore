@@ -13,21 +13,46 @@ type RuntimeContext =
         TimeZoneId: string
     }
 
-type InputChoiceOffer = { Input: string; Values: string list }
+[<RequireQualifiedAccess>]
+type View =
+    | Cases
+    | Authority
+    | Operations
 
-type OperationOffer =
+[<RequireQualifiedAccess>]
+type InstallationOffer =
+    | Open
+    | AuthorityAct of AuthorityKind
+
+[<RequireQualifiedAccess>]
+type HistoryDetail =
+    | Summary
+    | Full
+
+type CorrectionChoices =
     {
-        Definition: string
-        CaseReference: string option
-        ExpectedRevision: int64 option
-        Choices: InputChoiceOffer list
+        Registration: CorrectionGroupAction list
+        Decision: CorrectionGroupAction list
+        Payment: CorrectionGroupAction list
+    }
+
+[<RequireQualifiedAccess>]
+type CaseActOffer =
+    | Act of act: CaseActKind * expectedRevision: int64
+    | CorrectCase of expectedRevision: int64 * choices: CorrectionChoices
+
+type CaseAdvice =
+    {
+        Acts: CaseActOffer list
+        History: HistoryDetail list
     }
 
 type ActorContext =
     {
         Runtime: RuntimeContext
         Capabilities: Capability list
-        Offers: OperationOffer list
+        Views: View list
+        Offers: InstallationOffer list
     }
 
 /// Admission vocabulary shared by persistence and the composition root.
@@ -61,7 +86,7 @@ type CaseReceipt =
 type AuthorityReceipt =
     {
         TargetActorId: Guid
-        Act: RecordedAuthorityKind
+        Act: AuthorityKind
     }
 
 [<RequireQualifiedAccess>]
@@ -81,9 +106,7 @@ type OperationReceipt =
 type CaseReadModel =
     {
         Snapshot: CaseSnapshot
-        AvailableActs: CaseActKind list
-        Offers: OperationOffer list
-        HistoryDetails: string list
+        Advice: CaseAdvice
     }
 
 [<RequireQualifiedAccess>]
@@ -104,14 +127,9 @@ type CaseListRequest =
 type CaseSummaryPage =
     {
         Items: CaseSummary list
-        Offers: OperationOffer list
+        Offers: InstallationOffer list
         NextCursor: string option
     }
-
-[<RequireQualifiedAccess>]
-type HistoryDetail =
-    | Summary
-    | Full
 
 type HistoryRequest =
     {
@@ -214,7 +232,7 @@ type AdvisoryReview =
 
 [<RequireQualifiedAccess>]
 type PreviewOutcome =
-    | Reviewed of review: AdvisoryReview * requestSha256: string
+    | Reviewed of review: AdvisoryReview
     | AlreadyAccepted of OperationReceipt
     | Rejected of Rejection
     | Failed of CoreFault
@@ -227,7 +245,7 @@ type ExecuteOutcome =
     | Rejected of Rejection
     | Failed of CoreFault
     | Cancelled
-    | OutcomeUnknown of operationId: Guid * requestSha256: string
+    | OutcomeUnknown of operationId: Guid
 
 type IActorClaimsCore =
     abstract Context: CancellationToken -> Task<QueryOutcome<ActorContext>>

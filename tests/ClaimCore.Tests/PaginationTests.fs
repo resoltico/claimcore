@@ -5,6 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.RecordFormat
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.Tests.ApplicationFixtures
@@ -410,13 +411,21 @@ let private pageAdvice (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! readers = actor.List({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
 
         Expect.isFalse
-            ((succeeded readers).Offers |> List.exists (fun o -> o.Definition = "OPEN"))
+            ((succeeded readers).Offers |> List.contains InstallationOffer.Open)
             "Case-scoped registrar has no installation registration advice"
 
         let! owners = admin.List({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
-        let offers = (succeeded owners).Offers |> List.map _.Definition
-        Expect.contains offers "OPEN" "Same-page authority supplies registration advice"
-        Expect.contains offers "authority.grants" "Authority read advice is owned by core"
+        let offers = (succeeded owners).Offers
+
+        Expect.contains
+            offers
+            InstallationOffer.Open
+            "Same-page authority supplies registration advice"
+
+        Expect.contains
+            offers
+            (InstallationOffer.AuthorityAct AuthorityKind.SetGrant)
+            "Authority act advice is owned by core"
     }
 
 let private appendHistory (actor: IActorClaimsCore) =
@@ -602,7 +611,7 @@ let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture
         let! admin = caseWorker fixture
         let! view = fixture.Store.ReadActor(owner, CancellationToken.None)
         let view = view |> Result.defaultWith (fun _ -> failtest "Caller authority")
-        let authority = view.Actor |> Option.get
+        let authority = view.Actor.Actor |> Option.get
 
         for position in invalidGrantPositions do
             let cursor =

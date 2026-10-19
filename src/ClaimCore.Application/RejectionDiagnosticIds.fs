@@ -18,7 +18,6 @@ type RejectionDiagnosticId =
     | RevisionExhausted
     | PaymentClearRequired
     | PaymentAcknowledgementRequired
-    | CaseNotFound
     | CaseAlreadyExists
     | RevisionConflict
     | CaseClosed
@@ -102,7 +101,6 @@ module RejectionDiagnosticIds =
 
     let private case =
         [
-            RejectionDiagnosticId.CaseNotFound, "CASE_NOT_FOUND"
             RejectionDiagnosticId.CaseAlreadyExists, "CASE_ALREADY_EXISTS"
             RejectionDiagnosticId.RevisionConflict, "CASE_REVISION_CONFLICT"
             RejectionDiagnosticId.CaseClosed, "CASE_CLOSED"

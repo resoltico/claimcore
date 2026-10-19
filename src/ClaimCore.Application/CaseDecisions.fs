@@ -107,7 +107,7 @@ module internal CaseDecisions =
                 CaseReferenceId.encode installationId snapshot.Reference)
 
         let actor =
-            view.Actor
+            view.Actor.Actor
             |> Option.defaultWith (fun () ->
                 invalidArg (nameof view) "Authorized actor is missing.")
 

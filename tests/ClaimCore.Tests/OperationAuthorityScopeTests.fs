@@ -62,18 +62,16 @@ let private existingCaseAuthority (_: MemoryLedgerStore.Store) fixture =
 
         let read = read |> Result.defaultWith (fun _ -> failtest "Synthetic view refused")
         let target = read.Case |> Option.get |> _.CaseId
-        let actor = read.Actor |> Option.get
+        let actor = read.Actor
+
+        Expect.equal actor.Cases.Count 2 "Only request and existing-operation scopes are loaded"
 
         let targetOnly =
             { actor with
-                Grants =
-                    actor.Grants
-                    |> List.filter (fun grant ->
-                        grant.Scope = GrantScope.Installation
-                        || grant.Scope = GrantScope.Case target)
+                Cases = actor.Cases |> Map.filter (fun id _ -> id = target)
             }
 
-        let narrowed = { read with Actor = Some targetOnly }
+        let narrowed = { read with Actor = targetOnly }
 
         match
             CaseDecisions.review

@@ -4,12 +4,8 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
-open ClaimCore.RecordFormat
 
 module internal Core =
-    let private digest bytes =
-        LedgerEntry.requestDigest bytes |> Convert.ToHexStringLower
-
     let private mutationResult =
         function
         | LedgerWriteResult.Refused error -> ExecuteOutcome.Rejected error
@@ -17,11 +13,10 @@ module internal Core =
         | LedgerWriteResult.Appended receipt -> ExecuteOutcome.Accepted receipt
         | LedgerWriteResult.Replayed receipt -> ExecuteOutcome.AlreadyAccepted receipt
 
-    let private mutationFailure operationId bytes =
+    let private mutationFailure operationId =
         function
         | StoreFailure.Cancelled -> ExecuteOutcome.Cancelled
-        | StoreFailure.CommitOutcomeUnknown ->
-            ExecuteOutcome.OutcomeUnknown(operationId, digest bytes)
+        | StoreFailure.CommitOutcomeUnknown -> ExecuteOutcome.OutcomeUnknown operationId
         | failure -> ExecuteOutcome.Failed(Queries.fault failure)
 
     let private caseWrite
@@ -53,9 +48,7 @@ module internal Core =
                     return
                         result
                         |> Result.map mutationResult
-                        |> Result.defaultWith (
-                            mutationFailure request.OperationId (RequestRecord.encode request)
-                        )
+                        |> Result.defaultWith (mutationFailure request.OperationId)
         }
 
     let private authorityWrite
@@ -84,12 +77,10 @@ module internal Core =
                             ct
                         )
 
-                    let bytes = AuthorityRequests.toRecord request |> AuthorityRecord.encode
-
                     return
                         result
                         |> Result.map mutationResult
-                        |> Result.defaultWith (mutationFailure request.OperationId bytes)
+                        |> Result.defaultWith (mutationFailure request.OperationId)
         }
 
     let private businessFields =
@@ -172,10 +163,8 @@ module internal Core =
                             | CaseReviewDecision.Replay receipt ->
                                 PreviewOutcome.AlreadyAccepted receipt
                             | CaseReviewDecision.Proposed(before, after) ->
-                                PreviewOutcome.Reviewed(
-                                    advisory calendar view.ObservedAt request.Act before after,
-                                    digest (RequestRecord.encode request)
-                                )
+                                advisory calendar view.ObservedAt request.Act before after
+                                |> PreviewOutcome.Reviewed
         }
 
     /// Every facade authorizes each read against current authoritative state.

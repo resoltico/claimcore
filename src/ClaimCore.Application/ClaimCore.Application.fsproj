@@ -10,6 +10,7 @@
     <Compile Include="ActorIdentity.fs" />
     <Compile Include="AuthorizationTypes.fs" />
     <Compile Include="AuthorizationPolicy.fs" />
+    <Compile Include="AuthorityKinds.fs" />
     <Compile Include="CoreModels.fs" />
     <Compile Include="AuthorityOperationDefinitions.fs" />
     <Compile Include="ServiceLimits.fs" />
@@ -19,6 +20,7 @@
     <Compile Include="LedgerEntries.fs" />
     <Compile Include="CaseDecisions.fs" />
     <Compile Include="AuthorityDecisions.fs" />
+    <Compile Include="Advice.fs" />
     <Compile Include="Queries.fs" />
     <Compile Include="Core.fs" />
     <Compile Include="Verification/VerificationTypes.fs" />

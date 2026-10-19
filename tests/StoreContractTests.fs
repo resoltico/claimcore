@@ -143,6 +143,7 @@ let private history fixture reference after limit =
 let private listCases fixture visibility after limit =
     fixture.Store.ListCases(
         fixture.Owner,
+        ActorAuthorization.readRoles fixture.Owner,
         (fun _ ->
             Ok
                 {
@@ -161,7 +162,7 @@ let private genesis fixture =
             calls <- calls + 1
             Expect.equal view.Head.Sequence 0L "Genesis head"
             Expect.isTrue (view.Head.EntryHash = Array.zeroCreate 32) "Zero previous hash"
-            Expect.isNone view.Actor "No actor before provisioning"
+            Expect.isNone view.Actor.Actor "No actor before provisioning"
             AuthorityDecisions.provision fixture.InstallationId (id 1) fixture.Owner view
 
         let! result =
@@ -183,17 +184,10 @@ let private genesis fixture =
         let! actor = fixture.Store.ReadActor(fixture.Owner, CancellationToken.None)
 
         match actor with
-        | Ok { Actor = Some actor } ->
-            Expect.equal
-                actor.Grants
-                [
-                    ({
-                        Role = Role.Owner
-                        Scope = GrantScope.Installation
-                    }
-                    : ActorGrant)
-                ]
-                "Only the owner role is provisioned"
+        | Ok {
+                 Actor = ({ Actor = Some _ } as authority)
+             } ->
+            Expect.equal authority.Installation [ Role.Owner ] "Only the owner role is provisioned"
         | _ -> failtest "Missing owner projection"
 
         let! entry = fixture.Store.ReadOperation(fixture.Owner, id 1, CancellationToken.None)
@@ -430,6 +424,28 @@ let private existingCaseId fixture reference =
             | _ -> failtest "Expected existing case identity"
     }
 
+let private assignedReader (actor: IActorClaimsCore) =
+    task {
+        let principal =
+            PrincipalKey.human "https://issuer.example/" "assigned-reader"
+            |> Result.defaultWith failtest
+
+        let! registered =
+            actor.ExecuteAuthority(
+                authorityRequest (id 15) principal AuthorityAct.RegisterActor,
+                CancellationToken.None
+            )
+
+        acceptedAuthority registered
+
+        let! granted =
+            grant actor (id 16) principal Role.CaseReader (GrantTarget.CaseReference "C") true
+
+        acceptedAuthority granted
+
+        return principal
+    }
+
 let private caseVisibility fixture =
     task {
         let! actor = caseWorker fixture
@@ -452,8 +468,22 @@ let private caseVisibility fixture =
             "Reference-key order"
 
         Expect.equal first.NextAfterReference (Some "B") "Last visible key"
-        let! caseId = existingCaseId fixture "C"
-        let! only = listCases fixture (CaseVisibility.Only [ caseId ]) None 1
+
+        let! principal = assignedReader actor
+
+        let! only =
+            fixture.Store.ListCases(
+                principal,
+                ActorAuthorization.readRoles principal,
+                (fun _ ->
+                    Ok
+                        {
+                            Visibility = CaseVisibility.Assigned
+                            AfterReference = None
+                        }),
+                1,
+                CancellationToken.None
+            )
 
         Expect.equal
             ((storedPage only).Items |> List.map (fun record -> record.Snapshot.Reference))
@@ -493,19 +523,12 @@ let private authorityChanges fixture =
         let! read = fixture.Store.ReadActor(target, CancellationToken.None)
 
         match read with
-        | Ok { Actor = Some actor } ->
+        | Ok {
+                 Actor = ({ Actor = Some actor } as authority)
+             } ->
             Expect.equal actor.ActorId (id 2) "Registration identity"
 
-            Expect.equal
-                actor.Grants
-                [
-                    ({
-                        Role = Role.CaseReader
-                        Scope = GrantScope.Installation
-                    }
-                    : ActorGrant)
-                ]
-                "Added grant"
+            Expect.equal authority.Installation [ Role.CaseReader ] "Added grant"
         | _ -> failtest "Missing actor"
 
         let! removed =
@@ -523,9 +546,11 @@ let private authorityChanges fixture =
         let! read = fixture.Store.ReadActor(target, CancellationToken.None)
 
         match read with
-        | Ok { Actor = Some actor } ->
+        | Ok {
+                 Actor = ({ Actor = Some actor } as authority)
+             } ->
             Expect.isFalse actor.Enabled "Disabled"
-            Expect.isEmpty actor.Grants "Removed"
+            Expect.isEmpty authority.Installation "Removed"
         | _ -> failtest "Missing actor"
     }
 
@@ -587,21 +612,21 @@ let private checkScopedAdvice (actor: IActorClaimsCore) reference =
         match result with
         | QueryOutcome.Succeeded value ->
             Expect.equal
-                value.HistoryDetails
-                [ "SUMMARY"; "FULL" ]
+                value.Advice.History
+                [ HistoryDetail.Summary; HistoryDetail.Full ]
                 "Case-scoped full history is advised"
 
-            let correction =
-                value.Offers |> List.find (fun offer -> offer.Definition = "CORRECT_CASE")
+            let expected, correction =
+                value.Advice.Acts
+                |> List.pick (function
+                    | CaseActOffer.CorrectCase(expected, choices) -> Some(expected, choices)
+                    | _ -> None)
 
-            Expect.equal correction.ExpectedRevision (Some 2L) "Advice binds the actual revision"
-
-            let payment =
-                correction.Choices |> List.find (fun choice -> choice.Input = "groups.payment")
+            Expect.equal expected 2L "Advice binds the actual revision"
 
             Expect.equal
-                payment.Values
-                [ "KEEP" ]
+                correction.Payment
+                [ CorrectionGroupAction.Keep ]
                 "Absent payment and absent capability require explicit KEEP"
         | _ -> failtest "Expected readable scoped case"
     }
@@ -651,12 +676,15 @@ let private refusedAdvice fixture (actor: IActorClaimsCore) pending =
             Expect.equal value.Snapshot.Revision 2L "Refusal preserves the projection"
 
             Expect.equal
-                value.HistoryDetails
-                [ "SUMMARY" ]
+                value.Advice.History
+                [ HistoryDetail.Summary ]
                 "Fresh advice reflects revoked full history"
 
             Expect.isFalse
-                (value.Offers |> List.exists (fun offer -> offer.Definition = "CORRECT_CASE"))
+                (value.Advice.Acts
+                 |> List.exists (function
+                     | CaseActOffer.CorrectCase _ -> true
+                     | _ -> false))
                 "No stale act offer"
         | _ -> failtest "Reader remains authorized"
 
@@ -675,7 +703,7 @@ let private revokedAdvice fixture =
         let! target, actor = scopedHandler fixture admin reference
         do! checkScopedAdvice actor reference
 
-        let correction =
+        let correction: CaseCorrection =
             {
                 Registration =
                     RegistrationCorrection.Replace
@@ -705,10 +733,108 @@ let private revokedAdvice fixture =
         do! refusedAdvice fixture actor pending
     }
 
+let private scopedWorker fixture =
+    task {
+        let! admin = caseWorker fixture
+
+        let principal =
+            PrincipalKey.human "https://issuer.example/" "many-scopes"
+            |> Result.defaultWith failtest
+
+        let! registered =
+            admin.ExecuteAuthority(
+                authorityRequest (id 20) principal AuthorityAct.RegisterActor,
+                CancellationToken.None
+            )
+
+        acceptedAuthority registered
+
+        let! installed =
+            grant admin (id 21) principal Role.CaseRegistrar GrantTarget.Installation true
+
+        acceptedAuthority installed
+
+        for number in 1..12 do
+            let reference = $"SCOPE-{number}"
+
+            let! opened =
+                admin.Execute(
+                    request (100 + number) reference 0L (BusinessCommand.Open registration),
+                    CancellationToken.None
+                )
+
+            accepted opened |> ignore
+
+            let! granted =
+                grant
+                    admin
+                    (id (200 + number))
+                    principal
+                    Role.CaseReader
+                    (GrantTarget.CaseReference reference)
+                    true
+
+            acceptedAuthority granted
+
+        return principal
+    }
+
+let private scopedAuthority fixture =
+    task {
+        let! principal = scopedWorker fixture
+
+        let! read =
+            fixture.Store.ReadCase(principal, None, "SCOPE-1", CancellationToken.None)
+
+        let view = read |> Result.defaultWith (fun _ -> failtest "Scoped case read")
+
+        Expect.equal
+            view.Actor.Installation
+            [ Role.CaseRegistrar ]
+            "Installation grants remain available"
+
+        Expect.equal view.Actor.Cases.Count 1 "Unrelated case grants are not read"
+
+        let! identity =
+            fixture.Store.ReadCase(principal, Some(id 102), "SCOPE-1", CancellationToken.None)
+
+        let identity = identity |> Result.defaultWith (fun _ -> failtest "Identity scopes")
+
+        Expect.equal
+            identity.Actor.Cases.Count
+            2
+            "Existing operation adds only its own case authority"
+
+        let! observed =
+            fixture.Store.ReadOperation(principal, id 102, CancellationToken.None)
+
+        let observed = observed |> Result.defaultWith (fun _ -> failtest "Observe scopes")
+        Expect.equal observed.Actor.Cases.Count 1 "Observation reads the accepted entry scope only"
+        let! context = fixture.Store.ReadActor(principal, CancellationToken.None)
+        let context = context |> Result.defaultWith (fun _ -> failtest "Context read")
+        Expect.isEmpty context.Actor.Cases "Context never enumerates assigned grants"
+        Expect.isTrue context.Actor.HasAssignedCases "EXISTS reports assigned visibility"
+
+        let pending =
+            request 102 "SCOPE-1" 1L (BusinessCommand.AmendRegistration registration)
+
+        let! conflict =
+            (Core.create fixture.InstallationId fixture.Store fixture.Calendar principal)
+                .Execute(pending, CancellationToken.None)
+
+        Expect.equal
+            conflict
+            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+            "Both scopes preserve content exclusion"
+    }
+
 let internal tests factory =
     testList
         "ledger store contract"
         [
+            testCaseAsync
+                "authority loading stays bounded to the requested and accepted scopes"
+                (withFixture factory scopedAuthority)
             testCaseAsync
                 "scoped advice and preview never authorize execution after revocation"
                 (withFixture factory revokedAdvice)

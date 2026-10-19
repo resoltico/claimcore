@@ -23,4 +23,4 @@ type ResourceScope =
 [<RequireQualifiedAccess>]
 type CaseVisibility =
     | Every
-    | Only of caseIds: Guid list
+    | Assigned
