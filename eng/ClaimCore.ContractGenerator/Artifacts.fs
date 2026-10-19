@@ -35,11 +35,11 @@ module ContractArtifacts =
             }
             {
                 Name = "delivery-vectors.json"
-                Bytes = oracle "delivery-vectors.json"
+                Bytes = oracle "delivery-vectors.json" |> PolicyVectors.delivery
             }
             {
                 Name = "correlation-vectors.json"
-                Bytes = oracle "correlation-vectors.json"
+                Bytes = oracle "correlation-vectors.json" |> PolicyVectors.correlation
             }
             {
                 Name = "corpus.json"

@@ -163,6 +163,37 @@ let private producedNames () =
     finally
         directory.Delete true
 
+let private computedVectors
+    name
+    (generate: byte array -> byte array)
+    (groups: (string * string) list)
+    =
+    let path =
+        Path.Combine(ClaimCore.TestSupport.RepositoryRoot.find (), "tests/fixtures", name)
+
+    let original = JsonNode.Parse(File.ReadAllBytes path) |> nonNull
+    let poisoned = original.DeepClone()
+
+    for group, result in groups do
+        for row in (poisoned[group] |> nonNull).AsArray() do
+            (nonNull row)[result] <- JsonValue.Create "SYNTHETIC_WRONG_EXPECTATION"
+
+    let emitted =
+        generate (bytes (poisoned.ToJsonString())) |> JsonNode.Parse |> nonNull
+
+    for group, _ in groups do
+        Expect.isTrue
+            (JsonNode.DeepEquals(original[group], emitted[group]))
+            "Generated expected values are computed from Wire and match the independent oracle."
+
+let private policyVectors () =
+    computedVectors
+        "delivery-vectors.json"
+        PolicyVectors.delivery
+        [ "knowledge", "knowledge"; "evidence", "evidence"; "accumulate", "result" ]
+
+    computedVectors "correlation-vectors.json" PolicyVectors.correlation [ "cases", "correlated" ]
+
 [<Tests>]
 let tests =
     testList
@@ -172,6 +203,9 @@ let tests =
                 "publication replaces owned outputs and preserves unexpected content"
                 safePublication
             testCase "produced names are unique and stay within the output" producedNames
+            testCase
+                "published policy vectors compute results instead of copying oracle answers"
+                policyVectors
             testCase "tracked exact inventory and bytes equal generation" freshness
             testCase "freshness rejects missing extra and stale bytes" controls
             testCase "fingerprint covers emitted OpenAPI bytes and binds TypeScript" fingerprint

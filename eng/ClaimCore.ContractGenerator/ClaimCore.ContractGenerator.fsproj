@@ -9,6 +9,7 @@
     <Compile Include="TypeScript.fs" />
     <Compile Include="Samples.fs" />
     <Compile Include="Documents.fs" />
+    <Compile Include="PolicyVectors.fs" />
     <Compile Include="ArtifactPublication.fs" />
     <Compile Include="Artifacts.fs" />
     <Compile Include="Program.fs" />
