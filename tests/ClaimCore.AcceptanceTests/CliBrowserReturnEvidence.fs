@@ -19,7 +19,16 @@ let private vocabulary =
             "other"
         ]
         "provider", [ "none"; "credentials"; "cookie"; "expired"; "disabled"; "other" ]
-        "failure", [ "timeout"; "other" ]
+        "failure",
+        [
+            "timeout"
+            "browser-closed"
+            "page-closed"
+            "page-crashed"
+            "target-closed"
+            "resource"
+            "other"
+        ]
     ]
     |> Map.ofList
 

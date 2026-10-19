@@ -28,6 +28,9 @@ let private failureEvidence () =
     for stage, expected in
         [
             "callback-observed\n", "callback-observed"
+            "context-created", "context-created"
+            "page-created", "page-created"
+            "authorization-navigation-started", "authorization-navigation-started"
             "driver-refused-after-password-filled", "driver-refused-after-password-filled"
             "driver-refused-after-private-marker", "unknown"
             "callback-observed\nprivate-marker", "unknown"

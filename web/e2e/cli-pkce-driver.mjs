@@ -93,6 +93,7 @@ const requestWrongState = () => {
 };
 
 const login = async (page) => {
+  progress("authorization-navigation-started");
   await page.goto(authorization.toString());
   progress("authorization-opened");
   if ((await page.locator('input[name="username"]').count()) !== 1) {
@@ -144,12 +145,12 @@ const rejectCallbackState = async (context) => {
   return () => delivered;
 };
 
-const retainReturn = async (observation, page, error) => {
+const retainReturn = async (observation, page, error, connected) => {
   try {
     if (progressFile) {
       writeFileSync(
         `${progressFile}.return`,
-        JSON.stringify(await observation.report(page, error)),
+        JSON.stringify(await observation.report(page, error, connected)),
         {
           mode: 0o600,
         },
@@ -170,8 +171,10 @@ const run = async () => {
     browser = await chromium.launch({ headless: true });
     progress("browser-launched");
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
+    progress("context-created");
     const wrongStateDelivered = await rejectCallbackState(context);
     page = await context.newPage();
+    progress("page-created");
     observation.observe(page);
     await login(page);
     if (mode === "wrong-state") {
@@ -189,7 +192,7 @@ const run = async () => {
     if (redirect === undefined && remembered !== undefined) {
       redirect = new URL(remembered);
     }
-    await retainReturn(observation, page, error);
+    await retainReturn(observation, page, error, browser?.isConnected());
     throw error;
   } finally {
     await browser?.close();

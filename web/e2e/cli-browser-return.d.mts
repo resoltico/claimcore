@@ -8,7 +8,14 @@ type BrowserReturnEvidence = {
     network:
         "none" | "refused" | "reset" | "closed" | "empty" | "timeout" | "blocked" | "tls" | "other";
     provider: "none" | "credentials" | "cookie" | "expired" | "disabled" | "other";
-    failure: "timeout" | "other";
+    failure:
+        | "timeout"
+        | "other"
+        | "browser-closed"
+        | "page-closed"
+        | "page-crashed"
+        | "target-closed"
+        | "resource";
 };
 export declare const callbackAddress: (url: URL | undefined) => boolean;
 export declare const browserReturn: (
@@ -17,7 +24,11 @@ export declare const browserReturn: (
 ) => {
     observe: (page: Page) => void;
     callbackOrigin: () => string | undefined;
-    report: (page: Page | undefined, error: unknown) => Promise<BrowserReturnEvidence>;
+    report: (
+        page: Page | undefined,
+        error: unknown,
+        connected?: boolean,
+    ) => Promise<BrowserReturnEvidence>;
 };
 
 export declare const isAuthorizationResponse: (

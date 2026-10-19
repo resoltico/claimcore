@@ -104,6 +104,55 @@ const responseFacts = (value, issuer, state, target) => {
     state.redirect = true;
   }
 };
+const issuerNavigation = (request, page, issuer) =>
+  parsed(request.url())?.origin === issuer.origin &&
+  request.isNavigationRequest?.() === true &&
+  request.frame() === page.mainFrame();
+const networkFromError = (error) => {
+  const message = typeof error?.message === "string" ? error.message : "";
+  const code = message.match(/\bnet::ERR_[A-Z0-9_]+\b/u)?.[0];
+  return code === undefined ? "none" : (networks.get(code) ?? "other");
+};
+const failureClass = (error, connected, pageClosed, crashed) => {
+  const message = typeof error?.message === "string" ? error.message : "";
+  const resource = [
+    "pthread_create",
+    "Resource temporarily unavailable",
+    "Failed to create thread",
+  ];
+  if (resource.some((marker) => message.includes(marker))) {
+    return "resource";
+  }
+  if (connected === false) {
+    return "browser-closed";
+  }
+  if (crashed) {
+    return "page-crashed";
+  }
+  if (pageClosed) {
+    return "page-closed";
+  }
+  if (error?.constructor?.name === "TargetClosedError") {
+    return "target-closed";
+  }
+  return error?.name === "TimeoutError" ? "timeout" : "other";
+};
+const observePage = (page, issuer, state, target) => {
+  page.on("crash", () => {
+    state.crashed = true;
+  });
+  page.on("request", (request) => {
+    if (target(request.url())) {
+      state.requested = true;
+    }
+  });
+  page.on("response", (value) => responseFacts(value, issuer, state, target));
+  page.on("requestfailed", (request) => {
+    if (target(request.url()) || issuerNavigation(request, page, issuer)) {
+      state.network = networks.get(request.failure()?.errorText) ?? "other";
+    }
+  });
+};
 export const browserReturn = (issuer, expectedCallback) => {
   const state = {
     origin: expectedCallback?.origin,
@@ -111,6 +160,7 @@ export const browserReturn = (issuer, expectedCallback) => {
     requested: false,
     response: "none",
     network: "none",
+    crashed: false,
   };
   const target = (value) => {
     const url = parsed(value);
@@ -119,31 +169,19 @@ export const browserReturn = (issuer, expectedCallback) => {
     );
   };
   return {
-    observe: (page) => {
-      page.on("request", (request) => {
-        if (target(request.url())) {
-          state.requested = true;
-        }
-      });
-      page.on("response", (value) => responseFacts(value, issuer, state, target));
-      page.on("requestfailed", (request) => {
-        if (target(request.url())) {
-          state.network = networks.get(request.failure()?.errorText) ?? "other";
-        }
-      });
-    },
+    observe: (page) => observePage(page, issuer, state, target),
     callbackOrigin: () => state.origin,
-    report: async (page, error) => ({
-      location: locationClass(page?.url(), issuer, target),
-      redirect: state.redirect,
-      requested: state.requested,
-      response: state.response,
-      network: state.network,
-      provider:
-        locationClass(page?.url(), issuer, target) === "issuer"
-          ? await providerClass(page)
-          : "none",
-      failure: error?.name === "TimeoutError" ? "timeout" : "other",
-    }),
+    report: async (page, error, connected) => {
+      const failure = failureClass(error, connected, page?.isClosed() === true, state.crashed);
+      const snapshot = {
+        location: locationClass(page?.url(), issuer, target),
+        redirect: state.redirect,
+        requested: state.requested,
+        response: state.response,
+        network: state.network === "none" ? networkFromError(error) : state.network,
+      };
+      const provider = snapshot.location === "issuer" ? await providerClass(page) : "none";
+      return { ...snapshot, provider, failure };
+    },
   };
 };
