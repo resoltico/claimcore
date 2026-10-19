@@ -11,6 +11,7 @@
     <Compile Include="Fixtures.fs" />
     <Compile Include="WireCodecTests.fs" />
     <Compile Include="WireDeliveryTests.fs" />
+    <Compile Include="WireRequestTests.fs" />
     <Compile Include="VerificationFoldTests.fs" />
     <Compile Include="ScalarPropertyTests.fs" />
     <Compile Include="TransitionOracle.fs" />

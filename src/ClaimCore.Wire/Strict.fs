@@ -70,7 +70,7 @@ module Strict =
                 |> Result.bind (fun () ->
                     match readText (fun () -> property.Name) with
                     | Some name when isText name && names.Add name ->
-                        walk (path + "." + name) property.Value
+                        walk (path + ".*") property.Value
                     | _ -> problem path "member names must be unique Unicode scalar text"))
             (Ok())
 

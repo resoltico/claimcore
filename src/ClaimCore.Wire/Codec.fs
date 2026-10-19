@@ -12,7 +12,11 @@ open System.Text.Json
 type Schema =
     | Object of properties: (string * Schema) list * optionalMembers: string list
     | Array of items: Schema * maxItems: int
-    | String of pattern: string option * format: string option
+    | String of
+        pattern: string option *
+        format: string option *
+        minimumLength: int option *
+        maximumLength: int option
     | Integer of minimum: int64 * maximum: int64
     | Boolean
     | Null
@@ -122,8 +126,34 @@ module Codec =
         {
             Read = ofKind JsonValueKind.String (fun _ element -> Ok(element.GetString() |> nonNull))
             Write = WriterProfile.writeString
-            Schema = Schema.String(None, None)
+            Schema = Schema.String(None, None, None, None)
             Definitions = Map.empty
+        }
+
+    let boundedText minimum maximum =
+        if minimum < 0 || maximum < minimum then
+            invalidArg (nameof minimum) "Use ordered text-length bounds."
+
+        let within (value: string) =
+            let length = value.EnumerateRunes() |> Seq.length
+            length >= minimum && length <= maximum
+
+        { text with
+            Read =
+                fun path element ->
+                    text.Read path element
+                    |> Result.bind (fun value ->
+                        if within value then
+                            Ok value
+                        else
+                            fail path "text outside its length bounds")
+            Write =
+                fun writer value ->
+                    if not (within value) then
+                        invalidArg (nameof value) "Text outside its wire bounds."
+
+                    text.Write writer value
+            Schema = Schema.String(None, None, Some minimum, Some maximum)
         }
 
     let uuid: Codec<Guid> =
@@ -145,7 +175,9 @@ module Codec =
                 Schema.String(
                     Some
                         "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                    Some "uuid"
+                    Some "uuid",
+                    None,
+                    None
                 )
             Definitions = Map.empty
         }
@@ -223,7 +255,9 @@ module Codec =
             Schema =
                 Schema.String(
                     Some "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-                    Some "date-time"
+                    Some "date-time",
+                    None,
+                    None
                 )
             Definitions = Map.empty
         }
@@ -607,10 +641,16 @@ module Codec =
             writer.WritePropertyName "items"
             writeSchema prefix writer items
             writer.WriteNumber("maxItems", maximum)
-        | Schema.String(pattern, format) ->
+        | Schema.String(pattern, format, minimum, maximum) ->
             WriterProfile.writeMember writer "type" "string"
             pattern |> Option.iter (WriterProfile.writeMember writer "pattern")
             format |> Option.iter (WriterProfile.writeMember writer "format")
+
+            minimum
+            |> Option.iter (fun value -> writer.WriteNumber("minLength", (value: int)))
+
+            maximum
+            |> Option.iter (fun value -> writer.WriteNumber("maxLength", (value: int)))
         | Schema.Integer(minimum, maximum) ->
             WriterProfile.writeMember writer "type" "integer"
             writer.WriteNumber("minimum", minimum)

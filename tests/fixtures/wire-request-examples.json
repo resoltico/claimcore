@@ -1,0 +1,581 @@
+{
+  "source": "contracts/endpoint-corpus.json at df3263f5e8799c3f8d20f821ac618dfbfdc95902",
+  "cases": [
+    {
+      "id": "reference-True-0",
+      "endpoint": "case.get",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "caseReference": "Demo-001"
+      }
+    },
+    {
+      "id": "reference-True-1",
+      "endpoint": "case.get",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "id": "reference-True-2",
+      "endpoint": "case.get",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "caseReference": "!~<>\""
+      }
+    },
+    {
+      "id": "session-request-0",
+      "endpoint": "session",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "session.logout-request-0",
+      "endpoint": "session.logout",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "context-request-0",
+      "endpoint": "context",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "case.get-request-0",
+      "endpoint": "case.get",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "caseReference": "x"
+      }
+    },
+    {
+      "id": "case.list-request-0",
+      "endpoint": "case.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 1
+      }
+    },
+    {
+      "id": "case.history-request-0",
+      "endpoint": "case.history",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "caseReference": "x",
+        "detail": "SUMMARY",
+        "limit": 1
+      }
+    },
+    {
+      "id": "case.preview-request-0",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "incidentDate": "2026-01-01",
+            "incidentNotificationDate": "2026-01-01",
+            "incidentCountry": "LV",
+            "claimantName": "x",
+            "insurerName": "x",
+            "claimedAmount": "0",
+            "claimedCurrency": "EUR"
+          }
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-1",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "incidentDate": "2026-01-01",
+            "incidentNotificationDate": "2026-01-01",
+            "incidentCountry": "LV",
+            "claimantName": "x",
+            "insurerName": "x",
+            "claimedAmount": "0",
+            "claimedCurrency": "EUR"
+          }
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-2",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT_CASE",
+          "groups": {
+            "registration": {
+              "mode": "KEEP"
+            },
+            "decision": {
+              "mode": "KEEP"
+            },
+            "payment": {
+              "mode": "KEEP"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-3",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "DECIDE",
+          "values": {
+            "paymentDecisionDate": "2026-01-01",
+            "payableAmount": "0",
+            "payableCurrency": "EUR"
+          }
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-4",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "WITHDRAW_DECISION"
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-5",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "RECORD_PAYMENT",
+          "values": {
+            "paymentDate": "2026-01-01"
+          }
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-6",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CLEAR_PAYMENT"
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-7",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CLOSE"
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-8",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "REOPEN"
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-9",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "VOID",
+          "reason": "x"
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-10",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "REINSTATE",
+          "reason": "x"
+        }
+      }
+    },
+    {
+      "id": "case.preview-request-11",
+      "endpoint": "case.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "ERASE"
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-0",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "incidentDate": "2026-01-01",
+            "incidentNotificationDate": "2026-01-01",
+            "incidentCountry": "LV",
+            "claimantName": "x",
+            "insurerName": "x",
+            "claimedAmount": "0",
+            "claimedCurrency": "EUR"
+          }
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-1",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "incidentDate": "2026-01-01",
+            "incidentNotificationDate": "2026-01-01",
+            "incidentCountry": "LV",
+            "claimantName": "x",
+            "insurerName": "x",
+            "claimedAmount": "0",
+            "claimedCurrency": "EUR"
+          }
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-2",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT_CASE",
+          "groups": {
+            "registration": {
+              "mode": "KEEP"
+            },
+            "decision": {
+              "mode": "KEEP"
+            },
+            "payment": {
+              "mode": "KEEP"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-3",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "DECIDE",
+          "values": {
+            "paymentDecisionDate": "2026-01-01",
+            "payableAmount": "0",
+            "payableCurrency": "EUR"
+          }
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-4",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "WITHDRAW_DECISION"
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-5",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "RECORD_PAYMENT",
+          "values": {
+            "paymentDate": "2026-01-01"
+          }
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-6",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CLEAR_PAYMENT"
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-7",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CLOSE"
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-8",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "REOPEN"
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-9",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "VOID",
+          "reason": "x"
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-10",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "REINSTATE",
+          "reason": "x"
+        }
+      }
+    },
+    {
+      "id": "case.execute-request-11",
+      "endpoint": "case.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "ERASE"
+        }
+      }
+    },
+    {
+      "id": "operation.observe-request-0",
+      "endpoint": "operation.observe",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "authority.execute-request-0",
+      "endpoint": "authority.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "REGISTER_ACTOR"
+        }
+      }
+    },
+    {
+      "id": "authority.execute-request-1",
+      "endpoint": "authority.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "SET_GRANT",
+          "role": "OWNER",
+          "scope": {
+            "kind": "INSTALLATION"
+          },
+          "active": false
+        }
+      }
+    },
+    {
+      "id": "authority.execute-request-2",
+      "endpoint": "authority.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "SET_ENABLED",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "id": "authority.list-request-0",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 1
+      }
+    },
+    {
+      "id": "authority.grants-request-0",
+      "endpoint": "authority.grants",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "actorId": "10000000-0000-4000-8000-000000000001",
+        "limit": 1
+      }
+    }
+  ]
+}

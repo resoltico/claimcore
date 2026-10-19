@@ -65,6 +65,20 @@ let private byteProfile () =
     for raw in [ "-0"; "9007199254740991"; "-9007199254740991"; "\"索赔😀\"" ] do
         Expect.isOk (strict (bytes raw)) "Supported lexical values"
 
+let private privateMemberNames () =
+    match Strict.parse 65536 (bytes "{\"synthetic-private-member\":1.0}") with
+    | Ok document ->
+        document.Dispose()
+        failtest "Invalid numeric lexeme was accepted"
+    | Error problem ->
+        Expect.isFalse
+            (problem.Path.Contains("synthetic-private-member"))
+            "Byte errors never echo unknown member names"
+
+        Expect.isFalse
+            (problem.Reason.Contains("synthetic-private-member"))
+            "Fixed reason contains no submitted text"
+
 let private roundTrip () =
     let value =
         {
@@ -169,6 +183,7 @@ let tests =
         [
             testCase "encoder value bounds" encoderBounds
             testCase "strict byte profile" byteProfile
+            testCase "unknown member names remain private" privateMemberNames
             testCase "closed record round trip" roundTrip
             testCase "raw UTF8 writer profile" escaping
             testCase "lexical primitives and array bounds" primitives
