@@ -8,10 +8,14 @@ let authorization;
 let redirect;
 try {
   authorization = new URL(process.argv[2] ?? "");
-  redirect = new URL(authorization.searchParams.get("redirect_uri") ?? "");
+  const supplied = authorization.searchParams.get("redirect_uri");
+  redirect = supplied === null ? undefined : new URL(supplied);
 } catch {
   process.exit(2);
 }
+const pushed = authorization.searchParams.has("request_uri");
+const callbackAddress = (url) =>
+  url.protocol === "http:" && url.hostname === "127.0.0.1" && url.pathname === "/";
 const mode = process.env.CLAIMCORE_CLI_TEST_AUTH_MODE;
 const credentialsFile = process.env.CLAIMCORE_CLI_TEST_CREDENTIALS_FILE;
 const issuerText = process.env.CLAIMCORE_CLI_TEST_ISSUER;
@@ -38,11 +42,11 @@ if (
   authorization.origin !== issuer.origin ||
   authorization.pathname !== `${issuer.pathname}/protocol/openid-connect/auth` ||
   authorization.searchParams.get("client_id") !== publicClientId ||
-  redirect.protocol !== "http:" ||
-  redirect.hostname !== "127.0.0.1" ||
-  redirect.pathname !== "/" ||
-  !authorization.searchParams.has("code_challenge") ||
-  authorization.searchParams.get("code_challenge_method") !== "S256" ||
+  (!pushed &&
+    (redirect === undefined ||
+      !callbackAddress(redirect) ||
+      !authorization.searchParams.has("code_challenge") ||
+      authorization.searchParams.get("code_challenge_method") !== "S256")) ||
   !credentialsFile ||
   (mode !== "valid" && mode !== "wrong-state")
 ) {
@@ -72,57 +76,89 @@ if (
   process.exit(2);
 }
 
-const requestWrongState = () => {
-  redirect.search = new URLSearchParams({ code: "synthetic", state: "wrong-state" }).toString();
-  return new Promise((resolve, reject) => {
-    const request = http.get(redirect, (response) => {
+const deliverCallback = (address) =>
+  new Promise((resolve, reject) => {
+    const request = http.get(address, (response) => {
       response.resume();
       response.on("end", resolve);
     });
     request.on("error", reject);
   });
+
+const requestWrongState = () => {
+  if (redirect === undefined) {
+    return Promise.reject(new Error("Callback address unavailable."));
+  }
+  redirect.search = new URLSearchParams({ code: "synthetic", state: "wrong-state" }).toString();
+  return deliverCallback(redirect);
+};
+
+const login = async (page) => {
+  await page.goto(authorization.toString());
+  progress("authorization-opened");
+  if ((await page.locator('input[name="username"]').count()) !== 1) {
+    progress("login-form-missing");
+    throw new Error("Synthetic login form unavailable.");
+  }
+  await page.locator('input[name="username"]').fill(selectedUser.username);
+  progress("username-filled");
+  await page.locator('input[name="password"]').fill(selectedUser.password);
+  progress("password-filled");
+  const submit = page.locator('button[type="submit"], input[type="submit"]').first();
+  if ((await submit.count()) !== 1) {
+    throw new Error("Synthetic submit control unavailable.");
+  }
+  await submit.click();
+  progress("login-submitted");
+};
+
+const rejectCallbackState = async (context) => {
+  let delivered = false;
+  if (mode !== "wrong-state") {
+    return () => delivered;
+  }
+  await context.route("**/*", async (route) => {
+    const response = await route.fetch({ maxRedirects: 0 });
+    const { location } = response.headers();
+    if (location !== undefined) {
+      const callback = new URL(location, route.request().url());
+      if (callbackAddress(callback)) {
+        redirect = new URL(callback.origin);
+        callback.searchParams.set("state", "wrong-state");
+        await deliverCallback(callback);
+        delivered = true;
+        progress("wrong-state-delivered");
+        await route.fulfill({
+          status: 200,
+          contentType: "text/plain",
+          body: "Synthetic callback delivered.",
+        });
+        return;
+      }
+    }
+    await route.fulfill({ response });
+  });
+  return () => delivered;
 };
 
 const run = async () => {
-  if (mode === "wrong-state") {
-    progress("wrong-state-request");
-    await requestWrongState();
-    return;
-  }
-
-  // This browser is confined to the disposable synthetic Keycloak fixture. The CLI itself uses
-  // certificate-validated HTTPS with the fixture's explicit private CA, never this browser option.
+  // Only the disposable synthetic browser ignores its fixture certificate. CLI HTTPS validates
+  // its explicit CA. Inspect the provider redirect because routes do not intercept redirect hops.
   const browser = await chromium.launch({ headless: true });
   progress("browser-launched");
   try {
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
+    const wrongStateDelivered = await rejectCallbackState(context);
     const page = await context.newPage();
-    await page.goto(authorization.toString());
-    progress("authorization-opened");
-    if ((await page.locator('input[name="username"]').count()) !== 1) {
-      const text = (await page.locator("body").innerText()).toLowerCase();
-      if (text.includes("redirect_uri")) {
-        progress("redirect-refused");
-      } else if (text.includes("client")) {
-        progress("client-refused");
-      } else {
-        progress("login-form-missing");
+    await login(page);
+    if (mode === "wrong-state") {
+      if (!wrongStateDelivered()) {
+        throw new Error("Synthetic state control was not delivered.");
       }
-      throw new Error("Synthetic login form unavailable.");
+    } else {
+      await page.waitForURL((url) => callbackAddress(url));
+      progress("callback-observed");
     }
-    await page.locator('input[name="username"]').fill(selectedUser.username);
-    progress("username-filled");
-    await page.locator('input[name="password"]').fill(selectedUser.password);
-    progress("password-filled");
-    const submit = page.locator('button[type="submit"], input[type="submit"]').first();
-    if ((await submit.count()) !== 1) {
-      progress("submit-control-missing");
-      throw new Error("Synthetic submit control unavailable.");
-    }
-    await submit.click();
-    progress("login-submitted");
-    await page.waitForURL((url) => url.origin === redirect.origin && url.pathname === "/");
-    progress("callback-observed");
     await context.close();
   } finally {
     await browser.close();

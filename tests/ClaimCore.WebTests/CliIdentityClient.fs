@@ -72,9 +72,9 @@ let qualify (server: IdentityServer.Identity) (service: HttpClient) (cancelled: 
             let! acquired =
                 OAuthTokenClient.acquire
                     identity
-                    endpoints
+                    (Uri(endpoints.TokenEndpoint |> nonNull))
                     "service"
-                    (OAuthGrant.ClientCredentials secretPath)
+                    secretPath
                     cancelled
 
             let token =
@@ -87,9 +87,9 @@ let qualify (server: IdentityServer.Identity) (service: HttpClient) (cancelled: 
             let! denied =
                 OAuthTokenClient.acquire
                     identity
-                    endpoints
+                    (Uri(endpoints.TokenEndpoint |> nonNull))
                     "service"
-                    (OAuthGrant.ClientCredentials secretPath)
+                    secretPath
                     cancelled
 
             Expect.isError denied "Wrong client secret refused by real provider"

@@ -144,9 +144,16 @@ certificate validity and hostname checks remain enabled. Secret and trust-root f
 [private-input admission rules](database.md#cc-db-002) on macOS and Linux. Keep secret
 contents out of command arguments, environment variables and reports.
 
-Interactive mode opens the system browser for each new CLI process; the callback uses one-use
-HTTP on loopback while issuer and service traffic remains HTTPS. Automation uses a confidential
-client restricted to client credentials and an explicitly registered/granted SERVICE actor.
+The CLI uses Duende.IdentityModel and Duende.IdentityModel.OidcClient for discovery and token
+acquisition. Default discovery policy requires HTTPS and validates issuer and endpoint base
+addresses; endpoints outside the issuer base URL are refused. Interactive mode opens the system
+browser for each new CLI process, uses PKCE S256, and accepts one callback on an ephemeral
+`127.0.0.1` port. HTTP is confined to that callback; issuer and service traffic use HTTPS.
+Pushed authorization requests are used when advertised by the provider. The CLI consumes only
+the access token; it disables userinfo loading and makes no decisions from identity-token claims.
+Automation uses a confidential client restricted to client credentials and an explicitly
+registered/granted SERVICE actor. ClaimCore bounds process-local token reuse using elapsed
+monotonic time and conservative UTC expiry measured from token dispatch.
 Apply the [identity-provider flow restrictions](web.md) and follow [Getting started](getting-started.md)
 for the isolated human-owner flow. Tokens remain process-local.
 

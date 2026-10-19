@@ -22,6 +22,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Internal
 
+- CLI discovery, PKCE/state processing and token requests use the maintained Duende clients. The loopback adapter, explicit local trust roots and conservative process-local token reuse remain ClaimCore-owned. Provider-advertised pushed authorization requests are supported; default discovery policy refuses endpoints outside the issuer base URL.
+
 - Ledger verification folds and finding definitions now live in Application and have pure rejection tests for every finding. Postgres supplies typed records from one read snapshot; verification output and finding precedence remain unchanged.
 
 - Domain field, correction-group and business/stewardship act definitions use closed types. Retained snapshot failures have a distinct record-violation type. Durable-format regression vectors now include their independent Python oracle.
