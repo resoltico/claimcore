@@ -30,7 +30,7 @@
     {
       "file": "SDK-Host-NOTICES.txt",
       "sha256": "2dc8f8c5a39401e928b5784ab564eb8b3ceb99ead3df8f260e0cab7e0bbecc7a",
-      "source": "https://dotnet.microsoft.com/download/dotnet/10.0 (SDK 10.0.401 distribution root ThirdPartyNotices.txt; exact installed distribution bytes retained separately)"
+      "source": "https://dotnet.microsoft.com/download/dotnet/10.0 (SDK 10.0.402 distribution root ThirdPartyNotices.txt; exact installed distribution bytes retained separately)"
     },
     {
       "file": "PostgreSQL-NPGSQL.txt",

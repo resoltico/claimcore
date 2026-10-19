@@ -6,6 +6,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Security
 
+- Pinned .NET/ASP.NET runtime images include the 10.0.13 security fixes. Source builds require SDK 10.0.402.
 - Managed private-input admission permits group read and follows secret-volume symbolic links. Path and handle modes forbid other-user access and group write/execute; blocked opens are bounded to two seconds. Ownership and ACLs are no longer inspected. See [private inputs](docs/operations.md#private-configuration).
 - Web requires `CLAIMCORE_WEB_KEY_RING_DIRECTORY`, an existing protected absolute directory. Data-protection keys and encrypted private server-side session tickets persist across restarts with their original deadlines and logout revocation. Use one Web process per ticket directory; concurrent sharing is not qualified. Protect this secret outside database backups; Linux key XML is unencrypted. The read-only Compose Web host supplies bounded ephemeral `/tmp` for framework key staging.
 
