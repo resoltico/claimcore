@@ -1405,6 +1405,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
               "additionalProperties": false,
               "properties": {
                 "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
                   "const": "CORE_STORE_UNAVAILABLE"
                 },
                 "parameters": {
@@ -3148,6 +3184,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
     },
     "Fault": {
       "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
         {
           "type": "object",
           "additionalProperties": false,
@@ -4961,6 +5033,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
               "additionalProperties": false,
               "properties": {
                 "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
                   "const": "CORE_STORE_UNAVAILABLE"
                 },
                 "parameters": {
@@ -6765,6 +6873,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
     },
     "Fault": {
       "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
         {
           "type": "object",
           "additionalProperties": false,
@@ -8748,6 +8892,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
               "additionalProperties": false,
               "properties": {
                 "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
                   "const": "CORE_STORE_UNAVAILABLE"
                 },
                 "parameters": {
@@ -10616,6 +10796,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
     },
     "Fault": {
       "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
         {
           "type": "object",
           "additionalProperties": false,
@@ -13013,6 +13229,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
     },
     "Fault": {
       "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
         {
           "type": "object",
           "additionalProperties": false,
@@ -15439,6 +15691,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
               "additionalProperties": false,
               "properties": {
                 "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
                   "const": "CORE_STORE_UNAVAILABLE"
                 },
                 "parameters": {
@@ -17245,6 +17533,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
     },
     "Fault": {
       "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
         {
           "type": "object",
           "additionalProperties": false,
@@ -19249,6 +19573,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
               "additionalProperties": false,
               "properties": {
                 "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
                   "const": "CORE_STORE_UNAVAILABLE"
                 },
                 "parameters": {
@@ -21083,6 +21443,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
     },
     "Fault": {
       "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
         {
           "type": "object",
           "additionalProperties": false,
@@ -22938,6 +23334,42 @@ export const wireSchemas: Readonly<Record<keyof RequestByEndpoint, {request: Sch
     },
     "Fault": {
       "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagnostic": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "const": "CORE_INTERNAL_ERROR"
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {}
+                }
+              },
+              "required": [
+                "id",
+                "parameters"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recommendedAction": {
+              "const": "STOP_AND_INVESTIGATE"
+            }
+          },
+          "required": [
+            "diagnostic",
+            "message",
+            "recommendedAction"
+          ]
+        },
         {
           "type": "object",
           "additionalProperties": false,

@@ -511,10 +511,7 @@ let private failedProjection (store: MemoryLedgerStore.Store) (fixture: Fixture)
         let! result =
             fixture.Store.WriteCase(owner, id 99, "MISSING", decide, CancellationToken.None)
 
-        Expect.equal
-            result
-            (Error StoreFailure.Integrity)
-            "Projection failure rolls back the append"
+        Expect.equal result (Error StoreFailure.Internal) "Projection failure rolls back the append"
 
         Expect.equal store.Entries.Length before "No orphan entry"
         Expect.equal store.Cases.Length 1 "No projection change"

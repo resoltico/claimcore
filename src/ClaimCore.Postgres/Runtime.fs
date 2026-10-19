@@ -110,6 +110,7 @@ module internal LedgerAdministration =
                 |> Convert.ToHexStringLower
             )
         | Error StoreFailure.SchemaMismatch -> ExecuteOutcome.Failed CoreFault.SchemaMismatch
+        | Error StoreFailure.Internal -> ExecuteOutcome.Failed CoreFault.InternalError
         | Error StoreFailure.Integrity -> ExecuteOutcome.Failed CoreFault.StoreIntegrityError
         | Error StoreFailure.Unavailable -> ExecuteOutcome.Failed CoreFault.StoreUnavailable
 

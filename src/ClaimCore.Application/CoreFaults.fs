@@ -2,6 +2,7 @@ namespace ClaimCore.Application
 
 [<RequireQualifiedAccess>]
 type CoreFault =
+    | InternalError
     | StoreUnavailable
     | StoreIntegrityError
     | SchemaMismatch
@@ -10,6 +11,7 @@ type CoreFault =
 module CoreFaults =
     let private policies =
         [
+            CoreFault.InternalError, "CORE_INTERNAL_ERROR", RecommendedAction.StopAndInvestigate
             CoreFault.StoreUnavailable, "CORE_STORE_UNAVAILABLE", RecommendedAction.RetrySafe
             CoreFault.StoreIntegrityError,
             "CORE_STORE_INTEGRITY_ERROR",

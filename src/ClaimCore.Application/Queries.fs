@@ -10,6 +10,7 @@ open ClaimCore.RecordFormat
 module internal Queries =
     let fault =
         function
+        | StoreFailure.Internal -> CoreFault.InternalError
         | StoreFailure.Unavailable -> CoreFault.StoreUnavailable
         | StoreFailure.SchemaMismatch -> CoreFault.SchemaMismatch
         | _ -> CoreFault.StoreIntegrityError

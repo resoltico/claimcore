@@ -24,12 +24,6 @@ module internal Core =
             ExecuteOutcome.OutcomeUnknown(operationId, digest bytes)
         | failure -> ExecuteOutcome.Failed(Queries.fault failure)
 
-    let private protect decide view =
-        try
-            decide view
-        with :? ArgumentException ->
-            LedgerDecision.Fail CoreFault.StoreIntegrityError
-
     let private caseWrite
         (store: ILedgerStore)
         installationId
@@ -45,8 +39,7 @@ module internal Core =
                 match Case.validateRequest request with
                 | Error error -> return ExecuteOutcome.Rejected(Rejection.Case error)
                 | Ok() ->
-                    let decide =
-                        CaseDecisions.execute installationId calendar principal request |> protect
+                    let decide = CaseDecisions.execute installationId calendar principal request
 
                     let! result =
                         store.WriteCase(
@@ -79,8 +72,7 @@ module internal Core =
                 match AuthorityRequests.validate request with
                 | Error error -> return ExecuteOutcome.Rejected error
                 | Ok() ->
-                    let decide =
-                        AuthorityDecisions.execute installationId principal request |> protect
+                    let decide = AuthorityDecisions.execute installationId principal request
 
                     let! result =
                         store.WriteAuthority(

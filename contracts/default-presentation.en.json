@@ -309,6 +309,11 @@
       "literal": "Use a non-empty UUID."
     }
   ],
+  "diagnostic.CORE_INTERNAL_ERROR": [
+    {
+      "literal": "An internal error occurred. Stop and investigate."
+    }
+  ],
   "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
     {
       "literal": "Stored operation content is inconsistent. Stop and investigate."

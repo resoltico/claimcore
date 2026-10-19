@@ -888,6 +888,10 @@ export const productMetadata = { descriptors: {
   ],
   "faultDiagnostics": [
     {
+      "id": "CORE_INTERNAL_ERROR",
+      "parameters": []
+    },
+    {
       "id": "CORE_STORE_UNAVAILABLE",
       "parameters": []
     },
@@ -969,4 +973,4 @@ export const productMetadata = { descriptors: {
     "maximumPageSize": 50,
     "requestByteLimit": 65536
   }
-}, productVersion: "0.10.0", wireFingerprint: "3d17ce916c8cab9d54772b7f8dbe748dfe0b911f409c0eae0668a7cd09e6f192" } as const;
+}, productVersion: "0.10.0", wireFingerprint: "b24d6b2b876e722f52efd4fc2657da910f0f730504f0052c65fdf159ab544c12" } as const;

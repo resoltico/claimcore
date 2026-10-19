@@ -99,6 +99,7 @@ module internal VerificationChecks =
         try
             Ok(read ())
         with
+        | :? RecordCorruptException
         | :? InvalidOperationException
         | :? InvalidCastException
         | :? ArgumentException

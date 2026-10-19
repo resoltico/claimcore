@@ -26,11 +26,11 @@ module internal StoredEntries =
         match DatabaseSession.value<string> 4 row with
         | "AUTHORITY" ->
             if not (Convert.IsDBNull row[10]) || not (Convert.IsDBNull row[11]) then
-                invalidOp "Invalid authority ledger shape."
+                raise (RecordCorruptException "Invalid authority ledger shape.")
 
             let kind =
                 RecordedAuthorityActs.tryKind act
-                |> Option.defaultWith (fun () -> invalidOp "Invalid authority act.")
+                |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid authority act."))
 
             StoredScope.Authority(target, kind),
             LedgerScope.Authority { TargetActorId = target; Act = kind }
@@ -39,7 +39,7 @@ module internal StoredEntries =
 
             let kind =
                 CaseActKinds.tryParse act
-                |> Option.defaultWith (fun () -> invalidOp "Invalid case act.")
+                |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid case act."))
 
             let date = DatabaseSession.calendarDate 11 row
 
@@ -51,11 +51,11 @@ module internal StoredEntries =
                     Act = kind
                     BusinessDate = date
                 }
-        | _ -> invalidOp "Invalid ledger scope."
+        | _ -> raise (RecordCorruptException "Invalid ledger scope.")
 
     let decode installationId row =
         if DatabaseSession.value<int16> 3 row <> int16 RecordVersions.LedgerEntry then
-            invalidOp "Unsupported ledger format."
+            raise (RecordCorruptException "Unsupported ledger format.")
 
         let scope, metadataScope = scopes row
 
@@ -99,5 +99,5 @@ module internal StoredEntries =
             match rows with
             | [] -> return None
             | [ row ] -> return Some((decode installationId row).Entry)
-            | _ -> return invalidOp "Duplicate operation identity."
+            | _ -> return raise (RecordCorruptException "Duplicate operation identity.")
         }

@@ -10,6 +10,10 @@ open Npgsql
 type AdministrationOutcomeUnknownException() =
     inherit Exception("Administration commit confirmation was lost; repeat the same command.")
 
+/// Raised only where persisted rows fail their format contract.
+type internal RecordCorruptException(reason: string) =
+    inherit Exception(reason)
+
 module internal DatabaseSession =
     let command (connection: NpgsqlConnection) sql (parameters: objnull array) =
         let command = new NpgsqlCommand(sql, connection)
@@ -45,7 +49,10 @@ module internal DatabaseSession =
             return List.ofSeq rows
         }
 
-    let value<'T> index (row: obj array) = unbox<'T> row[index]
+    let value<'T> index (row: obj array) =
+        match row[index] with
+        | :? 'T as value -> value
+        | _ -> raise (RecordCorruptException "Invalid stored column type.")
 
     let optional<'T> index (row: obj array) =
         if Convert.IsDBNull row[index] then
@@ -81,7 +88,7 @@ module internal DatabaseSession =
         with
         | true, parsed when parsed.ToString("yyyy-MM-dd 'AD'", CultureInfo.InvariantCulture) = text ->
             parsed
-        | _ -> invalidOp "Invalid stored calendar date."
+        | _ -> raise (RecordCorruptException "Invalid stored calendar date.")
 
     let recordedInstant index row =
         let text = value<string> index row
@@ -96,7 +103,7 @@ module internal DatabaseSession =
             )
         with
         | true, parsed when parsed.ToString(format, CultureInfo.InvariantCulture) = text -> parsed
-        | _ -> invalidOp "Invalid stored ledger instant."
+        | _ -> raise (RecordCorruptException "Invalid stored ledger instant.")
 
     let transaction (source: NpgsqlDataSource) isolation token action =
         task {

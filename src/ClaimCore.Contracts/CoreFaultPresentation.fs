@@ -7,6 +7,7 @@ open ClaimCore.Application
 module CoreFaultPresentation =
     let render =
         function
+        | CoreFault.InternalError -> "An internal error occurred. Stop and investigate."
         | CoreFault.StoreUnavailable -> "The store is unavailable. Retry."
         | CoreFault.StoreIntegrityError -> "Stored data failed verification. Stop and run verify."
         | CoreFault.SchemaMismatch ->

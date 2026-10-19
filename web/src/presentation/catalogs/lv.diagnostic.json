@@ -22,6 +22,7 @@
   "diagnostic.COMMAND_OPERATION_ID_REQUIRED": "Izmantojiet netukšu UUID.",
   "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": "Operācijas ID pieder citam pieprasījuma saturam.",
   "diagnostic.CORE_SCHEMA_MISMATCH": "Izpildlaika shēma vai datubāzes iestatījumi nav saderīgi.",
+  "diagnostic.CORE_INTERNAL_ERROR": "Iekšēja kļūda. Apturiet darbu un izmeklējiet cēloni.",
   "diagnostic.CORE_STORE_INTEGRITY_ERROR": "Saglabātie dati neizturēja integritātes pārbaudi.",
   "diagnostic.CORE_STORE_UNAVAILABLE": "Krātuve nebija pieejama pirms pabeigšanas apstiprināšanas.",
   "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": "Labojums var aizstāt vai dzēst tikai jau reģistrētu šīs lietas vērtību.",

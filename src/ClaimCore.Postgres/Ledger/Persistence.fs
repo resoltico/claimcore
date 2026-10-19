@@ -92,7 +92,7 @@ module internal Persistence =
                         token
 
                 if changed <> 1 then
-                    invalidOp "Case projection is absent."
+                    raise (RecordCorruptException "Case projection is absent.")
             | CaseProjection.Erase(id, revision) ->
                 let! _ =
                     DatabaseSession.rows
@@ -109,7 +109,7 @@ module internal Persistence =
                         token
 
                 if changed <> 1 then
-                    invalidOp "Case projection is absent."
+                    raise (RecordCorruptException "Case projection is absent.")
         }
 
     let private register connection id principal token =
@@ -147,7 +147,7 @@ module internal Persistence =
                         token
 
                 if changed <> 1 then
-                    invalidOp "Authority projection is absent."
+                    raise (RecordCorruptException "Authority projection is absent.")
             | AuthorityProjection.AddGrant(id, role, caseId) ->
                 let! _ =
                     DatabaseSession.execute

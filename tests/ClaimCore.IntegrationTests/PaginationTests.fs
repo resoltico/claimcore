@@ -122,10 +122,9 @@ let private freshAdvice (actor: IActorClaimsCore) cursor current =
 
         let! next = actor.List(query cursor 50, token)
 
-        Expect.equal
-            next
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
-            "Changed authority invalidates older continuation"
+        Expect.isFalse
+            ((page next).Offers |> List.exists (fun offer -> offer.Definition = "OPEN"))
+            "Plain continuation uses current authority and does not restore registrar advice"
     }
 
 let private snapshot (database: PostgresFixture.Database) =

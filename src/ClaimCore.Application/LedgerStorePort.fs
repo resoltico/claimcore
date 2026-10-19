@@ -8,6 +8,7 @@ open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess>]
 type internal StoreFailure =
+    | Internal
     | Unavailable
     | SchemaMismatch
     | Integrity

@@ -13,7 +13,7 @@ module internal Projections =
     let private parsed =
         function
         | Ok value -> value
-        | Error _ -> invalidOp "Invalid stored projection."
+        | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
     let private amount index row =
         let text = required<string> index row
@@ -32,11 +32,13 @@ module internal Projections =
                 )
             )
         then
-            invalidOp "Invalid stored amount."
+            raise (RecordCorruptException "Invalid stored amount.")
 
-        Decimal
-            .Parse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture)
-            .ToString("0.####", CultureInfo.InvariantCulture)
+        match
+            Decimal.TryParse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture)
+        with
+        | true, amount -> amount.ToString("0.####", CultureInfo.InvariantCulture)
+        | _ -> raise (RecordCorruptException "Invalid stored amount.")
 
     let private date index row =
         (DatabaseSession.calendarDate index row)
@@ -85,7 +87,8 @@ module internal Projections =
             PaymentDate = optionalText date 14 row
             Status =
                 CaseStatuses.tryParse (required<string> 15 row)
-                |> Option.defaultWith (fun () -> invalidOp "Invalid stored status.")
+                |> Option.defaultWith (fun () ->
+                    raise (RecordCorruptException "Invalid stored status."))
         }
 
     let caseRow (row: obj array) : StoredCase =
@@ -95,12 +98,12 @@ module internal Projections =
             match required<string> 3 row with
             | "ERASED" ->
                 if row[4..] |> Array.exists (Convert.IsDBNull >> not) then
-                    invalidOp "Erased projection retains business fields."
+                    raise (RecordCorruptException "Erased projection retains business fields.")
 
                 CaseView.Erased
             | "ACTIVE" -> CaseView.Live(fields reference row, Disposition.Active)
             | "VOIDED" -> CaseView.Live(fields reference row, Disposition.Voided)
-            | _ -> invalidOp "Invalid stored disposition."
+            | _ -> raise (RecordCorruptException "Invalid stored disposition.")
 
         let snapshot =
             {
@@ -128,12 +131,12 @@ module internal Projections =
             match rows with
             | [] -> return None
             | [ row ] -> return Some(caseRow row)
-            | _ -> return invalidOp "Duplicate case projection."
+            | _ -> return raise (RecordCorruptException "Duplicate case projection.")
         }
 
     let private role row =
         Roles.tryParse (required<string> 0 row)
-        |> Option.defaultWith (fun () -> invalidOp "Invalid stored role.")
+        |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid stored role."))
 
     let actor connection principal token : System.Threading.Tasks.Task<ActorAuthority option> =
         task {
@@ -178,7 +181,7 @@ module internal Projections =
                             Enabled = required 1 row
                             Grants = grants
                         }
-            | _ -> return invalidOp "Duplicate stored principal."
+            | _ -> return raise (RecordCorruptException "Duplicate stored principal.")
         }
 
     let actorSummary row : ActorSummary =
@@ -199,6 +202,6 @@ module internal Projections =
             | None, None -> GrantTarget.Installation
             | Some _, Some reference when CaseReference.validate reference |> Result.isOk ->
                 GrantTarget.CaseReference reference
-            | _ -> invalidOp "Invalid grant projection."
+            | _ -> raise (RecordCorruptException "Invalid grant projection.")
 
         { Role = role; Scope = scope }, { Role = role; CaseId = caseId }

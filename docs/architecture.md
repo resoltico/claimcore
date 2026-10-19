@@ -162,3 +162,8 @@ Verification folds permanent record and authority invariants, compares projectio
 chain/commitments. It does not replay today’s capability matrix or admission rules against history.
 [Database](database.md) owns findings and operator exit codes. Normal read/replay checks the retained
 nonce and framed payload commitment before using stored identity or returning receipts.
+
+Unexpected programming failures produce `CORE_INTERNAL_ERROR` with `STOP_AND_INVESTIGATE`.
+Only an explicitly detected stored-record violation is classified as integrity failure;
+provider and I/O failures remain availability failures. A lost commit confirmation remains
+`OUTCOME_UNKNOWN`; the runtime does not infer failure or replace the operation identity.

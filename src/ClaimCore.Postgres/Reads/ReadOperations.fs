@@ -149,7 +149,7 @@ module internal ReadOperations =
             |> Option.map (fun (entry: StoredEntry) ->
                 match entry.Scope with
                 | StoredScope.Case(_, revision, _, _) -> revision
-                | _ -> invalidOp "Invalid case history.")
+                | _ -> raise (RecordCorruptException "Invalid case history."))
 
     let history source installationId principal reference select limit token =
         Transactions.read source token (fun connection ->
@@ -291,7 +291,7 @@ module internal ReadOperations =
                                 Target =
                                     target
                                     |> Option.defaultWith (fun () ->
-                                        invalidOp "Missing selected grant target.")
+                                        raise (RecordCorruptException "Missing selected grant target."))
                                 Items = visible |> List.map fst
                                 NextAfterGrant =
                                     if rows.Length > limit then

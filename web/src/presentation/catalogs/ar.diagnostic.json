@@ -22,6 +22,7 @@
   "diagnostic.COMMAND_OPERATION_ID_REQUIRED": "استخدم UUID غير فارغ.",
   "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": "يخص معرّف العملية محتوى طلب مختلفًا.",
   "diagnostic.CORE_SCHEMA_MISMATCH": "مخطط التشغيل أو إعدادات قاعدة البيانات غير متوافقة.",
+  "diagnostic.CORE_INTERNAL_ERROR": "حدث خطأ داخلي. توقف وتحقق من السبب.",
   "diagnostic.CORE_STORE_INTEGRITY_ERROR": "لم تجتز البيانات المخزنة التحقق من السلامة.",
   "diagnostic.CORE_STORE_UNAVAILABLE": "لم يكن المخزن متاحًا قبل تأكيد الاكتمال.",
   "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": "يمكن للتصحيح استبدال أو مسح قيمة مسجّلة بالفعل في هذا الملف فقط.",

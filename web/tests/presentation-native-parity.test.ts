@@ -17,7 +17,7 @@ it("every F# diagnostic template agrees with default browser rendering", () => {
     Record<string, { minimum?: number; maximum?: number }>
   > = requirements;
   const ids = Object.keys(limits);
-  expect(ids).toHaveLength(65);
+  expect(ids).toHaveLength(66);
   for (const id of ids) {
     const parts = originals[`diagnostic.${id}`];
     if (!Array.isArray(parts)) {

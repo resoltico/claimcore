@@ -298,8 +298,7 @@ type internal Store(instant: DateTimeOffset) =
             with
             | UnknownCommitFault -> return Error StoreFailure.CommitOutcomeUnknown
             | :? OperationCanceledException -> return Error StoreFailure.Cancelled
-            | :? InvalidOperationException
-            | :? Collections.Generic.KeyNotFoundException -> return Error StoreFailure.Integrity
+            | _ -> return Error StoreFailure.Internal
         }
 
     let failure () =
