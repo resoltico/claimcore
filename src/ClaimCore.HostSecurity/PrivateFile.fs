@@ -39,13 +39,16 @@ module PrivateFile =
             CryptographicOperations.ZeroMemory(Span<byte> buffer)
             reraise ()
 
-    let private readOpened maximumBytes (stream: FileStream) =
+    let internal readOpened maximumBytes (stream: FileStream) =
         if not stream.CanSeek then
             Error PrivateFileFailure.NotRegular
-        elif stream.Length > int64 maximumBytes then
-            Error PrivateFileFailure.TooLarge
         else
-            readBytes stream (Array.zeroCreate<byte>(int stream.Length))
+            let length = stream.Length
+
+            if length > int64 maximumBytes then
+                Error PrivateFileFailure.TooLarge
+            else
+                readBytes stream (Array.zeroCreate<byte>(int length))
 
     let internal readHandle maximumBytes (handle: SafeFileHandle) =
         use owned = handle

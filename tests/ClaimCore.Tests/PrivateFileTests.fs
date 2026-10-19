@@ -73,6 +73,14 @@ let private pathControls () =
         File.Move(path, unicode)
         Expect.equal (PrivateFile.read 1 unicode) (Ok [| 42uy |]) "Exact Unicode path")
 
+type private GrowingLengthStream(path) =
+    inherit FileStream(path, FileMode.Open, FileAccess.Read)
+    let mutable reads = 0L
+
+    override _.Length =
+        reads <- reads + 1L
+        reads
+
 let private handles () =
     file UnixFileMode.UserRead [| 42uy |] (fun path ->
         for maximum, expected in [ 1, Ok [| 42uy |]; 0, Error PrivateFileFailure.TooLarge ] do
@@ -89,6 +97,14 @@ let private handles () =
             "Handle mode is checked independently of path admission"
 
         Expect.isTrue handle.IsClosed "Mode refusal disposes the handle")
+
+    file UnixFileMode.UserRead [| 42uy; 43uy |] (fun path ->
+        use growing = new GrowingLengthStream(path)
+
+        Expect.equal
+            (PrivateFile.readOpened 1 growing)
+            (Ok [| 42uy |])
+            "Growth between length reads cannot bypass the admitted byte cap")
 
 let private failedRead () =
     use truncated = new MemoryStream([| 42uy |])
@@ -113,6 +129,7 @@ let tests =
                     UnixFileMode.UserRead
                     UnixFileMode.UserRead ||| UnixFileMode.UserWrite
                     UnixFileMode.UserRead ||| UnixFileMode.GroupRead
+                    UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.GroupRead
                 ] do
                 testCase ($"mode {mode} admits") (fun () ->
                     file mode [| 42uy |] (fun path ->
@@ -132,7 +149,15 @@ let tests =
                     UnixFileMode.OtherExecute
                 ] do
                 testCase ($"mode bit {bit} refuses") (fun () ->
-                    file (UnixFileMode.UserRead ||| bit) [| 42uy |] (fun path ->
+                    let mode = UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| bit
+
+                    let mode =
+                        if bit = UnixFileMode.GroupWrite || bit = UnixFileMode.OtherRead then
+                            mode ||| UnixFileMode.GroupRead
+                        else
+                            mode
+
+                    file mode [| 42uy |] (fun path ->
                         Expect.equal
                             (PrivateFile.read 1 path)
                             (Error PrivateFileFailure.TooPermissive)
@@ -180,7 +205,12 @@ let tests =
             testCase "private FIFO open is bounded" (fun () ->
                 fifo (UnixFileMode.UserRead ||| UnixFileMode.UserWrite))
             testCase "public FIFO refuses before open" (fun () ->
-                fifo (UnixFileMode.UserRead ||| UnixFileMode.OtherRead))
+                fifo (
+                    UnixFileMode.UserRead
+                    ||| UnixFileMode.UserWrite
+                    ||| UnixFileMode.GroupRead
+                    ||| UnixFileMode.OtherRead
+                ))
             testCase "unsupported platforms refuse before IO" (fun () ->
                 Expect.equal
                     (PrivateFile.readOnPlatform false 1 "/unopened")
