@@ -34,8 +34,9 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   snapshot disclosure; different content under a used ID is refused; a rejection records nothing.
   `OUTCOME_UNKNOWN` means a commit confirmation was lost and nothing else. Never infer that a
   commit failed, mint a replacement ID, or rebase a request.
-- RecordFormat owns every byte-stable encoding and its canonical JSON writer. A format number identifies one byte grammar and its admissible value set; it changes when either
-  changes. Format dispatch selects supported readers. Before 1.0.0, a release may
+- RecordFormat owns every byte-stable encoding and its canonical JSON writer. A format number
+  identifies one byte grammar and its admissible value set; it changes when either changes. Format
+  dispatch selects supported readers. Before 1.0.0, a release may
   explicitly refuse older installations untouched. From 1.0.0, keep reading every format a release
   wrote and ship migrations instead of refusing installations. The entry hash covers the salted
   payload commitment and never the payload, so erasure
@@ -54,9 +55,9 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   Current snapshots require case read; superseded snapshots require full history in the same
   locked/read context, including replay, execution, preview and observation.
 - `ClaimCore.Hosting` is the only case-work composition root. Only Hosting and Database
-  reference `ClaimCore.Postgres`; only Web references Hosting. Web uses Hosting/Wire/HostSecurity; CLI uses Wire/HostSecurity. `ClaimCore.Wire` references no
-  ClaimCore project and owns the one typed codec from which the published OpenAPI contract is
-  derived. The browser and CLI are
+  reference `ClaimCore.Postgres`; only Web references Hosting. Web uses Hosting/Wire/HostSecurity;
+  CLI uses Wire/HostSecurity. `ClaimCore.Wire` references no ClaimCore project and owns the one
+  typed codec from which the published OpenAPI contract is derived. The browser and CLI are
   authenticated HTTPS clients of one generated contract and never database peers.
   `ClaimCore.Database` is owner administration and serves no case work.
 - The installation stores one immutable canonical IANA business time zone. Business dates derive
