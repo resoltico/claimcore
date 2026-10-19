@@ -122,32 +122,32 @@ module internal CaseFold =
             | Some finding -> Error finding
             | None -> Ok()
 
+    let matchesProjection installationId histories (record: StoredCase) =
+        match Map.tryFind record.CaseId histories with
+        | None -> false
+        | Some history ->
+            let identity =
+                ClaimCore.RecordFormat.CaseReferenceId.encode
+                    installationId
+                    record.Snapshot.Reference
+                    =
+                    record.CaseId
+
+            let state =
+                match record.Snapshot.View with
+                | CaseView.Erased -> history.Erased && history.MissingPayloadAt.IsSome
+                | CaseView.Live(_, disposition) ->
+                    not history.Erased
+                    && history.MissingPayloadAt.IsNone
+                    && history.Snapshot = Some record.Snapshot
+                    && disposition = history.Disposition
+
+            identity && record.Snapshot.Revision = history.Revision && state
+
     let projection installationId histories (cases: StoredCase list) =
-        let matches (record: StoredCase) =
-            match Map.tryFind record.CaseId histories with
-            | None -> false
-            | Some history ->
-                let identity =
-                    ClaimCore.RecordFormat.CaseReferenceId.encode
-                        installationId
-                        record.Snapshot.Reference
-                        =
-                        record.CaseId
-
-                let state =
-                    match record.Snapshot.View with
-                    | CaseView.Erased -> history.Erased && history.MissingPayloadAt.IsSome
-                    | CaseView.Live(_, disposition) ->
-                        not history.Erased
-                        && history.MissingPayloadAt.IsNone
-                        && history.Snapshot = Some record.Snapshot
-                        && disposition = history.Disposition
-
-                identity && record.Snapshot.Revision = history.Revision && state
-
         require
             None
             VerificationFinding.CaseProjection
             (cases.Length = Map.count histories
              && (cases |> List.distinctBy _.CaseId |> List.length) = cases.Length
-             && List.forall matches cases)
+             && List.forall (matchesProjection installationId histories) cases)

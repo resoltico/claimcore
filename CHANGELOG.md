@@ -7,7 +7,7 @@ Notable changes to this project are documented in this file. The format is based
 ### Security
 
 - Private-file admission now uses managed APIs, allows group read and follows symbolic links. It checks path and handle modes, bounds blocked opens to two seconds, and no longer inspects ownership or ACLs. See [private inputs](docs/database.md#cc-db-002).
-- Web now requires `CLAIMCORE_WEB_KEY_RING_DIRECTORY`, an existing protected absolute directory. Persisted keys preserve session cookies and antiforgery tokens across restarts. Treat the key ring as a secret outside database backups; Linux key XML is unencrypted.
+- Web now requires `CLAIMCORE_WEB_KEY_RING_DIRECTORY`, an existing protected absolute directory. Cryptographic keys persist across restarts; server-side session tickets remain process-local. Treat the key ring as a secret outside database backups; Linux key XML is unencrypted.
 
 ### Removed
 

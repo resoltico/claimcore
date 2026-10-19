@@ -18,40 +18,78 @@ module internal VerificationRows =
 
         DatabaseSession.value<System.Guid> 0 row, role, DatabaseSession.optional<System.Guid> 2 row
 
+    let private fold
+        connection
+        sql
+        decode
+        append
+        initial
+        finding
+        (token: System.Threading.CancellationToken)
+        =
+        task {
+            use command = DatabaseSession.command connection sql [||]
+            use! reader = command.ExecuteReaderAsync(token)
+            let mutable state = Ok initial
+            let mutable reading = true
+
+            while reading && Result.isOk state do
+                let! found = reader.ReadAsync(token)
+
+                if not found then
+                    reading <- false
+                else
+                    let row = Array.zeroCreate<obj> reader.FieldCount
+                    reader.GetValues row |> ignore
+
+                    state <-
+                        state
+                        |> Result.bind (fun state ->
+                            capture None finding (fun () -> decode row)
+                            |> Result.bind (append state))
+
+            return state
+        }
+
     let cases connection installationId histories token =
         task {
-            let! rows =
-                DatabaseSession.rows
+            let! seen =
+                fold
                     connection
                     ($"SELECT {Projections.caseColumns} FROM claimcore.cases ORDER BY case_id")
-                    [||]
+                    Projections.caseRow
+                    (ProjectionVerification.caseProjection installationId histories)
+                    Set.empty
+                    VerificationFinding.CaseProjection
                     token
 
-            return
-                capture None VerificationFinding.CaseProjection (fun () ->
-                    List.map Projections.caseRow rows)
-                |> Result.bind (ProjectionVerification.cases installationId histories)
+            return seen |> Result.bind (ProjectionVerification.finishCases histories)
         }
 
     let authority connection expected token =
         task {
             let! actors =
-                DatabaseSession.rows
+                fold
                     connection
                     "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors ORDER BY actor_id"
-                    [||]
+                    Projections.actorSummary
+                    ProjectionVerification.actor
+                    Map.empty
+                    VerificationFinding.AuthorityProjection
                     token
 
-            let! grants =
-                DatabaseSession.rows
-                    connection
-                    "SELECT actor_id,role,case_id FROM claimcore.grants ORDER BY actor_id,role,case_id"
-                    [||]
-                    token
+            match actors with
+            | Error error -> return Error error
+            | Ok actors ->
+                let! actual =
+                    fold
+                        connection
+                        "SELECT actor_id,role,case_id FROM claimcore.grants ORDER BY actor_id,role,case_id"
+                        grant
+                        ProjectionVerification.grant
+                        actors
+                        VerificationFinding.AuthorityProjection
+                        token
 
-            return
-                capture None VerificationFinding.AuthorityProjection (fun () ->
-                    List.map Projections.actorSummary actors, List.map grant grants)
-                |> Result.bind (fun (actors, grants) ->
-                    ProjectionVerification.authority expected actors grants)
+                return actual |> Result.bind (ProjectionVerification.finishAuthority expected)
         }

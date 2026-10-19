@@ -31,20 +31,21 @@ module PrivateFile =
 
     let private admitted mode = mode &&& forbidden = UnixFileMode.None
 
+    let internal readBytes (stream: Stream) (buffer: byte array) =
+        try
+            stream.ReadExactly(buffer, 0, buffer.Length)
+            Ok buffer
+        with _ ->
+            CryptographicOperations.ZeroMemory(Span<byte> buffer)
+            reraise ()
+
     let private readOpened maximumBytes (stream: FileStream) =
         if not stream.CanSeek then
             Error PrivateFileFailure.NotRegular
         elif stream.Length > int64 maximumBytes then
             Error PrivateFileFailure.TooLarge
         else
-            let buffer = Array.zeroCreate<byte>(int stream.Length)
-
-            try
-                stream.ReadExactly(buffer, 0, buffer.Length)
-                Ok buffer
-            with _ ->
-                CryptographicOperations.ZeroMemory(Span<byte> buffer)
-                reraise ()
+            readBytes stream (Array.zeroCreate<byte>(int stream.Length))
 
     let internal readHandle maximumBytes (handle: SafeFileHandle) =
         use owned = handle

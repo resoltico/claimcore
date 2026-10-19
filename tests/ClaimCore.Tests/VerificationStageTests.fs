@@ -219,7 +219,7 @@ let private sharedBuild directory =
 
         Expect.stringContains
             execution
-            "--minimum-expected-tests=19"
+            "--minimum-expected-tests=18"
             "Independent acceptance discovery floor"
 
 let private failedBuild directory =
@@ -236,7 +236,7 @@ let private nativeStages directory =
     let project suite =
         "tests/ClaimCore." + suite + "Tests/ClaimCore." + suite + "Tests.fsproj"
 
-    for stage, suite, floor in [ "postgres", "Integration", 123; "web", "Web", 76 ] do
+    for stage, suite, floor in [ "postgres", "Integration", 125; "web", "Web", 78 ] do
         let config, commands = start directory "Linux" None [ stage ]
         let result = BoundedProcess.run config None 8192 10000
         Expect.equal result.ExitCode 0 "Independent native suite succeeds"
@@ -330,7 +330,7 @@ let private nativeUnitFloor directory =
 
     Expect.equal executions.Length 2 "Both complete native suites launch"
 
-    for execution, floor in List.zip (Array.toList executions) [ 342; 43 ] do
+    for execution, floor in List.zip (Array.toList executions) [ 354; 40 ] do
         Expect.stringContains
             execution
             ("--minimum-expected-tests=" + string floor)

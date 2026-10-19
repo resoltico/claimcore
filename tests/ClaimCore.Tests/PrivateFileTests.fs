@@ -90,11 +90,22 @@ let private handles () =
 
         Expect.isTrue handle.IsClosed "Mode refusal disposes the handle")
 
+let private failedRead () =
+    use truncated = new MemoryStream([| 42uy |])
+    let destination = Array.create 2 99uy
+
+    Expect.throwsT<EndOfStreamException>
+        (fun () -> PrivateFile.readBytes truncated destination |> ignore)
+        "A partial read fails rather than returning a shortened input"
+
+    Expect.equal destination [| 0uy; 0uy |] "A failed read clears partial content and unused bytes"
+
 [<Tests>]
 let tests =
     testList
         "managed private files"
         [
+            testCase "partial read failure clears the complete buffer" failedRead
             testCase "path admission" pathControls
             testCase "same-handle admission and disposal" handles
             for mode in

@@ -52,6 +52,7 @@ let private host directory =
         builder.Logging.ClearProviders() |> ignore
         builder.WebHost.UseTestServer() |> ignore
         SessionKeys.configure (SessionKeys.admit directory) builder.Services
+        // Isolates key persistence; production uses process-local OidcTicketStore tickets.
         builder.Services.AddAuthentication("Cookies").AddCookie() |> ignore
 
         builder.Services.AddAntiforgery(fun options ->
@@ -113,6 +114,7 @@ let private restart () =
 
 [<Tests>]
 let tests =
-    testTask "persisted cookie and antiforgery keys survive host restart and isolate sibling rings" {
+    testTask
+        "persisted cookie and antiforgery cryptography survives provider restart and isolates sibling rings" {
         do! restart ()
     }

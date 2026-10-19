@@ -20,9 +20,11 @@ operationId. Exception diagnostics contain type and method stack, never exceptio
 
 `CLAIMCORE_WEB_KEY_RING_DIRECTORY` is required and must name an existing absolute directory
 without group or other write permission. The host persists ASP.NET data-protection keys there
-under application name `ClaimCore.Web`. Reuse this directory after restart so session cookies
-and antiforgery tokens remain readable. A different directory cannot read them. Protect the
-key ring as a secret; its Linux XML files are unencrypted, and it is outside database backups.
+under application name `ClaimCore.Web`. Reuse this directory so protected cookie bytes and
+antiforgery tokens remain decryptable; a different directory cannot decrypt them. Browser
+session tickets still live in a process-local store, so a restart ends those sessions even
+with the same keys. The key ring does not persist session tickets. Protect it as a secret;
+its Linux XML files are unencrypted, and it is outside database backups.
 
 The editor freezes one draft identity and serialized request for review/execution. Editing
 an exposed request creates a fresh identity. Unknown delivery retains one pending request for

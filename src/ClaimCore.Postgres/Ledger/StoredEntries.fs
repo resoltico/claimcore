@@ -30,7 +30,8 @@ module internal StoredEntries =
 
             let kind =
                 RecordedAuthorityActs.tryKind act
-                |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid authority act."))
+                |> Option.defaultWith (fun () ->
+                    raise (RecordCorruptException "Invalid authority act."))
 
             StoredScope.Authority(target, kind),
             LedgerScope.Authority { TargetActorId = target; Act = kind }

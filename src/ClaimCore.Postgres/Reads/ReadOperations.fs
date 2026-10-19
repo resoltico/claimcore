@@ -291,7 +291,10 @@ module internal ReadOperations =
                                 Target =
                                     target
                                     |> Option.defaultWith (fun () ->
-                                        raise (RecordCorruptException "Missing selected grant target."))
+                                        raise (
+                                            RecordCorruptException
+                                                "Missing selected grant target."
+                                        ))
                                 Items = visible |> List.map fst
                                 NextAfterGrant =
                                     if rows.Length > limit then

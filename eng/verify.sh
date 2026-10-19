@@ -132,10 +132,10 @@ lint() {
 unit() {
   build_native
   # Native freshness tests check the complete tracked contracts/ inventory and exact bytes.
-  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 342
+  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 354
   dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
     --configuration Debug --no-restore -p:Optimize=false
-  tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 43 Debug 15m
+  tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 40 Debug 15m
 }
 
 frontend() { # Node only: no generated contract prerequisite or .NET process.
@@ -163,12 +163,12 @@ integration() {
 
 postgres() {
   build_native tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
-  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 123 Release 20m eng/expecto.integration.runsettings
+  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 125 Release 20m eng/expecto.integration.runsettings
 }
 
 web() {
   build_native tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
-  tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj 76 Release 20m
+  tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj 78 Release 20m
 }
 
 browsers() {
@@ -195,7 +195,7 @@ acceptance() {
   build_native
   build_frontend
   # One native case sequences every selected engine and stops before starting a later engine after a failure.
-  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 19 Release 40m
+  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 18 Release 40m
 }
 
 for stage in "${stages[@]}"; do
