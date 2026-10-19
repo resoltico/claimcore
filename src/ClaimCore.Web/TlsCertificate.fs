@@ -1,6 +1,6 @@
 namespace ClaimCore.Web
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.Security.Cryptography
@@ -12,9 +12,6 @@ module internal TlsCertificate =
     let private certificateBytes path =
         match PrivateFile.read (8 * 1024 * 1024) path with
         | Ok value when value.Length > 0 -> value
-        | Error PrivateFileFailure.NativeAssetUnavailable ->
-            Console.Error.WriteLine PrivateFile.nativeAssetGuidance
-            WebStartupDiagnostics.refuse WebStartupProblem.CertificateAccessRefused
         | Ok _
         | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.CertificateAccessRefused
 

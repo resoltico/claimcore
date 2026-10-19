@@ -35,14 +35,14 @@
     <Compile Include="CliIdentityClient.fs" />
     <Compile Include="OidcLiveTests.fs" />
     <Compile Include="ConfigurationTests.fs" />
+    <Compile Include="SessionKeyTests.fs" />
     <Compile Include="TransportGuards.fs" />
     <Compile Include="HostTransportTests.fs" />
     <Compile Include="RequestLogTests.fs" />
-    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />

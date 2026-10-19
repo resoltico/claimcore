@@ -8,9 +8,6 @@ open ClaimCore.HostSecurity
 module internal PrivateInputs =
     let text limit path =
         match PrivateFile.read limit path with
-        | Error PrivateFileFailure.NativeAssetUnavailable ->
-            Console.Error.WriteLine PrivateFile.nativeAssetGuidance
-            Error PrivateFileFailure.NativeAssetUnavailable
         | Error error -> Error error
         | Ok bytes ->
             try

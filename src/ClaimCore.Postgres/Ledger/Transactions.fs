@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.IO
 open System.Security.Cryptography
 open System.Threading
 open Npgsql
@@ -51,17 +52,22 @@ module internal Transactions =
                     : LedgerHead),
                     DatabaseSession.instant 2 row,
                     RandomNumberGenerator.GetBytes 32
-            | _ -> return invalidOp "Ledger head is absent."
+            | _ -> return raise (RecordCorruptException "Ledger head is absent.")
         }
 
-    let private dataFailure (error: exn) =
+    let private providerFailure commitStarted (error: exn) =
         match error with
-        | :? InvalidOperationException
-        | :? ArgumentException
-        | :? InvalidCastException
-        | :? FormatException
-        | :? OverflowException -> StoreFailure.Integrity
-        | _ -> StoreFailure.Unavailable
+        | :? RecordCorruptException -> StoreFailure.Integrity
+        | :? OperationCanceledException when not commitStarted -> StoreFailure.Cancelled
+        | :? OperationCanceledException -> StoreFailure.CommitOutcomeUnknown
+        | :? NpgsqlException
+        | :? IOException
+        | :? TimeoutException ->
+            if commitStarted then
+                StoreFailure.CommitOutcomeUnknown
+            else
+                StoreFailure.Unavailable
+        | _ -> StoreFailure.Internal
 
     let failure commitStarted (error: exn) =
         match error with
@@ -77,11 +83,7 @@ module internal Transactions =
             ->
             StoreFailure.SchemaMismatch
         | :? PostgresException -> StoreFailure.Unavailable
-        | :? NpgsqlException when commitStarted -> StoreFailure.CommitOutcomeUnknown
-        | :? OperationCanceledException when commitStarted -> StoreFailure.CommitOutcomeUnknown
-        | :? TimeoutException when commitStarted -> StoreFailure.CommitOutcomeUnknown
-        | :? OperationCanceledException -> StoreFailure.Cancelled
-        | error -> dataFailure error
+        | error -> providerFailure commitStarted error
 
     /// The commit marker is set only after all projection work and the final pre-commit cancellation check.
     let write source settings (token: CancellationToken) action =

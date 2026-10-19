@@ -1,7 +1,5 @@
 namespace ClaimCore.Application
 
-open ClaimCore.RecordFormat
-
 /// The closed input vocabulary required by authority operations.
 [<RequireQualifiedAccess>]
 type AuthorityInputPrimitive =
@@ -19,7 +17,7 @@ type AuthorityInputDefinition =
 
 type AuthorityOperationDefinition =
     {
-        Kind: RecordedAuthorityKind
+        Kind: AuthorityKind
         Label: string
         Meaning: string
         Inputs: AuthorityInputDefinition list
@@ -38,14 +36,14 @@ module AuthorityOperationDefinitions =
     let all =
         [
             {
-                Kind = RecordedAuthorityKind.RegisterActor
+                Kind = AuthorityKind.RegisterActor
                 Label = "Register actor"
                 Meaning =
                     "Register a principal without granting case or administration capabilities."
                 Inputs = []
             }
             {
-                Kind = RecordedAuthorityKind.SetGrant
+                Kind = AuthorityKind.SetGrant
                 Label = "Set actor grant"
                 Meaning = "Grant or revoke a role at installation or case scope."
                 Inputs =
@@ -56,7 +54,7 @@ module AuthorityOperationDefinitions =
                     ]
             }
             {
-                Kind = RecordedAuthorityKind.SetEnabled
+                Kind = AuthorityKind.SetEnabled
                 Label = "Set actor enabled"
                 Meaning =
                     "Enable or disable an actor. The final enabled human owner remains protected."

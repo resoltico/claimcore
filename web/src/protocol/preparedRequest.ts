@@ -1,6 +1,5 @@
-import type { RequestByEndpoint } from "@contracts/types";
-import { buildRequest, requestIssue } from "@contracts/browser-contract";
-import type { endpoints } from "@contracts/endpoint-catalog";
+import type { RequestByEndpoint, endpoints } from "@contracts/client";
+import { buildRequest, requestIssue } from "./client";
 export class ProtocolInputError extends Error {
   readonly path: ReadonlyArray<string>;
   constructor(path: ReadonlyArray<string>) {

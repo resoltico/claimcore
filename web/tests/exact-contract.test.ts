@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { admitBytes } from "../src/protocol/schema";
-import { isRequest, isResponse, decodeResponse } from "@contracts/browser-contract";
+import { isRequest, isResponse, decodeResponse } from "../src/protocol/client";
 import { corpusCases, generatedWebValue } from "./contract-corpus.fixtures";
 
 it("admits every positive and rejects every negative generated endpoint corpus case from bytes", () => {
@@ -67,7 +67,7 @@ it("independently rejects lossy numeric spellings, duplicate decoded names, dept
   ).toThrow();
 });
 
-it("checks Gregorian dates, exact timestamp spelling and retained scalar text independently", () => {
+it("admits business date strings for typed Domain rejection", () => {
   const base = {
     operationId: "10000000-0000-4000-8000-000000000001",
     caseReference: "A",
@@ -80,13 +80,13 @@ it("checks Gregorian dates, exact timestamp spelling and retained scalar text in
       ...base,
       act: { ...base.act, values: { paymentDate: "2023-02-29" } },
     }),
-  ).toBe(false);
+  ).toBe(true);
   expect(
     isRequest("case.execute", {
       ...base,
       act: { ...base.act, values: { paymentDate: "0000-02-29" } },
     }),
-  ).toBe(false);
+  ).toBe(true);
 });
 
 it("requires the owned canonical timestamp spelling rather than permissive host parsing", () => {
@@ -98,9 +98,10 @@ it("requires the owned canonical timestamp spelling rather than permissive host 
     ...source,
     outcome: { ...source.outcome, data: { ...source.outcome.data, recordedAt } },
   });
-  expect(isResponse("case.execute", reply("2026-10-16T12:34:56.1234560+00:00"))).toBe(true);
+  expect(isResponse("case.execute", reply("2026-10-16T12:34:56.123456Z"))).toBe(true);
   for (const timestamp of [
     "2026-10-16T12:34:56.1234560+14:59",
+    "2026-10-16T12:34:56.1234560+00:00",
     "2026-10-16T12:34:56.1234560+00:00\n",
     "2026-02-30T12:34:56.1234560+00:00",
   ]) {

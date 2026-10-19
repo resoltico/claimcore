@@ -132,7 +132,10 @@ let private start (database: PostgresFixture.Database) =
                 | _ -> failtest "Live fixture required"
 
             value
-            |> caseScope (fun scope -> { scope with Act = CaseActKind.Close })
+            |> caseScope (fun scope ->
+                { scope with
+                    Act = (CaseActKind.Business BusinessActKind.Close)
+                })
             |> updateCase
                 { request with
                     Act = CaseAct.Business BusinessCommand.Close
@@ -155,7 +158,7 @@ let private disposition (database: PostgresFixture.Database) =
             value
             |> caseScope (fun scope ->
                 { scope with
-                    Act = CaseActKind.Reinstate
+                    Act = (CaseActKind.Stewardship StewardshipActKind.Reinstate)
                 })
             |> updateCase
                 { request with

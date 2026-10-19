@@ -1,5 +1,5 @@
-import { isResponse } from "@contracts/browser-contract";
-import { wireContractFingerprint } from "@contracts/endpoint-catalog";
+import { isResponse } from "../src/protocol/client";
+import { wireContractFingerprint } from "@contracts/client";
 import { expect, test, type Page } from "@playwright/test";
 
 import { browserRequest, expectHostFailure, login, sessionToken } from "./session-helpers";

@@ -4,33 +4,39 @@ namespace ClaimCore.Domain
 module CaseActKinds =
     let business =
         [
-            CaseActKind.Open
-            CaseActKind.AmendRegistration
-            CaseActKind.CorrectCase
-            CaseActKind.Decide
-            CaseActKind.WithdrawDecision
-            CaseActKind.RecordPayment
-            CaseActKind.ClearPayment
-            CaseActKind.Close
-            CaseActKind.Reopen
+            (CaseActKind.Business BusinessActKind.Open)
+            (CaseActKind.Business BusinessActKind.AmendRegistration)
+            (CaseActKind.Business BusinessActKind.CorrectCase)
+            (CaseActKind.Business BusinessActKind.Decide)
+            (CaseActKind.Business BusinessActKind.WithdrawDecision)
+            (CaseActKind.Business BusinessActKind.RecordPayment)
+            (CaseActKind.Business BusinessActKind.ClearPayment)
+            (CaseActKind.Business BusinessActKind.Close)
+            (CaseActKind.Business BusinessActKind.Reopen)
         ]
 
-    let all = business @ [ CaseActKind.Void; CaseActKind.Reinstate; CaseActKind.Erase ]
+    let all =
+        business
+        @ [
+            (CaseActKind.Stewardship StewardshipActKind.Void)
+            (CaseActKind.Stewardship StewardshipActKind.Reinstate)
+            (CaseActKind.Stewardship StewardshipActKind.Erase)
+        ]
 
     let token kind =
         match kind with
-        | CaseActKind.Open -> "OPEN"
-        | CaseActKind.AmendRegistration -> "AMEND_REGISTRATION"
-        | CaseActKind.CorrectCase -> "CORRECT_CASE"
-        | CaseActKind.Decide -> "DECIDE"
-        | CaseActKind.WithdrawDecision -> "WITHDRAW_DECISION"
-        | CaseActKind.RecordPayment -> "RECORD_PAYMENT"
-        | CaseActKind.ClearPayment -> "CLEAR_PAYMENT"
-        | CaseActKind.Close -> "CLOSE"
-        | CaseActKind.Reopen -> "REOPEN"
-        | CaseActKind.Void -> "VOID"
-        | CaseActKind.Reinstate -> "REINSTATE"
-        | CaseActKind.Erase -> "ERASE"
+        | (CaseActKind.Business BusinessActKind.Open) -> "OPEN"
+        | (CaseActKind.Business BusinessActKind.AmendRegistration) -> "AMEND_REGISTRATION"
+        | (CaseActKind.Business BusinessActKind.CorrectCase) -> "CORRECT_CASE"
+        | (CaseActKind.Business BusinessActKind.Decide) -> "DECIDE"
+        | (CaseActKind.Business BusinessActKind.WithdrawDecision) -> "WITHDRAW_DECISION"
+        | (CaseActKind.Business BusinessActKind.RecordPayment) -> "RECORD_PAYMENT"
+        | (CaseActKind.Business BusinessActKind.ClearPayment) -> "CLEAR_PAYMENT"
+        | (CaseActKind.Business BusinessActKind.Close) -> "CLOSE"
+        | (CaseActKind.Business BusinessActKind.Reopen) -> "REOPEN"
+        | (CaseActKind.Stewardship StewardshipActKind.Void) -> "VOID"
+        | (CaseActKind.Stewardship StewardshipActKind.Reinstate) -> "REINSTATE"
+        | (CaseActKind.Stewardship StewardshipActKind.Erase) -> "ERASE"
 
     let tryParse value =
         all |> List.tryFind (token >> (=) value)
@@ -38,17 +44,18 @@ module CaseActKinds =
 module BusinessCommands =
     let kind command =
         match command with
-        | BusinessCommand.Open _ -> CaseActKind.Open
-        | BusinessCommand.AmendRegistration _ -> CaseActKind.AmendRegistration
-        | BusinessCommand.CorrectCase _ -> CaseActKind.CorrectCase
-        | BusinessCommand.Decide _ -> CaseActKind.Decide
-        | BusinessCommand.WithdrawDecision -> CaseActKind.WithdrawDecision
-        | BusinessCommand.RecordPayment _ -> CaseActKind.RecordPayment
-        | BusinessCommand.ClearPayment -> CaseActKind.ClearPayment
-        | BusinessCommand.Close -> CaseActKind.Close
-        | BusinessCommand.Reopen -> CaseActKind.Reopen
+        | BusinessCommand.Open _ -> BusinessActKind.Open
+        | BusinessCommand.AmendRegistration _ -> BusinessActKind.AmendRegistration
+        | BusinessCommand.CorrectCase _ -> BusinessActKind.CorrectCase
+        | BusinessCommand.Decide _ -> BusinessActKind.Decide
+        | BusinessCommand.WithdrawDecision -> BusinessActKind.WithdrawDecision
+        | BusinessCommand.RecordPayment _ -> BusinessActKind.RecordPayment
+        | BusinessCommand.ClearPayment -> BusinessActKind.ClearPayment
+        | BusinessCommand.Close -> BusinessActKind.Close
+        | BusinessCommand.Reopen -> BusinessActKind.Reopen
 
-    let name command = command |> kind |> CaseActKinds.token
+    let name command =
+        command |> kind |> CaseActKind.Business |> CaseActKinds.token
 
 module CaseStatuses =
     let all = [ CaseStatus.Opened; CaseStatus.Closed ]
@@ -64,9 +71,12 @@ module CaseStatuses =
 module CaseActs =
     let kind =
         function
-        | CaseAct.Business command -> BusinessCommands.kind command
-        | CaseAct.Stewardship(StewardshipAct.Void _) -> CaseActKind.Void
-        | CaseAct.Stewardship(StewardshipAct.Reinstate _) -> CaseActKind.Reinstate
-        | CaseAct.Stewardship StewardshipAct.Erase -> CaseActKind.Erase
+        | CaseAct.Business command -> BusinessCommands.kind command |> CaseActKind.Business
+        | CaseAct.Stewardship(StewardshipAct.Void _) ->
+            (CaseActKind.Stewardship StewardshipActKind.Void)
+        | CaseAct.Stewardship(StewardshipAct.Reinstate _) ->
+            (CaseActKind.Stewardship StewardshipActKind.Reinstate)
+        | CaseAct.Stewardship StewardshipAct.Erase ->
+            (CaseActKind.Stewardship StewardshipActKind.Erase)
 
     let name act = kind act |> CaseActKinds.token

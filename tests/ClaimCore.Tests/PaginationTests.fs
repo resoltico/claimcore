@@ -5,8 +5,8 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Application
 open ClaimCore.RecordFormat
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.Tests.ApplicationFixtures
 
@@ -84,7 +84,7 @@ let private caseLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         Expect.isNone rest.NextCursor "No omitted row"
     }
 
-let private principalAndGrantBinding (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private sharedPosition (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
         do! cases admin
@@ -96,9 +96,9 @@ let private principalAndGrantBinding (_: MemoryLedgerStore.Store) (fixture: Fixt
             another.List({ AfterCursor = token; Limit = 1 }, CancellationToken.None)
 
         Expect.equal
-            crossed
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
-            "Another authorized principal cannot reuse continuation"
+            (succeeded crossed).Items.Length
+            1
+            "Current authority permits sharing a position"
 
         let! extra =
             grant admin (id 22) owner Role.CaseReader (GrantTarget.CaseReference "CASE-C") true
@@ -107,12 +107,12 @@ let private principalAndGrantBinding (_: MemoryLedgerStore.Store) (fixture: Fixt
         let! changed = admin.List({ AfterCursor = token; Limit = 1 }, CancellationToken.None)
 
         Expect.equal
-            changed
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
-            "Even an otherwise irrelevant current grant changes the binding"
+            (succeeded changed).Items.Length
+            1
+            "Irrelevant grant changes do not invalidate a position"
     }
 
-let private expiryAndRevocation (store: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private elapsedTimeAndRevocation (store: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
         do! cases admin
@@ -120,12 +120,11 @@ let private expiryAndRevocation (store: MemoryLedgerStore.Store) (fixture: Fixtu
         let! first = actor.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
         let token = (succeeded first).NextCursor
         store.Instant <- instant.AddMinutes(15.0)
-        let! expired = actor.List({ AfterCursor = token; Limit = 2 }, CancellationToken.None)
 
-        Expect.equal
-            expired
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
-            "Expiry uses the read-snapshot database instant"
+        let! continued =
+            actor.List({ AfterCursor = token; Limit = 2 }, CancellationToken.None)
+
+        Expect.equal (succeeded continued).Items.Length 2 "Positions have no lifetime"
 
         store.Instant <- instant
 
@@ -141,7 +140,7 @@ let private expiryAndRevocation (store: MemoryLedgerStore.Store) (fixture: Fixtu
         Expect.equal
             denied
             (QueryOutcome.Rejected Rejection.ResourceUnavailable)
-            "A signed token confers no rights after revocation"
+            "A position confers no rights after revocation"
     }
 
 let private createHistory (actor: IActorClaimsCore) =
@@ -178,6 +177,23 @@ let private registerActors (actor: IActorClaimsCore) =
                 )
 
             acceptedAuthority registered
+    }
+
+let private differentHistoryResource (actor: IActorClaimsCore) (query: HistoryRequest) cursor =
+    task {
+        let! other = actor.Execute(openRequest 13 "OTHER", CancellationToken.None)
+        accepted other |> ignore
+
+        let! resource =
+            actor.History(
+                { query with
+                    CaseReference = "OTHER"
+                    AfterCursor = cursor
+                },
+                CancellationToken.None
+            )
+
+        Expect.equal resource (QueryOutcome.Rejected Rejection.InvalidCursor) "Resource is bound"
     }
 
 let private historyBinding (_: MemoryLedgerStore.Store) (fixture: Fixture) =
@@ -224,20 +240,12 @@ let private historyBinding (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                 CancellationToken.None
             )
 
-        Expect.equal summary (QueryOutcome.Rejected Rejection.InvalidCursor) "Detail is bound"
-        let! other = actor.Execute(openRequest 13 "OTHER", CancellationToken.None)
-        accepted other |> ignore
+        Expect.equal
+            (succeeded summary).Entries.Length
+            1
+            "Detail may change after independent authorization"
 
-        let! resource =
-            actor.History(
-                { query with
-                    CaseReference = "OTHER"
-                    AfterCursor = first.NextCursor
-                },
-                CancellationToken.None
-            )
-
-        Expect.equal resource (QueryOutcome.Rejected Rejection.InvalidCursor) "Resource is bound"
+        do! differentHistoryResource actor query first.NextCursor
     }
 
 let private authorityLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
@@ -302,10 +310,8 @@ let private malformedAndRestart (_: MemoryLedgerStore.Store) (fixture: Fixture) 
         do! cases actor
         let! first = actor.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
         let original = (succeeded first).NextCursor |> cursor
-        let chars = original.ToCharArray()
-        chars[chars.Length / 2] <- if chars[chars.Length / 2] = 'A' then 'B' else 'A'
 
-        for malformed in [ String chars; original + "="; ""; "!"; String.replicate 513 "A" ] do
+        for malformed in [ original + "="; ""; "!"; String.replicate 513 "A" ] do
             let! outcome =
                 actor.List(
                     {
@@ -320,8 +326,7 @@ let private malformedAndRestart (_: MemoryLedgerStore.Store) (fixture: Fixture) 
                 (QueryOutcome.Rejected Rejection.InvalidCursor)
                 "No malformed position is trusted"
 
-        let restarted =
-            Core.create installation fixture.Store calendar (Array.rev cursorKey) owner
+        let restarted = Core.create installation fixture.Store calendar owner
 
         let! old =
             restarted.List(
@@ -332,10 +337,7 @@ let private malformedAndRestart (_: MemoryLedgerStore.Store) (fixture: Fixture) 
                 CancellationToken.None
             )
 
-        Expect.equal
-            old
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
-            "Another runtime key rejects old continuations"
+        Expect.equal (succeeded old).Items.Length 1 "Plain continuation survives facade restart"
     }
 
 let private singleSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
@@ -344,8 +346,7 @@ let private singleSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         do! cases admin
         let proxy = AfterCaseWriteStore(fixture.Store, fun () -> Task.FromResult(()))
 
-        let actor =
-            Core.create installation (proxy :> ILedgerStore) calendar cursorKey owner
+        let actor = Core.create installation (proxy :> ILedgerStore) calendar owner
 
         let! first = actor.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
         succeeded first |> ignore
@@ -410,18 +411,26 @@ let private pageAdvice (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! readers = actor.List({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
 
         Expect.isFalse
-            ((succeeded readers).Offers |> List.exists (fun o -> o.Definition = "OPEN"))
+            ((succeeded readers).Offers |> List.contains InstallationOffer.Open)
             "Case-scoped registrar has no installation registration advice"
 
         let! owners = admin.List({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
-        let offers = (succeeded owners).Offers |> List.map _.Definition
-        Expect.contains offers "OPEN" "Same-page authority supplies registration advice"
-        Expect.contains offers "authority.grants" "Authority read advice is owned by core"
+        let offers = (succeeded owners).Offers
+
+        Expect.contains
+            offers
+            InstallationOffer.Open
+            "Same-page authority supplies registration advice"
+
+        Expect.contains
+            offers
+            (InstallationOffer.AuthorityAct AuthorityKind.SetGrant)
+            "Authority act advice is owned by core"
     }
 
 let private appendHistory (actor: IActorClaimsCore) =
     task {
-        for revision in 1L .. 12L do
+        for revision in 1L .. 52L do
             let act =
                 if revision % 2L = 1L then
                     BusinessCommand.Close
@@ -456,7 +465,7 @@ let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! first = actor.History(query, CancellationToken.None)
         let first = succeeded first
-        Expect.equal first.Entries.Length 10 "FULL effective limit is ten"
+        Expect.equal first.Entries.Length 50 "FULL shares the public page capacity"
 
         let! rest =
             actor.History(
@@ -478,7 +487,7 @@ let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             (rest.Entries |> List.map revision)
-            [ 11L; 12L; 13L ]
+            [ 51L; 52L; 53L ]
             "Continuation follows last included row"
 
         let! summary =
@@ -489,7 +498,7 @@ let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                 CancellationToken.None
             )
 
-        Expect.equal (succeeded summary).Entries.Length 13 "SUMMARY retains its larger capacity"
+        Expect.equal (succeeded summary).Entries.Length 50 "SUMMARY shares the public page capacity"
     }
 
 let private disabledGrantTarget
@@ -522,13 +531,10 @@ let private disabledGrantTarget
         Expect.isFalse (succeeded visible).Actor.Enabled "Disabled targets remain reviewable"
         store.Instant <- instant.AddMinutes 15.0
 
-        let! expired =
+        let! continued =
             admin.ListGrants({ query with AfterCursor = cursor }, CancellationToken.None)
 
-        Expect.equal
-            expired
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
-            "Grant cursor lifetime is enforced"
+        Expect.equal (succeeded continued).Items.Length 1 "Grant positions have no lifetime"
     }
 
 let private grantBinding (store: MemoryLedgerStore.Store) (fixture: Fixture) =
@@ -593,30 +599,30 @@ let private grantBinding (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
 let private invalidGrantPositions =
     [
-        GrantCursorPosition.encode "NOT_A_ROLE" None
-        GrantCursorPosition.encode "CASE_READER" (Some(Guid.Empty.ToString("D")))
-        GrantCursorPosition.encode "CASE_READER" (Some "A0000000-0000-4000-8000-000000000001")
+        "{\"caseId\":null,\"role\":\"NOT_A_ROLE\"}"
+        "{\"caseId\":\"00000000-0000-0000-0000-000000000000\",\"role\":\"CASE_READER\"}"
+        "{\"caseId\":\"A0000000-0000-4000-8000-000000000001\",\"role\":\"CASE_READER\"}"
         "{ \"caseId\":null,\"role\":\"CASE_READER\"}"
         "{\"caseId\":null,\"role\":\"CASE_READER\",\"extra\":false}"
     ]
-
 
 let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
         let! view = fixture.Store.ReadActor(owner, CancellationToken.None)
         let view = view |> Result.defaultWith (fun _ -> failtest "Caller authority")
-        let authority = view.Actor |> Option.get
+        let authority = view.Actor.Actor |> Option.get
 
         for position in invalidGrantPositions do
             let cursor =
-                Cursors.encode
-                    cursorKey
-                    installation
-                    authority
-                    (CursorQuery.Grants authority.ActorId)
-                    view.ObservedAt
-                    position
+                let json =
+                    $"{{\"actor\":\"{authority.ActorId:D}\",\"after\":{position},\"kind\":\"GRANTS\",\"v\":1}}"
+
+                Convert
+                    .ToBase64String(System.Text.Encoding.UTF8.GetBytes json)
+                    .TrimEnd('=')
+                    .Replace('+', '-')
+                    .Replace('/', '_')
 
             let! refused =
                 admin.ListGrants(
@@ -631,7 +637,7 @@ let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture
             Expect.equal
                 refused
                 (QueryOutcome.Rejected Rejection.InvalidCursor)
-                "An authentic envelope does not admit an invalid grant position"
+                "A plain envelope does not admit an invalid grant position"
 
         let! invalidLimit =
             admin.ListGrants(
@@ -655,11 +661,11 @@ let tests =
         "authorized continuation pages"
         [
             testCaseAsync
-                "signed grant positions retain primitive and semantic admission"
+                "plain grant positions retain primitive and semantic admission"
                 (run grantCursorRejections)
             testCaseAsync "case pages carry same-snapshot owned advice" (run pageAdvice)
             testCaseAsync
-                "FULL history uses ten and continues after its last included revision"
+                "FULL history uses fifty and continues after its last included revision"
                 (run fullHistoryLimit)
             testCaseAsync
                 "grant pages bind target preserve null ordering and review disabled targets"
@@ -668,17 +674,19 @@ let tests =
                 "case continuation preserves key order and permits changed page sizes"
                 (run caseLimits)
             testCaseAsync
-                "case continuation binds principal and the complete current grant set"
-                (run principalAndGrantBinding)
-            testCaseAsync "expired and revoked case continuations refuse" (run expiryAndRevocation)
+                "case positions may be shared under current authority and survive irrelevant grant changes"
+                (run sharedPosition)
             testCaseAsync
-                "history continuation binds normalized resource and detail while permitting changed limits"
+                "case positions survive elapsed time and still enforce revocation"
+                (run elapsedTimeAndRevocation)
+            testCaseAsync
+                "history positions bind the normalized resource and permit changed detail and limits"
                 (run historyBinding)
             testCaseAsync
                 "authority continuation pages actors once and cannot cross endpoints"
                 (run authorityLimits)
             testCaseAsync
-                "malformed tokens and runtime-key changes refuse without position disclosure"
+                "malformed tokens refuse and plain positions survive restart"
                 (run malformedAndRestart)
             testCaseAsync
                 "all pagination endpoints authorize and fetch within one read operation"

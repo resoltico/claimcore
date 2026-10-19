@@ -1,6 +1,6 @@
 module internal ClaimCore.WebTests.CliIdentityClient
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -9,7 +9,6 @@ open System.Text.Json
 open System.Threading
 open Expecto
 open ClaimCore.Cli
-open ClaimCore.ClientContract
 
 let private privateText directory name (text: string) =
     let path = Path.Combine(directory, name)
@@ -20,7 +19,7 @@ let private privateText directory name (text: string) =
 let private serviceReply service (token: AccessToken) cancelled =
     task {
         let invocation =
-            Frames.parse (
+            Frames.admit (
                 System.Text.Encoding.UTF8.GetBytes(
                     """{"endpoint":"case.get","input":{"caseReference":"SYNTHETIC-001"}}"""
                 )
@@ -72,9 +71,9 @@ let qualify (server: IdentityServer.Identity) (service: HttpClient) (cancelled: 
             let! acquired =
                 OAuthTokenClient.acquire
                     identity
-                    endpoints
+                    (Uri(endpoints.TokenEndpoint |> nonNull))
                     "service"
-                    (OAuthGrant.ClientCredentials secretPath)
+                    secretPath
                     cancelled
 
             let token =
@@ -87,9 +86,9 @@ let qualify (server: IdentityServer.Identity) (service: HttpClient) (cancelled: 
             let! denied =
                 OAuthTokenClient.acquire
                     identity
-                    endpoints
+                    (Uri(endpoints.TokenEndpoint |> nonNull))
                     "service"
-                    (OAuthGrant.ClientCredentials secretPath)
+                    secretPath
                     cancelled
 
             Expect.isError denied "Wrong client secret refused by real provider"

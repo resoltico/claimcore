@@ -1,6 +1,6 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.Net
@@ -8,15 +8,31 @@ open System.Net.Http
 open System.Net.Http.Headers
 open System.Threading
 open System.Threading.Tasks
-open ClaimCore.ClientContract
 
 module RemoteServiceCall =
     [<Literal>]
-    let MaximumResponseBytes = ProtocolProfile.MaximumResponseBytes
+    let MaximumResponseBytes = Limits.MaximumResponseBytes
 
     let private invalid frame =
-        CliReply.protocol "INVALID_RESPONSE"
-        |> CliReply.forAttempt frame (DeliveryPolicy.missing true (Frames.endpoint frame).Mutates)
+        CliReply.protocol ProtocolFailure.InvalidResponse
+        |> CliReply.forAttempt
+            frame
+            (Delivery.knowledge
+                (Frames.request frame |> WireRequest.endpoint)
+                AttemptResult.DispatchedWithoutReply)
+
+    let private encodeResult frame reply =
+        try
+            CliReply.result frame reply
+        with :? ArgumentException ->
+            // A valid HTTP body can exceed the frame cap once delivery metadata is added.
+            invalid frame
+
+    let private encodeServiceFailure frame failure =
+        try
+            CliReply.serviceFailure frame failure
+        with :? ArgumentException ->
+            invalid frame
 
     let internal readResponse frame (response: HttpResponseMessage) cancelled =
         task {
@@ -40,13 +56,18 @@ module RemoteServiceCall =
                     return invalid frame
                 elif response.StatusCode = HttpStatusCode.OK then
                     return
-                        Frames.result frame bytes
-                        |> Result.map CliReply.admitted
+                        Replies.decode (Frames.request frame |> WireRequest.endpoint) bytes
+                        |> Result.bind (fun reply ->
+                            if Correlation.matches (Frames.request frame) reply then
+                                Ok reply
+                            else
+                                Error { Path = "$"; Reason = "CORRELATION" })
+                        |> Result.map (encodeResult frame)
                         |> Result.defaultWith (fun _ -> invalid frame)
                 else
                     match HostFailures.decode bytes with
-                    | Ok reason when HostFailures.status reason = int response.StatusCode ->
-                        let reply = Frames.serviceFailure frame reason |> CliReply.admitted
+                    | Ok reason when HostFailures.status reason.Reason = int response.StatusCode ->
+                        let reply = encodeServiceFailure frame reason
 
                         return reply
                     | _ -> return invalid frame
@@ -61,21 +82,21 @@ module RemoteServiceCall =
         (cancelled: CancellationToken)
         =
         task {
-            let endpoint = Frames.endpoint frame
+            let endpoint = Frames.request frame |> WireRequest.endpoint
             use deadline = HttpRequestDeadline.link client cancelled
 
             use request =
-                new HttpRequestMessage(HttpMethod(endpoint.Method), Uri(service, endpoint.Path))
+                new HttpRequestMessage(
+                    HttpMethod(Endpoint.method endpoint),
+                    Uri(service, Endpoint.path endpoint)
+                )
 
             request.Headers.Authorization <- authorization
             request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue "application/json")
 
-            request.Headers.Add(
-                "ClaimCore-Contract",
-                WireContractFingerprint.value EndpointCatalog.fingerprint
-            )
+            request.Headers.Add("ClaimCore-Contract", Fingerprint.value)
 
-            if endpoint.Method = "POST" then
+            if Endpoint.method endpoint = "POST" then
                 let content = new ByteArrayContent(Frames.inputBytes frame)
                 content.Headers.ContentType <- MediaTypeHeaderValue "application/json"
                 request.Content <- content
@@ -100,5 +121,8 @@ module RemoteServiceCall =
                 let reply = CliReply.local ClientFailure.Unavailable
 
                 return
-                    CliReply.forAttempt frame (DeliveryPolicy.missing true endpoint.Mutates) reply
+                    CliReply.forAttempt
+                        frame
+                        (Delivery.knowledge endpoint AttemptResult.DispatchedWithoutReply)
+                        reply
         }

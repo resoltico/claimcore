@@ -33,8 +33,8 @@ Read the [erasure limits](docs/operations.md#erasure-limits).
 The browser offers English, Latvian and Arabic, right-to-left layout and independent display
 formats. The installation's immutable IANA business time zone governs business dates.
 Seven default-deny role presets and scoped grants control case work and administration.
-Core offers drive browser business, stewardship and authority forms; both clients use complete
-generated wire admission and correlated delivery replies.
+Typed core advice drives browser business, stewardship and authority forms. Both clients use one
+[OpenAPI contract](contracts/openapi.json), strict byte admission and correlated delivery replies.
 
 Every mutation rechecks locked current state. Replaying a retained accepted request returns
 its original acceptance without another ledger entry. If delivery is uncertain, preserve the operation ID, expected

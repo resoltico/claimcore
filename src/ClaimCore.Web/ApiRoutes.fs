@@ -1,6 +1,6 @@
 namespace ClaimCore.Web
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery
@@ -11,17 +11,17 @@ open ClaimCore.Hosting
 module internal ApiRoutes =
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
-        | true, values when values.Count = 1 -> ServiceGateway.matches (Some(string values[0]))
+        | true, values when values.Count = 1 -> string values[0] = Fingerprint.value
         | _ -> false
 
     let ingress (context: HttpContext) (next: RequestDelegate) : Task =
         task {
             match
-                ServiceGateway.endpoints
+                Endpoint.all
                 |> List.tryFind (fun endpoint ->
-                    Some endpoint.Path = Option.ofObj context.Request.Path.Value)
+                    Some(Endpoint.path endpoint) = Option.ofObj context.Request.Path.Value)
             with
-            | Some endpoint when context.Request.Method <> endpoint.Method ->
+            | Some endpoint when context.Request.Method <> Endpoint.method endpoint ->
                 do!
                     (RouteSupport.hostFailure context HostFailure.MethodRejected).ExecuteAsync
                         context
@@ -40,7 +40,7 @@ module internal ApiRoutes =
                 context
 
     let private input
-        (endpoint: ServiceEndpoint)
+        (endpoint: ClaimCore.Wire.Endpoint)
         (configuration: WebConfiguration)
         (context: HttpContext)
         =
@@ -48,10 +48,14 @@ module internal ApiRoutes =
             match! HttpBody.readRequest configuration.Admission.MaximumJsonBytes context with
             | Error problem -> return Error(RouteSupport.inputFailure context problem)
             | Ok bytes ->
-                match ServiceGateway.admit endpoint.Identifier bytes with
-                | Error problem -> return Error(RouteSupport.inputFailure context problem)
+                match
+                    ClaimCore.Wire.Admission.admit endpoint bytes
+                    |> Result.mapError (fun _ -> ())
+                    |> Result.bind ServiceGateway.admitTechnical
+                with
+                | Error _ -> return Error(RouteSupport.hostFailure context HostFailure.InputInvalid)
                 | Ok _ when context.RequestAborted.IsCancellationRequested ->
-                    return Error(RouteSupport.inputFailure context HttpInputProblem.BodyCancelled)
+                    return Error(RouteSupport.inputFailure context BodyProblem.BodyCancelled)
                 | Ok input -> return Ok input
         }
 
@@ -68,7 +72,7 @@ module internal ApiRoutes =
                     match! input endpoint configuration context with
                     | Error result -> return result
                     | Ok input ->
-                        ServiceGateway.requestOperationId input
+                        WireRequest.operationId input
                         |> Option.iter (fun id -> RequestLog.operation id context)
 
                         RouteSupport.markDispatched context

@@ -60,8 +60,8 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         match same with
         | ClaimCore.Application.QueryOutcome.Succeeded page ->
-            Expect.equal page.Items.Length 1 "Every facade shares its runtime key"
-        | _ -> failtest "Facade changed the signing key"
+            Expect.equal page.Items.Length 1 "Every facade accepts the plain position"
+        | _ -> failtest "Same-runtime continuation refused"
 
         let! second =
             ClaimCore.Hosting.Runtime.openConnection (connectionString database) token
@@ -69,14 +69,14 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         use second =
             second |> Result.defaultWith (fun _ -> failtest "Second runtime refused")
 
-        let! rejected =
+        let! continued =
             (second.Actor database.Fixture.Owner).List({ AfterCursor = cursor; Limit = 2 }, token)
 
-        Expect.equal
-            rejected
-            (ClaimCore.Application.QueryOutcome.Rejected
-                ClaimCore.Application.Rejection.InvalidCursor)
-            "Another runtime lifetime has a different ephemeral key"
+        match continued with
+        | ClaimCore.Application.QueryOutcome.Succeeded page ->
+            Expect.equal page.Items.Length 1 "Plain positions survive runtime restart"
+        | _ -> failtest "Restart continuation refused"
+
     }
 
 [<Tests>]
@@ -320,6 +320,6 @@ let tests =
                         (Some ClaimCore.Application.RuntimeOpenFault.UnsupportedServer)
                         "One admission vocabulary")
             testCaseAsync
-                "cursor keys are shared across actor facades and separate across runtime lifetimes"
+                "plain cursor positions survive actor facade and runtime lifetimes"
                 (run runtimeCursors)
         ]

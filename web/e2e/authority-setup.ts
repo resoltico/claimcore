@@ -1,9 +1,9 @@
-import type { RequestByEndpoint } from "@contracts/types";
+import type { RequestByEndpoint } from "@contracts/client";
 import { readFile } from "node:fs/promises";
 import { type Page } from "@playwright/test";
 
-import { isResponse } from "@contracts/browser-contract";
-import { endpoints } from "@contracts/endpoint-catalog";
+import { isResponse } from "../src/protocol/client";
+import { endpoints } from "@contracts/client";
 import { browserRequest, progress, sessionToken } from "./session-helpers";
 
 type Principals = Readonly<{

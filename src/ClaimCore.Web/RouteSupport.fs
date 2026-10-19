@@ -1,6 +1,6 @@
 namespace ClaimCore.Web
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System.IO
 open System.Threading.Tasks
@@ -30,18 +30,38 @@ module internal RouteSupport =
 
     let inputFailure context =
         function
-        | HttpInputProblem.BodyTooLarge -> hostFailure context HostFailure.BodyTooLarge
+        | BodyProblem.BodyTooLarge -> hostFailure context HostFailure.BodyTooLarge
         | _ -> hostFailure context HostFailure.InputInvalid
 
-    let outcome endpoint bytes context =
-        RequestLog.outcome "SUCCEEDED" context
-        WebWire.outcome endpoint bytes
+    let private tag =
+        function
+        | OutcomeTag.Succeeded -> "SUCCEEDED"
+        | OutcomeTag.Reviewed -> "REVIEWED"
+        | OutcomeTag.Accepted -> "ACCEPTED"
+        | OutcomeTag.AlreadyAccepted -> "ALREADY_ACCEPTED"
+        | OutcomeTag.Rejected -> "REJECTED"
+        | OutcomeTag.Failed -> "FAILED"
+        | OutcomeTag.Cancelled -> "CANCELLED"
+        | OutcomeTag.OutcomeUnknown -> "OUTCOME_UNKNOWN"
 
-    let reply (value: ServiceReply) context =
-        RequestLog.outcome value.Outcome context
-        value.OperationId |> Option.iter (fun id -> RequestLog.operation id context)
-        value.ActorId |> Option.iter (fun id -> RequestLog.actor id context)
-        WebWire.result 200 value.Bytes
+    let outcome value context =
+        match WireReply.attempt value with
+        | AttemptResult.Outcome(outcome, _) -> RequestLog.outcome (tag outcome) context
+        | _ -> invalidArg "value" "Expected a typed service outcome."
+
+        WebWire.reply value
+
+    let reply (value: WireReply) context =
+        match value with
+        | WireReply.CaseExecute {
+                                    Outcome = CaseExecuteOutcome.Accepted receipt
+                                } -> RequestLog.actor receipt.RecordedBy context
+        | WireReply.AuthorityExecute {
+                                         Outcome = AuthorityExecuteOutcome.Accepted receipt
+                                     } -> RequestLog.actor receipt.RecordedBy context
+        | _ -> ()
+
+        outcome value context
 
     let handleFailures (sink: TextWriter) (context: HttpContext) (next: RequestDelegate) : Task =
         task {

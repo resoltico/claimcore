@@ -21,14 +21,14 @@ const contracts = resolve(root, "../../contracts");
 const contract = (/** @type {string} */ name) =>
   JSON.parse(readFileSync(resolve(contracts, name), "utf8"));
 const descriptors = contract("descriptors.json");
-const requirements = diagnosticRequirements(descriptors, contract("host-failure.schema.json"));
+const requirements = diagnosticRequirements(descriptors, contract("openapi.json"));
 /** @param {string} language @returns {Record<string, import("./localization-policy.mjs").Message>} */
 const catalog = (language) =>
   Object.assign(
     language === "en"
       ? {
           ...businessMessages(descriptors),
-          ...contract("default-presentation.en.json"),
+          ...descriptors.diagnostics,
         }
       : {},
     ...readdirSync(resolve(root, "presentation/catalogs"))
@@ -56,7 +56,7 @@ test("every shipped real catalog covers the native metadata and diagnostic param
     validateCatalog(en, catalog(language), language);
   }
   validateCoverage(en, descriptors, requirements);
-  const tokens = renderedTokens(descriptors, readFileSync(resolve(contracts, "types.ts"), "utf8"));
+  const tokens = renderedTokens(descriptors, readFileSync(resolve(contracts, "client.ts"), "utf8"));
   validateTokens(en, tokens);
 });
 

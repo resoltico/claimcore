@@ -3,8 +3,8 @@ import type { CaseFields, CommandDraft, CaseReceipt } from "../src/api/types";
 import { expect, type Page } from "@playwright/test";
 import { startCommand } from "./case-workflow";
 import { browserRequest, sessionToken } from "./session-helpers";
-import { isResponse } from "@contracts/browser-contract";
-import { endpoints } from "@contracts/endpoint-catalog";
+import { isResponse } from "../src/protocol/client";
+import { endpoints } from "@contracts/client";
 import { selectLanguage } from "./localization-support";
 import type { Language } from "../src/presentation/preferences";
 

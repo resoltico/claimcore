@@ -105,27 +105,26 @@ type internal PausedPageStore
         member _.ListActors(principal, select, limit, ct) =
             inner.ListActors(principal, select, limit, ct)
 
-        member _.ListCases(principal, select, limit, ct) =
-            inner.ListCases(principal, paused select, limit, ct)
+        member _.ListCases(principal, readRoles, select, limit, ct) =
+            inner.ListCases(principal, readRoles, paused select, limit, ct)
 
 let private freshAdvice (actor: IActorClaimsCore) cursor current =
     task {
         Expect.isTrue
-            ((page current).Offers |> List.exists (fun o -> o.Definition = "OPEN"))
+            ((page current).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
             "Paused rows retain the same registrar snapshot advice"
 
         let! fresh = actor.List(query None 50, token)
 
         Expect.isFalse
-            ((page fresh).Offers |> List.exists (fun o -> o.Definition = "OPEN"))
+            ((page fresh).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
             "Fresh reader page has no OPEN advice"
 
         let! next = actor.List(query cursor 50, token)
 
-        Expect.equal
-            next
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
-            "Changed authority invalidates older continuation"
+        Expect.isFalse
+            ((page next).Offers |> List.exists (fun offer -> offer = InstallationOffer.Open))
+            "Plain continuation uses current authority and does not restore registrar advice"
     }
 
 let private snapshot (database: PostgresFixture.Database) =
@@ -150,7 +149,7 @@ let private snapshot (database: PostgresFixture.Database) =
                 database.Fixture.InstallationId
                 (store :> ILedgerStore)
                 database.Fixture.Calendar
-                cursorKey
+
                 principal
 
         let reading =

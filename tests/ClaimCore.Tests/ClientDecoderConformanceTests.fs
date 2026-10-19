@@ -5,8 +5,7 @@ open System.IO
 open System.Text
 open System.Text.Json
 open Expecto
-open ClaimCore.ClientProtocol
-open ClaimCore.ClientContract
+open ClaimCore.Wire
 
 let private fixture name =
     let root = ClaimCore.TestSupport.RepositoryRoot.find ()
@@ -22,19 +21,18 @@ let private payload (sample: JsonElement) =
 
 let private admits endpoint direction (bytes: byte array) =
     if direction = "response" then
-        Frames.response (EndpointCatalog.tryFind endpoint |> Option.get) bytes
-        |> Result.isOk
+        Replies.decode (Endpoint.tryParse endpoint |> Option.get) bytes |> Result.isOk
     else
         let prefix = Encoding.UTF8.GetBytes("{\"endpoint\":\"" + endpoint + "\",\"input\":")
 
         Array.concat [ prefix; bytes; Encoding.UTF8.GetBytes "}" ]
-        |> Frames.parse
+        |> Frames.admit
         |> Result.isOk
 
 let private independentByteCases () =
     use document = fixture "tests/fixtures/client-byte-conformance.json"
     let cases = document.RootElement.GetProperty("cases").EnumerateArray() |> Seq.toList
-    Expect.equal cases.Length 48 "Independent byte cases cannot disappear silently"
+    Expect.equal cases.Length 50 "Independent byte cases cannot disappear silently"
 
     for sample in cases do
         Expect.equal
@@ -43,7 +41,7 @@ let private independentByteCases () =
             (text "id" sample)
 
 let private generatedEndpointCases () =
-    use document = fixture "contracts/endpoint-corpus.json"
+    use document = fixture "contracts/corpus.json"
     let mutable positive, negative = 0, 0
 
     for sample in document.RootElement.GetProperty("cases").EnumerateArray() do
@@ -61,8 +59,8 @@ let private generatedEndpointCases () =
             expected
             (text "id" sample)
 
-    Expect.isGreaterThan positive 0 "Generated production native catalogue accepts positive cases"
-    Expect.isGreaterThan negative 0 "Generated production native catalogue rejects negative cases"
+    Expect.isGreaterThan positive 0 "Generated production codec corpus accepts positive cases"
+    Expect.isGreaterThan negative 0 "Generated production codec corpus rejects negative cases"
 
 let private authoritativeIdentityAdmission () =
     use document = fixture "tests/fixtures/client-byte-conformance.json"
@@ -74,9 +72,14 @@ let private authoritativeIdentityAdmission () =
             count <- count + 1
 
             Expect.equal
-                (ClaimCore.Contracts.EndpointCatalog.admitRequest
-                    (text "endpoint" sample)
+                (Admission.admit
+                    (Endpoint.tryParse (text "endpoint" sample) |> Option.get)
                     (payload sample)
+                 |> Result.mapError _.Reason
+                 |> Result.bind (function
+                     | WireRequest.AuthorityExecute request ->
+                         ClaimCore.Hosting.RequestMapping.authorityRequest request
+                     | _ -> Error "Expected authority request")
                  |> Result.isOk)
                 (expected.GetBoolean())
                 ("Unchanged authoritative identity admission: " + text "id" sample)
@@ -84,15 +87,7 @@ let private authoritativeIdentityAdmission () =
 
     Expect.equal count 22 "All independent principal cases reach authoritative typed binding"
 
-let private uuidWithoutLength () =
-    let document =
-        {
-            Identifier = "uuid-format"
-            Title = "UUID format"
-            Root = Schema.string (Some "uuid") None None None
-            Definitions = []
-        }
-
+let private exactUuid () =
     let valid = "10000000-0000-4000-8000-00000000000a"
 
     for value, expected in
@@ -106,8 +101,7 @@ let private uuidWithoutLength () =
         let bytes = JsonSerializer.Serialize(value) |> Encoding.UTF8.GetBytes
 
         Expect.equal
-            (HttpInputSupport.parse bytes (SchemaValueValidation.verify document)
-             |> Result.defaultValue false)
+            (Codec.decode 100 Codec.uuid bytes |> Result.isOk)
             expected
             "Unbounded UUID format consumes exactly one canonical nonempty UUID"
 
@@ -121,5 +115,5 @@ let tests =
             testCase
                 "wire admission leaves authoritative identity policy unchanged"
                 authoritativeIdentityAdmission
-            testCase "UUID format without length requires exact end of input" uuidWithoutLength
+            testCase "UUID codec requires exact canonical input" exactUuid
         ]

@@ -1,0 +1,994 @@
+{
+  "source": "df3263f5e8799c3f8d20f821ac618dfbfdc95902:contracts/endpoint-corpus.json, valid responses with W1-W7 applied independently",
+  "cases": [
+    {
+      "name": "session-response-0",
+      "endpoint": "session",
+      "value": {
+        "endpoint": "session",
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "authenticated": false,
+            "wireFingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+            "antiforgeryToken": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "session.logout-response-0",
+      "endpoint": "session.logout",
+      "value": {
+        "endpoint": "session.logout",
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "context-response-0",
+      "endpoint": "context",
+      "value": {
+        "endpoint": "context",
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "productVersion": "x",
+            "businessDate": "2026-01-01",
+            "timeZone": "x",
+            "offers": [],
+            "capabilities": [],
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "context-response-1",
+      "endpoint": "context",
+      "value": {
+        "endpoint": "context",
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "diagnostic": {
+              "id": "INPUT_TEXT_REQUIRED",
+              "parameters": {}
+            },
+            "message": "x",
+            "field": "incidentDate",
+            "actualRevision": 1,
+            "recommendedAction": "CORRECT_INPUT"
+          }
+        }
+      }
+    },
+    {
+      "name": "context-response-2",
+      "endpoint": "context",
+      "value": {
+        "endpoint": "context",
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "diagnostic": {
+              "id": "CORE_STORE_UNAVAILABLE",
+              "parameters": {}
+            },
+            "message": "x",
+            "recommendedAction": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "context-response-3",
+      "endpoint": "context",
+      "value": {
+        "endpoint": "context",
+        "outcome": {
+          "tag": "CANCELLED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "case.get-response-0",
+      "endpoint": "case.get",
+      "value": {
+        "endpoint": "case.get",
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "tag": "LIVE",
+              "disposition": "ACTIVE",
+              "fields": {
+                "incidentDate": "2026-01-01",
+                "incidentNotificationDate": "2026-01-01",
+                "incidentCountry": "LV",
+                "claimantName": "x",
+                "insurerName": "x",
+                "claimedAmount": "0",
+                "claimedCurrency": "EUR",
+                "caseReference": "x",
+                "paymentDecisionDate": "2026-01-01",
+                "payableAmount": "0",
+                "payableCurrency": "EUR",
+                "paymentDate": "2026-01-01",
+                "status": "OPENED"
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "case.get-response-1",
+      "endpoint": "case.get",
+      "value": {
+        "endpoint": "case.get",
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "diagnostic": {
+              "id": "INPUT_TEXT_REQUIRED",
+              "parameters": {}
+            },
+            "message": "x",
+            "field": "incidentDate",
+            "actualRevision": 1,
+            "recommendedAction": "CORRECT_INPUT"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.get-response-2",
+      "endpoint": "case.get",
+      "value": {
+        "endpoint": "case.get",
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "diagnostic": {
+              "id": "CORE_STORE_UNAVAILABLE",
+              "parameters": {}
+            },
+            "message": "x",
+            "recommendedAction": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.get-response-3",
+      "endpoint": "case.get",
+      "value": {
+        "endpoint": "case.get",
+        "outcome": {
+          "tag": "CANCELLED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "case.list-response-0",
+      "endpoint": "case.list",
+      "value": {
+        "endpoint": "case.list",
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "items": [],
+            "nextCursor": "x",
+            "offers": []
+          }
+        }
+      }
+    },
+    {
+      "name": "case.list-response-1",
+      "endpoint": "case.list",
+      "value": {
+        "endpoint": "case.list",
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "diagnostic": {
+              "id": "INPUT_TEXT_REQUIRED",
+              "parameters": {}
+            },
+            "message": "x",
+            "field": "incidentDate",
+            "actualRevision": 1,
+            "recommendedAction": "CORRECT_INPUT"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.list-response-2",
+      "endpoint": "case.list",
+      "value": {
+        "endpoint": "case.list",
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "diagnostic": {
+              "id": "CORE_STORE_UNAVAILABLE",
+              "parameters": {}
+            },
+            "message": "x",
+            "recommendedAction": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.list-response-3",
+      "endpoint": "case.list",
+      "value": {
+        "endpoint": "case.list",
+        "outcome": {
+          "tag": "CANCELLED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "case.history-response-0",
+      "endpoint": "case.history",
+      "value": {
+        "endpoint": "case.history",
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "entries": [
+              {
+                "tag": "SUMMARY",
+                "change": {
+                  "operationId": "10000000-0000-4000-8000-000000000001",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  },
+                  "revision": 1,
+                  "act": "OPEN",
+                  "recordedAt": "2026-01-01T00:00:00.000000Z",
+                  "recordedBy": "10000000-0000-4000-8000-000000000001"
+                }
+              }
+            ],
+            "nextCursor": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.history-response-1",
+      "endpoint": "case.history",
+      "value": {
+        "endpoint": "case.history",
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "diagnostic": {
+              "id": "INPUT_TEXT_REQUIRED",
+              "parameters": {}
+            },
+            "message": "x",
+            "field": "incidentDate",
+            "actualRevision": 1,
+            "recommendedAction": "CORRECT_INPUT"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.history-response-2",
+      "endpoint": "case.history",
+      "value": {
+        "endpoint": "case.history",
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "diagnostic": {
+              "id": "CORE_STORE_UNAVAILABLE",
+              "parameters": {}
+            },
+            "message": "x",
+            "recommendedAction": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.history-response-3",
+      "endpoint": "case.history",
+      "value": {
+        "endpoint": "case.history",
+        "outcome": {
+          "tag": "CANCELLED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "case.preview-response-0",
+      "endpoint": "case.preview",
+      "value": {
+        "endpoint": "case.preview",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "REVIEWED",
+          "data": {
+            "review": {
+              "before": {
+                "caseReference": "x",
+                "revision": 1,
+                "state": {
+                  "tag": "LIVE",
+                  "disposition": "ACTIVE",
+                  "fields": {
+                    "incidentDate": "2026-01-01",
+                    "incidentNotificationDate": "2026-01-01",
+                    "incidentCountry": "LV",
+                    "claimantName": "x",
+                    "insurerName": "x",
+                    "claimedAmount": "0",
+                    "claimedCurrency": "EUR",
+                    "caseReference": "x",
+                    "paymentDecisionDate": "2026-01-01",
+                    "payableAmount": "0",
+                    "payableCurrency": "EUR",
+                    "paymentDate": "2026-01-01",
+                    "status": "OPENED"
+                  }
+                }
+              },
+              "after": {
+                "caseReference": "x",
+                "revision": 1,
+                "state": {
+                  "tag": "LIVE",
+                  "disposition": "ACTIVE",
+                  "fields": {
+                    "incidentDate": "2026-01-01",
+                    "incidentNotificationDate": "2026-01-01",
+                    "incidentCountry": "LV",
+                    "claimantName": "x",
+                    "insurerName": "x",
+                    "claimedAmount": "0",
+                    "claimedCurrency": "EUR",
+                    "caseReference": "x",
+                    "paymentDecisionDate": "2026-01-01",
+                    "payableAmount": "0",
+                    "payableCurrency": "EUR",
+                    "paymentDate": "2026-01-01",
+                    "status": "OPENED"
+                  }
+                }
+              },
+              "changes": [],
+              "context": {
+                "productVersion": "x",
+                "businessDate": "2026-01-01",
+                "timeZone": "x"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "case.preview-response-1",
+      "endpoint": "case.preview",
+      "value": {
+        "endpoint": "case.preview",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "ALREADY_ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "scope": "CASE",
+            "caseReference": "x",
+            "revision": 1,
+            "act": "OPEN",
+            "snapshot": {
+              "tag": "DISCLOSED",
+              "state": {
+                "tag": "LIVE",
+                "disposition": "ACTIVE",
+                "fields": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "caseReference": "x",
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR",
+                  "paymentDate": "2026-01-01",
+                  "status": "OPENED"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "case.preview-response-2",
+      "endpoint": "case.preview",
+      "value": {
+        "endpoint": "case.preview",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "diagnostic": {
+              "id": "INPUT_TEXT_REQUIRED",
+              "parameters": {}
+            },
+            "message": "x",
+            "field": "incidentDate",
+            "actualRevision": 1,
+            "recommendedAction": "CORRECT_INPUT"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.preview-response-3",
+      "endpoint": "case.preview",
+      "value": {
+        "endpoint": "case.preview",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "diagnostic": {
+              "id": "CORE_STORE_UNAVAILABLE",
+              "parameters": {}
+            },
+            "message": "x",
+            "recommendedAction": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.preview-response-4",
+      "endpoint": "case.preview",
+      "value": {
+        "endpoint": "case.preview",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "CANCELLED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "case.execute-response-0",
+      "endpoint": "case.execute",
+      "value": {
+        "endpoint": "case.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "scope": "CASE",
+            "caseReference": "x",
+            "revision": 1,
+            "act": "OPEN",
+            "snapshot": {
+              "tag": "DISCLOSED",
+              "state": {
+                "tag": "LIVE",
+                "disposition": "ACTIVE",
+                "fields": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "caseReference": "x",
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR",
+                  "paymentDate": "2026-01-01",
+                  "status": "OPENED"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "case.execute-response-1",
+      "endpoint": "case.execute",
+      "value": {
+        "endpoint": "case.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "ALREADY_ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "scope": "CASE",
+            "caseReference": "x",
+            "revision": 1,
+            "act": "OPEN",
+            "snapshot": {
+              "tag": "DISCLOSED",
+              "state": {
+                "tag": "LIVE",
+                "disposition": "ACTIVE",
+                "fields": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "caseReference": "x",
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR",
+                  "paymentDate": "2026-01-01",
+                  "status": "OPENED"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "case.execute-response-2",
+      "endpoint": "case.execute",
+      "value": {
+        "endpoint": "case.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "OUTCOME_UNKNOWN",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.execute-response-3",
+      "endpoint": "case.execute",
+      "value": {
+        "endpoint": "case.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "diagnostic": {
+              "id": "INPUT_TEXT_REQUIRED",
+              "parameters": {}
+            },
+            "message": "x",
+            "field": "incidentDate",
+            "actualRevision": 1,
+            "recommendedAction": "CORRECT_INPUT"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.execute-response-4",
+      "endpoint": "case.execute",
+      "value": {
+        "endpoint": "case.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "diagnostic": {
+              "id": "CORE_STORE_UNAVAILABLE",
+              "parameters": {}
+            },
+            "message": "x",
+            "recommendedAction": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "case.execute-response-5",
+      "endpoint": "case.execute",
+      "value": {
+        "endpoint": "case.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "CANCELLED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "operation.observe-response-0",
+      "endpoint": "operation.observe",
+      "value": {
+        "endpoint": "operation.observe",
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "scope": "CASE",
+            "caseReference": "x",
+            "revision": 1,
+            "act": "OPEN",
+            "snapshot": {
+              "tag": "DISCLOSED",
+              "state": {
+                "tag": "LIVE",
+                "disposition": "ACTIVE",
+                "fields": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "caseReference": "x",
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR",
+                  "paymentDate": "2026-01-01",
+                  "status": "OPENED"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "operation.observe-response-1",
+      "endpoint": "operation.observe",
+      "value": {
+        "endpoint": "operation.observe",
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "diagnostic": {
+              "id": "INPUT_TEXT_REQUIRED",
+              "parameters": {}
+            },
+            "message": "x",
+            "field": "incidentDate",
+            "actualRevision": 1,
+            "recommendedAction": "CORRECT_INPUT"
+          }
+        }
+      }
+    },
+    {
+      "name": "operation.observe-response-2",
+      "endpoint": "operation.observe",
+      "value": {
+        "endpoint": "operation.observe",
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "diagnostic": {
+              "id": "CORE_STORE_UNAVAILABLE",
+              "parameters": {}
+            },
+            "message": "x",
+            "recommendedAction": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "operation.observe-response-3",
+      "endpoint": "operation.observe",
+      "value": {
+        "endpoint": "operation.observe",
+        "outcome": {
+          "tag": "CANCELLED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "authority.execute-response-0",
+      "endpoint": "authority.execute",
+      "value": {
+        "endpoint": "authority.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "scope": "AUTHORITY",
+            "targetActorId": "10000000-0000-4000-8000-000000000001",
+            "act": "PROVISION_OWNER"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.execute-response-1",
+      "endpoint": "authority.execute",
+      "value": {
+        "endpoint": "authority.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "ALREADY_ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "scope": "AUTHORITY",
+            "targetActorId": "10000000-0000-4000-8000-000000000001",
+            "act": "PROVISION_OWNER"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.execute-response-2",
+      "endpoint": "authority.execute",
+      "value": {
+        "endpoint": "authority.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "OUTCOME_UNKNOWN",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.execute-response-3",
+      "endpoint": "authority.execute",
+      "value": {
+        "endpoint": "authority.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "diagnostic": {
+              "id": "INPUT_TEXT_REQUIRED",
+              "parameters": {}
+            },
+            "message": "x",
+            "field": "incidentDate",
+            "actualRevision": 1,
+            "recommendedAction": "CORRECT_INPUT"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.execute-response-4",
+      "endpoint": "authority.execute",
+      "value": {
+        "endpoint": "authority.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "diagnostic": {
+              "id": "CORE_STORE_UNAVAILABLE",
+              "parameters": {}
+            },
+            "message": "x",
+            "recommendedAction": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.execute-response-5",
+      "endpoint": "authority.execute",
+      "value": {
+        "endpoint": "authority.execute",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "tag": "CANCELLED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "authority.list-response-0",
+      "endpoint": "authority.list",
+      "value": {
+        "endpoint": "authority.list",
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "items": [],
+            "nextCursor": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.list-response-1",
+      "endpoint": "authority.list",
+      "value": {
+        "endpoint": "authority.list",
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "diagnostic": {
+              "id": "INPUT_TEXT_REQUIRED",
+              "parameters": {}
+            },
+            "message": "x",
+            "field": "incidentDate",
+            "actualRevision": 1,
+            "recommendedAction": "CORRECT_INPUT"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.list-response-2",
+      "endpoint": "authority.list",
+      "value": {
+        "endpoint": "authority.list",
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "diagnostic": {
+              "id": "CORE_STORE_UNAVAILABLE",
+              "parameters": {}
+            },
+            "message": "x",
+            "recommendedAction": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.list-response-3",
+      "endpoint": "authority.list",
+      "value": {
+        "endpoint": "authority.list",
+        "outcome": {
+          "tag": "CANCELLED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "authority.grants-response-0",
+      "endpoint": "authority.grants",
+      "value": {
+        "endpoint": "authority.grants",
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "actor": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "principal": {
+                "kind": "HUMAN",
+                "issuer": "x",
+                "subject": "x"
+              },
+              "enabled": false
+            },
+            "items": [],
+            "nextCursor": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.grants-response-1",
+      "endpoint": "authority.grants",
+      "value": {
+        "endpoint": "authority.grants",
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "diagnostic": {
+              "id": "INPUT_TEXT_REQUIRED",
+              "parameters": {}
+            },
+            "message": "x",
+            "field": "incidentDate",
+            "actualRevision": 1,
+            "recommendedAction": "CORRECT_INPUT"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.grants-response-2",
+      "endpoint": "authority.grants",
+      "value": {
+        "endpoint": "authority.grants",
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "diagnostic": {
+              "id": "CORE_STORE_UNAVAILABLE",
+              "parameters": {}
+            },
+            "message": "x",
+            "recommendedAction": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.grants-response-3",
+      "endpoint": "authority.grants",
+      "value": {
+        "endpoint": "authority.grants",
+        "outcome": {
+          "tag": "CANCELLED",
+          "data": null
+        }
+      }
+    }
+  ]
+}

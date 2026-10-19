@@ -131,14 +131,14 @@ be replayed as retained requests. Its physical limits are in [Operations](operat
 - Incident country is exactly two uppercase ASCII letters. This checks syntax, not ISO membership;
   `ZZ` means unknown/international. Localized country names are advisory display hints.
 - Retained business text is non-empty and excludes NUL, unpaired surrogates and Unicode
-  noncharacters as permanent format invariants. New name assertions contain 1–200 Unicode
+  noncharacters as permanent format invariants and follows the [permanent byte bounds](architecture.md#durable-records). New name assertions contain 1–200 Unicode
   scalars, no surrounding whitespace,
   controls, line/paragraph separators, or the forbidden invisible/directional characters described
   by the [shared Domain text policy](../src/ClaimCore.Domain/Validation.fs). Names and stewardship
   reasons share this profile: U+200C (ZWNJ), U+200D (ZWJ), U+180E (Mongolian vowel separator),
   permitted selectors and private-use characters remain accepted. Unicode category Format is
   not a blanket refusal. Display warnings expose suspicious code points without rewriting data.
-- Format and admission are separate. Decoding, generic schemas, SQL and verification enforce
+- Format and admission are separate. Retained-record decoding, SQL and verification enforce
   permanent scalar syntax and state invariants. Current admission policy judges newly asserted
   values only: unchanged retained names and dates may be reaffirmed. Tightening admission never
   invalidates accepted records. Browser input hints describe policy without imposing it on reads.

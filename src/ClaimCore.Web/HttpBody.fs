@@ -1,6 +1,6 @@
 namespace ClaimCore.Web
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -10,7 +10,13 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open ClaimCore.Hosting
 
-/// HTTP allocation and transport failure handling; pure payload decoding belongs to Contracts.
+[<RequireQualifiedAccess>]
+type BodyProblem =
+    | BodyTooLarge
+    | BodyCancelled
+    | BodyUnreadable
+
+/// HTTP allocation and transport failure handling; pure payload decoding belongs to Wire.
 module HttpBody =
     let readBounded limit (stream: Stream) (ct: CancellationToken) =
         task {
@@ -40,16 +46,16 @@ module HttpBody =
                 budget.Token.ThrowIfCancellationRequested()
 
                 if total > limit then
-                    return Error HttpInputProblem.BodyTooLarge
+                    return Error BodyProblem.BodyTooLarge
                 else
                     return Ok(output.ToArray())
             with
             | :? Microsoft.AspNetCore.Http.BadHttpRequestException as failure when
                 failure.StatusCode = 413
                 ->
-                return Error HttpInputProblem.BodyTooLarge
-            | :? OperationCanceledException -> return Error HttpInputProblem.BodyCancelled
-            | :? IOException -> return Error HttpInputProblem.BodyUnreadable
+                return Error BodyProblem.BodyTooLarge
+            | :? OperationCanceledException -> return Error BodyProblem.BodyCancelled
+            | :? IOException -> return Error BodyProblem.BodyUnreadable
         }
 
     let readRequest limit (context: HttpContext) =

@@ -4,10 +4,4 @@
     <Compile Include="PrivateFile.fs" />
     <Compile Include="TlsCertificatePurpose.fs" />
   </ItemGroup>
-  <ItemGroup>
-    <ClaimCoreNativeLibrary
-      Include="$(MSBuildThisFileDirectory)native/private_file.c"
-      LibraryName="claimcore_hostsecurity"
-      Headers="$(MSBuildThisFileDirectory)native/private_file.h" />
-  </ItemGroup>
 </Project>

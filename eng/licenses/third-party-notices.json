@@ -1,0 +1,321 @@
+{
+  "format": 1,
+  "scope": "Reviewed notices for redistributed packages and apphosts. Platform shared frameworks and container images are separate redistribution inputs.",
+  "texts": [
+    {
+      "file": "Microsoft-MIT.txt",
+      "sha256": "480d420fd388a3ce0cecb73d79aee3f02f70fee060e95f4727b1335feff33201",
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/e34a38d2ae1fc26406a317517196e55c68ff83ab/src/fsharp/License.txt"
+    },
+    {
+      "file": "IdentityModel-MIT.txt",
+      "sha256": "cba03f5387b05405e56b688376421acae396136af4b5116738dc6e5160f87ddd",
+      "source": "https://raw.githubusercontent.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/ee19952f21d5c170a778bdca901b67076a1cd8f8/LICENSE.txt"
+    },
+    {
+      "file": "DotNet-Foundation-MIT.txt",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310",
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/95017c711e6afc1085133d440e42b4bd78155701/src/runtime/LICENSE.TXT"
+    },
+    {
+      "file": "AspNetCore-NOTICES.txt",
+      "sha256": "52af3d603b6d069e635f8afd08ec44ec01559255b5f3afd161ae9e6fe7e7aa54",
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/95017c711e6afc1085133d440e42b4bd78155701/src/aspnetcore/THIRD-PARTY-NOTICES.txt"
+    },
+    {
+      "file": "Runtime-NOTICES.txt",
+      "sha256": "66f1d4e44973185519bb4aa8a9718eb22fc7af2cc532e3ae9cfc4c127ee7fc54",
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/44525024595742ebe09023abe709df51de65009b/src/runtime/THIRD-PARTY-NOTICES.TXT"
+    },
+    {
+      "file": "SDK-Host-NOTICES.txt",
+      "sha256": "2dc8f8c5a39401e928b5784ab564eb8b3ceb99ead3df8f260e0cab7e0bbecc7a",
+      "source": "https://dotnet.microsoft.com/download/dotnet/10.0 (SDK 10.0.402 distribution root ThirdPartyNotices.txt; exact installed distribution bytes retained separately)"
+    },
+    {
+      "file": "PostgreSQL-NPGSQL.txt",
+      "sha256": "2e1d9cc6ed4eb7fe6fa82091846c06b4f58571a2c3b54777db6baeca10dd2d74",
+      "source": "https://raw.githubusercontent.com/npgsql/npgsql/d3768398c17877b3a916c3c4d87e8e11698991fc/LICENSE"
+    },
+    {
+      "file": "Duende-Apache-2.0.txt",
+      "sha256": "4ee4cb22a80a0c00799b326949ce89349502418bd08abc0e75f53b55b11441f1",
+      "source": "https://raw.githubusercontent.com/DuendeSoftware/foss/ab00474eb5311c3b4431b992e7296e779f5904aa/LICENSE (identical at IdentityModel revision 47a77f2dbda08f418ec95af04fc75529768dc1e2)"
+    }
+  ],
+  "packages": [
+    {
+      "id": "Duende.IdentityModel.OidcClient",
+      "version": "7.1.1",
+      "repository": "https://github.com/DuendeSoftware/foss",
+      "texts": [
+        "Duende-Apache-2.0.txt"
+      ],
+      "assets": [
+        "runtime:Duende.IdentityModel.OidcClient.dll"
+      ],
+      "packageRevision": "ab00474eb5311c3b4431b992e7296e779f5904aa",
+      "licenseRevision": "ab00474eb5311c3b4431b992e7296e779f5904aa"
+    },
+    {
+      "id": "Duende.IdentityModel",
+      "version": "8.1.0",
+      "repository": "https://github.com/DuendeSoftware/foss",
+      "texts": [
+        "Duende-Apache-2.0.txt"
+      ],
+      "assets": [
+        "runtime:Duende.IdentityModel.dll"
+      ],
+      "packageRevision": "47a77f2dbda08f418ec95af04fc75529768dc1e2",
+      "licenseRevision": "47a77f2dbda08f418ec95af04fc75529768dc1e2"
+    },
+    {
+      "id": "FSharp.Core",
+      "version": "10.1.401",
+      "repository": "https://github.com/dotnet/dotnet",
+      "texts": [
+        "Microsoft-MIT.txt"
+      ],
+      "assets": [
+        "resources:cs/FSharp.Core.resources.dll",
+        "resources:de/FSharp.Core.resources.dll",
+        "resources:es/FSharp.Core.resources.dll",
+        "resources:fr/FSharp.Core.resources.dll",
+        "resources:it/FSharp.Core.resources.dll",
+        "resources:ja/FSharp.Core.resources.dll",
+        "resources:ko/FSharp.Core.resources.dll",
+        "resources:pl/FSharp.Core.resources.dll",
+        "resources:pt-BR/FSharp.Core.resources.dll",
+        "resources:ru/FSharp.Core.resources.dll",
+        "resources:tr/FSharp.Core.resources.dll",
+        "resources:zh-Hans/FSharp.Core.resources.dll",
+        "resources:zh-Hant/FSharp.Core.resources.dll",
+        "runtime:FSharp.Core.dll"
+      ],
+      "packageRevision": "e34a38d2ae1fc26406a317517196e55c68ff83ab",
+      "licenseRevision": "e34a38d2ae1fc26406a317517196e55c68ff83ab"
+    },
+    {
+      "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
+      "version": "10.0.13",
+      "repository": "https://github.com/dotnet/dotnet",
+      "texts": [
+        "Microsoft-MIT.txt",
+        "DotNet-Foundation-MIT.txt",
+        "AspNetCore-NOTICES.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.AspNetCore.Authentication.JwtBearer.dll"
+      ],
+      "packageRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
+      "licenseRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699"
+    },
+    {
+      "id": "Microsoft.AspNetCore.Authentication.OpenIdConnect",
+      "version": "10.0.13",
+      "repository": "https://github.com/dotnet/dotnet",
+      "texts": [
+        "Microsoft-MIT.txt",
+        "DotNet-Foundation-MIT.txt",
+        "AspNetCore-NOTICES.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.AspNetCore.Authentication.OpenIdConnect.dll"
+      ],
+      "packageRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
+      "licenseRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699"
+    },
+    {
+      "id": "Microsoft.Bcl.Cryptography",
+      "version": "10.0.2",
+      "repository": "https://github.com/dotnet/dotnet",
+      "texts": [
+        "Microsoft-MIT.txt",
+        "DotNet-Foundation-MIT.txt",
+        "Runtime-NOTICES.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.Bcl.Cryptography.dll"
+      ],
+      "packageRevision": "44525024595742ebe09023abe709df51de65009b",
+      "licenseRevision": "44525024595742ebe09023abe709df51de65009b"
+    },
+    {
+      "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+      "version": "10.0.0",
+      "repository": "https://github.com/dotnet/dotnet",
+      "texts": [
+        "Microsoft-MIT.txt",
+        "DotNet-Foundation-MIT.txt",
+        "Runtime-NOTICES.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.Extensions.DependencyInjection.Abstractions.dll"
+      ],
+      "packageRevision": "b0f34d51fccc69fd334253924abd8d6853fad7aa",
+      "licenseRevision": "b0f34d51fccc69fd334253924abd8d6853fad7aa"
+    },
+    {
+      "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+      "version": "10.0.13",
+      "repository": "https://github.com/dotnet/dotnet",
+      "texts": [
+        "Microsoft-MIT.txt",
+        "DotNet-Foundation-MIT.txt",
+        "Runtime-NOTICES.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.Extensions.DependencyInjection.Abstractions.dll"
+      ],
+      "packageRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
+      "licenseRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699"
+    },
+    {
+      "id": "Microsoft.Extensions.Logging.Abstractions",
+      "version": "10.0.0",
+      "repository": "https://github.com/dotnet/dotnet",
+      "texts": [
+        "Microsoft-MIT.txt",
+        "DotNet-Foundation-MIT.txt",
+        "Runtime-NOTICES.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.Extensions.Logging.Abstractions.dll"
+      ],
+      "packageRevision": "b0f34d51fccc69fd334253924abd8d6853fad7aa",
+      "licenseRevision": "b0f34d51fccc69fd334253924abd8d6853fad7aa"
+    },
+    {
+      "id": "Microsoft.Extensions.Logging.Abstractions",
+      "version": "10.0.13",
+      "repository": "https://github.com/dotnet/dotnet",
+      "texts": [
+        "Microsoft-MIT.txt",
+        "DotNet-Foundation-MIT.txt",
+        "Runtime-NOTICES.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.Extensions.Logging.Abstractions.dll"
+      ],
+      "packageRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
+      "licenseRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699"
+    },
+    {
+      "id": "Microsoft.IdentityModel.Abstractions",
+      "version": "8.19.2",
+      "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+      "texts": [
+        "IdentityModel-MIT.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.IdentityModel.Abstractions.dll"
+      ],
+      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
+      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+    },
+    {
+      "id": "Microsoft.IdentityModel.JsonWebTokens",
+      "version": "8.19.2",
+      "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+      "texts": [
+        "IdentityModel-MIT.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.IdentityModel.JsonWebTokens.dll"
+      ],
+      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
+      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+    },
+    {
+      "id": "Microsoft.IdentityModel.Logging",
+      "version": "8.19.2",
+      "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+      "texts": [
+        "IdentityModel-MIT.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.IdentityModel.Logging.dll"
+      ],
+      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
+      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+    },
+    {
+      "id": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
+      "version": "8.19.2",
+      "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+      "texts": [
+        "IdentityModel-MIT.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.IdentityModel.Protocols.OpenIdConnect.dll"
+      ],
+      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
+      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+    },
+    {
+      "id": "Microsoft.IdentityModel.Protocols",
+      "version": "8.19.2",
+      "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+      "texts": [
+        "IdentityModel-MIT.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.IdentityModel.Protocols.dll"
+      ],
+      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
+      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+    },
+    {
+      "id": "Microsoft.IdentityModel.Tokens",
+      "version": "8.19.2",
+      "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+      "texts": [
+        "IdentityModel-MIT.txt"
+      ],
+      "assets": [
+        "runtime:Microsoft.IdentityModel.Tokens.dll"
+      ],
+      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
+      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+    },
+    {
+      "id": "Npgsql",
+      "version": "10.0.3",
+      "repository": "https://github.com/npgsql/npgsql",
+      "texts": [
+        "PostgreSQL-NPGSQL.txt"
+      ],
+      "assets": [
+        "runtime:Npgsql.dll"
+      ],
+      "packageRevision": "d3768398c17877b3a916c3c4d87e8e11698991fc",
+      "licenseRevision": "d3768398c17877b3a916c3c4d87e8e11698991fc"
+    },
+    {
+      "id": "System.IdentityModel.Tokens.Jwt",
+      "version": "8.19.2",
+      "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
+      "texts": [
+        "IdentityModel-MIT.txt"
+      ],
+      "assets": [
+        "runtime:System.IdentityModel.Tokens.Jwt.dll"
+      ],
+      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
+      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+    }
+  ],
+  "host": {
+    "assets": [
+      "ClaimCore.Cli",
+      "ClaimCore.Database",
+      "ClaimCore.Web"
+    ],
+    "texts": [
+      "DotNet-Foundation-MIT.txt",
+      "Runtime-NOTICES.txt",
+      "SDK-Host-NOTICES.txt"
+    ]
+  }
+}

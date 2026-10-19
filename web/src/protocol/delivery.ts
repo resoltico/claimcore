@@ -1,61 +1,76 @@
-import {
-  endpoints,
-  deliveryOutcomePolicies,
-  deliveryMissingPolicies,
-  deliveryHostPolicies,
-  deliveryResolutionPolicies,
-  unresolvedKnowledge,
-  resolutionEvidencePolicies,
-  type EndpointId,
-} from "@contracts/endpoint-catalog";
+import { endpoints, type EndpointId } from "@contracts/client";
 import type { ApiResult, EndpointOutcome } from "../api/types";
+export type AttemptKnowledge =
+  "NOT_SENT" | "READ_SUCCEEDED" | "READ_FAILED" | "ACCEPTED" | "NOT_ACCEPTED" | "UNCONFIRMED";
+export type AccumulatedKnowledge = AttemptKnowledge | "CONTENT_EXCLUDED";
+export type ResolutionEvidence = "NONE" | "CONTENT_ACCEPTED" | "CONTENT_EXCLUDED";
+const outcomeKnowledge = (
+  tag: EndpointOutcome["outcome"]["tag"],
+  mutates: boolean,
+): AttemptKnowledge => {
+  switch (tag) {
+    case "ACCEPTED":
+    case "ALREADY_ACCEPTED":
+      return "ACCEPTED";
+    case "SUCCEEDED":
+    case "REVIEWED":
+      return "READ_SUCCEEDED";
+    case "REJECTED":
+    case "FAILED":
+    case "CANCELLED":
+      return mutates ? "NOT_ACCEPTED" : "READ_FAILED";
+    case "OUTCOME_UNKNOWN":
+      return "UNCONFIRMED";
+    default:
+      throw new Error("Uncovered endpoint outcome family.");
+  }
+};
 export const attemptKnowledge = (
   endpoint: EndpointId,
   result: ApiResult<EndpointOutcome>,
   dispatched = true,
-): string => {
-  if (result.kind === "deliveryFailure" && result.dispatched === false) {
-    dispatched = false;
-  }
+): AttemptKnowledge => {
   const { mutates } = endpoints.find((item) => item.id === endpoint)!;
-  if (!dispatched || result.kind === "deliveryFailure") {
-    return deliveryMissingPolicies.find((row) => row.Item1 === dispatched && row.Item2 === mutates)!
-      .Item3;
+  if (!dispatched || (result.kind === "deliveryFailure" && result.dispatched === false)) {
+    return "NOT_SENT";
+  }
+  if (result.kind === "deliveryFailure") {
+    return mutates ? "UNCONFIRMED" : "READ_FAILED";
   }
   if (result.kind === "hostFailure") {
-    return deliveryHostPolicies.find(
-      (row) =>
-        row.Item1 === mutates && row.Item2 === (result.failure.executionPhase === "NOT_STARTED"),
-    )!.Item3;
+    if (!mutates) {
+      return "READ_FAILED";
+    }
+    return result.failure.executionPhase === "NOT_STARTED" ? "NOT_ACCEPTED" : "UNCONFIRMED";
   }
-  const row = deliveryOutcomePolicies.find(
-    (item) => item.Item1 === result.value.outcome.tag && item.Item2 === mutates,
-  );
-  if (row === undefined) {
-    throw new Error("Uncovered endpoint outcome family.");
-  }
-  return row.Item3;
+  return outcomeKnowledge(result.value.outcome.tag, mutates);
 };
-export const accumulateKnowledge = (prior: string, attempt: string, evidence: string): string =>
-  deliveryResolutionPolicies.find((row) => row.Item1 === evidence)?.Item2 ??
-  (prior === unresolvedKnowledge ? prior : attempt);
-export const resolutionEvidence = (result: ApiResult<EndpointOutcome>): string => {
+export const accumulateKnowledge = (
+  prior: AccumulatedKnowledge,
+  attempt: AttemptKnowledge,
+  evidence: ResolutionEvidence,
+): AccumulatedKnowledge => {
+  if (evidence === "CONTENT_ACCEPTED") {
+    return "ACCEPTED";
+  }
+  if (evidence === "CONTENT_EXCLUDED") {
+    return "CONTENT_EXCLUDED";
+  }
+  return prior === "UNCONFIRMED" ? prior : attempt;
+};
+export const resolutionEvidence = (result: ApiResult<EndpointOutcome>): ResolutionEvidence => {
   if (result.kind !== "outcome" || !("operationId" in result.value)) {
     return "NONE";
   }
   const endpoint = endpoints.find((item) => item.id === result.value.endpoint)!;
-  if (endpoint.receiptScope === "NONE") {
+  if (endpoint.receiptScope === null) {
     return "NONE";
   }
-  const { outcome } = result.value;
-  const knowledge = attemptKnowledge(result.value.endpoint, result);
-  const diagnostic = outcome.tag === "REJECTED" ? outcome.data.diagnostic.id : "";
-  return (
-    resolutionEvidencePolicies.find(
-      (row) =>
-        (row.Item1 === "*" || row.Item1 === knowledge) &&
-        (row.Item2 === "*" || row.Item2 === outcome.tag) &&
-        (row.Item3 === "*" || row.Item3 === diagnostic),
-    )?.Item4 ?? "NONE"
-  );
+  if (attemptKnowledge(result.value.endpoint, result) === "ACCEPTED") {
+    return "CONTENT_ACCEPTED";
+  }
+  return result.value.outcome.tag === "REJECTED" &&
+    result.value.outcome.data.diagnostic.id === "OPERATION_CONTENT_CONFLICT"
+    ? "CONTENT_EXCLUDED"
+    : "NONE";
 };

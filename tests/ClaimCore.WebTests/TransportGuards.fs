@@ -1,6 +1,6 @@
 module ClaimCore.WebTests.TransportGuards
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -9,7 +9,6 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open Microsoft.AspNetCore.Http
-open ClaimCore.Contracts
 open ClaimCore.Web
 
 type private StalledStream() =
@@ -43,7 +42,7 @@ let private bodyFailure () =
     Expect.equal
         (HttpBody.readBounded 16 stream CancellationToken.None
          |> _.GetAwaiter().GetResult())
-        (Error HttpInputProblem.BodyUnreadable)
+        (Error BodyProblem.BodyUnreadable)
         "I/O failure is typed without message"
 
 let private bodyCancellation () =
@@ -54,7 +53,7 @@ let private bodyCancellation () =
 
     Expect.equal
         (pending.WaitAsync(TimeSpan.FromSeconds 1.) |> _.GetAwaiter().GetResult())
-        (Error HttpInputProblem.BodyCancelled)
+        (Error BodyProblem.BodyCancelled)
         "No acquisition after cancellation"
 
 let private bodyDeadline () =
@@ -63,7 +62,7 @@ let private bodyDeadline () =
 
     Expect.equal
         (pending.WaitAsync(TimeSpan.FromSeconds 12.) |> _.GetAwaiter().GetResult())
-        (Error HttpInputProblem.BodyCancelled)
+        (Error BodyProblem.BodyCancelled)
         "Absolute acquisition deadline"
 
 let private headers () =

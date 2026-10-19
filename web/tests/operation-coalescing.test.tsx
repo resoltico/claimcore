@@ -1,23 +1,19 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { act, renderHook } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { CurrentCase } from "../src/api/service";
 import { useOperationEditor } from "../src/hooks/operation/useOperationEditor";
-import { definition, fields, digest, response, runtime } from "./service-ui.fixtures";
+import { definition, fields, response, runtime } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
-  offers: ["CLOSE"].map((identifier) => ({
-    definition: identifier,
-    caseReference: null,
-    expectedRevision: null,
-    choices: [],
-  })),
-  historyDetails: ["SUMMARY", "FULL"],
-  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
+  advice: { acts: caseOffers(["CLOSE"]), history: ["SUMMARY", "FULL"] },
+
+  state: { tag: "LIVE", fields, disposition: "ACTIVE" },
 };
 
-it("coalesces duplicate digest activation while retention is pending", async () => {
+it("coalesces duplicate preview activation while retention is pending", async () => {
   let finish: ((value: Response) => void) | undefined;
   const pending = new Promise<Response>((resolve) => {
     finish = resolve;
@@ -44,7 +40,6 @@ it("coalesces duplicate digest activation while retention is pending", async () 
   await act(async () => {
     finish?.(
       response("case.preview", "REVIEWED", {
-        requestSha256: digest,
         review: {
           before: {
             caseReference: current.caseReference,

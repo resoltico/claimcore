@@ -8,8 +8,8 @@ import {
   openLabel,
 } from "./localization-support";
 import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
-import { endpoints } from "@contracts/endpoint-catalog";
-import { isResponse } from "@contracts/browser-contract";
+import { endpoints } from "@contracts/client";
+import { isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/api/types";
 import type { Language } from "../src/presentation/preferences";
 

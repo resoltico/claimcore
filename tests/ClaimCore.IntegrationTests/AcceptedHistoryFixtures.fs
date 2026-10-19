@@ -61,11 +61,16 @@ let internal seed (database: PostgresFixture.Database) claimant =
         let id = CaseReferenceId.encode fixture.InstallationId snapshot.Reference
 
         let actor =
-            view.Actor
+            view.Actor.Actor
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
         let scope =
-            StoredScope.Case(id, 1L, CaseActKind.Open, fixture.Calendar.DateAt view.ObservedAt)
+            StoredScope.Case(
+                id,
+                1L,
+                (CaseActKind.Business BusinessActKind.Open),
+                fixture.Calendar.DateAt view.ObservedAt
+            )
 
         let entry =
             LedgerEntries.create
@@ -163,7 +168,7 @@ let private grandfathering (database: PostgresFixture.Database) =
 
 let private appendTransitions (actor: IActorClaimsCore) =
     task {
-        for revision in 1L .. 49L do
+        for revision in 1L .. 59L do
             let act =
                 if revision % 2L = 1L then
                     BusinessCommand.Close
@@ -206,7 +211,12 @@ let private remainingHistory (actor: IActorClaimsCore) (query: HistoryRequest) =
         while cursor.IsSome do
             let! current = actor.History({ query with AfterCursor = cursor }, token)
             let current = historyPage current
-            Expect.equal current.Entries.Length 10 "Every FULL page respects the effective capacity"
+
+            Expect.equal
+                current.Entries.Length
+                10
+                "The final FULL page includes the remaining ten revisions"
+
             entries <- entries @ current.Entries
             cursor <- current.NextCursor
 
@@ -299,7 +309,7 @@ let private revokedFullHistory
 let private retainedPages (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let name = String.replicate 60000 "<"
+        let name = String.replicate 1024 "<"
         do! seed database name
 
         do! appendTransitions actor
@@ -316,7 +326,7 @@ let private retainedPages (database: PostgresFixture.Database) =
 
         let first = historyPage first
 
-        Expect.equal first.Entries.Length 10 "FULL fetch and extra-row detection use effective ten"
+        Expect.equal first.Entries.Length 50 "FULL shares the public page capacity"
 
         let! remaining =
             remainingHistory
@@ -335,7 +345,7 @@ let private retainedPages (database: PostgresFixture.Database) =
 
         Expect.equal
             revisions
-            [ 1L .. 50L ]
+            [ 1L .. 60L ]
             "Every retained revision traverses without omissions or duplicates"
 
         assertRetained name entries

@@ -53,7 +53,7 @@ module ActorAuthorization =
         |> List.find (fun (candidate, _, _) -> candidate = role)
         |> fun (_, _, capabilities) -> capabilities
 
-    let rolesForCapability capability =
+    let rolesFor capability =
         roles |> List.filter (fun role -> List.contains capability (capabilities role))
 
     /// Permanent role/principal invariant, separate from the evolving capability matrix.
@@ -63,64 +63,78 @@ module ActorAuthorization =
         | Role.DataSteward -> true
         | _ -> false
 
-    let private covers resource scope =
-        match resource, scope with
-        | _, GrantScope.Installation -> true
-        | ResourceScope.Case target, GrantScope.Case granted ->
-            target <> Guid.Empty && target = granted
-        | _ -> false
+    let invalidRoles principal =
+        if PrincipalKey.isHuman principal then
+            []
+        else
+            roles |> List.filter humanOnlyRole
 
-    let validActor principal (actor: ActorAuthority) =
-        actor.ActorId <> Guid.Empty
-        && actor.Enabled
-        && actor.Principal = principal
-        && (PrincipalKey.isHuman principal
-            || actor.Grants |> List.forall (fun grant -> not (humanOnlyRole grant.Role)))
+    let readRoles principal =
+        rolesFor Capability.ReadCase
+        |> List.filter (fun role -> PrincipalKey.isHuman principal || not (humanOnlyRole role))
 
-    let can principal actor capability resource =
+    let validActor principal (view: AuthorityView) =
+        let loaded =
+            view.Installation @ (view.Cases |> Map.values |> Seq.collect id |> Seq.toList)
+
+        view.Actor
+        |> Option.exists (fun actor ->
+            actor.ActorId <> Guid.Empty
+            && actor.Enabled
+            && actor.Principal = principal
+            && (PrincipalKey.isHuman principal || loaded |> List.forall (humanOnlyRole >> not)))
+
+    let can principal (view: AuthorityView) capability resource =
         let humanOnly =
             capability = Capability.Steward || capability = Capability.ManageAuthority
 
-        let validResource =
+        let scoped =
             match resource with
-            | ResourceScope.Case id ->
+            | ResourceScope.Installation -> Some view.Installation
+            | ResourceScope.Case id when
                 id <> Guid.Empty
                 && capability <> Capability.ManageAuthority
                 && capability <> Capability.ReadAuthority
-            | ResourceScope.Installation -> true
+                ->
+                Some(view.Installation @ (view.Cases |> Map.tryFind id |> Option.defaultValue []))
+            | _ -> None
 
-        actor
-        |> Option.exists (fun authority ->
-            validResource
-            && validActor principal authority
-            && (not humanOnly || PrincipalKey.isHuman principal)
-            && (authority.Grants
-                |> List.exists (fun grant ->
-                    covers resource grant.Scope
-                    && List.contains capability (capabilities grant.Role))))
+        validActor principal view
+        && (not humanOnly || PrincipalKey.isHuman principal)
+        && (scoped
+            |> Option.exists (
+                List.exists (fun role -> List.contains capability (capabilities role))
+            ))
 
     let private ordinaryActs =
         Map.ofList
             [
-                CaseActKind.Open, Capability.Register
-                CaseActKind.AmendRegistration, Capability.Register
-                CaseActKind.Decide, Capability.Decide
-                CaseActKind.WithdrawDecision, Capability.Decide
-                CaseActKind.RecordPayment, Capability.RecordPayment
-                CaseActKind.ClearPayment, Capability.RecordPayment
-                CaseActKind.Close, Capability.Close
-                CaseActKind.Reopen, Capability.Close
-                CaseActKind.Void, Capability.Steward
-                CaseActKind.Reinstate, Capability.Steward
-                CaseActKind.Erase, Capability.Steward
+                (CaseActKind.Business BusinessActKind.Open), Capability.Register
+                (CaseActKind.Business BusinessActKind.AmendRegistration), Capability.Register
+                (CaseActKind.Business BusinessActKind.Decide), Capability.Decide
+                (CaseActKind.Business BusinessActKind.WithdrawDecision), Capability.Decide
+                (CaseActKind.Business BusinessActKind.RecordPayment), Capability.RecordPayment
+                (CaseActKind.Business BusinessActKind.ClearPayment), Capability.RecordPayment
+                (CaseActKind.Business BusinessActKind.Close), Capability.Close
+                (CaseActKind.Business BusinessActKind.Reopen), Capability.Close
+                (CaseActKind.Stewardship StewardshipActKind.Void), Capability.Steward
+                (CaseActKind.Stewardship StewardshipActKind.Reinstate), Capability.Steward
+                (CaseActKind.Stewardship StewardshipActKind.Erase), Capability.Steward
             ]
+
+    let correctionCapability =
+        function
+        | CorrectionGroup.Registration -> Capability.Register
+        | CorrectionGroup.Decision -> Capability.Decide
+        | CorrectionGroup.Payment -> Capability.RecordPayment
 
     let correctionGroups =
         [
-            "registration", Capability.Register
-            "decision", Capability.Decide
-            "payment", Capability.RecordPayment
+            CorrectionGroup.Registration
+            CorrectionGroup.Decision
+            CorrectionGroup.Payment
         ]
+        |> List.map (fun group -> group, correctionCapability group)
 
     let private correctionCapabilities = correctionGroups |> List.map snd
 
@@ -131,18 +145,18 @@ module ActorAuthorization =
             [
                 match correction.Registration with
                 | RegistrationCorrection.Keep -> ()
-                | _ -> yield (correctionGroups |> List.find (fst >> (=) "registration") |> snd)
+                | _ -> yield correctionCapability CorrectionGroup.Registration
                 match correction.Decision with
                 | DecisionCorrection.Keep -> ()
-                | _ -> yield (correctionGroups |> List.find (fst >> (=) "decision") |> snd)
+                | _ -> yield correctionCapability CorrectionGroup.Decision
                 match correction.Payment with
                 | PaymentCorrection.Keep -> ()
-                | _ -> yield (correctionGroups |> List.find (fst >> (=) "payment") |> snd)
+                | _ -> yield correctionCapability CorrectionGroup.Payment
             ]
         | act -> [ ordinaryActs[CaseActs.kind act] ]
 
     let canAdvertise principal actor resource kind =
-        if kind = CaseActKind.CorrectCase then
+        if kind = (CaseActKind.Business BusinessActKind.CorrectCase) then
             correctionCapabilities
             |> List.exists (fun capability -> can principal actor capability resource)
         else
@@ -153,30 +167,15 @@ module ActorAuthorization =
         && (requiredCapabilities act
             |> List.forall (fun capability -> can principal actor capability resource))
 
-    let visibility principal (actor: ActorAuthority) =
-        if not (validActor principal actor) then
+    let visibility principal (view: AuthorityView) =
+        if not (validActor principal view) then
             None
+        elif can principal view Capability.ReadCase ResourceScope.Installation then
+            Some CaseVisibility.Every
+        elif view.HasAssignedCases then
+            Some CaseVisibility.Assigned
         else
-            let scopes =
-                actor.Grants
-                |> List.filter (fun grant ->
-                    List.contains Capability.ReadCase (capabilities grant.Role))
-                |> List.map _.Scope
-
-            if List.contains GrantScope.Installation scopes then
-                Some CaseVisibility.Every
-            else
-                let cases =
-                    scopes
-                    |> List.choose (function
-                        | GrantScope.Case id when id <> Guid.Empty -> Some id
-                        | _ -> None)
-                    |> List.distinct
-
-                if List.isEmpty cases then
-                    None
-                else
-                    Some(CaseVisibility.Only cases)
+            None
 
 module Roles =
     let all = ActorAuthorization.roles

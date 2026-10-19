@@ -1,0 +1,266 @@
+module ClaimCore.Tests.OpenApiConformanceTests
+
+open System
+open System.IO
+open System.Text
+open System.Text.Json
+open System.Text.Json.Nodes
+open Expecto
+open Microsoft.OpenApi
+open global.Json.Schema
+open ClaimCore.Wire
+open ClaimCore.TestSupport
+
+let private emitted () =
+    OpenApi.emit () |> Encoding.UTF8.GetString
+
+let private parser () =
+    let result = OpenApiDocument.Parse(emitted (), "json")
+
+    Expect.isEmpty
+        (nonNull result.Diagnostic).Errors
+        "Independent OpenAPI parser admits the complete document"
+
+    Expect.equal (nonNull result.Document).Paths.Count 12 "All twelve operations are present"
+    let broken = OpenApiDocument.Parse("{\"openapi\":\"3.1.0\",\"paths\":{}}", "json")
+
+    Expect.isNonEmpty
+        (nonNull broken.Diagnostic).Errors
+        "Missing required info is a rejecting control"
+
+let private child (name: string) (node: JsonNode) = node[name] |> nonNull
+
+let private schema (document: JsonNode) endpoint response =
+    let op =
+        document
+        |> child "paths"
+        |> child (Endpoint.path endpoint)
+        |> child ((Endpoint.method endpoint).ToLowerInvariant())
+
+    let selected =
+        if response then
+            op |> child "responses" |> child "200"
+        else
+            op |> child "requestBody"
+        |> child "content"
+        |> child "application/json"
+        |> child "schema"
+
+    let root = JsonObject()
+    root["$schema"] <- JsonValue.Create "https://json-schema.org/draft/2020-12/schema"
+    root["components"] <- (document |> child "components").DeepClone()
+    root["allOf"] <- JsonArray(selected.DeepClone())
+    JsonSchema.FromText(root.ToJsonString(), BuildOptions(Dialect = Dialect.Draft202012))
+
+let private fixture name =
+    File.ReadAllText(Path.Combine(RepositoryRoot.find (), "tests/fixtures", name))
+    |> JsonDocument.Parse
+
+let private evaluate (schema: JsonSchema) (value: JsonElement) =
+    schema.Evaluate(value, EvaluationOptions(RequireFormatValidation = true)).IsValid
+
+let private corpus response filename () =
+    let document = JsonNode.Parse(emitted ()) |> nonNull
+    use examples = fixture filename
+    let mutable endpoints = Set.empty
+
+    for example in examples.RootElement.GetProperty("cases").EnumerateArray() do
+        let endpoint =
+            example.GetProperty("endpoint").GetString()
+            |> nonNull
+            |> Endpoint.tryParse
+            |> Option.get
+
+        if response || endpoint <> Endpoint.Session then
+            let selected = schema document endpoint response
+            let value = example.GetProperty "value"
+
+            Expect.isTrue
+                (evaluate selected value)
+                "Independent 2020-12 validator admits the frozen positive example"
+
+            let altered = JsonNode.Parse(value.GetRawText()) |> nonNull
+            altered["unexpectedMember"] <- JsonValue.Create true
+            use invalid = JsonDocument.Parse(altered.ToJsonString())
+
+            Expect.isFalse
+                (evaluate selected invalid.RootElement)
+                "Closed schema rejects an added member"
+
+            endpoints <- Set.add endpoint endpoints
+
+    let expected = if response then 12 else 11
+
+    Expect.equal
+        endpoints.Count
+        expected
+        "Corpus covers each endpoint with a request body or response"
+
+let private validatorControls () =
+    let constrained =
+        JsonSchema.FromText(
+            "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\",\"minimum\":1}},\"additionalProperties\":false}"
+        )
+
+    for text in [ "{}"; "{\"value\":0}"; "{\"value\":\"1\"}"; "{\"value\":1,\"extra\":true}" ] do
+        use value = JsonDocument.Parse text
+
+        Expect.isFalse
+            (evaluate constrained value.RootElement)
+            "Validator rejects required, bound, type and closed-object violations"
+
+let private responseStatuses () =
+    let document = JsonNode.Parse(emitted ()) |> nonNull
+    let statuses = HostFailures.all |> List.map HostFailures.status |> List.distinct
+
+    let responses =
+        document
+        |> child "paths"
+        |> child "/api/context"
+        |> child "post"
+        |> child "responses"
+
+    for status in statuses do
+        let selected =
+            responses
+            |> child (string status)
+            |> child "content"
+            |> child "application/json"
+            |> child "schema"
+
+        let root = JsonObject()
+        root["components"] <- (document |> child "components").DeepClone()
+        root["allOf"] <- JsonArray(selected.DeepClone())
+
+        let validator =
+            JsonSchema.FromText(root.ToJsonString(), BuildOptions(Dialect = Dialect.Draft202012))
+
+        for reason in HostFailures.all do
+            use body = JsonDocument.Parse(HostFailures.encode reason)
+
+            Expect.equal
+                (evaluate validator body.RootElement)
+                (HostFailures.status reason = status)
+                "HTTP response status permits exactly its fixed typed failure policies."
+
+let private generatedSchemas document =
+    [
+        for endpoint in Endpoint.all do
+            for response in [ false; true ] do
+                if response || endpoint <> Endpoint.Session then
+                    yield (endpoint, response), schema document endpoint response
+    ]
+    |> Map.ofList
+
+let private generatedCorpus () =
+    let root = RepositoryRoot.find ()
+    let document = JsonNode.Parse(emitted ()) |> nonNull
+    let schemas = generatedSchemas document
+
+    let frames =
+        JsonSchema.FromText(
+            File.ReadAllText(Path.Combine(root, "contracts/cli-frame.schema.json")),
+            BuildOptions(Dialect = Dialect.Draft202012)
+        )
+
+    use examples =
+        JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "contracts/corpus.json")))
+
+    let mutable positive, negative = 0, 0
+    let mutable seen = Set.empty
+
+    for example in examples.RootElement.GetProperty("cases").EnumerateArray() do
+        let endpoint =
+            example.GetProperty("endpoint").GetString()
+            |> nonNull
+            |> Endpoint.tryParse
+            |> Option.get
+
+        let response = example.GetProperty("direction").GetString() = "response"
+        let expected = example.GetProperty("valid").GetBoolean()
+        let value = example.GetProperty "value"
+
+        let actual =
+            if not response && endpoint = Endpoint.Session then
+                use invocation =
+                    JsonDocument.Parse(
+                        "{\"endpoint\":\"session\",\"input\":" + value.GetRawText() + "}"
+                    )
+
+                evaluate frames invocation.RootElement
+            else
+                evaluate schemas[endpoint, response] value
+
+        Expect.equal actual expected (example.GetProperty("id").GetString() |> nonNull)
+        seen <- Set.add (endpoint, response) seen
+
+        if expected then
+            positive <- positive + 1
+        else
+            negative <- negative + 1
+
+    Expect.equal seen.Count 24 "Every endpoint and direction reaches the independent validator."
+    Expect.isGreaterThan positive 0 "Generated positive cases execute."
+    Expect.isGreaterThan negative 0 "Generated rejecting controls execute."
+
+let private securityRequirements () =
+    use document = JsonDocument.Parse(emitted ())
+
+    let schemes =
+        document.RootElement.GetProperty("components").GetProperty("securitySchemes")
+
+    let csrf = schemes.GetProperty("antiforgery")
+    Expect.equal (csrf.GetProperty("type").GetString()) "apiKey" "CSRF is a separate credential."
+    Expect.equal (csrf.GetProperty("in").GetString()) "header" "CSRF travels in a header."
+
+    Expect.equal
+        (csrf.GetProperty("name").GetString())
+        "X-ClaimCore-Antiforgery"
+        "The named header matches host admission."
+
+    for endpoint in Endpoint.all do
+        let operation =
+            document.RootElement
+                .GetProperty("paths")
+                .GetProperty(Endpoint.path endpoint)
+                .GetProperty((Endpoint.method endpoint).ToLowerInvariant())
+
+        let actual =
+            operation.GetProperty("security").EnumerateArray()
+            |> Seq.map (fun requirement ->
+                requirement.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq)
+            |> Set.ofSeq
+
+        let expected =
+            match endpoint with
+            | Endpoint.Session ->
+                [ Set.empty; Set.singleton "cookieAuth"; Set.singleton "bearerAuth" ]
+            | Endpoint.SessionLogout -> [ Set.ofList [ "cookieAuth"; "antiforgery" ] ]
+            | _ -> [ Set.ofList [ "cookieAuth"; "antiforgery" ]; Set.singleton "bearerAuth" ]
+
+        Expect.equal
+            actual
+            (Set.ofList expected)
+            "Cookie and bearer alternatives have endpoint-specific CSRF requirements."
+
+[<Tests>]
+let tests =
+    testList
+        "independent OpenAPI and JSON Schema validation"
+        [
+            testCase "OpenAPI 3.1 parser accepts inventory and rejects incomplete document" parser
+            testCase
+                "request corpus validates independently with rejecting controls"
+                (corpus false "wire-request-examples.json")
+            testCase
+                "response corpus validates independently with rejecting controls"
+                (corpus true "wire-response-examples.json")
+            testCase "JSON Schema 2020-12 validator enforces negative controls" validatorControls
+            testCase "HTTP failure schemas bind their declared status" responseStatuses
+            testCase
+                "OpenAPI security alternatives preserve cookie CSRF and bearer admission"
+                securityRequirements
+            testCase
+                "all generated positive and negative corpus cases validate independently"
+                generatedCorpus
+        ]

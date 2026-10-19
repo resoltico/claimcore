@@ -4,7 +4,7 @@ import {
   type PreparedRequest,
 } from "../../protocol/preparedRequest";
 import { useEffect, useState, useRef } from "react";
-import { buildRequest, wireSchemas } from "@contracts/browser-contract";
+import { buildRequest, wireSchemas } from "../../protocol/client";
 import { service, resultNotice } from "../../api/service";
 import { localNotice, type Notice } from "../../api/notices";
 import { formValue, type FormValues } from "../../protocol/forms";

@@ -34,8 +34,8 @@ const AvailableCommands = ({
     <section aria-labelledby="commands-title">
       <h2 id="commands-title">{p.text("ui.availableCommands")}</h2>
       <div className="actions">
-        {current.offers
-          .map((offer) => offer.definition)
+        {current.advice.acts
+          .map((offer) => offer.act)
           .filter(isCaseAct)
           .map((command) => (
             <Button

@@ -1,13 +1,19 @@
 module ClaimCore.Tests.RemoteClientTests
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.Security.Cryptography
+open System.Net
+open System.Net.Http
+open System.Text.Json
+open System.Threading
+open System.Threading.Tasks
+open Duende.IdentityModel.Client
+open Duende.IdentityModel.OidcClient
 open System.Text
 open Expecto
 open ClaimCore.Cli
-open ClaimCore.Contracts
 open ClaimCore.Application
 
 let private validConfiguration () =
@@ -56,187 +62,177 @@ let private failClosedConfiguration () =
         (Error ClientFailure.Configuration)
         "Automation cannot proceed without private secret file"
 
-let private oidcMetadata () =
-    let issuer = Uri("https://identity.example.test/realms/synthetic")
+let private issuer = Uri "https://identity.example.test/realms/synthetic"
 
-    let valid =
-        """{"issuer":"https://identity.example.test/realms/synthetic","authorization_endpoint":"https://identity.example.test/authorize","token_endpoint":"https://identity.example.test/token","jwks_uri":"https://identity.example.test/keys"}"""
+let private metadata =
+    """{"issuer":"https://identity.example.test/realms/synthetic","authorization_endpoint":"https://identity.example.test/realms/synthetic/authorize","token_endpoint":"https://identity.example.test/realms/synthetic/token","jwks_uri":"https://identity.example.test/realms/synthetic/keys"}"""
 
-    match OidcClient.parseDiscovery issuer (Encoding.UTF8.GetBytes(valid)) with
-    | Ok endpoints -> Expect.equal endpoints.Token.Scheme "https" "HTTPS token endpoint"
-    | Error _ -> failtest "Expected valid OIDC metadata"
+let private keys =
+    """{"keys":[{"kty":"RSA","n":"AQAB","e":"AQAB","kid":"synthetic"}]}"""
 
-    for changed in
+let private provider document =
+    { new HttpMessageHandler() with
+        override _.SendAsync(request, _) =
+            let reply = new HttpResponseMessage(HttpStatusCode.OK)
+
+            let json =
+                if
+                    (request.RequestUri |> nonNull)
+                        .AbsolutePath.EndsWith("/keys", StringComparison.Ordinal)
+                then
+                    keys
+                else
+                    document
+
+            reply.Content <- new StringContent(json, Encoding.UTF8, "application/json")
+            Task.FromResult reply
+    }
+
+let private discovery () =
+    let documents =
         [
-            valid.Replace(
-                "identity.example.test/realms/synthetic",
-                "evil.example.test/realms/synthetic"
-            )
-            valid.Replace(
-                "https://identity.example.test/token",
-                "http://identity.example.test/token"
-            )
-            valid.Replace(
-                "https://identity.example.test/token",
-                "https://identity.example.test/token?leak=1"
-            )
-            valid.Replace(
-                "\"issuer\":",
-                "\"issuer\":\"https://identity.example.test/realms/synthetic\",\"issuer\":"
-            )
-            "{"
-        ] do
-        Expect.isError
-            (OidcClient.parseDiscovery issuer (Encoding.UTF8.GetBytes(changed)))
-            "Issuer mismatch, downgrade, and malformed metadata refused"
+            metadata, true
+            metadata.Replace(
+                "\"issuer\":\"https://identity.example.test",
+                "\"issuer\":\"https://evil.example.test"
+            ),
+            false
+            metadata.Replace(
+                "https://identity.example.test/realms/synthetic/token",
+                "http://identity.example.test/realms/synthetic/token"
+            ),
+            false
+            metadata.Replace(
+                "https://identity.example.test/realms/synthetic/token",
+                "https://evil.example.test/realms/synthetic/token"
+            ),
+            false
+            "{", false
+        ]
 
-let private pkce () =
-    let session = OidcClient.createPkceSession ()
+    for document, valid in documents do
+        use handler = provider document
+        use client = new HttpClient(handler, false)
+        client.MaxResponseContentBufferSize <- 65536L
 
-    let digest =
-        SHA256.HashData(Encoding.ASCII.GetBytes(session.Verifier))
+        let result =
+            OidcClient.discover client issuer CancellationToken.None
+            |> _.GetAwaiter().GetResult()
+
+        Expect.equal (Result.isOk result) valid "Default maintained discovery policy"
+
+let private libraryConfiguration () =
+    use browser = new LoopbackBrowser()
+    let options = InteractiveAuthorization.configuration issuer "claimcore-cli" browser
+    Expect.isFalse options.LoadProfile "No userinfo request"
+    Expect.isTrue (isNull options.IdentityTokenValidator) "No identity-token validator is installed"
+    Expect.equal options.Scope "openid" "Only the protocol scope"
+    Expect.isTrue options.Policy.Discovery.RequireHttps "HTTPS discovery default retained"
+    Expect.isTrue options.Policy.Discovery.ValidateIssuerName "Exact issuer policy retained"
+    Expect.isTrue options.Policy.Discovery.ValidateEndpoints "Endpoint policy retained"
+
+    Expect.isTrue
+        (options.RedirectUri.StartsWith("http://127.0.0.1:", StringComparison.Ordinal))
+        "Only loopback callback is HTTP"
+
+let private libraryPkce () =
+    use browser = new LoopbackBrowser()
+    use handler = provider metadata
+    use client = new HttpClient(handler, false)
+    let options = InteractiveAuthorization.configuration issuer "claimcore-cli" browser
+    options.BackchannelHandler <- handler
+    options.HttpClientFactory <- Func<OidcClientOptions, HttpClient>(fun _ -> client)
+    let oidc = Duende.IdentityModel.OidcClient.OidcClient options
+
+    let state =
+        oidc.PrepareLoginAsync(cancellationToken = CancellationToken.None).GetAwaiter().GetResult()
+
+    let query = Uri(state.StartUrl).Query
+
+    Expect.isTrue
+        (query.Contains("code_challenge_method=S256"))
+        "Library authorization requests PKCE S256"
+
+    let challenge =
+        SHA256.HashData(Encoding.ASCII.GetBytes state.CodeVerifier)
         |> Convert.ToBase64String
         |> _.TrimEnd('=')
         |> _.Replace('+', '-')
         |> _.Replace('/', '_')
 
-    Expect.equal session.Challenge digest "S256 challenge is bound to verifier"
-    Expect.isTrue (OidcClient.stateMatches session.State session.State) "Exact state"
-    Expect.isFalse (OidcClient.stateMatches session.State (session.State + "A")) "Changed state"
+    Expect.isTrue
+        (query.Contains("code_challenge=" + challenge))
+        "Challenge matches the library verifier"
 
-    let endpoints =
-        {
-            Authorization = Uri("https://identity.example.test/authorize")
-            Token = Uri("https://identity.example.test/token")
-            Jwks = Uri("https://identity.example.test/keys")
-        }
+    let result =
+        oidc
+            .ProcessResponseAsync(
+                browser.RedirectUri + "?code=synthetic&state=forged",
+                state,
+                cancellationToken = CancellationToken.None
+            )
+            .GetAwaiter()
+            .GetResult()
 
-    let redirect = Uri("http://127.0.0.1:49152/")
+    Expect.isTrue result.IsError "The library rejects a forged callback state"
 
-    match OidcClient.authorizationUri endpoints "claimcore-cli" redirect session with
-    | Ok uri ->
-        Expect.stringContains uri.Query "code_challenge_method=S256" "Mandatory PKCE"
-        Expect.stringContains uri.Query "response_type=code" "Authorization code only"
+let private tokenParts () =
+    let clock = TimeProvider.System
 
-        Expect.stringContains
-            uri.Query
-            "redirect_uri=http%3A%2F%2F127.0.0.1%3A49152"
-            "Native loopback origin uses the provider's any-port registration"
-    | Error _ -> failtest "Expected loopback redirect"
-
-    Expect.isError
-        (OidcClient.authorizationUri
-            endpoints
-            "claimcore-cli"
-            (Uri("https://remote.example.test/callback"))
-            session)
-        "Remote redirect refused"
-
-let private tokenResponse () =
-    let valid =
-        """{"access_token":"synthetic-token","token_type":"Bearer","expires_in":300}"""
+    let create kind value expiry =
+        AccessTokens.fromPartsAt clock (clock.GetUtcNow()) (clock.GetTimestamp()) kind value expiry
 
     for kind in [ "Bearer"; "bearer"; "BEARER"; "bEaReR" ] do
-        let body = valid.Replace("Bearer", kind)
-
-        match OAuthTokenClient.parseTokenResponse (Encoding.UTF8.GetBytes(body)) with
+        match create kind "synthetic-token" 300 with
         | Ok token ->
-            Expect.equal (token.ToString()) "<redacted access token>" "Secret is not printable"
-            Expect.equal token.Authorization.Scheme "Bearer" "Canonical bearer scheme"
-            Expect.equal token.Authorization.Parameter "synthetic-token" "Exact credential bytes"
-        | Error _ -> failtest "Expected bounded synthetic token with case-insensitive type"
+            Expect.equal (token.ToString()) "<redacted access token>" "Token is not printable"
+            Expect.equal token.Authorization.Scheme "Bearer" "Canonical bearer header"
+        | Error _ -> failtest "Valid typed token response was refused"
+
+    for kind, value, expiry in
+        [
+            ("Basic", "synthetic", 300)
+            ("Bearer", "", 300)
+            ("Bearer", "has space", 300)
+            ("Bearer", "has\r\nheader", 300)
+            ("Bearer", "é", 300)
+            ("Bearer", "synthetic", 0)
+        ] do
+        Expect.isError (create kind value expiry) "Invalid token metadata never reaches a header"
+
+let private callbackTransport () =
+    let host = "127.0.0.1:49152"
+    let request = $"GET /?code=synthetic&state=opaque HTTP/1.1\r\nHost: {host}\r\n\r\n"
+
+    Expect.isOk
+        (LoopbackTransport.parseRequest host request)
+        "Callback query remains opaque for library validation"
 
     for invalid in
         [
-            valid.Replace("Bearer", "Basic")
-            valid.Replace("Bearer", "")
-            valid.Replace("Bearer", " Bearer")
-            valid.Replace("Bearer", "Bearer ")
-            valid.Replace("\"Bearer\"", "null")
-            valid.Replace("\"Bearer\"", "1")
-            valid.Replace("token_type", "Token_Type")
-            valid.Replace("300", "0")
-            valid.Replace("synthetic-token", "")
-            "{"
-            "[]"
-            valid.Replace("\"token_type\":", "\"token_type\":\"Bearer\",\"token_type\":")
+            request.Replace(host, "127.0.0.1:49153")
+            request.Replace("GET /?", "GET /other?")
+            request.Replace("GET /?", "POST /?")
+            request.Replace("Host:", $"Host: {host}\r\nHost:")
         ] do
         Expect.isError
-            (OAuthTokenClient.parseTokenResponse (Encoding.UTF8.GetBytes(invalid)))
-            "Wrong type, expiry, empty token, and malformed JSON refused"
-
-let private callback () =
-    let host = "127.0.0.1:49152"
-    let issuer = "https://identity.example.test/realms/synthetic"
-    let state = "synthetic-state"
-
-    let query =
-        "/?code=synthetic-code&state=synthetic-state&iss="
-        + Uri.EscapeDataString(issuer)
-
-    let request = $"GET {query} HTTP/1.1\r\nHost: {host}\r\n\r\n"
-
-    Expect.equal
-        (LoopbackCallback.parseRequest host issuer state request)
-        (Ok "synthetic-code")
-        "Exact loopback callback"
-
-    Expect.isError
-        (LoopbackCallback.parseRequest host issuer "forged-state" request)
-        "Forged state refused"
-
-    Expect.isError
-        (LoopbackCallback.parseRequest "127.0.0.1:49153" issuer state request)
-        "Wrong listener host refused"
-
-let private hostileProviderBytes () =
-    let issuer = Uri("https://identity.example.test/realms/synthetic")
-
-    for data in
-        [
-            Unchecked.defaultof<byte array>
-            [| 0xffuy |]
-            Encoding.UTF8.GetBytes("null")
-            Encoding.UTF8.GetBytes("[0]")
-            Encoding.UTF8.GetBytes("{\"issuer\":\"\\ud800\"}")
-            Array.create 65537 (byte ' ')
-        ] do
-        Expect.isError
-            (OidcClient.parseDiscovery issuer data)
-            "Metadata reader is total and bounded"
-
-        Expect.isError
-            (OAuthTokenClient.parseTokenResponse data)
-            "Token reader is total and bounded"
-
-    for token in [ "has space"; "has\r\nheader"; "\u00e9" ] do
-        let json =
-            System.Text.Json.JsonSerializer.Serialize(
-                {|
-                    access_token = token
-                    token_type = "Bearer"
-                    expires_in = 60
-                |}
-            )
-
-        Expect.isError
-            (OAuthTokenClient.parseTokenResponse (Encoding.UTF8.GetBytes json))
-            "Invalid bearer text never reaches an HTTP header"
+            (LoopbackTransport.parseRequest host invalid)
+            "Only one exact loopback host and GET root"
 
 [<Tests>]
 let tests =
     testList
-        "CLI authentication"
+        "CLI maintained authentication"
         [
-            testCase
-                "hostile provider bytes and bearer header text are refused"
-                hostileProviderBytes
             testCase "HTTPS service configuration" validConfiguration
             testCase
                 "unsafe origins and absent automation secret are refused"
                 failClosedConfiguration
-            testCase "metadata pins issuer and TLS endpoints" oidcMetadata
-            testCase "authorization uses S256 PKCE and loopback state" pkce
-            testCase "tokens are bounded and redacted" tokenResponse
-            testCase "callback requires exact host and state" callback
+            testCase "maintained discovery enforces issuer HTTPS and endpoint host" discovery
+            testCase
+                "library configuration retains access-token-only constraints"
+                libraryConfiguration
+            testCase "library owns PKCE and callback state validation" libraryPkce
+            testCase "typed token data is bounded and redacted" tokenParts
+            testCase "loopback transport binds one exact host" callbackTransport
         ]

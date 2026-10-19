@@ -9,7 +9,7 @@ identity, authorization and outcomes; the store executes pure decisions against 
 ### CC-ARCH-001 — Component graph and compiled boundaries
 
 [The architecture manifest](../config/architecture.json) owns direct project references in both
-directions. Domain, RecordFormat, Application, ClientProtocol and Contracts call no clock, file,
+directions. Domain, RecordFormat, Application and Wire call no clock, file,
 environment, randomness or network APIs. Only Hosting and Database reference Postgres; only Web references
 Hosting. These referencer rules concern other projects, not a component's own types.
 TimeZoneInfo belongs only to Hosting, Database and Postgres. Compiled negative fixtures prove
@@ -20,31 +20,27 @@ transport dependencies. These controls reject specified violations, not every ex
 copy. Internals grants name a permitted referencer
 or an actual test project. Test projects reference only product or tooling projects.
 
-RecordFormat owns durable byte encodings. Contracts owns the endpoint catalogue, typed bindings
-and core-derived interaction definitions.
-ClientProtocol owns generic strict byte/schema admission, correlation and finite delivery policy,
-without core dependencies. ContractGenerator projects the same definitions into tracked native
-catalogue values and executable browser schemas/builders; complete inventory and byte checks
-reject missing, extra and stale outputs. Structural JSON Schema alone does not express the
-fingerprinted byte profile (UTF-8, duplicate names, Unicode, numeric lexemes and bounds). HostSecurity
-admits private files through its own original public-header C17 shim. Only scalar admission
-statuses and the admitted descriptor cross that native boundary; platform layouts and constants
-remain in C. The managed owner consumes that descriptor once. Shared native build plumbing also
-builds the separate test-only process supervisor, without sharing either mechanism or adding a
-product process-supervision dependency. Product native items belong only to HostSecurity;
-test executables belong only to their test projects.
-Postgres owns transactions, projection persistence, schema administration and verification.
-Hosting owns case-work composition, typed protocol dispatch and runtime lifetime. Its public service
-accepts verified subject facts and opaque admitted inputs and returns encoded replies with safe audit
-metadata. The typed runtime and actor factory remain internal to Hosting. Web references Hosting,
-ClientProtocol and HostSecurity; CLI references only
-ClientProtocol and HostSecurity. The published CLI excludes server semantic assemblies. Web verifies
-HTTP identity and transport admission; Hosting binds the principal and invokes the actor core.
-Hosting omits F# cross-assembly optimization data so the host compiler cannot import typed
-dispatch implementation through a protocol signature. CLI delivers generated-contract frames;
-Database is the separate owner administration process.
-Database references Application to validate principals and render shared ledger/authority values,
-so it does not duplicate their definitions. ContractGenerator derives artifacts from Contracts.
+RecordFormat owns durable bytes and supports only its versioned record readers and writers.
+Wire references no ClaimCore project. Its typed codecs supply request/reply readers, writers and
+schemas for all twelve endpoints. It also owns typed delivery, correlation and CLI frames.
+The OpenAPI contract derives from those codecs; the [API contract](api.md) owns the wire profile,
+fingerprint and tracked artifacts. ContractGenerator references Wire, Domain and Application to
+emit that contract and presentation descriptors. Generated TypeScript types support ordinary
+request object literals; clients have no generated builders or native F# catalogue.
+
+HostSecurity admits private files using managed APIs under the
+[private-input policy](operations.md#private-configuration). Test process capture and teardown use
+managed process APIs and are not a product dependency. Postgres owns transactions, scoped reads,
+projection persistence, schema administration and verification reads. Application owns pure ledger,
+authority, erasure, projection and checkpoint verification folds.
+
+Hosting is the case-work composition root. Its public service accepts verified subject facts and a
+Wire request, maps to Application, invokes the actor core and returns a typed Wire reply. Web owns
+HTTP authentication, admission, encoding and safe audit logging. Web references Hosting, Wire and
+HostSecurity; CLI references Wire and HostSecurity and embeds generated discovery artifacts.
+The published CLI excludes server semantic assemblies. Hosting exposes no Domain/Application
+objects through its public facade and needs no optimization-data suppression. Database is the
+separate owner administration process; it references Application for shared identities and outcomes.
 
 #### Durable records
 
@@ -64,10 +60,17 @@ are derived views, not independent acceptance evidence. Reads need no second acc
 or request-preparation store. [Operations](operations.md) defines the limits of this trust model.
 
 [RecordVersions](../src/ClaimCore.RecordFormat/Versions.fs) owns durable format identifiers.
-A format number changes only when its bytes change, and decoders dispatch explicitly by format.
-Before 1.0.0, releases may explicitly refuse older installations untouched. From 1.0.0, readers
+A format number identifies one byte grammar and its admissible value set, and decoders dispatch explicitly by format.
+Before 1.0.0, releases may explicitly replace the baseline and refuse older installations untouched. From 1.0.0, readers
 must retain every format a release wrote and schema changes require forward migrations.
 [Database admission](database.md#cc-db-001) refuses unsupported installations without conversion.
+
+Case requests use format 5 and snapshots format 4. Free-text names and stewardship reasons
+have a permanent bound of 1,024 UTF-8 bytes, inside a 32,768-byte framed payload bound.
+Authority, ledger-entry and case-identity formats remain 2. The independent Python oracle
+under [tests/fixtures/oracle](../tests/fixtures/oracle/generate_vectors.py) owns regression vectors.
+The replaced baseline refuses installations created by software through 0.10.0 untouched;
+keep those installations with their matching software.
 
 <a id="cc-run-001"></a>
 
@@ -89,12 +92,12 @@ read snapshot. Identity-provider membership and a database role grant no case au
 Only humans receive OWNER or DATA_STEWARD; at least one enabled human installation owner
 must remain. OWNER is authority administration and does not by itself grant case work.
 Absent, inaccessible and erased-beyond-view cases or operations have the same public refusal.
-Cursors carry a bounded HMAC-authenticated envelope. One ephemeral Hosting runtime key is shared
-by its actor facades; restart invalidates it. The envelope binds installation, principal, actor ID
-and enabled state, all sorted/deduplicated grants, endpoint, normalized query/resource/detail/order
-and continuation. Page size is excluded so callers may change limits. MAC verification precedes
-position use; the same REPEATABLE READ snapshot supplies authority and database time. Validity is
-issued ≤ database now < expiry, with a 15-minute lifetime. Tokens confer no rights.
+Cursors are unpadded canonical base64url JSON keysets owned by Application. They carry a
+folded reference, revision, actor UUID or grant position, with endpoint and resource bindings.
+They have no secret, MAC, issue time, expiry or authority binding and survive runtime restarts.
+Every page authorizes in its own read snapshot before decoding the position. Sharing or
+editing a valid position conveys no rights; page size and history detail may change after
+independent authorization.
 
 | Preset             | Capabilities                                                    |
 | ------------------ | --------------------------------------------------------------- |
@@ -111,8 +114,13 @@ correction; RecordPayment covers payment/clear and payment correction; Close cov
 Correction checks every requested REPLACE/CLEAR group, including unchanged reaffirmations.
 Installation ReadAuthority is required for actor listing, selected-actor grant paging and authority
 observation; case grants do not supply it. Public actor summaries exclude grants; selected grant
-pages load a bounded target header and grant rows in one REPEATABLE READ snapshot. Complete caller
-grants remain internal authorization and cursor-binding inputs, including when caller equals target. Human-only grants are enforced on their target as well as their executor.
+pages load a bounded target header and grant rows in one REPEATABLE READ snapshot. Caller authority loads installation grants and the case scopes that can influence that decision.
+A case request loads its target and, if a reused operation ID belongs to another case, that
+accepted entry’s scope: at most two cases. Identity authorization and receipt disclosure use
+those scopes in the same locked transaction or read snapshot. Context checks assigned
+visibility with EXISTS; list pages use a role-parameterized semi-join and never collect all
+assigned case IDs or grants. Authority review loads caller installation grants independently
+from the bounded selected-actor page, including when caller equals target. Human-only grants are enforced on their target as well as their executor.
 
 A receipt contains attribution ActorId and metadata; its snapshot is DISCLOSED, WITHHELD or ERASED.
 A current snapshot requires ReadCase; a superseded one requires ReadHistoryFull. Execute, replay,
@@ -149,14 +157,19 @@ ordering as a rejecting control. Lock, statement and idle-transaction timeouts b
 Every accepted case operation and authority change appends exactly one ledger entry in the
 transaction updating its projections. While accepted request content is retained, authorized
 exact replay returns the original acceptance metadata with snapshot disclosure evaluated in the
-current locked/read context. Different content under the same ID is refused. OUTCOME_UNKNOWN
+current locked/read context. Different content under the same ID is refused. Identity privacy checks use the accepted
+entry’s resource scope as well as permission on the current request’s target; these can be
+different cases. OUTCOME_UNKNOWN
 means a commit confirmation was lost. It does not prove rejection and never permits rebasing or
 replacement identity. Erased request content cannot be replayed. Reads use one REPEATABLE READ snapshot. Public actor and grant pages are bounded at 50 rows;
-FULL history uses an Application-owned capacity of 10 while SUMMARY remains 50. The
-RecordFormat payload bound and independent worst-escaping codec controls establish the FULL page's
-wire budget. A continuation follows the last included row; a short page is not necessarily terminal.
+Both history details use the [API page limit](api.md). Permanent field bounds and the independently computed worst-escaping page budget keep FULL pages within the response limit. A continuation follows the last included row; a short page is not necessarily terminal.
 
 Verification folds permanent record and authority invariants, compares projections and checks
 chain/commitments. It does not replay today’s capability matrix or admission rules against history.
 [Database](database.md) owns findings and operator exit codes. Normal read/replay checks the retained
 nonce and framed payload commitment before using stored identity or returning receipts.
+
+Unexpected programming failures produce `CORE_INTERNAL_ERROR` with `STOP_AND_INVESTIGATE`.
+Only an explicitly detected stored-record violation is classified as integrity failure;
+provider and I/O failures remain availability failures. A lost commit confirmation remains
+`OUTCOME_UNKNOWN`; the runtime does not infer failure or replace the operation identity.

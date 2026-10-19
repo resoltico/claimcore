@@ -5,52 +5,45 @@ open System.Net.Http
 open System.Threading
 
 module private RemoteTokenRequest =
-    let private grant configuration endpoints cancelled =
+    let acquire (configuration: RemoteConfiguration) (handler: HttpMessageHandler) cancelled =
         task {
             match configuration.Mode, configuration.SecretFile with
-            | RemoteClientMode.Automation, Some path -> return Ok(OAuthGrant.ClientCredentials path)
             | RemoteClientMode.Interactive, None ->
-                match!
+                return!
                     InteractiveAuthorization.obtain
-                        endpoints
+                        handler
                         configuration.Issuer
                         configuration.ClientId
                         cancelled
-                with
-                | Ok(code, redirect, verifier) ->
-                    return Ok(OAuthGrant.AuthorizationCode(code, redirect, verifier))
-                | Error reason -> return Error reason
-            | _ -> return Error "OIDC_GRANT_INVALID"
-        }
+            | RemoteClientMode.Automation, Some secret ->
+                use client = new HttpClient(handler, false)
+                client.Timeout <- TimeSpan.FromSeconds 20.
+                client.MaxResponseContentBufferSize <- 65536L
 
-    let acquire (configuration: RemoteConfiguration) (client: HttpClient) cancelled =
-        task {
-            match! OidcClient.discover client configuration.Issuer cancelled with
-            | Error reason -> return Error reason
-            | Ok endpoints ->
-                match! grant configuration endpoints cancelled with
+                match! OidcClient.discover client configuration.Issuer cancelled with
                 | Error reason -> return Error reason
-                | Ok request ->
-                    return!
-                        OAuthTokenClient.acquire
-                            client
-                            endpoints
-                            configuration.ClientId
-                            request
-                            cancelled
+                | Ok metadata ->
+                    match Option.ofObj metadata.TokenEndpoint with
+                    | None -> return Error "OIDC_METADATA_INVALID"
+                    | Some address ->
+                        return!
+                            OAuthTokenClient.acquire
+                                client
+                                (Uri address)
+                                configuration.ClientId
+                                secret
+                                cancelled
+            | _ -> return Error "OIDC_GRANT_INVALID"
         }
 
 /// Tokens remain process-local and are reacquired before expiry. No refresh token is persisted.
 type RemoteAccessSession
     private (configuration: RemoteConfiguration, oidcTrust: RemoteTls, serviceTrust: RemoteTls) =
-    let oidcClient = new HttpClient(oidcTrust.Handler, false)
     let serviceClient = new HttpClient(serviceTrust.Handler, false)
     let gate = new SemaphoreSlim(1, 1)
     let mutable current: AccessToken option = None
 
-    do
-        oidcClient.Timeout <- TimeSpan.FromSeconds(20.)
-        serviceClient.Timeout <- TimeSpan.FromSeconds(20.)
+    do serviceClient.Timeout <- TimeSpan.FromSeconds(20.)
 
     member _.Configuration = configuration
     member _.Client = serviceClient
@@ -63,7 +56,7 @@ type RemoteAccessSession
                 match current with
                 | Some token when token.CanReuse -> return Ok token
                 | _ ->
-                    match! RemoteTokenRequest.acquire configuration oidcClient cancelled with
+                    match! RemoteTokenRequest.acquire configuration oidcTrust.Handler cancelled with
                     | Error reason -> return Error reason
                     | Ok token ->
                         current <- Some token
@@ -75,7 +68,6 @@ type RemoteAccessSession
     interface IDisposable with
         member _.Dispose() =
             gate.Dispose()
-            oidcClient.Dispose()
             serviceClient.Dispose()
             (oidcTrust :> IDisposable).Dispose()
             (serviceTrust :> IDisposable).Dispose()

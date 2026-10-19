@@ -8,7 +8,8 @@ const { descriptors } = definition;
 import { readUnknown, isObject } from "./contract-corpus.fixtures";
 import requirements from "../src/presentation/generated/diagnostic-parameters.json";
 it("every F# diagnostic template agrees with default browser rendering", () => {
-  const originals = readUnknown("default-presentation.en.json");
+  const raw = readUnknown("descriptors.json");
+  const originals = isObject(raw) ? raw["diagnostics"] : null;
   if (!isObject(originals)) {
     throw new Error("Native presentation absent.");
   }
@@ -17,7 +18,7 @@ it("every F# diagnostic template agrees with default browser rendering", () => {
     Record<string, { minimum?: number; maximum?: number }>
   > = requirements;
   const ids = Object.keys(limits);
-  expect(ids).toHaveLength(76);
+  expect(ids).toHaveLength(65);
   for (const id of ids) {
     const parts = originals[`diagnostic.${id}`];
     if (!Array.isArray(parts)) {

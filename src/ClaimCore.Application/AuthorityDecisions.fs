@@ -10,22 +10,18 @@ type internal AuthorityAction =
     | ProvisionOwner
 
 module internal AuthorityDecisions =
-    let private owner (actor: ActorAuthority) =
-        actor.Enabled
-        && PrincipalKey.isHuman actor.Principal
-        && List.contains
-            ({
-                Role = Role.Owner
-                Scope = GrantScope.Installation
-            }
-            : ActorGrant)
-            actor.Grants
+    let private owner (view: AuthorityView) =
+        view.Actor
+        |> Option.exists (fun actor ->
+            actor.Enabled
+            && PrincipalKey.isHuman actor.Principal
+            && List.contains Role.Owner view.Installation)
 
     let private grantProjection
         role
         scope
         active
-        (actor: ActorAuthority)
+        (actor: AuthorityView)
         (view: AuthorityLockedView)
         =
         let caseId =
@@ -36,23 +32,32 @@ module internal AuthorityDecisions =
 
         caseId
         |> Result.bind (fun id ->
-            if Roles.requiresHuman role && not (PrincipalKey.isHuman actor.Principal) then
+            if
+                Roles.requiresHuman role
+                && not (PrincipalKey.isHuman actor.Actor.Value.Principal)
+            then
                 Error Rejection.HumanPrincipalRequired
             elif
                 not active
                 && role = Role.Owner
                 && id.IsNone
-                && owner actor
+                && owner view.Target
                 && view.EnabledHumanOwners <= 1
             then
                 Error Rejection.LastOwner
             elif active then
-                Ok(actor.ActorId, AuthorityProjection.AddGrant(actor.ActorId, role, id))
+                Ok(
+                    actor.Actor.Value.ActorId,
+                    AuthorityProjection.AddGrant(actor.Actor.Value.ActorId, role, id)
+                )
             else
-                Ok(actor.ActorId, AuthorityProjection.RemoveGrant(actor.ActorId, role, id)))
+                Ok(
+                    actor.Actor.Value.ActorId,
+                    AuthorityProjection.RemoveGrant(actor.Actor.Value.ActorId, role, id)
+                ))
 
     let private projection operationId target action (view: AuthorityLockedView) =
-        match action, view.Target with
+        match action, view.Target.Actor with
         | AuthorityAction.ProvisionOwner, _ when not (PrincipalKey.isHuman target) ->
             Error Rejection.HumanPrincipalRequired
         | AuthorityAction.ProvisionOwner, None when view.ActorCount = 0 ->
@@ -64,16 +69,16 @@ module internal AuthorityDecisions =
             Ok(operationId, AuthorityProjection.RegisterActor(operationId, target))
         | _, None -> Error Rejection.ActorUnknown
         | AuthorityAction.User(AuthorityAct.SetEnabled enabled), Some actor ->
-            if not enabled && owner actor && view.EnabledHumanOwners <= 1 then
+            if not enabled && owner view.Target && view.EnabledHumanOwners <= 1 then
                 Error Rejection.LastOwner
             else
                 Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, enabled))
-        | AuthorityAction.User(AuthorityAct.SetGrant(role, scope, active)), Some actor ->
-            grantProjection role scope active actor view
+        | AuthorityAction.User(AuthorityAct.SetGrant(role, scope, active)), Some _ ->
+            grantProjection role scope active view.Target view
 
     let private targets installationId target action (view: AuthorityLockedView) =
         if
-            view.Target
+            view.Target.Actor
             |> Option.exists (fun actor -> actor.ActorId = Guid.Empty || actor.Principal <> target)
         then
             Error CoreFault.StoreIntegrityError
@@ -124,7 +129,7 @@ module internal AuthorityDecisions =
             match action with
             | AuthorityAction.ProvisionOwner -> targetId
             | _ ->
-                view.Actor
+                view.Actor.Actor
                 |> Option.map _.ActorId
                 |> Option.defaultWith (fun () ->
                     invalidArg (nameof view) "Authorized actor is missing.")

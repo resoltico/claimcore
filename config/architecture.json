@@ -9,12 +9,6 @@
       "ClaimCore.Domain",
       "ClaimCore.RecordFormat"
     ],
-    "ClaimCore.Contracts": [
-      "ClaimCore.Application",
-      "ClaimCore.Domain",
-      "ClaimCore.RecordFormat",
-      "ClaimCore.ClientProtocol"
-    ],
     "ClaimCore.HostSecurity": [],
     "ClaimCore.Postgres": [
       "ClaimCore.Application",
@@ -25,29 +19,29 @@
       "ClaimCore.Application",
       "ClaimCore.Postgres",
       "ClaimCore.Domain",
-      "ClaimCore.Contracts",
-      "ClaimCore.ClientProtocol"
+      "ClaimCore.Wire"
     ],
     "ClaimCore.Web": [
       "ClaimCore.HostSecurity",
       "ClaimCore.Hosting",
-      "ClaimCore.ClientProtocol"
+      "ClaimCore.Wire"
     ],
     "ClaimCore.Cli": [
       "ClaimCore.HostSecurity",
-      "ClaimCore.ClientProtocol"
+      "ClaimCore.Wire"
     ],
     "ClaimCore.Database": [
       "ClaimCore.HostSecurity",
       "ClaimCore.Postgres",
       "ClaimCore.Application"
     ],
-    "ClaimCore.ClientProtocol": []
+    "ClaimCore.Wire": []
   },
   "tooling": {
     "ClaimCore.ContractGenerator": [
-      "ClaimCore.Contracts",
-      "ClaimCore.ClientProtocol"
+      "ClaimCore.Wire",
+      "ClaimCore.Domain",
+      "ClaimCore.Application"
     ]
   },
   "rules": {
@@ -62,8 +56,7 @@
       "ClaimCore.Domain",
       "ClaimCore.RecordFormat",
       "ClaimCore.Application",
-      "ClaimCore.Contracts",
-      "ClaimCore.ClientProtocol"
+      "ClaimCore.Wire"
     ],
     "onlyTheseMayUseTimeZoneInfo": [
       "ClaimCore.Hosting",
@@ -75,7 +68,7 @@
     ],
     "clientAvoidsServerSemantics": [
       "ClaimCore.Cli",
-      "ClaimCore.ClientProtocol"
+      "ClaimCore.Wire"
     ],
     "httpHostAvoidsDirectSemantics": [
       "ClaimCore.Web"

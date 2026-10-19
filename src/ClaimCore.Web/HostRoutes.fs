@@ -1,6 +1,6 @@
 namespace ClaimCore.Web
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -41,8 +41,16 @@ module HostRoutes =
 
                 return
                     RouteSupport.outcome
-                        "session"
-                        (ServiceGateway.session authenticated token)
+                        (WireReply.Session
+                            {
+                                Outcome =
+                                    SessionOutcome.Succeeded
+                                        {
+                                            Authenticated = authenticated
+                                            WireFingerprint = Fingerprint.value
+                                            AntiforgeryToken = token
+                                        }
+                            })
                         context
         }
 
@@ -63,8 +71,9 @@ module HostRoutes =
                         match! HttpBody.readRequest 1024 context with
                         | Error problem -> return RouteSupport.inputFailure context problem
                         | Ok bytes ->
-                            match ServiceGateway.admit "session.logout" bytes with
-                            | Error problem -> return RouteSupport.inputFailure context problem
+                            match ClaimCore.Wire.Admission.admit Endpoint.SessionLogout bytes with
+                            | Error _ ->
+                                return RouteSupport.hostFailure context HostFailure.InputInvalid
                             | Ok _ ->
                                 do!
                                     context.SignOutAsync(
@@ -75,8 +84,10 @@ module HostRoutes =
 
                                 return
                                     RouteSupport.outcome
-                                        "session.logout"
-                                        (ServiceGateway.logout ())
+                                        (WireReply.SessionLogout
+                                            {
+                                                Outcome = SessionLogoutOutcome.Succeeded()
+                                            })
                                         context
                 | _ -> return RouteSupport.hostFailure context HostFailure.SessionRejected
         }
@@ -105,9 +116,9 @@ module HostRoutes =
 
             if context.Request.Path.StartsWithSegments(PathString "/api") then
                 let known =
-                    ServiceGateway.endpoints
+                    Endpoint.all
                     |> List.exists (fun endpoint ->
-                        Some endpoint.Path = Option.ofObj context.Request.Path.Value)
+                        Some(Endpoint.path endpoint) = Option.ofObj context.Request.Path.Value)
 
                 let reason =
                     if known then
@@ -133,29 +144,29 @@ module HostRoutes =
         application.UseDefaultFiles() |> ignore
         application.UseStaticFiles files |> ignore
 
-        for endpoint in ServiceGateway.endpoints do
+        for endpoint in Endpoint.all do
             let handler =
-                match endpoint.Identifier with
+                match (Endpoint.id endpoint) with
                 | "session" -> session configuration
                 | "session.logout" -> logout configuration
                 | _ -> ApiRoutes.handle endpoint configuration service
 
             let exact (context: HttpContext) =
-                if Option.ofObj context.Request.Path.Value <> Some endpoint.Path then
+                if Option.ofObj context.Request.Path.Value <> Some(Endpoint.path endpoint) then
                     Task.FromResult(RouteSupport.hostFailure context HostFailure.EndpointMissing)
-                elif context.Request.Method <> endpoint.Method then
+                elif context.Request.Method <> (Endpoint.method endpoint) then
                     Task.FromResult(RouteSupport.hostFailure context HostFailure.MethodRejected)
                 else
                     handler context
 
             let route =
                 application.MapMethods(
-                    endpoint.Path,
-                    [| endpoint.Method |],
+                    (Endpoint.path endpoint),
+                    [| (Endpoint.method endpoint) |],
                     Func<HttpContext, Task<IResult>>(exact)
                 )
 
-            if endpoint.Identifier <> "session" then
+            if (Endpoint.id endpoint) <> "session" then
                 route.RequireRateLimiting "core" |> ignore
 
         application

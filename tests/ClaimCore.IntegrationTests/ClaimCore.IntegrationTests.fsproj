@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="../FixtureDisposal.fs" Link="FixtureDisposal.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
@@ -15,6 +16,7 @@
     <Compile Include="VerificationTests.fs" />
     <Compile Include="CaseProjectionTests.fs" />
     <Compile Include="SchemaTests.fs" />
+    <Compile Include="BaselineRefusalTests.fs" />
     <Compile Include="PaginationTests.fs" />
     <Compile Include="GrantPaginationTests.fs" />
     <Compile Include="AcceptedHistoryFixtures.fs" />
@@ -25,19 +27,20 @@
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
+    <Compile Include="TransactionFailureTests.fs" />
     <Compile Include="CommitProxy.fs" />
     <Compile Include="CommitTests.fs" />
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />
     <Compile Include="AdministrationTests.fs" />
+    <None Include="../fixtures/0001_baseline.v0.10.0.sql" Link="0001_baseline.v0.10.0.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="OwnerSchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
-    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />

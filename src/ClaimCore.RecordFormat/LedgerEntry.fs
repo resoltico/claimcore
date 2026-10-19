@@ -67,18 +67,18 @@ module LedgerEntry =
     let private caseActCodes =
         Map.ofList
             [
-                CaseActKind.Open, 1uy
-                CaseActKind.AmendRegistration, 2uy
-                CaseActKind.CorrectCase, 3uy
-                CaseActKind.Decide, 4uy
-                CaseActKind.WithdrawDecision, 5uy
-                CaseActKind.RecordPayment, 6uy
-                CaseActKind.ClearPayment, 7uy
-                CaseActKind.Close, 8uy
-                CaseActKind.Reopen, 9uy
-                CaseActKind.Void, 10uy
-                CaseActKind.Reinstate, 11uy
-                CaseActKind.Erase, 12uy
+                (CaseActKind.Business BusinessActKind.Open), 1uy
+                (CaseActKind.Business BusinessActKind.AmendRegistration), 2uy
+                (CaseActKind.Business BusinessActKind.CorrectCase), 3uy
+                (CaseActKind.Business BusinessActKind.Decide), 4uy
+                (CaseActKind.Business BusinessActKind.WithdrawDecision), 5uy
+                (CaseActKind.Business BusinessActKind.RecordPayment), 6uy
+                (CaseActKind.Business BusinessActKind.ClearPayment), 7uy
+                (CaseActKind.Business BusinessActKind.Close), 8uy
+                (CaseActKind.Business BusinessActKind.Reopen), 9uy
+                (CaseActKind.Stewardship StewardshipActKind.Void), 10uy
+                (CaseActKind.Stewardship StewardshipActKind.Reinstate), 11uy
+                (CaseActKind.Stewardship StewardshipActKind.Erase), 12uy
             ]
 
     let actCode act = caseActCodes[act]

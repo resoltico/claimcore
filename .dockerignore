@@ -2,7 +2,6 @@
 !global.json
 !.node-version
 !Directory.Build.props
-!Directory.Build.targets
 !Directory.Packages.props
 !NuGet.Config
 !ClaimCore.slnx
@@ -109,7 +108,6 @@
 **/blob-report
 **/playwright/.auth
 **/playwright/.cache
-**/web/src/generated
 **/web/src/presentation/generated
 
 # Reviewed credential-free policies required by the locked npm producers.

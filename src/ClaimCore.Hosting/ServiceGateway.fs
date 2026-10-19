@@ -1,11 +1,9 @@
 namespace ClaimCore.Hosting
 
-open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
-open ClaimCore.Contracts
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 /// Verified identity facts supplied by the HTTP authentication boundary.
 [<StructuralEquality; NoComparison>]
@@ -18,130 +16,106 @@ module AuthenticatedSubjects =
     let service issuer subject =
         PrincipalKey.service issuer subject |> Result.map AuthenticatedSubject
 
-/// The host can route and limit requests without access to typed core inputs.
-[<NoEquality; NoComparison>]
-type ServiceEndpoint =
-    {
-        Identifier: string
-        Method: string
-        Path: string
-        Mutates: bool
-    }
-
-[<NoEquality; NoComparison>]
-type ServiceRequest = private ServiceRequest of string * ServiceInput
-
-[<NoEquality; NoComparison>]
-type ServiceReply =
-    {
-        Bytes: byte array
-        Outcome: string
-        OperationId: Guid option
-        ActorId: Guid option
-    }
-
 type IProtocolService =
-    abstract Invoke: AuthenticatedSubject * ServiceRequest * CancellationToken -> Task<ServiceReply>
+    abstract Invoke: AuthenticatedSubject * WireRequest * CancellationToken -> Task<WireReply>
 
 module ServiceGateway =
-    let requestByteLimit = ServiceLimits.RequestByteLimit
+    let admitTechnical request =
+        match request with
+        | WireRequest.AuthorityExecute value ->
+            RequestMapping.authorityRequest value
+            |> Result.map (fun _ -> request)
+            |> Result.mapError (fun _ -> ())
+        | _ -> Ok request
 
-    let endpoints =
-        EndpointCatalog.all
-        |> List.map (fun value ->
-            {
-                Identifier = value.Identifier
-                Method = value.Method
-                Path = value.Path
-                Mutates = value.Mutates
-            })
+    let private history
+        (request: ClaimCore.Wire.HistoryRequest)
+        : ClaimCore.Application.HistoryRequest =
+        {
+            CaseReference = request.CaseReference
+            AfterCursor = request.Cursor
+            Limit = int request.Limit
+            Detail =
+                if request.Detail = "FULL" then
+                    HistoryDetail.Full
+                else
+                    HistoryDetail.Summary
+        }
 
-    let matches = EndpointCatalog.matches
+    let private page (request: PageRequest) : CaseListRequest =
+        {
+            AfterCursor = request.Cursor
+            Limit = int request.Limit
+        }
 
-    let admit endpoint bytes =
-        EndpointCatalog.admitRequest endpoint bytes
-        |> Result.map (fun input -> ServiceRequest(endpoint, input))
-
-    let session authenticated antiforgery =
-        OutcomeCodec.session authenticated antiforgery |> OutcomeCodec.encode "session"
-
-    let logout () =
-        OutcomeCodec.logout () |> OutcomeCodec.encode "session.logout"
-
-    let private operationId =
-        function
-        | ServiceInput.Case value -> Some value.OperationId
-        | ServiceInput.Authority value -> Some value.OperationId
-        | ServiceInput.Operation value -> Some value
-        | _ -> None
-
-    let requestOperationId (ServiceRequest(_, input)) = operationId input
-
-    let private actorId =
-        function
-        | ExecuteOutcome.Accepted receipt -> Some receipt.RecordedBy
-        | _ -> None
-
-    let private dispatch (core: IActorClaimsCore) endpoint input token =
+    let private reads (core: IActorClaimsCore) input token =
         task {
-            match endpoint, input with
-            | "context", ServiceInput.Empty ->
-                let! value = core.Context token in return OutcomeCodec.context value, None
-            | "case.get", ServiceInput.CaseReference reference ->
-                let! value = core.Get(reference, token) in
-                return OutcomeCodec.currentCase value, None
-            | "case.list", ServiceInput.CaseList request ->
-                let! value = core.List(request, token) in return OutcomeCodec.caseList value, None
-            | "case.history", ServiceInput.History request ->
-                let! value = core.History(request, token) in return OutcomeCodec.history value, None
-            | "operation.observe", ServiceInput.Operation id ->
-                let! value = core.Observe(id, token) in return OutcomeCodec.operation value, None
-            | "authority.list", ServiceInput.ActorList request ->
-                let! value = core.ListActors(request, token) in
-                return OutcomeCodec.actors value, None
-            | "authority.grants", ServiceInput.ActorGrants request ->
-                let! value = core.ListGrants(request, token) in
-                return OutcomeCodec.grants value, None
-            | "case.preview", ServiceInput.Case request ->
-                let! value = core.Preview(request, token) in return OutcomeCodec.preview value, None
-            | "case.execute", ServiceInput.Case request ->
-                let! value = core.Execute(request, token) in
-                return OutcomeCodec.execute value, actorId value
-            | "authority.execute", ServiceInput.Authority request ->
-                let! value = core.ExecuteAuthority(request, token) in
-                return OutcomeCodec.execute value, actorId value
-            | _ -> return invalidArg "input" "The admitted input does not match its endpoint."
+            match input with
+            | WireRequest.Context ->
+                let! value = core.Context token in return OutcomeMapping.context value
+            | WireRequest.CaseGet request ->
+                let! value = core.Get(request.CaseReference, token) in
+                return OutcomeMapping.caseGet value
+            | WireRequest.CaseList request ->
+                let! value = core.List(page request, token) in return OutcomeMapping.caseList value
+            | WireRequest.CaseHistory request ->
+                let! value = core.History(history request, token) in
+                return OutcomeMapping.caseHistory value
+            | WireRequest.OperationObserve request ->
+                let! value = core.Observe(request.OperationId, token) in
+                return OutcomeMapping.operationObserve value
+            | WireRequest.AuthorityList request ->
+                let! value =
+                    core.ListActors(
+                        {
+                            AfterCursor = request.Cursor
+                            Limit = int request.Limit
+                        },
+                        token
+                    )
+
+                return OutcomeMapping.authorityList value
+            | WireRequest.AuthorityGrants request ->
+                let! value =
+                    core.ListGrants(
+                        {
+                            ActorId = request.ActorId
+                            AfterCursor = request.Cursor
+                            Limit = int request.Limit
+                        },
+                        token
+                    )
+
+                return OutcomeMapping.authorityGrants value
+            | _ -> return invalidArg "request" "Expected an application query."
+        }
+
+    let private dispatch (core: IActorClaimsCore) input token =
+        task {
+            match input with
+            | WireRequest.CasePreview request ->
+                let! value = core.Preview(RequestMapping.caseRequest request, token)
+                return OutcomeMapping.preview request.OperationId value
+            | WireRequest.CaseExecute request ->
+                let! value =
+                    core.Execute(RequestMapping.caseRequest request, CancellationToken.None)
+
+                return OutcomeMapping.execute request.OperationId value
+            | WireRequest.AuthorityExecute request ->
+                let admitted =
+                    RequestMapping.authorityRequest request
+                    |> Result.defaultWith (invalidArg "request")
+
+                let! value = core.ExecuteAuthority(admitted, CancellationToken.None)
+                return OutcomeMapping.authorityExecute request.OperationId value
+            | WireRequest.Session
+            | WireRequest.SessionLogout ->
+                return invalidArg "request" "The HTTPS host owns session operations."
+            | request -> return! reads core request token
         }
 
     let internal bind (forActor: PrincipalKey -> IActorClaimsCore) =
         { new IProtocolService with
-            member _.Invoke
-                (AuthenticatedSubject principal, ServiceRequest(endpoint, input), cancellation)
-                =
-                task {
-                    let definition = EndpointCatalog.tryFind endpoint |> Option.get
-
-                    let token =
-                        if definition.Mutates then
-                            CancellationToken.None
-                        else
-                            cancellation
-
-                    let! outcome, actor = dispatch (forActor principal) endpoint input token
-                    let id = operationId input
-
-                    let bytes =
-                        match input, id with
-                        | (ServiceInput.Case _ | ServiceInput.Authority _), Some value ->
-                            OutcomeCodec.encodeOperation endpoint value outcome
-                        | _ -> OutcomeCodec.encode endpoint outcome
-
-                    return
-                        {
-                            Bytes = bytes
-                            Outcome = (outcome["tag"] |> nonNull).GetValue<string>()
-                            OperationId = id
-                            ActorId = actor
-                        }
-                }
+            member _.Invoke(AuthenticatedSubject principal, request, cancellation) =
+                dispatch (forActor principal) request cancellation
         }

@@ -2,48 +2,25 @@ namespace ClaimCore.ContractGeneration
 
 open System
 open System.IO
-open System.Text.Json
 
 type Artifact = { Name: string; Bytes: byte array }
 
-/// Only a previously generated inventory authorizes removing an obsolete output.
+/// The produced set is the inventory. Unexpected content is never deleted.
 module ArtifactPublication =
-    let inventoryName = "artifact-inventory.json"
+    let private admitExisting output (artifacts: Artifact list) =
+        let owned = artifacts |> List.map _.Name |> Set.ofList
 
-    let withInventory (artifacts: Artifact list) =
-        let names = artifacts |> List.map _.Name |> List.sort
-
-        if names.Length <> (names |> Set.ofList |> Set.count) then
+        if owned.Count <> artifacts.Length then
             invalidOp "Duplicate generated artifact name."
 
-        for name in names do
-            if Path.GetFileName name <> name || name = inventoryName then
+        for name in owned do
+            if Path.GetFileName name <> name then
                 invalidOp "Invalid generated artifact name."
 
-        artifacts
-        @ [
-            {
-                Name = inventoryName
-                Bytes = JsonSerializer.SerializeToUtf8Bytes names
-            }
-        ]
-
-    let private admitExisting output (artifacts: Artifact list) =
         if Directory.Exists output then
-            let inventory = Path.Combine(output, inventoryName)
-
-            let owned =
-                if File.Exists inventory then
-                    JsonSerializer.Deserialize<string list>(File.ReadAllBytes inventory)
-                    |> nonNull
-                    |> Set.ofList
-                    |> Set.add inventoryName
-                else
-                    artifacts |> List.map _.Name |> Set.ofList
-
             for entry in Directory.EnumerateFileSystemEntries output do
                 if Directory.Exists entry || not (Set.contains (Path.GetFileName entry) owned) then
-                    invalidOp "Output contains content outside its generated artifact inventory."
+                    invalidOp "Output contains content outside the produced contract artifact set."
 
     let private stage directory (artifacts: Artifact list) =
         Directory.CreateDirectory directory |> ignore

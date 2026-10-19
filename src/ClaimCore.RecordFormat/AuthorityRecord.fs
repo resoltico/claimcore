@@ -78,11 +78,11 @@ module AuthorityRecord =
             | Error _ -> Json.reject (path + ".caseReference") "Invalid case reference."
         | _ -> Json.reject (path + ".kind") "Unknown grant scope."
 
-    let private act allowProvision root =
+    let private act root =
         let path = "$.act"
 
         match Json.text path "kind" root with
-        | "PROVISION_OWNER" when allowProvision ->
+        | "PROVISION_OWNER" ->
             Json.properties path [ "kind" ] root
             RecordedAuthorityAct.ProvisionOwner
         | "REGISTER_ACTOR" ->
@@ -101,9 +101,9 @@ module AuthorityRecord =
             RecordedAuthorityAct.SetEnabled(Json.boolean path "enabled" root)
         | _ -> Json.reject (path + ".kind") "Unknown authority act."
 
-    let private read durable root =
+    let private read root =
         let members = [ "operationId"; "target"; "act" ]
-        Json.properties "$" (if durable then "format" :: members else members) root
+        Json.properties "$" ("format" :: members) root
         let target = Json.required "$" "target" root
         Json.properties "$.target" [ "kind"; "issuer"; "subject" ] target
         let kind = Json.text "$.target" "kind" target
@@ -119,14 +119,11 @@ module AuthorityRecord =
                     Issuer = Json.text "$.target" "issuer" target
                     Subject = Json.text "$.target" "subject" target
                 }
-            Act = Json.required "$" "act" root |> act durable
+            Act = Json.required "$" "act" root |> act
         }
 
     let decode maxBytes bytes =
-        Json.bounded maxBytes bytes (Json.dispatch [ 2L, read true ])
-
-    let decodeWire maxBytes bytes =
-        Json.bounded maxBytes bytes (read false)
+        Json.bounded maxBytes bytes (Json.dispatch [ 2L, read ])
 
     let private scopeValue =
         function
@@ -159,12 +156,9 @@ module AuthorityRecord =
         let kind = RecordedAuthorityActs.kind act |> RecordedAuthorityActs.token
         CanonicalValue.Object(("kind", CanonicalValue.String kind) :: members)
 
-    let private value durable (request: AuthorityRequestRecord) =
+    let private value (request: AuthorityRequestRecord) =
         if request.OperationId = Guid.Empty then
             invalidArg (nameof request) "Use a nonempty operation ID."
-
-        if not durable && request.Act = RecordedAuthorityAct.ProvisionOwner then
-            invalidArg (nameof request) "Provisioning is owner administration."
 
         if request.Target.Kind <> "HUMAN" && request.Target.Kind <> "SERVICE" then
             invalidArg (nameof request) "Unknown principal kind."
@@ -192,14 +186,7 @@ module AuthorityRecord =
             ]
 
         CanonicalValue.Object(
-            if durable then
-                ("format", CanonicalValue.Integer(int64 RecordVersions.Authority)) :: members
-            else
-                members
+            ("format", CanonicalValue.Integer(int64 RecordVersions.Authority)) :: members
         )
 
-    let encode request =
-        value true request |> CanonicalJson.encode
-
-    let encodeWire request =
-        value false request |> CanonicalJson.encode
+    let encode request = value request |> CanonicalJson.encode

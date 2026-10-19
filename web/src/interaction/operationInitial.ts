@@ -14,7 +14,7 @@ export const initialOperation = (
   caseReference,
   command,
   values,
-  requestSha256: null,
+
   requestBytes: null,
   prepared: null,
   review: null,

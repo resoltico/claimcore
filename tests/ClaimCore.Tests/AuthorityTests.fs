@@ -204,16 +204,9 @@ let private uncertainty (store: MemoryLedgerStore.Store) (fixture: Fixture) =
             let! outcome = actor.ExecuteAuthority(request, CancellationToken.None)
 
             match outcome with
-            | ExecuteOutcome.OutcomeUnknown(operationId, hash) ->
+            | ExecuteOutcome.OutcomeUnknown operationId ->
                 Expect.equal operationId request.OperationId "Original authority identity"
 
-                Expect.equal
-                    hash
-                    (AuthorityRequests.toRecord request
-                     |> AuthorityRecord.encode
-                     |> LedgerEntry.requestDigest
-                     |> Convert.ToHexStringLower)
-                    "Original canonical authority content"
             | _ -> failtest "Authority uncertainty relabeled"
 
             let! retry = actor.ExecuteAuthority(request, CancellationToken.None)
@@ -360,29 +353,28 @@ let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             "Authority observation requires installation ReadAuthority"
     }
 
-let private offerDefinitions (actor: IActorClaimsCore) =
+let private actorContext (actor: IActorClaimsCore) =
     task {
         let! context = actor.Context CancellationToken.None
 
         match context with
-        | QueryOutcome.Succeeded value -> return value.Offers |> List.map _.Definition
+        | QueryOutcome.Succeeded value -> return value
         | _ -> return failtest "Expected enabled actor context"
     }
 
 let private contextOffers (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! admin = bootstrap fixture
-        let! offers = offerDefinitions admin
+        let! context = actorContext admin
+        let offers = context.Offers
+        Expect.equal context.Views [ View.Authority; View.Operations ] "Owner views exclude cases"
 
         Expect.equal
             offers
             [
-                "REGISTER_ACTOR"
-                "SET_GRANT"
-                "SET_ENABLED"
-                "authority.list"
-                "authority.grants"
-                "operation.observe"
+                InstallationOffer.AuthorityAct AuthorityKind.RegisterActor
+                InstallationOffer.AuthorityAct AuthorityKind.SetGrant
+                InstallationOffer.AuthorityAct AuthorityKind.SetEnabled
             ]
             "An owner has administration advice without case authority"
 
@@ -400,19 +392,24 @@ let private contextOffers (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         acceptedAuthority scoped
         let reader = core fixture target
-        let! offers = offerDefinitions reader
+        let! context = actorContext reader
+        let offers = context.Offers
+
+        Expect.isEmpty offers "A scoped registrar has no installation OPEN advice"
 
         Expect.equal
-            offers
-            [ "case.list"; "case.get"; "operation.observe" ]
-            "A scoped registrar can read its case without installation OPEN advice"
+            context.Views
+            [ View.Cases; View.Operations ]
+            "Assigned case roles supply case views"
 
         let! revoked =
             grant admin (id 6) target Role.CaseRegistrar (GrantTarget.CaseReference "OFFER-1") false
 
         acceptedAuthority revoked
-        let! offers = offerDefinitions reader
+        let! context = actorContext reader
+        let offers = context.Offers
         Expect.isEmpty offers "A fresh context observes revocation without cached offers"
+        Expect.isEmpty context.Views "Revoked reads remove every view"
     }
 
 [<Tests>]

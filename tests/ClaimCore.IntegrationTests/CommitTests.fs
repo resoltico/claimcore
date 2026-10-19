@@ -50,7 +50,7 @@ let private proxyCore (database: PostgresFixture.Database) source =
             database.Fixture.InstallationId
             store
             database.Fixture.Calendar
-            cursorKey
+
             database.Fixture.Owner
 
     actor
@@ -137,7 +137,7 @@ let tests =
 
                                 Expect.isTrue
                                     (match result with
-                                     | ExecuteOutcome.OutcomeUnknown(id, _) ->
+                                     | ExecuteOutcome.OutcomeUnknown id ->
                                          id = operation.OperationId
                                      | _ -> false)
                                     "Lost commit reply stays unknown"

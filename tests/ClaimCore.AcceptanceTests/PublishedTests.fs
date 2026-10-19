@@ -100,6 +100,38 @@ let private erasedHistory fixture =
             ]
             "Receipt retains identity and ledger metadata"
 
+let private erasedView (tombstone: JsonElement) =
+    Expect.equal
+        (tombstone.GetProperty("state").GetProperty("tag").GetString())
+        "ERASED"
+        "Erased state"
+
+    let names = tombstone.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
+
+    Expect.equal
+        names
+        [ "advice"; "caseReference"; "revision"; "state" ]
+        "Erased views expose only identity, revision, state and current advice"
+
+    let advice = tombstone.GetProperty "advice"
+
+    Expect.equal
+        (advice.GetProperty("acts").GetArrayLength())
+        0
+        "Erased records offer no business or stewardship act"
+
+    let history =
+        advice.GetProperty("history").EnumerateArray()
+        |> Seq.map (fun detail -> detail.GetString() |> nonNull)
+        |> Seq.sort
+        |> Seq.toList
+
+    Expect.equal
+        history
+        [ "FULL"; "SUMMARY" ]
+        "Only authorized retained history details are offered"
+
+
 let private stewardship (fixture: PublishedFixture.Fixture) =
     let source =
         Path.Combine(fixture.Root, "examples", "07-void.json") |> File.ReadAllBytes
@@ -124,22 +156,7 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
         automation fixture "case.get" {| caseReference = "DEMO-0001" |} 0
         |> require "SUCCEEDED"
 
-    let tombstone = erased
-
-    Expect.equal
-        (tombstone.GetProperty("state").GetProperty("tag").GetString())
-        "ERASED"
-        "Erased state"
-
-    Expect.equal
-        (tombstone.EnumerateObject() |> Seq.length)
-        5
-        "Erased reference, revision, state and current advice"
-
-    Expect.equal
-        (tombstone.GetProperty("offers").GetArrayLength())
-        1
-        "Only authorized retained history is offered"
+    erasedView erased
 
     erasedHistory fixture
 

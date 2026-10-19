@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
-    <Compile Include="../ProcessResolution.fs" Link="ProcessResolution.fs" />
-    <Compile Include="../ProcessSupervision.fs" Link="ProcessSupervision.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="../FixtureDisposal.fs" Link="FixtureDisposal.fs" />
@@ -17,11 +15,11 @@
     <Compile Include="../IdentityReadiness.fs" Link="IdentityReadiness.fs" />
     <Compile Include="IdentityServer.fs" />
     <Compile Include="IdentityReadinessTests.fs" />
-    <Compile Include="NativeNoticeManifest.fs" />
-    <Compile Include="NativeNoticeAssets.fs" />
-    <Compile Include="NativeNotices.fs" />
+    <Compile Include="ThirdPartyNoticeManifest.fs" />
+    <Compile Include="ThirdPartyNoticeAssets.fs" />
+    <Compile Include="ThirdPartyNotices.fs" />
     <Compile Include="PublishedProcesses.fs" />
-    <Compile Include="NativeNoticeTests.fs" />
+    <Compile Include="ThirdPartyNoticeTests.fs" />
     <Compile Include="RedirectControl.fs" />
     <Compile Include="HttpsProxy.fs" />
     <Compile Include="CommitReplyProxy.fs" />
@@ -37,13 +35,12 @@
     <Compile Include="BrowserReadback.fs" />
     <Compile Include="BrowserProgress.fs" />
     <Compile Include="BrowserTests.fs" />
+    <Compile Include="DeploymentConfigurationTests.fs" />
     <Compile Include="ProcessFailureTests.fs" />
-    <Compile Include="ProcessSupervisionTests.fs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ProcessResolutionFixture.fsx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="../../src/ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Npgsql" />

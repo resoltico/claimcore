@@ -1,6 +1,6 @@
 module ClaimCore.WebTests.TestServerFixture
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -18,10 +18,10 @@ open Microsoft.AspNetCore.Authentication
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.DataProtection
 open Microsoft.AspNetCore.TestHost
+open Microsoft.Extensions.DependencyInjection.Extensions
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open ClaimCore.Application
-open ClaimCore.Contracts
 open ClaimCore.Web
 open ClaimCore.WebTests.FacadeStub
 
@@ -47,6 +47,7 @@ let limits =
 
 let configuration certificate =
     {
+        KeyRingDirectory = DirectoryInfo(Path.GetTempPath())
         Binding = WebBindings.create origin "127.0.0.1" 5443
         ConnectionString = "synthetic-not-opened"
         Certificate = certificate
@@ -60,7 +61,11 @@ let private services (builder: WebApplicationBuilder) =
     builder.Logging.ClearProviders() |> ignore
     builder.WebHost.UseTestServer() |> ignore
 
-    builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider()
+    builder.Services.AddDataProtection() |> ignore
+
+    builder.Services.Replace(
+        ServiceDescriptor.Singleton<IDataProtectionProvider>(EphemeralDataProtectionProvider())
+    )
     |> ignore
 
     builder.Services.AddAntiforgery(fun options ->
@@ -210,14 +215,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
         }
 
     member this.Bootstrap() =
-        this.Send(
-            HttpMethod.Get,
-            "/api/session",
-            None,
-            [
-                "ClaimCore-Contract", WireContractFingerprint.value EndpointCatalog.fingerprint
-            ]
-        )
+        this.Send(HttpMethod.Get, "/api/session", None, [ "ClaimCore-Contract", Fingerprint.value ])
 
     member this.Token() =
         task {
@@ -244,8 +242,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
             [
                 "Origin", origin.GetLeftPart(UriPartial.Authority)
                 "X-ClaimCore-Antiforgery", token
-                "ClaimCore-Contract",
-                defaultArg fingerprint (WireContractFingerprint.value EndpointCatalog.fingerprint)
+                "ClaimCore-Contract", defaultArg fingerprint (Fingerprint.value)
             ]
         )
 

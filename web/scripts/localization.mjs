@@ -41,18 +41,14 @@ for (const lang of languages) {
 }
 const generated = resolve(root, "../contracts");
 const descriptors = JSON.parse(await readFile(resolve(generated, "descriptors.json"), "utf8"));
-const host = JSON.parse(await readFile(resolve(generated, "host-failure.schema.json"), "utf8"));
-Object.assign(
-  catalogs["en"] ?? {},
-  businessMessages(descriptors),
-  readCatalog(await readFile(resolve(generated, "default-presentation.en.json"), "utf8")),
-);
+const host = JSON.parse(await readFile(resolve(generated, "openapi.json"), "utf8"));
+Object.assign(catalogs["en"] ?? {}, businessMessages(descriptors), descriptors.diagnostics);
 for (const lang of languages) {
   validateCatalog(catalogs["en"] ?? {}, catalogs[lang] ?? {}, lang);
 }
 const requirements = diagnosticRequirements(descriptors, host);
 validateCoverage(catalogs["en"] ?? {}, descriptors, requirements);
-const types = await readFile(resolve(generated, "types.ts"), "utf8");
+const types = await readFile(resolve(generated, "client.ts"), "utf8");
 validateTokens(catalogs["en"] ?? {}, renderedTokens(descriptors, types));
 await mkdir(output, { recursive: true });
 /** @type {Record<string, string>} */

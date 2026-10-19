@@ -1,5 +1,5 @@
 import { fireEvent } from "@testing-library/react";
-import { productMetadata } from "@contracts/product-metadata";
+import { productMetadata } from "../src/protocol/productMetadata";
 import { caseFields } from "./service-foundation.fixtures";
 /** Supplies wire-valid authored registration; individual tests override current business admission. */
 export const fillRegistrationInputs = (overrides: Readonly<Record<string, string>> = {}): void => {

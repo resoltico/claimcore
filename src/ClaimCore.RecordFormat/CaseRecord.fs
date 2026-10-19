@@ -92,7 +92,7 @@ module CaseRecord =
             Status = status
         }
 
-    let private readFormat3 root =
+    let private readFormat4 root =
         Json.properties "$" [ "format"; "fields"; "revision"; "disposition" ] root
         let fields = Json.required "$" "fields" root |> readFields
 
@@ -114,4 +114,4 @@ module CaseRecord =
         | Error _ -> Json.reject "$.fields" "Invalid accepted case format."
 
     let decodeSnapshot bytes =
-        Json.bounded FormatLimits.MaximumPayloadBytes bytes (Json.dispatch [ 3L, readFormat3 ])
+        Json.bounded FormatLimits.MaximumPayloadBytes bytes (Json.dispatch [ 4L, readFormat4 ])

@@ -1,6 +1,6 @@
 import { parseSync } from "oxc-parser";
 
-const owners = new Set(["CaseReceipt", "AuthorityReceipt", "CaseView"]);
+const owners = new Set(["CaseReceipt", "AuthorityReceipt", "CaseView", "CaseState_LIVE"]);
 const members = new Set(["act", "disposition"]);
 /** @param {import("./tooling-types.mjs").JsonRecord} key */
 const memberName = (key) => (key["type"] === "Identifier" ? key["name"] : key["value"]);
@@ -43,7 +43,7 @@ const visit = (node, result) => {
 
 /** @param {string} types @param {Set<string>} result */
 const renderedFamilies = (types, result) => {
-  const { program, errors } = parseSync("types.ts", types);
+  const { program, errors } = parseSync("client.ts", types);
   if (errors.length > 0) {
     throw new Error("The rendered type declarations could not be parsed.");
   }

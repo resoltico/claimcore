@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { isResponse } from "@contracts/browser-contract";
+import { isResponse } from "../src/protocol/client";
 import { startOpen } from "./case-workflow";
 import {
   expectAccessible,
@@ -12,7 +12,8 @@ import {
   expectKeyboardContained,
   confirmReview,
   pauseJsonReply,
-  localInputRefusalText,
+  businessFormatRefusalText,
+  expectBusinessFormatRefusal,
   reviewFrom,
   selectFormat,
   selectLanguage,
@@ -69,16 +70,20 @@ const unacceptedCase = async (page: Page, reference: string) => {
   }
 };
 const invalidCalendar = async (page: Page, requests: string[]) => {
-  await page.getByRole("button", { name: "Review changes" }).click();
+  await expectBusinessFormatRefusal(page, "incidentDate", "INPUT_CALENDAR_DATE_REQUIRED", () =>
+    page.getByRole("button", { name: "Review changes" }).click(),
+  );
   await expect(page.locator('input[name="incidentDate"]')).toBeFocused();
   await expect(page.locator('input[name="incidentDate"]')).toHaveAttribute("aria-invalid", "true");
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
-    await expect(page.getByRole("alert")).toContainText(localInputRefusalText[language]);
+    await expect(page.getByRole("alert")).toContainText(
+      businessFormatRefusalText.INPUT_CALENDAR_DATE_REQUIRED[language],
+    );
   }
   await expect(page.locator('input[name="incidentDate"]')).toHaveValue("2026-02-30");
   await expect(page.locator('input[name="claimantName"]')).toHaveValue("A\u0308 / العربية");
-  expect(requests).toHaveLength(0);
+  expect(requests).toEqual(["POST /api/case.preview"]);
   await expect(page.locator("section.receipt")).toHaveCount(0);
   await expectAccessible(page);
 };
@@ -113,7 +118,7 @@ const policyRefusal = async (page: Page, requests: string[]) => {
       await expect(name).toHaveAttribute("aria-invalid", "true");
     }
     await expect(name).toHaveValue(authored);
-    expect(requests).toEqual(["POST /api/case.preview"]);
+    expect(requests).toEqual(["POST /api/case.preview", "POST /api/case.preview"]);
   } finally {
     pending.release();
   }
@@ -175,7 +180,7 @@ test("switches language and independent display format during draft review witho
     expect(await dialog.evaluate((element, prior) => element === prior, originalDialog)).toBe(true);
     await expect(confirmation).toBeChecked();
     await expect(dialog).toContainText(identity.operationId);
-    await expect(dialog).toContainText(identity.requestSha256);
+
     expect(requests).toHaveLength(1);
     await expectAccessible(page);
     await selectLanguage(page, "en");

@@ -1,4 +1,4 @@
-import { productMetadata } from "@contracts/product-metadata";
+import { productMetadata } from "../protocol/productMetadata";
 import correctionTargets from "./generated/correction-targets.json";
 import type { Notice } from "../api/notices";
 import type { FieldDescriptor } from "../api/service";

@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CliReplyLossTests
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -16,8 +16,6 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Cli
-open ClaimCore.Contracts
-open ClaimCore.ClientContract
 open CliTransportFixture
 
 let private certificate () =

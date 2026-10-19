@@ -1,3 +1,4 @@
+import { stubDashboardContext } from "./dashboard-context.fixtures";
 import { fillRegistrationInputs } from "./registration-inputs.fixtures";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -5,7 +6,10 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { Dashboard } from "../src/views/Dashboard";
 import { context, response } from "./service-ui.fixtures";
 
-beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+beforeEach(() => {
+  vi.stubGlobal("fetch", vi.fn());
+  stubDashboardContext();
+});
 
 it("renders public product metadata while an authorized case read is pending", async () => {
   vi.mocked(globalThis.fetch).mockReturnValueOnce(

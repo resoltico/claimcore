@@ -91,7 +91,7 @@ type BusinessCommand =
 
 /// Closed operation vocabulary; names and payload kinds belong to the core, not a renderer.
 [<RequireQualifiedAccess>]
-type CaseActKind =
+type BusinessActKind =
     | Open
     | AmendRegistration
     | CorrectCase
@@ -101,9 +101,17 @@ type CaseActKind =
     | ClearPayment
     | Close
     | Reopen
+
+[<RequireQualifiedAccess>]
+type StewardshipActKind =
     | Void
     | Reinstate
     | Erase
+
+[<RequireQualifiedAccess>]
+type CaseActKind =
+    | Business of BusinessActKind
+    | Stewardship of StewardshipActKind
 
 /// Stewardship changes the case record without asserting business facts.
 [<RequireQualifiedAccess>]
@@ -174,6 +182,16 @@ type CaseRefusal =
     | AlreadyClosed
     | AlreadyOpened
     | ZeroDecisionCannotBePaid
+
+/// A retained snapshot that cannot represent accepted state; never an input diagnostic.
+[<RequireQualifiedAccess>]
+type RecordViolation =
+    | InvalidScalar of InputTarget * InputViolation
+    | IncompleteDecision
+    | InvalidProgress
+    | NonCanonicalFields
+    | RevisionOutOfRange
+    | ReferenceMismatch
 
 /// Small Result computation expression; ordinary business refusals are values, not exceptions.
 module internal ResultFlow =

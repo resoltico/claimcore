@@ -70,7 +70,7 @@ let receipt id reference =
                 {
                     Reference = reference
                     Revision = 1L
-                    Act = CaseActKind.Open
+                    Act = (CaseActKind.Business BusinessActKind.Open)
                     Snapshot = SnapshotDisclosure.Disclosed (view reference).View
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
@@ -86,6 +86,7 @@ let authorityReceipt (request: AuthorityRequest) =
                     Act =
                         AuthorityRequests.toRecord request
                         |> fun value -> ClaimCore.RecordFormat.RecordedAuthorityActs.kind value.Act
+                        |> AuthorityKinds.fromRecord
                 }
     }
 
@@ -97,6 +98,7 @@ let description =
                 EffectiveBusinessDate = DateOnly(2026, 10, 13)
                 TimeZoneId = "Etc/UTC"
             }
+        Views = [ View.Cases; View.Authority; View.Operations ]
         Capabilities = Capabilities.all
         Offers = []
     }
@@ -148,9 +150,7 @@ type Facade() =
                 (QueryOutcome.Succeeded
                     {
                         Snapshot = view reference
-                        AvailableActs = []
-                        Offers = []
-                        HistoryDetails = []
+                        Advice = { Acts = []; History = [] }
                     })
 
         member this.List(_, _) =

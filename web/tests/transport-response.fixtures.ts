@@ -1,6 +1,6 @@
 import { ReadableStream } from "node:stream/web";
 import { vi } from "vitest";
-import { isObject } from "@contracts/browser-contract";
+import { isObject } from "../src/protocol/client";
 const snapshot = (value: unknown): unknown => {
   if (!isObject(value)) {
     return value;
@@ -57,9 +57,6 @@ const envelope = (endpoint: string, tag: string, original: unknown) => {
   ) {
     echo = { operationId: request["operationId"] };
     data = responseData(endpoint, tag, data, request);
-  }
-  if (endpoint === "case.get" && tag === "SUCCEEDED" && isObject(data) && !("offers" in data)) {
-    data = { ...data, offers: [], historyDetails: ["SUMMARY", "FULL"] };
   }
   return { endpoint, ...echo, outcome: { tag, data } };
 };

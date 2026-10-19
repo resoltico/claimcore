@@ -1,6 +1,6 @@
 namespace ClaimCore.Web
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -34,6 +34,7 @@ type OidcConfiguration =
 [<NoEquality; NoComparison>]
 type WebConfiguration =
     {
+        KeyRingDirectory: DirectoryInfo
         Binding: WebBinding
         ConnectionString: string
         Certificate: X509Certificate2
@@ -74,8 +75,8 @@ module Configuration =
             MaximumJsonBytes =
                 boundedInt
                     WebSetting.JsonLimit
-                    ServiceGateway.requestByteLimit
-                    ServiceGateway.requestByteLimit
+                    Limits.MaximumRequestBytes
+                    Limits.MaximumRequestBytes
             CorePermitLimit = boundedInt WebSetting.CorePermits 4 4
             CoreQueueLimit = boundedInt WebSetting.CoreQueue 16 16
             LoginPermitLimit = boundedInt WebSetting.LoginPermits 5 5
@@ -175,6 +176,7 @@ module Configuration =
     let load () =
         let sessionIdle, sessionAbsolute = sessionLifetimes ()
         let configuredEndpoint = binding ()
+        let keyRingDirectory = required WebSetting.KeyRingDirectory |> SessionKeys.admit
 
         let configuredConnection =
             privateConnection
@@ -192,6 +194,7 @@ module Configuration =
                     (required WebSetting.CertificatePath)
 
             {
+                KeyRingDirectory = keyRingDirectory
                 Binding = configuredEndpoint
                 ConnectionString = configuredConnection
                 Certificate = configuredCertificate

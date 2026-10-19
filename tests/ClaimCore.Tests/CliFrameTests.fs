@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CliFrameTests
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -9,8 +9,6 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Cli
-open ClaimCore.Contracts
-open ClaimCore.ClientContract
 open CliTransportFixture
 
 type private BrokenOutput() =
@@ -29,17 +27,17 @@ type private PartialOutput() =
 let private deliveryKnowledge () =
     use output = new MemoryStream()
     use errors = new MemoryStream()
-    let delivery = FrameDelivery(output, errors)
+    let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
     delivery.BeginFrame()
     Expect.equal (delivery.Interrupt()) 130 "Before dispatch cancellation"
-    let mutation = FrameDelivery(output, errors)
+    let mutation = ClaimCore.Cli.FrameDelivery(output, errors)
     mutation.BeginFrame()
     mutation.BeforeDispatch(frame "case.execute")
     Expect.equal (mutation.Interrupt()) 4 "Cancellation after mutation dispatch"
-    let completed = FrameDelivery(output, errors)
+    let completed = ClaimCore.Cli.FrameDelivery(output, errors)
     completed.BeginFrame()
     completed.BeforeDispatch(frame "case.execute")
-    completed.Write(CliReply.protocol "INVALID_RESPONSE")
+    completed.Write(CliReply.protocol ProtocolFailure.InvalidResponse)
     completed.BeginFrame()
 
     Expect.equal
@@ -48,7 +46,7 @@ let private deliveryKnowledge () =
         "Next frame does not inherit flushed mutation knowledge"
 
     use broken = new BrokenOutput()
-    let lost = FrameDelivery(broken, errors)
+    let lost = ClaimCore.Cli.FrameDelivery(broken, errors)
     lost.BeginFrame()
     lost.BeforeDispatch(frame "authority.execute")
 
@@ -62,7 +60,7 @@ let private readOutputFailure () =
     for dispatched, expected in [ false, "NOT_SENT"; true, "READ_FAILED" ] do
         use output = new BrokenOutput()
         use errors = new MemoryStream()
-        let delivery = FrameDelivery(output, errors)
+        let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
         let invocation = frame "case.get"
         delivery.BeginFrame()
         delivery.Prepare invocation
@@ -79,7 +77,7 @@ let private readOutputFailure () =
                 70
                 "A failed read output remains a definite local failure"
 
-        let failure = Frames.decode (errors.ToArray()) |> Fixtures.accepted
+        let failure = replyJson (errors.ToArray())
 
         Expect.equal
             (failure.GetProperty("attemptKnowledge").GetString())
@@ -96,7 +94,7 @@ let private partialOutputKnowledge () =
         [ "case.execute", 4, "UNCONFIRMED"; "case.get", 70, "READ_FAILED" ] do
         use output = new PartialOutput()
         use errors = new MemoryStream()
-        let delivery = FrameDelivery(output, errors)
+        let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
         delivery.BeginFrame()
         delivery.BeforeDispatch(frame endpoint)
 
@@ -110,7 +108,7 @@ let private partialOutputKnowledge () =
                 "Partial output preserves delivery classification"
 
         Expect.equal output.Length 5L "Only a partial frame was written"
-        let failure = Frames.decode (errors.ToArray()) |> Fixtures.accepted
+        let failure = replyJson (errors.ToArray())
 
         Expect.equal
             (failure.GetProperty("attemptKnowledge").GetString())
@@ -118,7 +116,7 @@ let private partialOutputKnowledge () =
             "Stderr safely reports the attempt knowledge"
 
         use brokenErrors = new PartialOutput()
-        let both = FrameDelivery(output, brokenErrors)
+        let both = ClaimCore.Cli.FrameDelivery(output, brokenErrors)
         both.BeginFrame()
         both.BeforeDispatch(frame endpoint)
 
@@ -167,7 +165,7 @@ let private readerBounds () =
         Expect.isOk (Frames.decode output) "One protocol failure reply"
 
 let private sessionLines () =
-    let document = Frames.bytes (frame "case.get") |> Encoding.UTF8.GetString
+    let document = frameBytes (frame "case.get") |> Encoding.UTF8.GetString
     use input = new MemoryStream(bytes (document + "\r\n{}\n" + document + "\n"))
     use output = new MemoryStream()
     use errors = new MemoryStream()
@@ -199,8 +197,8 @@ let private sessionLines () =
         Expect.isOk (Frames.decode (bytes line)) "Every response is a valid frame"
 
 let private uncertainSession () =
-    let first = Frames.bytes (frame "authority.execute") |> Encoding.UTF8.GetString
-    let next = Frames.bytes (frame "case.get") |> Encoding.UTF8.GetString
+    let first = frameBytes (frame "authority.execute") |> Encoding.UTF8.GetString
+    let next = frameBytes (frame "case.get") |> Encoding.UTF8.GetString
     use input = new MemoryStream(bytes (first + "\n" + next + "\n"))
     use output = new MemoryStream()
     use errors = new MemoryStream()
@@ -217,7 +215,7 @@ let private uncertainSession () =
                 let reply = CliReply.local ClientFailure.Unavailable
 
                 Task.FromResult(
-                    if (Frames.endpoint invocation).Mutates then
+                    if (frameEndpoint invocation |> Endpoint.mutates) then
                         CliReply.unknown reply
                     else
                         reply
@@ -266,21 +264,17 @@ let private exampleFrames () =
     let mutable current = None
 
     for index, path in Array.indexed files do
-        let invocation = Frames.parse (File.ReadAllBytes path) |> Fixtures.accepted
+        let invocation = Frames.admit (File.ReadAllBytes path) |> Fixtures.accepted
 
         Expect.equal
-            (Frames.endpoint invocation).Identifier
+            (frameEndpoint invocation |> Endpoint.id)
             "case.execute"
             "Business and stewardship share execution"
 
         let request =
-            match
-                ClaimCore.Contracts.EndpointCatalog.admitRequest
-                    "case.execute"
-                    (Frames.inputBytes invocation)
-                |> Fixtures.accepted
-            with
-            | ServiceInput.Case request -> request
+            match Frames.request invocation with
+            | WireRequest.CaseExecute request ->
+                ClaimCore.Hosting.RequestMapping.caseRequest request
             | _ -> failtest "Example must be a case request"
 
         let next =

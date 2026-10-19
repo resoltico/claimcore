@@ -1,131 +1,172 @@
 namespace ClaimCore.Application
 
 open System
-open System.Security.Cryptography
+open System.Text
+open System.Text.Json
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
-[<RequireQualifiedAccess>]
-type internal CursorQuery =
-    | Cases
-    | History of reference: string * detail: HistoryDetail
-    | Actors
-    | Grants of actorId: Guid
-
+/// Plain positions convey no authority. Every selection authorizes before decoding.
 module internal Cursors =
-    let private lifetimeTicks = TimeSpan.FromMinutes(15.0).Ticks
+    [<Literal>]
+    let MaximumTokenCharacters = 512
 
-    let private digest value =
-        CanonicalJson.encode value |> SHA256.HashData
+    let private base64 (bytes: byte array) =
+        Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
 
-    let private scopeKey =
-        function
-        | GrantScope.Installation -> ""
-        | GrantScope.Case id -> id.ToString("D")
+    let private encode members =
+        CanonicalValue.Object members |> CanonicalJson.encode |> base64
 
-    let private grantOrder (left: ActorGrant) (right: ActorGrant) =
-        let role = String.CompareOrdinal(Roles.token left.Role, Roles.token right.Role)
+    let private alphabet character =
+        (character >= 'A' && character <= 'Z')
+        || (character >= 'a' && character <= 'z')
+        || (character >= '0' && character <= '9')
+        || character = '-'
+        || character = '_'
 
-        if role <> 0 then
-            role
+    let private decode read (token: string) =
+        if
+            String.IsNullOrEmpty token
+            || token.Length > MaximumTokenCharacters
+            || token.Length % 4 = 1
+            || not (Seq.forall alphabet token)
+        then
+            Error Rejection.InvalidCursor
         else
-            String.CompareOrdinal(scopeKey left.Scope, scopeKey right.Scope)
+            try
+                let padded =
+                    token.Replace('-', '+').Replace('_', '/')
+                    + String('=', (4 - token.Length % 4) % 4)
 
-    let private grantValue (grant: ActorGrant) =
-        let scope =
-            match grant.Scope with
-            | GrantScope.Installation ->
-                CanonicalValue.Object [ "kind", CanonicalValue.String "INSTALLATION" ]
-            | GrantScope.Case id ->
-                CanonicalValue.Object
-                    [
-                        "kind", CanonicalValue.String "CASE"
-                        "caseId", CanonicalValue.String(id.ToString("D"))
-                    ]
+                let bytes = Convert.FromBase64String padded
+                UTF8Encoding(false, true).GetCharCount(bytes) |> ignore
 
-        CanonicalValue.Object
-            [ "role", CanonicalValue.String(Roles.token grant.Role); "scope", scope ]
+                use document =
+                    JsonDocument.Parse(ReadOnlyMemory bytes, JsonDocumentOptions(MaxDepth = 32))
 
-    let private queryValue =
-        function
-        | CursorQuery.Cases ->
-            CanonicalValue.Object
-                [
-                    "endpoint", CanonicalValue.String "case.list"
-                    "order", CanonicalValue.String "REFERENCE_ASCENDING"
-                ]
-        | CursorQuery.Grants actorId ->
-            CanonicalValue.Object
-                [
-                    "endpoint", CanonicalValue.String "authority.grants"
-                    "actorId", CanonicalValue.String(actorId.ToString("D"))
-                    "order", CanonicalValue.String "ROLE_COLUMN_ASC_CASE_ID_ASC_NULLS_LAST"
-                ]
-        | CursorQuery.Actors ->
-            CanonicalValue.Object
-                [
-                    "endpoint", CanonicalValue.String "authority.list"
-                    "order", CanonicalValue.String "ACTOR_ID_ASCENDING"
-                ]
-        | CursorQuery.History(reference, detail) ->
-            CanonicalValue.Object
-                [
-                    "endpoint", CanonicalValue.String "case.history"
-                    "caseReference", CanonicalValue.String(CaseReference.key reference)
-                    "detail",
-                    CanonicalValue.String(if detail = HistoryDetail.Full then "FULL" else "SUMMARY")
-                    "order", CanonicalValue.String "REVISION_ASCENDING"
-                ]
+                let value = CanonicalJson.ofElement document.RootElement
 
-    let private binding (installationId: Guid) (actor: ActorAuthority) query =
-        let principal = PrincipalKey.describe actor.Principal
+                if base64 bytes <> token || CanonicalJson.encode value <> bytes then
+                    Error Rejection.InvalidCursor
+                else
+                    match read value with
+                    | Some position -> Ok position
+                    | None -> Error Rejection.InvalidCursor
+            with
+            | :? ArgumentException
+            | :? FormatException
+            | :? InvalidOperationException
+            | :? JsonException -> Error Rejection.InvalidCursor
 
-        let grants =
-            actor.Grants
-            |> List.distinct
-            |> List.sortWith grantOrder
-            |> List.map grantValue
-            |> CanonicalValue.Array
-            |> digest
+    let private reference value =
+        CaseReference.validate value |> Result.isOk && CaseReference.key value = value
 
-        CanonicalValue.Object
+    let private uuid value =
+        match Guid.TryParseExact((value: string), "D") with
+        | true, id when id <> Guid.Empty && id.ToString("D") = value -> Some id
+        | _ -> None
+
+    let encodeCases after =
+        encode
             [
-                "installationId", CanonicalValue.String(installationId.ToString("D"))
-                "actorId", CanonicalValue.String(actor.ActorId.ToString("D"))
-                "enabled", CanonicalValue.Boolean actor.Enabled
-                "principal",
-                CanonicalValue.Object
-                    [
-                        "kind", CanonicalValue.String principal.Kind
-                        "issuer", CanonicalValue.String principal.Issuer
-                        "subject", CanonicalValue.String principal.Subject
-                    ]
-                "grants", CanonicalValue.String(Convert.ToHexStringLower grants)
-                "query", queryValue query
+                "after", CanonicalValue.String(CaseReference.key after)
+                "kind", CanonicalValue.String "CASES"
+                "v", CanonicalValue.Integer 1L
             ]
-        |> digest
 
-    let encode key installationId actor query (observedAt: DateTimeOffset) position =
-        CursorRecord.encode
-            key
-            {
-                IssuedAtTicks = observedAt.UtcTicks
-                Binding = binding installationId actor query
-                Position = position
-            }
+    let decodeCases token =
+        decode
+            (function
+            | CanonicalValue.Object [ "after", CanonicalValue.String after
+                                      "kind", CanonicalValue.String "CASES"
+                                      "v", CanonicalValue.Integer 1L ] when reference after ->
+                Some after
+            | _ -> None)
+            token
 
-    /// MAC and structural validation happen before position is returned to an endpoint parser.
-    let decode key installationId actor query (observedAt: DateTimeOffset) token =
-        match CursorRecord.decode key token with
-        | Error _ -> Error Rejection.InvalidCursor
-        | Ok envelope ->
-            let expected = binding installationId actor query
+    let encodeHistory reference after =
+        encode
+            [
+                "after", CanonicalValue.Integer after
+                "case", CanonicalValue.String(CaseReference.key reference)
+                "kind", CanonicalValue.String "HISTORY"
+                "v", CanonicalValue.Integer 1L
+            ]
 
-            if
-                envelope.IssuedAtTicks <= observedAt.UtcTicks
-                && observedAt.UtcTicks < envelope.IssuedAtTicks + lifetimeTicks
-                && CryptographicOperations.FixedTimeEquals(expected, envelope.Binding)
-            then
-                Ok envelope.Position
-            else
-                Error Rejection.InvalidCursor
+    let decodeHistory requested token =
+        decode
+            (function
+            | CanonicalValue.Object [ "after", CanonicalValue.Integer after
+                                      "case", CanonicalValue.String target
+                                      "kind", CanonicalValue.String "HISTORY"
+                                      "v", CanonicalValue.Integer 1L ] when
+                after >= 1L
+                && after <= Revision.Maximum
+                && reference target
+                && target = CaseReference.key requested
+                ->
+                Some after
+            | _ -> None)
+            token
+
+    let encodeActors (after: Guid) =
+        encode
+            [
+                "after", CanonicalValue.String(after.ToString("D"))
+                "kind", CanonicalValue.String "ACTORS"
+                "v", CanonicalValue.Integer 1L
+            ]
+
+    let decodeActors token =
+        decode
+            (function
+            | CanonicalValue.Object [ "after", CanonicalValue.String after
+                                      "kind", CanonicalValue.String "ACTORS"
+                                      "v", CanonicalValue.Integer 1L ] -> uuid after
+            | _ -> None)
+            token
+
+    let encodeGrants (actorId: Guid) (after: GrantPosition) =
+        let position =
+            CanonicalValue.Object
+                [
+                    "caseId",
+                    after.CaseId
+                    |> Option.map (fun id -> CanonicalValue.String(id.ToString("D")))
+                    |> Option.defaultValue CanonicalValue.Null
+                    "role", CanonicalValue.String(Roles.token after.Role)
+                ]
+
+        encode
+            [
+                "actor", CanonicalValue.String(actorId.ToString("D"))
+                "after", position
+                "kind", CanonicalValue.String "GRANTS"
+                "v", CanonicalValue.Integer 1L
+            ]
+
+    let private grant role caseId =
+        let scope =
+            match caseId with
+            | CanonicalValue.Null -> Some None
+            | CanonicalValue.String value -> uuid value |> Option.map Some
+            | _ -> None
+
+        match Roles.tryParse role, scope with
+        | Some role, Some caseId -> Some { Role = role; CaseId = caseId }
+        | _ -> None
+
+    let decodeGrants actorId token =
+        decode
+            (function
+            | CanonicalValue.Object [ "actor", CanonicalValue.String target
+                                      "after",
+                                      CanonicalValue.Object [ "caseId", caseId
+                                                              "role", CanonicalValue.String role ]
+                                      "kind", CanonicalValue.String "GRANTS"
+                                      "v", CanonicalValue.Integer 1L ] when
+                uuid target = Some actorId
+                ->
+                grant role caseId
+            | _ -> None)
+            token

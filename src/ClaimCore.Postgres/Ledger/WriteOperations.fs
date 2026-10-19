@@ -4,12 +4,29 @@ open ClaimCore.Application
 open ClaimCore.RecordFormat
 
 module internal WriteOperations =
+    let private persist connection token project decision =
+        task {
+            match decision with
+            | LedgerDecision.Replay entry -> return LedgerWriteResult.Replayed entry, false
+            | LedgerDecision.Refuse reason -> return LedgerWriteResult.Refused reason, false
+            | LedgerDecision.Fail fault -> return LedgerWriteResult.Failed fault, false
+            | LedgerDecision.Append(entry, projection, receipt) ->
+                let! _ = Persistence.entry connection entry token
+                do! project connection projection token
+                return LedgerWriteResult.Appended receipt, true
+        }
+
     let case source settings installationId principal operationId reference decide token =
         Transactions.write source settings token (fun connection ->
             task {
                 let! head, instant, nonce = Transactions.head connection token
-                let! actor = Projections.actor connection principal token
                 let! existing = StoredEntries.operation connection installationId operationId token
+
+                let ids =
+                    CaseReferenceId.encode installationId reference
+                    :: Projections.operationCases existing
+
+                let! actor = Projections.actor connection principal ids token
 
                 let! case =
                     Projections.caseById
@@ -27,14 +44,7 @@ module internal WriteOperations =
                         Case = case
                     }
 
-                match decide view with
-                | LedgerDecision.Replay entry -> return LedgerWriteResult.Replayed entry, false
-                | LedgerDecision.Refuse reason -> return LedgerWriteResult.Refused reason, false
-                | LedgerDecision.Fail fault -> return LedgerWriteResult.Failed fault, false
-                | LedgerDecision.Append(entry, projection, receipt) ->
-                    let! _ = Persistence.entry connection entry token
-                    do! Persistence.case connection projection token
-                    return LedgerWriteResult.Appended receipt, true
+                return! persist connection token Persistence.case (decide view)
             })
 
     let private counts connection token =
@@ -58,9 +68,21 @@ module internal WriteOperations =
         Transactions.write source settings token (fun connection ->
             task {
                 let! head, instant, nonce = Transactions.head connection token
-                let! actor = Projections.actor connection principal token
                 let! existing = StoredEntries.operation connection installationId operationId token
-                let! target = Projections.actor connection target token
+
+                let ids =
+                    reference
+                    |> Option.map (CaseReferenceId.encode installationId)
+                    |> Option.toList
+
+                let! actor =
+                    Projections.actor
+                        connection
+                        principal
+                        (ids @ Projections.operationCases existing)
+                        token
+
+                let! target = Projections.actor connection target ids token
 
                 let! case =
                     match reference with
@@ -86,12 +108,5 @@ module internal WriteOperations =
                         EnabledHumanOwners = DatabaseSession.value 1 counts.Head
                     }
 
-                match decide view with
-                | LedgerDecision.Replay entry -> return LedgerWriteResult.Replayed entry, false
-                | LedgerDecision.Refuse reason -> return LedgerWriteResult.Refused reason, false
-                | LedgerDecision.Fail fault -> return LedgerWriteResult.Failed fault, false
-                | LedgerDecision.Append(entry, projection, receipt) ->
-                    let! _ = Persistence.entry connection entry token
-                    do! Persistence.authority connection projection token
-                    return LedgerWriteResult.Appended receipt, true
+                return! persist connection token Persistence.authority (decide view)
             })

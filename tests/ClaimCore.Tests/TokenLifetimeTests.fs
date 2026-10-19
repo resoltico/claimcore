@@ -23,12 +23,14 @@ let private response seconds =
     $"""{{"access_token":"synthetic-token","token_type":"Bearer","expires_in":{seconds}}}"""
 
 let private parsed (clock: TokenClock) =
-    OAuthTokenClient.parseTokenResponseAt
+    AccessTokens.fromPartsAt
         clock
         (clock.GetUtcNow())
         (clock.GetTimestamp())
-        (Encoding.UTF8.GetBytes(response 60))
-    |> Result.defaultWith (fun _ -> failtest "Synthetic token reply must parse.")
+        "Bearer"
+        "synthetic-token"
+        60
+    |> Result.defaultWith (fun _ -> failtest "Synthetic token must be admitted.")
 
 let private rollbackBudget () =
     let clock = TokenClock()
@@ -58,33 +60,40 @@ let private delayedDelivery () =
                     clock.Elapsed(TimeSpan.FromSeconds seconds)
                     clock.Jump(TimeSpan.FromHours -2.)
                     let reply = new HttpResponseMessage(HttpStatusCode.OK)
-                    reply.Content <- new StringContent(response 15)
+
+                    reply.Content <-
+                        new StringContent(response 15, Encoding.UTF8, "application/json")
+
                     Task.FromResult(reply)
             }
 
         use client = new HttpClient(handler, false)
 
-        let endpoints =
-            {
-                Authorization = Uri("https://issuer.example.test/authorize")
-                Token = Uri("https://issuer.example.test/token")
-                Jwks = Uri("https://issuer.example.test/keys")
+        let directory =
+            System.IO.Directory.CreateTempSubdirectory("claimcore-token-budget-")
+
+        use cleanup =
+            { new IDisposable with
+                member _.Dispose() = directory.Delete(true)
             }
 
-        let grant =
-            OAuthGrant.AuthorizationCode(
-                "synthetic-code",
-                Uri("http://127.0.0.1:49152/"),
-                "synthetic-verifier"
-            )
+        let secret = System.IO.Path.Combine(directory.FullName, "secret")
+        System.IO.File.WriteAllText(secret, "synthetic-secret")
+
+        System.IO.File.SetUnixFileMode(
+            secret,
+            System.IO.UnixFileMode.UserRead ||| System.IO.UnixFileMode.UserWrite
+        )
+
+        let endpoint = Uri "https://issuer.example.test/token"
 
         let result =
             OAuthTokenClient.acquireWithClock
                 clock
                 client
-                endpoints
+                endpoint
                 "synthetic-client"
-                grant
+                secret
                 CancellationToken.None
             |> _.GetAwaiter().GetResult()
 

@@ -1,8 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0.401@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS sdk
-FROM gcc:14.3.0-bookworm@sha256:5e927c284bf55a7dc796262e311a0703344f62f41f5621eb56843111b1d37e15 AS native-sdk
-COPY --from=sdk /usr/share/dotnet /usr/share/dotnet
-ENV DOTNET_ROOT=/usr/share/dotnet
-ENV PATH="/usr/share/dotnet:${PATH}"
+FROM mcr.microsoft.com/dotnet/sdk:10.0.402@sha256:0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa AS sdk
 FROM node:26.10.0-bookworm@sha256:2aaae6d91f99fee84cfc92da9b52c22a185752d247746052bbc3f961e44478c6 AS node
 
 # The browser build consumes tracked contracts and needs no .NET SDK.
@@ -19,7 +15,7 @@ COPY web ./web
 COPY prettier.config.mjs LICENSE ./
 RUN npm --prefix web run build
 
-FROM native-sdk AS build
+FROM sdk AS build
 WORKDIR /source
 COPY . .
 COPY --from=frontend /source/web/dist ./web/dist
@@ -29,14 +25,14 @@ RUN --mount=type=cache,target=/root/.nuget/packages \
     && dotnet publish src/ClaimCore.Cli --configuration Release --no-restore --output /published/cli \
     && dotnet publish src/ClaimCore.Database --configuration Release --no-restore --output /published/database
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:222759b391a1aaf241166672c8f99b2d4ada452e7b5319f3c6e8f265a37b5ad4 AS administration
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:d5633778c754e89a386882eddf8dbee6942447a8a4b8267c19cf1e1158d0b0ac AS administration
 WORKDIR /app
 COPY --from=build /published/database/ ./database/
 COPY --from=build /published/cli/ ./cli/
 USER $APP_UID
 ENTRYPOINT ["dotnet", "/app/database/ClaimCore.Database.dll"]
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:222759b391a1aaf241166672c8f99b2d4ada452e7b5319f3c6e8f265a37b5ad4 AS web
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:d5633778c754e89a386882eddf8dbee6942447a8a4b8267c19cf1e1158d0b0ac AS web
 WORKDIR /app
 COPY --from=build /published/web/ ./
 USER $APP_UID

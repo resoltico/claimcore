@@ -8,6 +8,7 @@ open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess>]
 type internal StoreFailure =
+    | Internal
     | Unavailable
     | SchemaMismatch
     | Integrity
@@ -44,7 +45,7 @@ type internal StoredEntry =
 type internal CaseReadView =
     {
         ObservedAt: DateTimeOffset
-        Actor: ActorAuthority option
+        Actor: AuthorityView
         ExistingOperation: StoredEntry option
         Case: StoredCase option
     }
@@ -54,7 +55,7 @@ type internal CaseLockedView =
         Head: LedgerHead
         ObservedAt: DateTimeOffset
         PayloadNonce: byte array
-        Actor: ActorAuthority option
+        Actor: AuthorityView
         ExistingOperation: StoredEntry option
         Case: StoredCase option
     }
@@ -98,9 +99,9 @@ type internal AuthorityLockedView =
         Head: LedgerHead
         ObservedAt: DateTimeOffset
         PayloadNonce: byte array
-        Actor: ActorAuthority option
+        Actor: AuthorityView
         ExistingOperation: StoredEntry option
-        Target: ActorAuthority option
+        Target: AuthorityView
         TargetCase: StoredCase option
         EnabledHumanOwners: int
         ActorCount: int
@@ -117,7 +118,7 @@ type internal AuthorityProjection =
 type internal ActorReadView =
     {
         ObservedAt: DateTimeOffset
-        Actor: ActorAuthority option
+        Actor: AuthorityView
     }
 
 type internal CasePageSelection =
@@ -129,14 +130,14 @@ type internal CasePageSelection =
 type internal HistoryReadView =
     {
         ObservedAt: DateTimeOffset
-        Actor: ActorAuthority option
+        Actor: AuthorityView
         Case: StoredCase option
     }
 
 type internal StoredCasePage =
     {
         ObservedAt: DateTimeOffset
-        Actor: ActorAuthority option
+        Actor: AuthorityView
         Items: StoredCase list
         NextAfterReference: string option
     }
@@ -144,7 +145,7 @@ type internal StoredCasePage =
 type internal StoredHistoryPage =
     {
         ObservedAt: DateTimeOffset
-        Actor: ActorAuthority option
+        Actor: AuthorityView
         Case: StoredCase option
         Entries: StoredEntry list
         NextAfterRevision: int64 option
@@ -153,7 +154,7 @@ type internal StoredHistoryPage =
 type internal StoredActorPage =
     {
         ObservedAt: DateTimeOffset
-        Actor: ActorAuthority option
+        Actor: AuthorityView
         Items: ActorSummary list
         NextAfterActorId: Guid option
     }
@@ -163,14 +164,14 @@ type internal GrantPosition = { Role: Role; CaseId: Guid option }
 type internal GrantReadView =
     {
         ObservedAt: DateTimeOffset
-        Actor: ActorAuthority option
+        Actor: AuthorityView
         Target: ActorSummary option
     }
 
 type internal StoredGrantPage =
     {
         ObservedAt: DateTimeOffset
-        Actor: ActorAuthority option
+        Actor: AuthorityView
         Target: ActorSummary
         Items: AuthorityGrant list
         NextAfterGrant: GrantPosition option
@@ -179,7 +180,7 @@ type internal StoredGrantPage =
 type internal OperationReadView =
     {
         ObservedAt: DateTimeOffset
-        Actor: ActorAuthority option
+        Actor: AuthorityView
         Entry: StoredEntry option
         Case: StoredCase option
     }
@@ -213,6 +214,7 @@ type internal ILedgerStore =
 
     abstract ListCases:
         principal: PrincipalKey *
+        readRoles: Role list *
         select: (ActorReadView -> Result<CasePageSelection, Rejection>) *
         limit: int *
         cancellationToken: CancellationToken ->

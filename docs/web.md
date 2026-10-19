@@ -18,6 +18,12 @@ outcome. Durable execution continues despite an abandoned HTTP caller; loss of c
 is uncertain. Request logs contain only endpoint, outcome, status, durationMs, actorId and
 operationId. Exception diagnostics contain type and method stack, never exception messages.
 
+`CLAIMCORE_WEB_KEY_RING_DIRECTORY` is required and names an existing absolute directory without
+group or other write permission. ASP.NET data-protection keys use application name `ClaimCore.Web`;
+encrypted server-side tickets live in its private `sessions` subdirectory. Reuse the directory for
+Web restarts. [Operations](operations.md#access-review-and-sessions) owns session deadlines,
+revocation, single-process qualification and protection of this secret outside database backups.
+
 The editor freezes one draft identity and serialized request for review/execution. Editing
 an exposed request creates a fresh identity. Unknown delivery retains one pending request for
 retries of the same bytes while the page is alive; a closed/reloaded page retains no pending
@@ -30,21 +36,19 @@ advice. The service locks and revalidates execution. The browser offers English,
 Arabic with independent date/number formats and right-to-left Arabic layout. Latvian and Arabic
 catalogues are machine-drafted and require native-language review. Pseudolocalization supports
 layout checks. Authority form selects and non-checkbox inputs size to their panel while checkboxes
-retain native dimensions. Stewardship and authority management are reachable browser operations, using core offers and generated forms.
+retain native dimensions. Stewardship and authority management are reachable browser operations, using typed core advice and descriptor-driven forms.
 
 Bearer tokens require an admitted issuer/audience and `JWT` or `at+jwt` type. The CLI client is
 human and requires `sub`. Other verified clients identify services by client ID; matching single
 `azp`/`client_id` values or their single-claim fallback are accepted. Duplicate, blank or conflicting
 client identities are refused. IdP verification does not register or grant a ClaimCore actor.
 
-Configure SERVICE actors only for confidential clients restricted to client credentials; disable
-interactive authorization and other user grant paths for those clients. Configure the CLI as a
-public human authorization-code/PKCE client with service accounts disabled. Issue the API audience
-only in access tokens, never ID tokens. Classification by `azp`/`client_id` identifies the client;
-it does not prove which OAuth grant produced a token. These IdP flow restrictions are part of the
-deployment trust contract and prevent user tokens from inheriting a shared service actor’s grants.
+The [identity-provider flow restrictions](operations.md#access-review-and-sessions) are part of the
+deployment trust contract. Client classification identifies a client; it does not prove which OAuth
+grant produced a token. Restrict IdP clients before granting SERVICE principals ClaimCore access.
 
-The browser consumes tracked generated types/descriptors, request builders and complete response schemas.
+The browser consumes tracked generated types/descriptors and OpenAPI component schemas. Requests
+are typed object literals; a single schema interpreter validates response shapes.
 Its production decoder starts with bounded strict UTF-8 bytes and preserves integer lexical checks. Missing or unusable mutation receipt data remains uncertain
 and preserves the original retry identity/content. WITHHELD snapshots show
 metadata without fields; ERASED is distinct. Country display hints use localized names where known,

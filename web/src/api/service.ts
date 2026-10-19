@@ -9,9 +9,9 @@ import {
   endpoints,
   strictByteProfile,
   wireContractFingerprint,
-} from "@contracts/endpoint-catalog";
+} from "@contracts/client";
 import { admitBytes } from "../protocol/schema";
-import { correlateReply, isHostFailure, isResponse } from "@contracts/browser-contract";
+import { correlateReply, isHostFailure, isResponse } from "../protocol/client";
 export type * from "./types";
 export { isCurrentCase } from "./types";
 export { isMutationUncertain, resultNotice } from "./outcomes";

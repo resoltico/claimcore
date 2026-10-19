@@ -11,6 +11,8 @@ const renderState = async (state: SessionState) => {
   vi.doMock("../src/hooks/useSession", () => ({
     useSession: () => ({ state, logout: vi.fn(), refresh: vi.fn() }),
   }));
+  const { stubDashboardContext } = await import("./dashboard-context.fixtures");
+  stubDashboardContext();
   const { App } = await import("../src/App");
   const { PresentationProvider } = await import("../src/presentation/PresentationProvider");
   return render(
@@ -43,6 +45,6 @@ it("renders OIDC sign-in and authenticated dashboard paths", async () => {
   expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
   rejected.unmount();
   await renderState({ kind: "authenticated", token: "token", epoch: 4 });
-  expect(screen.getByRole("heading", { name: "Cases" })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "Cases" })).toBeVisible();
   expect(screen.queryByText("Loading application…")).toBeNull();
 });

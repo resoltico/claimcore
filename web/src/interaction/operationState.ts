@@ -1,3 +1,4 @@
+import type { ResolutionEvidence } from "../protocol/delivery";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import type { Notice } from "../api/notices";
 import type { Review, CommandDraft, CaseReceipt } from "../api/service";
@@ -19,7 +20,6 @@ export type OperationState = {
   caseReference: string;
   command: CommandKind;
   values: DraftValues;
-  requestSha256: string | null;
   requestBytes: string | null;
   prepared: PreparedRequest<"case.execute"> | null;
   review: Review | null;
@@ -53,13 +53,13 @@ export type OperationAction =
       draft: CommandDraft;
       prepared?: PreparedRequest<"case.execute">;
     }
-  | { type: "REVIEWED"; requestId: number; requestSha256: string; review: Review }
+  | { type: "REVIEWED"; requestId: number; review: Review }
   | {
       type: "DEFINITELY_REJECTED";
       requestId: number;
       message: Notice;
       field: string | null;
-      evidence?: string;
+      evidence?: ResolutionEvidence;
       disclosureRefused?: boolean;
     }
   | { type: "SUBMITTING"; requestId: number }

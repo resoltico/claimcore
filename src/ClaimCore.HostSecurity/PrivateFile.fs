@@ -2,96 +2,62 @@ namespace ClaimCore.HostSecurity
 
 open System
 open System.IO
-open System.Runtime.InteropServices
 open System.Security.Cryptography
 open System.Text
+open System.Threading.Tasks
 open Microsoft.Win32.SafeHandles
 
-/// Why an owner-private file was refused. Values carry no path and no content.
+/// Refusals carry neither the private path nor its content.
 [<RequireQualifiedAccess>]
 type PrivateFileFailure =
     | NotAbsolute
     | InvalidPath
     | InvalidLimit
     | Missing
-    | IsLink
     | NotRegular
-    | WrongOwner
     | TooPermissive
     | TooLarge
     | Unreadable
-    | AclRefused
-    | NativeAssetUnavailable
     | UnsupportedPlatform
 
-module internal PrivateFileNative =
-    [<DllImport("claimcore_hostsecurity",
-                EntryPoint = "claimcore_private_file_open",
-                CallingConvention = CallingConvention.Cdecl)>]
-    extern int private openFile([<MarshalAs(UnmanagedType.LPUTF8Str)>] string path, int& descriptor)
-
-    let status =
-        function
-        | 0 -> Ok()
-        | 1 -> Error PrivateFileFailure.Missing
-        | 2 -> Error PrivateFileFailure.IsLink
-        | 3 -> Error PrivateFileFailure.NotRegular
-        | 4 -> Error PrivateFileFailure.WrongOwner
-        | 5 -> Error PrivateFileFailure.TooPermissive
-        | 6 -> Error PrivateFileFailure.Unreadable
-        | 7 -> Error PrivateFileFailure.AclRefused
-        | _ -> Error PrivateFileFailure.Unreadable
-
-    let invoke action =
-        try
-            action ()
-        with
-        | :? DllNotFoundException
-        | :? EntryPointNotFoundException
-        | :? BadImageFormatException -> Error PrivateFileFailure.NativeAssetUnavailable
-
-    let openRead path =
-        invoke (fun () ->
-            let mutable descriptor = -1
-
-            match status (openFile (path, &descriptor)) with
-            | Ok() when descriptor >= 0 -> Ok descriptor
-            | Ok() -> Error PrivateFileFailure.Unreadable
-            | Error failure -> Error failure)
-
-/// Same-descriptor admission and bounded reads of owner-private regular files.
+/// Managed admission of bounded private inputs on Linux and macOS.
 module PrivateFile =
-    /// Fixed, nonsecret guidance for a missing or incompatible native runtime asset.
-    let nativeAssetGuidance =
-        "Private-file native support is missing or incompatible. Rebuild or reinstall ClaimCore for this supported operating system and architecture."
+    let private forbidden =
+        UnixFileMode.OtherRead
+        ||| UnixFileMode.OtherWrite
+        ||| UnixFileMode.OtherExecute
+        ||| UnixFileMode.GroupWrite
+        ||| UnixFileMode.GroupExecute
 
-    let private readOpened maximumBytes (stream: FileStream) =
-        let length = if stream.CanSeek then stream.Length else 0L
+    let private admitted mode = mode &&& forbidden = UnixFileMode.None
 
+    let internal readBytes (stream: Stream) (buffer: byte array) =
+        try
+            stream.ReadExactly(buffer, 0, buffer.Length)
+            Ok buffer
+        with _ ->
+            CryptographicOperations.ZeroMemory(Span<byte> buffer)
+            reraise ()
+
+    let internal readOpened maximumBytes (stream: FileStream) =
         if not stream.CanSeek then
             Error PrivateFileFailure.NotRegular
-        elif length > int64 maximumBytes then
-            Error PrivateFileFailure.TooLarge
         else
-            let buffer = Array.zeroCreate<byte>(int length)
+            let length = stream.Length
 
-            try
-                stream.ReadExactly(buffer, 0, buffer.Length)
-                Ok buffer
-            with _ ->
-                CryptographicOperations.ZeroMemory(Span<byte> buffer)
-                reraise ()
+            if length > int64 maximumBytes then
+                Error PrivateFileFailure.TooLarge
+            else
+                readBytes stream (Array.zeroCreate<byte>(int length))
 
     let internal readHandle maximumBytes (handle: SafeFileHandle) =
-        let opened =
-            try
-                new FileStream(handle, FileAccess.Read, 1, false)
-            with _ ->
-                handle.Dispose()
-                reraise ()
+        use owned = handle
 
-        use stream = opened
-        readOpened maximumBytes stream
+        if not (admitted (File.GetUnixFileMode handle)) then
+            Error PrivateFileFailure.TooPermissive
+        else
+            use stream = new FileStream(handle, FileAccess.Read, 1, false)
+            readOpened maximumBytes stream
 
     let private validPath (path: string) =
         if path.Contains '\000' then
@@ -103,7 +69,31 @@ module PrivateFile =
             with :? EncoderFallbackException ->
                 false
 
-    /// Reads at most `maximumBytes`. The caller owns the returned buffer and clears it after use.
+    let private abandon (worker: Task<SafeFileHandle>) =
+        worker.ContinueWith(fun (finished: Task<SafeFileHandle>) ->
+            if finished.IsCompletedSuccessfully then
+                finished.Result.Dispose()
+            elif finished.IsFaulted then
+                finished.Exception |> ignore)
+        |> ignore
+
+    let private openRead maximumBytes (path: string) =
+        if not (admitted (File.GetUnixFileMode path)) then
+            Error PrivateFileFailure.TooPermissive
+        elif Directory.Exists path then
+            Error PrivateFileFailure.NotRegular
+        else
+            let worker =
+                Task.Run(fun () -> File.OpenHandle(path, FileMode.Open, FileAccess.Read))
+
+            try
+                let handle = worker.WaitAsync(TimeSpan.FromSeconds 2.).GetAwaiter().GetResult()
+                readHandle maximumBytes handle
+            with :? TimeoutException ->
+                abandon worker
+                Error PrivateFileFailure.NotRegular
+
+    /// The caller owns the returned bytes and must clear them after use. Links are followed.
     let internal readOnPlatform supported maximumBytes (path: string) =
         if not supported then
             Error PrivateFileFailure.UnsupportedPlatform
@@ -115,21 +105,12 @@ module PrivateFile =
             Error PrivateFileFailure.InvalidPath
         else
             try
-                match PrivateFileNative.openRead path with
-                | Error failure -> Error failure
-                | Ok descriptor ->
-                    readHandle maximumBytes (new SafeFileHandle(nativeint descriptor, true))
+                openRead maximumBytes path
             with
+            | :? FileNotFoundException
+            | :? DirectoryNotFoundException -> Error PrivateFileFailure.Missing
             | :? IOException
             | :? UnauthorizedAccessException -> Error PrivateFileFailure.Unreadable
 
     let read maximumBytes path =
-        let supportedArchitecture =
-            RuntimeInformation.ProcessArchitecture = Architecture.Arm64
-            || RuntimeInformation.ProcessArchitecture = Architecture.X64
-
-        readOnPlatform
-            ((OperatingSystem.IsMacOS() || OperatingSystem.IsLinux())
-             && supportedArchitecture)
-            maximumBytes
-            path
+        readOnPlatform (OperatingSystem.IsMacOS() || OperatingSystem.IsLinux()) maximumBytes path

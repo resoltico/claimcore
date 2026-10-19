@@ -13,13 +13,13 @@ module internal Projections =
     let private parsed =
         function
         | Ok value -> value
-        | Error _ -> invalidOp "Invalid stored projection."
+        | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
     let private amount index row =
         let text = required<string> index row
 
         let grammar =
-            match FieldDefinitions.scalar "claimedAmount" with
+            match FieldDefinitions.scalar (InputField.Business BusinessField.ClaimedAmount) with
             | ScalarRule.Amount rule -> rule.Grammar
             | _ -> invalidOp "Expected amount format."
 
@@ -32,11 +32,13 @@ module internal Projections =
                 )
             )
         then
-            invalidOp "Invalid stored amount."
+            raise (RecordCorruptException "Invalid stored amount.")
 
-        Decimal
-            .Parse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture)
-            .ToString("0.####", CultureInfo.InvariantCulture)
+        match
+            Decimal.TryParse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture)
+        with
+        | true, amount -> amount.ToString("0.####", CultureInfo.InvariantCulture)
+        | _ -> raise (RecordCorruptException "Invalid stored amount.")
 
     let private date index row =
         (DatabaseSession.calendarDate index row)
@@ -85,7 +87,8 @@ module internal Projections =
             PaymentDate = optionalText date 14 row
             Status =
                 CaseStatuses.tryParse (required<string> 15 row)
-                |> Option.defaultWith (fun () -> invalidOp "Invalid stored status.")
+                |> Option.defaultWith (fun () ->
+                    raise (RecordCorruptException "Invalid stored status."))
         }
 
     let caseRow (row: obj array) : StoredCase =
@@ -95,12 +98,12 @@ module internal Projections =
             match required<string> 3 row with
             | "ERASED" ->
                 if row[4..] |> Array.exists (Convert.IsDBNull >> not) then
-                    invalidOp "Erased projection retains business fields."
+                    raise (RecordCorruptException "Erased projection retains business fields.")
 
                 CaseView.Erased
             | "ACTIVE" -> CaseView.Live(fields reference row, Disposition.Active)
             | "VOIDED" -> CaseView.Live(fields reference row, Disposition.Voided)
-            | _ -> invalidOp "Invalid stored disposition."
+            | _ -> raise (RecordCorruptException "Invalid stored disposition.")
 
         let snapshot =
             {
@@ -128,58 +131,95 @@ module internal Projections =
             match rows with
             | [] -> return None
             | [ row ] -> return Some(caseRow row)
-            | _ -> return invalidOp "Duplicate case projection."
+            | _ -> return raise (RecordCorruptException "Duplicate case projection.")
         }
 
     let private role row =
         Roles.tryParse (required<string> 0 row)
-        |> Option.defaultWith (fun () -> invalidOp "Invalid stored role.")
+        |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid stored role."))
 
-    let actor connection principal token : System.Threading.Tasks.Task<ActorAuthority option> =
+    let private authorityRows principal (rows: obj array list) =
+        match rows with
+        | [] -> AuthorityView.empty
+        | first :: _ ->
+            let grants =
+                rows
+                |> List.choose (fun row ->
+                    optional<string> 2 row
+                    |> Option.map (fun role ->
+                        let role =
+                            Roles.tryParse role
+                            |> Option.defaultWith (fun () ->
+                                raise (RecordCorruptException "Invalid stored role."))
+
+                        {
+                            Role = role
+                            Scope =
+                                optional<Guid> 3 row
+                                |> Option.map GrantScope.Case
+                                |> Option.defaultValue GrantScope.Installation
+                        }))
+
+            let stored: ActorAuthority =
+                {
+                    ActorId = required 0 first
+                    Principal = principal
+                    Enabled = required 1 first
+                    Grants = grants
+                }
+
+            AuthorityView.ofActor (Some stored)
+
+    let actor connection principal (caseIds: Guid list) token =
         task {
             let kind, issuer, subject = PrincipalKey.storageParts principal
 
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT actor_id,enabled FROM claimcore.actors WHERE principal_kind=$1 AND issuer=$2 AND subject=$3"
-                    [| box kind; box issuer; box subject |]
+                    "SELECT a.actor_id,a.enabled,g.role,g.case_id FROM claimcore.actors a LEFT JOIN LATERAL (SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id IS NULL UNION ALL SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id=ANY($4::uuid[])) g ON true WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
+                    [|
+                        box kind
+                        box issuer
+                        box subject
+                        box (caseIds |> List.distinct |> List.toArray)
+                    |]
                     token
 
-            match rows with
-            | [] -> return None
-            | [ row ] ->
-                let id = required<Guid> 0 row
+            return authorityRows principal rows
+        }
 
-                let! grants =
+    let assigned connection principal readRoles (view: AuthorityView) token =
+        task {
+            match view.Actor with
+            | None -> return view
+            | Some actor ->
+                let forbidden =
+                    ActorAuthorization.invalidRoles principal
+                    |> List.map Roles.token
+                    |> List.toArray
+
+                let! rows =
                     DatabaseSession.rows
                         connection
-                        "SELECT role,case_id FROM claimcore.grants WHERE actor_id=$1"
-                        [| box id |]
+                        "SELECT EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=$1 AND g.case_id IS NOT NULL AND g.role=ANY($2::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=g.actor_id AND bad.case_id=g.case_id AND bad.role=ANY($3::text[])))"
+                        [|
+                            box actor.ActorId
+                            box (readRoles |> List.map Roles.token |> List.toArray)
+                            box forbidden
+                        |]
                         token
 
-                let grants =
-                    grants
-                    |> List.map (fun row ->
-                        ({
-                            Role = role row
-                            Scope =
-                                optional<Guid> 1 row
-                                |> Option.map GrantScope.Case
-                                |> Option.defaultValue GrantScope.Installation
-                        }
-                        : ActorGrant))
-
                 return
-                    Some
-                        {
-                            ActorId = id
-                            Principal = principal
-                            Enabled = required 1 row
-                            Grants = grants
-                        }
-            | _ -> return invalidOp "Duplicate stored principal."
+                    { view with
+                        HasAssignedCases = DatabaseSession.value<bool> 0 rows.Head
+                    }
         }
+
+    let operationCases entry =
+        match entry |> Option.map (fun (entry: StoredEntry) -> entry.Scope) with
+        | Some(StoredScope.Case(id, _, _, _)) -> [ id ]
+        | _ -> []
 
     let actorSummary row : ActorSummary =
         {
@@ -199,6 +239,6 @@ module internal Projections =
             | None, None -> GrantTarget.Installation
             | Some _, Some reference when CaseReference.validate reference |> Result.isOk ->
                 GrantTarget.CaseReference reference
-            | _ -> invalidOp "Invalid grant projection."
+            | _ -> raise (RecordCorruptException "Invalid grant projection.")
 
         { Role = role; Scope = scope }, { Role = role; CaseId = caseId }

@@ -17,7 +17,16 @@ module internal ReadOperations =
         Transactions.read source token (fun connection ->
             task {
                 let! time = instant connection token
-                let! actor = Projections.actor connection principal token
+                let! actor = Projections.actor connection principal [] token
+
+                let! actor =
+                    Projections.assigned
+                        connection
+                        principal
+                        (ActorAuthorization.readRoles principal)
+                        actor
+                        token
+
                 return ({ ObservedAt = time; Actor = actor }: ActorReadView)
             })
 
@@ -25,12 +34,17 @@ module internal ReadOperations =
         Transactions.read source token (fun connection ->
             task {
                 let! time = instant connection token
-                let! actor = Projections.actor connection principal token
 
                 let! existing =
                     match operationId with
                     | Some id -> StoredEntries.operation connection installationId id token
                     | None -> Task.FromResult None
+
+                let ids =
+                    CaseReferenceId.encode installationId reference
+                    :: Projections.operationCases existing
+
+                let! actor = Projections.actor connection principal ids token
 
                 let! record =
                     Projections.caseById
@@ -52,8 +66,10 @@ module internal ReadOperations =
         Transactions.read source token (fun connection ->
             task {
                 let! time = instant connection token
-                let! actor = Projections.actor connection principal token
                 let! entry = StoredEntries.operation connection installationId id token
+
+                let! actor =
+                    Projections.actor connection principal (Projections.operationCases entry) token
 
                 let! record =
                     match entry |> Option.map _.Scope with
@@ -71,28 +87,37 @@ module internal ReadOperations =
                     : OperationReadView)
             })
 
-    let list source principal select limit token =
+    let list source principal readRoles select limit token =
         Transactions.read source token (fun connection ->
             task {
                 let! time = instant connection token
-                let! actor = Projections.actor connection principal token
+                let! actor = Projections.actor connection principal [] token
+                let! actor = Projections.assigned connection principal readRoles actor token
                 let view: ActorReadView = { ObservedAt = time; Actor = actor }
 
                 match select view with
                 | Error reason -> return Error reason
                 | Ok selection ->
-                    let ids =
-                        match selection.Visibility with
-                        | CaseVisibility.Every -> None
-                        | CaseVisibility.Only ids -> Some(Array.ofList ids)
+                    let every = selection.Visibility = CaseVisibility.Every
+
+                    let actorId =
+                        actor.Actor |> Option.map _.ActorId |> Option.defaultValue Guid.Empty
+
+                    let forbidden =
+                        ActorAuthorization.invalidRoles principal
+                        |> List.map Roles.token
+                        |> List.toArray
 
                     let! rows =
                         DatabaseSession.rows
                             connection
-                            ($"SELECT {Projections.caseColumns} FROM claimcore.cases WHERE ($1::text IS NULL OR upper(case_reference COLLATE \"C\") > $1 COLLATE \"C\") AND ($2::uuid[] IS NULL OR case_id=ANY($2)) ORDER BY upper(case_reference COLLATE \"C\") LIMIT $3")
+                            ($"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE ($1::text IS NULL OR upper(case_reference COLLATE \"C\") > $1 COLLATE \"C\") AND ($2 OR c.case_id IN (SELECT g.case_id FROM claimcore.grants g WHERE g.actor_id=$3 AND g.role=ANY($4::text[]) AND g.case_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=g.actor_id AND bad.case_id=g.case_id AND bad.role=ANY($5::text[])))) ORDER BY upper(case_reference COLLATE \"C\") LIMIT $6")
                             [|
                                 DatabaseSession.parameter selection.AfterReference
-                                DatabaseSession.parameter ids
+                                box every
+                                box actorId
+                                box (readRoles |> List.map Roles.token |> List.toArray)
+                                box forbidden
                                 box (limit + 1)
                             |]
                             token
@@ -149,13 +174,19 @@ module internal ReadOperations =
             |> Option.map (fun (entry: StoredEntry) ->
                 match entry.Scope with
                 | StoredScope.Case(_, revision, _, _) -> revision
-                | _ -> invalidOp "Invalid case history.")
+                | _ -> raise (RecordCorruptException "Invalid case history."))
 
     let history source installationId principal reference select limit token =
         Transactions.read source token (fun connection ->
             task {
                 let! time = instant connection token
-                let! actor = Projections.actor connection principal token
+
+                let! actor =
+                    Projections.actor
+                        connection
+                        principal
+                        [ CaseReferenceId.encode installationId reference ]
+                        token
 
                 let! record =
                     Projections.caseById
@@ -191,7 +222,7 @@ module internal ReadOperations =
         Transactions.read source token (fun connection ->
             task {
                 let! time = instant connection token
-                let! actor = Projections.actor connection principal token
+                let! actor = Projections.actor connection principal [] token
                 let view: ActorReadView = { ObservedAt = time; Actor = actor }
 
                 match select view with
@@ -265,7 +296,7 @@ module internal ReadOperations =
         Transactions.read source token (fun connection ->
             task {
                 let! time = instant connection token
-                let! actor = Projections.actor connection principal token
+                let! actor = Projections.actor connection principal [] token
 
                 let! target = grantTarget connection targetId token
 
@@ -291,7 +322,10 @@ module internal ReadOperations =
                                 Target =
                                     target
                                     |> Option.defaultWith (fun () ->
-                                        invalidOp "Missing selected grant target.")
+                                        raise (
+                                            RecordCorruptException
+                                                "Missing selected grant target."
+                                        ))
                                 Items = visible |> List.map fst
                                 NextAfterGrant =
                                     if rows.Length > limit then

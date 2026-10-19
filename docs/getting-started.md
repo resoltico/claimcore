@@ -7,11 +7,10 @@ before using personal data.
 
 ## Prerequisites
 
-Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, the [native compiler prerequisites](development.md#first-checkout), and the .NET SDK in
+Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, and the .NET SDK in
 [`global.json`](../global.json), and Node/npm versions declared by
 [`.node-version`](../.node-version) and [`web/package.json`](../web/package.json).
-Use your intended local Docker engine. Downloads require network access. The local CLI build needs
-the native compiler/SDK above; image builds carry their pinned Linux compiler.
+Use your intended local Docker engine. Downloads require network access. The local CLI build uses the pinned .NET SDK.
 For isolated browser trust, also install the NSS certificate utility `certutil` before starting.
 
 Choose a new absolute checkout location, then prepare the CLI and locked browser tools. Compose
@@ -39,7 +38,9 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- sch
 
 Choose an absolute configuration path that does not exist, an IANA business time zone,
 and two unused loopback ports. The example uses 7443 and 7444. The time zone becomes immutable
-at initialization. Do not reuse an existing database, configuration directory or volume.
+at initialization. Paths containing carriage returns or line feeds are refused before creation;
+other path characters remain literal in the generated Compose inputs and printed Bash command.
+Do not reuse an existing database, configuration directory or volume.
 
 ```sh
 claimcore_config="$HOME/claimcore-first-run-config"
@@ -48,9 +49,15 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml ps -a
 ```
 
+Compose waits for the identity provider’s readiness endpoint before starting Web. Its management
+health listener is HTTP on container loopback only; browser and OIDC traffic use HTTPS.
 The initializer must exit successfully and Web must become healthy; repeat `ps -a` while startup
-is in progress. PostgreSQL has no host port. Web runs without a writable container filesystem;
-its private configuration is mounted read-only. Configuration generation refuses an existing path.
+is in progress. PostgreSQL has no host port. Web runs with a read-only root filesystem and read-only private
+configuration. Its key-ring/session volume is persistent and writable; bounded ephemeral `/tmp`
+supports framework staging. See [local filesystem operation](operations.md#access-review-and-sessions). The producer creates the
+required `CLAIMCORE_WEB_KEY_RING_DIRECTORY` and configures ClaimCore containers with your UID/GID;
+PostgreSQL and Keycloak retain their required ownership. Preserve the generated key-ring directory
+across Web restarts and protect it under the [session policy](operations.md#access-review-and-sessions). Configuration generation refuses an existing path.
 Initialization refuses an unsupported schema and supplies no conversion.
 
 ## Trust the certificate and sign in
@@ -83,9 +90,9 @@ use a second terminal for those commands. Close Firefox when you finish the walk
 Open `https://localhost:7443`. Choose sign in. The generated identity provider is
 `https://identity.localhost:7444/realms/claimcore`. Sign in as `owner`; obtain its password
 locally from `owner-login.password` in your configuration directory. Do not copy credentials
-into terminal commands, logs or public reports. After authentication, the browser shows the
-Cases view. An owner administers authority; owner status alone grants no case viewing or editing.
-The resource-unavailable message is expected until a case role is granted.
+into terminal commands, logs or public reports. After authentication, installation context selects the views that current grants allow. An owner
+can administer authority; owner status alone grants no case viewing or editing. Cases become
+available after a case role is granted.
 
 ## Configure the human owner CLI and grant case work
 

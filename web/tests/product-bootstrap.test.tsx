@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { useSession } from "../src/hooks/useSession";
-import { productMetadata } from "@contracts/product-metadata";
+import { productMetadata } from "../src/protocol/productMetadata";
 import { response } from "./service-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));

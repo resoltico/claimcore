@@ -1,3 +1,5 @@
+import { stubDashboardContext } from "./dashboard-context.fixtures";
+import { caseOffers } from "./case-advice.fixtures";
 import { fireEvent, render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -5,19 +7,14 @@ import type { CurrentCase } from "../src/api/service";
 import { Dashboard } from "../src/views/Dashboard";
 
 import { previewForRequest } from "./preview-request.fixtures";
-import { context, fields, digest, response, runtime } from "./service-ui.fixtures";
+import { context, fields, response, runtime } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
-  offers: ["CLOSE"].map((identifier) => ({
-    definition: identifier,
-    caseReference: null,
-    expectedRevision: null,
-    choices: [],
-  })),
-  historyDetails: ["SUMMARY", "FULL"],
-  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
+  advice: { acts: caseOffers(["CLOSE"]), history: ["SUMMARY", "FULL"] },
+
+  state: { tag: "LIVE", fields, disposition: "ACTIVE" },
 };
 
 import { generatedWebValue } from "./contract-corpus.fixtures";
@@ -28,7 +25,10 @@ if (accepted.outcome.tag !== "ACCEPTED") {
 const receipt = accepted.outcome.data;
 const renderDashboard = () =>
   render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
-beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+beforeEach(() => {
+  vi.stubGlobal("fetch", vi.fn());
+  stubDashboardContext();
+});
 
 const queueDefinitionAndList = () => {
   const fetch = vi.mocked(globalThis.fetch);
@@ -100,7 +100,6 @@ it("returns an accepted open operation to Dashboard through its committed transi
   fetch.mockImplementationOnce(
     previewForRequest(
       response("case.preview", "REVIEWED", {
-        requestSha256: digest,
         review: {
           before: null,
           after: {

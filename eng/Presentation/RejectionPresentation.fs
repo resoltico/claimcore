@@ -1,0 +1,188 @@
+#if CONTRACT_GENERATION
+namespace ClaimCore.ContractGeneration.Presentation
+#else
+namespace ClaimCore.Hosting.Presentation
+#endif
+
+open System.Globalization
+open ClaimCore.Application
+open ClaimCore.Domain
+
+[<RequireQualifiedAccess>]
+type internal DiagnosticHole =
+    | MaximumCharacters
+    | MaximumIntegerDigits
+    | MaximumFractionalDigits
+    | MaximumPageSize
+
+[<RequireQualifiedAccess>]
+type internal DiagnosticTextPart =
+    | Literal of string
+    | Hole of DiagnosticHole
+
+/// The existing English presentation belongs to the outward adapter, never to core meaning.
+/// Host rendering and build-only catalog projection share literal text and closed parameter holes.
+module internal RejectionPresentation =
+    let private action kind =
+        "“" + (CommandDefinitions.forKind kind).Label + "”"
+
+    let private integer (value: int) =
+        value.ToString(CultureInfo.InvariantCulture)
+
+    let private text =
+        [
+            RejectionDiagnosticId.TextRequired, "A non-blank value is required."
+            RejectionDiagnosticId.MalformedUnicode, "Malformed Unicode is not accepted."
+            RejectionDiagnosticId.SurroundingWhitespace,
+            "Leading or trailing whitespace is not accepted."
+            RejectionDiagnosticId.ControlCharacters, "Control characters are not accepted."
+        ]
+
+    let private scalar =
+        [
+            RejectionDiagnosticId.CalendarDateRequired,
+            "Use one valid calendar date in YYYY-MM-DD format."
+            RejectionDiagnosticId.ChronologicalOrder,
+            "The dates are in an invalid chronological order."
+            RejectionDiagnosticId.FutureDate,
+            "A future date cannot record an event that has already occurred."
+            RejectionDiagnosticId.CurrencyFormat,
+            "Use three uppercase ASCII letters (A–Z) for the currency identifier."
+        ]
+
+    let private command =
+        [
+            RejectionDiagnosticId.EmptyOperationId, "Use a non-empty UUID."
+            RejectionDiagnosticId.ExpectedRevisionOutOfRange,
+            "Use an integer revision from 0 through 9007199254740991."
+            RejectionDiagnosticId.RevisionExhausted, "The case has reached its final revision."
+        ]
+
+    let private correction =
+        [
+            RejectionDiagnosticId.PaymentClearRequired,
+            "Clearing a paid decision requires clearing the payment record."
+            RejectionDiagnosticId.PaymentAcknowledgementRequired,
+            "Replacing a paid decision requires explicit payment reaffirmation or clearing the payment record."
+        ]
+
+    let private case =
+        [
+            RejectionDiagnosticId.CaseAlreadyExists, "The case reference already exists."
+            RejectionDiagnosticId.RevisionConflict,
+            "Read the current case before making a changed request."
+            RejectionDiagnosticId.CaseClosed,
+            "This action cannot change a closed case. Use "
+            + action (CaseActKind.Business BusinessActKind.CorrectCase)
+            + " for factual corrections while keeping its status, or "
+            + action (CaseActKind.Business BusinessActKind.Reopen)
+            + " when you intend to resume ordinary case work."
+            RejectionDiagnosticId.AlreadyClosed, "The case is already closed."
+            RejectionDiagnosticId.AlreadyOpened, "The case is already open."
+        ]
+
+    let private progress =
+        [
+            RejectionDiagnosticId.AmendmentRequiresUndecided,
+            action (CaseActKind.Business BusinessActKind.AmendRegistration)
+            + " requires an undecided case. Use "
+            + action (CaseActKind.Business BusinessActKind.CorrectCase)
+            + " to correct recorded registration while keeping its decision."
+            RejectionDiagnosticId.CorrectionNoChanges,
+            "Choose at least one factual correction that changes the current case."
+            RejectionDiagnosticId.CorrectionRequiresExistingValue,
+            "A correction can only replace or clear a value already recorded on this case."
+            RejectionDiagnosticId.DecisionRequired, "Record a payment decision first."
+            RejectionDiagnosticId.PaymentAlreadyRecorded, "ClaimCore records one full payment."
+            RejectionDiagnosticId.PaymentNotRecorded, "There is no payment record to clear."
+            RejectionDiagnosticId.DecisionAlreadyPaid,
+            action (CaseActKind.Business BusinessActKind.Decide)
+            + " and "
+            + action (CaseActKind.Business BusinessActKind.WithdrawDecision)
+            + " cannot change a paid decision. Use "
+            + action (CaseActKind.Business BusinessActKind.CorrectCase)
+            + " for a factual correction, with explicit payment reaffirmation or clearing when replacing a paid decision."
+            RejectionDiagnosticId.ZeroDecisionCannotBePaid, "A zero decision is not a payment."
+        ]
+
+    let private operation =
+        [
+            RejectionDiagnosticId.InvalidCursor, "Use one pagination cursor returned by ClaimCore."
+            RejectionDiagnosticId.IdempotencyConflict,
+            "This operation ID belongs to different command content. Do not reuse it."
+            RejectionDiagnosticId.CaseVoided, "This case is voided."
+            RejectionDiagnosticId.CaseErased, "This case has been erased."
+            RejectionDiagnosticId.AlreadyVoided, "This case is already voided."
+            RejectionDiagnosticId.NotVoided, "This case is not voided."
+            RejectionDiagnosticId.LastOwner, "At least one enabled human owner is required."
+            RejectionDiagnosticId.ActorAlreadyRegistered, "This principal is already registered."
+            RejectionDiagnosticId.ActorUnknown, "This principal is not registered."
+            RejectionDiagnosticId.HumanPrincipalRequired, "This role requires a human principal."
+            RejectionDiagnosticId.FormattingCharacter,
+            "Formatting characters are not accepted in a new assertion."
+            RejectionDiagnosticId.ReferenceFormat,
+            "Use 1 to 80 printable non-space ASCII characters."
+            RejectionDiagnosticId.CountryFormat,
+            "Use two uppercase ASCII letters for the country code."
+            RejectionDiagnosticId.ActNotPermitted, "This act is not permitted."
+            RejectionDiagnosticId.LedgerExhausted, "The ledger has reached its final sequence."
+            RejectionDiagnosticId.ResourceUnavailable, "The requested resource is unavailable."
+        ]
+
+    let private messages =
+        text @ scalar @ command @ correction @ case @ progress @ operation
+
+    let template identifier =
+        let literal = DiagnosticTextPart.Literal
+        let hole = DiagnosticTextPart.Hole
+
+        match identifier with
+        | RejectionDiagnosticId.TextTooLong ->
+            [
+                literal "The value must not exceed "
+                hole DiagnosticHole.MaximumCharacters
+                literal " Unicode characters."
+            ]
+        | RejectionDiagnosticId.DecimalFormat ->
+            [
+                literal "Use non-negative decimal text: up to "
+                hole DiagnosticHole.MaximumIntegerDigits
+                literal " integer digits and "
+                hole DiagnosticHole.MaximumFractionalDigits
+                literal " fractional digits; no sign or exponent."
+            ]
+        | RejectionDiagnosticId.PageLimitOutOfRange ->
+            [
+                literal "Use a value from 1 through "
+                hole DiagnosticHole.MaximumPageSize
+                literal "."
+            ]
+        | _ -> [ messages |> List.find (fst >> (=) identifier) |> snd |> literal ]
+
+    let holeName =
+        function
+        | DiagnosticHole.MaximumCharacters -> "maximumCharacters"
+        | DiagnosticHole.MaximumIntegerDigits -> "maximumIntegerDigits"
+        | DiagnosticHole.MaximumFractionalDigits -> "maximumFractionalDigits"
+        | DiagnosticHole.MaximumPageSize -> "maximumPageSize"
+
+    let private holeValue parameters hole =
+        match hole, parameters with
+        | DiagnosticHole.MaximumCharacters, DiagnosticParameters.MaximumCharacters value
+        | DiagnosticHole.MaximumPageSize, DiagnosticParameters.MaximumPageSize value ->
+            integer value
+        | DiagnosticHole.MaximumIntegerDigits, DiagnosticParameters.DecimalDigits(value, _) ->
+            integer value
+        | DiagnosticHole.MaximumFractionalDigits, DiagnosticParameters.DecimalDigits(_, value) ->
+            integer value
+        | _ -> invalidOp "Diagnostic template and typed parameters disagree."
+
+    let render (rejection: Rejection) =
+        let diagnostic = RejectionDiagnostics.describe rejection
+
+        template (RejectionDiagnostics.identifier diagnostic)
+        |> List.map (function
+            | DiagnosticTextPart.Literal value -> value
+            | DiagnosticTextPart.Hole hole ->
+                holeValue (RejectionDiagnostics.parameters diagnostic) hole)
+        |> String.concat ""

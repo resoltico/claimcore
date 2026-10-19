@@ -1,9 +1,9 @@
 import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
-import type { EndpointId } from "@contracts/endpoint-catalog";
-import { endpoints } from "@contracts/endpoint-catalog";
+import type { EndpointId } from "@contracts/client";
+import { endpoints } from "@contracts/client";
 import type { ServiceResponse } from "../src/api/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
-import { isHostFailure, isResponse } from "@contracts/browser-contract";
+import { isHostFailure, isResponse } from "../src/protocol/client";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
@@ -83,11 +83,7 @@ export const reviewFrom = (
     throw new Error("Missing operation identity.");
   }
   const { operationId } = draft;
-  const { requestSha256 } = value.outcome.data;
-  if (requestSha256 === null) {
-    throw new Error("E2E_LOCALIZATION_EXACT_DIGEST_MISSING");
-  }
-  return { operationId, requestSha256 };
+  return { operationId };
 };
 const deferred = <T>() => {
   let resolve: (value: T) => void = () => undefined;
@@ -173,11 +169,6 @@ export const pauseJsonReply = <K extends EndpointId>(page: Page, endpoint: K, dr
     },
     drop,
   );
-export const localInputRefusalText = {
-  en: "Complete this input using the required format.",
-  lv: "Aizpildiet šo ievadi vajadzīgajā formātā.",
-  ar: "أكمل هذا الحقل بالتنسيق المطلوب.",
-} as const;
 export { noHorizontalOverflow } from "./layout-support";
 
 export const expectKeyboardContained = async (page: Page, dialog: Locator): Promise<void> => {
@@ -196,4 +187,50 @@ export const confirmReview = async (page: Page): Promise<void> => {
     .filter({ has: page.getByRole("checkbox") })
     .click();
   await expect(checkbox).toBeChecked();
+};
+
+export const businessFormatRefusalText = {
+  INPUT_CALENDAR_DATE_REQUIRED: {
+    en: "Use one valid calendar date in YYYY-MM-DD format.",
+    lv: "Izmantojiet vienu derīgu datumu formātā YYYY-MM-DD.",
+    ar: "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD.",
+  },
+  INPUT_DECIMAL_FORMAT: {
+    en: "Use non-negative decimal text: up to 18 integer digits and 4 fractional digits; no sign or exponent.",
+    lv: "Izmantojiet nenegatīvu decimālskaitli: līdz 18 veseliem cipariem un 4 daļas cipariem; bez zīmes vai eksponenta.",
+    ar: "استخدم نصًا عشريًا غير سالب: حتى \u206818\u2069 رقمًا صحيحًا و\u20684\u2069 أرقام كسرية؛ دون إشارة أو أس.",
+  },
+  INPUT_CURRENCY_FORMAT: {
+    en: "Use three uppercase ASCII letters (A–Z) for the currency identifier.",
+    lv: "Izmantojiet trīs lielos ASCII burtus (A–Z) valūtas apzīmējumam.",
+    ar: "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة.",
+  },
+} as const;
+
+export const expectBusinessFormatRefusal = async (
+  page: Page,
+  field: string,
+  diagnostic: keyof typeof businessFormatRefusalText,
+  submit: () => Promise<void>,
+) => {
+  const pending = await pauseJsonReply(page, "case.preview");
+  try {
+    await submit();
+    const { outcome } = (await pending.ready).reply;
+    expect(outcome.tag).toBe("REJECTED");
+    if (outcome.tag !== "REJECTED") {
+      throw new Error("Expected a typed business format refusal.");
+    }
+    expect(outcome.data.field).toBe(field);
+    expect(outcome.data.diagnostic.id).toBe(diagnostic);
+    expect(outcome.data.recommendedAction).toBe("CORRECT_INPUT");
+    if (diagnostic === "INPUT_DECIMAL_FORMAT") {
+      expect(outcome.data.diagnostic.parameters).toEqual({
+        maximumIntegerDigits: 18,
+        maximumFractionalDigits: 4,
+      });
+    }
+  } finally {
+    pending.release();
+  }
 };

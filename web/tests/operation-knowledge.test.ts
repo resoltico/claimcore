@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { useOperationEditor } from "../src/hooks/operation/useOperationEditor";
 import { service, type ApiResult, type ServiceResponse } from "../src/api/service";
-import { definition, digest, review } from "./service-ui.fixtures";
+import { definition, review } from "./service-ui.fixtures";
 import { generatedWebValue } from "./contract-corpus.fixtures";
 
 afterEach(() => vi.restoreAllMocks());
@@ -24,7 +24,7 @@ const preview = (): ApiResult<ServiceResponse<"case.preview">> => ({
   value: {
     endpoint: "case.preview",
     operationId: "10000000-0000-4000-8000-000000000001",
-    outcome: { tag: "REVIEWED", data: { requestSha256: digest, review } },
+    outcome: { tag: "REVIEWED", data: { review } },
   },
 });
 const rejected = (conflict: boolean): ApiResult<ServiceResponse<"case.execute">> => ({

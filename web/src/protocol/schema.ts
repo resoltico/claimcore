@@ -1,4 +1,4 @@
-import { strictByteProfile } from "@contracts/endpoint-catalog";
+import { strictByteProfile } from "@contracts/client";
 import { strictJsonBytes, isRepresentable } from "./strictJson";
 
 export type SchemaNode = {
@@ -22,7 +22,7 @@ export type SchemaNode = {
   readonly pattern?: string;
 };
 export type SchemaDocument = SchemaNode & {
-  readonly $defs?: Readonly<Record<string, SchemaNode>>;
+  readonly components?: { readonly schemas: Readonly<Record<string, SchemaNode>> };
   readonly $schema?: string;
   readonly $id?: string;
   readonly title?: string;
@@ -117,7 +117,7 @@ const objectMatches = (document: SchemaDocument, schema: SchemaNode, value: obje
 };
 function check(document: SchemaDocument, schema: SchemaNode, value: unknown): boolean {
   if (schema.$ref !== undefined) {
-    const target = document.$defs?.[schema.$ref.replace("#/$defs/", "")];
+    const target = document.components?.schemas[schema.$ref.replace("#/components/schemas/", "")];
     return target !== undefined && check(document, target, value);
   }
   if (Object.hasOwn(schema, "const")) {
@@ -196,9 +196,14 @@ export const validateStructure = (document: SchemaDocument, value: unknown): boo
   validateSchema(
     {
       ...structuralNode(document),
-      $defs: Object.fromEntries(
-        Object.entries(document.$defs ?? {}).map(([name, child]) => [name, structuralNode(child)]),
-      ),
+      components: {
+        schemas: Object.fromEntries(
+          Object.entries(document.components?.schemas ?? {}).map(([name, child]) => [
+            name,
+            structuralNode(child),
+          ]),
+        ),
+      },
     },
     value,
   );
@@ -215,7 +220,7 @@ function issueAt(
   if (node.$ref !== undefined) {
     return issueAt(
       document,
-      document.$defs?.[node.$ref.replace("#/$defs/", "")] ?? {},
+      document.components?.schemas[node.$ref.replace("#/components/schemas/", "")] ?? {},
       value,
       path,
     );

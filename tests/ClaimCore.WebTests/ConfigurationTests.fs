@@ -54,6 +54,7 @@ let private configured action =
         Environment.SetEnvironmentVariable("CLAIMCORE_CONNECTION_FILE", connection)
         Environment.SetEnvironmentVariable("CLAIMCORE_WEB_CERTIFICATE_PATH", certificate)
         Environment.SetEnvironmentVariable("CLAIMCORE_WEB_ORIGIN", "https://probe.localhost:5443")
+        Environment.SetEnvironmentVariable("CLAIMCORE_WEB_KEY_RING_DIRECTORY", directory)
         action directory connection
     finally
         for name, value in previous do
@@ -69,6 +70,7 @@ let private catalogue () =
                 "CLAIMCORE_WEB_ORIGIN"
                 "CLAIMCORE_WEB_LISTEN_ADDRESS"
                 "CLAIMCORE_WEB_LISTEN_PORT"
+                "CLAIMCORE_WEB_KEY_RING_DIRECTORY"
                 "CLAIMCORE_WEB_CERTIFICATE_PATH"
                 "CLAIMCORE_WEB_SESSION_IDLE_MINUTES"
                 "CLAIMCORE_WEB_SESSION_ABSOLUTE_MINUTES"
@@ -88,9 +90,9 @@ let private catalogue () =
     Expect.equal
         (WebSettings.all |> List.map WebSettings.token |> Set.ofList)
         expected
-        "Exactly eighteen names"
+        "Exactly nineteen names"
 
-    Expect.equal WebSettings.all.Length 18 "No duplicate registry entries"
+    Expect.equal WebSettings.all.Length 19 "No duplicate registry entries"
 
 let private limits () =
     configured (fun _ _ ->
@@ -112,18 +114,49 @@ let private limits () =
 
 let private privateConnection () =
     configured (fun _ connection ->
-        File.SetUnixFileMode(connection, UnixFileMode.UserRead ||| UnixFileMode.GroupRead)
-        Expect.throws (fun () -> Configuration.load () |> ignore) "Group access refused"
+        File.SetUnixFileMode(connection, UnixFileMode.UserRead ||| UnixFileMode.GroupWrite)
+        Expect.throws (fun () -> Configuration.load () |> ignore) "Group write refused"
         File.SetUnixFileMode(connection, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
         File.WriteAllBytes(connection, [| 0xffuy |])
         Expect.throws (fun () -> Configuration.load () |> ignore) "Malformed UTF-8 refused")
+
+let private keyRing () =
+    configured (fun directory _ ->
+        for value in [ "relative"; Path.Combine(directory, "missing") ] do
+            Environment.SetEnvironmentVariable("CLAIMCORE_WEB_KEY_RING_DIRECTORY", value)
+
+            Expect.throws
+                (fun () -> Configuration.load () |> ignore)
+                "Existing absolute directory required"
+
+        Environment.SetEnvironmentVariable("CLAIMCORE_WEB_KEY_RING_DIRECTORY", directory)
+
+        for bit in [ UnixFileMode.GroupWrite; UnixFileMode.OtherWrite ] do
+            File.SetUnixFileMode(
+                directory,
+                UnixFileMode.UserRead
+                ||| UnixFileMode.UserWrite
+                ||| UnixFileMode.UserExecute
+                ||| bit
+            )
+
+            Expect.throws (fun () -> Configuration.load () |> ignore) "Shared write refuses"
+
+        File.SetUnixFileMode(
+            directory,
+            UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
+        )
+
+        Environment.SetEnvironmentVariable("CLAIMCORE_WEB_KEY_RING_DIRECTORY", null)
+        Expect.throws (fun () -> Configuration.load () |> ignore) "Required setting")
 
 [<Tests>]
 let tests =
     testList
         "host configuration"
         [
-            testCase "the service setting registry has exactly eighteen names" catalogue
+            testCase "key ring requires an existing protected directory" keyRing
+            testCase "the service setting registry has exactly nineteen names" catalogue
             testCase "defaults are bounded and out-of-range settings are refused" limits
             testCase "the connection input is owner-private and strict UTF-8" privateConnection
         ]

@@ -60,10 +60,17 @@ module private BusinessState =
             ClaimedCurrency = fields.ClaimedCurrency
         }
 
+    let private retained value =
+        value
+        |> Result.mapError (function
+            | CaseRefusal.InvalidInput(field, violation) ->
+                RecordViolation.InvalidScalar(field, violation)
+            | _ -> RecordViolation.InvalidProgress)
+
     let private restoreProgress (fields: CaseFields) =
         match fields.PaymentDecisionDate, fields.PayableAmount, fields.PayableCurrency with
         | None, None, None when fields.PaymentDate.IsNone -> Ok PaymentProgress.Undecided
-        | None, None, None -> Error CaseRefusal.DecisionRequired
+        | None, None, None -> Error RecordViolation.InvalidProgress
         | Some date, Some amount, Some currency ->
             result {
                 let! decision =
@@ -73,24 +80,23 @@ module private BusinessState =
                             PayableAmount = amount
                             PayableCurrency = currency
                         }
+                    |> retained
 
                 let! paid =
                     match fields.PaymentDate with
                     | None -> Ok None
-                    | Some value -> Validation.date InputTarget.PaymentDate value |> Result.map Some
+                    | Some value ->
+                        Validation.date InputTarget.PaymentDate value |> retained |> Result.map Some
 
-                return! PaymentProgress.fromGroups (Some decision) paid
+                return! PaymentProgress.fromGroups (Some decision) paid |> retained
             }
-        | _ ->
-            Validation.invalidCorrection
-                InputTarget.PaymentDecisionDate
-                CorrectionViolation.CompleteDecisionRequired
+        | _ -> Error RecordViolation.IncompleteDecision
 
     let restore (accepted: CaseFields) =
         result {
-            let! facts = accepted |> registration |> Validation.registration
+            let! facts = accepted |> registration |> Validation.registration |> retained
             let! progress = restoreProgress accepted
-            do! StateValidation.progress facts progress
+            do! StateValidation.progress facts progress |> retained
 
             let claim =
                 {
@@ -100,8 +106,7 @@ module private BusinessState =
                 }
 
             if fields accepted.CaseReference claim <> accepted then
-                return!
-                    Validation.invalidAct InputTarget.Fields ActViolation.StateTransitionMismatch
+                return! Error RecordViolation.NonCanonicalFields
             else
                 return claim
         }
@@ -126,15 +131,17 @@ module private BusinessState =
                 }
         }
 
-    let private changePayment command progress =
-        match command, progress with
-        | ValidatedCommand.Decide decision, _ -> Ok(PaymentProgress.Decided decision)
-        | ValidatedCommand.WithdrawDecision, _ -> Ok PaymentProgress.Undecided
-        | ValidatedCommand.RecordPayment date, PaymentProgress.Decided decision ->
-            Ok(PaymentProgress.Paid(decision, date))
-        | ValidatedCommand.ClearPayment, PaymentProgress.Paid(decision, _) ->
-            Ok(PaymentProgress.Decided decision)
-        | _ -> Validation.invalidAct InputTarget.Act ActViolation.StateTransitionMismatch
+    let private recordPayment date progress =
+        match progress with
+        | PaymentProgress.Decided decision -> Ok(PaymentProgress.Paid(decision, date))
+        | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
+        | PaymentProgress.Paid _ -> Error CaseRefusal.PaymentAlreadyRecorded
+
+    let private clearPayment progress =
+        match progress with
+        | PaymentProgress.Paid(decision, _) -> Ok(PaymentProgress.Decided decision)
+        | PaymentProgress.Undecided
+        | PaymentProgress.Decided _ -> Error CaseRefusal.PaymentNotRecorded
 
     let private change command (claim: Claim) =
         match command with
@@ -157,8 +164,21 @@ module private BusinessState =
                     Facts = facts
                     Progress = progress
                 })
-        | _ ->
-            changePayment command claim.Progress
+        | ValidatedCommand.Decide decision ->
+            Ok
+                { claim with
+                    Progress = PaymentProgress.Decided decision
+                }
+        | ValidatedCommand.WithdrawDecision ->
+            Ok
+                { claim with
+                    Progress = PaymentProgress.Undecided
+                }
+        | ValidatedCommand.RecordPayment date ->
+            recordPayment date claim.Progress
+            |> Result.map (fun progress -> { claim with Progress = progress })
+        | ValidatedCommand.ClearPayment ->
+            clearPayment claim.Progress
             |> Result.map (fun progress -> { claim with Progress = progress })
 
     let transition today kind command claim =
@@ -195,11 +215,12 @@ module Case =
 
     let ofAccepted (accepted: CaseSnapshot) =
         result {
-            do! CaseReference.validate accepted.Reference
+            do!
+                CaseReference.validate accepted.Reference
+                |> Result.mapError (fun _ -> RecordViolation.ReferenceMismatch)
 
             if accepted.Revision < 1L || accepted.Revision > Revision.Maximum then
-                return!
-                    Validation.invalidAct InputTarget.Revision ActViolation.StoredRevisionOutOfRange
+                return! Error RecordViolation.RevisionOutOfRange
             else
                 let! state =
                     match accepted.View with
@@ -209,10 +230,7 @@ module Case =
                         ->
                         BusinessState.restore fields
                         |> Result.map (fun claim -> CaseState.Live(claim, disposition))
-                    | _ ->
-                        Validation.invalidAct
-                            InputTarget.CaseReference
-                            ActViolation.CaseReferenceMismatch
+                    | _ -> Error RecordViolation.ReferenceMismatch
 
                 return
                     {
@@ -268,7 +286,7 @@ module Case =
 
     let private existing today (request: CaseRequest) (record: CaseRecord) =
         if CaseReference.key record.Reference <> CaseReference.key request.CaseReference then
-            Validation.invalidAct InputTarget.CaseReference ActViolation.CaseReferenceMismatch
+            invalidArg "record" "The authoritative case does not match the request target."
         else
             match record.State, request.Act with
             | CaseState.Erased, _ -> Error CaseRefusal.CaseErased
@@ -299,14 +317,25 @@ module Case =
         else
             match record.State with
             | CaseState.Erased -> []
-            | CaseState.Live(_, Disposition.Voided) -> [ CaseActKind.Reinstate; CaseActKind.Erase ]
+            | CaseState.Live(_, Disposition.Voided) ->
+                [
+                    (CaseActKind.Stewardship StewardshipActKind.Reinstate)
+                    (CaseActKind.Stewardship StewardshipActKind.Erase)
+                ]
             | CaseState.Live(claim, Disposition.Active) ->
                 let business =
                     CaseActKinds.business
                     |> List.filter (fun kind ->
-                        Eligibility.check kind claim.Status claim.Progress |> Result.isOk)
+                        match kind with
+                        | CaseActKind.Business business ->
+                            Eligibility.check business claim.Status claim.Progress |> Result.isOk
+                        | CaseActKind.Stewardship _ -> false)
 
-                business @ [ CaseActKind.Void; CaseActKind.Erase ]
+                business
+                @ [
+                    (CaseActKind.Stewardship StewardshipActKind.Void)
+                    (CaseActKind.Stewardship StewardshipActKind.Erase)
+                ]
 
     let correctionActions (record: CaseRecord) group =
         match record.State with

@@ -3,7 +3,7 @@ namespace ClaimCore.RecordFormat
 open System.Text.Json
 open ClaimCore.Domain
 
-/// The same case-request codec serves the wire envelope and format-4 durable records.
+/// Case-request parsing and canonical encoding.
 module RequestRecord =
     let private registrationGroup (value: JsonElement) =
         let path = "$.act.groups.registration"
@@ -117,9 +117,9 @@ module RequestRecord =
             CaseAct.Stewardship StewardshipAct.Erase
         | kind -> CaseAct.Business(business kind element)
 
-    let private read durable root =
+    let private read root =
         let members = [ "operationId"; "caseReference"; "expectedRevision"; "act" ]
-        Json.properties "$" (if durable then "format" :: members else members) root
+        Json.properties "$" ("format" :: members) root
 
         let request =
             {
@@ -137,10 +137,7 @@ module RequestRecord =
 
     // Append decoders when supporting another durable format; never reinterpret existing bytes.
     let decode maxBytes bytes =
-        Json.bounded maxBytes bytes (Json.dispatch [ int64 RecordVersions.CaseRequest, read true ])
-
-    let decodeWire maxBytes bytes =
-        Json.bounded maxBytes bytes (read false)
+        Json.bounded maxBytes bytes (Json.dispatch [ int64 RecordVersions.CaseRequest, read ])
 
     let private mode name = "mode", CanonicalValue.String name
 
@@ -192,7 +189,7 @@ module RequestRecord =
 
         CanonicalValue.Object(("kind", CanonicalValue.String(CaseActs.name act)) :: payload)
 
-    let private value durable (request: CaseRequest) =
+    let private value (request: CaseRequest) =
         match Case.validateRequest request with
         | Error _ -> invalidArg (nameof request) "Invalid case-request format."
         | Ok() ->
@@ -205,14 +202,7 @@ module RequestRecord =
                 ]
 
             CanonicalValue.Object(
-                if durable then
-                    ("format", CanonicalValue.Integer(int64 RecordVersions.CaseRequest)) :: fields
-                else
-                    fields
+                ("format", CanonicalValue.Integer(int64 RecordVersions.CaseRequest)) :: fields
             )
 
-    let encode request =
-        value true request |> CanonicalJson.encode
-
-    let encodeWire request =
-        value false request |> CanonicalJson.encode
+    let encode request = value request |> CanonicalJson.encode

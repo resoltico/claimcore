@@ -11,8 +11,18 @@ services:
     command: [postgres, -c, ssl=on, -c, ssl_cert_file=/etc/claimcore-postgres/server.pem, -c, ssl_key_file=/etc/claimcore-postgres/server.key]
     volumes:
       - postgres-data:/var/lib/postgresql
-      - ${CLAIMCORE_CONFIG_DIR:?}/postgres:/etc/claimcore-postgres:ro
-      - ./postgres-roles.sh:/docker-entrypoint-initdb.d/10-claimcore-roles.sh:ro
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}/postgres
+        target: /etc/claimcore-postgres
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./postgres-roles.sh
+        target: /docker-entrypoint-initdb.d/10-claimcore-roles.sh
+        read_only: true
+        bind:
+          create_host_path: false
     healthcheck:
       test: [CMD, pg_isready, -h, 127.0.0.1, -U, claimcore_owner, -d, claimcore]
       interval: 2s
@@ -26,6 +36,8 @@ services:
       - start
       - --db=dev-file
       - --health-enabled=true
+      - --http-management-scheme=http
+      - --http-management-host=127.0.0.1
       - --http-enabled=false
       - --https-port=${CLAIMCORE_IDENTITY_PORT:-5444}
       - --https-certificate-file=/etc/claimcore-identity/server.pem
@@ -39,11 +51,36 @@ services:
       - 127.0.0.1:${CLAIMCORE_IDENTITY_PORT:-5444}:${CLAIMCORE_IDENTITY_PORT:-5444}
     volumes:
       - identity-data:/opt/keycloak/data
-      - ${CLAIMCORE_CONFIG_DIR}/identity:/etc/claimcore-identity:ro
-      - ${CLAIMCORE_CONFIG_DIR}/identity/realm:/opt/keycloak/data/import:ro
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/identity
+        target: /etc/claimcore-identity
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/identity/realm
+        target: /opt/keycloak/data/import
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD
+        - /bin/bash
+        - -ec
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000;
+          printf 'HEAD /health/ready HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3;
+          read -r protocol status remainder <&3;
+          [[ "$$protocol" == HTTP/1.* && "$$status" == 200 ]]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 30s
     restart: unless-stopped
 
   administration:
+    user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
     build:
       context: ..
       dockerfile: deployment/Dockerfile
@@ -55,7 +92,12 @@ services:
       CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/owner.connection
       CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE: /etc/claimcore/owner.principal
     volumes:
-      - ${CLAIMCORE_CONFIG_DIR}/administration:/etc/claimcore:ro
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/administration
+        target: /etc/claimcore
+        read_only: true
+        bind:
+          create_host_path: false
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
@@ -65,6 +107,7 @@ services:
     restart: "no"
 
   web:
+    user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
     build:
       context: ..
       dockerfile: deployment/Dockerfile
@@ -74,7 +117,15 @@ services:
     ports:
       - 127.0.0.1:${CLAIMCORE_HOST_PORT:-5443}:5443
     volumes:
-      - ${CLAIMCORE_CONFIG_DIR}/web:/etc/claimcore/runtime:ro
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/web
+        target: /etc/claimcore/runtime
+        read_only: true
+        bind:
+          create_host_path: false
+      - web-key-ring:/var/lib/claimcore/key-ring
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
@@ -82,7 +133,7 @@ services:
       administration:
         condition: service_completed_successfully
       identity:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: [CMD, dotnet, ClaimCore.Web.dll, probe, ready]
       interval: 5s
@@ -94,3 +145,9 @@ services:
 volumes:
   postgres-data:
   identity-data:
+  web-key-ring:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${CLAIMCORE_CONFIG_DIR}/key-ring

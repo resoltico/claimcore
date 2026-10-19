@@ -26,7 +26,7 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   and only then reads authority, the operation ID and the case. Nothing that a decision depends
   on is read before the lock.
 - The store locks, loads, calls one pure decision function and persists its result. It never
-  decides. Domain, RecordFormat, Application, ClientProtocol and Contracts perform no I/O and read no clock,
+  decides. Domain, RecordFormat, Application and Wire perform no I/O and read no clock,
   time zone, environment or randomness; the instant and the payload nonce arrive in the locked
   view.
 - An operation is its caller-chosen ID plus its RFC 8785 canonical request content. While request content
@@ -34,8 +34,9 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   snapshot disclosure; different content under a used ID is refused; a rejection records nothing.
   `OUTCOME_UNKNOWN` means a commit confirmation was lost and nothing else. Never infer that a
   commit failed, mint a replacement ID, or rebase a request.
-- RecordFormat owns every byte-stable encoding and its canonical JSON writer. A format's number
-  changes only when its bytes change. Format dispatch selects supported readers. Before 1.0.0, a release may
+- RecordFormat owns every byte-stable encoding and its canonical JSON writer. A format number
+  identifies one byte grammar and its admissible value set; it changes when either changes. Format
+  dispatch selects supported readers. Before 1.0.0, a release may
   explicitly refuse older installations untouched. From 1.0.0, keep reading every format a release
   wrote and ship migrations instead of refusing installations. The entry hash covers the salted
   payload commitment and never the payload, so erasure
@@ -54,7 +55,9 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   Current snapshots require case read; superseded snapshots require full history in the same
   locked/read context, including replay, execution, preview and observation.
 - `ClaimCore.Hosting` is the only case-work composition root. Only Hosting and Database
-  reference `ClaimCore.Postgres`; only Web references Hosting. Web uses Hosting/ClientProtocol/HostSecurity; CLI uses ClientProtocol/HostSecurity with a generated native catalogue. The browser and CLI are
+  reference `ClaimCore.Postgres`; only Web references Hosting. Web uses Hosting/Wire/HostSecurity;
+  CLI uses Wire/HostSecurity. `ClaimCore.Wire` references no ClaimCore project and owns the one
+  typed codec from which the published OpenAPI contract is derived. The browser and CLI are
   authenticated HTTPS clients of one generated contract and never database peers.
   `ClaimCore.Database` is owner administration and serves no case work.
 - The installation stores one immutable canonical IANA business time zone. Business dates derive
@@ -62,7 +65,8 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   `TimeZoneInfo.Local` or a host default.
 - The schema is an ordered, forward-only list of migrations in `db/migrations/`. A change ships
   as a new numbered script with its readers, writers, tests and documentation. Never edit a migration
-  shipped by a release. A database whose history is not exactly a prefix of that list is refused
+  shipped by a release. Before 1.0.0, a release may instead replace the baseline and refuse older
+  installations untouched. A database whose history is not exactly a prefix of that list is refused
   untouched. Supported PostgreSQL majors and minimum minors live in `db/postgresql-baseline.json`;
   qualify every listed major against its pinned image.
 - The trust model and the non-goals in [operations](docs/operations.md) are part of the design.
@@ -83,7 +87,9 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   `[<Tests>]`; there is no hand-kept registry. Focused, pending, skipped, filtered or retried
   runs cannot satisfy verification. `bash eng/verify.sh` is the complete local gate and CI calls the same stages.
   PR browser smoke is explicitly partial; main/tag and explicit dispatch retain full qualification.
-- Contract artifacts are generated and tracked in `contracts/`. Run
+- Contract artifacts (`openapi.json` and its derived client types, descriptors and vectors) are
+  generated and tracked in `contracts/`; the fingerprint is SHA-256 of `openapi.json` and covers
+  the wire shape only. Run
   `dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts` and review
   the generated diff with the F# change. Freshness checks require exact inventory and bytes.
   Within-toolchain outputs stay ignored; web commands never invoke .NET.
@@ -94,6 +100,9 @@ boundaries. [Development](docs/development.md) owns commands and gates.
 - Ordinary .NET builds do not run npm. Report commands actually executed and their outcomes
   separately from source inspection. Keep generated reports and private local state in ignored
   paths, never tracked source.
+
+- Private inputs are absolute, regular files with no other-access bits and no group write or
+  execute bits, read from the admitted handle; there is no native code in the product or its tests.
 
 ## Name by meaning, not incidental development history
 

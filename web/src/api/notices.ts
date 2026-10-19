@@ -1,4 +1,4 @@
-import type { Fault, HostFailure, Rejection } from "@contracts/types";
+import type { Fault, HostFailure, Rejection } from "@contracts/client";
 export type Diagnostic = Fault["diagnostic"] | Rejection["diagnostic"] | HostFailure["diagnostic"];
 export type LocalNoticeReason =
   | "responseTimeout"

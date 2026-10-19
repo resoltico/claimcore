@@ -1,6 +1,6 @@
 namespace ClaimCore.Web
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
@@ -22,7 +22,13 @@ module internal WebWire =
     let result status bytes =
         EncodedJsonResult(bytes, status) :> IResult
 
-    let outcome _endpoint value = result 200 value
+    let reply value =
+        let bytes = Replies.encode value
+
+        if bytes.Length > Limits.MaximumResponseBytes then
+            invalidOp "The encoded response exceeds the response limit."
+
+        result 200 bytes
 
     let hostFailure reason =
         HostFailures.encode reason |> result (HostFailures.status reason)

@@ -29,7 +29,7 @@ let private scope (vector: JsonElement) =
             {
                 CaseId = Guid.Parse(text vector "subjectId")
                 Revision = vector.GetProperty("caseRevision").GetInt64()
-                Act = CaseActKind.Open
+                Act = (CaseActKind.Business BusinessActKind.Open)
                 BusinessDate =
                     DateOnly.Parse(text vector "businessDate", CultureInfo.InvariantCulture)
             }
@@ -125,6 +125,19 @@ let private changedHash (value: byte array) =
     copy[0] <- copy[0] ^^^ 1uy
     copy
 
+let private changedCaseMetadata otherId case =
+    [
+        { case with CaseId = otherId }
+        { case with Revision = 2L }
+        { case with
+            Act = (CaseActKind.Business BusinessActKind.Close)
+        }
+        { case with
+            BusinessDate = case.BusinessDate.AddDays 1
+        }
+    ]
+
+
 let private allMetadataFields () =
     withVectors (fun vectors ->
         let entry = metadata vectors.Head
@@ -158,15 +171,7 @@ let private allMetadataFields () =
                 }
             ]
 
-        let scopes =
-            [
-                { case with CaseId = otherId }
-                { case with Revision = 2L }
-                { case with Act = CaseActKind.Close }
-                { case with
-                    BusinessDate = case.BusinessDate.AddDays 1
-                }
-            ]
+        let scopes = changedCaseMetadata otherId case
 
         let original = LedgerEntry.hash entry
 
@@ -227,18 +232,18 @@ let tests =
             testCase "act codes have an independent append-only expectation" (fun () ->
                 let acts =
                     [
-                        CaseActKind.Open
-                        CaseActKind.AmendRegistration
-                        CaseActKind.CorrectCase
-                        CaseActKind.Decide
-                        CaseActKind.WithdrawDecision
-                        CaseActKind.RecordPayment
-                        CaseActKind.ClearPayment
-                        CaseActKind.Close
-                        CaseActKind.Reopen
-                        CaseActKind.Void
-                        CaseActKind.Reinstate
-                        CaseActKind.Erase
+                        (CaseActKind.Business BusinessActKind.Open)
+                        (CaseActKind.Business BusinessActKind.AmendRegistration)
+                        (CaseActKind.Business BusinessActKind.CorrectCase)
+                        (CaseActKind.Business BusinessActKind.Decide)
+                        (CaseActKind.Business BusinessActKind.WithdrawDecision)
+                        (CaseActKind.Business BusinessActKind.RecordPayment)
+                        (CaseActKind.Business BusinessActKind.ClearPayment)
+                        (CaseActKind.Business BusinessActKind.Close)
+                        (CaseActKind.Business BusinessActKind.Reopen)
+                        (CaseActKind.Stewardship StewardshipActKind.Void)
+                        (CaseActKind.Stewardship StewardshipActKind.Reinstate)
+                        (CaseActKind.Stewardship StewardshipActKind.Erase)
                     ]
 
                 Expect.equal

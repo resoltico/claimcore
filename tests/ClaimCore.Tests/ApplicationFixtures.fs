@@ -75,9 +75,9 @@ type AfterCaseWriteStore(inner: ILedgerStore, afterWrite: unit -> Task<unit>) =
             reads <- reads + 1
             inner.ReadOperation(principal, operationId, ct)
 
-        member _.ListCases(principal, select, limit, ct) =
+        member _.ListCases(principal, readRoles, select, limit, ct) =
             reads <- reads + 1
-            inner.ListCases(principal, select, limit, ct)
+            inner.ListCases(principal, readRoles, select, limit, ct)
 
         member _.ReadHistory(principal, reference, select, limit, ct) =
             reads <- reads + 1

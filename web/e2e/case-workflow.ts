@@ -1,10 +1,10 @@
 import { expect, type Page } from "@playwright/test";
 
-import { isResponse } from "@contracts/browser-contract";
+import { isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/api/types";
 import { progress } from "./session-helpers";
 
-export type ReviewIdentity = Readonly<{ operationId: string; requestSha256: string }>;
+export type ReviewIdentity = Readonly<{ operationId: string }>;
 
 const fill = async (page: Page, values: Readonly<Record<string, string>>): Promise<void> => {
   for (const [label, value] of Object.entries(values)) {
@@ -108,14 +108,10 @@ export const reviewDraft = async (
     throw new Error("Missing request identity.");
   }
   const { operationId } = posted;
-  const { requestSha256 } = outcome.data;
-  if (requestSha256 === null) {
-    throw new Error("E2E_REVIEW_EXACT_IDENTITY_UNAVAILABLE");
-  }
-  const identity = { operationId, requestSha256 };
+  const identity = { operationId };
   const dialog = page.getByRole("dialog", { name: "Review changes" });
   await expect(dialog).toContainText(operationId);
-  await expect(dialog).toContainText(requestSha256);
+
   await progress("review-visible");
   return identity;
 };

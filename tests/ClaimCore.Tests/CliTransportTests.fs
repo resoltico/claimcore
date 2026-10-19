@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CliTransportTests
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
@@ -11,8 +11,6 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Cli
-open ClaimCore.Contracts
-open ClaimCore.ClientContract
 open CliTransportFixture
 
 let private resultExits () =
@@ -29,8 +27,8 @@ let private resultExits () =
 
     let mutable seen = Set.empty
 
-    for endpoint in EndpointCatalog.all do
-        for body in SchemaSamples.variants endpoint.Response do
+    for endpoint in Endpoint.all do
+        for body in samples "wire-response-examples.json" (Endpoint.id endpoint) do
             use document = JsonDocument.Parse(ReadOnlyMemory body)
 
             let tag =
@@ -38,11 +36,11 @@ let private resultExits () =
                 |> Option.ofObj
                 |> Option.get
 
-            let invocation = frame endpoint.Identifier
+            let invocation = frame (Endpoint.id endpoint)
 
             let body =
                 if
-                    endpoint.Identifier = "authority.execute"
+                    (Endpoint.id endpoint) = "authority.execute"
                     && (tag = "ACCEPTED" || tag = "ALREADY_ACCEPTED")
                 then
                     let value = System.Text.Json.Nodes.JsonNode.Parse(body) |> nonNull
@@ -61,7 +59,7 @@ let private resultExits () =
             Expect.equal
                 reply.ExitCode
                 (Map.tryFind tag expected |> Option.defaultValue 0)
-                ("Outcome selects exit for " + endpoint.Identifier + " " + tag)
+                ("Outcome selects exit for " + (Endpoint.id endpoint) + " " + tag)
 
             Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
             seen <- Set.add tag seen
@@ -70,25 +68,25 @@ let private resultExits () =
         Expect.isTrue (Set.contains tag seen) "Each specified outcome exit has a fixture"
 
 let private requestBytes () =
-    for endpoint in EndpointCatalog.all do
-        let invocation = frame endpoint.Identifier
+    for endpoint in Endpoint.all do
+        let invocation = frame (Endpoint.id endpoint)
 
         use handler =
             new Handler(fun request ->
                 task {
-                    Expect.equal request.Method.Method endpoint.Method "Exact method"
+                    Expect.equal request.Method.Method (Endpoint.method endpoint) "Exact method"
 
                     Expect.equal
                         (request.RequestUri |> Option.ofObj |> Option.get |> _.AbsolutePath)
-                        endpoint.Path
+                        (Endpoint.path endpoint)
                         "Exact route"
 
                     Expect.equal
                         (request.Headers.GetValues("ClaimCore-Contract") |> Seq.toList)
-                        [ WireContractFingerprint.value EndpointCatalog.fingerprint ]
+                        [ Fingerprint.value ]
                         "Compiled handshake"
 
-                    if endpoint.Method = "POST" then
+                    if (Endpoint.method endpoint) = "POST" then
                         let content = request.Content |> Option.ofObj |> Option.get
                         let! sent = content.ReadAsByteArrayAsync()
 
@@ -105,7 +103,7 @@ let private requestBytes () =
         Expect.equal (send handler invocation).ExitCode 3 "Definite admission refusal"
 
 let private failurePhases () =
-    for endpoint in EndpointCatalog.all do
+    for endpoint in Endpoint.all do
         for reason in HostFailures.all do
             use handler =
                 new Handler(fun _ ->
@@ -114,13 +112,16 @@ let private failurePhases () =
                     ))
 
             let expected =
-                if endpoint.Mutates && HostFailures.phase reason <> Some "NOT_STARTED" then
+                if
+                    (Endpoint.mutates endpoint)
+                    && HostFailures.phase reason <> Some ExecutionPhase.NotStarted
+                then
                     4
                 else
                     3
 
             Expect.equal
-                (send handler (frame endpoint.Identifier)).ExitCode
+                (send handler (frame (Endpoint.id endpoint))).ExitCode
                 expected
                 "Phase and durable mutation determine uncertainty"
 
@@ -135,7 +136,12 @@ let private invalidReplies () =
             ] do
             use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
             let invocation = frame endpoint
-            let expected = if (Frames.endpoint invocation).Mutates then 4 else 2
+
+            let expected =
+                if (frameEndpoint invocation |> Endpoint.mutates) then
+                    4
+                else
+                    2
 
             Expect.equal
                 (send handler invocation).ExitCode
@@ -148,24 +154,25 @@ let private invalidReplies () =
 
         Expect.equal
             (send wrongStatus (frame endpoint)).ExitCode
-            (if (Frames.endpoint (frame endpoint)).Mutates then 4 else 2)
+            (if (frame endpoint |> frameEndpoint |> Endpoint.mutates) then
+                 4
+             else
+                 2)
             "HTTP status is bound to failure body"
 
 let private successfulBody endpoint invocation =
     let tag =
-        if (Frames.endpoint invocation).Mutates then
+        if (frameEndpoint invocation |> Endpoint.mutates) then
             "ACCEPTED"
         else
             "SUCCEEDED"
 
-    let definition = EndpointCatalog.tryFind endpoint |> Option.get
-
-    SchemaSamples.variants definition.Response
+    samples "wire-response-examples.json" endpoint
     |> List.find (fun body ->
         use document = JsonDocument.Parse(ReadOnlyMemory body)
 
         document.RootElement.GetProperty("outcome").GetProperty("tag").GetString() = tag
-        && (Frames.result invocation body |> Result.isOk))
+        && (result invocation body |> Result.isOk))
 
 let private mediaVariants () =
     for endpoint in [ "case.get"; "case.execute" ] do
@@ -202,7 +209,12 @@ let private mediaVariants () =
 let private mixedMediaRefusals () =
     for endpoint in [ "case.get"; "case.execute" ] do
         let invocation = frame endpoint
-        let expected = if (Frames.endpoint invocation).Mutates then 4 else 2
+
+        let expected =
+            if (frameEndpoint invocation |> Endpoint.mutates) then
+                4
+            else
+                2
 
         for media in [ Some "Application/JSON"; Some "text/plain"; None ] do
             for status, body in
@@ -231,7 +243,12 @@ let private absentJsonMedia () =
     for endpoint in [ "case.get"; "case.execute" ] do
         let invocation = frame endpoint
         let body = successfulBody endpoint invocation
-        let expected = if (Frames.endpoint invocation).Mutates then 4 else 2
+
+        let expected =
+            if (frameEndpoint invocation |> Endpoint.mutates) then
+                4
+            else
+                2
 
         for media in [ Some "text/plain"; None ] do
             use handler =
@@ -259,7 +276,7 @@ let private mixedMediaCorrelation () =
     receipt["caseReference"] <- System.Text.Json.Nodes.JsonValue.Create("another")
     let body = node.ToJsonString() |> bytes
 
-    Expect.isError (Frames.result invocation body) "Changed receipt identity is uncorrelated"
+    Expect.isError (result invocation body) "Changed receipt identity is uncorrelated"
 
     use handler =
         new Handler(fun _ ->
@@ -281,14 +298,14 @@ let private localExits () =
             ClientFailure.Cancelled, 130
         ] do
         let code, output, _ =
-            call (Frames.bytes (frame "case.get")) (fun _ _ _ ->
+            call (frameBytes (frame "case.get")) (fun _ _ _ ->
                 Task.FromResult(CliReply.local failure))
 
         Expect.equal code expected "Local failure exit"
         Expect.isOk (Frames.decode output) "One stdout frame"
 
     let code, output, errors =
-        call (Frames.bytes (frame "case.get")) (fun _ _ _ ->
+        call (frameBytes (frame "case.get")) (fun _ _ _ ->
             raise (InvalidOperationException "synthetic-secret"))
 
     Expect.equal code 70 "Unexpected failure before dispatch"
@@ -320,7 +337,7 @@ let private localExits () =
 let private responseBounds () =
     for endpoint in [ "case.get"; "authority.execute" ] do
         let invocation = frame endpoint
-        let mutates = (Frames.endpoint invocation).Mutates
+        let mutates = (frameEndpoint invocation |> Endpoint.mutates)
 
         use oversize =
             new Handler(fun _ ->
@@ -358,7 +375,7 @@ let private dispatchGuards () =
     Expect.isError (HostFailures.decode forged) "A phase cannot be detached from its diagnostic"
 
     let code, _, _ =
-        call (Frames.bytes (frame "authority.execute")) (fun _ dispatched _ ->
+        call (frameBytes (frame "authority.execute")) (fun _ dispatched _ ->
             dispatched ()
             raise (InvalidOperationException "synthetic-after-dispatch"))
 
@@ -384,6 +401,117 @@ let private dispatchGuards () =
     with :? OperationCanceledException ->
         Expect.isFalse dispatched "Cancellation is checked before dispatch knowledge"
 
+let private malformedBusinessInput () =
+    let original = frame "case.execute"
+    let input = Frames.inputBytes original |> Encoding.UTF8.GetString
+
+    let malformed =
+        input.Replace("2026-01-01", "not-a-calendar-date").Replace("\"x\"", "\"\\u0078\"")
+
+    let invocation =
+        bytes ($"{{\"endpoint\":\"case.execute\",\"input\":{malformed}}}")
+        |> Frames.admit
+        |> Fixtures.accepted
+
+    let rejected =
+        samples "wire-response-examples.json" "case.execute"
+        |> List.find (fun body ->
+            use document = JsonDocument.Parse(ReadOnlyMemory<byte> body)
+            document.RootElement.GetProperty("outcome").GetProperty("tag").GetString() = "REJECTED")
+
+    use handler =
+        new Handler(fun request ->
+            task {
+                let! sent = (request.Content |> nonNull).ReadAsByteArrayAsync()
+
+                Expect.equal
+                    sent
+                    (bytes malformed)
+                    "The malformed business string and original escape spelling are sent unchanged."
+
+                return response 200 rejected
+            })
+
+    let reply = send handler invocation
+    Expect.equal reply.ExitCode 2 "A typed business rejection exits two after dispatch."
+
+    match Frames.decode reply.Bytes |> Fixtures.accepted with
+    | FrameReply.CaseExecute(_, CaseExecuteOutcome.Rejected _) -> ()
+    | _ -> failtest "Business format refusal remains a typed result, not a protocol failure."
+
+let private nearFrameLimitBody endpoint failure =
+    let original =
+        if failure then
+            HostFailures.encode HostFailure.BeforeDispatchFailed
+        else
+            samples "wire-response-examples.json" endpoint
+            |> List.find (fun body ->
+                use document = JsonDocument.Parse(ReadOnlyMemory<byte> body)
+
+                document.RootElement.GetProperty("outcome").GetProperty("tag").GetString() =
+                    "REJECTED")
+
+    let node = System.Text.Json.Nodes.JsonNode.Parse(original) |> nonNull
+
+    let target =
+        if failure then
+            node
+        else
+            node["outcome"] |> nonNull |> fun outcome -> outcome["data"] |> nonNull
+
+    target["message"] <- System.Text.Json.Nodes.JsonValue.Create("x")
+    let baseline = node.ToJsonString() |> bytes
+
+    target["message"] <-
+        System.Text.Json.Nodes.JsonValue.Create(
+            String('a', Limits.MaximumResponseBytes - baseline.Length - 31)
+        )
+
+    node.ToJsonString() |> bytes
+
+let private frameResponseBounds () =
+    for endpoint in [ "case.get"; "case.execute" ] do
+        for failure in [ false; true ] do
+            let body = nearFrameLimitBody endpoint failure
+            let invocation = frame endpoint
+            let selected = frameEndpoint invocation
+
+            Expect.equal
+                body.Length
+                (Limits.MaximumResponseBytes - 32)
+                "The HTTP body is within its own bound."
+
+            if failure then
+                Expect.isOk (HostFailures.decode body) "Host failure body is well formed."
+            else
+                Expect.isOk (Replies.decode selected body) "Outcome body is well formed."
+
+            use handler =
+                new Handler(fun _ -> Task.FromResult(response (if failure then 500 else 200) body))
+
+            let reply = send handler invocation
+
+            Expect.equal
+                reply.ExitCode
+                (if Endpoint.mutates selected then 4 else 2)
+                "An unencodable response cannot settle a mutation."
+
+            Expect.isLessThanOrEqual
+                reply.Bytes.Length
+                Limits.MaximumResponseBytes
+                "The delivered frame stays bounded."
+
+            match Frames.decode reply.Bytes |> Fixtures.accepted with
+            | FrameReply.ProtocolFailure(meta, _, ProtocolFailure.InvalidResponse) ->
+                Expect.equal
+                    meta.AttemptKnowledge
+                    (if Endpoint.mutates selected then
+                         AttemptKnowledge.Unconfirmed
+                     else
+                         AttemptKnowledge.ReadFailed)
+                    "Invalid response metadata preserves dispatch uncertainty."
+            | _ -> failtest "Expected a bounded invalid-response frame."
+
 [<Tests>]
 let tests =
     testList
@@ -396,6 +524,12 @@ let tests =
                 mixedMediaRefusals ()
                 absentJsonMedia ()
                 mixedMediaCorrelation ())
+            testCase
+                "malformed business strings reach typed server rejection unchanged"
+                malformedBusinessInput
+            testCase
+                "HTTP bodies near the byte cap cannot create oversized reply frames"
+                frameResponseBounds
             testCase "all result tags select the specified exit" resultExits
             testCase "catalogue methods handshake and exact input bytes are sent" requestBytes
             testCase "all typed service failure phases preserve mutation knowledge" failurePhases

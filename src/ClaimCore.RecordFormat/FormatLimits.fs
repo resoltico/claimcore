@@ -3,4 +3,7 @@ namespace ClaimCore.RecordFormat
 /// Permanent retained payload admission, independent of current business-text policy.
 module FormatLimits =
     [<Literal>]
-    let MaximumPayloadBytes = 262144
+    let MaximumFreeTextBytes = ClaimCore.Domain.TextFormat.MaximumFreeTextBytes
+
+    [<Literal>]
+    let MaximumPayloadBytes = 32768

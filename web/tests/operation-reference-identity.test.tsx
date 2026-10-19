@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -5,24 +6,18 @@ import type { CurrentCase } from "../src/api/service";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
-import { definition, fields, digest, response, runtime } from "./service-ui.fixtures";
+import { definition, fields, response, runtime } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
-  offers: ["CLOSE"].map((identifier) => ({
-    definition: identifier,
-    caseReference: null,
-    expectedRevision: null,
-    choices: [],
-  })),
-  historyDetails: ["SUMMARY", "FULL"],
-  state: { tag: "LIVE", fields, disposition: "ACTIVE", availableActs: ["CLOSE"] },
+  advice: { acts: caseOffers(["CLOSE"]), history: ["SUMMARY", "FULL"] },
+
+  state: { tag: "LIVE", fields, disposition: "ACTIVE" },
 };
 
 const prepared = () =>
   response("case.preview", "REVIEWED", {
-    requestSha256: digest,
     review: {
       before: current,
       after: {

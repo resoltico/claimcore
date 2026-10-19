@@ -1,3 +1,4 @@
+import { installationOffers } from "./installation-advice.fixtures";
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
@@ -57,14 +58,8 @@ const reads = (offered = true) => {
         tag: "SUCCEEDED",
         data: {
           ...context.outcome.data,
-          offers: ["REGISTER_ACTOR", ...(offered ? ["authority.grants"] : [])].map(
-            (definition) => ({
-              definition,
-              caseReference: null,
-              expectedRevision: null,
-              choices: [],
-            }),
-          ),
+          offers: installationOffers(["REGISTER_ACTOR"]),
+          views: offered ? ["AUTHORITY"] : [],
         },
       },
     },

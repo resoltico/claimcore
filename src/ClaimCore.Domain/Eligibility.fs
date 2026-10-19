@@ -63,22 +63,21 @@ module internal Eligibility =
 
     let private opened kind progress =
         match kind with
-        | CaseActKind.Open -> Error CaseRefusal.AlreadyExists
-        | CaseActKind.Reopen -> Error CaseRefusal.AlreadyOpened
-        | CaseActKind.Close -> Ok()
-        | CaseActKind.AmendRegistration -> amendment progress
-        | CaseActKind.CorrectCase -> correction progress
-        | CaseActKind.Decide -> decision progress
-        | CaseActKind.WithdrawDecision -> withdrawal progress
-        | CaseActKind.RecordPayment -> payment progress
-        | CaseActKind.ClearPayment -> clearPayment progress
-        | _ -> Validation.invalidAct InputTarget.Act ActViolation.StateTransitionMismatch
+        | BusinessActKind.Open -> Error CaseRefusal.AlreadyExists
+        | BusinessActKind.Reopen -> Error CaseRefusal.AlreadyOpened
+        | BusinessActKind.Close -> Ok()
+        | BusinessActKind.AmendRegistration -> amendment progress
+        | BusinessActKind.CorrectCase -> correction progress
+        | BusinessActKind.Decide -> decision progress
+        | BusinessActKind.WithdrawDecision -> withdrawal progress
+        | BusinessActKind.RecordPayment -> payment progress
+        | BusinessActKind.ClearPayment -> clearPayment progress
 
     let check kind status progress =
         match status, kind with
-        | CaseStatus.Closed, CaseActKind.Open -> Error CaseRefusal.AlreadyExists
-        | CaseStatus.Closed, CaseActKind.Reopen -> Ok()
-        | CaseStatus.Closed, CaseActKind.Close -> Error CaseRefusal.AlreadyClosed
-        | CaseStatus.Closed, CaseActKind.CorrectCase -> Ok()
+        | CaseStatus.Closed, BusinessActKind.Open -> Error CaseRefusal.AlreadyExists
+        | CaseStatus.Closed, BusinessActKind.Reopen -> Ok()
+        | CaseStatus.Closed, BusinessActKind.Close -> Error CaseRefusal.AlreadyClosed
+        | CaseStatus.Closed, BusinessActKind.CorrectCase -> Ok()
         | CaseStatus.Closed, _ -> Error CaseRefusal.ClosedCase
         | CaseStatus.Opened, _ -> opened kind progress

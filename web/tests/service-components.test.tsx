@@ -2,7 +2,7 @@ import { localNotice } from "../src/api/notices";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { isEndpointId } from "@contracts/endpoint-catalog";
+import { isEndpointId } from "../src/protocol/client";
 import { CopyValue } from "../src/components/CopyValue";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
 import { DescriptorField } from "../src/components/DescriptorField";
@@ -37,7 +37,7 @@ it("associates optional field errors and supports password text input", () => {
         error="Required"
       />
       <DescriptorField
-        field={definition.descriptors.fields[0]}
+        field={definition.descriptors.fields[0]!}
         value="CASE-1"
         error={localNotice("unreachable")}
         onChange={onChange}

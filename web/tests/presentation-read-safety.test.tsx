@@ -86,11 +86,11 @@ const readReply = (url: string, value: string, missing: boolean) => {
       : {
           caseReference: value,
           revision: 1,
+          advice: { acts: [], history: ["SUMMARY", "FULL"] },
           state: {
             tag: "LIVE",
             disposition: "ACTIVE",
             fields: { ...fields, caseReference: value },
-            availableActs: [],
           },
         },
   );

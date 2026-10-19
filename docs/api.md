@@ -1,6 +1,6 @@
 # Service and CLI contract
 
-The [endpoint catalogue](../contracts/catalog.json) defines twelve endpoints, their strict wire
+The [OpenAPI 3.1 contract](../contracts/openapi.json) defines twelve endpoints, their strict wire
 schemas and one shared fingerprint. `session` is GET; the others are POST to the literal
 `/api/<endpoint>` path, including dots in names such as `/api/case.execute`. Session bootstrap is
 anonymous; remaining operations require an authenticated principal. Case and authority work also
@@ -36,8 +36,8 @@ accumulated rows from successive requests are not one frozen snapshot. Execution
 `authority.list` returns actor ID, principal and enabled state, without nested grants. Use
 `authority.grants` with `actorId`, optional `cursor` and `limit` to review that actor's grants.
 Both reads require current installation ReadAuthority; disabled targets remain reviewable.
-The grant page returns its current actor header and at most 50 grants. Continuations bind the
-caller, complete caller authority, endpoint and target; grants may evolve between requests.
+The grant page returns its current actor header and at most 50 grants. Continuations bind the endpoint and target resource, with no identity, authority or time binding.
+Grants may evolve between requests; every page authorizes in its own read snapshot.
 A successful reply must echo the requested actor ID in its actor header.
 Use an actor ID returned by `authority.list` in the CLI frame (the ID below is synthetic):
 
@@ -48,8 +48,7 @@ Use an actor ID returned by `authority.list` in the CLI frame (the ID below is s
 }
 ```
 
-`case.history` returns uniform SUMMARY or FULL entries. SUMMARY pages contain at most 50 entries;
-FULL pages contain at most 10 to keep supported retained snapshots inside the response byte limit.
+`case.history` returns uniform SUMMARY or FULL entries. Both details allow pages of up to 50 entries.
 The server can return fewer entries than requested. Only `nextCursor: null` establishes the end:
 follow a non-null cursor even after a short page. This capacity does not change accepted text,
 truncate history or reduce historical disclosure requirements.
@@ -69,24 +68,37 @@ The two execute endpoints use `ACCEPTED`, `ALREADY_ACCEPTED`, `REJECTED`, `FAILE
 and `OUTCOME_UNKNOWN`. A refusal records nothing. Preview returns `REVIEWED`, `ALREADY_ACCEPTED`
 or an explicit refusal/failure; it never
 accepts a new operation. Reads, including operation observation, return `SUCCEEDED` or an explicit
-refusal/failure. Absent and inaccessible resources share `RESOURCE_UNAVAILABLE`.
+refusal/failure. Absent and inaccessible resources share `ACCESS_RESOURCE_UNAVAILABLE`.
 
 Case receipts retain the original acceptance metadata. Their snapshots are `DISCLOSED`,
 `WITHHELD` or `ERASED` under current access; replay does not grant historical snapshot access.
 
-Schemas close objects and tags and check permanent format invariants. Business admission policy
-is evaluated only by Domain on newly asserted values, preserving old accepted text. Strict codecs
-reject duplicate members, invalid UTF-8, malformed scalars, invalid UUID/revision values and excess
-nesting/bytes. Wire-format failures are host refusals before Domain validation; they do not
-produce business-field rejections. Typed endpoint outcomes use HTTP 200; host failures carry
-their own HTTP status and an optional `executionPhase`. Server responses undergo full schema validation;
-both clients validate complete generated endpoint schemas from bounded strict response bytes. Malformed mutation replies
-retain exact delivery uncertainty.
+Schemas close objects and tags. Strict byte admission rejects duplicate decoded member names,
+invalid UTF-8 and Unicode, numeric lexemes outside the safe integer profile, invalid technical
+UUID/revision shapes, and excess nesting/bytes. Request business values remain strings: an invalid
+business date, amount, currency, country, reference or asserted text reaches Application/Domain and
+returns typed `REJECTED` with field guidance, HTTP 200 and CLI exit 2. A shape error remains a
+host `INPUT_INVALID` / HTTP 400 / `NOT_STARTED` refusal. Accepted response values obey permanent
+record formats; today's admission policy never invalidates retained history. Web encodes the typed
+reply directly. The CLI decodes with the Wire codec and the browser interprets the generated
+OpenAPI component schemas from bounded strict bytes. Malformed mutation replies preserve exact
+request identity and delivery uncertainty.
 
-Tracked [contract artifacts](../contracts/catalog.json) are generated from F# contract definitions.
-The fingerprint covers canonical framed catalogue metadata without its identity field, all schemas,
-complete descriptors, default English, delivery/correlation policy and the strict-byte profile; derived TypeScript, corpus and the fingerprint itself are excluded.
-[Development](development.md) owns generation and freshness checks.
+The fingerprint is lowercase SHA-256 of the exact deterministic bytes of `openapi.json`. It covers
+wire shape and the declared byte profile, excluding labels, glossary, English messages, descriptors,
+product version and generated client text. Presentation-only changes do not change the fingerprint.
+The generated inventory is `openapi.json`, `client.ts`, `descriptors.json`, `cli-frame.schema.json`,
+`delivery-vectors.json`, `correlation-vectors.json`, `corpus.json` and the TypeScript package metadata.
+[Development](development.md#generated-contracts-and-boundary-verification) owns generation and
+freshness checks. The [descriptors](../contracts/descriptors.json) carry presentation and typed advice
+vocabularies. `context.views` advertises `CASES`, `AUTHORITY` and `OPERATIONS`; installation offers
+contain only OPEN or an authority act. A case record has `advice.acts` and `advice.history`; correction
+choices belong only to CORRECT_CASE. Endpoint names and duplicated `state.availableActs`, `offers`
+and `historyDetails` are absent from case advice. Execution always rechecks current authority.
+
+Pagination uses [plain canonical keysets](architecture.md#cc-auth-001). Editing or sharing a cursor
+conveys no access. Both history details allow 50 rows and complete client replies are bounded to
+4 MiB; continuations remain required after short pages.
 
 Case preview/execute and authority execute response envelopes echo the admitted request operation ID,
 including refusals. Clients correlate that ID and receipt scope/act, case resource identity and promised
@@ -115,7 +127,7 @@ The CLI calls HTTPS with authorization-code/PKCE or client credentials and recei
 credential. `call` reads one `{"endpoint":...,"input":...}` JSON document from stdin, which may
 span multiple lines. `session` reads one complete frame per line as NDJSON and reuses its
 process-local authentication session. Each input frame is limited to 128 KiB; responses are
-limited to 16 MiB. Input is strict UTF-8 and replies are validated against the generated contract.
+limited to 4 MiB. Input is strict UTF-8 and replies are validated against the generated contract.
 Preview is advisory; execution revalidates locked state.
 
 Discovery needs no credentials. `describe authority [kind]` exposes the Application-owned
@@ -145,9 +157,16 @@ certificate validity and hostname checks remain enabled. Secret and trust-root f
 [private-input admission rules](database.md#cc-db-002) on macOS and Linux. Keep secret
 contents out of command arguments, environment variables and reports.
 
-Interactive mode opens the system browser for each new CLI process; the callback uses one-use
-HTTP on loopback while issuer and service traffic remains HTTPS. Automation uses a confidential
-client restricted to client credentials and an explicitly registered/granted SERVICE actor.
+The CLI uses Duende.IdentityModel and Duende.IdentityModel.OidcClient for discovery and token
+acquisition. Default discovery policy requires HTTPS and validates issuer and endpoint base
+addresses; endpoints outside the issuer base URL are refused. Interactive mode opens the system
+browser for each new CLI process, uses PKCE S256, and accepts one callback on an ephemeral
+`127.0.0.1` port. HTTP is confined to that callback; issuer and service traffic use HTTPS.
+Pushed authorization requests are used when advertised by the provider. The CLI consumes only
+the access token; it disables userinfo loading and makes no decisions from identity-token claims.
+Automation uses a confidential client restricted to client credentials and an explicitly
+registered/granted SERVICE actor. ClaimCore bounds process-local token reuse using elapsed
+monotonic time and conservative UTC expiry measured from token dispatch.
 Apply the [identity-provider flow restrictions](web.md) and follow [Getting started](getting-started.md)
 for the isolated human-owner flow. Tokens remain process-local.
 
@@ -155,7 +174,8 @@ for the isolated human-owner flow. Tokens remain process-local.
 
 ### CC-CLI-003 — Mutation uncertainty after dispatch
 
-Exit 0 is success; 2 is protocol/business refusal; 3 is definite local/service failure;
+Exit 0 is success; 2 is invocation/protocol or typed business refusal (including malformed business
+strings); 3 is definite local/service failure;
 4 is dispatched mutation with uncertain delivery; 130 is cancellation. Invocation/root failures
 use 64/70. An uncertain retry retains operation ID, expected revision and exact request bytes.
 `session` stops on 4 or 130 and on an oversized frame; it cannot let a later result mask uncertainty.

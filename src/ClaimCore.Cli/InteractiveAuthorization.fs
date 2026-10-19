@@ -1,65 +1,76 @@
 namespace ClaimCore.Cli
 
 open System
-open System.Diagnostics
-open System.Net
-open System.Net.Sockets
-open System.Runtime.InteropServices
+open System.Net.Http
 open System.Threading
+open Duende.IdentityModel.OidcClient
 
 module InteractiveAuthorization =
-    let private launch (authorization: Uri) =
-        let executable =
-            if RuntimeInformation.IsOSPlatform(OSPlatform.OSX) then
-                Some "open"
-            elif RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then
-                Some "xdg-open"
-            else
-                None
+    let private tokenEndpoint (options: OidcClientOptions) () =
+        match options.ProviderInformation with
+        | null -> None
+        | provider ->
+            match Uri.TryCreate(provider.TokenEndpoint, UriKind.Absolute) with
+            | true, uri -> Option.ofObj uri
+            | _ -> None
 
-        match executable with
-        | None -> Error "OIDC_BROWSER_UNAVAILABLE"
-        | Some name ->
-            try
-                let start = ProcessStartInfo(name)
-                start.UseShellExecute <- false
-                start.RedirectStandardOutput <- true
-                start.RedirectStandardError <- true
-                start.CreateNoWindow <- true
-                start.ArgumentList.Add(authorization.AbsoluteUri)
+    let internal configuration (issuer: Uri) clientId (browser: LoopbackBrowser) =
+        OidcClientOptions(
+            Authority = issuer.AbsoluteUri,
+            ClientId = clientId,
+            Scope = "openid",
+            RedirectUri = browser.RedirectUri,
+            Browser = browser,
+            LoadProfile = false,
+            BackchannelTimeout = TimeSpan.FromSeconds 20.
+        )
 
-                use child = Process.Start(start)
-
-                if isNull child then
-                    Error "OIDC_BROWSER_UNAVAILABLE"
-                else
-                    Ok()
-            with
-            | :? ComponentModel.Win32Exception
-            | :? InvalidOperationException -> Error "OIDC_BROWSER_UNAVAILABLE"
-
-    let obtain
-        (endpoints: OidcEndpoints)
-        (issuer: Uri)
-        (clientId: string)
-        (cancelled: CancellationToken)
+    let private received
+        clock
+        (browser: LoopbackBrowser)
+        (transport: OidcBackchannel)
+        (result: LoginResult)
         =
-        task {
-            use listener = new TcpListener(IPAddress.Loopback, 0)
-            listener.Start(1)
-            let port = (listener.LocalEndpoint :?> IPEndPoint).Port
-            let redirect = Uri($"http://127.0.0.1:{port}/")
-            let pkce = OidcClient.createPkceSession ()
+        if result.IsError then
+            Error(
+                browser.Failure
+                |> Option.defaultValue (
+                    if transport.Dispatch.IsSome then
+                        "OIDC_TOKEN_UNAVAILABLE"
+                    else
+                        "OIDC_CALLBACK_INVALID"
+                )
+            )
+        else
+            match transport.Dispatch with
+            | None -> Error "OIDC_TOKEN_UNAVAILABLE"
+            | Some dispatch ->
+                AccessTokens.fromResponseAt
+                    clock
+                    dispatch.Utc
+                    dispatch.Timestamp
+                    result.TokenResponse
 
-            match OidcClient.authorizationUri endpoints clientId redirect pkce with
-            | Error reason -> return Error reason
-            | Ok authorization ->
-                match launch authorization with
-                | Error reason -> return Error reason
-                | Ok() ->
-                    match!
-                        LoopbackCallback.receive listener issuer.AbsoluteUri pkce.State cancelled
-                    with
-                    | Error reason -> return Error reason
-                    | Ok code -> return Ok(code, redirect, pkce.Verifier)
+    let obtain (handler: HttpMessageHandler) (issuer: Uri) clientId (cancelled: CancellationToken) =
+        task {
+            use browser = new LoopbackBrowser()
+            let options = configuration issuer clientId browser
+            let clock = TimeProvider.System
+            use transport = new OidcBackchannel(handler, tokenEndpoint options, clock)
+            use client = new HttpClient(transport, false)
+            client.Timeout <- options.BackchannelTimeout
+            client.MaxResponseContentBufferSize <- 65536L
+            options.BackchannelHandler <- transport
+            options.HttpClientFactory <- Func<OidcClientOptions, HttpClient>(fun _ -> client)
+            let oidc = Duende.IdentityModel.OidcClient.OidcClient options
+
+            try
+                let! result = oidc.LoginAsync(LoginRequest(), cancelled)
+                return received clock browser transport result
+            with
+            | :? OperationCanceledException
+            | :? HttpRequestException
+            | :? IO.IOException -> return Error "OIDC_TOKEN_UNAVAILABLE"
+            | :? InvalidOperationException
+            | :? ArgumentException -> return Error "OIDC_METADATA_INVALID"
         }

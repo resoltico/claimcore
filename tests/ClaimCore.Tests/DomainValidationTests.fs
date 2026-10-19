@@ -47,7 +47,7 @@ let private restorationTests =
                         }
 
                 let result = Case.ofAccepted invalid |> Result.map Case.snapshot
-                Expect.isTrue (result = Error CaseRefusal.DecisionRequired) "Corruption")
+                Expect.isTrue (result = Error RecordViolation.InvalidProgress) "Corruption")
             testCase "all six incomplete decision tuples are rejected on restoration" (fun () ->
                 let original = Case.snapshot (opened ())
 

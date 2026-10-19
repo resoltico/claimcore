@@ -4,12 +4,8 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
-open ClaimCore.RecordFormat
 
 module internal Core =
-    let private digest bytes =
-        LedgerEntry.requestDigest bytes |> Convert.ToHexStringLower
-
     let private mutationResult =
         function
         | LedgerWriteResult.Refused error -> ExecuteOutcome.Rejected error
@@ -17,18 +13,11 @@ module internal Core =
         | LedgerWriteResult.Appended receipt -> ExecuteOutcome.Accepted receipt
         | LedgerWriteResult.Replayed receipt -> ExecuteOutcome.AlreadyAccepted receipt
 
-    let private mutationFailure operationId bytes =
+    let private mutationFailure operationId =
         function
         | StoreFailure.Cancelled -> ExecuteOutcome.Cancelled
-        | StoreFailure.CommitOutcomeUnknown ->
-            ExecuteOutcome.OutcomeUnknown(operationId, digest bytes)
+        | StoreFailure.CommitOutcomeUnknown -> ExecuteOutcome.OutcomeUnknown operationId
         | failure -> ExecuteOutcome.Failed(Queries.fault failure)
-
-    let private protect decide view =
-        try
-            decide view
-        with :? ArgumentException ->
-            LedgerDecision.Fail CoreFault.StoreIntegrityError
 
     let private caseWrite
         (store: ILedgerStore)
@@ -45,8 +34,7 @@ module internal Core =
                 match Case.validateRequest request with
                 | Error error -> return ExecuteOutcome.Rejected(Rejection.Case error)
                 | Ok() ->
-                    let decide =
-                        CaseDecisions.execute installationId calendar principal request |> protect
+                    let decide = CaseDecisions.execute installationId calendar principal request
 
                     let! result =
                         store.WriteCase(
@@ -60,9 +48,7 @@ module internal Core =
                     return
                         result
                         |> Result.map mutationResult
-                        |> Result.defaultWith (
-                            mutationFailure request.OperationId (RequestRecord.encode request)
-                        )
+                        |> Result.defaultWith (mutationFailure request.OperationId)
         }
 
     let private authorityWrite
@@ -79,8 +65,7 @@ module internal Core =
                 match AuthorityRequests.validate request with
                 | Error error -> return ExecuteOutcome.Rejected error
                 | Ok() ->
-                    let decide =
-                        AuthorityDecisions.execute installationId principal request |> protect
+                    let decide = AuthorityDecisions.execute installationId principal request
 
                     let! result =
                         store.WriteAuthority(
@@ -92,12 +77,10 @@ module internal Core =
                             ct
                         )
 
-                    let bytes = AuthorityRequests.toRecord request |> AuthorityRecord.encode
-
                     return
                         result
                         |> Result.map mutationResult
-                        |> Result.defaultWith (mutationFailure request.OperationId bytes)
+                        |> Result.defaultWith (mutationFailure request.OperationId)
         }
 
     let private businessFields =
@@ -180,26 +163,19 @@ module internal Core =
                             | CaseReviewDecision.Replay receipt ->
                                 PreviewOutcome.AlreadyAccepted receipt
                             | CaseReviewDecision.Proposed(before, after) ->
-                                PreviewOutcome.Reviewed(
-                                    advisory calendar view.ObservedAt request.Act before after,
-                                    digest (RequestRecord.encode request)
-                                )
+                                advisory calendar view.ObservedAt request.Act before after
+                                |> PreviewOutcome.Reviewed
         }
 
-    /// Hosting owns the single ephemeral key for the runtime; every facade shares its bytes.
+    /// Every facade authorizes each read against current authoritative state.
     let create
         installationId
         (store: ILedgerStore)
         (calendar: IBusinessCalendar)
-        (cursorKey: byte array)
         principal
         : IActorClaimsCore =
-        if
-            installationId = Guid.Empty
-            || obj.ReferenceEquals(cursorKey, null)
-            || cursorKey.Length <> 32
-        then
-            invalidArg (nameof cursorKey) "Use an admitted installation and a 32-byte cursor key."
+        if installationId = Guid.Empty then
+            invalidArg (nameof installationId) "Use an admitted installation."
 
         { new IActorClaimsCore with
             member _.Context ct =
@@ -218,17 +194,17 @@ module internal Core =
                 Queries.get store installationId principal reference ct
 
             member _.List(request, ct) =
-                Queries.list store installationId cursorKey principal request ct
+                Queries.list store installationId principal request ct
 
             member _.History(request, ct) =
-                Queries.history store installationId cursorKey principal request ct
+                Queries.history store installationId principal request ct
 
             member _.Observe(id, ct) =
                 Queries.observe store installationId principal id ct
 
             member _.ListGrants(request, ct) =
-                Queries.grants store installationId cursorKey principal request ct
+                Queries.grants store principal request ct
 
             member _.ListActors(request, ct) =
-                Queries.actors store installationId cursorKey principal request ct
+                Queries.actors store principal request ct
         }

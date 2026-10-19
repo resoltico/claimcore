@@ -132,10 +132,10 @@ lint() {
 unit() {
   build_native
   # Native freshness tests check the complete tracked contracts/ inventory and exact bytes.
-  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 339
+  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 402
   dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
     --configuration Debug --no-restore -p:Optimize=false
-  tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 43 Debug 15m
+  tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 41 Debug 15m
 }
 
 frontend() { # Node only: no generated contract prerequisite or .NET process.
@@ -151,7 +151,12 @@ frontend() { # Node only: no generated contract prerequisite or .NET process.
 }
 
 workflows() {
-  shellcheck eng/*.sh deployment/*.sh
+  local script
+  local -a scripts=()
+  for script in eng/*.sh deployment/*.sh; do
+    if [[ -f "${script}" ]]; then scripts+=("${script}"); fi
+  done
+  shellcheck "${scripts[@]}"
   docker run --rm --label claimcore.workflow-check=actionlint -v "${PWD}:/repo:ro" -w /repo \
     rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
 }
@@ -163,12 +168,12 @@ integration() {
 
 postgres() {
   build_native tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
-  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 121 Release 20m eng/expecto.integration.runsettings
+  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 127 Release 20m eng/expecto.integration.runsettings
 }
 
 web() {
   build_native tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
-  tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj 76 Release 20m
+  tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj 83 Release 20m
 }
 
 browsers() {

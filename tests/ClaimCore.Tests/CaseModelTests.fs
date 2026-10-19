@@ -61,15 +61,16 @@ let private live status decided paid =
 
 let private acts =
     [
-        CaseActKind.Open, CaseAct.Business(BusinessCommand.Open registration)
-        CaseActKind.AmendRegistration,
+        (CaseActKind.Business BusinessActKind.Open),
+        CaseAct.Business(BusinessCommand.Open registration)
+        (CaseActKind.Business BusinessActKind.AmendRegistration),
         CaseAct.Business(
             BusinessCommand.AmendRegistration
                 { registration with
                     ClaimantName = "Changed Party"
                 }
         )
-        CaseActKind.CorrectCase,
+        (CaseActKind.Business BusinessActKind.CorrectCase),
         CaseAct.Business(
             BusinessCommand.CorrectCase
                 {
@@ -82,7 +83,7 @@ let private acts =
                     Payment = PaymentCorrection.Keep
                 }
         )
-        CaseActKind.Decide,
+        (CaseActKind.Business BusinessActKind.Decide),
         CaseAct.Business(
             BusinessCommand.Decide
                 {
@@ -91,14 +92,19 @@ let private acts =
                     PayableCurrency = "EUR"
                 }
         )
-        CaseActKind.WithdrawDecision, CaseAct.Business BusinessCommand.WithdrawDecision
-        CaseActKind.RecordPayment, CaseAct.Business(BusinessCommand.RecordPayment "2026-08-20")
-        CaseActKind.ClearPayment, CaseAct.Business BusinessCommand.ClearPayment
-        CaseActKind.Close, CaseAct.Business BusinessCommand.Close
-        CaseActKind.Reopen, CaseAct.Business BusinessCommand.Reopen
-        CaseActKind.Void, CaseAct.Stewardship(StewardshipAct.Void "Entry error")
-        CaseActKind.Reinstate, CaseAct.Stewardship(StewardshipAct.Reinstate "Entry confirmed")
-        CaseActKind.Erase, CaseAct.Stewardship StewardshipAct.Erase
+        (CaseActKind.Business BusinessActKind.WithdrawDecision),
+        CaseAct.Business BusinessCommand.WithdrawDecision
+        (CaseActKind.Business BusinessActKind.RecordPayment),
+        CaseAct.Business(BusinessCommand.RecordPayment "2026-08-20")
+        (CaseActKind.Business BusinessActKind.ClearPayment),
+        CaseAct.Business BusinessCommand.ClearPayment
+        (CaseActKind.Business BusinessActKind.Close), CaseAct.Business BusinessCommand.Close
+        (CaseActKind.Business BusinessActKind.Reopen), CaseAct.Business BusinessCommand.Reopen
+        (CaseActKind.Stewardship StewardshipActKind.Void),
+        CaseAct.Stewardship(StewardshipAct.Void "Entry error")
+        (CaseActKind.Stewardship StewardshipActKind.Reinstate),
+        CaseAct.Stewardship(StewardshipAct.Reinstate "Entry confirmed")
+        (CaseActKind.Stewardship StewardshipActKind.Erase), CaseAct.Stewardship StewardshipAct.Erase
     ]
 
 let private stateExpectations =
@@ -211,15 +217,11 @@ let private allKeepPrecedence =
                 CaseReference = "OTHER"
             }
 
-        Expect.equal
-            (Case.decide today mismatch (Some(retained 1L (live CaseStatus.Opened true false))))
-            (Error(
-                CaseRefusal.InvalidInput(
-                    InputTarget.CaseReference,
-                    InputViolation.Act ActViolation.CaseReferenceMismatch
-                )
-            ))
-            "Reference identity precedes correction semantics")
+        Expect.throwsT<System.ArgumentException>
+            (fun () ->
+                Case.decide today mismatch (Some(retained 1L (live CaseStatus.Opened true false)))
+                |> ignore)
+            "The store must supply the authoritative target record")
 
 let private grandfathering =
     testCase

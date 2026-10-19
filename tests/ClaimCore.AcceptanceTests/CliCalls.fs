@@ -56,6 +56,10 @@ let interactiveEnvironment (fixture: PublishedFixture.Fixture) username mode =
     values["CLAIMCORE_CLI_AUTH_MODE"] <- "interactive"
     values["CLAIMCORE_OIDC_CLIENT_ID"] <- "cli"
     values["CLAIMCORE_CLI_TEST_AUTH_MODE"] <- mode
+
+    values["CLAIMCORE_CLI_TEST_PROGRESS_FILE"] <-
+        Path.Combine(fixture.Directory, "cli-auth-" + mode + ".progress")
+
     values["CLAIMCORE_CLI_TEST_USERNAME"] <- username
 
     values["CLAIMCORE_CLI_TEST_CREDENTIALS_FILE"] <-

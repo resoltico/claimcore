@@ -47,7 +47,7 @@ body:
     attributes:
       label: Platform
       description: Give only the relevant operating system, architecture, and runtime versions.
-      placeholder: macOS arm64; .NET 10.0.401; Node version
+      placeholder: macOS arm64; .NET SDK 10.0.402; Node version
     validations:
       required: true
   - type: textarea

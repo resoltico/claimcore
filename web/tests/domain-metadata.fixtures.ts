@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { expect } from "vitest";
 import type { CurrentCase, Descriptors } from "../src/api/service";
 import {
@@ -39,14 +40,9 @@ const definition = {
 const current: CurrentCase = {
   caseReference: caseFields.caseReference,
   revision: 1,
-  offers: [].map((identifier) => ({
-    definition: identifier,
-    caseReference: null,
-    expectedRevision: null,
-    choices: [],
-  })),
-  historyDetails: ["SUMMARY", "FULL"],
-  state: { tag: "LIVE", disposition: "ACTIVE", fields: caseFields, availableActs: [] },
+  advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
+
+  state: { tag: "LIVE", disposition: "ACTIVE", fields: caseFields },
 };
 const keep = { mode: "KEEP" as const, values: {} };
 const emptyRegistration = {

@@ -1,10 +1,9 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.ClientProtocol
+open ClaimCore.Wire
 
 open System
 open System.IO
-open ClaimCore.ClientContract
 
 /// A successful flush clears the current frame's dispatch knowledge.
 type FrameDelivery(output: Stream, errors: Stream) =
@@ -12,7 +11,7 @@ type FrameDelivery(output: Stream, errors: Stream) =
     let mutable interrupted = false
     let mutable potentiallyChanged = false
     let mutable dispatched = false
-    let mutable pending: ProtocolInvocation option = None
+    let mutable pending: Invocation option = None
 
     let advance action =
         lock gate (fun () ->
@@ -32,7 +31,9 @@ type FrameDelivery(output: Stream, errors: Stream) =
 
     member _.BeforeDispatch frame =
         advance (fun () ->
-            potentiallyChanged <- (Frames.endpoint frame).Mutates
+            potentiallyChanged <-
+                (Frames.request frame |> WireRequest.endpoint |> Endpoint.mutates)
+
             dispatched <- true
             pending <- Some frame)
 
@@ -56,7 +57,7 @@ type FrameDelivery(output: Stream, errors: Stream) =
                 let reply = CliReply.unknown (CliReply.local ClientFailure.Unavailable)
 
                 match pending with
-                | Some frame -> CliReply.forAttempt frame "UNCONFIRMED" reply
+                | Some frame -> CliReply.forAttempt frame AttemptKnowledge.Unconfirmed reply
                 | None -> reply
             elif error :? OperationCanceledException then
                 CliReply.local ClientFailure.Cancelled
@@ -68,7 +69,12 @@ type FrameDelivery(output: Stream, errors: Stream) =
             | Some frame when not uncertain ->
                 CliReply.forAttempt
                     frame
-                    (DeliveryPolicy.missing sent (Frames.endpoint frame).Mutates)
+                    (Delivery.knowledge
+                        (Frames.request frame |> WireRequest.endpoint)
+                        (if sent then
+                             AttemptResult.DispatchedWithoutReply
+                         else
+                             AttemptResult.NotDispatched))
                     reply
             | _ -> reply
 

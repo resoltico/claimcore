@@ -308,8 +308,7 @@ let private commitSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let store = AfterCaseWriteStore(fixture.Store, afterWrite)
 
-        let actor =
-            Core.create installation (store :> ILedgerStore) calendar cursorKey principal
+        let actor = Core.create installation (store :> ILedgerStore) calendar principal
 
         let! result = actor.Execute(openRequest 10 "PROBE-1", CancellationToken.None)
         let receipt = accepted result

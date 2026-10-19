@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -9,18 +10,15 @@ import { previewReply } from "./presentation-state.fixtures";
 const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
-  offers: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"].map((identifier) => ({
-    definition: identifier,
-    caseReference: null,
-    expectedRevision: null,
-    choices: [],
-  })),
-  historyDetails: ["SUMMARY", "FULL"],
+  advice: {
+    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"]),
+    history: ["SUMMARY", "FULL"],
+  },
+
   state: {
     tag: "LIVE",
     fields,
     disposition: "ACTIVE",
-    availableActs: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"],
   },
 };
 const open = (command: "AMEND_REGISTRATION" | "CORRECT_CASE" = "AMEND_REGISTRATION") => {

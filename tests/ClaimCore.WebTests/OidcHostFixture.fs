@@ -13,6 +13,7 @@ open Microsoft.AspNetCore.DataProtection
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.TestHost
+open Microsoft.Extensions.DependencyInjection.Extensions
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open ClaimCore.Web
@@ -27,7 +28,11 @@ let private configure
     builder.Logging.ClearProviders() |> ignore
     builder.WebHost.UseTestServer() |> ignore
 
-    builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider()
+    builder.Services.AddDataProtection() |> ignore
+
+    builder.Services.Replace(
+        ServiceDescriptor.Singleton<IDataProtectionProvider>(EphemeralDataProtectionProvider())
+    )
     |> ignore
 
     AuthMiddleware.configureSyntheticLoopback

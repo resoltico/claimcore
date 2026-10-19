@@ -17,6 +17,12 @@ rechecked against authoritative locked state. Browser sessions use secure cookie
 antiforgery admission. The browser and CLI are HTTPS clients and receive no database credentials.
 Database administration uses a separate owner credential and executable.
 
+The [private-input policy](docs/operations.md#private-configuration) allows group read and follows
+secret-volume symlinks; it does not inspect ownership or ACLs. Protect the required Web key-ring
+directory and its encrypted server-side session tickets as a secret outside database backups.
+Sessions retain their deadlines across a single Web process restart; concurrent processes sharing
+tickets are not qualified. See [session operation](docs/operations.md#access-review-and-sessions).
+
 The identity provider, service host, database owner and backup operator remain trusted.
 Ledger hashes detect inconsistency against trusted retained evidence. They do not prove
 independent freshness or protect against rewriting all evidence. Erasure clears live case

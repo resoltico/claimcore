@@ -14,15 +14,14 @@ suites independently of lint/unit completion and requires every suite in `Gate`.
 `Check-FSharpLint.sh` retains every failure. With no arguments `verify.sh` selects the default;
 `--fast` must stand alone. Empty or invalid arguments refuse before tools or Docker.
 
-`build-native.sh` owns the C17 host/compiler/SDK policy, consumed by `NativeBuild.targets`.
-It builds the product HostSecurity library and separate test-only programs incrementally;
-unsupported or cross-RID compilation refuses. [Development](../docs/development.md#first-checkout)
-owns contributor prerequisites and publication limits. `licenses/native-notices.json` is the
-reviewed package/asset provenance and canonical-text owner; app publication copies this common
-superset without consulting the NuGet cache.
+`licenses/third-party-notices.json` owns reviewed package and apphost notices; application
+publication copies this common superset without consulting the NuGet cache. Acceptance checks
+the actual publish inventory and rejects missing or unreviewed contributions.
 
-ContractGenerator derives tracked catalogue, schemas, descriptors, corpus and client declarations
-from Contracts. Native tests check exact artifact bytes and inventory, without invoking Node.
+ContractGenerator derives OpenAPI and TypeScript client types from Wire codecs and descriptors
+from Domain/Application. It references only those three projects. F# tests check exact artifact
+bytes and inventory without invoking Node. Committed independent Python oracles bind durable bytes,
+delivery and correlation; the generated vectors bind the browser to F# policies.
 Frontend checks include consumed-response guards, localization, notices and accessibility tooling.
 Knip checks unused frontend code. CSS checks cover formatting and browser accessibility/layout;
 the gate performs no dedicated CSS semantic linting.

@@ -1,4 +1,4 @@
-import { isResponse } from "@contracts/browser-contract";
+import { isResponse } from "../src/protocol/client";
 import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
@@ -7,7 +7,8 @@ import { openAuthenticated, browserRequest, sessionToken } from "./session-helpe
 import {
   confirmReview,
   pauseJsonReply,
-  localInputRefusalText,
+  businessFormatRefusalText,
+  expectBusinessFormatRefusal,
   trackRequests,
   selectLanguage,
   ui,
@@ -52,20 +53,26 @@ for (const language of ["en", "lv", "ar"] as const) {
     await startOpen(page, `SYNTAX-${randomUUID()}`);
     await selectLanguage(page, language);
     const requests = trackRequests(page);
-    for (const [name, value] of [
-      ["claimedAmount", "١٢٫٥٠"],
-      ["claimedAmount", "125,50"],
-      ["incidentDate", "٢٠٢٦-٠٩-٠١"],
-      ["claimedCurrency", "ĀBC"],
-    ]) {
-      await page.locator(`input[name="${name}"]`).fill(value!);
-      await page
-        .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
-        .click();
-      await expect(page.getByRole("alert")).toContainText(localInputRefusalText[language]);
+    for (const [name, value, diagnostic] of [
+      ["claimedAmount", "١٢٫٥٠", "INPUT_DECIMAL_FORMAT"],
+      ["claimedAmount", "125,50", "INPUT_DECIMAL_FORMAT"],
+      ["incidentDate", "٢٠٢٦-٠٩-٠١", "INPUT_CALENDAR_DATE_REQUIRED"],
+      ["claimedCurrency", "ĀBC", "INPUT_CURRENCY_FORMAT"],
+    ] as const) {
+      await page.locator(`input[name="${name}"]`).fill(value);
+      const before = requests.length;
+      await expectBusinessFormatRefusal(page, name, diagnostic, () =>
+        page
+          .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
+          .click(),
+      );
+      await expect(page.getByRole("alert")).toContainText(
+        businessFormatRefusalText[diagnostic][language],
+      );
       await expect(page.locator(`input[name="${name}"]`)).toBeFocused();
-      expect(requests).toHaveLength(0);
-      await expect(page.locator(`input[name="${name}"]`)).toHaveValue(value!);
+      await expect(page.locator(`input[name="${name}"]`)).toHaveAttribute("aria-invalid", "true");
+      expect(requests.slice(before)).toEqual(["POST /api/case.preview"]);
+      await expect(page.locator(`input[name="${name}"]`)).toHaveValue(value);
       await expect(page.locator("section.receipt")).toHaveCount(0);
       await page.locator('input[name="claimedAmount"]').fill("1200.50");
       await page.locator('input[name="incidentDate"]').fill("2026-09-01");

@@ -112,9 +112,7 @@ let private decoderProperty =
         return
             total (RequestRecord.decode 65536) bytes
             && total CaseRecord.decodeSnapshot bytes
-            && total (RequestRecord.decodeWire 65536) bytes
             && total (AuthorityRecord.decode 65536) bytes
-            && total (AuthorityRecord.decodeWire 65536) bytes
             && total (LedgerEntry.decodePayload 65536) bytes
     }
 
@@ -172,7 +170,7 @@ let tests =
         [
             testCase "stewardship encoding has fixed independent bytes" (fun () ->
                 let expected =
-                    "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"format\":4,\"operationId\":\"20000000-0000-4000-8000-000000000001\"}"
+                    "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"format\":5,\"operationId\":\"20000000-0000-4000-8000-000000000001\"}"
 
                 Expect.equal
                     (steward StewardshipAct.Erase

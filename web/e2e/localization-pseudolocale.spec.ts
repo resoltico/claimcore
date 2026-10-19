@@ -33,7 +33,7 @@ const startPseudo = async (page: Page) => {
   const captured = await pending.ready;
   const identity = reviewFrom(captured.reply, captured.bytes);
   pending.release();
-  await expect(page.getByRole("dialog")).toContainText(identity.requestSha256);
+
   await confirmReview(page);
   return { values, identity };
 };
@@ -52,7 +52,7 @@ test("authors and prepares in seeded pseudolocale then switches out with draft, 
   expect(await dialog.evaluate((element, previous) => element === previous, original)).toBe(true);
   await expect(dialog.getByRole("checkbox")).toBeChecked();
   await expect(dialog).toContainText(identity.operationId);
-  await expect(dialog).toContainText(identity.requestSha256);
+
   for (const [name, value] of Object.entries(values)) {
     await expect(page.locator(`input[name="${name}"]`)).toHaveValue(value);
   }

@@ -65,12 +65,12 @@ type ScalarRule =
 [<RequireQualifiedAccess>]
 type PrefillSource =
     | Blank
-    | CurrentField of fieldName: string
+    | CurrentField of field: BusinessField
 
 /// Ordered authored scalar metadata. The immutable case target is never an input field.
 type FieldInputDefinition =
     {
-        FieldName: string
+        FieldName: InputField
         Prefill: PrefillSource
     }
 
@@ -86,7 +86,7 @@ type CorrectionGroupAction =
 /// the authoritative accepted value and CLEAR deliberately removes a value that is present.
 type CorrectionGroupDefinition =
     {
-        Name: string
+        Name: CorrectionGroup
         Label: string
         Meaning: string
         Actions: CorrectionGroupAction list

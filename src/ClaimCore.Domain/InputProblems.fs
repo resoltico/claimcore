@@ -15,14 +15,8 @@ type InputTarget =
     | PayableAmount
     | PayableCurrency
     | PaymentDate
-    | Status
     | OperationId
     | ExpectedRevision
-    | Revision
-    | Act
-    | Fields
-    | Registration
-    | Decision
     | Payment
     | Reason
 
@@ -41,14 +35,8 @@ module InputTargets =
             InputTarget.PayableAmount, "payableAmount"
             InputTarget.PayableCurrency, "payableCurrency"
             InputTarget.PaymentDate, "paymentDate"
-            InputTarget.Status, "status"
             InputTarget.OperationId, "operationId"
             InputTarget.ExpectedRevision, "expectedRevision"
-            InputTarget.Revision, "revision"
-            InputTarget.Act, "act"
-            InputTarget.Fields, "fields"
-            InputTarget.Registration, "registration"
-            InputTarget.Decision, "decision"
             InputTarget.Payment, "payment"
             InputTarget.Reason, "reason"
         ]
@@ -61,7 +49,6 @@ type TextViolation =
     | NonBlankRequired
     | MalformedUnicode
     | SurroundingWhitespace
-    | TooShort of minimumCharacters: int
     | TooLong of maximumCharacters: int
     | ControlCharacters
     | FormattingCharacter
@@ -78,26 +65,16 @@ type DateViolation =
 type AmountViolation =
     | DecimalFormat of maximumIntegerDigits: int * maximumFractionalDigits: int
     | CurrencyFormat
-    | NotRepresentable
 
 [<RequireQualifiedAccess>]
 type ActViolation =
     | EmptyOperationId
     | ExpectedRevisionOutOfRange
-    | StoredRevisionOutOfRange
-    | CaseReferenceMismatch
-    | StateTransitionMismatch
-    | ExactInputsRequired
-    | GroupedCorrectionRequired
 
 [<RequireQualifiedAccess>]
 type CorrectionViolation =
-    | CompleteDecisionRequired
     | PaymentClearRequired
     | PaymentAcknowledgementRequired
-    | PaymentDecisionRequired
-    | ReplacementFieldsRequired
-    | RegistrationCannotBeCleared
 
 /// Closed reason with only typed constraint limits. Authored content is never a diagnostic argument.
 [<RequireQualifiedAccess>]

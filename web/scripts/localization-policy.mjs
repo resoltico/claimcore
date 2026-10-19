@@ -166,6 +166,9 @@ export const validateCatalog = (source, translated, language) => {
     }
   }
 };
+const diagnosticIds = (/** @type {import("./tooling-types.mjs").JsonRecord} */ node) =>
+  node["enum"] ??
+  node["oneOf"]?.map((/** @type {{const:string}} */ branch) => branch.const) ?? [node["const"]];
 /** @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {import("./tooling-types.mjs").JsonRecord} hostSchema @returns {Record<string, Record<string, unknown>>} */
 export const diagnosticRequirements = (descriptors, hostSchema) => {
   const result = Object.fromEntries(
@@ -186,9 +189,9 @@ export const diagnosticRequirements = (descriptors, hostSchema) => {
     if (!node || typeof node !== "object") {
       return;
     }
-    const d = node["properties"]?.diagnostic?.properties;
-    if (d) {
-      for (const id of d.id.enum ?? [d.id.const]) {
+    const d = node["properties"];
+    if (d?.id && d.parameters?.properties) {
+      for (const id of diagnosticIds(d.id)) {
         result[id] = d.parameters.properties;
       }
     }

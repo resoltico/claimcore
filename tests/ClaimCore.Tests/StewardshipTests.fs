@@ -141,9 +141,10 @@ let private exhausted () =
 let private vocabulary () =
     for action, expected in
         [
-            StewardshipAct.Void "Reason", CaseActKind.Void
-            StewardshipAct.Reinstate "Reason", CaseActKind.Reinstate
-            StewardshipAct.Erase, CaseActKind.Erase
+            StewardshipAct.Void "Reason", (CaseActKind.Stewardship StewardshipActKind.Void)
+            StewardshipAct.Reinstate "Reason",
+            (CaseActKind.Stewardship StewardshipActKind.Reinstate)
+            StewardshipAct.Erase, (CaseActKind.Stewardship StewardshipActKind.Erase)
         ] do
         Expect.equal
             (CaseActs.kind (CaseAct.Stewardship action))

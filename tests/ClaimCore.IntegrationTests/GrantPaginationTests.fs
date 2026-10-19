@@ -347,7 +347,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
                 database.Fixture.InstallationId
                 (store :> ILedgerStore)
                 database.Fixture.Calendar
-                cursorKey
+
                 database.Fixture.Owner
 
         let query =

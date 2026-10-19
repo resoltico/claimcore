@@ -1,3 +1,4 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { describe, expect, it } from "vitest";
 import type { CurrentCase } from "../src/api/service";
 import { createDraft, isGroupedDraftValues, prefilledValues } from "../src/interaction/metadata";
@@ -12,15 +13,12 @@ for (const status of ["OPENED", "CLOSED"] as const) {
         const current: CurrentCase = {
           caseReference: "CASE-SERIALIZATION",
           revision: 4,
-          offers: [
-            { definition: "CORRECT_CASE", caseReference: null, expectedRevision: 4, choices: [] },
-          ],
-          historyDetails: ["SUMMARY", "FULL"],
+          advice: { acts: caseOffers(["CORRECT_CASE"]), history: ["SUMMARY", "FULL"] },
+
           state: {
             tag: "LIVE",
             disposition: "ACTIVE",
             fields: { ...caseFields, status },
-            availableActs: ["CORRECT_CASE"],
           },
         };
         const values = prefilledValues(definition, "CORRECT_CASE", current);

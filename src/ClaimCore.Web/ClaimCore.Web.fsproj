@@ -7,7 +7,6 @@
   <ItemGroup>
     <Content Remove="wwwroot/**/*" />
     <None Remove="wwwroot/**/*" />
-    <ProjectReference Include="../ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
@@ -17,9 +16,11 @@
     <Compile Include="OidcTrustRoot.fs" />
     <Compile Include="TlsCertificate.fs" />
     <Compile Include="WebBinding.fs" />
+    <Compile Include="TicketPersistence.fs" />
+    <Compile Include="Security.fs" />
+    <Compile Include="SessionKeys.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="OidcStartup.fs" />
-    <Compile Include="Security.fs" />
     <Compile Include="HttpBody.fs" />
     <Compile Include="AuthMiddleware.fs" />
     <Compile Include="Headers.fs" />
@@ -37,7 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
-    <ProjectReference Include="../ClaimCore.ClientProtocol/ClaimCore.ClientProtocol.fsproj" />
+    <ProjectReference Include="../ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <ProjectReference Include="../ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
   </ItemGroup>
   <ItemGroup>

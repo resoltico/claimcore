@@ -2,7 +2,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import { editor, current } from "./presentation-state.fixtures";
-import { fields, digest, response, runtime } from "./service-ui.fixtures";
+import { fields, response, runtime } from "./service-ui.fixtures";
 
 const stateLabels = { ACTIVE: "Active", VOIDED: "Voided as a data-entry error", ERASED: "Erased" };
 const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "ERASED") => {
@@ -11,7 +11,6 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
     vi.fn().mockImplementation(() =>
       Promise.resolve(
         response("case.preview", "REVIEWED", {
-          requestSha256: digest,
           review: {
             before: {
               caseReference: fields.caseReference,
@@ -60,7 +59,7 @@ it.each([
         initialCommand: act,
         current: {
           ...current,
-          offers: [{ definition: act, choices: [], caseReference: null, expectedRevision: null }],
+          advice: { ...current.advice, acts: [{ act, expectedRevision: current.revision }] },
         },
       }),
     );

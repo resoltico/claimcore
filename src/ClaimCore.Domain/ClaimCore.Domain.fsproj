@@ -2,6 +2,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="UnicodeText.fs" />
+    <Compile Include="Fields.fs" />
     <Compile Include="InputProblems.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="Vocabulary.fs" />
