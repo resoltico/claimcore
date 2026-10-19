@@ -8,10 +8,10 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
 
-let private wire revision =
+let private recordBytes revision =
     let original =
         request 0L (BusinessCommand.Open registration)
-        |> RequestRecord.encodeWire
+        |> RequestRecord.encode
         |> Encoding.UTF8.GetString
 
     original.Replace("\"expectedRevision\":0", "\"expectedRevision\":" + revision)
@@ -20,15 +20,15 @@ let private wire revision =
 let private revisions () =
     for revision in [ "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\""; "null"; "true" ] do
         Expect.isError
-            (RequestRecord.decodeWire 65536 (wire revision))
-            "Raw wire requires safe nonnegative integer lexemes"
+            (RequestRecord.decode 65536 (recordBytes revision))
+            "Durable records require safe nonnegative integer lexemes"
 
     for revision in [ "0"; "-0"; "9007199254740990"; "9007199254740991" ] do
         Expect.isOk
-            (RequestRecord.decodeWire 65536 (wire revision))
+            (RequestRecord.decode 65536 (recordBytes revision))
             "Exact expected revision boundary"
 
-    let zero = RequestRecord.decodeWire 65536 (wire "-0") |> accepted
+    let zero = RequestRecord.decode 65536 (recordBytes "-0") |> accepted
 
     Expect.equal
         (RequestRecord.encode zero)
@@ -130,15 +130,14 @@ let private envelope () =
         |> fun value -> value.Replace("\"format\":2,", "") |> Encoding.UTF8.GetBytes
 
     Expect.isError
-        (AuthorityRecord.decodeWire 65536 wire)
+        (ClaimCore.Wire.Admission.admit ClaimCore.Wire.Endpoint.AuthorityExecute wire)
         "Provisioning is never case-work authority API input"
 
-    Expect.throws
-        (fun () -> AuthorityRecord.encodeWire owner |> ignore)
-        "No wire provisioning writer"
-
     let case = request 0L (BusinessCommand.Open registration) |> RequestRecord.encode
-    Expect.isError (RequestRecord.decodeWire 65536 case) "Durable format is not a wire member"
+
+    Expect.isError
+        (ClaimCore.Wire.Admission.admit ClaimCore.Wire.Endpoint.CaseExecute case)
+        "Durable format is not a wire member"
 
     let authored =
         { request 1L BusinessCommand.Close with

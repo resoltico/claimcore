@@ -40,12 +40,6 @@ let private requests () =
                 (text vector "sha256")
                 "Independent digest"
 
-            let wire = RequestRecord.encodeWire request
-
-            Expect.equal
-                (RequestRecord.decodeWire 65536 wire)
-                (Ok request)
-                "The same codec owns wire content"
 
         let first = RequestRecord.decode 65536 (bytes vectors.Head) |> Fixtures.accepted
         Expect.equal first.CaseReference "Demo-0001" "Independent authored target"
@@ -111,10 +105,7 @@ let private authority () =
 
         Expect.isTrue (AuthorityRecord.encode request = encoded) "Independent authority bytes"
 
-        Expect.equal
-            (AuthorityRecord.decodeWire 65536 (AuthorityRecord.encodeWire request))
-            (Ok request)
-            "Same wire codec")
+    )
 
 let private formats () =
     withVectors (fun root ->

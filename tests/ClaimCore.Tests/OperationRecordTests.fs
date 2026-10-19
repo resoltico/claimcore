@@ -112,9 +112,7 @@ let private decoderProperty =
         return
             total (RequestRecord.decode 65536) bytes
             && total CaseRecord.decodeSnapshot bytes
-            && total (RequestRecord.decodeWire 65536) bytes
             && total (AuthorityRecord.decode 65536) bytes
-            && total (AuthorityRecord.decodeWire 65536) bytes
             && total (LedgerEntry.decodePayload 65536) bytes
     }
 
