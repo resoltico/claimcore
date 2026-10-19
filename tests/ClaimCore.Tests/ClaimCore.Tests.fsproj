@@ -40,6 +40,7 @@
     <Compile Include="ApplicationFixtures.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="AuthorizationPolicyTests.fs" />
+    <Compile Include="OperationAuthorityScopeTests.fs" />
     <Compile Include="CursorTests.fs" />
     <Compile Include="ApplicationTests.fs" />
     <Compile Include="AuthorityTests.fs" />

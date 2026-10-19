@@ -154,7 +154,9 @@ ordering as a rejecting control. Lock, statement and idle-transaction timeouts b
 Every accepted case operation and authority change appends exactly one ledger entry in the
 transaction updating its projections. While accepted request content is retained, authorized
 exact replay returns the original acceptance metadata with snapshot disclosure evaluated in the
-current locked/read context. Different content under the same ID is refused. OUTCOME_UNKNOWN
+current locked/read context. Different content under the same ID is refused. Identity privacy checks use the accepted
+entry’s resource scope as well as permission on the current request’s target; these can be
+different cases. OUTCOME_UNKNOWN
 means a commit confirmation was lost. It does not prove rejection and never permits rebasing or
 replacement identity. Erased request content cannot be replayed. Reads use one REPEATABLE READ snapshot. Public actor and grant pages are bounded at 50 rows;
 Both history details use the [API page limit](api.md). Permanent field bounds and the independently computed worst-escaping page budget keep FULL pages within the response limit. A continuation follows the last included row; a short page is not necessarily terminal.
