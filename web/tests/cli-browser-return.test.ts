@@ -4,6 +4,7 @@ import type { Page } from "@playwright/test";
 import { expect, it } from "vitest";
 import {
   browserReturn,
+  browserCompletion,
   callbackAddress,
   isAuthorizationResponse,
 } from "../e2e/cli-browser-return.mjs";
@@ -319,4 +320,34 @@ it.each([
   });
   expect(facts.network).toBe(network);
   expect(JSON.stringify(facts)).not.toContain("PRIVATE");
+});
+
+it("does not signal browser closure before its close promise resolves", async () => {
+  let release: () => void = () => {
+    throw new Error("Close not started");
+  };
+  const closed = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let completed = false;
+  const pending = browserCompletion({ close: () => closed }).then((result) => {
+    completed = true;
+    return result;
+  });
+  await Promise.resolve();
+  expect(completed).toBe(false);
+  release();
+  expect(await pending).toBe("closed");
+});
+
+it("reports browser cleanup failure without throwing or copying its private detail", async () => {
+  const original = new Error("PRIVATE_CLOSE_DETAIL");
+  const result = await browserCompletion({ close: () => Promise.reject(original) });
+  expect(result).toBe("failed");
+  expect(result).not.toContain("PRIVATE");
+});
+
+it("reports no browser handle separately from successful browser closure", async () => {
+  expect(await browserCompletion(undefined)).toBe("not-started");
+  expect(await browserCompletion({ close: () => Promise.resolve() })).toBe("closed");
 });

@@ -288,6 +288,25 @@ let private malformedConnection partial =
             Expect.isTrue (response.StartsWith("HTTP/1.1 400 Bad Request")) "Refusal response"
         })
 
+let private stalledPartialConnection () =
+    withCallback (fun endpoint pending cancelled ->
+        task {
+            use client = new TcpClient()
+            do! client.ConnectAsync(endpoint.Address, endpoint.Port, cancelled)
+            use stream = client.GetStream()
+            do! stream.WriteAsync(ReadOnlyMemory [| byte 'G' |], cancelled)
+            let! result = pending
+            Expect.isError result "A partial header timeout consumes and refuses the callback"
+            use response = new System.IO.MemoryStream()
+            do! stream.CopyToAsync(response, cancelled)
+
+            Expect.isTrue
+                (Encoding.ASCII
+                    .GetString(response.ToArray())
+                    .StartsWith("HTTP/1.1 400 Bad Request"))
+                "A stalled partial request receives the refusal before its socket closes"
+        })
+
 type private ObservedNetworkStream(socket, received: TaskCompletionSource<unit>) =
     inherit NetworkStream(socket, false)
 
@@ -334,6 +353,30 @@ let private resetHeaders partial (listener: TcpListener) (endpoint: IPEndPoint) 
         with :? System.IO.IOException when partial ->
             ()
     }
+
+let private cancelledPartialConnection () =
+    withListener (fun listener endpoint cancelled ->
+        task {
+            use client = new TcpClient()
+            do! client.ConnectAsync(endpoint.Address, endpoint.Port, cancelled)
+            use! accepted = listener.AcceptTcpClientAsync(cancelled)
+            use cancellation = CancellationTokenSource.CreateLinkedTokenSource cancelled
+
+            let received =
+                TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+            use stream = new ObservedNetworkStream(accepted.Client, received)
+            let pending = LoopbackTransport.readConnection stream cancellation.Token
+            do! client.GetStream().WriteAsync(ReadOnlyMemory [| byte 'G' |], cancelled)
+            do! received.Task.WaitAsync(cancelled)
+            cancellation.Cancel()
+
+            try
+                let! _ = pending
+                failtest "Outer cancellation after a header byte remains cancellation"
+            with :? OperationCanceledException ->
+                ()
+        })
 
 let private resetConnection partial =
     withListener (fun listener endpoint cancelled ->
@@ -400,6 +443,12 @@ let tests =
             }
             testTask "an empty closed connection does not consume the loopback callback" {
                 do! unusedConnections false
+            }
+            testTask "a partial callback header timeout is refused" {
+                do! stalledPartialConnection ()
+            }
+            testTask "outer cancellation after a header byte remains cancellation" {
+                do! cancelledPartialConnection ()
             }
             testTask "partial callback EOF is refused" { do! malformedConnection true }
             testTask "a complete malformed callback is refused" { do! malformedConnection false }

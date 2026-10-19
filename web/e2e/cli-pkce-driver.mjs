@@ -1,9 +1,32 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import http from "node:http";
 import process from "node:process";
 import { URL, URLSearchParams } from "node:url";
 import { chromium } from "@playwright/test";
-import { browserReturn, callbackAddress, isAuthorizationResponse } from "./cli-browser-return.mjs";
+import {
+  browserReturn,
+  browserCompletion,
+  callbackAddress,
+  isAuthorizationResponse,
+} from "./cli-browser-return.mjs";
+
+const progressFile = process.env.CLAIMCORE_CLI_TEST_PROGRESS_FILE;
+const retainCompletion = (completion) => {
+  try {
+    if (progressFile) {
+      const temporary = `${progressFile}.closed.tmp`;
+      writeFileSync(temporary, `${completion}\n`, { mode: 0o600, flag: "wx" });
+      renameSync(temporary, `${progressFile}.closed`);
+    }
+  } catch {
+    process.exitCode = 1;
+  }
+};
+const refuseLaunch = () => {
+  retainCompletion("not-started");
+  process.exit(2);
+};
+let completion = "not-started";
 
 let authorization;
 let redirect;
@@ -12,14 +35,13 @@ try {
   const supplied = authorization.searchParams.get("redirect_uri");
   redirect = supplied === null ? undefined : new URL(supplied);
 } catch {
-  process.exit(2);
+  refuseLaunch();
 }
 const pushed = authorization.searchParams.has("request_uri");
 const mode = process.env.CLAIMCORE_CLI_TEST_AUTH_MODE;
 const credentialsFile = process.env.CLAIMCORE_CLI_TEST_CREDENTIALS_FILE;
 const issuerText = process.env.CLAIMCORE_CLI_TEST_ISSUER;
 const publicClientId = process.env.CLAIMCORE_CLI_TEST_PUBLIC_CLIENT_ID;
-const progressFile = process.env.CLAIMCORE_CLI_TEST_PROGRESS_FILE;
 let currentStage = "start";
 const progress = (stage) => {
   currentStage = stage;
@@ -33,7 +55,7 @@ let issuer;
 try {
   issuer = new URL(issuerText ?? "");
 } catch {
-  process.exit(2);
+  refuseLaunch();
 }
 
 if (
@@ -49,17 +71,17 @@ if (
   !credentialsFile ||
   (mode !== "valid" && mode !== "wrong-state")
 ) {
-  process.exit(2);
+  refuseLaunch();
 }
 
 let credentials;
 try {
   credentials = JSON.parse(readFileSync(credentialsFile, "utf8"));
 } catch {
-  process.exit(2);
+  refuseLaunch();
 }
 if (!Array.isArray(credentials.users) || credentials.users.length < 1) {
-  process.exit(2);
+  refuseLaunch();
 }
 
 const selectedUsername = process.env.CLAIMCORE_CLI_TEST_USERNAME;
@@ -72,7 +94,7 @@ if (
   typeof selectedUser.username !== "string" ||
   typeof selectedUser.password !== "string"
 ) {
-  process.exit(2);
+  refuseLaunch();
 }
 
 const deliverCallback = (address) =>
@@ -195,7 +217,10 @@ const run = async () => {
     await retainReturn(observation, page, error, browser?.isConnected());
     throw error;
   } finally {
-    await browser?.close();
+    completion = await browserCompletion(browser);
+    if (completion === "failed") {
+      process.exitCode = 1;
+    }
   }
 };
 
@@ -212,4 +237,6 @@ try {
   }
   // Never write the authorization URL, callback code, credential, or provider content to logs.
   process.exitCode = 1;
+} finally {
+  retainCompletion(completion);
 }

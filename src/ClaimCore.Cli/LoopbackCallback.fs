@@ -90,8 +90,9 @@ module internal LoopbackTransport =
                         complete <-
                             count >= 4
                             && buffer[count - 4 .. count - 1] = [| 13uy; 10uy; 13uy; 10uy |]
-            with :? IO.IOException when count = 0 ->
-                ()
+            with
+            | :? IO.IOException when count = 0 -> ()
+            | :? OperationCanceledException when count > 0 -> ()
 
             if
                 complete
@@ -106,14 +107,16 @@ module internal LoopbackTransport =
                 return Error "OIDC_CALLBACK_INVALID"
         }
 
-    let private readConnection (stream: NetworkStream) (cancelled: CancellationToken) =
+    let readConnection (stream: NetworkStream) (cancelled: CancellationToken) =
         task {
             // A browser's idle preconnection must not consume the one callback.
             use deadline = CancellationTokenSource.CreateLinkedTokenSource cancelled
             deadline.CancelAfter(TimeSpan.FromSeconds 2.)
 
             try
-                return! readHeaders stream deadline.Token
+                let! result = readHeaders stream deadline.Token
+                cancelled.ThrowIfCancellationRequested()
+                return result
             with :? OperationCanceledException when not cancelled.IsCancellationRequested ->
                 return Ok None
         }

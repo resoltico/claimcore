@@ -185,3 +185,15 @@ export const browserReturn = (issuer, expectedCallback) => {
     },
   };
 };
+
+export const browserCompletion = async (browser) => {
+  if (browser === undefined) {
+    return "not-started";
+  }
+  try {
+    await browser.close();
+    return "closed";
+  } catch {
+    return "failed";
+  }
+};

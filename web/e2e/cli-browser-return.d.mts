@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Browser, Page } from "@playwright/test";
 
 type BrowserReturnEvidence = {
     location: "issuer" | "callback" | "callback-upgraded" | "browser-error" | "other";
@@ -38,3 +38,7 @@ export declare const isAuthorizationResponse: (
     issuer: URL,
     expectedCallback: URL | undefined,
 ) => boolean;
+
+export declare const browserCompletion: (
+    browser: Pick<Browser, "close"> | undefined,
+) => Promise<"closed" | "not-started" | "failed">;

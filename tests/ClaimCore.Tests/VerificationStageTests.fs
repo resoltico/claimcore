@@ -219,7 +219,7 @@ let private sharedBuild directory =
 
         Expect.stringContains
             execution
-            "--minimum-expected-tests=23"
+            "--minimum-expected-tests=27"
             "Independent acceptance discovery floor"
 
 let private failedBuild directory =
@@ -330,7 +330,7 @@ let private nativeUnitFloor directory =
 
     Expect.equal executions.Length 2 "Both complete native suites launch"
 
-    for execution, floor in List.zip (Array.toList executions) [ 409; 41 ] do
+    for execution, floor in List.zip (Array.toList executions) [ 411; 41 ] do
         Expect.stringContains
             execution
             ("--minimum-expected-tests=" + string floor)

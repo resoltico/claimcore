@@ -55,8 +55,9 @@ let private invoke
         | true, path -> Some path
         | _ -> None
 
-    CliInvocationEvidence.run expected Console.Error progress (fun () ->
-        ProcessRunner.dotnet 90_000 fixture.Cli arguments environment (Some source))
+    CliDriverCompletion.run 90_000 Console.Error progress expected (fun () ->
+        CliInvocationEvidence.run expected Console.Error progress (fun () ->
+            ProcessRunner.dotnet 90_000 fixture.Cli arguments environment (Some source)))
 
 let run (fixture: PublishedFixture.Fixture) environment source code =
     invoke fixture environment [ "call" ] source code |> parse code
