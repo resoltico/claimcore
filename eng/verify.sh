@@ -151,7 +151,12 @@ frontend() { # Node only: no generated contract prerequisite or .NET process.
 }
 
 workflows() {
-  shellcheck eng/*.sh deployment/*.sh
+  local script
+  local -a scripts=()
+  for script in eng/*.sh deployment/*.sh; do
+    if [[ -f "${script}" ]]; then scripts+=("${script}"); fi
+  done
+  shellcheck "${scripts[@]}"
   docker run --rm --label claimcore.workflow-check=actionlint -v "${PWD}:/repo:ro" -w /repo \
     rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
 }

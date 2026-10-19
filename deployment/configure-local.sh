@@ -81,7 +81,9 @@ CLAIMCORE_OIDC_CLI_CLIENT_ID=claimcore-cli
 CLAIMCORE_OIDC_CA_CERT_FILE=/etc/claimcore/runtime/ca.pem
 ENV
 printf 'CLAIMCORE_CONFIG_DIR=%s\nCLAIMCORE_COMPOSE_PROJECT=%s\nCLAIMCORE_BUSINESS_ZONE=%s\nCLAIMCORE_HOST_PORT=%s\nCLAIMCORE_IDENTITY_PORT=%s\n' "${configuration}" "${project}" "${zone}" "${web_port}" "${identity_port}" >"${configuration}/compose.env"
-printf 'CLAIMCORE_UID=%s\nCLAIMCORE_GID=%s\n' "$(id -u)" "$(id -g)" >>"${configuration}/compose.env"
+claimcore_uid="$(id -u)"
+claimcore_gid="$(id -g)"
+printf 'CLAIMCORE_UID=%s\nCLAIMCORE_GID=%s\n' "${claimcore_uid}" "${claimcore_gid}" >>"${configuration}/compose.env"
 # ClaimCore runs as the configuring user; only PostgreSQL/Keycloak require different owners.
 # Only this newly created directory is mounted. The helper has no network or persistent data.
 docker run --rm --name "${project}-permissions" --label claimcore.configuration="${project}" \
