@@ -68,6 +68,38 @@ let private cleanupControls () =
     let completed = BoundedProcess.captureFailure Delivery bytes bytes (fun () -> true)
     Expect.isFalse completed.CleanupFailed "Completed cleanup has no failure flag"
 
+let private descendantCleanup () =
+    let result =
+        failure
+            Deadline
+            "sleep 30 & descendant=$!; printf '%s\n' \"$descendant\"; wait \"$descendant\""
+            None
+            64
+            500
+
+    let pid = Int32.Parse(Encoding.ASCII.GetString(result.StandardOutput).Trim())
+
+    let child =
+        try
+            Some(Process.GetProcessById pid)
+        with :? ArgumentException ->
+            None
+
+    child
+    |> Option.iter (fun descendant ->
+        use owned = descendant
+
+        try
+            Expect.isTrue
+                (descendant.HasExited || descendant.WaitForExit 1000)
+                "The owned waiting descendant is terminated with its parent"
+        finally
+            if not descendant.HasExited then
+                descendant.Kill()
+                descendant.WaitForExit 1000 |> ignore)
+
+    Expect.isFalse result.CleanupFailed "Owned process-tree cleanup is observed"
+
 let private progressControls () =
     let row = "  ✓  1 [firefox] › e2e/example.spec.ts:4:1 › private test title (1.2s)"
 
@@ -313,6 +345,7 @@ let private controls () =
     Expect.isFalse deadline.CleanupFailed "The owned quiet child completed cleanup"
 
     outputControls ()
+    descendantCleanup ()
 
     let delivery =
         failure
