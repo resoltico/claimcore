@@ -1,4 +1,4 @@
-import { refusedRead } from "./narrow-role-oracles";
+import { refusedRead, noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
 import { expect, test, type Page } from "@playwright/test";
 import {
   openAuthenticated,
@@ -107,14 +107,18 @@ for (const [name, role, scoped] of cases) {
     await test.step("Apply scoped role", () => setup ?? Promise.resolve());
     const narrow = await context.newPage();
     await test.step("Open narrow actor session", () =>
-      openAuthenticated(narrow, "Cases", "narrow-authenticated-state.json"));
+      openAuthenticated(
+        narrow,
+        role === null ? "ClaimCore" : "Cases",
+        "narrow-authenticated-state.json",
+      ));
     await test.step("Check enabled actor context", () => expectContextAccess(narrow));
     if (role === "CASE_READER" || role === "CASE_HANDLER" || role === "DATA_STEWARD") {
       await test.step("Read current case and enforce history scope", () =>
         readCase(narrow, fixture, role, scoped));
     } else {
-      await expect(narrow.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
-      await refusedRead(narrow, "case.get", () => findCase(narrow, fixture.reference));
+      await noCaseWorkspace(narrow);
+      await opaqueCaseRefusal(narrow, fixture.reference);
     }
     await test.step("Check narrow view accessibility", () => expectAccessible(narrow));
   });

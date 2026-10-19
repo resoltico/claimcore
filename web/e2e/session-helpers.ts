@@ -67,7 +67,7 @@ type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
   await retainResponseBodies(page);
   await page.goto("/", { waitUntil: "commit" });
-  // Readiness includes public metadata and the actor-bound case-list outcome.
+  // Readiness uses the heading of the actor's advertised workspace.
   await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible({
     timeout: 10_000,
   });
@@ -199,16 +199,18 @@ const trackOidcCallback = (page: Page) => {
 
 export const login = async (
   page: Page,
-  casesHeading = "Cases",
+  workspaceHeading: string | null = "Cases",
   signIn = "Sign in",
   username?: string,
 ): Promise<void> => {
   await progress("login-start");
   await retainResponseBodies(page);
-  const cases = page.getByRole("heading", { name: casesHeading, exact: true });
+  const authenticated =
+    workspaceHeading === null
+      ? page.getByRole("button", { name: "Sign out", exact: true })
+      : page.getByRole("heading", { name: workspaceHeading, exact: true });
   try {
-    await page
-      .getByRole("heading", { name: casesHeading, exact: true })
+    await authenticated
       .or(page.getByRole("heading", { name: "ClaimCore", exact: true }))
       .first()
       .waitFor({ timeout: 5_000 });
@@ -217,7 +219,7 @@ export const login = async (
     const kind = ["loading", "login-shell", "app-shell"].includes(main) ? main : "other";
     throw new Error(`E2E_LOGIN_VIEW_${kind.toUpperCase().replace(/-/gu, "_")}`);
   }
-  if (await cases.isVisible()) {
+  if (await authenticated.isVisible()) {
     await progress("login-auth");
     await progress("login-ready");
     return;
@@ -226,8 +228,8 @@ export const login = async (
   const applicationOrigin = new URL(page.url()).origin;
   const owner = await syntheticCredentials(username);
   await page.getByRole("link", { name: signIn, exact: true }).click();
-  await page.locator('input[name="username"]').or(cases).first().waitFor();
-  if (await cases.isVisible()) {
+  await page.locator('input[name="username"]').or(authenticated).first().waitFor();
+  if (await authenticated.isVisible()) {
     await progress("login-ready");
     return;
   }
@@ -241,7 +243,7 @@ export const login = async (
   await progress("oidc-submitted");
   await awaitOidcReturn(page, applicationOrigin, callbackStatus);
   await progress("oidc-callback-returned");
-  await expect(cases).toBeVisible();
+  await expect(authenticated).toBeVisible();
   await progress("login-ready");
 };
 

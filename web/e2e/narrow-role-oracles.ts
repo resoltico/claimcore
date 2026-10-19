@@ -1,5 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { endpoints } from "@contracts/client";
+import { browserRequest, sessionToken } from "./session-helpers";
+import { randomUUID } from "node:crypto";
 import { isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/api/types";
 
@@ -23,4 +25,38 @@ export const refusedRead = async (
     throw new Error("Narrow read did not return its actual authorization refusal.");
   }
   expect(outcome.data.diagnostic.id).toBe("ACCESS_RESOURCE_UNAVAILABLE");
+};
+
+const directCaseRefusal = async (page: Page, reference: string) => {
+  const endpoint = endpoints.find((entry) => entry.id === "case.get")!;
+  const reply = await browserRequest(page, endpoint.path, {
+    method: endpoint.method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": await sessionToken(page),
+    },
+    body: JSON.stringify({ caseReference: reference }),
+  });
+  expect(reply.status).toBe(200);
+  expect(reply.cacheControl).toContain("no-store");
+  if (!isResponse("case.get", reply.payload) || reply.payload.outcome.tag !== "REJECTED") {
+    throw new Error("A case without read authority must return a typed public refusal.");
+  }
+  expect(reply.payload.outcome.data.diagnostic.id).toBe("ACCESS_RESOURCE_UNAVAILABLE");
+  return reply.payload.outcome;
+};
+
+export const opaqueCaseRefusal = async (page: Page, reference: string) => {
+  const actual = await directCaseRefusal(page, reference);
+  const missing = await directCaseRefusal(page, `MISSING-${randomUUID()}`);
+  expect(actual).toEqual(missing);
+};
+
+export const noCaseWorkspace = async (page: Page) => {
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cases", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Cases", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Find case", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "current case", exact: true })).toHaveCount(0);
 };
