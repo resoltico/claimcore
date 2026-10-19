@@ -674,7 +674,7 @@ let tests =
                 "case continuation preserves key order and permits changed page sizes"
                 (run caseLimits)
             testCaseAsync
-                "case continuation binds principal and the complete current grant set"
+                "case positions may be shared under current authority and survive irrelevant grant changes"
                 (run sharedPosition)
             testCaseAsync
                 "case positions survive elapsed time and still enforce revocation"
