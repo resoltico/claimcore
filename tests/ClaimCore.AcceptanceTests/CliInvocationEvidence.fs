@@ -41,23 +41,34 @@ let private safeStage (source: string) =
     else
         "unknown"
 
-let private readStage path =
+let private readText maximum path =
     try
         use source =
             new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
 
         let length = source.Length
 
-        if length > 128L then
-            "unknown"
+        if length > maximum then
+            Error "unknown"
         else
             let bytes = Array.zeroCreate<byte>(int length)
             source.ReadExactly(bytes)
-            UTF8Encoding(false, true).GetString bytes |> safeStage
+            UTF8Encoding(false, true).GetString bytes |> Ok
     with
     | :? IOException
     | :? System.UnauthorizedAccessException
-    | :? DecoderFallbackException -> "unavailable"
+    | :? DecoderFallbackException -> Error "unavailable"
+
+let internal readStage path =
+    match readText 128L path with
+    | Ok value -> safeStage value
+    | Error category -> category
+
+let internal browserReturn progress =
+    progress
+    |> Option.bind (fun path -> readText 512L (path + ".return") |> Result.toOption)
+    |> Option.bind CliBrowserReturnEvidence.decode
+    |> Option.defaultValue "unavailable"
 
 let private replyCount (source: byte array) =
     source
@@ -72,18 +83,31 @@ let private replyCount (source: byte array) =
         (0, 0)
     |> snd
 
+let private captured stage output errors =
+    $"CLI invocation evidence: authStage={safeStage stage}; validReplyFrames={replyCount output}; stdoutBytes={output.Length}; stderrBytes={Array.length errors}"
+
 let internal describe stage (failure: BoundedProcessFailure) =
-    $"CLI invocation evidence: authStage={safeStage stage}; validReplyFrames={replyCount failure.StandardOutput}; stdoutBytes={failure.StandardOutput.Length}; stderrBytes={failure.StandardError.Length}; kind={failure.Kind}; cleanupFailed={failure.CleanupFailed}."
+    captured stage failure.StandardOutput failure.StandardError
+    + $"; kind={failure.Kind}; cleanupFailed={failure.CleanupFailed}."
 
-let internal run (diagnostics: TextWriter) progress invoke =
+let private report (diagnostics: TextWriter) progress render =
     try
-        invoke ()
-    with :? BoundedProcessFailure as failure ->
-        try
-            let stage = progress |> Option.map readStage |> Option.defaultValue "not-applicable"
-            diagnostics.WriteLine(describe stage failure)
-        with
-        | :? IOException
-        | :? System.ObjectDisposedException -> ()
+        let stage = progress |> Option.map readStage |> Option.defaultValue "not-applicable"
+        diagnostics.WriteLine(render stage + " browserReturn=" + browserReturn progress)
+    with
+    | :? IOException
+    | :? System.ObjectDisposedException -> ()
 
+let internal run expected diagnostics progress (invoke: unit -> ProcessRunner.Result) =
+    try
+        let result = invoke ()
+
+        if result.ExitCode <> expected then
+            report diagnostics progress (fun stage ->
+                captured stage result.StandardOutput result.StandardError
+                + $"; exitCode={result.ExitCode}.")
+
+        result
+    with :? BoundedProcessFailure as failure ->
+        report diagnostics progress (fun stage -> describe stage failure)
         reraise ()

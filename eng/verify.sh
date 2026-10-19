@@ -200,7 +200,7 @@ acceptance() {
   build_native
   build_frontend
   # One native case sequences every selected engine and stops before starting a later engine after a failure.
-  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 21 Release 40m
+  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 23 Release 40m
 }
 
 for stage in "${stages[@]}"; do

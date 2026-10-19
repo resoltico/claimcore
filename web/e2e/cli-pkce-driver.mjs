@@ -3,6 +3,7 @@ import http from "node:http";
 import process from "node:process";
 import { URL, URLSearchParams } from "node:url";
 import { chromium } from "@playwright/test";
+import { browserReturn, callbackAddress, isAuthorizationResponse } from "./cli-browser-return.mjs";
 
 let authorization;
 let redirect;
@@ -14,8 +15,6 @@ try {
   process.exit(2);
 }
 const pushed = authorization.searchParams.has("request_uri");
-const callbackAddress = (url) =>
-  url.protocol === "http:" && url.hostname === "127.0.0.1" && url.pathname === "/";
 const mode = process.env.CLAIMCORE_CLI_TEST_AUTH_MODE;
 const credentialsFile = process.env.CLAIMCORE_CLI_TEST_CREDENTIALS_FILE;
 const issuerText = process.env.CLAIMCORE_CLI_TEST_ISSUER;
@@ -123,11 +122,15 @@ const rejectCallbackState = async (context) => {
     if (location !== undefined) {
       const callback = new URL(location, route.request().url());
       if (callbackAddress(callback)) {
+        if (
+          !isAuthorizationResponse(response.url(), response.status(), callback, issuer, redirect)
+        ) {
+          throw new Error("Synthetic provider did not issue an authorization code response.");
+        }
         redirect = new URL(callback.origin);
         callback.searchParams.set("state", "wrong-state");
         await deliverCallback(callback);
         delivered = true;
-        progress("wrong-state-delivered");
         await route.fulfill({
           status: 200,
           contentType: "text/plain",
@@ -141,27 +144,55 @@ const rejectCallbackState = async (context) => {
   return () => delivered;
 };
 
+const retainReturn = async (observation, page, error) => {
+  try {
+    if (progressFile) {
+      writeFileSync(
+        `${progressFile}.return`,
+        JSON.stringify(await observation.report(page, error)),
+        {
+          mode: 0o600,
+        },
+      );
+    }
+  } catch {
+    // Evidence storage must not replace the original synthetic browser failure.
+  }
+};
+
 const run = async () => {
   // Only the disposable synthetic browser ignores its fixture certificate. CLI HTTPS validates
   // its explicit CA. Inspect the provider redirect because routes do not intercept redirect hops.
-  const browser = await chromium.launch({ headless: true });
-  progress("browser-launched");
+  const observation = browserReturn(issuer, redirect);
+  let browser;
+  let page;
   try {
+    browser = await chromium.launch({ headless: true });
+    progress("browser-launched");
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const wrongStateDelivered = await rejectCallbackState(context);
-    const page = await context.newPage();
+    page = await context.newPage();
+    observation.observe(page);
     await login(page);
     if (mode === "wrong-state") {
       if (!wrongStateDelivered()) {
         throw new Error("Synthetic state control was not delivered.");
       }
+      progress("wrong-state-delivered");
     } else {
       await page.waitForURL((url) => callbackAddress(url));
       progress("callback-observed");
     }
     await context.close();
+  } catch (error) {
+    const remembered = observation.callbackOrigin();
+    if (redirect === undefined && remembered !== undefined) {
+      redirect = new URL(remembered);
+    }
+    await retainReturn(observation, page, error);
+    throw error;
   } finally {
-    await browser.close();
+    await browser?.close();
   }
 };
 

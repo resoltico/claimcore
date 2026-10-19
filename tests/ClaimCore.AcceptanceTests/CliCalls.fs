@@ -48,17 +48,18 @@ let private invoke
     (environment: IReadOnlyDictionary<string, string>)
     arguments
     source
+    expected
     =
     let progress =
         match environment.TryGetValue "CLAIMCORE_CLI_TEST_PROGRESS_FILE" with
         | true, path -> Some path
         | _ -> None
 
-    CliInvocationEvidence.run Console.Error progress (fun () ->
+    CliInvocationEvidence.run expected Console.Error progress (fun () ->
         ProcessRunner.dotnet 90_000 fixture.Cli arguments environment (Some source))
 
 let run (fixture: PublishedFixture.Fixture) environment source code =
-    invoke fixture environment [ "call" ] source |> parse code
+    invoke fixture environment [ "call" ] source code |> parse code
 
 let automation fixture endpoint input code =
     run fixture fixture.Environment (frame endpoint input) code
@@ -235,5 +236,5 @@ let setup fixture =
 
     let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
 
-    invoke fixture environment [ "session" ] source
+    invoke fixture environment [ "session" ] source 0
     |> requireAcceptedReplies frames.Length

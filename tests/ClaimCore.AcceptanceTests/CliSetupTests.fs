@@ -44,7 +44,7 @@ let private requireOriginal writer progress (failure: BoundedProcessFailure) =
     let mutable observed: exn option = None
 
     try
-        CliInvocationEvidence.run writer progress (fun () -> raise failure)
+        CliInvocationEvidence.run 0 writer progress (fun () -> raise failure) |> ignore
     with error ->
         observed <- Some error
 
@@ -82,6 +82,70 @@ let private retainedFailure () =
     finally
         Directory.Delete(directory, true)
 
+let private returnEvidence () =
+    let accepted =
+        """{"location":"issuer","redirect":false,"requested":false,"response":"none","network":"none","provider":"credentials","failure":"timeout"}"""
+
+    let decoded = CliBrowserReturnEvidence.decode accepted
+    Expect.isSome decoded "A closed browser return category is retained"
+    Expect.stringContains decoded.Value "provider=credentials" "Known provider category"
+
+    for invalid in
+        [
+            accepted.Replace("credentials", "private-marker")
+            accepted.Replace("false", "\"private-marker\"")
+            accepted.Replace("\"failure\":\"timeout\"", "\"private-marker\":\"timeout\"")
+            accepted.Replace("{", "{\"private-marker\":true,")
+            accepted.Replace("{", "{\"location\":\"private-marker\",")
+            accepted.Replace(",\"failure\":\"timeout\"", "")
+            accepted + "private-marker"
+            "[]"
+        ] do
+        Expect.isNone
+            (CliBrowserReturnEvidence.decode invalid)
+            "Unadmitted content is never reported"
+
+let private unexpectedResult () =
+    let directory = FixtureFiles.directory ()
+    let progress = Path.Combine(directory, "progress")
+
+    let result: ProcessRunner.Result =
+        {
+            ExitCode = 3
+            StandardOutput = Encoding.UTF8.GetBytes("private-marker")
+            StandardError = [||]
+        }
+
+    try
+        File.WriteAllText(progress, "driver-refused-after-login-submitted")
+
+        for bytes in [ [| 255uy |]; Array.create 513 (byte 'x') ] do
+            File.WriteAllBytes(progress + ".return", bytes)
+            use writer = new StringWriter()
+            let returned = CliInvocationEvidence.run 0 writer (Some progress) (fun () -> result)
+            Expect.isTrue (obj.ReferenceEquals(returned, result)) "The original result is retained"
+
+            Expect.stringContains
+                (writer.ToString())
+                "exitCode=3"
+                "Unexpected exits retain phase evidence"
+
+            Expect.stringContains
+                (writer.ToString())
+                "browserReturn=unavailable"
+                "Unadmitted bytes stay private"
+
+            Expect.isFalse
+                (writer.ToString().Contains "private-marker")
+                "No captured data is disclosed"
+
+        use writer = new StringWriter()
+        writer.Dispose()
+        let returned = CliInvocationEvidence.run 0 writer (Some progress) (fun () -> result)
+        Expect.isTrue (obj.ReferenceEquals(returned, result)) "Writer failure preserves the result"
+    finally
+        Directory.Delete(directory, true)
+
 [<Tests>]
 let evidenceTests =
     testList
@@ -91,6 +155,10 @@ let evidenceTests =
             testCase
                 "bounded file evidence and writer failures preserve the original failure"
                 retainedFailure
+            testCase "browser return evidence has exact closed fields" returnEvidence
+            testCase
+                "unexpected exits retain safe evidence and the original result"
+                unexpectedResult
         ]
 
 [<Tests>]
