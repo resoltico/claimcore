@@ -1,6 +1,7 @@
 module ClaimCore.Cli.Program
 
 open ClaimCore.Wire
+open ClaimCore.Catalog
 
 open System
 open System.Text
@@ -16,32 +17,34 @@ let private writeBytes (bytes: byte array) =
 
     output.Flush()
 
-let private unsupported () =
-    Console.Error.WriteLine((ContractDiscovery.message "cli.unsupportedInvocation"))
+let private unsupported language issue =
+    Console.Error.Write(ContractDiscovery.helpTopic language ("usage." + string issue))
     64
 
-let private writeDiscovery response =
+let private writeDiscovery language response =
     match response with
     | Some bytes ->
         writeBytes bytes
         0
-    | None -> unsupported ()
+    | None -> unsupported language CliUsageIssue.Selector
 
 let private discovery =
     function
-    | []
-    | [ "help" ] ->
-        Console.Out.WriteLine(Discovery.help ())
+    | CliInvocation.Help(topic, language) ->
+        Console.Out.Write(ContractDiscovery.helpTopic language topic)
         0
-    | [ "version" ] ->
+    | CliInvocation.Version false ->
         Console.Out.WriteLine(BuildIdentity.current.Version)
         0
-    | [ "version"; "--json" ] ->
+    | CliInvocation.Version true ->
         Discovery.versionJson () |> writeBytes
         0
-    | "describe" :: arguments -> Discovery.describe arguments |> writeDiscovery
-    | "schema" :: arguments -> Discovery.schema arguments |> writeDiscovery
-    | _ -> unsupported ()
+    | CliInvocation.Describe(selector, false, _) ->
+        Discovery.describe selector |> writeDiscovery "en"
+    | CliInvocation.Describe(selector, true, language) ->
+        Discovery.describeText language selector |> writeDiscovery language
+    | CliInvocation.Schema selection -> Discovery.schema selection |> writeDiscovery "en"
+    | _ -> unsupported "en" CliUsageIssue.Invocation
 
 let private remote session =
     use input = Console.OpenStandardInput()
@@ -84,10 +87,11 @@ let main argv =
     try
         Console.OutputEncoding <- UTF8Encoding(false)
 
-        match Array.toList argv with
-        | [ "call" ] -> remote false
-        | [ "session" ] -> remote true
-        | arguments -> discovery arguments
+        match CliInvocations.admit (Array.toList argv) with
+        | Ok CliInvocation.Call -> remote false
+        | Ok CliInvocation.Session -> remote true
+        | Ok invocation -> discovery invocation
+        | Error issue -> unsupported (CliInvocations.usageLanguage (Array.toList argv)) issue
     with _ ->
         try
             Console.Error.WriteLine((ContractDiscovery.message "cli.beforeDispatchFailure"))

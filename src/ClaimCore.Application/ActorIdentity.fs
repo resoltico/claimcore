@@ -56,15 +56,35 @@ module PrincipalKey =
         else
             Error "ACTOR_IDENTITY_INVALID"
 
+    let admit kind issuerValue subject =
+        let issue target value =
+            {
+                Target = target
+                Issue =
+                    if String.IsNullOrWhiteSpace value then
+                        InputIssue.Missing
+                    else
+                        InputIssue.Invalid
+            }
+
+        let maximum = if kind = PrincipalKinds.Human then 512 else 256
+
+        match issuer issuerValue, identifier maximum subject with
+        | Error _, _ -> Error(issue PrincipalInputTarget.TargetIssuer issuerValue)
+        | _, Error _ -> Error(issue PrincipalInputTarget.TargetSubject subject)
+        | Ok validIssuer, Ok validSubject when kind = PrincipalKinds.Human ->
+            Ok(HumanPrincipal(validIssuer, validSubject))
+        | Ok validIssuer, Ok validSubject when kind = PrincipalKinds.Service ->
+            Ok(ServicePrincipal(validIssuer, validSubject))
+        | _ -> Error(issue PrincipalInputTarget.TargetKind kind)
+
     let human issuerValue subject =
-        match issuer issuerValue, identifier 512 subject with
-        | Ok validIssuer, Ok validSubject -> Ok(HumanPrincipal(validIssuer, validSubject))
-        | _ -> Error "ACTOR_PRINCIPAL_INVALID"
+        admit PrincipalKinds.Human issuerValue subject
+        |> Result.mapError (fun _ -> "ACTOR_PRINCIPAL_INVALID")
 
     let service issuerValue clientId =
-        match issuer issuerValue, identifier 256 clientId with
-        | Ok validIssuer, Ok validClient -> Ok(ServicePrincipal(validIssuer, validClient))
-        | _ -> Error "ACTOR_PRINCIPAL_INVALID"
+        admit PrincipalKinds.Service issuerValue clientId
+        |> Result.mapError (fun _ -> "ACTOR_PRINCIPAL_INVALID")
 
     /// Private storage projection; never infer identity from email, display name or groups.
     let internal storageParts =

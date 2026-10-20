@@ -1,6 +1,6 @@
 import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef, type RefObject } from "react";
 import type { CurrentCase, ProductMetadata, CaseReceipt } from "../api/service";
 import type { CommandKind } from "../interaction/metadata";
 import { service, type ServiceResponse } from "../api/service";
@@ -201,14 +201,80 @@ const useDashboardNavigation = () => {
 const contextData = (reply: ServiceResponse<"context">) =>
   reply.outcome.tag === "SUCCEEDED" ? reply.outcome.data : null;
 
-export const Dashboard = ({ token, onLogout }: DashboardProps) => {
-  const navigation = useDashboardNavigation();
-  const definition = productMetadata;
+const useNavigationFocus = (location: string) => {
+  const content = useRef<HTMLDivElement>(null);
+  const previous = useRef(location);
+  useEffect(() => {
+    if (previous.current !== location) {
+      const heading = content.current?.querySelector<HTMLElement>("h2");
+      if (heading) {
+        heading.tabIndex = -1;
+        heading.focus();
+      }
+      previous.current = location;
+    }
+  }, [location]);
+  return content;
+};
+
+const useWorkspaceContext = (token: string, destination: RefObject<HTMLDivElement | null>) => {
+  const pendingFocus = useRef<string | null>(null);
   const requestContext = useCallback(
     (signal: AbortSignal) => service.context(token, signal),
     [token],
   );
   const context = useRead(requestContext, contextData, token);
+  useEffect(() => {
+    if (pendingFocus.current === token && context.value !== null) {
+      const heading = destination.current?.querySelector<HTMLElement>("h2");
+      if (heading) {
+        heading.tabIndex = -1;
+        heading.focus();
+      }
+      pendingFocus.current = null;
+    }
+  }, [context.value, destination, token]);
+  return {
+    ...context,
+    reload: () => {
+      pendingFocus.current = token;
+      context.reload();
+    },
+  };
+};
+
+const ContextStatus = ({
+  context,
+}: {
+  context: ReturnType<
+    typeof useRead<ServiceResponse<"context">, NonNullable<ReturnType<typeof contextData>>>
+  >;
+}) => {
+  const p = usePresentation();
+  return (
+    <>
+      {" "}
+      {context.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
+      {context.message === null ? null : (
+        <div role="alert">
+          <NoticeView value={context.message} />
+          <Button onPress={context.reload}>{p.text("ui.tryAgain")}</Button>
+        </div>
+      )}
+      {!context.loading && context.value !== null && context.value.views.length === 0 ? (
+        <p>{p.text("ui.noViews")}</p>
+      ) : null}
+    </>
+  );
+};
+
+export const Dashboard = ({ token, onLogout }: DashboardProps) => {
+  const navigation = useDashboardNavigation();
+  const content = useNavigationFocus(
+    `${navigation.active}:${navigation.selectedReference ?? ""}:${navigation.operation?.command ?? ""}`,
+  );
+  const definition = productMetadata;
+  const context = useWorkspaceContext(token, content);
   const views: ReadonlyArray<string> = context.value?.views ?? [];
   const active = views.includes(navigation.active.toUpperCase())
     ? navigation.active
@@ -226,10 +292,12 @@ export const Dashboard = ({ token, onLogout }: DashboardProps) => {
         navigate={navigation.navigate}
         views={views}
       />
-      {context.message === null ? null : <NoticeView value={context.message} />}
-      {active === undefined ? null : (
-        <DashboardContent {...navigation} active={active} token={token} definition={definition} />
-      )}
+      <ContextStatus context={context} />
+      <div ref={content}>
+        {active === undefined ? null : (
+          <DashboardContent {...navigation} active={active} token={token} definition={definition} />
+        )}
+      </div>
     </main>
   );
 };

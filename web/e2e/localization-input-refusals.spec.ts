@@ -45,6 +45,20 @@ const forgedCorrection = async (page: Page, reference: string) => {
     expect(outcome.data.diagnostic.id).toBe("CORRECTION_EXISTING_VALUE_REQUIRED");
   }
 };
+const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
+  await page.locator('input[name="claimedAmount"]').fill("0.10");
+  const pending = page.waitForResponse((response) => response.url().endsWith("/api/case.preview"));
+  await page
+    .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
+    .click();
+  const value: unknown = await (await pending).json();
+  expect(isResponse("case.preview", value)).toBe(true);
+  if (!isResponse("case.preview", value)) {
+    throw new Error("Expected typed review.");
+  }
+  expect(value.outcome.tag).toBe("REVIEWED");
+};
+
 for (const language of ["en", "lv", "ar"] as const) {
   test(`refuses localized authoring digits and currency alphabets in ${language} [CC-DOM-001]`, async ({
     page,
@@ -56,6 +70,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     for (const [name, value, diagnostic] of [
       ["claimedAmount", "١٢٫٥٠", "INPUT_DECIMAL_FORMAT"],
       ["claimedAmount", "125,50", "INPUT_DECIMAL_FORMAT"],
+      ["claimedAmount", "00.10", "INPUT_DECIMAL_FORMAT"],
       ["incidentDate", "٢٠٢٦-٠٩-٠١", "INPUT_CALENDAR_DATE_REQUIRED"],
       ["claimedCurrency", "ĀBC", "INPUT_CURRENCY_FORMAT"],
     ] as const) {
@@ -78,6 +93,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       await page.locator('input[name="incidentDate"]').fill("2026-09-01");
       await page.locator('input[name="claimedCurrency"]').fill("EUR");
     }
+    await reviewDecimal(page, language);
   });
   test(`offers KEEP for missing recorded groups and refuses forged correction in ${language} [CC-DOM-002]`, async ({
     page,

@@ -241,10 +241,8 @@ let private measure workload (database: PostgresFixture.Database) =
         return report workload elapsed latencies timeoutMilliseconds verification
     }
 
-let private qualify () =
+let private workloads completed =
     async {
-        let reports = ResizeArray<_>()
-
         for writes, cases, actors in
             [ 64, 4, 1; 256, 16, 4; 1024, 32, 16; 256, 4, 1; 256, 32, 1; 256, 4, 16 ] do
             for writers in [ 1; 4 ] do
@@ -262,34 +260,72 @@ let private qualify () =
                             database
                         |> Async.AwaitTask
 
-                    reports.Add report
+                    completed report
                 finally
                     database.Fixture.Dispose()
 
-                let state = database.Container.State
-                Expect.notEqual (string state) "Running" "Owned growth container is stopped"
+                Expect.notEqual
+                    (string database.Container.State)
+                    "Running"
+                    "Owned growth container is stopped"
+    }
 
+let private qualify () =
+    async {
         let directory =
             Path.Combine(
                 ClaimCore.TestSupport.RepositoryRoot.find (),
-                "artifacts/verification/growth"
+                "artifacts/verification/growth",
+                Guid.NewGuid().ToString("N")
             )
 
         Directory.CreateDirectory directory |> ignore
-        let path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".json")
 
-        let architecture =
-            System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture
+        let atomic name value =
+            let path = Path.Combine(directory, name)
+            File.WriteAllBytes(path + ".writing", JsonSerializer.SerializeToUtf8Bytes value)
+            File.Move(path + ".writing", path, true)
 
-        File.WriteAllBytes(
-            path,
-            JsonSerializer.SerializeToUtf8Bytes
+        let mutable count = 0
+
+        let nativeRun =
+            Environment.GetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY")
+            |> Option.ofObj
+            |> Option.map Path.GetFileName
+
+        let state result =
+            atomic
+                "run.json"
                 {|
-                    platform = Environment.OSVersion.ToString()
-                    architecture = string architecture
-                    results = reports
+                    result = result
+                    completed = count
+                    expected = 12
+                    nativeRun = nativeRun
                 |}
-        )
+
+        state "incomplete"
+
+        try
+            do!
+                workloads (fun report ->
+                    atomic (sprintf "workload-%02d.json" count) report
+                    count <- count + 1
+                    state "incomplete")
+
+            state "completed"
+        with error ->
+            let failure =
+                try
+                    state "failed"
+                    error
+                with reportError ->
+                    AggregateException(
+                        "Qualification and report storage failed.",
+                        [| error; reportError |]
+                    )
+                    :> exn
+
+            return raise failure
     }
 
 [<Tests>]

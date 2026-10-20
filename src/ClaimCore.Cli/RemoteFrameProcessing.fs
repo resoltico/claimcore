@@ -17,10 +17,10 @@ type private RemoteSessionHolder() =
         | Some value -> Ok value
         | None ->
             match RemoteConfiguration.fromEnvironment () with
-            | Error _ -> Error ClientFailure.Configuration
+            | Error failure -> Error failure
             | Ok configuration ->
                 match RemoteAccessSession.Open configuration with
-                | Error _ -> Error ClientFailure.Configuration
+                | Error failure -> Error failure
                 | Ok opened ->
                     session <- Some opened
                     Ok opened
@@ -42,6 +42,14 @@ module private FrameInvocation =
                     match! access.Token cancelled with
                     | Error _ when cancelled.IsCancellationRequested ->
                         return CliReply.local ClientFailure.Cancelled
+                    | Error "OIDC_CREDENTIAL_UNAVAILABLE" ->
+                        return
+                            CliReply.local (
+                                ClientFailure.ConfigurationIssue(
+                                    CliSetting.SecretFile,
+                                    ConfigurationIssue.PrivateInputRefused
+                                )
+                            )
                     | Error _ -> return CliReply.local ClientFailure.Authentication
                     | Ok token ->
                         return!

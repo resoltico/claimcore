@@ -79,11 +79,51 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
     }
 
+let private readinessCancellation database =
+    task {
+        let! opened =
+            ClaimCore.Hosting.Runtime.openConnection (connectionString database) token
+
+        use runtime = opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+        use! owner = database.OwnerSource.OpenConnectionAsync token
+        use! transaction = owner.BeginTransactionAsync token
+
+        use blocking =
+            new NpgsqlCommand(
+                "LOCK claimcore.schema_migrations IN ACCESS EXCLUSIVE MODE",
+                owner,
+                transaction
+            )
+
+        let! _ = blocking.ExecuteNonQueryAsync token
+        use deadline = new CancellationTokenSource(TimeSpan.FromSeconds 2.)
+        let watch = Diagnostics.Stopwatch.StartNew()
+        let! blocked = runtime.Ready deadline.Token
+        Expect.isFalse blocked "Cancelled schema query cannot report ready"
+
+        Expect.isTrue
+            deadline.IsCancellationRequested
+            "Real blocked query reaches cancellation deadline"
+
+        Expect.isLessThan watch.Elapsed.TotalSeconds 8. "Actual provider cancellation/cleanup bound"
+
+        printfn
+            "Readiness blocked query and provider cleanup: %.0f ms"
+            watch.Elapsed.TotalMilliseconds
+
+        do! transaction.RollbackAsync token
+        let! recovered = runtime.Ready token
+        Expect.isTrue recovered "Same runtime pool recovers after provider cleanup"
+    }
+
 [<Tests>]
 let tests =
     testList
         "runtime composition"
         [
+            testCaseAsync
+                "readiness cancellation reaches isolated PostgreSQL and recovers its pool"
+                (run readinessCancellation)
             testCaseAsync
                 "readiness checks schema availability and closes after shutdown without reading case payloads"
                 (run (fun database ->

@@ -52,10 +52,10 @@ module internal ApiRoutes =
             | Ok bytes ->
                 match
                     ClaimCore.Wire.Admission.admit endpoint bytes
-                    |> Result.mapError (fun _ -> ())
+                    |> Result.mapError (fun _ -> HostFailure.InputInvalid)
                     |> Result.bind ServiceGateway.admitTechnical
                 with
-                | Error _ -> return Error(RouteSupport.hostFailure context HostFailure.InputInvalid)
+                | Error reason -> return Error(RouteSupport.hostFailure context reason)
                 | Ok _ when context.RequestAborted.IsCancellationRequested ->
                     return Error(RouteSupport.inputFailure context BodyProblem.BodyCancelled)
                 | Ok input -> return Ok input

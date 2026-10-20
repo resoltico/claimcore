@@ -11,6 +11,10 @@ module ContractIdentity =
         SHA256.HashData bytes |> Convert.ToHexStringLower
 
     let manifest (artifacts: Artifact list) =
+        let artifacts =
+            artifacts
+            |> List.filter (fun artifact -> artifact.Role = ArtifactRole.RuntimePrecursor)
+
         let names = artifacts |> List.map _.Name
 
         if List.distinct names |> List.length <> names.Length then

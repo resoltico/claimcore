@@ -65,7 +65,13 @@ const token = (
   if (hasMessage(key)) {
     return renderKey(preferences, key);
   }
-  return metadata(preferences, "command", value, "label", definitions);
+  return metadata(
+    preferences,
+    definitions.authorityCommands.some((item) => item.kind === value) ? "authority" : "command",
+    value,
+    "label",
+    definitions,
+  );
 };
 const fieldValueText = (
   preferences: Preferences,

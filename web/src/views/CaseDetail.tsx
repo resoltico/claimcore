@@ -108,7 +108,9 @@ const CaseHeader = ({
   return (
     <>
       <div className="section-heading">
-        <h2 id="case-detail-title">{p.text("ui.caseDetail")}</h2>
+        <h2 id="case-detail-title" tabIndex={-1}>
+          {p.text("ui.caseDetail")}
+        </h2>
         <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
       </div>
       <p>
@@ -126,6 +128,7 @@ const CaseDisclosure = ({
   onBack,
   onCommand,
 }: CaseDetailProps) => {
+  const p = usePresentation();
   const current = useCaseDisclosure(caseReference, token);
   const state = current.value;
   const lookup = state !== null && isCurrentCase(state) ? state : null;
@@ -133,6 +136,16 @@ const CaseDisclosure = ({
     <section aria-labelledby="case-detail-title">
       <CaseHeader caseReference={caseReference} onBack={onBack} />
       <CurrentFeedback message={current.message} loading={current.loading} />
+      {current.message === null ? null : (
+        <Button
+          onPress={() => {
+            current.revalidate();
+            document.getElementById("case-detail-title")?.focus();
+          }}
+        >
+          {p.text("ui.tryAgain")}
+        </Button>
+      )}
       {lookup === null ? null : (
         <CurrentPresentation current={lookup} definition={definition} onCommand={onCommand} />
       )}

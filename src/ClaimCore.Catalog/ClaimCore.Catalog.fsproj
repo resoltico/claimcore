@@ -13,6 +13,8 @@
     <Compile Include="Localization/MessageText.fs" />
     <Compile Include="Localization/LocalizationPolicy.fs" />
     <Compile Include="DeliveryVocabulary.fs" />
+    <Compile Include="InputDiagnostics.fs" />
     <Compile Include="ProtocolFailures.fs" />
+    <Compile Include="CliHelp.fs" />
   </ItemGroup>
 </Project>

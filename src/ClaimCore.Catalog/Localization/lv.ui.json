@@ -65,7 +65,7 @@
   "ui.copyFallback": "Kopēšanas alternatīva: {label}",
   "ui.textHint": "Līdz {maximum} rakstzīmēm.",
   "ui.dateHint": "Izmantojiet ASCII ciparus formātā YYYY-MM-DD, piemēram, 2026-10-06.",
-  "ui.amountHint": "Izmantojiet ASCII ciparus un punktu, piemēram, 125.50; ne vairāk kā {maximum} zīmes aiz punkta. Bez zīmēm un komatiem.",
+  "ui.amountHint": "Lietojiet ASCII ciparus un punktu, piemēram, 0.10; līdz {maximum} zīmēm aiz punkta. Bez liekām sākuma nullēm (00.10), zīmēm vai komatiem.",
   "ui.currencyHint": "{length} lielie ASCII burti (A–Z).",
   "ui.command": "Darbība ar lietu",
   "ui.reference": "{label}: {reference}",
@@ -125,7 +125,7 @@
   "ui.inspectOperationId": "Pārbaudīt operācijas ID",
   "ui.returnToEdit": "Atgriezties pie rediģēšanas",
   "ui.retryExact": "Atkārtot to pašu darbību",
-  "ui.retryExactDescription": "Darbības rezultāts nav zināms. Atstājiet šo lapu atvērtu un atkārtojiet to pašu darbību.",
+  "ui.retryExactDescription": "Darbības rezultāts nav zināms. Atstājiet šo lapu atvērtu un atkārtojiet to pašu darbību. Aizverot vai pārlādējot lapu, šis atmiņā glabātais pieprasījums tiek zaudēts. Identifikatori vien nepierāda pieņemšanu un neatjauno pieprasījumu.",
   "ui.reloadContract": "Pārlādēt lapu",
   "ui.lifecycleErased": "Dzēsta — saglabāta tikai lietas atsauce un revīzija.",
   "ui.languageDescription": "Valoda maina attēloto tekstu un saglabā pašreizējo melnrakstu un pārskatījumu.",
@@ -156,5 +156,14 @@
   "ui.reloadGrants": "Pārlādēt pilnvaras",
   "ui.moreGrants": "Vairāk pilnvaru",
   "ui.grantsPartial": "Parādīta tikai daļa šī dalībnieka pilnvaru.",
-  "ui.grantsEnd": "Parādītas visas šajā pārskatā atgrieztās pilnvaras."
+  "ui.grantsEnd": "Parādītas visas šajā pārskatā atgrieztās pilnvaras.",
+  "ui.noViews": "Šim dalībniekam nav pieejamu darba skatu.",
+  "ui.emptyInput": "Tukša ievade",
+  "ui.editInput": "Rediģēt ievadi",
+  "ui.authorityAction": "Pilnvaru darbība",
+  "ui.noAccessibleCases": "Nav atgrieztu pieejamu lietu.",
+  "ui.noAccessibleActors": "Nav atgrieztu pieejamu dalībnieku.",
+  "ui.pagePartial": "Šajā redzamajā tvērumā ir vēl rezultāti.",
+  "ui.pageEnd": "Rezultātu beigas šajā redzamajā tvērumā.",
+  "ui.noAccessibleHistory": "Nav atgrieztu pieejamu vēstures ierakstu."
 }

@@ -85,24 +85,42 @@ let private identityInputs () =
         |> Set.ofSeq
 
     let inputs =
-        artifacts |> List.filter (fun artifact -> Set.contains artifact.Name names)
+        artifacts
+        |> List.filter (fun artifact -> artifact.Role = ArtifactRole.RuntimePrecursor)
+
+    Expect.equal
+        (inputs |> List.map _.Name |> Set.ofList)
+        names
+        "Manifest membership follows the produced roles"
 
     inputs
+
+let private qualificationIdentity () =
+    let all = ContractArtifacts.all ()
+
+    for artifact in all |> List.filter (fun item -> item.Role = ArtifactRole.QualificationOrTooling) do
+        let changed =
+            all
+            |> List.map (fun item ->
+                if item.Name = artifact.Name then
+                    { item with
+                        Bytes = Array.append item.Bytes [| 32uy |]
+                    }
+                else
+                    item)
+
+        Expect.equal
+            (ContractIdentity.manifest changed |> ContractIdentity.digest)
+            ConsumerContract.identity
+            "Qualification bytes do not change runtime identity"
+
 
 let private consumerIdentity () =
     let inputs = identityInputs ()
 
-    for name in
-        [
-            "openapi.json"
-            "descriptors.json"
-            "locale.lv.ui.json"
-            "delivery-policy.json"
-            "correlation-policy.json"
-            "delivery-vectors.json"
-            "correlation-vectors.json"
-            "request-bindings.json"
-        ] do
+    for input in inputs do
+        let name = input.Name
+
         let changed =
             inputs
             |> List.map (fun artifact ->
@@ -135,7 +153,14 @@ let private consumerIdentity () =
         "Duplicate identity inputs refuse"
 
     let vector =
-        ContractIdentity.manifest [ { Name = "a.json"; Bytes = bytes "abc" } ]
+        ContractIdentity.manifest
+            [
+                {
+                    Name = "a.json"
+                    Bytes = bytes "abc"
+                    Role = ArtifactRole.RuntimePrecursor
+                }
+            ]
         |> Encoding.UTF8.GetString
 
     Expect.equal
@@ -150,6 +175,7 @@ let private safePublication () =
     let artifact content =
         {
             Name = "current.json"
+            Role = ArtifactRole.RuntimePrecursor
             Bytes = bytes content
         }
 
@@ -186,10 +212,24 @@ let private producedNames () =
 
     try
         Expect.throws
-            (fun () -> ArtifactPublication.publish output [ { Name = "../escape"; Bytes = [||] } ])
+            (fun () ->
+                ArtifactPublication.publish
+                    output
+                    [
+                        {
+                            Name = "../escape"
+                            Bytes = [||]
+                            Role = ArtifactRole.RuntimePrecursor
+                        }
+                    ])
             "Names cannot escape"
 
-        let repeated = { Name = "a.json"; Bytes = [||] }
+        let repeated =
+            {
+                Name = "a.json"
+                Bytes = [||]
+                Role = ArtifactRole.RuntimePrecursor
+            }
 
         Expect.throws
             (fun () -> ArtifactPublication.publish output [ repeated; repeated ])
@@ -248,4 +288,7 @@ let tests =
                 "consumer identity covers the canonical manifest and binds TypeScript"
                 fingerprint
             testCase "every authoritative consumer document changes identity" consumerIdentity
+            testCase
+                "qualification artifacts retain freshness without changing runtime identity"
+                qualificationIdentity
         ]

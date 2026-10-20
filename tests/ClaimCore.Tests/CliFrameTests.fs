@@ -229,6 +229,16 @@ let private uncertainSession () =
 
     Expect.equal invoked 1 "Uncertainty ends the session at the replayable frame"
 
+let private describe arguments =
+    match CliInvocations.admit ("describe" :: arguments) with
+    | Ok(CliInvocation.Describe(selector, _, _)) -> Discovery.describe selector
+    | _ -> None
+
+let private schema arguments =
+    match CliInvocations.admit ("schema" :: arguments) with
+    | Ok(CliInvocation.Schema selection) -> Discovery.schema selection
+    | _ -> None
+
 let private offlineDiscovery () =
     for args in
         [
@@ -240,7 +250,7 @@ let private offlineDiscovery () =
             [ "endpoints" ]
             [ "diagnostics" ]
         ] do
-        Expect.isSome (Discovery.describe args) "Offline catalogue read"
+        Expect.isSome (describe args) "Offline catalogue read"
 
     for args in
         [
@@ -249,10 +259,10 @@ let private offlineDiscovery () =
             [ "authority.execute"; "request" ]
             [ "host-failure" ]
         ] do
-        Expect.isSome (Discovery.schema args) "Offline schemas"
+        Expect.isSome (schema args) "Offline schemas"
 
-    Expect.isNone (Discovery.describe [ "unsupported.synthetic" ]) "Unsupported selector refused"
-    Expect.isNone (Discovery.schema [ "unsupported.synthetic" ]) "Unknown schema refused"
+    Expect.isNone (describe [ "unsupported.synthetic" ]) "Unsupported selector refused"
+    Expect.isNone (schema [ "unsupported.synthetic" ]) "Unknown schema refused"
 
 let private exampleFrames () =
     let root = ClaimCore.TestSupport.RepositoryRoot.find ()

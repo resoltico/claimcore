@@ -182,11 +182,9 @@ let private configureRoutes
     )
     |> ignore
 
-    application.Use(
-        Func<HttpContext, RequestDelegate, Task>(
-            HostRoutes.health (fun () -> runtime.Ready System.Threading.CancellationToken.None)
-        )
-    )
+    let readiness = Readiness(runtime.Ready, application.Lifetime.ApplicationStopping)
+
+    application.Use(Func<HttpContext, RequestDelegate, Task>(HostRoutes.health readiness.Check))
     |> ignore
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))

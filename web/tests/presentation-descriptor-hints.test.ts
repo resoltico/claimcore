@@ -15,7 +15,7 @@ it("gives exact scalar syntax and limits from each descriptor rather than an abs
     "Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06.",
   );
   expect(hint("claimedAmount")).toBe(
-    "Use ASCII digits and a dot, for example 125.50; up to 4 decimal places. No signs or commas.",
+    "Use ASCII digits and a dot, for example 0.10; up to 4 decimal places. No redundant leading zeros (00.10), signs or commas.",
   );
   expect(hint("claimedCurrency")).toBe("3 uppercase ASCII letters (A–Z).");
   expect(hint("status")).toBe("Open, Closed");

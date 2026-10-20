@@ -50,7 +50,7 @@
   "diagnostic.INPUT_COUNTRY_FORMAT": "Valsts kodam izmantojiet divus lielos ASCII burtus.",
   "diagnostic.INPUT_CURRENCY_FORMAT": "Izmantojiet trīs lielos ASCII burtus (A–Z) valūtas apzīmējumam.",
   "diagnostic.INPUT_DATE_ORDER": "Datumu hronoloģiskā secība nav derīga.",
-  "diagnostic.INPUT_DECIMAL_FORMAT": "Izmantojiet nenegatīvu decimālskaitli: līdz {maximumIntegerDigits} veseliem cipariem un {maximumFractionalDigits} daļas cipariem; bez zīmes vai eksponenta.",
+  "diagnostic.INPUT_DECIMAL_FORMAT": "Izmantojiet nenegatīvu decimālskaitli: līdz {maximumIntegerDigits} veseliem cipariem un {maximumFractionalDigits} daļas cipariem; bez zīmes vai eksponenta. Bez liekām sākuma nullēm: 0.10 ir derīgs; 00.10 nav derīgs.",
   "diagnostic.INPUT_FUTURE_DATE": "Nākotnes datums nevar apzīmēt jau notikušu notikumu.",
   "diagnostic.INPUT_MALFORMED_UNICODE": "Nederīgs Unicode nav atļauts.",
   "diagnostic.INPUT_SURROUNDING_WHITESPACE": "Atstarpes vērtības sākumā vai beigās nav atļautas.",
@@ -63,5 +63,6 @@
   "diagnostic.QUERY_CURSOR_INVALID": "Lapas turpinājums vairs nav derīgs. Pārlādējiet sarakstu no sākuma.",
   "diagnostic.QUERY_PAGE_LIMIT_RANGE": "Izmantojiet vērtību no 1 līdz {maximumPageSize}.",
   "diagnostic.REVISION_EXHAUSTED": "Lieta ir sasniegusi savu pēdējo redakciju.",
-  "diagnostic.TEXT_FORMATTING_CHARACTER": "Jaunā apgalvojumā formatēšanas rakstzīmes nav atļautas."
+  "diagnostic.TEXT_FORMATTING_CHARACTER": "Jaunā apgalvojumā formatēšanas rakstzīmes nav atļautas.",
+  "diagnostic.PRINCIPAL_INPUT_INVALID": "Labojiet identitātes lauku {target}: {issue}. Šis mēģinājums nenosūtīja darbību izpildei."
 }

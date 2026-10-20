@@ -135,7 +135,38 @@ process-local authentication session. Each input frame is limited to 128 KiB; re
 limited to 4 MiB. Input is strict UTF-8 and replies are validated against the generated contract.
 Preview is advisory; execution revalidates locked state.
 
-Discovery needs no credentials. `describe authority [kind]` exposes the Application-owned
+Discovery needs no credentials. `help [topic] [--language en|lv|ar]` is plain UTF-8 text,
+with English as the culture-independent default. Topics include `configuration`, `call`, `session`,
+`delivery`, `examples`, `describe` and `schema`. Exact `--help`, `-h`, `<command> --help` and
+`<command> -h` aliases run before stdin, configuration or transport. Aliases accept no extra flags;
+use `help call --language lv` for localized help.
+
+`describe` defaults to JSON. Add `--format text` for a concise static descriptor projection;
+only help and explicit text describe admit `--language`. Selected human descriptions include
+input field IDs with localized labels, prefill sources, correction choices/replacement fields, and
+endpoint mutation nature plus exact request/response schema commands. Schemas remain JSON.
+Duplicate/unknown
+options and selectors refuse atomically with safe corrective commands on stderr, empty stdout
+and exit 64. Unknown authored tokens are never echoed. No TTY-dependent format or prompt is used.
+
+Local failure frames now require a closed `diagnostic` object. Known configuration failures use
+`CLI_CONFIGURATION_ISSUE` with allowlisted `setting` and `issue` (`MISSING`, `INVALID` or
+`PRIVATE_INPUT_REFUSED`); unknown local causes remain broad. Protocol failures carry
+`CLI_PROTOCOL_GUIDANCE`: resolve that exact ID with `help CLI_PROTOCOL_GUIDANCE` or
+`describe diagnostics`. Both project the same generated core guidance for `schema invocation`,
+`schema response` and call/document versus session/NDJSON framing. No parser path, raw key, URL,
+private filename, provider message or exception text
+is included. Configuration is checked in service-root, issuer, client-ID, auth-mode, mode-dependent
+secret-path, OIDC-root, service-root order; file admission retains its known cause.
+
+Authored principal refusals remain HTTP 400 / `INPUT_INVALID` / `NOT_STARTED`, using the same
+host-failure codec with `PRINCIPAL_INPUT_INVALID`, closed `target` (`issuer`, `subject`, `kind`)
+and `issue` (`MISSING`, `INVALID`). Other host status/code/phase combinations refuse that detail.
+Authentication and protected-resource failures remain generic. These are breaking diagnostic frame
+and runtime-identity changes: rebuild all generated consumers and deploy matching clients/service;
+there is no alternate admission period or database migration.
+
+ `describe authority [kind]` exposes the Application-owned
 authority definitions alongside case command discovery:
 
 ```sh

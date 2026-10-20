@@ -87,6 +87,9 @@ const executeAuthority = async (
     invalidateDisclosure(true);
     return;
   }
+  if (result.kind === "hostFailure" && result.failure.diagnostic.id === "PRINCIPAL_INPUT_INVALID") {
+    state.setFieldError(`target.${result.failure.diagnostic.parameters.target}`);
+  }
   state.setNotice(resultNotice(result));
 };
 const authorityDraftActions = (state: State) => {
@@ -149,6 +152,14 @@ export const useAuthorityOperation = (
     ...state,
     disclosure,
     ...draftActions,
+    edit: () => {
+      if (state.busy || state.uncertain || delivery.current.busy) {
+        return;
+      }
+      state.clearPrepared();
+      state.setValues({ ...state.values, operationId: crypto.randomUUID() });
+      state.setConfirmed(false);
+    },
     discard: () => {
       if (!delivery.current.busy && !delivery.current.dispatched) {
         draftActions.discard();

@@ -5,14 +5,17 @@ import { renderKey, translate } from "./messages";
 import type { Preferences } from "./preferences";
 
 const limits: Readonly<
-  Record<string, Readonly<Record<string, { minimum?: number; maximum?: number }>>>
+  Record<
+    string,
+    Readonly<Record<string, { minimum?: number; maximum?: number; enum?: ReadonlyArray<string> }>>
+  >
 > = requirements;
 const diagnosticText = (
   preferences: Preferences,
   diagnostic: Extract<Notice, { kind: "diagnostic" }>["diagnostic"],
 ): string => {
   const expected = Object.hasOwn(limits, diagnostic.id) ? limits[diagnostic.id] : undefined;
-  const supplied: Readonly<Record<string, number>> = diagnostic.parameters;
+  const supplied: Readonly<Record<string, number | string>> = diagnostic.parameters;
   if (typeof supplied !== "object" || supplied === null || Array.isArray(supplied)) {
     return translate(preferences, "notice.unknownDiagnostic");
   }
@@ -20,11 +23,12 @@ const diagnosticText = (
   if (expected === undefined || keys !== Object.keys(expected).sort().join(",")) {
     return translate(preferences, "notice.unknownDiagnostic");
   }
-  const valid = Object.entries(supplied).every(
-    ([key, value]) =>
-      Number.isSafeInteger(value) &&
-      value >= (expected[key]?.minimum ?? 0) &&
-      value <= (expected[key]?.maximum ?? 2147483647),
+  const valid = Object.entries(supplied).every(([key, value]) =>
+    typeof value === "string"
+      ? expected[key]?.enum?.includes(value) === true
+      : Number.isSafeInteger(value) &&
+        value >= (expected[key]?.minimum ?? 0) &&
+        value <= (expected[key]?.maximum ?? 2147483647),
   );
   if (!valid) {
     return translate(preferences, "notice.unknownDiagnostic");
@@ -32,7 +36,7 @@ const diagnosticText = (
   const parameters = Object.fromEntries(
     Object.entries(supplied).map(([k, v]) => [
       k,
-      exactInteger(String(v), preferences.displayLocale),
+      typeof v === "string" ? v : exactInteger(String(v), preferences.displayLocale),
     ]),
   );
   return renderKey(preferences, `diagnostic.${diagnostic.id}`, parameters);

@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open System
+open ClaimCore.Catalog
 open System.Net.Http
 open System.Threading
 
@@ -72,12 +73,22 @@ type RemoteAccessSession
             (oidcTrust :> IDisposable).Dispose()
             (serviceTrust :> IDisposable).Dispose()
 
+    static member private ConfigurationFailure setting reason =
+        match reason with
+        | "TLS_TRUST_ROOT_UNAVAILABLE" ->
+            ClientFailure.ConfigurationIssue(setting, ConfigurationIssue.PrivateInputRefused)
+        | "TLS_TRUST_ROOT_INVALID"
+        | "TLS_TRUST_ROOT_SCOPE_INVALID" ->
+            ClientFailure.ConfigurationIssue(setting, ConfigurationIssue.Invalid)
+        | _ -> ClientFailure.Configuration
+
     static member Open(configuration: RemoteConfiguration) =
         match RemoteTls.Create(configuration.OidcTrustRootFile, configuration.Issuer) with
-        | Error reason -> Error reason
+        | Error reason ->
+            Error(RemoteAccessSession.ConfigurationFailure CliSetting.OidcTrustRoot reason)
         | Ok oidcTrust ->
             match RemoteTls.Create(configuration.ServiceTrustRootFile, configuration.Service) with
             | Error reason ->
                 (oidcTrust :> IDisposable).Dispose()
-                Error reason
+                Error(RemoteAccessSession.ConfigurationFailure CliSetting.ServiceTrustRoot reason)
             | Ok serviceTrust -> Ok(new RemoteAccessSession(configuration, oidcTrust, serviceTrust))

@@ -19,42 +19,56 @@ module ContractArtifacts =
         [
             {
                 Name = "openapi.json"
+                Role = ArtifactRole.RuntimePrecursor
                 Bytes = OpenApi.emit ()
             }
             {
                 Name = "correlation-policy.json"
+                Role = ArtifactRole.RuntimePrecursor
                 Bytes = DeliveryTables.correlation ()
             }
             {
                 Name = "delivery-policy.json"
+                Role = ArtifactRole.RuntimePrecursor
                 Bytes = DeliveryTables.render ()
             }
             {
                 Name = "request-bindings.json"
+                Role = ArtifactRole.RuntimePrecursor
                 Bytes = RequestBindings.render ()
             }
             {
                 Name = "descriptors.json"
+                Role = ArtifactRole.RuntimePrecursor
                 Bytes = ContractDocuments.descriptors ()
             }
             {
                 Name = "cli-frame.schema.json"
+                Role = ArtifactRole.RuntimePrecursor
                 Bytes = ContractDocuments.frames ()
             }
+        ]
+
+    let private qualification () =
+        [
             {
                 Name = "delivery-vectors.json"
+                Role = ArtifactRole.QualificationOrTooling
                 Bytes = oracle "delivery-vectors.json" |> PolicyVectors.delivery
             }
             {
                 Name = "correlation-vectors.json"
+                Role = ArtifactRole.QualificationOrTooling
                 Bytes = oracle "correlation-vectors.json" |> PolicyVectors.correlation
             }
             {
                 Name = "corpus.json"
+                Role = ArtifactRole.QualificationOrTooling
                 Bytes = SchemaSamples.corpus ()
             }
             {
                 Name = "package.json"
+                Role = ArtifactRole.QualificationOrTooling
                 Bytes = Encoding.UTF8.GetBytes "{\"private\":true,\"type\":\"module\"}\n"
             }
         ]
@@ -73,9 +87,37 @@ module ContractArtifacts =
 
             {
                 Name = "locale." + name.Substring("ClaimCore.Localization.".Length)
+                Role = ArtifactRole.RuntimePrecursor
                 Bytes = output.ToArray()
             })
         |> Array.toList
+
+    let private helpDocument () =
+        [
+            for language in ClaimCore.Catalog.LocalizationPolicy.languages do
+                for topic in ClaimCore.Catalog.CliHelp.topics do
+                    language + "." + topic,
+                    ClaimCore.Catalog.CliHelp.text
+                        language
+                        topic
+                        Limits.MaximumInvocationBytes
+                        Limits.MaximumRequestBytes
+                        Limits.MaximumResponseBytes
+        ]
+        @ [
+            for language in ClaimCore.Catalog.LocalizationPolicy.languages do
+                for issue in
+                    [
+                        ClaimCore.Catalog.CliUsageIssue.Invocation
+                        ClaimCore.Catalog.CliUsageIssue.Topic
+                        ClaimCore.Catalog.CliUsageIssue.Options
+                        ClaimCore.Catalog.CliUsageIssue.Selector
+                    ] do
+                    language + ".usage." + string issue,
+                    ClaimCore.Catalog.CliHelp.usage language issue
+        ]
+        |> Map.ofList
+        |> System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
 
     let private presentation () =
         let policy =
@@ -92,10 +134,17 @@ module ContractArtifacts =
         [
             {
                 Name = "localization-policy.json"
+                Role = ArtifactRole.RuntimePrecursor
                 Bytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes policy
             }
             {
+                Name = "cli-help.json"
+                Role = ArtifactRole.RuntimePrecursor
+                Bytes = helpDocument ()
+            }
+            {
                 Name = "cli-messages.json"
+                Role = ArtifactRole.RuntimePrecursor
                 Bytes =
                     ClaimCore.Catalog.MessageText.all
                     |> Map.filter (fun key _ ->
@@ -108,7 +157,7 @@ module ContractArtifacts =
     let all () =
         CatalogValidation.validate ()
         CorrelationValidation.validate CorrelationBindings.all
-        let inputs = authoritative () @ locales () @ presentation ()
+        let inputs = authoritative () @ qualification () @ locales () @ presentation ()
         let manifest = ContractIdentity.manifest inputs
         let identity = ContractIdentity.digest manifest
 
@@ -116,18 +165,22 @@ module ContractArtifacts =
         @ [
             {
                 Name = "evolution-fixture.json"
+                Role = ArtifactRole.QualificationOrTooling
                 Bytes = EvolutionQualification.render ()
             }
             {
                 Name = "contract-manifest.json"
+                Role = ArtifactRole.IdentityDerived
                 Bytes = manifest
             }
             {
                 Name = "contract-identity.txt"
+                Role = ArtifactRole.IdentityDerived
                 Bytes = Encoding.UTF8.GetBytes(identity + "\n")
             }
             {
                 Name = "contract-identity.fs"
+                Role = ArtifactRole.IdentityDerived
                 Bytes =
                     Encoding.UTF8.GetBytes(
                         "namespace ClaimCore.Wire\n\nmodule internal ConsumerContractIdentity =\n    let Value = \""
@@ -137,6 +190,7 @@ module ContractArtifacts =
             }
             {
                 Name = "client.ts"
+                Role = ArtifactRole.IdentityDerived
                 Bytes = TypeScript.source identity
             }
         ]

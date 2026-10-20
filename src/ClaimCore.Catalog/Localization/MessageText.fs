@@ -9,13 +9,19 @@ type MessagePart =
 module MessageText =
     let private definitions =
         [
+            "diagnostic.PRINCIPAL_INPUT_INVALID",
+            [
+                MessagePart.Literal "Correct principal field "
+                MessagePart.Hole "target"
+                MessagePart.Literal ": "
+                MessagePart.Hole "issue"
+                MessagePart.Literal ". No operation was dispatched by this attempt."
+            ]
             "cli.callbackAccepted",
             [
                 MessagePart.Literal "Authentication response received. Return to the terminal."
             ]
             "cli.callbackRefused", [ MessagePart.Literal "Authentication response refused." ]
-            "cli.unsupportedInvocation",
-            [ MessagePart.Literal "Unsupported invocation. Run claimcore help." ]
             "cli.beforeDispatchFailure",
             [ MessagePart.Literal "Unexpected failure before dispatch." ]
             "authority.REGISTER_ACTOR.label", [ MessagePart.Literal "Register actor" ]
@@ -44,11 +50,6 @@ module MessageText =
             "authority.field.scope.label", [ MessagePart.Literal "Grant scope" ]
             "authority.field.subject.label", [ MessagePart.Literal "Subject or client ID" ]
             "authority.field.target.label", [ MessagePart.Literal "Actor principal" ]
-            "cli.help",
-            [
-                MessagePart.Literal
-                    "ClaimCore: help | version [--json] | describe [summary|fields [name]|commands [kind]|authority [kind]|endpoints [id]|diagnostics] | schema <name> | call | session"
-            ]
             "command.AMEND_REGISTRATION.label", [ MessagePart.Literal "Amend registration" ]
             "command.AMEND_REGISTRATION.meaning",
             [
@@ -240,7 +241,8 @@ module MessageText =
                 MessagePart.Hole "maximumIntegerDigits"
                 MessagePart.Literal " integer digits and "
                 MessagePart.Hole "maximumFractionalDigits"
-                MessagePart.Literal " fractional digits; no sign or exponent."
+                MessagePart.Literal
+                    " fractional digits; no sign, exponent or redundant leading zeros: 0.10 is valid; 00.10 is invalid."
             ]
             "diagnostic.INPUT_FUTURE_DATE",
             [

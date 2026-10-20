@@ -11,12 +11,15 @@ export const useRead = <R extends EndpointOutcome, T>(
   request: (signal: AbortSignal) => Promise<ApiResult<R>>,
   select: (response: R) => T | null,
   key: string,
-): ReadState<T> => {
+): ReadState<T> & { reload: () => void } => {
+  const [revision, setRevision] = useState(0);
   const [state, setState] = useState<ReadState<T>>({ value: null, message: null, loading: true });
   useEffect(() => {
     const controller = new AbortController();
     queueMicrotask(() => {
-      setState({ value: null, message: null, loading: true });
+      if (!controller.signal.aborted) {
+        setState({ value: null, message: null, loading: true });
+      }
     });
     void request(controller.signal).then((result) => {
       if (controller.signal.aborted) {
@@ -33,8 +36,13 @@ export const useRead = <R extends EndpointOutcome, T>(
       controller.abort();
     };
     // oxlint-disable-next-line react/exhaustive-effect-dependencies
-  }, [key, request, select]);
-  return state;
+  }, [key, request, select, revision]);
+  return {
+    ...state,
+    reload: () => {
+      setRevision((prior) => prior + 1);
+    },
+  };
 };
 
 type PageSinks<T, P> = {

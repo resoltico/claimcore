@@ -29,5 +29,9 @@
   "token.PROVISION_OWNER": "Iestatīt sākotnējo īpašnieku",
   "token.REGISTER_ACTOR": "Reģistrēt identitāti",
   "token.SET_ENABLED": "Iestatīt identitātes aktivitāti",
-  "token.SET_GRANT": "Iestatīt pilnvaru"
+  "token.SET_GRANT": "Iestatīt pilnvaru",
+  "token.HUMAN": "Cilvēks",
+  "token.SERVICE": "Pakalpojums",
+  "token.INSTALLATION": "Instalācija",
+  "token.CASE": "Viena lieta"
 }

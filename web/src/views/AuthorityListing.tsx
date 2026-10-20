@@ -1,3 +1,4 @@
+import { PageStatus } from "../components/PageStatus";
 import { useCallback } from "react";
 import type { Notice } from "../api/notices";
 import { service, type ServiceResponse } from "../api/service";
@@ -84,6 +85,13 @@ export const AuthorityListing = (props: ListingProps) => {
           <NoticeView value={page.message} />
         </p>
       )}
+      {page.page !== null && !page.loading && page.message === null ? (
+        <PageStatus
+          empty={page.items.length === 0}
+          cursor={page.cursor}
+          emptyMessage="ui.noAccessibleActors"
+        />
+      ) : null}
       {page.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       <button type="button" disabled={page.loading} onClick={() => void page.load(null)}>
         {p.text("ui.reloadActors")}

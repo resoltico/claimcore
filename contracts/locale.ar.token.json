@@ -29,5 +29,9 @@
   "token.PROVISION_OWNER": "تعيين المالك الأول",
   "token.REGISTER_ACTOR": "تسجيل جهة",
   "token.SET_ENABLED": "تعيين حالة تفعيل الجهة",
-  "token.SET_GRANT": "تعيين الصلاحية"
+  "token.SET_GRANT": "تعيين الصلاحية",
+  "token.HUMAN": "شخص",
+  "token.SERVICE": "خدمة",
+  "token.INSTALLATION": "التثبيت",
+  "token.CASE": "قضية واحدة"
 }

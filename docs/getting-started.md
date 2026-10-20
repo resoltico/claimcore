@@ -26,11 +26,14 @@ dotnet build src/ClaimCore.Cli --configuration Release --no-restore
 npm --prefix web ci
 ```
 
-Discover the CLI without service credentials:
+Discover the CLI without service credentials. Use `help configuration` for settings,
+`help call` versus `help session` for document/NDJSON framing, and `help delivery` before retrying
+an uncertain operation. Help aliases are exact-only; translated help uses `help call --language lv`.
+Describe remains JSON unless `--format text` is explicit:
 
 ```sh
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- help
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- describe summary
+dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- describe commands OPEN --format text
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- schema invocation
 ```
 

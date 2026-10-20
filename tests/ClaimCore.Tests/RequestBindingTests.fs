@@ -150,6 +150,7 @@ let private publicationRefusal definitions commands =
                 let artifact =
                     {
                         Name = "request-bindings.json"
+                        Role = ArtifactRole.RuntimePrecursor
                         Bytes = RequestBindings.renderFrom definitions commands
                     }
 

@@ -14,6 +14,7 @@ type HostFailure =
     | EndpointMissing
     | RateLimited
     | InputInvalid
+    | PrincipalInput of PrincipalInputIssue
     | BeforeDispatchFailed
     | DispatchUnconfirmed
     | CompletedResponseFailed
@@ -38,12 +39,21 @@ module HostFailureIds =
             HostFailure.CompletedResponseFailed, "RESPONSE_FAILED", "HOST_COMPLETEDRESPONSEFAILED"
         ]
 
+    let private generic =
+        function
+        | HostFailure.PrincipalInput _ -> HostFailure.InputInvalid
+        | value -> value
+
     let token failure =
+        let failure = generic failure
+
         definitions
         |> List.find (fun (value, _, _) -> value = failure)
         |> fun (_, code, _) -> code
 
     let diagnostic failure =
+        let failure = generic failure
+
         definitions
         |> List.find (fun (value, _, _) -> value = failure)
         |> fun (_, _, diagnostic) -> diagnostic

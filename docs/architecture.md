@@ -23,7 +23,8 @@ or an actual test project. Test projects reference only product or tooling proje
 RecordFormat owns durable bytes and supports only its versioned record readers and writers.
 Catalog owns shared closed vocabulary, diagnostic identities, authored English templates and locale assets.
 Wire references only Catalog; it carries no Domain/Application policy. Its typed codecs supply request/reply readers, writers and
-schemas for all twelve endpoints. It also owns typed delivery, correlation and CLI frames.
+schemas for all twelve endpoints. It also owns typed delivery, correlation, CLI frames and finite CLI invocation/selector syntax.
+CLI projects the selected generated resources and admits no independent argv grammar.
 The OpenAPI contract derives from those codecs; the [API contract](api.md) owns the wire profile,
 fingerprint and tracked artifacts. ContractGenerator references Wire, Domain and Application to
 emit that contract and presentation descriptors. Core input descriptors bind to codec members during generation. The browser assembles requests
@@ -191,7 +192,11 @@ ordinally and binds their exact bytes with SHA-256. Its canonical bytes have fix
 compact JSON and one final LF. The digest identifies static consumer documents, not current actor
 authority, server freshness, review quality or owner approval. Identity-bearing client/source
 resources are emitted afterwards and excluded from the input set. Generation never reads a runtime
-identity to compute its successor. Freshness compares every produced filename and byte.
+identity to compute its successor. Each produced artifact declares one role: RuntimePrecursor, QualificationOrTooling or
+IdentityDerived. Only runtime precursors enter the manifest. QA vectors, byte corpus, evolution
+fixture and build-only package metadata retain exact freshness but do not force runtime-client
+replacement. Identity-derived files remain outside their own digest. Freshness compares every
+produced filename and byte across all roles.
 
 Case and authority clients share a tagged mutation lifecycle. Prepared immutable requests own bytes,
 identity and expected revision. Preview and confirmation content remain distinct; disclosure refusal

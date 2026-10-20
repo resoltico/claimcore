@@ -1,3 +1,5 @@
+import type { Notice } from "../api/notices";
+import { NoticeView } from "../presentation/Message";
 import type { SchemaDocument, SchemaNode } from "../protocol/schema";
 import { resolveSchema, selectedSchema, unionSelector, type FormValues } from "../protocol/forms";
 import { usePresentation } from "../presentation/context";
@@ -9,6 +11,7 @@ type Props = {
   values: FormValues;
   disabled: boolean;
   errorPath?: string | null;
+  errorNotice?: Notice | null;
   onChange: (path: string, value: string | boolean) => void;
 };
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
@@ -42,7 +45,7 @@ const Choice = ({
     </label>
   );
 };
-const ScalarInput = ({ path, values, disabled, onChange, node, errorPath }: Props) => {
+const ScalarInput = ({ path, values, disabled, onChange, node, errorPath, errorNotice }: Props) => {
   const p = usePresentation();
   const label = p.fieldLabel(path.split(".").at(-1)!);
   if (node.type === "boolean") {
@@ -71,12 +74,18 @@ const ScalarInput = ({ path, values, disabled, onChange, node, errorPath }: Prop
         value={text(values[path])}
         disabled={disabled}
         aria-invalid={errorPath === path || undefined}
+        aria-describedby={errorPath === path && errorNotice ? `${path}-error` : undefined}
         autoComplete="off"
         dir="auto"
         onChange={(event) => {
           onChange(path, event.target.value);
         }}
       />
+      {errorPath === path && errorNotice ? (
+        <small id={`${path}-error`}>
+          <NoticeView value={errorNotice} />
+        </small>
+      ) : null}
     </label>
   );
 };
