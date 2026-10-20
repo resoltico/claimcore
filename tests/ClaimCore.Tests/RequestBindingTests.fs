@@ -56,6 +56,39 @@ let private propagation () =
         [ "values"; "reason" ]
         "Synthetic input propagates to its codec-owned wire member"
 
+let private bindingFailure definitions commands =
+    try
+        RequestBindings.renderFrom definitions commands |> ignore
+        None
+    with :? InvalidOperationException as error ->
+        Some error.Message
+
+let private semanticInputMismatch () =
+    let definitions = OpenApi.definitions ()
+
+    use unchanged =
+        JsonDocument.Parse(
+            ReadOnlyMemory<byte>(RequestBindings.renderFrom definitions CommandDefinitions.all)
+        )
+
+    Expect.equal
+        (unchanged.RootElement.GetArrayLength())
+        CommandDefinitions.all.Length
+        "The complete unchanged inventory succeeds"
+
+    let poisoned =
+        CommandDefinitions.all
+        |> List.map (fun command ->
+            if command.Kind = opening.Kind then
+                addReason command
+            else
+                command)
+
+    Expect.equal
+        (bindingFailure definitions poisoned)
+        (Some "Semantic inputs and codec request members differ.")
+        "The additional semantic input fails member matching, not act coverage"
+
 [<Tests>]
 let tests =
     testList
@@ -65,15 +98,25 @@ let tests =
                 "a fixture-only input change propagates without client command rules"
                 propagation
             testCase "a codec member missing from semantic inputs refuses" (fun () ->
-                Expect.throws
-                    (fun () -> RequestBindings.renderFrom (changedCodec ()) [ opening ] |> ignore)
-                    "Unbound fields refuse")
-            testCase "a semantic input missing from the codec refuses" (fun () ->
-                Expect.throws
-                    (fun () ->
-                        RequestBindings.renderFrom (OpenApi.definitions ()) [ addReason opening ]
-                        |> ignore)
-                    "Unknown inputs refuse")
+                let definitions = changedCodec ()
+
+                use matching =
+                    JsonDocument.Parse(
+                        ReadOnlyMemory<byte>(
+                            RequestBindings.renderFrom definitions [ addReason opening ]
+                        )
+                    )
+
+                Expect.equal
+                    (matching.RootElement.GetArrayLength())
+                    1
+                    "Matching narrowed codec and inputs succeed"
+
+                Expect.equal
+                    (bindingFailure definitions [ opening ])
+                    (Some "Semantic inputs and codec request members differ.")
+                    "The codec's additional member fails input matching")
+            testCase "a semantic input missing from the codec refuses" semanticInputMismatch
             testCase "duplicate authored core messages refuse" (fun () ->
                 Expect.throws
                     (fun () ->
