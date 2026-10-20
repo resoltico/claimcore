@@ -58,6 +58,7 @@ let private start directory platform engine stages =
     config.Environment["PATH"] <- directory + string Path.PathSeparator + config.Environment["PATH"]
     config.Environment["CLAIMCORE_TEST_COMMANDS_FILE"] <- commands
     config.Environment["CLAIMCORE_TEST_PLATFORM"] <- platform
+    config.Environment["CLAIMCORE_TEST_REPORT_DIRECTORY"] <- Path.Combine(directory, "reports")
 
     for name in
         [

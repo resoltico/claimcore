@@ -46,6 +46,10 @@ let private options () =
             [ "schema"; "invocation"; "--language"; "en" ]
             [ "help"; "call"; "--language"; "en"; "--language"; "en" ]
             [ "help"; "secret-canary" ]
+            [ "describe"; "secret-canary" ]
+            [ "describe"; "summary"; "extra" ]
+            [ "describe"; "commands"; "OPEN"; "extra" ]
+            [ "schema"; "context"; "extra" ]
             [ "describe"; "--format"; "text"; "--format"; "text" ]
         ] do
         Expect.isError (CliInvocations.admit args) "Unsupported combinations refuse atomically"
@@ -53,7 +57,7 @@ let private options () =
     Expect.equal
         (CliInvocations.admit
             [ "describe"; "commands"; "OPEN"; "--format"; "text"; "--language"; "ar" ])
-        (Ok(CliInvocation.Describe([ "commands"; "OPEN" ], true, "ar")))
+        (Ok(CliInvocation.Describe(CliDescription.Commands(Some "OPEN"), true, "ar")))
         "Explicit human format"
 
     Expect.isOk

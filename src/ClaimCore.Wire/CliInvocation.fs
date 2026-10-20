@@ -3,11 +3,26 @@ namespace ClaimCore.Wire
 open ClaimCore.Catalog
 
 [<RequireQualifiedAccess>]
+type CliDescription =
+    | Summary
+    | Fields of string option
+    | Commands of string option
+    | Authority of string option
+    | Endpoints of Endpoint option
+    | Diagnostics
+
+[<RequireQualifiedAccess>]
+type CliSchema =
+    | Named of string
+    | Request of Endpoint
+    | Response of Endpoint
+
+[<RequireQualifiedAccess>]
 type CliInvocation =
     | Help of topic: string * language: string
     | Version of json: bool
-    | Describe of selectors: string list * text: bool * language: string
-    | Schema of selectors: string list
+    | Describe of selector: CliDescription * text: bool * language: string
+    | Schema of selection: CliSchema
     | Call
     | Session
 
@@ -44,19 +59,52 @@ module CliInvocations =
             | [ topic ], None -> help topic (defaultArg language "en")
             | _ -> Error CliUsageIssue.Options)
 
+    let private descriptions =
+        [
+            "fields", CliDescription.Fields
+            "commands", CliDescription.Commands
+            "authority", CliDescription.Authority
+        ]
+
+    let private describeSelector =
+        function
+        | []
+        | [ "summary" ] -> Ok CliDescription.Summary
+        | [ "diagnostics" ] -> Ok CliDescription.Diagnostics
+        | [ "endpoints" ] -> Ok(CliDescription.Endpoints None)
+        | [ "endpoints"; name ] ->
+            match Endpoint.tryParse name with
+            | Some endpoint -> Ok(CliDescription.Endpoints(Some endpoint))
+            | None -> Error CliUsageIssue.Selector
+        | category :: tail ->
+            match List.tryFind (fst >> (=) category) descriptions, tail with
+            | Some(_, create), [] -> Ok(create None)
+            | Some(_, create), [ name ] -> Ok(create (Some name))
+            | _ -> Error CliUsageIssue.Selector
+
+    let private schemaSelector =
+        function
+        | [ name ] -> Ok(CliSchema.Named name)
+        | [ name; direction ] ->
+            match Endpoint.tryParse name, direction with
+            | Some endpoint, "request" -> Ok(CliSchema.Request endpoint)
+            | Some endpoint, "response" -> Ok(CliSchema.Response endpoint)
+            | _ -> Error CliUsageIssue.Selector
+        | _ -> Error CliUsageIssue.Selector
+
     let private admitDescribe tail =
         options tail
         |> Result.bind (fun (operands, format, language) ->
             if language.IsSome && format <> Some "text" then
                 Error CliUsageIssue.Options
             else
-                Ok(
+                describeSelector operands
+                |> Result.map (fun selector ->
                     CliInvocation.Describe(
-                        operands,
+                        selector,
                         (format = Some "text"),
                         defaultArg language "en"
-                    )
-                ))
+                    )))
 
     let private alias command flag =
         List.contains command CliHelp.commands && List.contains flag CliHelp.aliases
@@ -79,7 +127,7 @@ module CliInvocations =
                     tail
             )
             ->
-            Ok(CliInvocation.Schema tail)
+            schemaSelector tail |> Result.map CliInvocation.Schema
         | _ -> Error CliUsageIssue.Invocation
 
     let usageLanguage arguments =

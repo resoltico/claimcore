@@ -44,6 +44,30 @@ let private configurationRefusals (fixture: PublishedFixture.Fixture) =
 
         Expect.equal (parameters.GetProperty("issue").GetString()) issue "Known cause survives"
 
+let private missingConfiguration
+    (invoke: string list -> byte array option -> ProcessRunner.Result)
+    =
+    let configured =
+        invoke [ "call" ] (Some(Encoding.UTF8.GetBytes "{\"endpoint\":\"context\",\"input\":{}}"))
+
+    Expect.equal configured.ExitCode 3 "Missing configuration is definite"
+    use document = JsonDocument.Parse configured.StandardOutput
+
+    let parameters =
+        document.RootElement.GetProperty("diagnostic").GetProperty("parameters")
+
+    Expect.equal
+        (parameters.GetProperty("setting").GetString())
+        "CLAIMCORE_SERVICE_URL"
+        "First known missing setting"
+
+    Expect.equal
+        (parameters.GetProperty("issue").GetString())
+        "MISSING"
+        "Missing is distinct from invalid"
+
+    Expect.equal configured.StandardError.Length 0 "Machine failures remain one frame"
+
 let qualify (fixture: PublishedFixture.Fixture) =
     configurationRefusals fixture
     let environment = Dictionary<string, string>()
@@ -57,6 +81,19 @@ let qualify (fixture: PublishedFixture.Fixture) =
             Expect.equal result.ExitCode 0 "All topics work offline"
             Expect.equal result.StandardError.Length 0 "Human help has no errors"
             Expect.isGreaterThan result.StandardOutput.Length 100 "Useful published help"
+
+    for language in LocalizationPolicy.languages do
+        let result =
+            invoke [ "describe"; "summary"; "--format"; "text"; "--language"; language ] None
+
+        Expect.equal result.ExitCode 0 "Human summary is offline"
+        let text = Encoding.UTF8.GetString result.StandardOutput
+
+        for identity in [ "caseReference"; "OPEN"; "REGISTER_ACTOR" ] do
+            Expect.stringContains
+                text
+                identity
+                "Human summary includes exact generated capability and field identities"
 
     for command in CliHelp.commands do
         for alias in [ "--help"; "-h" ] do
@@ -87,23 +124,4 @@ let qualify (fixture: PublishedFixture.Fixture) =
             (Encoding.UTF8.GetString(result.StandardError).Contains "secret-canary")
             "No raw token echo"
 
-    let configured =
-        invoke [ "call" ] (Some(Encoding.UTF8.GetBytes "{\"endpoint\":\"context\",\"input\":{}}"))
-
-    Expect.equal configured.ExitCode 3 "Missing configuration is definite"
-    use document = JsonDocument.Parse configured.StandardOutput
-
-    let parameters =
-        document.RootElement.GetProperty("diagnostic").GetProperty("parameters")
-
-    Expect.equal
-        (parameters.GetProperty("setting").GetString())
-        "CLAIMCORE_SERVICE_URL"
-        "First known missing setting"
-
-    Expect.equal
-        (parameters.GetProperty("issue").GetString())
-        "MISSING"
-        "Missing is distinct from invalid"
-
-    Expect.equal configured.StandardError.Length 0 "Machine failures remain one frame"
+    missingConfiguration invoke

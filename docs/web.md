@@ -27,7 +27,8 @@ revocation, single-process qualification and protection of this secret outside d
 The editor freezes one draft identity and serialized request for review/execution. Editing
 an exposed request creates a fresh identity. Unknown delivery retains one pending request for
 retries of the same bytes while the page is alive; a closed/reloaded page retains no pending
-operation. Contract mismatch prompts reload and does not replay a draft. Display safety is distinct
+operation. Contract mismatch blocks this attempt. Resolve any prior uncertainty before reloading: a reload
+loses the in-memory request. Reload before authoring a different request; no draft is replayed automatically. Display safety is distinct
 from business acceptance; authored Unicode is preserved and suspicious code points can be shown as warnings.
 
 Current views distinguish live, voided and erased records. Erased views expose only reference,

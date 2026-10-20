@@ -35,22 +35,18 @@ module Discovery =
                 item.GetProperty(key).GetString() |> Option.ofObj = Some value)
             |> Option.map (fun item -> Encoding.UTF8.GetBytes(item.GetRawText()))
 
-    let describe arguments =
+    let describe selection =
         let descriptors = ContractDiscovery.descriptors ()
 
-        match arguments with
-        | []
-        | [ "summary" ] -> Some descriptors
-        | [ "fields" ] -> select descriptors "fields" "name" None
-        | [ "fields"; name ] -> select descriptors "fields" "name" (Some name)
-        | [ "commands" ] -> select descriptors "commands" "kind" None
-        | [ "commands"; kind ] -> select descriptors "commands" "kind" (Some kind)
-        | [ "authority" ] -> select descriptors "authorityCommands" "kind" None
-        | [ "authority"; kind ] -> select descriptors "authorityCommands" "kind" (Some kind)
-        | [ "endpoints" ] -> Some(ContractDiscovery.catalogue ())
-        | [ "endpoints"; id ] -> select (ContractDiscovery.catalogue ()) "endpoints" "id" (Some id)
-        | [ "diagnostics" ] -> Some(ContractDiscovery.presentation ())
-        | _ -> None
+        match selection with
+        | CliDescription.Summary -> Some descriptors
+        | CliDescription.Fields name -> select descriptors "fields" "name" name
+        | CliDescription.Commands kind -> select descriptors "commands" "kind" kind
+        | CliDescription.Authority kind -> select descriptors "authorityCommands" "kind" kind
+        | CliDescription.Endpoints None -> Some(ContractDiscovery.catalogue ())
+        | CliDescription.Endpoints(Some endpoint) ->
+            select (ContractDiscovery.catalogue ()) "endpoints" "id" (Some(Endpoint.id endpoint))
+        | CliDescription.Diagnostics -> Some(ContractDiscovery.presentation ())
 
     let private describeMessages language (value: JsonElement) =
         value.EnumerateObject()
@@ -68,8 +64,37 @@ module Discovery =
             item.Name + ": " + ContractDiscovery.localized language item.Name template)
         |> String.concat "\n"
 
-    let describeText language arguments =
-        describe arguments
+    let private summary language =
+        [
+            CliDescription.Fields None
+            CliDescription.Commands None
+            CliDescription.Authority None
+        ]
+        |> List.collect (fun selection ->
+            match describe selection with
+            | None -> []
+            | Some bytes ->
+                use document = JsonDocument.Parse(System.ReadOnlyMemory<byte> bytes)
+
+                document.RootElement.EnumerateArray()
+                |> Seq.map (fun item ->
+                    let name =
+                        match item.TryGetProperty "name" with
+                        | true, value -> value.GetString() |> nonNull
+                        | _ -> item.GetProperty("kind").GetString() |> nonNull
+
+                    let label =
+                        ContractDiscovery.localized
+                            language
+                            (item.GetProperty("labelId").GetString() |> nonNull)
+                            (item.GetProperty("label").GetString() |> nonNull)
+
+                    name + " — " + label)
+                |> Seq.toList)
+        |> String.concat "\n"
+
+    let describeText language selection =
+        describe selection
         |> Option.map (fun bytes ->
             use document = JsonDocument.Parse(System.ReadOnlyMemory<byte> bytes)
 
@@ -114,18 +139,20 @@ module Discovery =
                 | _ -> value.GetRawText()
 
             let text =
-                if List.isEmpty arguments || arguments = [ "summary" ] then
+                if selection = CliDescription.Summary then
                     ContractDiscovery.helpTopic language "describe"
-                elif arguments = [ "diagnostics" ] then
+                    + summary language
+                    + "\nClaimCore.Cli schema invocation\n"
+                elif selection = CliDescription.Diagnostics then
                     describeMessages language document.RootElement + "\n"
                 else
                     render document.RootElement + "\nClaimCore.Cli schema invocation\n"
 
             Encoding.UTF8.GetBytes text)
 
-    let schema arguments =
-        match arguments with
-        | [ name ] -> ContractDiscovery.schema name
-        | [ endpoint; direction ] when direction = "request" || direction = "response" ->
-            ContractDiscovery.schema (endpoint + "." + direction)
-        | _ -> None
+    let schema =
+        function
+        | CliSchema.Named name -> ContractDiscovery.schema name
+        | CliSchema.Request endpoint -> ContractDiscovery.schema (Endpoint.id endpoint + ".request")
+        | CliSchema.Response endpoint ->
+            ContractDiscovery.schema (Endpoint.id endpoint + ".response")

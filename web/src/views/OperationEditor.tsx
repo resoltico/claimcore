@@ -50,9 +50,18 @@ const requestLeave = (model: OperationEditorModel, onClose: () => void): void =>
 
 const UnknownOperation = ({ model }: { model: OperationEditorModel }) => {
   const p = usePresentation();
+  const heading = useRef<HTMLHeadingElement>(null);
+  const { delivery } = model.state;
+  useEffect(() => {
+    if (delivery !== "SUBMITTING") {
+      heading.current?.focus();
+    }
+  }, [delivery]);
   return (
-    <section role="alert" aria-busy={model.state.delivery === "SUBMITTING"}>
-      <NoticeView value={{ kind: "local", reason: "outcomeUnknown" }} />
+    <section role="alert" aria-live="off" aria-busy={model.state.delivery === "SUBMITTING"}>
+      <h2 ref={heading} tabIndex={-1}>
+        <NoticeView value={{ kind: "local", reason: "outcomeUnknown" }} />
+      </h2>
       <dl>
         {(
           [

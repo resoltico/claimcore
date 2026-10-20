@@ -39,11 +39,11 @@ let private discovery =
     | CliInvocation.Version true ->
         Discovery.versionJson () |> writeBytes
         0
-    | CliInvocation.Describe(arguments, false, _) ->
-        Discovery.describe arguments |> writeDiscovery "en"
-    | CliInvocation.Describe(arguments, true, language) ->
-        Discovery.describeText language arguments |> writeDiscovery language
-    | CliInvocation.Schema arguments -> Discovery.schema arguments |> writeDiscovery "en"
+    | CliInvocation.Describe(selector, false, _) ->
+        Discovery.describe selector |> writeDiscovery "en"
+    | CliInvocation.Describe(selector, true, language) ->
+        Discovery.describeText language selector |> writeDiscovery language
+    | CliInvocation.Schema selection -> Discovery.schema selection |> writeDiscovery "en"
     | _ -> unsupported "en" CliUsageIssue.Invocation
 
 let private remote session =

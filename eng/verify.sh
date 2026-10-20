@@ -81,9 +81,10 @@ done
 
 # Floors follow complete discovery. No filtered or retried run qualifies a stage.
 tests() { # <project> <minimum-expected-tests> [configuration] [timeout] [settings]
-  local report_directory
-  mkdir -p artifacts/verification
-  report_directory="$(mktemp -d "${PWD}/artifacts/verification/native.XXXXXXXX")"
+  local report_directory report_root
+  report_root="${CLAIMCORE_TEST_REPORT_DIRECTORY:-${PWD}/artifacts/verification}"
+  mkdir -p "${report_root}"
+  report_directory="$(mktemp -d "${report_root}/native.XXXXXXXX")"
   python3 eng/verification_evidence.py begin "${report_directory}" "$1"
   local result=0 reporting=0
   CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" dotnet test --project "$1" --configuration "${3:-Release}" --no-build --no-restore \

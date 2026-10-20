@@ -23,7 +23,8 @@ or an actual test project. Test projects reference only product or tooling proje
 RecordFormat owns durable bytes and supports only its versioned record readers and writers.
 Catalog owns shared closed vocabulary, diagnostic identities, authored English templates and locale assets.
 Wire references only Catalog; it carries no Domain/Application policy. Its typed codecs supply request/reply readers, writers and
-schemas for all twelve endpoints. It also owns typed delivery, correlation and CLI frames.
+schemas for all twelve endpoints. It also owns typed delivery, correlation, CLI frames and finite CLI invocation/selector syntax.
+CLI projects the selected generated resources and admits no independent argv grammar.
 The OpenAPI contract derives from those codecs; the [API contract](api.md) owns the wire profile,
 fingerprint and tracked artifacts. ContractGenerator references Wire, Domain and Application to
 emit that contract and presentation descriptors. Core input descriptors bind to codec members during generation. The browser assembles requests

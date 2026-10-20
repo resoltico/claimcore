@@ -128,11 +128,13 @@ const HistoryModePicker = ({
 
 const HistoryPageStatus = ({
   loading,
+  loaded,
   message,
   empty,
   cursor,
 }: {
   loading: boolean;
+  loaded: boolean;
   message: Notice | null;
   empty: boolean;
   cursor: string | null;
@@ -146,7 +148,7 @@ const HistoryPageStatus = ({
         </p>
       )}
       {loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
-      {!loading && message === null ? (
+      {loaded && !loading && message === null ? (
         <PageStatus empty={empty} cursor={cursor} emptyMessage="ui.noAccessibleHistory" />
       ) : null}
     </>
@@ -186,7 +188,8 @@ export const CaseHistory = ({
       <p>{p.text("ui.historyHint")}</p>
       <HistoryEntries items={items} fields={fields} />
       <HistoryPageStatus
-        loading={loading || page === null}
+        loading={loading}
+        loaded={page !== null}
         message={message}
         empty={items.length === 0}
         cursor={cursor}

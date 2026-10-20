@@ -59,7 +59,7 @@ with tempfile.TemporaryDirectory() as temporary:
     (preexisting / 'private-canary.json').write_text('secret')
     try:
         evidence.publish(directory, preexisting)
-    except (ValueError, FileExistsError):
+    except FileExistsError:
         pass
     else:
         raise AssertionError('Existing upload content must refuse')

@@ -49,6 +49,12 @@ const refuseRetryBeforeDispatch = async (page: Page, requests: (string | null)[]
     page.getByRole("button", { name: "Retry the same operation", exact: true }),
   ).toBeEnabled();
   await expect(page.getByRole("alert")).toContainText("unknown");
+  await expect(
+    page.getByRole("heading", {
+      name: "The operation outcome is unknown. Retry the exact same operation.",
+      exact: true,
+    }),
+  ).toBeFocused();
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Back to case", exact: true })).toHaveCount(0);
   await page.unroute("**/api/case.execute");
@@ -78,6 +84,12 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   await page.getByText("I confirm these changes.", { exact: true }).click();
   await page.getByRole("button", { name: "Record changes" }).click();
   await expect(page.getByRole("alert")).toContainText("unknown");
+  await expect(
+    page.getByRole("heading", {
+      name: "The operation outcome is unknown. Retry the exact same operation.",
+      exact: true,
+    }),
+  ).toBeFocused();
   await expect(
     page.getByRole("button", { name: "Retry the same operation", exact: true }),
   ).toHaveCount(1);
