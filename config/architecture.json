@@ -1,47 +1,59 @@
 {
   "description": "Every project the repository builds and the project references it may declare. tests/ClaimCore.ArchitectureTests holds each .fsproj to this file in both directions: an undeclared reference fails, and so does a declared one that no longer exists. Adding an edge is a reviewed change to the architecture.",
   "product": {
-    "ClaimCore.Domain": [],
+    "ClaimCore.Domain": [
+      "ClaimCore.Catalog"
+    ],
     "ClaimCore.RecordFormat": [
-      "ClaimCore.Domain"
+      "ClaimCore.Domain",
+      "ClaimCore.Catalog"
     ],
     "ClaimCore.Application": [
       "ClaimCore.Domain",
-      "ClaimCore.RecordFormat"
+      "ClaimCore.RecordFormat",
+      "ClaimCore.Catalog"
     ],
     "ClaimCore.HostSecurity": [],
     "ClaimCore.Postgres": [
       "ClaimCore.Application",
       "ClaimCore.Domain",
-      "ClaimCore.RecordFormat"
+      "ClaimCore.RecordFormat",
+      "ClaimCore.Catalog"
     ],
     "ClaimCore.Hosting": [
       "ClaimCore.Application",
       "ClaimCore.Postgres",
       "ClaimCore.Domain",
-      "ClaimCore.Wire"
+      "ClaimCore.Wire",
+      "ClaimCore.Catalog"
     ],
     "ClaimCore.Web": [
       "ClaimCore.HostSecurity",
       "ClaimCore.Hosting",
-      "ClaimCore.Wire"
+      "ClaimCore.Wire",
+      "ClaimCore.Catalog"
     ],
     "ClaimCore.Cli": [
       "ClaimCore.HostSecurity",
-      "ClaimCore.Wire"
+      "ClaimCore.Wire",
+      "ClaimCore.Catalog"
     ],
     "ClaimCore.Database": [
       "ClaimCore.HostSecurity",
       "ClaimCore.Postgres",
       "ClaimCore.Application"
     ],
-    "ClaimCore.Wire": []
+    "ClaimCore.Wire": [
+      "ClaimCore.Catalog"
+    ],
+    "ClaimCore.Catalog": []
   },
   "tooling": {
     "ClaimCore.ContractGenerator": [
       "ClaimCore.Wire",
       "ClaimCore.Domain",
-      "ClaimCore.Application"
+      "ClaimCore.Application",
+      "ClaimCore.Catalog"
     ]
   },
   "rules": {
@@ -56,7 +68,8 @@
       "ClaimCore.Domain",
       "ClaimCore.RecordFormat",
       "ClaimCore.Application",
-      "ClaimCore.Wire"
+      "ClaimCore.Wire",
+      "ClaimCore.Catalog"
     ],
     "onlyTheseMayUseTimeZoneInfo": [
       "ClaimCore.Hosting",

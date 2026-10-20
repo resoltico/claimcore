@@ -1,5 +1,7 @@
 module ClaimCore.Tests.DomainTests
 
+open ClaimCore.Catalog
+
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures

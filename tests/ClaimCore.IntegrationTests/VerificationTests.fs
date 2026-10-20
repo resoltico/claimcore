@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.VerificationTests
 
+open ClaimCore.Catalog
+
 open System
 open Expecto
 open ClaimCore.Domain
@@ -520,7 +522,7 @@ let private priorCaseRequired (database: PostgresFixture.Database) =
             sql
                 database
                 "UPDATE claimcore.grants SET case_id=$1 WHERE actor_id=$2 AND role=$3"
-                [| box caseId; box (id 1); box (Roles.token Role.PaymentRecorder) |]
+                [| box caseId; box (id 1); box (RoleTokens.token Role.PaymentRecorder) |]
 
         do! finding VerificationFinding.AuthorityFold database
     }

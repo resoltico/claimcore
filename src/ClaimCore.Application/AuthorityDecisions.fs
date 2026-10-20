@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 open System
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
@@ -33,7 +35,7 @@ module internal AuthorityDecisions =
         caseId
         |> Result.bind (fun id ->
             if
-                Roles.requiresHuman role
+                ActorAuthorization.humanOnlyRole role
                 && not (PrincipalKey.isHuman actor.Actor.Value.Principal)
             then
                 Error Rejection.HumanPrincipalRequired

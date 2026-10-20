@@ -1,5 +1,7 @@
 namespace ClaimCore.Domain
 
+open ClaimCore.Catalog
+
 open System
 
 /// Permanent text representability and syntax. Policy is never a generic schema assertion.
@@ -49,7 +51,7 @@ type CurrencyScalarRule =
         ExactCharacters: int
     }
 
-/// Closed status vocabulary owned by the Domain.
+/// Catalog supplies closed status vocabulary; Domain owns transitions.
 type CaseStatusScalarRule = { AllowedValues: CaseStatus list }
 
 /// Typed scalar rules are the Domain authority for adapter-visible field constraints.
@@ -76,19 +78,13 @@ type FieldInputDefinition =
 
 /// An explicit operator choice for one correction group. The tag is part of the request shape;
 /// it is not inferred from omitted or nullable scalar fields.
-[<RequireQualifiedAccess>]
-type CorrectionGroupAction =
-    | Keep
-    | Replace
-    | Clear
-
 /// One required grouped correction input. ReplaceFields are required only for REPLACE. KEEP reads
 /// the authoritative accepted value and CLEAR deliberately removes a value that is present.
 type CorrectionGroupDefinition =
     {
         Name: CorrectionGroup
-        Label: string
-        Meaning: string
+        LabelId: string
+        MeaningId: string
         Actions: CorrectionGroupAction list
         ReplaceFields: FieldInputDefinition list
     }

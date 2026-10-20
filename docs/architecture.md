@@ -9,7 +9,7 @@ identity, authorization and outcomes; the store executes pure decisions against 
 ### CC-ARCH-001 — Component graph and compiled boundaries
 
 [The architecture manifest](../config/architecture.json) owns direct project references in both
-directions. Domain, RecordFormat, Application and Wire call no clock, file,
+directions. Catalog, Domain, RecordFormat, Application and Wire call no clock, file,
 environment, randomness or network APIs. Only Hosting and Database reference Postgres; only Web references
 Hosting. These referencer rules concern other projects, not a component's own types.
 TimeZoneInfo belongs only to Hosting, Database and Postgres. Compiled negative fixtures prove
@@ -21,12 +21,14 @@ copy. Internals grants name a permitted referencer
 or an actual test project. Test projects reference only product or tooling projects.
 
 RecordFormat owns durable bytes and supports only its versioned record readers and writers.
-Wire references no ClaimCore project. Its typed codecs supply request/reply readers, writers and
-schemas for all twelve endpoints. It also owns typed delivery, correlation and CLI frames.
+Catalog owns shared closed vocabulary, diagnostic identities, authored English templates and locale assets.
+Wire references only Catalog; it carries no Domain/Application policy. Its typed codecs supply request/reply readers, writers and
+schemas for all twelve endpoints. It also owns typed delivery, correlation, CLI frames and finite CLI invocation/selector syntax.
+CLI projects the selected generated resources and admits no independent argv grammar.
 The OpenAPI contract derives from those codecs; the [API contract](api.md) owns the wire profile,
 fingerprint and tracked artifacts. ContractGenerator references Wire, Domain and Application to
-emit that contract and presentation descriptors. Generated TypeScript types support ordinary
-request object literals; clients have no generated builders or native F# catalogue.
+emit that contract and presentation descriptors. Core input descriptors bind to codec members during generation. The browser assembles requests
+from these checked bindings. Both clients consume generated delivery and correlation descriptions.
 
 HostSecurity admits private files using managed APIs under the
 [private-input policy](operations.md#private-configuration). Test process capture and teardown use
@@ -36,9 +38,9 @@ authority, erasure, projection and checkpoint verification folds.
 
 Hosting is the case-work composition root. Its public service accepts verified subject facts and a
 Wire request, maps to Application, invokes the actor core and returns a typed Wire reply. Web owns
-HTTP authentication, admission, encoding and safe audit logging. Web references Hosting, Wire and
-HostSecurity; CLI references Wire and HostSecurity and embeds generated discovery artifacts.
-The published CLI excludes server semantic assemblies. Hosting exposes no Domain/Application
+HTTP authentication, admission, encoding and safe audit logging. Web references Hosting, Wire, HostSecurity and inert Catalog vocabulary;
+CLI references Wire, HostSecurity and Catalog and embeds generated discovery artifacts.
+The published CLI includes inert Catalog vocabulary and excludes server decision and persistence assemblies. Hosting exposes no Domain/Application
 objects through its public facade and needs no optimization-data suppression. Database is the
 separate owner administration process; it references Application for shared identities and outcomes.
 
@@ -173,3 +175,42 @@ Unexpected programming failures produce `CORE_INTERNAL_ERROR` with `STOP_AND_INV
 Only an explicitly detected stored-record violation is classified as integrity failure;
 provider and I/O failures remain availability failures. A lost commit confirmation remains
 `OUTCOME_UNKNOWN`; the runtime does not infer failure or replace the operation identity.
+
+<a id="cc-cat-001"></a>
+
+### CC-CAT-001 — Consumer vocabulary and presentation ownership
+
+[Catalog](../src/ClaimCore.Catalog/ClaimCore.Catalog.fsproj) owns stable shared tokens and safe message
+identities. Domain retains admission and transitions; Application retains authorization policy.
+Descriptors reference Catalog message identities. English templates and en/lv/ar source assets live
+under Catalog/Localization; the generator publishes them for CLI/Web. Pure core modules open no
+resources. Node validates and compiles ICU from tracked generated documents without invoking .NET.
+Language and display-locale preferences remain independent.
+
+The [consumer manifest](../contracts/contract-manifest.json) has format 1. It orders input names
+ordinally and binds their exact bytes with SHA-256. Its canonical bytes have fixed member order,
+compact JSON and one final LF. The digest identifies static consumer documents, not current actor
+authority, server freshness, review quality or owner approval. Identity-bearing client/source
+resources are emitted afterwards and excluded from the input set. Generation never reads a runtime
+identity to compute its successor. Each produced artifact declares one role: RuntimePrecursor, QualificationOrTooling or
+IdentityDerived. Only runtime precursors enter the manifest. QA vectors, byte corpus, evolution
+fixture and build-only package metadata retain exact freshness but do not force runtime-client
+replacement. Identity-derived files remain outside their own digest. Freshness compares every
+produced filename and byte across all roles.
+
+Case and authority clients share a tagged mutation lifecycle. Prepared immutable requests own bytes,
+identity and expected revision. Preview and confirmation content remain distinct; disclosure refusal
+clears server views independently from unresolved delivery. Exact accepted content or content-exclusion
+evidence can resolve uncertainty; later availability or permission failure cannot.
+
+
+Generation rejects unsupported required request members, including literals and empty objects
+inside inputs, additional KEEP/CLEAR members, and mismatched command discriminators. Every
+correction variant must be accounted for. Declared label/meaning/confirmation identities survive
+projection directly; renderers do not reconstruct them from operation names.
+
+Correlation publication also executes independent identity scenarios against the candidate
+specification, so removing a required comparison or receipt scope refuses generation. These
+scenarios are test evidence rather than a second production policy. A generated fixture-only
+codec/input/message evolution exercises generic forms and assembly against admitted bytes; its
+qualification artifact is excluded from runtime identity inputs.

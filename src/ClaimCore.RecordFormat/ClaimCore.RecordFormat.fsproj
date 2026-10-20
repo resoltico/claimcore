@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <Compile Include="Versions.fs" />
     <Compile Include="FormatLimits.fs" />
     <Compile Include="CanonicalJson.fs" />

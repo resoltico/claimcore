@@ -2,7 +2,7 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { wireContractFingerprint } from "@contracts/client";
+import { consumerContractIdentity } from "@contracts/client";
 import { login, logout } from "./session-helpers";
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -26,7 +26,7 @@ const readSession = (page: Page) =>
       cacheControl: response.headers.get("cache-control"),
       payload: (await response.json()) as SessionEnvelope,
     } satisfies ApiReply<SessionEnvelope>;
-  }, wireContractFingerprint);
+  }, consumerContractIdentity);
 
 const readUnknownEndpoint = (page: Page) =>
   page.evaluate(async () => {
@@ -57,7 +57,7 @@ const readProtectedList = (page: Page, token: string) =>
         payload: (await response.json()) as HostFailure,
       } satisfies ApiReply<HostFailure>;
     },
-    { antiforgeryToken: token, fingerprint: wireContractFingerprint },
+    { antiforgeryToken: token, fingerprint: consumerContractIdentity },
   );
 
 const expectAnonymousSessionBoundary = async (page: Page) => {

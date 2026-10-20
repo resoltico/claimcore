@@ -1,8 +1,9 @@
 module ClaimCore.Tests.WireResponseTests
 
+open ClaimCore.Catalog
+
 open System
 open System.IO
-open System.Security.Cryptography
 open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
@@ -132,11 +133,6 @@ let private frames () =
 let private openApi () =
     let first = OpenApi.emit ()
     Expect.equal (OpenApi.emit ()) first "OpenAPI bytes are deterministic"
-
-    Expect.equal
-        Fingerprint.value
-        (SHA256.HashData first |> Convert.ToHexStringLower)
-        "Only OpenAPI bytes are fingerprinted"
 
     use document = JsonDocument.Parse(first.AsMemory())
     let root = document.RootElement

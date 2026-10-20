@@ -29,10 +29,10 @@ record revisions, timestamps, database users, and available commands remain outs
 |  12 | Payment date                                | `paymentDate`              | `null` until recorded.                                                                            |
 |  13 | Case status                                 | `status`                   | Core-derived: initialized `OPENED`, changed by `CLOSE`/`REOPEN`; never supplied as command input. |
 
-Default English labels and explanations come from
+Default English labels and explanations originate in Catalog/Localization.
 [Domain field descriptors](../src/ClaimCore.Domain/FieldDefinitions.fs) and
-[command descriptors](../src/ClaimCore.Domain/CommandDefinitions.fs), shared by CLI discovery and
-generated browser presentation. The insurer is the handler’s recorded assertion for this claim.
+[command descriptors](../src/ClaimCore.Domain/CommandDefinitions.fs) reference those identities
+for CLI discovery and generated browser presentation. The insurer is the handler’s recorded assertion for this claim.
 
 Every rendered case contains all thirteen keys. Unrecorded decision and payment values are `null`,
 never zero or an invented date. `OPEN` accepts the seven registration values plus the command's

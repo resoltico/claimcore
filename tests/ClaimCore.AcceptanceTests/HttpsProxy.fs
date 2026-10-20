@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.HttpsProxy
 
+open ClaimCore.Catalog
+
 open ClaimCore.Wire
 
 open System

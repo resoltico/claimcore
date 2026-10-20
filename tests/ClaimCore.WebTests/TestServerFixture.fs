@@ -104,7 +104,9 @@ let private pipeline (application: WebApplication) sink readiness =
     application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures sink))
     |> ignore
 
-    application.Use(Func<HttpContext, RequestDelegate, Task>(HostRoutes.health readiness))
+    application.Use(
+        Func<HttpContext, RequestDelegate, Task>(HostRoutes.health (fun _ -> readiness ()))
+    )
     |> ignore
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))
@@ -215,7 +217,12 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
         }
 
     member this.Bootstrap() =
-        this.Send(HttpMethod.Get, "/api/session", None, [ "ClaimCore-Contract", Fingerprint.value ])
+        this.Send(
+            HttpMethod.Get,
+            "/api/session",
+            None,
+            [ "ClaimCore-Contract", ConsumerContract.identity ]
+        )
 
     member this.Token() =
         task {
@@ -242,7 +249,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
             [
                 "Origin", origin.GetLeftPart(UriPartial.Authority)
                 "X-ClaimCore-Antiforgery", token
-                "ClaimCore-Contract", defaultArg fingerprint (Fingerprint.value)
+                "ClaimCore-Contract", defaultArg fingerprint (ConsumerContract.identity)
             ]
         )
 

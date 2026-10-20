@@ -63,8 +63,8 @@ it("matches all 380 frozen independent delivery vectors", () => {
     ).toBe(row.result);
   }
 });
-it("matches all 38 frozen independent correlation vectors", () => {
-  expect(correlation.cases).toHaveLength(38);
+it("matches all 104 frozen independent correlation vectors", () => {
+  expect(correlation.cases).toHaveLength(104);
   for (const row of correlation.cases) {
     if (!isEndpointId(row.endpoint)) {
       throw new Error("Unknown oracle endpoint.");

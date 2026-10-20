@@ -1,11 +1,14 @@
 namespace ClaimCore.Wire
 
+open ClaimCore.Catalog
+
 open System
 open System.Text
 
 [<RequireQualifiedAccess>]
 type LocalFailure =
     | ConfigurationInvalid
+    | ConfigurationIssue of CliSetting * ConfigurationIssue
     | AuthenticationFailed
     | ServiceUnavailable
     | Cancelled
@@ -172,34 +175,17 @@ module Frames =
                 else
                     Ok { Request = value; InputBytes = input }))
 
-    let knowledge =
-        enumeration
-            [
-                AttemptKnowledge.NotSent, "NOT_SENT"
-                AttemptKnowledge.ReadSucceeded, "READ_SUCCEEDED"
-                AttemptKnowledge.ReadFailed, "READ_FAILED"
-                AttemptKnowledge.Accepted, "ACCEPTED"
-                AttemptKnowledge.NotAccepted, "NOT_ACCEPTED"
-                AttemptKnowledge.Unconfirmed, "UNCONFIRMED"
-            ]
+    let knowledge = enumeration DeliveryTokens.knowledgeDefinitions
+    let evidence = enumeration DeliveryTokens.evidenceDefinitions
 
-    let evidence =
-        enumeration
-            [
-                ResolutionEvidence.NoEvidence, "NONE"
-                ResolutionEvidence.ContentAccepted, "CONTENT_ACCEPTED"
-                ResolutionEvidence.ContentExcluded, "CONTENT_EXCLUDED"
-            ]
-
-    let private localCode =
-        enumeration
-            [
-                LocalFailure.ConfigurationInvalid, "CLI_CONFIGURATION_INVALID"
-                LocalFailure.AuthenticationFailed, "CLI_AUTHENTICATION_FAILED"
-                LocalFailure.ServiceUnavailable, "CLI_SERVICE_UNAVAILABLE"
-                LocalFailure.Cancelled, "CLI_CANCELLED"
-                LocalFailure.Internal, "CLI_INTERNAL"
-            ]
+    let private localDefinitions =
+        [
+            LocalFailure.ConfigurationInvalid, "CLI_CONFIGURATION_INVALID"
+            LocalFailure.AuthenticationFailed, "CLI_AUTHENTICATION_FAILED"
+            LocalFailure.ServiceUnavailable, "CLI_SERVICE_UNAVAILABLE"
+            LocalFailure.Cancelled, "CLI_CANCELLED"
+            LocalFailure.Internal, "CLI_INTERNAL"
+        ]
 
     let private protocolCode =
         enumeration
@@ -333,25 +319,65 @@ module Frames =
                 | _ -> None)
                 (serviceCodec endpoint))
 
-    let private local =
-        record (fun code endpoint operation attempt resolution ->
+    let private localDiagnostic code =
+        let identity, parameters =
+            match code with
+            | LocalFailure.ConfigurationIssue(setting, issue) ->
+                InputDiagnostics.configurationId,
+                (record ()
+                 |> fixedField
+                     "setting"
+                     (InputDiagnostics.settings |> List.find (fst >> (=) setting) |> snd)
+                 |> fixedField
+                     "issue"
+                     (InputDiagnostics.configurationIssues |> List.find (fst >> (=) issue) |> snd)
+                 |> build)
+            | _ -> InputDiagnostics.localId, (record () |> build)
+
+        record (fun () -> ())
+        |> fixedField "id" identity
+        |> field "parameters" id parameters
+        |> build
+
+    let private localVariant code token =
+        record (fun () endpoint operation attempt resolution ->
             delivery operation attempt resolution, endpoint, code)
         |> fixedField "kind" "localFailure"
-        |> field "code" (fun (_, _, code) -> code) localCode
+        |> fixedField "code" token
+        |> field "diagnostic" (fun _ -> ()) (localDiagnostic code)
         |> field "endpoint" (fun (_, endpoint, _) -> endpoint) (nullable nonempty)
         |> delivered (fun (meta, _, _) -> meta)
         |> build
         |> branch
             (fun (meta, endpoint, code) -> FrameReply.LocalFailure(meta, endpoint, code))
             (function
-             | FrameReply.LocalFailure(meta, endpoint, code) -> Some(meta, endpoint, code)
+             | FrameReply.LocalFailure(meta, endpoint, actual) when actual = code ->
+                 Some(meta, endpoint, actual)
              | _ -> None)
 
+    let private locals =
+        let configurations =
+            [
+                for setting, _ in InputDiagnostics.settings do
+                    for issue, _ in InputDiagnostics.configurationIssues do
+                        LocalFailure.ConfigurationIssue(setting, issue), "CLI_CONFIGURATION_INVALID"
+            ]
+
+        localDefinitions @ configurations
+        |> List.map (fun (code, token) -> localVariant code token)
+
     let private protocol =
-        record (fun code endpoint operation attempt resolution ->
+        record (fun code () endpoint operation attempt resolution ->
             delivery operation attempt resolution, endpoint, code)
         |> fixedField "kind" "protocolFailure"
         |> field "code" (fun (_, _, code) -> code) protocolCode
+        |> field
+            "diagnostic"
+            (fun _ -> ())
+            (record (fun () -> ())
+             |> fixedField "id" InputDiagnostics.protocolId
+             |> field "parameters" id (record () |> build)
+             |> build)
         |> field "endpoint" (fun (_, endpoint, _) -> endpoint) (nullable nonempty)
         |> delivered (fun (meta, _, _) -> meta)
         |> build
@@ -361,7 +387,7 @@ module Frames =
              | FrameReply.ProtocolFailure(meta, endpoint, code) -> Some(meta, endpoint, code)
              | _ -> None)
 
-    let replyCodec = choice "CliReply" (results @ services @ [ local; protocol ])
+    let replyCodec = choice "CliReply" (results @ services @ locals @ [ protocol ])
 
     let encode value =
         let bytes = Codec.encode replyCodec value

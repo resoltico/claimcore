@@ -1,5 +1,7 @@
 namespace ClaimCore.Domain
 
+open ClaimCore.Catalog
+
 open ClaimCore.Domain.ResultFlow
 
 /// Invariants apply equally to historical restoration and every newly proposed business state.

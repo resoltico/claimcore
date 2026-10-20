@@ -1,5 +1,7 @@
 namespace ClaimCore.Domain
 
+open ClaimCore.Catalog
+
 [<RequireQualifiedAccess>]
 type internal PaymentProgress =
     | Undecided

@@ -8,7 +8,7 @@ import {
   createDraft,
 } from "../src/interaction/metadata";
 import { fields, definition } from "./service-ui.fixtures";
-import { endpoints, wireContractFingerprint } from "@contracts/client";
+import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { generatedResponse } from "./contract-corpus.fixtures";
 describe("core command metadata", () => {
   it("describes all twelve commands and registration inputs", () => {
@@ -52,7 +52,7 @@ describe("catalogue-bound requests", () => {
       endpoints.find((e) => e.id === "case.list")!.path,
     );
     expect(vi.mocked(fetch).mock.calls[0]?.[1]?.headers).toMatchObject({
-      "ClaimCore-Contract": wireContractFingerprint,
+      "ClaimCore-Contract": consumerContractIdentity,
       "X-ClaimCore-Antiforgery": "csrf",
     });
   });

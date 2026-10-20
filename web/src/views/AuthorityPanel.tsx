@@ -26,7 +26,7 @@ const AuthorityPicker = ({ model, offered }: FormProps) => {
   const p = usePresentation();
   return (
     <label>
-      {p.text("ui.command")}
+      {p.text("ui.authorityAction")}
       <select
         disabled={model.busy || offered.length === 0}
         value={String(model.values["act.kind"] ?? offered[0]?.kind ?? "")}
@@ -51,6 +51,8 @@ const AuthorityInputs = ({ model, offered }: FormProps) => {
   const change = (path: string, value: string | boolean) => {
     model.setValues({ ...model.values, [path]: value });
     model.setFieldError(null);
+    model.setNotice(null);
+    model.setConfirmed(false);
   };
   return (
     <>
@@ -61,6 +63,7 @@ const AuthorityInputs = ({ model, offered }: FormProps) => {
         values={values}
         disabled={model.busy}
         errorPath={model.fieldError}
+        errorNotice={model.notice}
         onChange={change}
       />
       <ProtocolFields
@@ -70,6 +73,7 @@ const AuthorityInputs = ({ model, offered }: FormProps) => {
         values={values}
         disabled={model.busy}
         errorPath={model.fieldError}
+        errorNotice={model.notice}
         onChange={change}
       />
     </>
@@ -146,7 +150,7 @@ const AuthorityReview = ({ model }: { model: AuthorityOperation }) => {
   return (
     <section>
       <h3>{p.text("ui.reviewExactRequest")}</h3>
-      <ProtocolSummary value={model.prepared?.input} />
+      <ProtocolSummary value={model.prepared?.input} document={document} node={document} />
       {model.uncertain ? (
         <p>{p.text("ui.retryExactDescription")}</p>
       ) : (
@@ -158,7 +162,11 @@ const AuthorityReview = ({ model }: { model: AuthorityOperation }) => {
               model.setConfirmed(event.target.checked);
             }}
           />
-          {p.text("ui.confirmExactRequest")}
+          {p.text(
+            productMetadata.descriptors.authorityCommands.find(
+              (command) => command.kind === model.prepared?.input.act.kind,
+            )!.confirmationId,
+          )}
         </label>
       )}
       <button
@@ -173,11 +181,10 @@ const AuthorityReview = ({ model }: { model: AuthorityOperation }) => {
           type="button"
           disabled={model.busy}
           onClick={() => {
-            model.setBytes(null);
-            model.setValues({ ...model.values, operationId: crypto.randomUUID() });
+            model.edit();
           }}
         >
-          {p.text("ui.backToCases")}
+          {p.text("ui.editInput")}
         </button>
       )}
     </section>
@@ -251,7 +258,7 @@ const AuthorityWorkspace = ({ token, model }: { token: string; model: AuthorityO
         loading={context.loading}
         message={context.message}
         reload={() => {
-          model.disclosure.invalidate(true);
+          context.reload();
         }}
       />
       <AuthorityListing
@@ -302,6 +309,43 @@ const AuthorityDisclosure = ({ token, model }: { token: string; model: Authority
     </>
   );
 };
+const AuthorityFeedback = ({ model }: { model: AuthorityOperation }) => {
+  const summary = useRef<HTMLParagraphElement>(null);
+  const notice = model.disclosure.notice ?? model.notice;
+  const attemptNotice = model.notice;
+  useEffect(() => {
+    if (attemptNotice !== null) {
+      summary.current?.focus();
+    }
+  }, [attemptNotice]);
+  return notice === null ? null : (
+    <p role="alert" tabIndex={-1} ref={summary}>
+      <NoticeView value={model.uncertain ? { kind: "local", reason: "outcomeUnknown" } : notice} />
+    </p>
+  );
+};
+const AuthorityReceipt = ({ identity }: { identity: string }) => {
+  const p = usePresentation();
+  const heading = useRef<HTMLHeadingElement>(null);
+  const previous = useRef<string | null>(null);
+  useEffect(() => {
+    if (previous.current !== identity) {
+      heading.current?.focus();
+      previous.current = identity;
+    }
+  }, [identity]);
+  return (
+    <>
+      <h3 ref={heading} tabIndex={-1}>
+        {p.text("ui.accepted")}
+      </h3>
+      <p role="status">
+        <bdi>{identity}</bdi>
+      </p>
+    </>
+  );
+};
+
 export const AuthorityPanel = ({
   token,
   onLockChange,
@@ -314,21 +358,13 @@ export const AuthorityPanel = ({
   return (
     <section aria-labelledby="authority-title" className="authority-panel">
       <h2 id="authority-title">{p.text("ui.authority")}</h2>
-      {model.receipt === null ? null : (
-        <p role="status">
-          {p.text("ui.accepted")} · {model.receipt}
-        </p>
-      )}
+      {model.receipt === null ? null : <AuthorityReceipt identity={model.receipt} />}
+      <AuthorityFeedback model={model} />
       <AuthorityDisclosure
         key={`${token}:${model.disclosure.revision}`}
         token={token}
         model={model}
       />
-      {model.disclosure.notice === null && model.notice === null ? null : (
-        <p role="alert">
-          <NoticeView value={(model.disclosure.notice ?? model.notice)!} />
-        </p>
-      )}
       <AuthorityDiscardAction model={model} />
       <AuthorityDiscard model={model} />
     </section>

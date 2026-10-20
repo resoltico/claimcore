@@ -8,15 +8,23 @@
         "resolved": "10.1.401",
         "contentHash": "/lvOK51KD8IangBYkfDVna3/HrE/r4VUnX3dI01KDspctoYXmind3POeoYkqWKeXHwiKlf6Hc9TxwSnoSCWcjw=="
       },
+      "claimcore.catalog": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {
+          "ClaimCore.Catalog": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
+          "ClaimCore.Catalog": "[0.10.0, )",
           "ClaimCore.Domain": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }

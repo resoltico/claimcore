@@ -17,7 +17,8 @@ module ContractDocuments =
         root["productVersion"] <-
             JsonValue.Create(ClaimCore.Application.BuildIdentity.current.Version)
 
-        root["diagnostics"] <- JsonNode.Parse(DefaultPresentation.render ())
+        root["messages"] <- JsonNode.Parse(DefaultPresentation.render ())
+        root["requestBindings"] <- JsonNode.Parse(RequestBindings.render ())
         json root
 
     let private schema (writer: Utf8JsonWriter) codec (definitions: Map<string, Schema>) =

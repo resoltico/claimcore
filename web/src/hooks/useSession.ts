@@ -1,4 +1,4 @@
-import { wireContractFingerprint } from "@contracts/client";
+import { consumerContractIdentity } from "@contracts/client";
 import { localNotice } from "../api/notices";
 import type { Notice } from "../api/notices";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -31,7 +31,7 @@ const stateFor = (
   if (failed !== null || value === null) {
     return { kind: "failure", message: failed ?? localNotice("invalidSession"), epoch };
   }
-  if (value.wireFingerprint !== wireContractFingerprint) {
+  if (value.contractIdentity !== consumerContractIdentity) {
     return { kind: "failure", message: localNotice("definitionMismatch"), epoch };
   }
   if (!value.authenticated) {
@@ -84,7 +84,11 @@ export const useSession = () => {
     }
     const value =
       result.kind === "outcome"
-        ? { authenticated: false, antiforgeryToken: null, wireFingerprint: wireContractFingerprint }
+        ? {
+            authenticated: false,
+            antiforgeryToken: null,
+            contractIdentity: consumerContractIdentity,
+          }
         : null;
     // A successful logout response is an anonymous snapshot. No claimant-bearing state survives its epoch.
     setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch)));

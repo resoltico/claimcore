@@ -81,13 +81,19 @@ done
 
 # Floors follow complete discovery. No filtered or retried run qualifies a stage.
 tests() { # <project> <minimum-expected-tests> [configuration] [timeout] [settings]
-  local report_directory
-  mkdir -p artifacts/verification
-  report_directory="$(mktemp -d "${PWD}/artifacts/verification/native.XXXXXXXX")"
+  local report_directory report_root
+  report_root="${CLAIMCORE_TEST_REPORT_DIRECTORY:-${PWD}/artifacts/verification}"
+  mkdir -p "${report_root}"
+  report_directory="$(mktemp -d "${report_root}/native.XXXXXXXX")"
+  python3 eng/verification_evidence.py begin "${report_directory}" "$1"
+  local result=0 reporting=0
   CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" dotnet test --project "$1" --configuration "${3:-Release}" --no-build --no-restore \
     --minimum-expected-tests="$2" --zero-tests-policy=strict --timeout="${4:-30m}" \
     --report-trx --report-trx-filename="${report_directory}/results.trx" \
-    -- --settings="${PWD}/${5:-eng/expecto.runsettings}"
+    -- --settings="${PWD}/${5:-eng/expecto.runsettings}" || result=$?
+  python3 eng/verification_evidence.py finish "${report_directory}" "${result}" || reporting=$?
+  if [[ "${result}" -ne 0 ]]; then return "${result}"; fi
+  return "${reporting}"
 }
 
 native_restored=false
@@ -132,7 +138,7 @@ lint() {
 unit() {
   build_native
   # Native freshness tests check the complete tracked contracts/ inventory and exact bytes.
-  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 411
+  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 430
   dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
     --configuration Debug --no-restore -p:Optimize=false
   tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 41 Debug 15m
@@ -168,12 +174,12 @@ integration() {
 
 postgres() {
   build_native tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
-  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 127 Release 20m eng/expecto.integration.runsettings
+  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 129 Release 20m eng/expecto.integration.runsettings
 }
 
 web() {
   build_native tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
-  tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj 83 Release 20m
+  tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj 88 Release 20m
 }
 
 browsers() {

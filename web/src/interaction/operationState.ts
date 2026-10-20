@@ -1,3 +1,4 @@
+import type { MutationLifecycle } from "./mutationLifecycle";
 import type { ResolutionEvidence } from "../protocol/delivery";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import type { Notice } from "../api/notices";
@@ -13,6 +14,7 @@ export type DeliveryState =
   | "DEFINITELY_REJECTED"
   | "OUTCOME_UNKNOWN";
 export type OperationState = {
+  mutation: MutationLifecycle<"case.execute">;
   delivery: DeliveryState;
   unresolved: boolean;
   disclosureRefused: boolean;
@@ -67,3 +69,27 @@ export type OperationAction =
   | { type: "OUTCOME_UNKNOWN"; requestId: number; message: Notice }
   | { type: "RETURN_TO_EDIT" }
   | { type: "RESET_MESSAGE" };
+
+type DerivedDelivery =
+  "delivery" | "prepared" | "requestBytes" | "exposedRequest" | "unresolved" | "pending";
+export const projectOperation = (state: Omit<OperationState, DerivedDelivery>): OperationState => {
+  const { mutation } = state;
+  const { prepared } = mutation;
+  return {
+    ...state,
+    delivery: mutation.phase,
+    prepared,
+    requestBytes: prepared?.bytes ?? null,
+    exposedRequest: prepared?.input ?? null,
+    unresolved:
+      mutation.phase === "OUTCOME_UNKNOWN" ||
+      (mutation.phase === "SUBMITTING" && mutation.prior === "UNCONFIRMED"),
+    pending:
+      mutation.phase === "SUBMITTING" || mutation.phase === "PREVIEWING"
+        ? {
+            kind: mutation.phase === "PREVIEWING" ? "PREVIEW" : "SUBMIT",
+            requestId: mutation.requestId,
+          }
+        : null,
+  };
+};

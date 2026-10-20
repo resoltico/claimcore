@@ -1,5 +1,7 @@
 namespace ClaimCore.Postgres
 
+open ClaimCore.Catalog
+
 open System
 open ClaimCore.Application
 open ClaimCore.Domain
@@ -134,7 +136,7 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "INSERT INTO claimcore.grants VALUES ($1,$2,NULL)"
-                        [| box id; box (Roles.token Role.Owner) |]
+                        [| box id; box (RoleTokens.token Role.Owner) |]
                         token
 
                 return ()
@@ -153,7 +155,7 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "INSERT INTO claimcore.grants VALUES ($1,$2,$3) ON CONFLICT DO NOTHING"
-                        [| box id; box (Roles.token role); DatabaseSession.parameter caseId |]
+                        [| box id; box (RoleTokens.token role); DatabaseSession.parameter caseId |]
                         token
 
                 return ()
@@ -162,7 +164,7 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "DELETE FROM claimcore.grants WHERE actor_id=$1 AND role=$2 AND case_id IS NOT DISTINCT FROM $3"
-                        [| box id; box (Roles.token role); DatabaseSession.parameter caseId |]
+                        [| box id; box (RoleTokens.token role); DatabaseSession.parameter caseId |]
                         token
 
                 return ()

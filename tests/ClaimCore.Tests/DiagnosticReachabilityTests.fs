@@ -1,5 +1,7 @@
 module ClaimCore.Tests.DiagnosticReachabilityTests
 
+open ClaimCore.Catalog
+
 open System
 open System.Threading
 open System.Text.Json

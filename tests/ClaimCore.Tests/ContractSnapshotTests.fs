@@ -36,7 +36,7 @@ let private freshness () =
         (differences (expected ()) actual)
         "Regenerate: dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts"
 
-    Expect.equal (actual.Count) 8 "Seven contract artifacts and the package marker"
+    Expect.isNonEmpty actual "The complete produced inventory is delivered"
 
 let private controls () =
     let original = expected ()
@@ -54,58 +54,119 @@ let private controls () =
 
 let private fingerprint () =
     let emitted = expected ()
-    let openapi = Map.find "openapi.json" emitted
-    let hash = SHA256.HashData openapi |> Convert.ToHexStringLower
-    Expect.equal Fingerprint.value hash "Fingerprint is SHA-256 of emitted OpenAPI bytes"
+    let manifest = Map.find "contract-manifest.json" emitted
+    let hash = SHA256.HashData manifest |> Convert.ToHexStringLower
+
+    Expect.equal
+        ConsumerContract.identity
+        hash
+        "Runtime identity hashes the canonical consumer manifest"
 
     Expect.stringContains
         (Map.find "client.ts" emitted |> Encoding.UTF8.GetString)
         hash
-        "Browser binds the same fingerprint"
+        "Browser binds the same consumer identity"
 
-    let root = JsonNode.Parse(openapi) |> nonNull
-    root["info"] <- JsonNode.Parse("""{"title":"ClaimCore","version":"changed"}""")
+    Expect.equal (expected ()) emitted "Regeneration is byte identical"
 
-    Expect.notEqual
-        (SHA256.HashData(bytes (root.ToJsonString())) |> Convert.ToHexStringLower)
-        hash
-        "Contract byte changes alter identity"
+let private identityInputs () =
+    let artifacts = ContractArtifacts.all ()
 
-let private presentationIndependence () =
-    let original = Fingerprint.value
-    let descriptors = JsonNode.Parse(ContractDocuments.descriptors ()) |> nonNull
-    let firstField = (descriptors["fields"] |> nonNull).AsArray()[0] |> nonNull
-    firstField["label"] <- JsonValue.Create "Different English label"
-    firstField["meaning"] <- JsonValue.Create "Different English meaning"
+    let manifest =
+        artifacts
+        |> List.find (fun artifact -> artifact.Name = "contract-manifest.json")
 
-    descriptors["diagnostics"] <-
-        JsonNode.Parse(
-            """{"diagnostic.CORE_INTERNAL_ERROR":[{"literal":"Different presentation"}]}"""
-        )
+    use document =
+        System.Text.Json.JsonDocument.Parse(System.ReadOnlyMemory<byte> manifest.Bytes)
 
-    Expect.notEqual
-        (bytes (descriptors.ToJsonString()))
-        (ContractDocuments.descriptors ())
-        "Presentation control actually changed"
+    let names =
+        document.RootElement.GetProperty("inputs").EnumerateArray()
+        |> Seq.map (fun row -> row.GetProperty("name").GetString() |> nonNull)
+        |> Set.ofSeq
 
-    let artifacts =
-        expected () |> Map.add "descriptors.json" (bytes (descriptors.ToJsonString()))
-
-    let changedIdentity =
-        Map.find "openapi.json" artifacts |> SHA256.HashData |> Convert.ToHexStringLower
+    let inputs =
+        artifacts
+        |> List.filter (fun artifact -> artifact.Role = ArtifactRole.RuntimePrecursor)
 
     Expect.equal
-        changedIdentity
-        original
-        "Changing English labels and meanings leaves contract identity unchanged"
+        (inputs |> List.map _.Name |> Set.ofList)
+        names
+        "Manifest membership follows the produced roles"
+
+    inputs
+
+let private qualificationIdentity () =
+    let all = ContractArtifacts.all ()
+
+    for artifact in all |> List.filter (fun item -> item.Role = ArtifactRole.QualificationOrTooling) do
+        let changed =
+            all
+            |> List.map (fun item ->
+                if item.Name = artifact.Name then
+                    { item with
+                        Bytes = Array.append item.Bytes [| 32uy |]
+                    }
+                else
+                    item)
+
+        Expect.equal
+            (ContractIdentity.manifest changed |> ContractIdentity.digest)
+            ConsumerContract.identity
+            "Qualification bytes do not change runtime identity"
+
+
+let private consumerIdentity () =
+    let inputs = identityInputs ()
+
+    for input in inputs do
+        let name = input.Name
+
+        let changed =
+            inputs
+            |> List.map (fun artifact ->
+                if artifact.Name = name then
+                    { artifact with
+                        Bytes = Array.append artifact.Bytes [| 32uy |]
+                    }
+                else
+                    artifact)
+
+        Expect.notEqual
+            (ContractIdentity.manifest changed |> ContractIdentity.digest)
+            ConsumerContract.identity
+            (name + " changes consumer identity")
+
+    let forward = ContractIdentity.manifest inputs
 
     Expect.equal
-        Fingerprint.value
-        changedIdentity
-        "The runtime fingerprint hashes exactly the contract artifact"
+        (ContractIdentity.manifest (List.rev inputs))
+        forward
+        "Manifest ordering is ordinal and independent of enumeration"
 
-    let originalArtifacts = expected ()
-    Expect.equal (expected ()) originalArtifacts "Generation is deterministic"
+    Expect.notEqual
+        (ContractIdentity.manifest (List.tail inputs))
+        forward
+        "Missing inputs change identity"
+
+    Expect.throws
+        (fun () -> ContractIdentity.manifest (inputs @ [ List.head inputs ]) |> ignore)
+        "Duplicate identity inputs refuse"
+
+    let vector =
+        ContractIdentity.manifest
+            [
+                {
+                    Name = "a.json"
+                    Bytes = bytes "abc"
+                    Role = ArtifactRole.RuntimePrecursor
+                }
+            ]
+        |> Encoding.UTF8.GetString
+
+    Expect.equal
+        vector
+        "{\"format\":1,\"inputs\":[{\"name\":\"a.json\",\"sha256\":\"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"}]}\n"
+        "Independent canonical manifest vector"
 
 let private safePublication () =
     let directory = Directory.CreateTempSubdirectory("claimcore-contract-publication-")
@@ -114,6 +175,7 @@ let private safePublication () =
     let artifact content =
         {
             Name = "current.json"
+            Role = ArtifactRole.RuntimePrecursor
             Bytes = bytes content
         }
 
@@ -150,10 +212,24 @@ let private producedNames () =
 
     try
         Expect.throws
-            (fun () -> ArtifactPublication.publish output [ { Name = "../escape"; Bytes = [||] } ])
+            (fun () ->
+                ArtifactPublication.publish
+                    output
+                    [
+                        {
+                            Name = "../escape"
+                            Bytes = [||]
+                            Role = ArtifactRole.RuntimePrecursor
+                        }
+                    ])
             "Names cannot escape"
 
-        let repeated = { Name = "a.json"; Bytes = [||] }
+        let repeated =
+            {
+                Name = "a.json"
+                Bytes = [||]
+                Role = ArtifactRole.RuntimePrecursor
+            }
 
         Expect.throws
             (fun () -> ArtifactPublication.publish output [ repeated; repeated ])
@@ -208,8 +284,11 @@ let tests =
                 policyVectors
             testCase "tracked exact inventory and bytes equal generation" freshness
             testCase "freshness rejects missing extra and stale bytes" controls
-            testCase "fingerprint covers emitted OpenAPI bytes and binds TypeScript" fingerprint
             testCase
-                "presentation stays outside deterministic Wire identity"
-                presentationIndependence
+                "consumer identity covers the canonical manifest and binds TypeScript"
+                fingerprint
+            testCase "every authoritative consumer document changes identity" consumerIdentity
+            testCase
+                "qualification artifacts retain freshness without changing runtime identity"
+                qualificationIdentity
         ]

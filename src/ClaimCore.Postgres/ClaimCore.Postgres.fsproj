@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Admission/ServerSupport.fs" />
     <Compile Include="DatabaseSession.fs" />

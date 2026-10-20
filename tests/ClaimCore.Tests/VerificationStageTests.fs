@@ -58,6 +58,7 @@ let private start directory platform engine stages =
     config.Environment["PATH"] <- directory + string Path.PathSeparator + config.Environment["PATH"]
     config.Environment["CLAIMCORE_TEST_COMMANDS_FILE"] <- commands
     config.Environment["CLAIMCORE_TEST_PLATFORM"] <- platform
+    config.Environment["CLAIMCORE_TEST_REPORT_DIRECTORY"] <- Path.Combine(directory, "reports")
 
     for name in
         [
@@ -236,7 +237,7 @@ let private nativeStages directory =
     let project suite =
         "tests/ClaimCore." + suite + "Tests/ClaimCore." + suite + "Tests.fsproj"
 
-    for stage, suite, floor in [ "postgres", "Integration", 127; "web", "Web", 83 ] do
+    for stage, suite, floor in [ "postgres", "Integration", 129; "web", "Web", 88 ] do
         let config, commands = start directory "Linux" None [ stage ]
         let result = BoundedProcess.run config None 8192 10000
         Expect.equal result.ExitCode 0 "Independent native suite succeeds"
@@ -330,7 +331,7 @@ let private nativeUnitFloor directory =
 
     Expect.equal executions.Length 2 "Both complete native suites launch"
 
-    for execution, floor in List.zip (Array.toList executions) [ 411; 41 ] do
+    for execution, floor in List.zip (Array.toList executions) [ 430; 41 ] do
         Expect.stringContains
             execution
             ("--minimum-expected-tests=" + string floor)
@@ -355,6 +356,24 @@ let private unavailableDocker directory =
             [| "info --format {{.ServerVersion}}" |]
             "One daemon preflight"
 
+let private retainedEvidence () =
+    let start =
+        ProcessStartInfo(
+            "python3",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        )
+
+    start.WorkingDirectory <- RepositoryRoot.find ()
+    start.ArgumentList.Add("tests/fixtures/verification_evidence.py")
+    let result = BoundedProcess.run start None 8192 10000
+
+    Expect.equal
+        result.ExitCode
+        0
+        "Safe evidence rejects canaries and retains interrupted completed work"
+
 [<Tests>]
 let tests =
     testCase
@@ -377,5 +396,6 @@ let tests =
                 combinedNativeStages directory
                 unavailableDocker directory
                 nativeUnitFloor directory
+                retainedEvidence ()
             finally
                 Directory.Delete(directory, true))

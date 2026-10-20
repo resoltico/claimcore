@@ -1,5 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
+open ClaimCore.Catalog
+
 open System
 open System.Text
 open System.Text.Json
@@ -30,25 +32,8 @@ module PolicyVectors =
         Endpoint.tryParse (text "endpoint" value)
         |> Option.defaultWith (fun () -> invalidOp "An embedded policy endpoint is unknown.")
 
-    let private phase =
-        Codec.enumeration
-            [
-                ExecutionPhase.NotStarted, "NOT_STARTED"
-                ExecutionPhase.StartedUnconfirmed, "STARTED_UNCONFIRMED"
-            ]
-
-    let private tags =
-        Codec.enumeration
-            [
-                OutcomeTag.Succeeded, "SUCCEEDED"
-                OutcomeTag.Reviewed, "REVIEWED"
-                OutcomeTag.Accepted, "ACCEPTED"
-                OutcomeTag.AlreadyAccepted, "ALREADY_ACCEPTED"
-                OutcomeTag.Rejected, "REJECTED"
-                OutcomeTag.Failed, "FAILED"
-                OutcomeTag.Cancelled, "CANCELLED"
-                OutcomeTag.OutcomeUnknown, "OUTCOME_UNKNOWN"
-            ]
+    let private phase = Codec.enumeration DeliveryTokens.phases
+    let private tags = Codec.enumeration DeliveryTokens.outcomes
 
     let private attempt value =
         match text "kind" value with

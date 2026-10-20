@@ -1,4 +1,4 @@
-import { businessMessages, correctionTargets } from "./localization-metadata.mjs";
+import { correctionTargets } from "./localization-metadata.mjs";
 import { renderedTokens, validateTokens } from "./localization-tokens.mjs";
 import { format, resolveConfig } from "prettier";
 import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
@@ -13,36 +13,44 @@ import {
 } from "./localization-policy.mjs";
 
 const root = resolve(import.meta.dirname, "..");
-const input = resolve(root, "src/presentation/catalogs");
+const input = resolve(root, "../contracts");
 const output = resolve(root, "src/presentation/generated");
 const generate = process.argv.slice(2).includes("--write");
-const languages = ["en", "lv", "ar"];
+/** @type {{languages: string[]}} */
+const { languages } = JSON.parse(
+  await readFile(resolve(input, "localization-policy.json"), "utf8"),
+);
 /** @type {Record<string, Record<string, import("./localization-policy.mjs").Message>>} */
 const catalogs = {};
 const domains = ["ui", "notice", "token", "field", "command", "group", "authority", "diagnostic"];
 /** @param {string} language */
 const authoredDomains = (language) => (language === "en" ? ["ui", "notice", "token"] : domains);
 const expectedInputs = languages
-  .flatMap((language) => authoredDomains(language).map((domain) => `${language}.${domain}.json`))
+  .flatMap((language) =>
+    authoredDomains(language).map((domain) => `locale.${language}.${domain}.json`),
+  )
   .sort();
-if (JSON.stringify((await readdir(input)).sort()) !== JSON.stringify(expectedInputs)) {
+if (
+  JSON.stringify((await readdir(input)).filter((f) => f.startsWith("locale.")).sort()) !==
+  JSON.stringify(expectedInputs)
+) {
   throw new Error("Unexpected or missing localization catalog domain.");
 }
 for (const lang of languages) {
   const catalog = {};
   const files = (await readdir(input))
-    .filter((f) => f.startsWith(`${lang}.`) && f.endsWith(".json"))
+    .filter((f) => f.startsWith(`locale.${lang}.`) && f.endsWith(".json"))
     .sort();
   for (const file of files) {
     const entries = readCatalog(await readFile(resolve(input, file), "utf8"));
-    addDomain(catalog, entries, file.slice(lang.length + 1, -5));
+    addDomain(catalog, entries, file.slice("locale.".length + lang.length + 1, -5));
   }
   catalogs[lang] = catalog;
 }
 const generated = resolve(root, "../contracts");
 const descriptors = JSON.parse(await readFile(resolve(generated, "descriptors.json"), "utf8"));
 const host = JSON.parse(await readFile(resolve(generated, "openapi.json"), "utf8"));
-Object.assign(catalogs["en"] ?? {}, businessMessages(descriptors), descriptors.diagnostics);
+Object.assign(catalogs["en"] ?? {}, descriptors.messages);
 for (const lang of languages) {
   validateCatalog(catalogs["en"] ?? {}, catalogs[lang] ?? {}, lang);
 }
@@ -67,6 +75,8 @@ for (const [lang, catalog] of Object.entries(catalogs)) {
   }
   expected[`${lang}.json`] = `${JSON.stringify(compiled)}\n`;
 }
+expected["catalogs.ts"] =
+  `${languages.map((language) => `import ${language} from "./${language}.json";`).join("\n")}\nexport const catalogs = { ${languages.join(", ")} };\n`;
 expected["diagnostic-parameters.json"] = `${JSON.stringify(requirements, null, 2)}\n`;
 for (const domain of domains) {
   const entries = Object.entries(args).filter(([k]) => k.startsWith(`${domain}.`));

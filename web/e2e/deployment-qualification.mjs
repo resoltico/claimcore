@@ -1,5 +1,4 @@
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import https from "node:https";
 import net from "node:net";
@@ -198,9 +197,13 @@ const login = async (context, origin) => {
   }
 };
 const qualify = async (origin, ca) => {
-  const fingerprint = createHash("sha256")
-    .update(readFileSync(path.join(root, "contracts/openapi.json")))
-    .digest("hex");
+  const fingerprint = readFileSync(
+    path.join(root, "contracts/contract-identity.txt"),
+    "utf8",
+  ).trim();
+  if (!/^[0-9a-f]{64}$/u.test(fingerprint)) {
+    throw new Error("Invalid generated consumer-contract identity.");
+  }
   const browser = await chromium.launch({ headless: true });
   try {
     // Only this synthetic browser ignores fixture certificates. Readiness above verifies its explicit CA and hostname.

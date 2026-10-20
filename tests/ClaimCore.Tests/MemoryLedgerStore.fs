@@ -1,5 +1,7 @@
 module ClaimCore.Tests.MemoryLedgerStore
 
+open ClaimCore.Catalog
+
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -167,7 +169,8 @@ let private grantPosition (g: ActorGrant) : GrantPosition =
     }
 
 let private compareGrantPosition (left: GrantPosition) (right: GrantPosition) =
-    let role = String.CompareOrdinal(Roles.token left.Role, Roles.token right.Role)
+    let role =
+        String.CompareOrdinal(RoleTokens.token left.Role, RoleTokens.token right.Role)
 
     if role <> 0 then
         role
@@ -233,7 +236,7 @@ type internal Store(instant: DateTimeOffset) =
 
         let valid roles =
             PrincipalKey.isHuman principal
-            || roles |> List.forall (Roles.requiresHuman >> not)
+            || roles |> List.forall (ActorAuthorization.humanOnlyRole >> not)
 
         { all with
             Cases = cases

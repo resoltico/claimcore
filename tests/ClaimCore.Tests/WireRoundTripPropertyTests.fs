@@ -1,5 +1,7 @@
 module ClaimCore.Tests.WireRoundTripPropertyTests
 
+open ClaimCore.Catalog
+
 open System
 open System.Collections
 open System.Collections.Generic
@@ -249,7 +251,7 @@ let private responseStrings =
             "ClaimedAmount", amount
             "PayableAmount", amount
             "EntryHash", digest
-            "WireFingerprint", digest
+            "ContractIdentity", digest
             "Issuer", arbitraryText
             "Subject", arbitraryText
         ]

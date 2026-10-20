@@ -59,7 +59,7 @@ it("independently rejects lossy numeric spellings, duplicate decoded names, dept
     decodeResponse(
       "session",
       new TextEncoder().encode(
-        `{"endpoint":"session","outcome":{"tag":"SUCCEEDED","data":{"authenticated":true,"wireFingerprint":"${"a".repeat(
+        `{"endpoint":"session","outcome":{"tag":"SUCCEEDED","data":{"authenticated":true,"contractIdentity":"${"a".repeat(
           64,
         )}","antiforgeryToken":null,"unexpected":true}}}`,
       ),

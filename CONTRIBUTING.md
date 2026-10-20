@@ -3,8 +3,7 @@
 Read [Domain](docs/domain.md), [Architecture](docs/architecture.md) and
 [Development](docs/development.md) before changing behavior or verification.
 
-Domain/Application own rules and authority; RecordFormat owns durable encodings; Wire owns the
-standalone typed request/reply codecs, OpenAPI contract and delivery/correlation rules. Postgres
+Catalog owns shared vocabulary and authored presentation. Domain/Application own rules and authority; RecordFormat owns durable encodings; Wire owns typed request/reply codecs over inert Catalog vocabulary, the derived OpenAPI contract and delivery/correlation rules. Postgres
 owns persistence and Hosting owns runtime composition and typed dispatch. The browser consumes
 generated types and schemas; CLI consumes Wire and embedded discovery artifacts. Coordinate the
 service, clients and tracked contract outputs. Keep affected callers, locks, tests and docs together.

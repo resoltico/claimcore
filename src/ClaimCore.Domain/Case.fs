@@ -1,5 +1,7 @@
 namespace ClaimCore.Domain
 
+open ClaimCore.Catalog
+
 open System
 open ClaimCore.Domain.ResultFlow
 

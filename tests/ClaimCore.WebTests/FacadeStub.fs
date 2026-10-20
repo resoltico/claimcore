@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.FacadeStub
 
+open ClaimCore.Catalog
+
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -86,7 +88,7 @@ let authorityReceipt (request: AuthorityRequest) =
                     Act =
                         AuthorityRequests.toRecord request
                         |> fun value -> ClaimCore.RecordFormat.RecordedAuthorityActs.kind value.Act
-                        |> AuthorityKinds.fromRecord
+                        |> AuthorityRecordKinds.fromRecord
                 }
     }
 

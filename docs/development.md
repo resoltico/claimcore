@@ -170,9 +170,9 @@ remain disabled in CI.
 
 ## Generated contracts and boundary verification
 
-The generator stages and validates its complete owned directory before replacement. It emits
-exactly the OpenAPI contract, TypeScript client types, descriptors, CLI frame schema, delivery and
-correlation vectors, byte corpus and TypeScript package metadata. Missing, stale and extra files
+The generator stages and validates its complete owned directory before replacement. It emits the complete consumer bundle, including OpenAPI, descriptors, request bindings,
+localization, help, delivery/correlation policies, independent-scenario projections, corpus,
+canonical input manifest and dependent identity resources. Missing, stale and extra files
 refuse freshness checks. Run:
 
 ```sh
@@ -180,8 +180,7 @@ dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts
 ```
 
 Review the generated diff with the typed Wire/Application/Domain change. The generator builds
-independently of CLI and references only Wire, Domain and Application. CLI embeds `openapi.json`
-and `descriptors.json`; the browser imports `client.ts` and interprets OpenAPI component schemas.
+independently of CLI and references Catalog, Wire, Domain and Application. CLI embeds OpenAPI, descriptors, request bindings through discovery and core-authored help; the browser imports `client.ts` and interprets OpenAPI component schemas.
 Neither ordinary build invokes generation, and web commands never invoke .NET. Wire response
 round trips and a separately implemented JSON Schema 2020-12 validator check the byte corpus;
 an independent parser checks OpenAPI 3.1. Committed Python-generated fixtures bind F# to independent
@@ -198,3 +197,52 @@ byte decoders. Grant review pages must traverse installation-null/case/erased sc
 omission under current caller authority. FULL history uses the effective server limit and the
 last included revision, with retained-format and actual escaping/metadata byte-budget controls.
 Browser cursor recovery is local unless an actual access/session refusal is observed.
+
+## Synthetic growth qualification
+
+The complete PostgreSQL suite includes a sequenced growth qualification with 64, 256 and 1,024
+case writes, varied case and actor/grant counts, and one versus four writers. It retains per-workload
+JSON reports in ignored `artifacts/verification/growth/`. Workloads use owned disposable containers,
+concurrent authority writes, full ledger/projection verification and bounded FULL history reads.
+Elapsed time, latency quantiles, throughput, managed heap observations and the test process peak
+working set are evidence for that environment only. Peak working set is cumulative for the test
+process; it is not isolated verifier memory. Existing transaction tests exercise lock timeout,
+cancellation and disabled-timeout negative controls. Reports are qualification evidence, not
+production sizing or a readiness mode.
+
+
+The generator's tracked evolution fixture is produced from a fixture-only typed codec and changed
+core descriptors. Browser qualification consumes that emitted metadata/schema to render inputs,
+collect values and assemble bytes identical to those admitted by the codec. It also exercises
+declared message-identity retargeting in en/lv/ar. This fixture adds no production business field
+or operation. Independent correlation oracle coverage includes poisoned individual/all bindings,
+scope removal and incompatible comparisons.
+
+## Retained qualification summaries
+
+`eng/verification_evidence.py` captures tracked regular-file input hashes and revision/dirty state
+before each native suite, with run/job/platform, pinned tool/database inputs, completion scope and
+numeric counts. The controlled native invocation is unfiltered and has no retries. Missing reports
+remain incomplete; a failed command keeps its original exit and its failed summary. Raw TRX stays
+ignored locally. Source hashes identify inputs and do not establish review or approval. Unknown or unadmitted
+untracked input provenance remains explicit; source stability is checked again at suite completion.
+
+Growth qualification atomically finishes one numeric workload file at a time in a unique run
+folder. Its run record stays incomplete until every workload and cleanup succeeds, and marks
+caught failures explicitly. Interruption preserves earlier completed files; the publication reader
+reconciles a completed workload written just before a progress-record interruption.
+
+CI retains only schema-checked summaries and their exact generated upload manifest for fourteen
+days, including failure. The publication step constructs a separate directory after validation;
+it does not copy raw result trees. Unknown fields, arbitrary strings and nonfinite measurements
+refuse. Raw logs/TRX, screenshots, traces, private fixtures and captured process output are excluded.
+Canary and interruption controls run through the final publication inventory in the discovered
+native suite. Local private failure evidence remains available under ignored paths.
+
+Session latency qualification exercises the real durable ticket store with 1, 8 and 24 concurrent
+synthetic sessions on a local temporary directory, recording storage/platform and per-batch
+latencies. This isolates persisted activity cost from identity-provider/network/browser latency;
+it is a bounded equivalent for this mechanism, not production capacity. Restart-aware idle,
+absolute deadlines, backwards-time refusal, logout and fsync remain unchanged. Published browser
+qualification separately exercises real HTTPS sessions and all supported engines. Native-language,
+manual assistive-technology and terminal bidi quality require separate human review.

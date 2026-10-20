@@ -86,10 +86,10 @@ const finish = async <T,>(read: ReturnType<typeof pending<T>>, value: T) => {
 const selectEnabled = async () => {
   await waitFor(() => {
     expect(
-      screen.getByLabelText("Case action", { exact: true }).querySelectorAll("option"),
+      screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
     ).toHaveLength(3);
   });
-  fireEvent.change(screen.getByLabelText("Case action", { exact: true }), {
+  fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
     target: { value: "SET_ENABLED" },
   });
 };
@@ -119,12 +119,12 @@ it.each(["context", "listing"] as const)(
     if (first === "listing") {
       await finish(listingRead, listing());
       expect(
-        screen.getByLabelText("Case action", { exact: true }).querySelectorAll("option"),
+        screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
       ).toHaveLength(0);
-      expect(screen.getByLabelText("Case action", { exact: true })).toBeDisabled();
+      expect(screen.getByLabelText("Authority action", { exact: true })).toBeDisabled();
     }
     await finish(contextRead, context());
-    fireEvent.change(screen.getByLabelText("Case action", { exact: true }), {
+    fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
       target: { value: "SET_GRANT" },
     });
     await author("synthetic-next");
@@ -132,7 +132,7 @@ it.each(["context", "listing"] as const)(
       await finish(listingRead, listing());
     }
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByLabelText("Case action", { exact: true })).toHaveValue("SET_GRANT");
+    expect(screen.getByLabelText("Authority action", { exact: true })).toHaveValue("SET_GRANT");
     expect(document.querySelector('[name="target.subject"]')).toHaveValue("synthetic-next");
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     expect(screen.getByRole("heading", { name: "Review exact request" })).toBeVisible();
@@ -195,14 +195,14 @@ it.each(["transport", "host", "core"] as const)(
     fireEvent.click(screen.getByRole("button", { name: "Submit operation" }));
     expect(await screen.findByRole("alert")).toBeVisible();
     expect(
-      screen.getByLabelText("Case action", { exact: true }).querySelectorAll("option"),
+      screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
     ).toHaveLength(0);
-    expect(screen.getByLabelText("Case action", { exact: true })).toBeDisabled();
+    expect(screen.getByLabelText("Authority action", { exact: true })).toBeDisabled();
     expect(reads).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole("button", { name: /^Try again$/u }));
     await waitFor(() => {
       expect(
-        screen.getByLabelText("Case action", { exact: true }).querySelectorAll("option"),
+        screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
       ).toHaveLength(3);
     });
     expect(screen.queryByRole("alert")).toBeNull();

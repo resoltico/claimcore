@@ -1,19 +1,18 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 open System
 open ClaimCore.Domain
 
 module ActorAuthorization =
-    // The one role catalogue owns tokens and capabilities together.
+    // Application owns the one role-to-capability policy. Catalog owns spelling.
     let private matrix =
         [
-            Role.Owner, "OWNER", [ Capability.ManageAuthority; Capability.ReadAuthority ]
-            Role.CaseReader, "CASE_READER", [ Capability.ReadCase; Capability.ReadHistory ]
-            Role.CaseRegistrar,
-            "CASE_REGISTRAR",
-            [ Capability.ReadCase; Capability.ReadHistory; Capability.Register ]
+            Role.Owner, [ Capability.ManageAuthority; Capability.ReadAuthority ]
+            Role.CaseReader, [ Capability.ReadCase; Capability.ReadHistory ]
+            Role.CaseRegistrar, [ Capability.ReadCase; Capability.ReadHistory; Capability.Register ]
             Role.CaseHandler,
-            "CASE_HANDLER",
             [
                 Capability.ReadCase
                 Capability.ReadHistory
@@ -23,13 +22,9 @@ module ActorAuthorization =
                 Capability.Close
             ]
             Role.PaymentRecorder,
-            "PAYMENT_RECORDER",
             [ Capability.ReadCase; Capability.ReadHistory; Capability.RecordPayment ]
-            Role.DataSteward,
-            "DATA_STEWARD",
-            [ Capability.ReadCase; Capability.ReadHistory; Capability.Steward ]
+            Role.DataSteward, [ Capability.ReadCase; Capability.ReadHistory; Capability.Steward ]
             Role.Auditor,
-            "AUDITOR",
             [
                 Capability.ReadCase
                 Capability.ReadHistory
@@ -38,20 +33,12 @@ module ActorAuthorization =
             ]
         ]
 
-    let roles = matrix |> List.map (fun (role, _, _) -> role)
-
-    let roleToken role =
-        matrix
-        |> List.find (fun (candidate, _, _) -> candidate = role)
-        |> fun (_, token, _) -> token
-
-    let tryRole value =
-        roles |> List.tryFind (roleToken >> (=) value)
+    let roles = matrix |> List.map (fun (role, _) -> role)
 
     let capabilities role =
         matrix
-        |> List.find (fun (candidate, _, _) -> candidate = role)
-        |> fun (_, _, capabilities) -> capabilities
+        |> List.find (fun (candidate, _) -> candidate = role)
+        |> fun (_, capabilities) -> capabilities
 
     let rolesFor capability =
         roles |> List.filter (fun role -> List.contains capability (capabilities role))
@@ -176,25 +163,3 @@ module ActorAuthorization =
             Some CaseVisibility.Assigned
         else
             None
-
-module Roles =
-    let all = ActorAuthorization.roles
-    let token role = ActorAuthorization.roleToken role
-    let tryParse value = ActorAuthorization.tryRole value
-    let requiresHuman role = ActorAuthorization.humanOnlyRole role
-
-module Capabilities =
-    let all = Roles.all |> List.collect ActorAuthorization.capabilities |> List.distinct
-
-    let token =
-        function
-        | Capability.ReadCase -> "READ_CASE"
-        | Capability.ReadHistory -> "READ_HISTORY"
-        | Capability.ReadHistoryFull -> "READ_HISTORY_FULL"
-        | Capability.Register -> "REGISTER"
-        | Capability.Decide -> "DECIDE"
-        | Capability.RecordPayment -> "RECORD_PAYMENT"
-        | Capability.Close -> "CLOSE"
-        | Capability.Steward -> "STEWARD"
-        | Capability.ManageAuthority -> "MANAGE_AUTHORITY"
-        | Capability.ReadAuthority -> "READ_AUTHORITY"

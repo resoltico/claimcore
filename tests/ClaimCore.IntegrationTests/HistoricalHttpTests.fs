@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.HistoricalHttpTests
 
+open ClaimCore.Catalog
+
 open System.Text
 open System.Text.Json
 open Expecto

@@ -26,7 +26,7 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   and only then reads authority, the operation ID and the case. Nothing that a decision depends
   on is read before the lock.
 - The store locks, loads, calls one pure decision function and persists its result. It never
-  decides. Domain, RecordFormat, Application and Wire perform no I/O and read no clock,
+  decides. Catalog, Domain, RecordFormat, Application and Wire perform no I/O and read no clock,
   time zone, environment or randomness; the instant and the payload nonce arrive in the locked
   view.
 - An operation is its caller-chosen ID plus its RFC 8785 canonical request content. While request content
@@ -55,8 +55,8 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   Current snapshots require case read; superseded snapshots require full history in the same
   locked/read context, including replay, execution, preview and observation.
 - `ClaimCore.Hosting` is the only case-work composition root. Only Hosting and Database
-  reference `ClaimCore.Postgres`; only Web references Hosting. Web uses Hosting/Wire/HostSecurity;
-  CLI uses Wire/HostSecurity. `ClaimCore.Wire` references no ClaimCore project and owns the one
+  reference `ClaimCore.Postgres`; only Web references Hosting. Web uses Hosting/Wire/HostSecurity/Catalog;
+  CLI uses Wire/HostSecurity/Catalog. `ClaimCore.Catalog` owns inert shared vocabulary and presentation; `ClaimCore.Wire` references only Catalog and owns the one
   typed codec from which the published OpenAPI contract is derived. The browser and CLI are
   authenticated HTTPS clients of one generated contract and never database peers.
   `ClaimCore.Database` is owner administration and serves no case work.
@@ -88,8 +88,8 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   runs cannot satisfy verification. `bash eng/verify.sh` is the complete local gate and CI calls the same stages.
   PR browser smoke is explicitly partial; main/tag and explicit dispatch retain full qualification.
 - Contract artifacts (`openapi.json` and its derived client types, descriptors and vectors) are
-  generated and tracked in `contracts/`; the fingerprint is SHA-256 of `openapi.json` and covers
-  the wire shape only. Run
+  generated and tracked in `contracts/`; the consumer identity is SHA-256 of the canonical generated input manifest and covers
+  wire shape, descriptors, localization and delivery/correlation policy. Run
   `dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts` and review
   the generated diff with the F# change. Freshness checks require exact inventory and bytes.
   Within-toolchain outputs stay ignored; web commands never invoke .NET.

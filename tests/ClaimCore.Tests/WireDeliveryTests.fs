@@ -1,5 +1,7 @@
 module ClaimCore.Tests.WireDeliveryTests
 
+open ClaimCore.Catalog
+
 open System
 open System.IO
 open System.Text.Json

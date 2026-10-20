@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
@@ -16,7 +18,7 @@ module AuthorityRequests =
             | AuthorityAct.RegisterActor -> RecordedAuthorityAct.RegisterActor
             | AuthorityAct.SetEnabled value -> RecordedAuthorityAct.SetEnabled value
             | AuthorityAct.SetGrant(role, target, active) ->
-                RecordedAuthorityAct.SetGrant(Roles.token role, scope target, active)
+                RecordedAuthorityAct.SetGrant(RoleTokens.token role, scope target, active)
 
         {
             OperationId = request.OperationId
@@ -34,7 +36,7 @@ module AuthorityRequests =
         | RecordedAuthorityAct.RegisterActor -> Ok AuthorityAct.RegisterActor
         | RecordedAuthorityAct.SetEnabled value -> Ok(AuthorityAct.SetEnabled value)
         | RecordedAuthorityAct.SetGrant(role, scope, active) ->
-            match Roles.tryParse role with
+            match RoleTokens.tryParse role with
             | Some role -> Ok(AuthorityAct.SetGrant(role, grantScope scope, active))
             | None -> Error "AUTHORITY_ROLE_INVALID"
         | RecordedAuthorityAct.ProvisionOwner -> Error "AUTHORITY_ACT_INVALID"

@@ -1,9 +1,8 @@
-import type { AttemptKnowledge, ResolutionEvidence } from "../protocol/delivery";
-import { accumulateKnowledge } from "../protocol/delivery";
+import { beginMutation, completeMutation } from "./mutationLifecycle";
+import { projectOperation } from "./operationState";
 import { prepareRequest } from "../protocol/preparedRequest";
 import type { CommandKind, DraftValues } from "./metadata";
 import { isGroupedDraftValues } from "./metadata";
-import { freezeRequest } from "./operationRequest";
 import type { CompletionResponse, EditingAction } from "./operationReducerTypes";
 import type { OperationAction, OperationState } from "./operationState";
 
@@ -24,17 +23,14 @@ const reset = (
   command,
   values,
 
-  requestBytes: null,
-  prepared: null,
+  mutation: { phase: "EDITING", prepared: null },
+
   review: null,
   receipt: null,
-  delivery: "EDITING",
-  unresolved: false,
+
   disclosureRefused: false,
   message: null,
   fieldError: null,
-  exposedRequest: null,
-  pending: null,
 });
 const edit = (state: OperationState, action: Extract<OperationAction, { type: "EDIT" }>) =>
   !editable(state) ||
@@ -116,22 +112,22 @@ const beginPreview = (
   if (state.prepared !== null && state.prepared !== action.prepared) {
     return state;
   }
-  const draft = state.exposedRequest ?? freezeRequest(action.draft);
-  const prepared = action.prepared ?? prepareRequest("case.execute", draft);
+  const prepared =
+    action.prepared ?? prepareRequest("case.execute", state.exposedRequest ?? action.draft);
   return {
     ...state,
-    delivery: "PREVIEWING",
-    exposedRequest: draft,
-    requestBytes: prepared.bytes,
-    prepared,
+    mutation: { phase: "PREVIEWING", prepared, requestId: action.requestId },
+
     message: null,
     fieldError: null,
-    pending: { kind: "PREVIEW", requestId: action.requestId },
   };
 };
-const completionKnowledge = (state: OperationState, action: CompletionResponse): string => {
-  let attempt: AttemptKnowledge = "NOT_ACCEPTED";
-  let evidence: ResolutionEvidence = "NONE";
+const complete = (state: OperationState, action: CompletionResponse): OperationState => {
+  if (state.pending?.requestId !== action.requestId) {
+    return state;
+  }
+  let attempt: Parameters<typeof completeMutation>[2] = "NOT_ACCEPTED";
+  let evidence: Parameters<typeof completeMutation>[3] = "NONE";
   if (action.type === "ACCEPTED") {
     attempt = "ACCEPTED";
     evidence = "CONTENT_ACCEPTED";
@@ -140,21 +136,15 @@ const completionKnowledge = (state: OperationState, action: CompletionResponse):
   } else {
     evidence = action.evidence ?? "NONE";
   }
-  return accumulateKnowledge(state.unresolved ? "UNCONFIRMED" : "NOT_SENT", attempt, evidence);
-};
-const complete = (state: OperationState, action: CompletionResponse): OperationState => {
-  if (state.pending?.requestId !== action.requestId) {
-    return state;
-  }
-  const unresolved = completionKnowledge(state, action) === "UNCONFIRMED";
+  const mutation = completeMutation(state.mutation, action.requestId, attempt, evidence);
   if (action.type === "ACCEPTED") {
     return {
       ...state,
-      delivery: "ACCEPTED",
-      unresolved,
+      mutation,
+
       receipt: action.receipt,
       disclosureRefused: false,
-      pending: null,
+
       message: null,
     };
   }
@@ -162,21 +152,19 @@ const complete = (state: OperationState, action: CompletionResponse): OperationS
     return state.pending.kind === "SUBMIT"
       ? {
           ...state,
-          delivery: "OUTCOME_UNKNOWN",
-          unresolved,
-          pending: null,
+          mutation,
+
           message: action.message,
         }
       : state;
   }
   return {
     ...state,
-    delivery: unresolved ? "OUTCOME_UNKNOWN" : "DEFINITELY_REJECTED",
-    unresolved,
+    mutation,
+
     disclosureRefused: action.disclosureRefused === true,
     review: null,
 
-    pending: null,
     message: action.message,
     fieldError: action.field === null ? null : { name: action.field, message: action.message },
   };
@@ -184,8 +172,29 @@ const complete = (state: OperationState, action: CompletionResponse): OperationS
 const submit = (state: OperationState, requestId: number): OperationState =>
   (state.delivery === "REVIEWING" || state.delivery === "OUTCOME_UNKNOWN") &&
   state.requestBytes !== null
-    ? { ...state, delivery: "SUBMITTING", pending: { kind: "SUBMIT", requestId }, message: null }
+    ? {
+        ...state,
+        mutation: beginMutation(state.mutation, requestId),
+        message: null,
+      }
     : state;
+const reviewed = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "REVIEWED" }>,
+): OperationState => {
+  if (
+    state.pending?.kind !== "PREVIEW" ||
+    state.pending.requestId !== action.requestId ||
+    state.prepared === null
+  ) {
+    return state;
+  }
+  return {
+    ...state,
+    mutation: { phase: "REVIEWING", prepared: state.prepared },
+    review: action.review,
+  };
+};
 const transition = (
   state: OperationState,
   action: Exclude<OperationAction, EditingAction>,
@@ -195,7 +204,8 @@ const transition = (
       return editable(state)
         ? {
             ...state,
-            delivery: "DEFINITELY_REJECTED",
+            mutation: { phase: "DEFINITELY_REJECTED", prepared: state.prepared },
+
             message: action.message,
             fieldError: { name: action.field, message: action.message },
           }
@@ -203,20 +213,16 @@ const transition = (
     case "PREVIEWING":
       return beginPreview(state, action);
     case "REVIEWED":
-      return state.pending?.kind === "PREVIEW" && state.pending.requestId === action.requestId
-        ? {
-            ...state,
-            delivery: "REVIEWING",
-            review: action.review,
-
-            pending: null,
-          }
-        : state;
+      return reviewed(state, action);
     case "SUBMITTING":
       return submit(state, action.requestId);
     case "RETURN_TO_EDIT":
       return state.delivery === "REVIEWING"
-        ? { ...state, delivery: "EDITING", review: null, pending: null }
+        ? {
+            ...state,
+            mutation: { phase: "EDITING", prepared: state.prepared },
+            review: null,
+          }
         : state;
     case "RESET_MESSAGE":
       return { ...state, message: null };
@@ -238,11 +244,17 @@ const editingReducer = (state: OperationState, action: EditingAction): Operation
       return change(state, action);
   }
 };
-export const operationReducer = (state: OperationState, action: OperationAction): OperationState =>
-  action.type === "EDIT" ||
-  action.type === "EDIT_CORRECTION" ||
-  action.type === "SET_CORRECTION_MODE" ||
-  action.type === "EDIT_REFERENCE" ||
-  action.type === "CHANGE_COMMAND"
-    ? editingReducer(state, action)
-    : transition(state, action);
+export const operationReducer = (
+  state: OperationState,
+  action: OperationAction,
+): OperationState => {
+  const result =
+    action.type === "EDIT" ||
+    action.type === "EDIT_CORRECTION" ||
+    action.type === "SET_CORRECTION_MODE" ||
+    action.type === "EDIT_REFERENCE" ||
+    action.type === "CHANGE_COMMAND"
+      ? editingReducer(state, action)
+      : transition(state, action);
+  return result === state ? state : projectOperation(result);
+};

@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
@@ -56,6 +57,8 @@
     <Compile Include="PayloadBudgetTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="ContractSnapshotTests.fs" />
+    <Compile Include="RequestBindingTests.fs" />
+    <Compile Include="CorrelationSpecificationTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
     <Compile Include="RemoteTlsTests.fs" />
     <Compile Include="TokenLifetimeTests.fs" />
@@ -65,6 +68,9 @@
     <Compile Include="ClientDecoderConformanceTests.fs" />
     <Compile Include="CliReplyLossTests.fs" />
     <Compile Include="CliFrameTests.fs" />
+    <Compile Include="CliDescriptionTests.fs" />
+    <Compile Include="CliInvocationTests.fs" />
+    <Compile Include="InputDiagnosticTests.fs" />
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="VerificationStageTests.fs" />

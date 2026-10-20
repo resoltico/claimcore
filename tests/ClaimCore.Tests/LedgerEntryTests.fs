@@ -1,5 +1,7 @@
 module ClaimCore.Tests.LedgerEntryTests
 
+open ClaimCore.Catalog
+
 open System
 open System.Globalization
 open System.IO

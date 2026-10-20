@@ -27,7 +27,8 @@ revocation, single-process qualification and protection of this secret outside d
 The editor freezes one draft identity and serialized request for review/execution. Editing
 an exposed request creates a fresh identity. Unknown delivery retains one pending request for
 retries of the same bytes while the page is alive; a closed/reloaded page retains no pending
-operation. Contract mismatch prompts reload and does not replay a draft. Display safety is distinct
+operation. Contract mismatch blocks this attempt. Resolve any prior uncertainty before reloading: a reload
+loses the in-memory request. Reload before authoring a different request; no draft is replayed automatically. Display safety is distinct
 from business acceptance; authored Unicode is preserved and suspicious code points can be shown as warnings.
 
 Current views distinguish live, voided and erased records. Erased views expose only reference,
@@ -47,8 +48,8 @@ The [identity-provider flow restrictions](operations.md#access-review-and-sessio
 deployment trust contract. Client classification identifies a client; it does not prove which OAuth
 grant produced a token. Restrict IdP clients before granting SERVICE principals ClaimCore access.
 
-The browser consumes tracked generated types/descriptors and OpenAPI component schemas. Requests
-are typed object literals; a single schema interpreter validates response shapes.
+The browser consumes tracked generated types/descriptors and OpenAPI component schemas. Case requests are assembled through codec-checked core input bindings; authority forms use the
+same typed codec schemas. A single schema interpreter validates response shapes.
 Its production decoder starts with bounded strict UTF-8 bytes and preserves integer lexical checks. Missing or unusable mutation receipt data remains uncertain
 and preserves the original retry identity/content. WITHHELD snapshots show
 metadata without fields; ERASED is distinct. Country display hints use localized names where known,
@@ -80,3 +81,20 @@ a successful nonempty offer set; retrying advice does not discard or replace a p
 Generated protocol purity follows the resolved transitive import closure, including JavaScript
 modules, and rejects React, locale, clock, randomness and I/O dependencies. Generated TypeScript
 is included in the normal type-aware lint stage.
+
+Readiness owns two process-wide probe permits with no queue. Saturation returns 503 without
+starting database work; `/health/live` remains independent. Each admitted probe links request
+abort, application stopping and a two-second cancellation deadline through the runtime and
+PostgreSQL commands. The permit remains owned until provider work and connection cleanup finish.
+Two seconds is a cancellation deadline, not a hard response-time guarantee. Readiness checks
+installation/schema access, never case outcomes, freshness or owner approval.
+
+Workspace and current-case read failures offer explicit in-page retry under the current session.
+Views remain default-deny until a successful context read. Explicit navigation focuses destination
+headings; background read completion does not move focus. Authority technical guidance appears
+beside authoring with field focus when explicitly returning to edit. Editing preserves authored
+whitespace and values, clears old consent and requires fresh review; accumulated unresolved
+execution blocks editing even after a later `NOT_STARTED` refusal. Unknown delivery remains the
+primary message, with caller-known support identities and exact retry while this page lives.
+Identity alone proves no acceptance and cannot reconstruct request bytes. Successful lists describe
+only visible scope; only a null continuation establishes its end.

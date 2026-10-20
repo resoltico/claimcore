@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Wire
+open ClaimCore.Catalog
 
 open System
 
@@ -74,41 +75,81 @@ module RemoteConfiguration =
             | _ -> Error ClientFailure.Configuration
         | _ -> Error ClientFailure.Configuration
 
+    let private read setting =
+        let name = InputDiagnostics.settings |> List.find (fst >> (=) setting) |> snd
+        Environment.GetEnvironmentVariable name |> Option.ofObj
+
+    let private invalid setting =
+        Error(ClientFailure.ConfigurationIssue(setting, ConfigurationIssue.Invalid))
+
+    let private required setting =
+        match read setting with
+        | None -> Error(ClientFailure.ConfigurationIssue(setting, ConfigurationIssue.Missing))
+        | Some value -> Ok value
+
+    let private root setting =
+        required setting
+        |> Result.bind (fun value ->
+            match absoluteHttpsRoot value with
+            | Some uri -> Ok uri
+            | None -> invalid setting)
+
+    let private privateRoot setting =
+        match read setting with
+        | None -> Ok None
+        | Some path when IO.Path.IsPathFullyQualified path -> Ok(Some path)
+        | _ -> invalid setting
+
+    let private configureMode (service: Uri) (issuer: Uri) clientId =
+        required CliSetting.AuthMode
+        |> Result.bind (fun mode ->
+            match mode with
+            | "interactive" ->
+                create
+                    service.AbsoluteUri
+                    issuer.AbsoluteUri
+                    clientId
+                    RemoteClientMode.Interactive
+                    None
+            | "automation" ->
+                required CliSetting.SecretFile
+                |> Result.bind (fun path ->
+                    if not (IO.Path.IsPathFullyQualified path) then
+                        invalid CliSetting.SecretFile
+                    else
+                        create
+                            service.AbsoluteUri
+                            issuer.AbsoluteUri
+                            clientId
+                            RemoteClientMode.Automation
+                            (Some path))
+            | _ -> invalid CliSetting.AuthMode)
+
+    let private trust value =
+        privateRoot CliSetting.OidcTrustRoot
+        |> Result.bind (fun oidc ->
+            privateRoot CliSetting.ServiceTrustRoot
+            |> Result.map (fun service ->
+                { value with
+                    OidcTrustRootFile = oidc
+                    ServiceTrustRootFile = service
+                }))
+
     let fromEnvironment () =
-        let read = Environment.GetEnvironmentVariable
-
-        match
-            read "CLAIMCORE_SERVICE_URL",
-            read "CLAIMCORE_OIDC_ISSUER",
-            read "CLAIMCORE_OIDC_CLIENT_ID",
-            read "CLAIMCORE_CLI_AUTH_MODE"
-        with
-        | null, _, _, _
-        | _, null, _, _
-        | _, _, null, _
-        | _, _, _, null -> Error ClientFailure.Configuration
-        | service, issuer, clientId, mode ->
-            let configured =
-                match mode with
-                | "interactive" -> create service issuer clientId RemoteClientMode.Interactive None
-                | "automation" ->
-                    let path = read "CLAIMCORE_OIDC_CLIENT_SECRET_FILE" |> Option.ofObj
-                    create service issuer clientId RemoteClientMode.Automation path
-                | _ -> Error ClientFailure.Configuration
-
-            let privateRoot name =
-                match read name |> Option.ofObj with
-                | None -> Ok None
-                | Some path when IO.Path.IsPathFullyQualified(path) -> Ok(Some path)
-                | Some _ -> Error ClientFailure.Configuration
-
-            configured
-            |> Result.bind (fun value ->
-                privateRoot "CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE"
-                |> Result.bind (fun oidcRoot ->
-                    privateRoot "CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"
-                    |> Result.map (fun serviceRoot ->
-                        { value with
-                            OidcTrustRootFile = oidcRoot
-                            ServiceTrustRootFile = serviceRoot
-                        })))
+        root CliSetting.ServiceUrl
+        |> Result.bind (fun service ->
+            if service.AbsolutePath <> "/" then
+                invalid CliSetting.ServiceUrl
+            else
+                root CliSetting.Issuer
+                |> Result.bind (fun issuer ->
+                    required CliSetting.ClientId
+                    |> Result.bind (fun clientId ->
+                        if
+                            String.IsNullOrWhiteSpace clientId
+                            || clientId <> clientId.Trim()
+                            || clientId.Length > 256
+                        then
+                            invalid CliSetting.ClientId
+                        else
+                            configureMode service issuer clientId |> Result.bind trust)))

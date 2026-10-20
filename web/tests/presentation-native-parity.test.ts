@@ -9,23 +9,26 @@ import { readUnknown, isObject } from "./contract-corpus.fixtures";
 import requirements from "../src/presentation/generated/diagnostic-parameters.json";
 it("every F# diagnostic template agrees with default browser rendering", () => {
   const raw = readUnknown("descriptors.json");
-  const originals = isObject(raw) ? raw["diagnostics"] : null;
+  const originals = isObject(raw) ? raw["messages"] : null;
   if (!isObject(originals)) {
     throw new Error("Native presentation absent.");
   }
   const limits: Record<
     string,
-    Record<string, { minimum?: number; maximum?: number }>
+    Record<string, { minimum?: number; maximum?: number; enum?: ReadonlyArray<string> }>
   > = requirements;
   const ids = Object.keys(limits);
-  expect(ids).toHaveLength(65);
+  expect(ids).toHaveLength(66);
   for (const id of ids) {
     const parts = originals[`diagnostic.${id}`];
     if (!Array.isArray(parts)) {
       throw new Error("Native template absent.");
     }
     const values = Object.fromEntries(
-      Object.entries(limits[id]!).map(([key, rule]) => [key, String(rule.minimum ?? 0)]),
+      Object.entries(limits[id]!).map(([key, rule]) => [
+        key,
+        rule.enum?.[0] ?? String(rule.minimum ?? 0),
+      ]),
     );
     const expected = parts
       .map((part: unknown) => {

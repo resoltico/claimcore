@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 open System
 open ClaimCore.Application.VerificationChecks
 

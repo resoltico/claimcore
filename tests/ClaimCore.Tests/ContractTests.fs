@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ContractTests
 
+open ClaimCore.Catalog
+
 open System
 open System.Text
 open System.IO
@@ -540,8 +542,7 @@ let private authorityFieldPresentation () =
         Expect.equal labelId ("authority.field." + name + ".label") "Stable message identifier"
 
         let literal =
-            root.GetProperty("diagnostics").GetProperty(labelId).EnumerateArray()
-            |> Seq.head
+            root.GetProperty("messages").GetProperty(labelId).EnumerateArray() |> Seq.head
 
         Expect.equal
             (literal.GetProperty("literal").GetString())

@@ -1,3 +1,4 @@
+import { presentationPseudolanguage, presentationDefaults } from "@contracts/client";
 import "./styles.css";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { I18nProvider } from "react-aria-components/I18nProvider";
@@ -18,7 +19,10 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
   }));
   const { preferences, persistenceFailed, changed } = state;
   const presenter = useMemo(() => createPresenter(preferences), [preferences]);
-  const language = preferences.language === "en-XA" ? "en" : preferences.language;
+  const language =
+    preferences.language === presentationPseudolanguage
+      ? presentationDefaults.language
+      : preferences.language;
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = presenter.direction;

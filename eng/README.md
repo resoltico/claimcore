@@ -19,7 +19,7 @@ publication copies this common superset without consulting the NuGet cache. Acce
 the actual publish inventory and rejects missing or unreviewed contributions.
 
 ContractGenerator derives OpenAPI and TypeScript client types from Wire codecs and descriptors
-from Domain/Application. It references only those three projects. F# tests check exact artifact
+from Domain/Application. It also references the pure Catalog for shared vocabulary and authored presentation. F# tests check exact artifact
 bytes and inventory without invoking Node. Committed independent Python oracles bind durable bytes,
 delivery and correlation; the generated vectors bind the browser to F# policies.
 Frontend checks include consumed-response guards, localization, notices and accessibility tooling.

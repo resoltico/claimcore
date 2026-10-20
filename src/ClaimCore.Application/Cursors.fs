@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 open System
 open System.Text
 open System.Text.Json
@@ -134,7 +136,7 @@ module internal Cursors =
                     after.CaseId
                     |> Option.map (fun id -> CanonicalValue.String(id.ToString("D")))
                     |> Option.defaultValue CanonicalValue.Null
-                    "role", CanonicalValue.String(Roles.token after.Role)
+                    "role", CanonicalValue.String(RoleTokens.token after.Role)
                 ]
 
         encode
@@ -152,7 +154,7 @@ module internal Cursors =
             | CanonicalValue.String value -> uuid value |> Option.map Some
             | _ -> None
 
-        match Roles.tryParse role, scope with
+        match RoleTokens.tryParse role, scope with
         | Some role, Some caseId -> Some { Role = role; CaseId = caseId }
         | _ -> None
 

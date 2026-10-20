@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 open System
 open ClaimCore.RecordFormat
 open ClaimCore.Application.VerificationChecks
@@ -113,14 +115,15 @@ module internal AuthorityFold =
         =
         result {
             let! role =
-                Roles.tryParse role
+                RoleTokens.tryParse role
                 |> known (Some entry.Sequence) VerificationFinding.PayloadFormat
 
             do!
                 require
                     (Some entry.Sequence)
                     VerificationFinding.HumanRequired
-                    (not (Roles.requiresHuman role) || PrincipalKey.isHuman actor.Principal)
+                    (not (ActorAuthorization.humanOnlyRole role)
+                     || PrincipalKey.isHuman actor.Principal)
 
             let! scope =
                 match scope with

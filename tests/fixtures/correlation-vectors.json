@@ -887,6 +887,1536 @@
     }
    },
    "correlated": true
+  },
+  {
+   "name": "coverage case.execute ACCEPTED matches",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.execute ACCEPTED wrong operationId",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ACCEPTED wrong outcome.data.operationId",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000002",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ACCEPTED wrong outcome.data.act",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "ERASE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ACCEPTED wrong outcome.data.scope",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "AUTHORITY",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ACCEPTED wrong outcome.data.caseReference",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "OTHER",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ACCEPTED wrong outcome.data.revision",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 6
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ALREADY_ACCEPTED matches",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.execute ALREADY_ACCEPTED wrong operationId",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ALREADY_ACCEPTED wrong outcome.data.operationId",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000002",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ALREADY_ACCEPTED wrong outcome.data.act",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "ERASE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ALREADY_ACCEPTED wrong outcome.data.scope",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "AUTHORITY",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ALREADY_ACCEPTED wrong outcome.data.caseReference",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "OTHER",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute ALREADY_ACCEPTED wrong outcome.data.revision",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 6
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute REJECTED matches",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "REJECTED",
+     "data": {}
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.execute REJECTED wrong operationId",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "REJECTED",
+     "data": {}
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute FAILED matches",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "FAILED",
+     "data": {}
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.execute FAILED wrong operationId",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "FAILED",
+     "data": {}
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute CANCELLED matches",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "CANCELLED",
+     "data": {}
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.execute CANCELLED wrong operationId",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "CANCELLED",
+     "data": {}
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute OUTCOME_UNKNOWN matches",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "OUTCOME_UNKNOWN",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001"
+     }
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.execute OUTCOME_UNKNOWN wrong operationId",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "OUTCOME_UNKNOWN",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.execute OUTCOME_UNKNOWN wrong outcome.data.operationId",
+   "endpoint": "case.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "OUTCOME_UNKNOWN",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000002"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ACCEPTED matches",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.preview ACCEPTED wrong operationId",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ACCEPTED wrong outcome.data.operationId",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000002",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ACCEPTED wrong outcome.data.act",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "ERASE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ACCEPTED wrong outcome.data.scope",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "AUTHORITY",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ACCEPTED wrong outcome.data.caseReference",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "OTHER",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ACCEPTED wrong outcome.data.revision",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 6
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ALREADY_ACCEPTED matches",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.preview ALREADY_ACCEPTED wrong operationId",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ALREADY_ACCEPTED wrong outcome.data.operationId",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000002",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ALREADY_ACCEPTED wrong outcome.data.act",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "ERASE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ALREADY_ACCEPTED wrong outcome.data.scope",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "AUTHORITY",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ALREADY_ACCEPTED wrong outcome.data.caseReference",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "OTHER",
+      "revision": 5
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview ALREADY_ACCEPTED wrong outcome.data.revision",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "scope": "CASE",
+      "act": "DECIDE",
+      "caseReference": "DEMO-0001",
+      "revision": 6
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview REJECTED matches",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "REJECTED",
+     "data": {}
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.preview REJECTED wrong operationId",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "REJECTED",
+     "data": {}
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview FAILED matches",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "FAILED",
+     "data": {}
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.preview FAILED wrong operationId",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "FAILED",
+     "data": {}
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview CANCELLED matches",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "CANCELLED",
+     "data": {}
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.preview CANCELLED wrong operationId",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "CANCELLED",
+     "data": {}
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview REVIEWED matches",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "REVIEWED",
+     "data": {
+      "review": {
+       "after": {
+        "caseReference": "DEMO-0001",
+        "revision": 5
+       }
+      }
+     }
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage case.preview REVIEWED wrong operationId",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "REVIEWED",
+     "data": {
+      "review": {
+       "after": {
+        "caseReference": "DEMO-0001",
+        "revision": 5
+       }
+      }
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview REVIEWED wrong outcome.data.review.after.caseReference",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "REVIEWED",
+     "data": {
+      "review": {
+       "after": {
+        "caseReference": "OTHER",
+        "revision": 5
+       }
+      }
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage case.preview REVIEWED wrong outcome.data.review.after.revision",
+   "endpoint": "case.preview",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "Demo-0001",
+    "expectedRevision": 4,
+    "act": {
+     "kind": "DECIDE"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "REVIEWED",
+     "data": {
+      "review": {
+       "after": {
+        "caseReference": "DEMO-0001",
+        "revision": 6
+       }
+      }
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute ACCEPTED matches",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "act": "SET_GRANT",
+      "scope": "AUTHORITY"
+     }
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage authority.execute ACCEPTED wrong operationId",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "act": "SET_GRANT",
+      "scope": "AUTHORITY"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute ACCEPTED wrong outcome.data.operationId",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000002",
+      "act": "SET_GRANT",
+      "scope": "AUTHORITY"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute ACCEPTED wrong outcome.data.act",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "act": "ERASE",
+      "scope": "AUTHORITY"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute ACCEPTED wrong outcome.data.scope",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "act": "SET_GRANT",
+      "scope": "CASE"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute ALREADY_ACCEPTED matches",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "act": "SET_GRANT",
+      "scope": "AUTHORITY"
+     }
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage authority.execute ALREADY_ACCEPTED wrong operationId",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "act": "SET_GRANT",
+      "scope": "AUTHORITY"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute ALREADY_ACCEPTED wrong outcome.data.operationId",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000002",
+      "act": "SET_GRANT",
+      "scope": "AUTHORITY"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute ALREADY_ACCEPTED wrong outcome.data.act",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "act": "ERASE",
+      "scope": "AUTHORITY"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute ALREADY_ACCEPTED wrong outcome.data.scope",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "ALREADY_ACCEPTED",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "act": "SET_GRANT",
+      "scope": "CASE"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute REJECTED matches",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "REJECTED",
+     "data": {}
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage authority.execute REJECTED wrong operationId",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "REJECTED",
+     "data": {}
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute FAILED matches",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "FAILED",
+     "data": {}
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage authority.execute FAILED wrong operationId",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "FAILED",
+     "data": {}
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute CANCELLED matches",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "CANCELLED",
+     "data": {}
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage authority.execute CANCELLED wrong operationId",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "CANCELLED",
+     "data": {}
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute OUTCOME_UNKNOWN matches",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "OUTCOME_UNKNOWN",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001"
+     }
+    }
+   },
+   "correlated": true
+  },
+  {
+   "name": "coverage authority.execute OUTCOME_UNKNOWN wrong operationId",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "outcome": {
+     "tag": "OUTCOME_UNKNOWN",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000001"
+     }
+    }
+   },
+   "correlated": false
+  },
+  {
+   "name": "coverage authority.execute OUTCOME_UNKNOWN wrong outcome.data.operationId",
+   "endpoint": "authority.execute",
+   "request": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "act": {
+     "kind": "SET_GRANT"
+    }
+   },
+   "reply": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "outcome": {
+     "tag": "OUTCOME_UNKNOWN",
+     "data": {
+      "operationId": "10000000-0000-4000-8000-000000000002"
+     }
+    }
+   },
+   "correlated": false
   }
  ]
 }

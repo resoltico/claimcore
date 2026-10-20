@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Catalog
+
 open ClaimCore.Wire
 
 open System.Threading.Tasks
@@ -11,7 +13,7 @@ open ClaimCore.Hosting
 module internal ApiRoutes =
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
-        | true, values when values.Count = 1 -> string values[0] = Fingerprint.value
+        | true, values when values.Count = 1 -> string values[0] = ConsumerContract.identity
         | _ -> false
 
     let ingress (context: HttpContext) (next: RequestDelegate) : Task =
@@ -50,10 +52,10 @@ module internal ApiRoutes =
             | Ok bytes ->
                 match
                     ClaimCore.Wire.Admission.admit endpoint bytes
-                    |> Result.mapError (fun _ -> ())
+                    |> Result.mapError (fun _ -> HostFailure.InputInvalid)
                     |> Result.bind ServiceGateway.admitTechnical
                 with
-                | Error _ -> return Error(RouteSupport.hostFailure context HostFailure.InputInvalid)
+                | Error reason -> return Error(RouteSupport.hostFailure context reason)
                 | Ok _ when context.RequestAborted.IsCancellationRequested ->
                     return Error(RouteSupport.inputFailure context BodyProblem.BodyCancelled)
                 | Ok input -> return Ok input

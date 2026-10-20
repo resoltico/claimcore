@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliDelivery
 
+open ClaimCore.Catalog
+
 open System
 open System.Collections.Generic
 open System.IO

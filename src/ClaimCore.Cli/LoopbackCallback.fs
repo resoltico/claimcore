@@ -121,24 +121,28 @@ module internal LoopbackTransport =
                 return Ok None
         }
 
+    let response status body =
+        let bytes = Encoding.UTF8.GetBytes(body: string)
+
+        let header =
+            Encoding.ASCII.GetBytes(
+                $"HTTP/1.1 {status}\r\nContent-Type: text/plain; charset=utf-8\r\nCache-Control: no-store\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n"
+            )
+
+        Array.append header bytes
+
+    let callbackResponse accepted =
+        let status, identity =
+            if accepted then
+                "200 OK", "cli.callbackAccepted"
+            else
+                "400 Bad Request", "cli.callbackRefused"
+
+        response status (ContractDiscovery.message identity)
+
     let respond (stream: NetworkStream) accepted cancelled =
         task {
-            let status = if accepted then "200 OK" else "400 Bad Request"
-
-            let body =
-                if accepted then
-                    "Authentication response received. Return to the terminal."
-                else
-                    "Authentication response refused."
-
-            let bytes = Encoding.ASCII.GetBytes body
-
-            let header =
-                Encoding.ASCII.GetBytes(
-                    $"HTTP/1.1 {status}\r\nContent-Type: text/plain; charset=us-ascii\r\nCache-Control: no-store\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n"
-                )
-
-            do! stream.WriteAsync(header.AsMemory(), cancelled)
+            let bytes = callbackResponse accepted
             do! stream.WriteAsync(bytes.AsMemory(), cancelled)
             do! stream.FlushAsync(cancelled)
         }

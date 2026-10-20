@@ -5,6 +5,7 @@
     <WebClientDirectory>$(MSBuildProjectDirectory)/../../web</WebClientDirectory>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <Content Remove="wwwroot/**/*" />
     <None Remove="wwwroot/**/*" />
   </ItemGroup>
@@ -30,6 +31,7 @@
     <Compile Include="RouteSupport.fs" />
     <Compile Include="RateLimits.fs" />
     <Compile Include="ApiRoutes.fs" />
+    <Compile Include="Readiness.fs" />
     <Compile Include="HostRoutes.fs" />
     <Compile Include="WebProbeTransport.fs" />
     <Compile Include="WebProbe.fs" />

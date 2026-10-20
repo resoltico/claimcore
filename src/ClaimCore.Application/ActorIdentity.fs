@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 open System
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
@@ -54,21 +56,41 @@ module PrincipalKey =
         else
             Error "ACTOR_IDENTITY_INVALID"
 
+    let admit kind issuerValue subject =
+        let issue target value =
+            {
+                Target = target
+                Issue =
+                    if String.IsNullOrWhiteSpace value then
+                        InputIssue.Missing
+                    else
+                        InputIssue.Invalid
+            }
+
+        let maximum = if kind = PrincipalKinds.Human then 512 else 256
+
+        match issuer issuerValue, identifier maximum subject with
+        | Error _, _ -> Error(issue PrincipalInputTarget.TargetIssuer issuerValue)
+        | _, Error _ -> Error(issue PrincipalInputTarget.TargetSubject subject)
+        | Ok validIssuer, Ok validSubject when kind = PrincipalKinds.Human ->
+            Ok(HumanPrincipal(validIssuer, validSubject))
+        | Ok validIssuer, Ok validSubject when kind = PrincipalKinds.Service ->
+            Ok(ServicePrincipal(validIssuer, validSubject))
+        | _ -> Error(issue PrincipalInputTarget.TargetKind kind)
+
     let human issuerValue subject =
-        match issuer issuerValue, identifier 512 subject with
-        | Ok validIssuer, Ok validSubject -> Ok(HumanPrincipal(validIssuer, validSubject))
-        | _ -> Error "ACTOR_PRINCIPAL_INVALID"
+        admit PrincipalKinds.Human issuerValue subject
+        |> Result.mapError (fun _ -> "ACTOR_PRINCIPAL_INVALID")
 
     let service issuerValue clientId =
-        match issuer issuerValue, identifier 256 clientId with
-        | Ok validIssuer, Ok validClient -> Ok(ServicePrincipal(validIssuer, validClient))
-        | _ -> Error "ACTOR_PRINCIPAL_INVALID"
+        admit PrincipalKinds.Service issuerValue clientId
+        |> Result.mapError (fun _ -> "ACTOR_PRINCIPAL_INVALID")
 
     /// Private storage projection; never infer identity from email, display name or groups.
     let internal storageParts =
         function
-        | HumanPrincipal(issuerValue, subject) -> "HUMAN", issuerValue, subject
-        | ServicePrincipal(issuerValue, clientId) -> "SERVICE", issuerValue, clientId
+        | HumanPrincipal(issuerValue, subject) -> PrincipalKinds.Human, issuerValue, subject
+        | ServicePrincipal(issuerValue, clientId) -> PrincipalKinds.Service, issuerValue, clientId
 
     let describe principal : RecordedPrincipal =
         let kind, issuer, subject = storageParts principal
@@ -90,8 +112,8 @@ module PrincipalKey =
 
     let internal fromStorage kind issuerValue stableValue =
         match kind with
-        | "HUMAN" -> human issuerValue stableValue
-        | "SERVICE" -> service issuerValue stableValue
+        | PrincipalKinds.Human -> human issuerValue stableValue
+        | PrincipalKinds.Service -> service issuerValue stableValue
         | _ -> Error "ACTOR_PRINCIPAL_INVALID"
 
     let internal isHuman =
@@ -99,15 +121,6 @@ module PrincipalKey =
         | HumanPrincipal _ -> true
         | ServicePrincipal _ -> false
 
-[<RequireQualifiedAccess>]
-type Role =
-    | Owner
-    | CaseReader
-    | CaseRegistrar
-    | CaseHandler
-    | PaymentRecorder
-    | DataSteward
-    | Auditor
 
 [<RequireQualifiedAccess>]
 type GrantScope =

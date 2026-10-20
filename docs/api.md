@@ -1,7 +1,8 @@
 # Service and CLI contract
 
 The [OpenAPI 3.1 contract](../contracts/openapi.json) defines twelve endpoints, their strict wire
-schemas and one shared fingerprint. `session` is GET; the others are POST to the literal
+schemas. Service and clients share one consumer-contract identity, described below.
+`session` is GET; the others are POST to the literal
 `/api/<endpoint>` path, including dots in names such as `/api/case.execute`. Session bootstrap is
 anonymous; remaining operations require an authenticated principal. Case and authority work also
 require the current ClaimCore actor grants. Every API request carries the matching
@@ -84,14 +85,18 @@ reply directly. The CLI decodes with the Wire codec and the browser interprets t
 OpenAPI component schemas from bounded strict bytes. Malformed mutation replies preserve exact
 request identity and delivery uncertainty.
 
-The fingerprint is lowercase SHA-256 of the exact deterministic bytes of `openapi.json`. It covers
-wire shape and the declared byte profile, excluding labels, glossary, English messages, descriptors,
-product version and generated client text. Presentation-only changes do not change the fingerprint.
-The generated inventory is `openapi.json`, `client.ts`, `descriptors.json`, `cli-frame.schema.json`,
-`delivery-vectors.json`, `correlation-vectors.json`, `corpus.json` and the TypeScript package metadata.
+The runtime consumer-contract identity is lowercase SHA-256 of the canonical
+[versioned input manifest](../contracts/contract-manifest.json). It covers wire shape, capability
+and request bindings, all authored locale resources, help and delivery/correlation specifications.
+Descriptor-only, locale-only and policy-only changes therefore require matching clients.
+Session discovery exposes `contractIdentity`; `ClaimCore-Contract` carries that identity.
+The manifest excludes identity-bearing generated client/source resources to avoid self-reference.
+This is a breaking replacement of OpenAPI-only admission, with no dual admission period.
 [Development](development.md#generated-contracts-and-boundary-verification) owns generation and
 freshness checks. The [descriptors](../contracts/descriptors.json) carry presentation and typed advice
-vocabularies. `context.views` advertises `CASES`, `AUTHORITY` and `OPERATIONS`; installation offers
+vocabularies. `messages` supplies core-authored default templates; descriptor label, meaning and
+confirmation identities reference core resources. Request bindings are available in discovery and
+[the generated binding document](../contracts/request-bindings.json). `context.views` advertises `CASES`, `AUTHORITY` and `OPERATIONS`; installation offers
 contain only OPEN or an authority act. A case record has `advice.acts` and `advice.history`; correction
 choices belong only to CORRECT_CASE. Endpoint names and duplicated `state.availableActs`, `offers`
 and `historyDetails` are absent from case advice. Execution always rechecks current authority.
@@ -130,7 +135,38 @@ process-local authentication session. Each input frame is limited to 128 KiB; re
 limited to 4 MiB. Input is strict UTF-8 and replies are validated against the generated contract.
 Preview is advisory; execution revalidates locked state.
 
-Discovery needs no credentials. `describe authority [kind]` exposes the Application-owned
+Discovery needs no credentials. `help [topic] [--language en|lv|ar]` is plain UTF-8 text,
+with English as the culture-independent default. Topics include `configuration`, `call`, `session`,
+`delivery`, `examples`, `describe` and `schema`. Exact `--help`, `-h`, `<command> --help` and
+`<command> -h` aliases run before stdin, configuration or transport. Aliases accept no extra flags;
+use `help call --language lv` for localized help.
+
+`describe` defaults to JSON. Add `--format text` for a concise static descriptor projection;
+only help and explicit text describe admit `--language`. Selected human descriptions include
+input field IDs with localized labels, prefill sources, correction choices/replacement fields, and
+endpoint mutation nature plus exact request/response schema commands. Schemas remain JSON.
+Duplicate/unknown
+options and selectors refuse atomically with safe corrective commands on stderr, empty stdout
+and exit 64. Unknown authored tokens are never echoed. No TTY-dependent format or prompt is used.
+
+Local failure frames now require a closed `diagnostic` object. Known configuration failures use
+`CLI_CONFIGURATION_ISSUE` with allowlisted `setting` and `issue` (`MISSING`, `INVALID` or
+`PRIVATE_INPUT_REFUSED`); unknown local causes remain broad. Protocol failures carry
+`CLI_PROTOCOL_GUIDANCE`: resolve that exact ID with `help CLI_PROTOCOL_GUIDANCE` or
+`describe diagnostics`. Both project the same generated core guidance for `schema invocation`,
+`schema response` and call/document versus session/NDJSON framing. No parser path, raw key, URL,
+private filename, provider message or exception text
+is included. Configuration is checked in service-root, issuer, client-ID, auth-mode, mode-dependent
+secret-path, OIDC-root, service-root order; file admission retains its known cause.
+
+Authored principal refusals remain HTTP 400 / `INPUT_INVALID` / `NOT_STARTED`, using the same
+host-failure codec with `PRINCIPAL_INPUT_INVALID`, closed `target` (`issuer`, `subject`, `kind`)
+and `issue` (`MISSING`, `INVALID`). Other host status/code/phase combinations refuse that detail.
+Authentication and protected-resource failures remain generic. These are breaking diagnostic frame
+and runtime-identity changes: rebuild all generated consumers and deploy matching clients/service;
+there is no alternate admission period or database migration.
+
+ `describe authority [kind]` exposes the Application-owned
 authority definitions alongside case command discovery:
 
 ```sh

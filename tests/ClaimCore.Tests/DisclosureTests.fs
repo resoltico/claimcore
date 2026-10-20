@@ -1,5 +1,7 @@
 module ClaimCore.Tests.DisclosureTests
 
+open ClaimCore.Catalog
+
 open System.Threading
 open Expecto
 open ClaimCore.Domain
@@ -335,7 +337,7 @@ let tests =
         [
             for role, readable, full in roleExpectations do
                 testCaseAsync
-                    (Roles.token role + " current and superseded observation and history")
+                    (RoleTokens.token role + " current and superseded observation and history")
                     (roleDisclosure role readable full)
             testCaseAsync
                 "execute replay and preview ALREADY_ACCEPTED withhold superseded snapshots"

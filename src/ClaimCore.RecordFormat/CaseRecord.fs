@@ -1,5 +1,7 @@
 namespace ClaimCore.RecordFormat
 
+open ClaimCore.Catalog
+
 open ClaimCore.Domain
 
 module CaseRecord =

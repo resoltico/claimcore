@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Catalog
+
 open ClaimCore.Wire
 
 open System.IO

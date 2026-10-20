@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.DatabaseTests
 
+open ClaimCore.Catalog
+
 open System
 open System.Security.Cryptography
 open System.Text

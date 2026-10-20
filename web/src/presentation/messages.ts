@@ -1,15 +1,15 @@
 import IntlMessageFormat from "intl-messageformat";
 import { type MessageFormatElement } from "@formatjs/icu-messageformat-parser";
-import en from "./generated/en.json";
-import lv from "./generated/lv.json";
-import ar from "./generated/ar.json";
+import { catalogs as generatedCatalogs } from "./generated/catalogs";
+import { presentationPseudolanguage, presentationDefaults } from "@contracts/client";
+import { languageDirection } from "./preferences";
 import { pseudolocalize } from "./pseudolocalization.mjs";
 import shapes from "./generated/arguments.json";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
-// oxlint-disable-next-line typescript/no-unsafe-type-assertion
-const catalogs = { en, lv, ar } as unknown as Record<
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Generated ICU ASTs are validated before emission.
+const catalogs = generatedCatalogs as unknown as Record<
   string,
   Record<string, MessageFormatElement[]>
 >;
@@ -22,14 +22,17 @@ const message = (key: string, preferences: Preferences): IntlMessageFormat => {
     return cached;
   }
   const ast =
-    preferences.language === "en-XA"
+    preferences.language === presentationPseudolanguage
       ? ([
           { type: 0, value: "⟦" },
-          ...pseudolocalize(catalogs["en"]![key]!),
+          ...pseudolocalize(catalogs[presentationDefaults.language]![key]!),
           { type: 0, value: "⟧" },
         ] satisfies MessageFormatElement[])
       : catalogs[preferences.language]![key]!;
-  const grammar = preferences.language === "en-XA" ? "en" : preferences.language;
+  const grammar =
+    preferences.language === presentationPseudolanguage
+      ? presentationDefaults.language
+      : preferences.language;
   const formatter = new IntlMessageFormat(ast, grammar, undefined, {
     formatters: {
       getNumberFormat: () => new Intl.NumberFormat(preferences.displayLocale),
@@ -63,7 +66,10 @@ export const renderKey = (
     return String(message("notice.unknownDiagnostic", preferences).format());
   }
   const prepared = Object.fromEntries(
-    Object.entries(values).map(([k, v]) => [k, isolate(v, preferences.language === "ar")]),
+    Object.entries(values).map(([k, v]) => [
+      k,
+      isolate(v, languageDirection(preferences.language) === "rtl"),
+    ]),
   );
   return String(message(key, preferences).format(prepared));
 };
@@ -86,7 +92,10 @@ export const renderIsolatedValue = <T>(
     return [renderKey(preferences, "notice.unknownDiagnostic")];
   }
   const prepared = Object.fromEntries(
-    Object.entries(values).map(([k, v]) => [k, isolate(v, preferences.language === "ar")]),
+    Object.entries(values).map(([k, v]) => [
+      k,
+      isolate(v, languageDirection(preferences.language) === "rtl"),
+    ]),
   );
   return message(key, preferences)
     .formatToParts<T>({ ...prepared, [argument]: reference })

@@ -1,5 +1,7 @@
 namespace ClaimCore.Wire
 
+open ClaimCore.Catalog
+
 open System
 
 type Registration =

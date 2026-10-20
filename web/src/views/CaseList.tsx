@@ -1,3 +1,4 @@
+import { PageStatus } from "../components/PageStatus";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
@@ -117,7 +118,7 @@ const useCaseList = (token: string) => {
 export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
   const p = usePresentation();
   const [lookup, setLookup] = useState("");
-  const { items, cursor, message, loading, load, mayOpen } = useCaseList(token);
+  const { items, cursor, message, loading, load, mayOpen, page } = useCaseList(token);
   return (
     <section aria-labelledby="case-list-title">
       <CaseHeading mayOpen={mayOpen} onOpen={onOpen} />
@@ -137,6 +138,13 @@ export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
           <NoticeView value={message} />
         </p>
       )}
+      {page !== null && !loading && message === null ? (
+        <PageStatus
+          empty={items.length === 0}
+          cursor={cursor}
+          emptyMessage="ui.noAccessibleCases"
+        />
+      ) : null}
       <ul className="case-list">
         {items.map((caseView) => (
           <CaseRow key={caseView.caseReference} caseView={caseView} onSelect={onSelect} />

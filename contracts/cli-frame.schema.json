@@ -3698,19 +3698,28 @@
                 "oneOf": [
                   {
                     "const": "CLI_CONFIGURATION_INVALID"
-                  },
-                  {
-                    "const": "CLI_AUTHENTICATION_FAILED"
-                  },
-                  {
-                    "const": "CLI_SERVICE_UNAVAILABLE"
-                  },
-                  {
-                    "const": "CLI_CANCELLED"
-                  },
-                  {
-                    "const": "CLI_INTERNAL"
                   }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_LOCAL_FAILURE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {},
+                    "required": []
+                  }
+                },
+                "required": ["id","parameters"
                 ]
               },
               "endpoint": {
@@ -3775,7 +3784,2943 @@
                 ]
               }
             },
-            "required": ["kind","code","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_AUTHENTICATION_FAILED"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_LOCAL_FAILURE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {},
+                    "required": []
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_SERVICE_UNAVAILABLE"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_LOCAL_FAILURE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {},
+                    "required": []
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CANCELLED"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_LOCAL_FAILURE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {},
+                    "required": []
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_INTERNAL"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_LOCAL_FAILURE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {},
+                    "required": []
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_SERVICE_URL"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "MISSING"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_SERVICE_URL"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "INVALID"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_SERVICE_URL"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "PRIVATE_INPUT_REFUSED"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_OIDC_ISSUER"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "MISSING"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_OIDC_ISSUER"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "INVALID"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_OIDC_ISSUER"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "PRIVATE_INPUT_REFUSED"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_OIDC_CLIENT_ID"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "MISSING"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_OIDC_CLIENT_ID"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "INVALID"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_OIDC_CLIENT_ID"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "PRIVATE_INPUT_REFUSED"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_CLI_AUTH_MODE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "MISSING"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_CLI_AUTH_MODE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "INVALID"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_CLI_AUTH_MODE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "PRIVATE_INPUT_REFUSED"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "MISSING"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "INVALID"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "PRIVATE_INPUT_REFUSED"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "MISSING"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "INVALID"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "PRIVATE_INPUT_REFUSED"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "MISSING"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "INVALID"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "oneOf": [
+                  {
+                    "const": "localFailure"
+                  }
+                ]
+              },
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CLI_CONFIGURATION_INVALID"
+                  }
+                ]
+              },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_CONFIGURATION_ISSUE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "setting": {
+                        "oneOf": [
+                          {
+                            "const": "CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"
+                          }
+                        ]
+                      },
+                      "issue": {
+                        "oneOf": [
+                          {
+                            "const": "PRIVATE_INPUT_REFUSED"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["setting","issue"
+                    ]
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
+              "endpoint": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "format": "uuid",
+                    "minLength": 36,
+                    "maxLength": 36
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attemptKnowledge": {
+                "oneOf": [
+                  {
+                    "const": "NOT_SENT"
+                  },
+                  {
+                    "const": "READ_SUCCEEDED"
+                  },
+                  {
+                    "const": "READ_FAILED"
+                  },
+                  {
+                    "const": "ACCEPTED"
+                  },
+                  {
+                    "const": "NOT_ACCEPTED"
+                  },
+                  {
+                    "const": "UNCONFIRMED"
+                  }
+                ]
+              },
+              "resolutionEvidence": {
+                "oneOf": [
+                  {
+                    "const": "NONE"
+                  },
+                  {
+                    "const": "CONTENT_ACCEPTED"
+                  },
+                  {
+                    "const": "CONTENT_EXCLUDED"
+                  }
+                ]
+              }
+            },
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
             ]
           },
           {
@@ -3802,6 +6747,27 @@
                   }
                 ]
               },
+              "diagnostic": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "const": "CLI_PROTOCOL_GUIDANCE"
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {},
+                    "required": []
+                  }
+                },
+                "required": ["id","parameters"
+                ]
+              },
               "endpoint": {
                 "oneOf": [
                   {
@@ -3864,7 +6830,7 @@
                 ]
               }
             },
-            "required": ["kind","code","endpoint","operationId","attemptKnowledge","resolutionEvidence"
+            "required": ["kind","code","diagnostic","endpoint","operationId","attemptKnowledge","resolutionEvidence"
             ]
           }
         ]
@@ -5527,6 +8493,24 @@
           },
           {
             "$ref": "#/components/schemas/HostFailure.CompletedResponseFailed"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
           }
         ]
       },
@@ -6190,6 +9174,438 @@
                 "additionalProperties": false,
                 "properties": {},
                 "required": []
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetIssuer.Invalid": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "issuer"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "INVALID"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetIssuer.Missing": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "issuer"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "MISSING"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetKind.Invalid": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "kind"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "INVALID"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetKind.Missing": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "kind"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "MISSING"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetSubject.Invalid": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "subject"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "INVALID"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetSubject.Missing": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "subject"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "MISSING"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
               }
             },
             "required": ["id","parameters"
@@ -7306,7 +10722,7 @@
           "authenticated": {
             "type": "boolean"
           },
-          "wireFingerprint": {
+          "contractIdentity": {
             "type": "string",
             "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
             "minLength": 64,
@@ -7325,7 +10741,7 @@
             ]
           }
         },
-        "required": ["authenticated","wireFingerprint","antiforgeryToken"
+        "required": ["authenticated","contractIdentity","antiforgeryToken"
         ]
       },
       "SessionLogoutOutcome": {

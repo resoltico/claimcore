@@ -1,5 +1,7 @@
 namespace ClaimCore.RecordFormat
 
+open ClaimCore.Catalog
+
 open System
 open System.Buffers.Binary
 open System.Security.Cryptography

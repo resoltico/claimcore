@@ -1,5 +1,5 @@
 import { transportResponse } from "./transport-response.fixtures";
-import { wireContractFingerprint } from "@contracts/client";
+import { consumerContractIdentity } from "@contracts/client";
 export { productMetadata as definition } from "../src/protocol/productMetadata";
 export { caseFields as fields, operationId, review } from "./service-foundation.fixtures";
 export const runtime = {
@@ -13,7 +13,7 @@ const fixtureData = (endpoint: string, data: unknown): unknown => {
   }
   if (endpoint === "session") {
     return {
-      wireFingerprint: wireContractFingerprint,
+      contractIdentity: consumerContractIdentity,
       ...(typeof data === "object" && data !== null ? data : {}),
     };
   }

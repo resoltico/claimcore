@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 open ClaimCore.Domain
 
 module internal Advice =

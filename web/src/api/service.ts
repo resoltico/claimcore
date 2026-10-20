@@ -8,7 +8,7 @@ import {
   type EndpointId,
   endpoints,
   strictByteProfile,
-  wireContractFingerprint,
+  consumerContractIdentity,
 } from "@contracts/client";
 import { admitBytes } from "../protocol/schema";
 import { correlateReply, isHostFailure, isResponse } from "../protocol/client";
@@ -63,7 +63,7 @@ const send = async <K extends EndpointId>(
   const endpoint = endpoints.find((candidate) => candidate.id === id)!;
   const headers: Record<string, string> = {
     Accept: "application/json",
-    "ClaimCore-Contract": wireContractFingerprint,
+    "ClaimCore-Contract": consumerContractIdentity,
   };
   if (token !== undefined) {
     headers["X-ClaimCore-Antiforgery"] = token;

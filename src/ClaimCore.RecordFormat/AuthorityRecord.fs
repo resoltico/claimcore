@@ -1,5 +1,7 @@
 namespace ClaimCore.RecordFormat
 
+open ClaimCore.Catalog
+
 open System
 open ClaimCore.Domain
 
@@ -47,10 +49,11 @@ module RecordedAuthorityActs =
 
     let private tokens =
         [
-            RecordedAuthorityKind.ProvisionOwner, "PROVISION_OWNER"
-            RecordedAuthorityKind.RegisterActor, "REGISTER_ACTOR"
-            RecordedAuthorityKind.SetGrant, "SET_GRANT"
-            RecordedAuthorityKind.SetEnabled, "SET_ENABLED"
+            RecordedAuthorityKind.ProvisionOwner,
+            (AuthorityKinds.token AuthorityKind.ProvisionOwner)
+            RecordedAuthorityKind.RegisterActor, (AuthorityKinds.token AuthorityKind.RegisterActor)
+            RecordedAuthorityKind.SetGrant, (AuthorityKinds.token AuthorityKind.SetGrant)
+            RecordedAuthorityKind.SetEnabled, (AuthorityKinds.token AuthorityKind.SetEnabled)
         ]
 
     let all = tokens |> List.map fst
@@ -82,13 +85,13 @@ module AuthorityRecord =
         let path = "$.act"
 
         match Json.text path "kind" root with
-        | "PROVISION_OWNER" ->
+        | value when value = (AuthorityKinds.token AuthorityKind.ProvisionOwner) ->
             Json.properties path [ "kind" ] root
             RecordedAuthorityAct.ProvisionOwner
-        | "REGISTER_ACTOR" ->
+        | value when value = (AuthorityKinds.token AuthorityKind.RegisterActor) ->
             Json.properties path [ "kind" ] root
             RecordedAuthorityAct.RegisterActor
-        | "SET_GRANT" ->
+        | value when value = (AuthorityKinds.token AuthorityKind.SetGrant) ->
             Json.properties path [ "kind"; "role"; "scope"; "active" ] root
 
             RecordedAuthorityAct.SetGrant(
@@ -96,7 +99,7 @@ module AuthorityRecord =
                 Json.required path "scope" root |> scope,
                 Json.boolean path "active" root
             )
-        | "SET_ENABLED" ->
+        | value when value = (AuthorityKinds.token AuthorityKind.SetEnabled) ->
             Json.properties path [ "kind"; "enabled" ] root
             RecordedAuthorityAct.SetEnabled(Json.boolean path "enabled" root)
         | _ -> Json.reject (path + ".kind") "Unknown authority act."
@@ -108,7 +111,7 @@ module AuthorityRecord =
         Json.properties "$.target" [ "kind"; "issuer"; "subject" ] target
         let kind = Json.text "$.target" "kind" target
 
-        if kind <> "HUMAN" && kind <> "SERVICE" then
+        if kind <> PrincipalKinds.Human && kind <> PrincipalKinds.Service then
             Json.reject "$.target.kind" "Unknown principal kind."
 
         {
@@ -160,7 +163,10 @@ module AuthorityRecord =
         if request.OperationId = Guid.Empty then
             invalidArg (nameof request) "Use a nonempty operation ID."
 
-        if request.Target.Kind <> "HUMAN" && request.Target.Kind <> "SERVICE" then
+        if
+            request.Target.Kind <> PrincipalKinds.Human
+            && request.Target.Kind <> PrincipalKinds.Service
+        then
             invalidArg (nameof request) "Unknown principal kind."
 
         let target =

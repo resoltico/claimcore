@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Catalog
+
 open ClaimCore.Wire
 
 open System
@@ -47,7 +49,7 @@ module HostRoutes =
                                     SessionOutcome.Succeeded
                                         {
                                             Authenticated = authenticated
-                                            WireFingerprint = Fingerprint.value
+                                            ContractIdentity = ConsumerContract.identity
                                             AntiforgeryToken = token
                                         }
                             })
@@ -93,7 +95,7 @@ module HostRoutes =
         }
 
     let health
-        (readiness: unit -> Task<bool>)
+        (readiness: System.Threading.CancellationToken -> Task<bool>)
         (context: HttpContext)
         (next: RequestDelegate)
         : Task =
@@ -101,7 +103,7 @@ module HostRoutes =
             match context.Request.Method, context.Request.Path.Value with
             | "GET", "/health/live" -> context.Response.StatusCode <- 200
             | "GET", "/health/ready" ->
-                let! ready = readiness ()
+                let! ready = readiness context.RequestAborted
                 context.Response.StatusCode <- if ready then 200 else 503
             | _, ("/health/live" | "/health/ready") ->
                 do!

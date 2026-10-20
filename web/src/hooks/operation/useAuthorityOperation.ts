@@ -1,48 +1,32 @@
-import {
-  prepareRequest,
-  ProtocolInputError,
-  type PreparedRequest,
-} from "../../protocol/preparedRequest";
+import { prepareRequest, ProtocolInputError } from "../../protocol/preparedRequest";
 import { useEffect, useState, useRef } from "react";
+import { useMutationLifecycle } from "./useMutationLifecycle";
 import { buildRequest, wireSchemas } from "../../protocol/client";
 import { service, resultNotice } from "../../api/service";
 import { localNotice, type Notice } from "../../api/notices";
 import { formValue, type FormValues } from "../../protocol/forms";
-import { accumulateKnowledge, attemptKnowledge, resolutionEvidence } from "../../protocol/delivery";
+import { attemptKnowledge, resolutionEvidence } from "../../protocol/delivery";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { useAuthorityDisclosure } from "./useAuthorityDisclosure";
 export const authorityDocument = wireSchemas["authority.execute"].request;
 const useAuthorityState = () => {
   const [values, setValues] = useState<FormValues>({ operationId: crypto.randomUUID() });
-  const [prepared, setPrepared] = useState<PreparedRequest<"authority.execute"> | null>(null);
-  const bytes = prepared?.bytes ?? null;
-  const setBytes = (_value: null) => {
-    setPrepared(null);
-  };
+  const delivery = useMutationLifecycle<"authority.execute">();
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [uncertain, setUncertain] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [pendingDiscard, setPendingDiscard] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<string | null>(null);
   return {
-    prepared,
-    setPrepared,
+    ...delivery,
     fieldError,
     setFieldError,
     pendingDiscard,
     setPendingDiscard,
     values,
     setValues,
-    bytes,
-    setBytes,
     confirmed,
     setConfirmed,
-    busy,
-    setBusy,
-    uncertain,
-    setUncertain,
     notice,
     setNotice,
     receipt,
@@ -82,20 +66,14 @@ const executeAuthority = async (
   control.busy = true;
   control.dispatched = true;
   const serial = ++control.serial;
-  state.setBusy(true);
+  state.begin(serial);
   const result = await service.authorityExecute(state.prepared, token);
   if (control.serial !== serial) {
     return;
   }
   control.busy = false;
   control.dispatched = false;
-  state.setBusy(false);
-  const knowledge = accumulateKnowledge(
-    state.uncertain ? "UNCONFIRMED" : "NOT_SENT",
-    attemptKnowledge("authority.execute", result),
-    resolutionEvidence(result),
-  );
-  state.setUncertain(knowledge === "UNCONFIRMED");
+  state.complete(serial, attemptKnowledge("authority.execute", result), resolutionEvidence(result));
   if (isDisclosureRefused(result)) {
     invalidateDisclosure(true);
   }
@@ -106,9 +84,11 @@ const executeAuthority = async (
     state.setValues({ operationId: crypto.randomUUID() });
     state.setReceipt(result.value.outcome.data.operationId);
     state.setNotice(null);
-    state.setBytes(null);
     invalidateDisclosure(true);
     return;
+  }
+  if (result.kind === "hostFailure" && result.failure.diagnostic.id === "PRINCIPAL_INPUT_INVALID") {
+    state.setFieldError(`target.${result.failure.diagnostic.parameters.target}`);
   }
   state.setNotice(resultNotice(result));
 };
@@ -123,7 +103,7 @@ const authorityDraftActions = (state: State) => {
         ? { "act.kind": state.pendingDiscard }
         : {}),
     });
-    state.setBytes(null);
+    state.clearPrepared();
     state.setPendingDiscard(null);
   };
   const changeCommand = (next: string) => {
@@ -151,35 +131,35 @@ export const useAuthorityOperation = (
   const state = useAuthorityState();
   const disclosure = useAuthorityDisclosure();
   const delivery = useRef<DeliveryControl>({ busy: false, serial: 0, dispatched: false, token });
-  const { setBusy, setUncertain, setReceipt } = state;
+  const { interrupt, setReceipt } = state;
   const { invalidate } = disclosure;
   useEffect(() => {
     const control = delivery.current;
     if (control.token !== token) {
       control.token = token;
       invalidate(true);
-      setBusy(false);
-      setUncertain(
-        (prior) =>
-          accumulateKnowledge(
-            prior ? "UNCONFIRMED" : "NOT_SENT",
-            control.dispatched ? "UNCONFIRMED" : "NOT_SENT",
-            "NONE",
-          ) === "UNCONFIRMED",
-      );
+      interrupt();
       setReceipt(null);
     }
     return () => {
       control.serial += 1;
       control.busy = false;
     };
-  }, [token, setBusy, setUncertain, setReceipt, invalidate]);
+  }, [token, interrupt, setReceipt, invalidate]);
   useAuthorityLock(state, onLockChange);
   const draftActions = authorityDraftActions(state);
   return {
     ...state,
     disclosure,
     ...draftActions,
+    edit: () => {
+      if (state.busy || state.uncertain || delivery.current.busy) {
+        return;
+      }
+      state.clearPrepared();
+      state.setValues({ ...state.values, operationId: crypto.randomUUID() });
+      state.setConfirmed(false);
+    },
     discard: () => {
       if (!delivery.current.busy && !delivery.current.dispatched) {
         draftActions.discard();

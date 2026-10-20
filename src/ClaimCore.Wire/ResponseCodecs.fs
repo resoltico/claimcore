@@ -1,5 +1,7 @@
 namespace ClaimCore.Wire
 
+open ClaimCore.Catalog
+
 module ResponseCodecs =
     open Codec
     open ResponseScalars
@@ -37,7 +39,7 @@ module ResponseCodecs =
         |> field "payableAmount" _.PayableAmount (nullable amount)
         |> field "payableCurrency" _.PayableCurrency (nullable currency)
         |> field "paymentDate" _.PaymentDate (nullable date)
-        |> field "status" _.Status (tokens [ "OPENED"; "CLOSED" ])
+        |> field "status" _.Status (tokens (CaseStatuses.all |> List.map CaseStatuses.token))
         |> build
         |> named "CaseFields"
 
@@ -91,9 +93,38 @@ module ResponseCodecs =
                 Payment = v2
             })
         : Fields<CorrectionAdvice, _>)
-        |> field "registration" _.Registration (list 2 (tokens [ "KEEP"; "REPLACE" ]))
-        |> field "decision" _.Decision (list 3 (tokens [ "KEEP"; "REPLACE"; "CLEAR" ]))
-        |> field "payment" _.Payment (list 3 (tokens [ "KEEP"; "REPLACE"; "CLEAR" ]))
+        |> field
+            "registration"
+            _.Registration
+            (list
+                2
+                (tokens
+                    [
+                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                    ]))
+        |> field
+            "decision"
+            _.Decision
+            (list
+                3
+                (tokens
+                    [
+                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        (CorrectionActions.token CorrectionGroupAction.Clear)
+                    ]))
+        |> field
+            "payment"
+            _.Payment
+            (list
+                3
+                (tokens
+                    [
+                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        (CorrectionActions.token CorrectionGroupAction.Clear)
+                    ]))
         |> build
         |> named "CorrectionAdvice"
 
@@ -104,23 +135,23 @@ module ResponseCodecs =
             fst
             (tokens
                 [
-                    "OPEN"
-                    "AMEND_REGISTRATION"
-                    "DECIDE"
-                    "WITHDRAW_DECISION"
-                    "RECORD_PAYMENT"
-                    "CLEAR_PAYMENT"
-                    "CLOSE"
-                    "REOPEN"
-                    "VOID"
-                    "REINSTATE"
-                    "ERASE"
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
+                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
+                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
+                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
                 ])
         |> field "expectedRevision" snd revision
 
     let private correctionOfferFields =
         record (fun revision correction -> revision, correction)
-        |> fixedField "act" "CORRECT_CASE"
+        |> fixedField "act" (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
         |> field "expectedRevision" fst revision
         |> field "correction" snd correctionAdvice
 
@@ -172,7 +203,7 @@ module ResponseCodecs =
             "kind"
             [
                 variant
-                    "OPEN"
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
                     InstallationOffer.Open
                     (function
                     | InstallationOffer.Open value -> Some value
@@ -185,7 +216,15 @@ module ResponseCodecs =
                     | InstallationOffer.AuthorityAct value -> Some value
                     | _ -> None)
                     (record id
-                     |> field "act" id (tokens [ "REGISTER_ACTOR"; "SET_GRANT"; "SET_ENABLED" ]))
+                     |> field
+                         "act"
+                         id
+                         (tokens
+                             [
+                                 (AuthorityKinds.token AuthorityKind.RegisterActor)
+                                 (AuthorityKinds.token AuthorityKind.SetGrant)
+                                 (AuthorityKinds.token AuthorityKind.SetEnabled)
+                             ]))
             ]
 
     let runtimeContext =
@@ -275,18 +314,18 @@ module ResponseCodecs =
             _.Act
             (tokens
                 [
-                    "OPEN"
-                    "AMEND_REGISTRATION"
-                    "CORRECT_CASE"
-                    "DECIDE"
-                    "WITHDRAW_DECISION"
-                    "RECORD_PAYMENT"
-                    "CLEAR_PAYMENT"
-                    "CLOSE"
-                    "REOPEN"
-                    "VOID"
-                    "REINSTATE"
-                    "ERASE"
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
+                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
+                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
+                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
                 ])
         |> field "snapshot" _.Snapshot (disclosure)
 
@@ -313,7 +352,13 @@ module ResponseCodecs =
         |> field
             "act"
             _.Act
-            (tokens [ "PROVISION_OWNER"; "REGISTER_ACTOR"; "SET_GRANT"; "SET_ENABLED" ])
+            (tokens
+                [
+                    (AuthorityKinds.token AuthorityKind.ProvisionOwner)
+                    (AuthorityKinds.token AuthorityKind.RegisterActor)
+                    (AuthorityKinds.token AuthorityKind.SetGrant)
+                    (AuthorityKinds.token AuthorityKind.SetEnabled)
+                ])
 
 
     let authorityReceipt = authorityReceiptFields |> build |> named "AuthorityReceipt"
@@ -337,18 +382,18 @@ module ResponseCodecs =
             _.Act
             (tokens
                 [
-                    "OPEN"
-                    "AMEND_REGISTRATION"
-                    "CORRECT_CASE"
-                    "DECIDE"
-                    "WITHDRAW_DECISION"
-                    "RECORD_PAYMENT"
-                    "CLEAR_PAYMENT"
-                    "CLOSE"
-                    "REOPEN"
-                    "VOID"
-                    "REINSTATE"
-                    "ERASE"
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
+                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
+                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
+                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
+                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
                 ])
         |> field "recordedAt" _.RecordedAt (instant)
         |> field "recordedBy" _.RecordedBy (uuid)
@@ -401,19 +446,7 @@ module ResponseCodecs =
 
     let authorityGrant =
         (record (fun v0 v1 -> { AuthorityGrant.Role = v0; Scope = v1 }): Fields<AuthorityGrant, _>)
-        |> field
-            "role"
-            _.Role
-            (tokens
-                [
-                    "OWNER"
-                    "CASE_READER"
-                    "CASE_REGISTRAR"
-                    "CASE_HANDLER"
-                    "PAYMENT_RECORDER"
-                    "DATA_STEWARD"
-                    "AUDITOR"
-                ])
+        |> field "role" _.Role (tokens (RoleTokens.all |> List.map RoleTokens.token))
         |> field "scope" _.Scope (scope)
         |> build
         |> named "AuthorityGrant"
@@ -493,12 +526,12 @@ module ResponseCodecs =
         (record (fun v0 v1 v2 ->
             {
                 Session.Authenticated = v0
-                WireFingerprint = v1
+                ContractIdentity = v1
                 AntiforgeryToken = v2
             })
         : Fields<Session, _>)
         |> field "authenticated" _.Authenticated (boolean)
-        |> field "wireFingerprint" _.WireFingerprint digest
+        |> field "contractIdentity" _.ContractIdentity digest
         |> field "antiforgeryToken" _.AntiforgeryToken (nullable nonempty)
         |> build
         |> named "Session"
@@ -517,13 +550,20 @@ module ResponseCodecs =
 
     let emptyParameters = record () |> build |> named "EmptyParameters"
 
+    let private argumentCodec argument =
+        let definition = DiagnosticArguments.definition argument
+        integer (int64 definition.Minimum) (int64 definition.Maximum)
+
     let textLengthParameters =
         (record (fun v0 ->
             {
                 TextLengthParameters.MaximumCharacters = v0
             })
         : Fields<TextLengthParameters, _>)
-        |> field "maximumCharacters" _.MaximumCharacters (integer 0L 2147483647L)
+        |> field
+            (DiagnosticArguments.token DiagnosticArgument.MaximumCharacters)
+            _.MaximumCharacters
+            (argumentCodec DiagnosticArgument.MaximumCharacters)
         |> build
         |> named "TextLengthParameters"
 
@@ -534,56 +574,65 @@ module ResponseCodecs =
                 MaximumFractionalDigits = v1
             })
         : Fields<DecimalParameters, _>)
-        |> field "maximumIntegerDigits" _.MaximumIntegerDigits (integer 1L 2147483647L)
-        |> field "maximumFractionalDigits" _.MaximumFractionalDigits (integer 0L 2147483647L)
+        |> field
+            (DiagnosticArguments.token DiagnosticArgument.MaximumIntegerDigits)
+            _.MaximumIntegerDigits
+            (argumentCodec DiagnosticArgument.MaximumIntegerDigits)
+        |> field
+            (DiagnosticArguments.token DiagnosticArgument.MaximumFractionalDigits)
+            _.MaximumFractionalDigits
+            (argumentCodec DiagnosticArgument.MaximumFractionalDigits)
         |> build
         |> named "DecimalParameters"
 
     let pageParameters =
         (record (fun v0 -> { PageParameters.MaximumPageSize = v0 }): Fields<PageParameters, _>)
-        |> field "maximumPageSize" _.MaximumPageSize (integer 1L 2147483647L)
+        |> field
+            (DiagnosticArguments.token DiagnosticArgument.MaximumPageSize)
+            _.MaximumPageSize
+            (argumentCodec DiagnosticArgument.MaximumPageSize)
         |> build
         |> named "PageParameters"
 
     let private diagnostics0 =
         [
             variant
-                "INPUT_TEXT_REQUIRED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.TextRequired)
                 Diagnostic.TextRequired
                 (function
                 | Diagnostic.TextRequired value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "INPUT_MALFORMED_UNICODE"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.MalformedUnicode)
                 Diagnostic.MalformedUnicode
                 (function
                 | Diagnostic.MalformedUnicode value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "INPUT_SURROUNDING_WHITESPACE"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.SurroundingWhitespace)
                 Diagnostic.SurroundingWhitespace
                 (function
                 | Diagnostic.SurroundingWhitespace value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "INPUT_TEXT_TOO_LONG"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.TextTooLong)
                 Diagnostic.TextTooLong
                 (function
                 | Diagnostic.TextTooLong value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id textLengthParameters)
             variant
-                "INPUT_CONTROL_CHARACTERS"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.ControlCharacters)
                 Diagnostic.ControlCharacters
                 (function
                 | Diagnostic.ControlCharacters value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "TEXT_FORMATTING_CHARACTER"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.FormattingCharacter)
                 Diagnostic.FormattingCharacter
                 (function
                 | Diagnostic.FormattingCharacter value -> Some value
@@ -594,42 +643,42 @@ module ResponseCodecs =
     let private diagnostics1 =
         [
             variant
-                "INPUT_CASE_REFERENCE_FORMAT"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.ReferenceFormat)
                 Diagnostic.ReferenceFormat
                 (function
                 | Diagnostic.ReferenceFormat value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "INPUT_COUNTRY_FORMAT"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.CountryFormat)
                 Diagnostic.CountryFormat
                 (function
                 | Diagnostic.CountryFormat value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "INPUT_CALENDAR_DATE_REQUIRED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.CalendarDateRequired)
                 Diagnostic.CalendarDateRequired
                 (function
                 | Diagnostic.CalendarDateRequired value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "INPUT_DATE_ORDER"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.ChronologicalOrder)
                 Diagnostic.ChronologicalOrder
                 (function
                 | Diagnostic.ChronologicalOrder value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "INPUT_FUTURE_DATE"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.FutureDate)
                 Diagnostic.FutureDate
                 (function
                 | Diagnostic.FutureDate value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "INPUT_DECIMAL_FORMAT"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.DecimalFormat)
                 Diagnostic.DecimalFormat
                 (function
                 | Diagnostic.DecimalFormat value -> Some value
@@ -640,42 +689,42 @@ module ResponseCodecs =
     let private diagnostics2 =
         [
             variant
-                "INPUT_CURRENCY_FORMAT"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.CurrencyFormat)
                 Diagnostic.CurrencyFormat
                 (function
                 | Diagnostic.CurrencyFormat value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "COMMAND_OPERATION_ID_REQUIRED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.EmptyOperationId)
                 Diagnostic.EmptyOperationId
                 (function
                 | Diagnostic.EmptyOperationId value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "COMMAND_EXPECTED_REVISION_RANGE"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.ExpectedRevisionOutOfRange)
                 Diagnostic.ExpectedRevisionOutOfRange
                 (function
                 | Diagnostic.ExpectedRevisionOutOfRange value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "REVISION_EXHAUSTED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.RevisionExhausted)
                 Diagnostic.RevisionExhausted
                 (function
                 | Diagnostic.RevisionExhausted value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CORRECTION_PAYMENT_CLEAR_REQUIRED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.PaymentClearRequired)
                 Diagnostic.PaymentClearRequired
                 (function
                 | Diagnostic.PaymentClearRequired value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.PaymentAcknowledgementRequired)
                 Diagnostic.PaymentAcknowledgementRequired
                 (function
                 | Diagnostic.PaymentAcknowledgementRequired value -> Some value
@@ -686,42 +735,42 @@ module ResponseCodecs =
     let private diagnostics3 =
         [
             variant
-                "CASE_ALREADY_EXISTS"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.CaseAlreadyExists)
                 Diagnostic.CaseAlreadyExists
                 (function
                 | Diagnostic.CaseAlreadyExists value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_REVISION_CONFLICT"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.RevisionConflict)
                 Diagnostic.RevisionConflict
                 (function
                 | Diagnostic.RevisionConflict value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_CLOSED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.CaseClosed)
                 Diagnostic.CaseClosed
                 (function
                 | Diagnostic.CaseClosed value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_ALREADY_CLOSED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.AlreadyClosed)
                 Diagnostic.AlreadyClosed
                 (function
                 | Diagnostic.AlreadyClosed value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_ALREADY_OPENED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.AlreadyOpened)
                 Diagnostic.AlreadyOpened
                 (function
                 | Diagnostic.AlreadyOpened value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_AMENDMENT_REQUIRES_UNDECIDED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.AmendmentRequiresUndecided)
                 Diagnostic.AmendmentRequiresUndecided
                 (function
                 | Diagnostic.AmendmentRequiresUndecided value -> Some value
@@ -732,42 +781,42 @@ module ResponseCodecs =
     let private diagnostics4 =
         [
             variant
-                "CORRECTION_NO_CHANGES"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.CorrectionNoChanges)
                 Diagnostic.CorrectionNoChanges
                 (function
                 | Diagnostic.CorrectionNoChanges value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CORRECTION_EXISTING_VALUE_REQUIRED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.CorrectionRequiresExistingValue)
                 Diagnostic.CorrectionRequiresExistingValue
                 (function
                 | Diagnostic.CorrectionRequiresExistingValue value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_DECISION_REQUIRED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.DecisionRequired)
                 Diagnostic.DecisionRequired
                 (function
                 | Diagnostic.DecisionRequired value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_PAYMENT_ALREADY_RECORDED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.PaymentAlreadyRecorded)
                 Diagnostic.PaymentAlreadyRecorded
                 (function
                 | Diagnostic.PaymentAlreadyRecorded value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_PAYMENT_NOT_RECORDED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.PaymentNotRecorded)
                 Diagnostic.PaymentNotRecorded
                 (function
                 | Diagnostic.PaymentNotRecorded value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_DECISION_ALREADY_PAID"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.DecisionAlreadyPaid)
                 Diagnostic.DecisionAlreadyPaid
                 (function
                 | Diagnostic.DecisionAlreadyPaid value -> Some value
@@ -778,42 +827,42 @@ module ResponseCodecs =
     let private diagnostics5 =
         [
             variant
-                "CASE_ZERO_DECISION_CANNOT_BE_PAID"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.ZeroDecisionCannotBePaid)
                 Diagnostic.ZeroDecisionCannotBePaid
                 (function
                 | Diagnostic.ZeroDecisionCannotBePaid value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "QUERY_PAGE_LIMIT_RANGE"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.PageLimitOutOfRange)
                 Diagnostic.PageLimitOutOfRange
                 (function
                 | Diagnostic.PageLimitOutOfRange value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id pageParameters)
             variant
-                "QUERY_CURSOR_INVALID"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.InvalidCursor)
                 Diagnostic.InvalidCursor
                 (function
                 | Diagnostic.InvalidCursor value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "ACT_NOT_PERMITTED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.ActNotPermitted)
                 Diagnostic.ActNotPermitted
                 (function
                 | Diagnostic.ActNotPermitted value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "LEDGER_SEQUENCE_EXHAUSTED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.LedgerExhausted)
                 Diagnostic.LedgerExhausted
                 (function
                 | Diagnostic.LedgerExhausted value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "OPERATION_CONTENT_CONFLICT"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.IdempotencyConflict)
                 Diagnostic.IdempotencyConflict
                 (function
                 | Diagnostic.IdempotencyConflict value -> Some value
@@ -824,42 +873,42 @@ module ResponseCodecs =
     let private diagnostics6 =
         [
             variant
-                "ACCESS_RESOURCE_UNAVAILABLE"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.ResourceUnavailable)
                 Diagnostic.ResourceUnavailable
                 (function
                 | Diagnostic.ResourceUnavailable value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_VOIDED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.CaseVoided)
                 Diagnostic.CaseVoided
                 (function
                 | Diagnostic.CaseVoided value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "CASE_ERASED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.CaseErased)
                 Diagnostic.CaseErased
                 (function
                 | Diagnostic.CaseErased value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "ALREADY_VOIDED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.AlreadyVoided)
                 Diagnostic.AlreadyVoided
                 (function
                 | Diagnostic.AlreadyVoided value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "NOT_VOIDED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.NotVoided)
                 Diagnostic.NotVoided
                 (function
                 | Diagnostic.NotVoided value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "LAST_OWNER"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.LastOwner)
                 Diagnostic.LastOwner
                 (function
                 | Diagnostic.LastOwner value -> Some value
@@ -870,21 +919,21 @@ module ResponseCodecs =
     let private diagnostics7 =
         [
             variant
-                "ACTOR_ALREADY_REGISTERED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.ActorAlreadyRegistered)
                 Diagnostic.ActorAlreadyRegistered
                 (function
                 | Diagnostic.ActorAlreadyRegistered value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "ACTOR_UNKNOWN"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.ActorUnknown)
                 Diagnostic.ActorUnknown
                 (function
                 | Diagnostic.ActorUnknown value -> Some value
                 | _ -> None)
                 (record id |> field "parameters" id emptyParameters)
             variant
-                "HUMAN_PRINCIPAL_REQUIRED"
+                (RejectionDiagnosticIds.token RejectionDiagnosticId.HumanPrincipalRequired)
                 Diagnostic.HumanPrincipalRequired
                 (function
                 | Diagnostic.HumanPrincipalRequired value -> Some value
@@ -977,19 +1026,25 @@ module ResponseCodecs =
         choice
             "Fault"
             [
-                faultVariant FaultReason.InternalError "CORE_INTERNAL_ERROR" "STOP_AND_INVESTIGATE"
-                faultVariant FaultReason.StoreUnavailable "CORE_STORE_UNAVAILABLE" "RETRY_SAFE"
+                faultVariant
+                    FaultReason.InternalError
+                    FaultDiagnosticIds.InternalError
+                    "STOP_AND_INVESTIGATE"
+                faultVariant
+                    FaultReason.StoreUnavailable
+                    FaultDiagnosticIds.StoreUnavailable
+                    "RETRY_SAFE"
                 faultVariant
                     FaultReason.StoreIntegrityError
-                    "CORE_STORE_INTEGRITY_ERROR"
+                    FaultDiagnosticIds.StoreIntegrityError
                     "STOP_AND_INVESTIGATE"
                 faultVariant
                     FaultReason.SchemaMismatch
-                    "CORE_SCHEMA_MISMATCH"
+                    FaultDiagnosticIds.SchemaMismatch
                     "STOP_AND_INVESTIGATE"
                 faultVariant
                     FaultReason.OperationContentConflict
-                    "CORE_OPERATION_CONTENT_CONFLICT"
+                    FaultDiagnosticIds.OperationContentConflict
                     "STOP_AND_INVESTIGATE"
             ]
 
@@ -1033,7 +1088,10 @@ module ResponseCodecs =
                      : Fields<LiveSummary, _>)
                      |> field "caseReference" _.CaseReference reference
                      |> field "revision" _.Revision sequence
-                     |> field "status" _.Status (tokens [ "OPENED"; "CLOSED" ])
+                     |> field
+                         "status"
+                         _.Status
+                         (tokens (CaseStatuses.all |> List.map CaseStatuses.token))
                      |> field "disposition" _.Disposition (tokens [ "ACTIVE"; "VOIDED" ]))
                 variant
                     "ERASED"

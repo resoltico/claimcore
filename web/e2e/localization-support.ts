@@ -6,9 +6,9 @@ import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
-import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
-import lv from "../src/presentation/catalogs/lv.ui.json" with { type: "json" };
-import ar from "../src/presentation/catalogs/ar.ui.json" with { type: "json" };
+import en from "../../contracts/locale.en.ui.json" with { type: "json" };
+import lv from "../../contracts/locale.lv.ui.json" with { type: "json" };
+import ar from "../../contracts/locale.ar.ui.json" with { type: "json" };
 import enPresentation from "../src/presentation/generated/en.json" with { type: "json" };
 import lvPresentation from "../src/presentation/generated/lv.json" with { type: "json" };
 import arPresentation from "../src/presentation/generated/ar.json" with { type: "json" };
@@ -196,7 +196,7 @@ export const businessFormatRefusalText = {
     ar: "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD.",
   },
   INPUT_DECIMAL_FORMAT: {
-    en: "Use non-negative decimal text: up to 18 integer digits and 4 fractional digits; no sign or exponent.",
+    en: "Use non-negative decimal text: up to 18 integer digits and 4 fractional digits; no sign, exponent or redundant leading zeros: 0.10 is valid; 00.10 is invalid.",
     lv: "Izmantojiet nenegatīvu decimālskaitli: līdz 18 veseliem cipariem un 4 daļas cipariem; bez zīmes vai eksponenta.",
     ar: "استخدم نصًا عشريًا غير سالب: حتى \u206818\u2069 رقمًا صحيحًا و\u20684\u2069 أرقام كسرية؛ دون إشارة أو أس.",
   },

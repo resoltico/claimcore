@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="Fields.fs" />
+    <Compile Include="CaseVocabulary.fs" />
+    <Compile Include="CaseTokens.fs" />
+    <Compile Include="InputTargets.fs" />
+    <Compile Include="RejectionDiagnosticIds.fs" />
+    <Compile Include="Capabilities.fs" />
+    <Compile Include="Roles.fs" />
+    <Compile Include="AuthorityKinds.fs" />
+    <Compile Include="PrincipalKinds.fs" />
+    <Compile Include="FaultDiagnosticIds.fs" />
+    <Compile Include="Localization/MessageText.fs" />
+    <Compile Include="Localization/LocalizationPolicy.fs" />
+    <Compile Include="DeliveryVocabulary.fs" />
+    <Compile Include="InputDiagnostics.fs" />
+    <Compile Include="ProtocolFailures.fs" />
+    <Compile Include="CliHelp.fs" />
+  </ItemGroup>
+</Project>

@@ -11,20 +11,29 @@
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
+          "ClaimCore.Catalog": "[0.10.0, )",
           "ClaimCore.Domain": "[0.10.0, )",
           "ClaimCore.RecordFormat": "[0.10.0, )",
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
+      "claimcore.catalog": {
+        "type": "Project",
+        "dependencies": {
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {
+          "ClaimCore.Catalog": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
+          "ClaimCore.Catalog": "[0.10.0, )",
           "ClaimCore.Domain": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
@@ -32,6 +41,7 @@
       "claimcore.wire": {
         "type": "Project",
         "dependencies": {
+          "ClaimCore.Catalog": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       }

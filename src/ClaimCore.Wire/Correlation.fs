@@ -1,5 +1,7 @@
 namespace ClaimCore.Wire
 
+open ClaimCore.Catalog
+
 open System
 
 /// Only identity-bearing values participate; presentation and payload bytes cannot affect correlation.
@@ -30,72 +32,166 @@ type ReplyIdentity =
     | Other of envelopeOperation: Guid option
 
 module Correlation =
-    let private sameReference left right =
-        String.Equals(left, right, StringComparison.OrdinalIgnoreCase)
+    let private document value =
+        System.Text.Json.JsonSerializer.SerializeToUtf8Bytes value
+        |> fun bytes -> System.Text.Json.JsonDocument.Parse(ReadOnlyMemory<byte> bytes)
 
-    let private successor expected actual =
-        expected < Strict.MaximumSafeInteger && actual = expected + 1L
-
-    let private receipt request envelope (receipt: ReceiptIdentity) =
-        match request with
-        | RequestIdentity.Case(operation, reference, revision, act) ->
-            envelope = Some operation
-            && receipt.OperationId = operation
-            && receipt.Scope = ReceiptScope.Case
-            && receipt.Act = act
-            && (receipt.CaseReference |> Option.exists (sameReference reference))
-            && (receipt.Revision |> Option.exists (successor revision))
-        | RequestIdentity.Authority(operation, act) ->
-            envelope = Some operation
-            && receipt.OperationId = operation
-            && receipt.Scope = ReceiptScope.Authority
-            && receipt.Act = act
-        | _ -> false
-
-    let private reviewed request envelope reference revision =
-        match request with
-        | RequestIdentity.Case(operation, expectedReference, expectedRevision, _) ->
-            envelope = operation
-            && sameReference reference expectedReference
-            && successor expectedRevision revision
-        | _ -> false
-
-    let private unknown request envelope operation =
-        match request with
-        | RequestIdentity.Case(expected, _, _, _)
-        | RequestIdentity.Authority(expected, _) -> envelope = expected && operation = expected
-        | _ -> false
-
-    let private other request envelope =
-        match request with
-        | RequestIdentity.Case(operation, _, _, _)
-        | RequestIdentity.Authority(operation, _) -> envelope = Some operation
-        | _ -> true
-
-    let matchesIdentity request =
+    let private authored =
         function
-        | ReplyIdentity.Receipt(envelope, value) -> receipt request envelope value
+        | RequestIdentity.Case(operation, reference, revision, act) ->
+            Endpoint.CaseExecute,
+            box
+                {|
+                    operationId = operation
+                    caseReference = reference
+                    expectedRevision = revision
+                    act = {| kind = act |}
+                |}
+        | RequestIdentity.Authority(operation, act) ->
+            Endpoint.AuthorityExecute,
+            box
+                {|
+                    operationId = operation
+                    act = {| kind = act |}
+                |}
+        | RequestIdentity.Actor actor -> Endpoint.AuthorityGrants, box {| actorId = actor |}
+        | RequestIdentity.Operation operation ->
+            Endpoint.OperationObserve, box {| operationId = operation |}
+        | RequestIdentity.Read -> Endpoint.Context, box {| empty = true |}
+
+    let private receivedReceipt (envelope: Guid option) (receipt: ReceiptIdentity) =
+        box
+            {|
+                operationId = envelope
+                outcome =
+                    {|
+                        tag = "ACCEPTED"
+                        data =
+                            {|
+                                operationId = receipt.OperationId
+                                act = receipt.Act
+                                scope =
+                                    (match receipt.Scope with
+                                     | ReceiptScope.Case -> "CASE"
+                                     | ReceiptScope.Authority -> "AUTHORITY")
+                                caseReference = receipt.CaseReference
+                                revision = receipt.Revision
+                            |}
+                    |}
+            |}
+
+    let private receivedReview (envelope: Guid) (reference: string) (revision: int64) =
+        box
+            {|
+                operationId = envelope
+                outcome =
+                    {|
+                        tag = "REVIEWED"
+                        data =
+                            {|
+                                review =
+                                    {|
+                                        after =
+                                            {|
+                                                caseReference = reference
+                                                revision = revision
+                                            |}
+                                    |}
+                            |}
+                    |}
+            |}
+
+    let private received =
+        function
+        | ReplyIdentity.Receipt(envelope, receipt) -> receivedReceipt envelope receipt
         | ReplyIdentity.Reviewed(envelope, reference, revision) ->
-            reviewed request envelope reference revision
-        | ReplyIdentity.Unknown(envelope, operation) -> unknown request envelope operation
-        | ReplyIdentity.Actor actor -> request = RequestIdentity.Actor actor
-        | ReplyIdentity.Observed operation -> request = RequestIdentity.Operation operation
-        | ReplyIdentity.Other envelope -> other request envelope
+            receivedReview envelope reference revision
+        | ReplyIdentity.Unknown(envelope, operation) ->
+            box
+                {|
+                    operationId = envelope
+                    outcome =
+                        {|
+                            tag = "OUTCOME_UNKNOWN"
+                            data = {| operationId = operation |}
+                        |}
+                |}
+        | ReplyIdentity.Actor actor ->
+            box
+                {|
+                    outcome =
+                        {|
+                            tag = "SUCCEEDED"
+                            data = {| actor = {| actorId = actor |} |}
+                        |}
+                |}
+        | ReplyIdentity.Observed operation ->
+            box
+                {|
+                    outcome =
+                        {|
+                            tag = "SUCCEEDED"
+                            data = {| operationId = operation |}
+                        |}
+                |}
+        | ReplyIdentity.Other envelope ->
+            box
+                {|
+                    operationId = envelope
+                    outcome = {| tag = "REJECTED" |}
+                |}
+
+    let matchesIdentity request reply =
+        let applicable =
+            match reply, request with
+            | ReplyIdentity.Actor _, RequestIdentity.Actor _
+            | ReplyIdentity.Observed _, RequestIdentity.Operation _ -> true
+            | ReplyIdentity.Actor _, _
+            | ReplyIdentity.Observed _, _ -> false
+            | _ -> true
+
+        let sourceEndpoint, value = authored request
+
+        let endpoint =
+            if
+                sourceEndpoint = Endpoint.CaseExecute
+                && (match reply with
+                    | ReplyIdentity.Reviewed _ -> true
+                    | _ -> false)
+            then
+                Endpoint.CasePreview
+            else
+                sourceEndpoint
+
+        use requestDocument = document value
+        use replyDocument = document (received reply)
+
+        applicable
+        && CorrelationEvaluation.matches
+            endpoint
+            requestDocument.RootElement
+            replyDocument.RootElement
 
     let private caseAct =
         function
-        | CaseAct.Open _ -> "OPEN"
-        | CaseAct.AmendRegistration _ -> "AMEND_REGISTRATION"
-        | CaseAct.CorrectCase _ -> "CORRECT_CASE"
-        | CaseAct.Decide _ -> "DECIDE"
-        | CaseAct.WithdrawDecision -> "WITHDRAW_DECISION"
-        | CaseAct.RecordPayment _ -> "RECORD_PAYMENT"
-        | CaseAct.ClearPayment -> "CLEAR_PAYMENT"
-        | CaseAct.Close -> "CLOSE"
-        | CaseAct.Reopen -> "REOPEN"
-        | CaseAct.Void _ -> "VOID"
-        | CaseAct.Reinstate _ -> "REINSTATE"
-        | CaseAct.Erase -> "ERASE"
+        | CaseAct.Open _ -> (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
+        | CaseAct.AmendRegistration _ ->
+            (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
+        | CaseAct.CorrectCase _ ->
+            (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
+        | CaseAct.Decide _ -> (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
+        | CaseAct.WithdrawDecision ->
+            (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
+        | CaseAct.RecordPayment _ ->
+            (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
+        | CaseAct.ClearPayment ->
+            (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
+        | CaseAct.Close -> (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
+        | CaseAct.Reopen -> (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
+        | CaseAct.Void _ -> (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
+        | CaseAct.Reinstate _ ->
+            (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
+        | CaseAct.Erase -> (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
 
     let requestIdentity =
         function
@@ -110,9 +206,9 @@ module Correlation =
         | WireRequest.AuthorityExecute value ->
             let act =
                 match value.Act with
-                | AuthorityAct.RegisterActor -> "REGISTER_ACTOR"
-                | AuthorityAct.SetGrant _ -> "SET_GRANT"
-                | AuthorityAct.SetEnabled _ -> "SET_ENABLED"
+                | AuthorityAct.RegisterActor -> (AuthorityKinds.token AuthorityKind.RegisterActor)
+                | AuthorityAct.SetGrant _ -> (AuthorityKinds.token AuthorityKind.SetGrant)
+                | AuthorityAct.SetEnabled _ -> (AuthorityKinds.token AuthorityKind.SetEnabled)
 
             RequestIdentity.Authority(value.OperationId, act)
         | WireRequest.AuthorityGrants value -> RequestIdentity.Actor value.ActorId

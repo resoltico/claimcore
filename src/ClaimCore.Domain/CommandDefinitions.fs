@@ -1,11 +1,14 @@
 namespace ClaimCore.Domain
 
+open ClaimCore.Catalog
+
 /// Semantic operation descriptions, not widgets or client-owned transition rules.
 type CommandDefinition =
     {
         Kind: CaseActKind
-        Label: string
-        Meaning: string
+        LabelId: string
+        MeaningId: string
+        ConfirmationId: string
         Inputs: CommandInputShape
     }
 
@@ -41,8 +44,8 @@ module CommandDefinitions =
     let private correctionGroup name label meaning actions replaceFields =
         {
             Name = name
-            Label = label
-            Meaning = meaning
+            LabelId = label
+            MeaningId = meaning
             Actions = actions
             ReplaceFields = replaceFields
         }
@@ -52,14 +55,14 @@ module CommandDefinitions =
             [
                 correctionGroup
                     CorrectionGroup.Registration
-                    "Registration"
-                    "Keep the current registration details or replace all seven details together."
+                    "group.registration.label"
+                    "group.registration.meaning"
                     [ CorrectionGroupAction.Keep; CorrectionGroupAction.Replace ]
                     (registrationFields |> List.map current)
                 correctionGroup
                     CorrectionGroup.Decision
-                    "Payment decision"
-                    "Keep the current payment decision, replace its date, amount and currency together, or clear the decision."
+                    "group.decision.label"
+                    "group.decision.meaning"
                     [
                         CorrectionGroupAction.Keep
                         CorrectionGroupAction.Replace
@@ -72,8 +75,8 @@ module CommandDefinitions =
                     ]
                 correctionGroup
                     CorrectionGroup.Payment
-                    "Payment record"
-                    "Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money."
+                    "group.payment.label"
+                    "group.payment.meaning"
                     [
                         CorrectionGroupAction.Keep
                         CorrectionGroupAction.Replace
@@ -85,8 +88,9 @@ module CommandDefinitions =
     let private definition kind label meaning inputs =
         {
             Kind = kind
-            Label = label
-            Meaning = meaning
+            LabelId = label
+            MeaningId = meaning
+            ConfirmationId = "ui.reviewConfirmation"
             Inputs = inputs
         }
 
@@ -94,29 +98,29 @@ module CommandDefinitions =
         [
             definition
                 (CaseActKind.Business BusinessActKind.Open)
-                "Open a case"
-                "Register the incident, claimant, insurer and amount claimed."
+                "command.OPEN.label"
+                "command.OPEN.meaning"
                 (registrationFields |> List.map blank |> fields)
             definition
                 (CaseActKind.Business BusinessActKind.AmendRegistration)
-                "Amend registration"
-                "Replace the initial facts. The handler's case reference remains unchanged."
+                "command.AMEND_REGISTRATION.label"
+                "command.AMEND_REGISTRATION.meaning"
                 (registrationFields |> List.map current |> fields)
         ]
 
     let private correctionDefinition =
         definition
             (CaseActKind.Business BusinessActKind.CorrectCase)
-            "Correct case facts"
-            "Correct recorded details on a case with a decision, payment or closed status. All changes are recorded together. Clearing a payment date does not refund money."
+            "command.CORRECT_CASE.label"
+            "command.CORRECT_CASE.meaning"
             correctionGroups
 
     let private paymentAndStatusDefinitions =
         [
             definition
                 (CaseActKind.Business BusinessActKind.Decide)
-                "Record payment decision"
-                "Record or replace the decided amount and currency. This does not send money."
+                "command.DECIDE.label"
+                "command.DECIDE.meaning"
                 (fields
                     [
                         current (InputField.Business BusinessField.PaymentDecisionDate)
@@ -125,28 +129,28 @@ module CommandDefinitions =
                     ])
             definition
                 (CaseActKind.Business BusinessActKind.WithdrawDecision)
-                "Withdraw payment decision"
-                "Clear the unpaid decision while preserving its history."
+                "command.WITHDRAW_DECISION.label"
+                "command.WITHDRAW_DECISION.meaning"
                 (fields [])
             definition
                 (CaseActKind.Business BusinessActKind.RecordPayment)
-                "Record actual payment"
-                "Record the date the full decided amount was actually paid. This does not execute or verify a transfer."
+                "command.RECORD_PAYMENT.label"
+                "command.RECORD_PAYMENT.meaning"
                 (fields [ blank (InputField.Business BusinessField.PaymentDate) ])
             definition
                 (CaseActKind.Business BusinessActKind.ClearPayment)
-                "Correct an erroneous payment record"
-                "Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains."
+                "command.CLEAR_PAYMENT.label"
+                "command.CLEAR_PAYMENT.meaning"
                 (fields [])
             definition
                 (CaseActKind.Business BusinessActKind.Close)
-                "Close the case"
-                "Close the case. Closing does not mean that payment was made."
+                "command.CLOSE.label"
+                "command.CLOSE.meaning"
                 (fields [])
             definition
                 (CaseActKind.Business BusinessActKind.Reopen)
-                "Reopen the case"
-                "Reopen the case, preserving its details and history."
+                "command.REOPEN.label"
+                "command.REOPEN.meaning"
                 (fields [])
         ]
 
@@ -154,18 +158,18 @@ module CommandDefinitions =
         [
             definition
                 (CaseActKind.Stewardship StewardshipActKind.Void)
-                "Void case record"
-                "Block business commands while retaining the case and its history."
+                "command.VOID.label"
+                "command.VOID.meaning"
                 (fields [ blank InputField.Reason ])
             definition
                 (CaseActKind.Stewardship StewardshipActKind.Reinstate)
-                "Reinstate case record"
-                "Restore ordinary case work on a voided record."
+                "command.REINSTATE.label"
+                "command.REINSTATE.meaning"
                 (fields [ blank InputField.Reason ])
             definition
                 (CaseActKind.Stewardship StewardshipActKind.Erase)
-                "Erase case payload"
-                "Permanently remove business payload from the live database. WAL, backups and copies elsewhere are not erased."
+                "command.ERASE.label"
+                "command.ERASE.meaning"
                 (fields [])
         ]
 

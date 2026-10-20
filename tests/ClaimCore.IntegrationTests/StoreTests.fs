@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.StoreTests
 
+open ClaimCore.Catalog
+
 open System.Threading
 open Expecto
 open ClaimCore.Domain
@@ -59,7 +61,7 @@ let private serviceScopeCorruption () =
                 DatabaseSession.execute
                     connection
                     "INSERT INTO claimcore.grants(actor_id,role,case_id) SELECT $1,$2,case_id FROM claimcore.cases WHERE case_reference=$3"
-                    [| box (id 400); box (Roles.token Role.DataSteward); box "SERVICE-1" |]
+                    [| box (id 400); box (RoleTokens.token Role.DataSteward); box "SERVICE-1" |]
                     CancellationToken.None
                 |> Async.AwaitTask
 

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.OperationAuthorityScopeTests
 
+open ClaimCore.Catalog
+
 open System.Threading
 open System.Threading.Tasks
 open Expecto

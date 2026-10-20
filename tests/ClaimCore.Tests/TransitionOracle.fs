@@ -1,5 +1,7 @@
 module ClaimCore.Tests.TransitionOracle
 
+open ClaimCore.Catalog
+
 open ClaimCore.Domain
 
 // This oracle covers the fixed synthetic vocabulary in TransitionPropertyTests, not arbitrary drafts.

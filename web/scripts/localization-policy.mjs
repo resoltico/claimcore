@@ -169,6 +169,28 @@ export const validateCatalog = (source, translated, language) => {
 const diagnosticIds = (/** @type {import("./tooling-types.mjs").JsonRecord} */ node) =>
   node["enum"] ??
   node["oneOf"]?.map((/** @type {{const:string}} */ branch) => branch.const) ?? [node["const"]];
+/** @param {import("./tooling-types.mjs").JsonRecord | undefined} previous @param {import("./tooling-types.mjs").JsonRecord} properties */
+const mergeParameterRules = (previous, properties) => {
+  const merged = { ...previous };
+  for (const [name, schema] of Object.entries(properties)) {
+    const alternatives = schema.oneOf ?? [schema];
+    if (
+      alternatives.every((/** @type {{const?:string}} */ item) => typeof item.const === "string")
+    ) {
+      merged[name] = {
+        enum: [
+          ...new Set([
+            ...(merged[name]?.enum ?? []),
+            ...alternatives.map((/** @type {{const:string}} */ item) => item.const),
+          ]),
+        ],
+      };
+    } else {
+      merged[name] = schema;
+    }
+  }
+  return merged;
+};
 /** @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {import("./tooling-types.mjs").JsonRecord} hostSchema @returns {Record<string, Record<string, unknown>>} */
 export const diagnosticRequirements = (descriptors, hostSchema) => {
   const result = Object.fromEntries(
@@ -192,7 +214,7 @@ export const diagnosticRequirements = (descriptors, hostSchema) => {
     const d = node["properties"];
     if (d?.id && d.parameters?.properties) {
       for (const id of diagnosticIds(d.id)) {
-        result[id] = d.parameters.properties;
+        result[id] = mergeParameterRules(result[id], d.parameters.properties);
       }
     }
     for (const value of Object.values(node)) {

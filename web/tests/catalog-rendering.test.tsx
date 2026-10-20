@@ -290,10 +290,10 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
 const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
   await waitFor(() => {
     expect(
-      screen.getByLabelText("Case action", { exact: true }).querySelectorAll("option"),
+      screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
     ).toHaveLength(3);
   });
-  fireEvent.change(screen.getByLabelText("Case action", { exact: true }), {
+  fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
     target: { value: kind },
   });
   input("target.issuer", "https://issuer.example/");
@@ -328,7 +328,7 @@ it.each(authorityCommands)(
     await waitFor(() => {
       expect(calls).toHaveLength(1);
     });
-    await screen.findByText(`accepted · ${calls[0]!.input.operationId}`);
+    await screen.findByText(calls[0]!.input.operationId, { exact: true });
     expect(before).toContain(calls[0]!.input.operationId);
     expect(calls[0]!.input.act.kind).toBe(command.kind);
     expect(calls[0]!.input.target).toEqual({

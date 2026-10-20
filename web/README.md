@@ -6,7 +6,7 @@ same-origin HTTPS client with a contract fingerprint header and cookie antiforge
 
 `src/api/transport.ts` owns browser networking; `src/api/service.ts` is its validated service facade.
 A single `src/protocol/schema.ts` interpreter admits bounded strict JSON replies against generated
-OpenAPI component schemas. Request builders are typed object literals.
+OpenAPI component schemas. Requests use codec-checked core input bindings and generic schema assembly.
 `src/interaction` and operation hooks preserve authored values, review identity and the exact
 serialized request. Preview is advisory. Confirmation executes that request; an unknown
 outcome or lost execution reply keeps one exact retry action while the page lives. A contract
@@ -25,7 +25,7 @@ From the repository root, run `npm --prefix web ci`, then `npm --prefix web run 
 `bash eng/verify.sh frontend` runs formatting, lint, types, unit tests, Knip, audit, licenses,
 build and notices using Node only. See [Development](../docs/development.md) for named stages.
 
-The eight generated artifacts are tracked in `contracts/`. The F# generator owns their bytes;
+The complete generated consumer bundle is tracked in `contracts/`. The F# generator owns their bytes;
 .NET freshness tests check exact inventory and content. No web command invokes .NET. Generated
 `client.ts` types, OpenAPI component schemas and the strict-byte profile govern requests and
 responses; typed delivery and correlation policies are tested against generated vectors. Views
@@ -49,3 +49,6 @@ consent and exact retries. Each fixture has one worker and zero retries because 
 state are shared. CI isolates engines across jobs; complete qualification runs all specifications
 on Chromium, Firefox and WebKit. See [Development](../docs/development.md) for local sequencing
 and the explicitly partial PR smoke selection.
+
+Authored localization lives in `src/ClaimCore.Catalog/Localization` at the repository root.
+The browser consumes generated contracts, checked input bindings and core delivery/correlation policy.

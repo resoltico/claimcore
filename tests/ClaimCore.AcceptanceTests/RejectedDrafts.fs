@@ -17,14 +17,12 @@ let private input (fixture: PublishedFixture.Fixture) (field: string) value =
     values[field] <- JsonValue.Create<string> value
     input
 
-let qualify (fixture: PublishedFixture.Fixture) =
-    let before = fixture.Administration [ "head" ]
-    Expect.equal before.ExitCode 0 "Read accepted head before refusals"
-
+let private businessRefusals fixture =
     for field, value, diagnostic in
         [
             "incidentDate", "2026-02-30", "INPUT_CALENDAR_DATE_REQUIRED"
             "claimedAmount", "١٢٫٥٠", "INPUT_DECIMAL_FORMAT"
+            "claimedAmount", "00.10", "INPUT_DECIMAL_FORMAT"
             "claimedCurrency", "ĀBC", "INPUT_CURRENCY_FORMAT"
             "claimantName", "", "INPUT_TEXT_REQUIRED"
         ] do
@@ -69,6 +67,52 @@ let qualify (fixture: PublishedFixture.Fixture) =
                 diagnostic
                 "Current policy diagnostic remains reachable"
 
+
+let private principalRefusals fixture =
+    for issuer, subject, target, issue in
+        [
+            "", "", "issuer", "MISSING"
+            "https://issuer.example/", "", "subject", "MISSING"
+            "secret-canary", "synthetic", "issuer", "INVALID"
+        ] do
+        let reply =
+            automation
+                fixture
+                "authority.execute"
+                {|
+                    operationId = id ()
+                    target =
+                        {|
+                            kind = "HUMAN"
+                            issuer = issuer
+                            subject = subject
+                        |}
+                    act = {| kind = "REGISTER_ACTOR" |}
+                |}
+                3
+
+        let failure = reply.GetProperty("failure")
+        Expect.equal (failure.GetProperty("status").GetInt32()) 400 "Technical input refusal"
+        Expect.equal (failure.GetProperty("executionPhase").GetString()) "NOT_STARTED" "No dispatch"
+        let parameters = failure.GetProperty("diagnostic").GetProperty("parameters")
+        Expect.equal (parameters.GetProperty("target").GetString()) target "Core field guidance"
+        Expect.equal (parameters.GetProperty("issue").GetString()) issue "Core cause"
+        Expect.isFalse (reply.GetRawText().Contains "secret-canary") "No authored principal echo"
+
+
+let qualify (fixture: PublishedFixture.Fixture) =
+    let before = fixture.Administration [ "head" ]
+    Expect.equal before.ExitCode 0 "Read accepted head before refusals"
+
+    businessRefusals fixture
+    principalRefusals fixture
     let after = fixture.Administration [ "head" ]
     Expect.equal after.ExitCode 0 "Read accepted head after refusals"
     Expect.equal after.StandardOutput before.StandardOutput "Refusals append nothing"
+
+    let verified = fixture.Administration [ "verify" ]
+
+    Expect.equal
+        verified.ExitCode
+        0
+        "Refused attempts leave projections consistent with the unchanged ledger"

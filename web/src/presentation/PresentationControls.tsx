@@ -1,3 +1,8 @@
+import {
+  presentationLanguageOptions,
+  presentationDisplayOptions,
+  presentationPseudolanguage,
+} from "@contracts/client";
 import { useId } from "react";
 import { usePresentation } from "./context";
 import { resolveDisplayLocale, resolveLanguage } from "./preferences";
@@ -25,16 +30,14 @@ const LanguageControl = ({ id }: { id: string }) => {
           });
         }}
       >
-        <option value="en" lang="en">
-          English
-        </option>
-        <option value="lv" lang="lv">
-          Latviešu
-        </option>
-        <option value="ar" lang="ar">
-          العربية
-        </option>
-        {p.language === "en-XA" ? <option value="en-XA">{p.text("ui.pseudo")}</option> : null}
+        {presentationLanguageOptions.map((option) => (
+          <option key={option.value} value={option.value} lang={option.value}>
+            {option.label}
+          </option>
+        ))}
+        {p.language === presentationPseudolanguage ? (
+          <option value={presentationPseudolanguage}>{p.text("ui.pseudo")}</option>
+        ) : null}
       </select>
     </div>
   );
@@ -56,15 +59,11 @@ const DisplayControl = ({ id }: { id: string }) => {
           });
         }}
       >
-        <option value="en-GB" lang="en">
-          English — United Kingdom
-        </option>
-        <option value="lv-LV" lang="lv">
-          Latviešu — Latvija
-        </option>
-        <option value="ar-EG" lang="ar">
-          العربية — مصر
-        </option>
+        {presentationDisplayOptions.map((option) => (
+          <option key={option.value} value={option.value} lang={option.language}>
+            {option.label}
+          </option>
+        ))}
       </select>
     </div>
   );
