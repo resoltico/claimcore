@@ -3,7 +3,6 @@ import { projectOperation } from "./operationState";
 import { prepareRequest } from "../protocol/preparedRequest";
 import type { CommandKind, DraftValues } from "./metadata";
 import { isGroupedDraftValues } from "./metadata";
-import { freezeRequest } from "./operationRequest";
 import type { CompletionResponse, EditingAction } from "./operationReducerTypes";
 import type { OperationAction, OperationState } from "./operationState";
 
@@ -113,8 +112,8 @@ const beginPreview = (
   if (state.prepared !== null && state.prepared !== action.prepared) {
     return state;
   }
-  const draft = state.exposedRequest ?? freezeRequest(action.draft);
-  const prepared = action.prepared ?? prepareRequest("case.execute", draft);
+  const prepared =
+    action.prepared ?? prepareRequest("case.execute", state.exposedRequest ?? action.draft);
   return {
     ...state,
     mutation: { phase: "PREVIEWING", prepared, requestId: action.requestId },

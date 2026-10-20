@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { createPresenter } from "../src/presentation/presenter";
 import { createDraft } from "../src/interaction/metadata";
-import { freezeRequest } from "../src/interaction/operationRequest";
+import { prepareRequest } from "../src/protocol/preparedRequest";
 import { definition, operationId } from "./service-ui.fixtures";
 
 const arabicDigits = (value: string) =>
@@ -44,7 +44,10 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
       claimedAmount: `${whole}.${fraction}`,
       incidentDate: `${year}-${month}-${day}`,
     };
-    const frozen = freezeRequest(createDraft(operationId, reference, 0, "OPEN", values));
+    const frozen = prepareRequest(
+      "case.execute",
+      createDraft(operationId, reference, 0, "OPEN", values),
+    ).input;
     const bytes = JSON.stringify(frozen);
     for (const choice of [index % 12, (index + 5) % 12]) {
       const language = (["en", "lv", "ar", "en-XA"] as const)[choice % 4]!;

@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { createDraft } from "../src/interaction/metadata";
-import { freezeRequest } from "../src/interaction/operationRequest";
+import { prepareRequest } from "../src/protocol/preparedRequest";
 import { initialOperation, operationReducer } from "../src/interaction/operationReducer";
 import { firstId, secondId, refused, begin, reviewed } from "./operation-identity.fixtures";
 import { groupedCorrectionValues } from "./service-foundation.fixtures";
@@ -14,7 +14,7 @@ it("detaches replacement group values so later authoring cannot change a frozen 
     },
   };
   const draft = createDraft(firstId, "CASE-1", 3, "CORRECT_CASE", authored);
-  const frozen = freezeRequest(draft);
+  const frozen = prepareRequest("case.execute", draft).input;
   if (draft.act.kind !== "CORRECT_CASE" || draft.act.groups.registration.mode !== "REPLACE") {
     throw new Error("Missing authored correction fixture.");
   }

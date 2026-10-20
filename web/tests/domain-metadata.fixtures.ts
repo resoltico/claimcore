@@ -11,7 +11,7 @@ import {
   isDirty,
   prefilledValues,
 } from "../src/interaction/metadata";
-import { freezeRequest } from "../src/interaction/operationRequest";
+import { prepareRequest } from "../src/protocol/preparedRequest";
 import {
   caseFields,
   groupedCorrectionValues,
@@ -123,12 +123,20 @@ const expectDirtiness = () => {
 };
 
 const expectFrozenRequests = () => {
-  const flat = createDraft("op", "CASE-1", 1, "OPEN", { claimantName: "A" });
-  const frozenFlat = freezeRequest(flat);
+  const flat = createDraft("10000000-0000-4000-8000-000000000001", "CASE-1", 1, "OPEN", {
+    claimantName: "A",
+  });
+  const frozenFlat = prepareRequest("case.execute", flat).input;
   expect(frozenFlat).toEqual(flat);
   expect(frozenFlat.act).not.toBe(flat.act);
-  const grouped = createDraft("op", "CASE-1", 1, "CORRECT_CASE", groupedCorrectionValues);
-  const frozen = freezeRequest(grouped);
+  const grouped = createDraft(
+    "10000000-0000-4000-8000-000000000001",
+    "CASE-1",
+    1,
+    "CORRECT_CASE",
+    groupedCorrectionValues,
+  );
+  const frozen = prepareRequest("case.execute", grouped).input;
   if (frozen.act.kind !== "CORRECT_CASE" || grouped.act.kind !== "CORRECT_CASE") {
     throw new Error("Expected grouped correction requests.");
   }

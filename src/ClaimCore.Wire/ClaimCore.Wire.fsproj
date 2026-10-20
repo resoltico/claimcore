@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
-    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <Compile Include="../../contracts/contract-identity.fs" />
     <Compile Include="Strict.fs" />
     <Compile Include="Codec.fs" />

@@ -97,6 +97,8 @@ let private consumerIdentity () =
             "openapi.json"
             "descriptors.json"
             "locale.lv.ui.json"
+            "delivery-policy.json"
+            "correlation-policy.json"
             "delivery-vectors.json"
             "correlation-vectors.json"
             "request-bindings.json"
