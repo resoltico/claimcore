@@ -5,6 +5,10 @@ using ClaimCore.Cli;
 var payload = Encoding.UTF8.GetBytes("Rīga مطالبة 😀\n");
 try {
     using var errors = StandardSinks.errors();
+    if (args[0] == "file-failure") {
+        errors.Write(Encoding.UTF8.GetBytes("STREAM_READY\n")); errors.Flush();
+        if (Console.OpenStandardInput().ReadByte() != 42) return 72;
+    }
     using (var output = args[0] == "console" ? Console.OpenStandardOutput() : StandardSinks.output()) {
         output.Write(payload);
         if (args[0] == "twice") output.Write(payload);
