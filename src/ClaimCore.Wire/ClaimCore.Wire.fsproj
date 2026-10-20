@@ -19,6 +19,7 @@
     <Compile Include="HostFailures.fs" />
     <Compile Include="HttpsOrigins.fs" />
     <Compile Include="Frames.fs" />
+    <Compile Include="CliInvocation.fs" />
     <Compile Include="OpenApi.fs" />
     <Compile Include="ConsumerContract.fs" />
   </ItemGroup>

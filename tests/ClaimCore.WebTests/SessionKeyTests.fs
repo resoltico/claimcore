@@ -246,11 +246,90 @@ let private protectedFiles () =
     finally
         directory.Delete true
 
+let private sessionTraffic count (store: ITicketStore) =
+    task {
+        let ticket =
+            AuthenticationTicket(
+                ClaimsPrincipal(ClaimsIdentity("synthetic")),
+                AuthenticationProperties(),
+                "Cookies"
+            )
+
+        let! keys = [| for _ in 1..count -> store.StoreAsync ticket |] |> Task.WhenAll
+
+        let read key =
+            task {
+                let watch = Diagnostics.Stopwatch.StartNew()
+                let! found = store.RetrieveAsync key
+                Expect.isNotNull found "Live session survives durable activity update"
+                return watch.Elapsed.TotalMilliseconds
+            }
+
+        let! times =
+            [| for key in keys -> Task.Factory.StartNew(fun () -> read key).Unwrap() |]
+            |> Task.WhenAll
+
+        Array.sortInPlace times
+
+        return
+            {|
+                sessions = count
+                p50Milliseconds = times[count / 2]
+                maximumMilliseconds = Array.last times
+            |}
+    }
+
+let private sessionLoad () =
+    task {
+        let directory = Directory.CreateTempSubdirectory("claimcore-session-latency-")
+
+        try
+            let protection = DataProtectionProvider.Create directory
+            let persistence = TicketPersistence(directory, protection)
+
+            let store =
+                OidcTicketStore(
+                    TimeSpan.FromMinutes 30.,
+                    TimeSpan.FromHours 8.,
+                    persistence = persistence
+                )
+                :> ITicketStore
+
+            let results = ResizeArray<_>()
+
+            for count in [ 1; 8; 24 ] do
+                let! result = sessionTraffic count store
+                results.Add result
+
+            let output =
+                Path.Combine(
+                    ClaimCore.TestSupport.RepositoryRoot.find (),
+                    "artifacts/verification/sessions"
+                )
+
+            Directory.CreateDirectory output |> ignore
+
+            File.WriteAllBytes(
+                Path.Combine(output, Guid.NewGuid().ToString("N") + ".json"),
+                System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
+                    {|
+                        storage = "local-temporary-directory"
+                        platform = System.Runtime.InteropServices.RuntimeInformation.OSDescription
+                        results = results
+                    |}
+            )
+        finally
+            directory.Delete true
+    }
+
 [<Tests>]
 let tests =
     testList
         "persisted browser sessions"
         [
+            testCaseAsync
+                "durable ticket activity latency at one eight and twenty four sessions"
+                (async { do! sessionLoad () |> Async.AwaitTask })
             testTask
                 "[CC-WEB-001] production session and antiforgery survive restart, isolate sibling rings and retain logout" {
                 do! restart ()

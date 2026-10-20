@@ -1,3 +1,5 @@
+import type { Notice } from "../api/notices";
+import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import { Button } from "react-aria-components/Button";
 import type { FieldDescriptor, HistoryEntry, CaseReceipt, ServiceResponse } from "../api/service";
@@ -124,6 +126,33 @@ const HistoryModePicker = ({
   );
 };
 
+const HistoryPageStatus = ({
+  loading,
+  message,
+  empty,
+  cursor,
+}: {
+  loading: boolean;
+  message: Notice | null;
+  empty: boolean;
+  cursor: string | null;
+}) => {
+  const p = usePresentation();
+  return (
+    <>
+      {message === null ? null : (
+        <p className="error" role="alert">
+          <NoticeView value={message} />
+        </p>
+      )}
+      {loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
+      {!loading && message === null ? (
+        <PageStatus empty={empty} cursor={cursor} emptyMessage="ui.noAccessibleHistory" />
+      ) : null}
+    </>
+  );
+};
+
 const summaryModes: ReadonlyArray<HistoryMode> = ["SUMMARY"];
 export const CaseHistory = ({
   token,
@@ -146,7 +175,7 @@ export const CaseHistory = ({
       service.history({ caseReference, cursor, limit: 50, detail: requestedDetail }, token, signal),
     [caseReference, token, requestedDetail],
   );
-  const { items, cursor, message, loading, load } = useRetryablePage<
+  const { items, cursor, message, loading, load, page } = useRetryablePage<
     ServiceResponse<"case.history">,
     HistoryEntry
   >(request, historyPage, onDisclosureRefused);
@@ -156,12 +185,12 @@ export const CaseHistory = ({
       <HistoryModePicker detail={requestedDetail} onChange={setDetail} modes={modes} />
       <p>{p.text("ui.historyHint")}</p>
       <HistoryEntries items={items} fields={fields} />
-      {message === null ? null : (
-        <p className="error" role="alert">
-          <NoticeView value={message} />
-        </p>
-      )}
-      {loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
+      <HistoryPageStatus
+        loading={loading || page === null}
+        message={message}
+        empty={items.length === 0}
+        cursor={cursor}
+      />
       <Button onPress={() => void load(null)} isDisabled={loading}>
         {p.text("ui.reloadHistory")}
       </Button>

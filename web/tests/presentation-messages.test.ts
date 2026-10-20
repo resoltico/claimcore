@@ -89,9 +89,15 @@ it("refuses unknown or malformed message arguments without echoing the supplied 
 });
 
 it("renders every specific diagnostic using only its closed safe parameter contract", () => {
-  for (const [id, parameters] of Object.entries(requirements)) {
+  const rules: Readonly<
+    Record<string, Readonly<Record<string, { minimum?: number; enum?: ReadonlyArray<string> }>>>
+  > = requirements;
+  for (const [id, parameters] of Object.entries(rules)) {
     const values = Object.fromEntries(
-      Object.entries(parameters).map(([key, range]) => [key, range.minimum ?? 0]),
+      Object.entries(parameters).map(([key, range]) => [
+        key,
+        range.enum?.[0] ?? range.minimum ?? 0,
+      ]),
     );
     const diagnostic = { id, parameters: values } as Diagnostic;
     for (const language of languages) {

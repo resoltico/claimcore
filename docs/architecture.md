@@ -191,7 +191,11 @@ ordinally and binds their exact bytes with SHA-256. Its canonical bytes have fix
 compact JSON and one final LF. The digest identifies static consumer documents, not current actor
 authority, server freshness, review quality or owner approval. Identity-bearing client/source
 resources are emitted afterwards and excluded from the input set. Generation never reads a runtime
-identity to compute its successor. Freshness compares every produced filename and byte.
+identity to compute its successor. Each produced artifact declares one role: RuntimePrecursor, QualificationOrTooling or
+IdentityDerived. Only runtime precursors enter the manifest. QA vectors, byte corpus, evolution
+fixture and build-only package metadata retain exact freshness but do not force runtime-client
+replacement. Identity-derived files remain outside their own digest. Freshness compares every
+produced filename and byte across all roles.
 
 Case and authority clients share a tagged mutation lifecycle. Prepared immutable requests own bytes,
 identity and expected revision. Preview and confirmation content remain distinct; disclosure refusal

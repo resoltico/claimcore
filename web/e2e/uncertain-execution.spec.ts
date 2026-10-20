@@ -23,6 +23,34 @@ const dropFirstReply = async (
   });
 };
 
+const refuseRetryBeforeDispatch = async (page: Page, requests: (string | null)[]) => {
+  await page.unroute("**/api/case.execute");
+  await page.route("**/api/case.execute", async (route) => {
+    requests.push(route.request().postData());
+    await route.fulfill({
+      status: 409,
+      contentType: "application/json",
+      body: JSON.stringify({
+        kind: "HOST_FAILURE",
+        code: "CONTRACT_MISMATCH",
+        status: 409,
+        message: "Synthetic contract refusal",
+        diagnostic: { id: "HOST_CONTRACTMISMATCH", parameters: {} },
+        executionPhase: "NOT_STARTED",
+      }),
+    });
+  });
+  await page.getByRole("button", { name: "Retry the same operation", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("unknown");
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Back to case", exact: true })).toHaveCount(0);
+  await page.unroute("**/api/case.execute");
+  await page.route("**/api/case.execute", async (route) => {
+    requests.push(route.request().postData());
+    await route.continue();
+  });
+};
+
 test("retries one lost accepted reply with the exact reviewed operation and bytes [CC-WEB-001]", async ({
   page,
 }) => {
@@ -49,6 +77,7 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   expect(isResponse("case.execute", accepted)).toBe(true);
   const first = (accepted as ServiceResponse<"case.execute">).outcome;
   expect(first.tag).toBe("ACCEPTED");
+  await refuseRetryBeforeDispatch(page, requests);
   const replayed = page.waitForResponse((response) => response.url().endsWith("/api/case.execute"));
   await page.getByRole("button", { name: "Retry the same operation", exact: true }).click();
   const response = await replayed;
@@ -62,6 +91,6 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   expect(second.data).toEqual(first.data);
   expect(second.data.operationId).toBe(identity.operationId);
   expect(second.data.revision).toBe(2);
-  expect(requests).toEqual([original, original]);
+  expect(requests).toEqual([original, original, original]);
   await expect(page.getByRole("heading", { name: "Recorded change" })).toBeVisible();
 });

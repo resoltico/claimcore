@@ -84,10 +84,15 @@ tests() { # <project> <minimum-expected-tests> [configuration] [timeout] [settin
   local report_directory
   mkdir -p artifacts/verification
   report_directory="$(mktemp -d "${PWD}/artifacts/verification/native.XXXXXXXX")"
+  python3 eng/verification_evidence.py begin "${report_directory}" "$1"
+  local result=0 reporting=0
   CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" dotnet test --project "$1" --configuration "${3:-Release}" --no-build --no-restore \
     --minimum-expected-tests="$2" --zero-tests-policy=strict --timeout="${4:-30m}" \
     --report-trx --report-trx-filename="${report_directory}/results.trx" \
-    -- --settings="${PWD}/${5:-eng/expecto.runsettings}"
+    -- --settings="${PWD}/${5:-eng/expecto.runsettings}" || result=$?
+  python3 eng/verification_evidence.py finish "${report_directory}" "${result}" || reporting=$?
+  if [[ "${result}" -ne 0 ]]; then return "${result}"; fi
+  return "${reporting}"
 }
 
 native_restored=false

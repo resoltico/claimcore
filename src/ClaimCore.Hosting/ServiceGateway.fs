@@ -23,9 +23,7 @@ module ServiceGateway =
     let admitTechnical request =
         match request with
         | WireRequest.AuthorityExecute value ->
-            RequestMapping.authorityRequest value
-            |> Result.map (fun _ -> request)
-            |> Result.mapError (fun _ -> ())
+            RequestMapping.authorityRequest value |> Result.map (fun _ -> request)
         | _ -> Ok request
 
     let private history
@@ -104,7 +102,8 @@ module ServiceGateway =
             | WireRequest.AuthorityExecute request ->
                 let admitted =
                     RequestMapping.authorityRequest request
-                    |> Result.defaultWith (invalidArg "request")
+                    |> Result.defaultWith (fun _ ->
+                        invalidArg "request" "Technical admission is required.")
 
                 let! value = core.ExecuteAuthority(admitted, CancellationToken.None)
                 return OutcomeMapping.authorityExecute request.OperationId value

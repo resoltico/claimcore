@@ -196,7 +196,7 @@ export const businessFormatRefusalText = {
     ar: "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD.",
   },
   INPUT_DECIMAL_FORMAT: {
-    en: "Use non-negative decimal text: up to 18 integer digits and 4 fractional digits; no sign or exponent.",
+    en: "Use non-negative decimal text: up to 18 integer digits and 4 fractional digits; no sign, exponent or redundant leading zeros: 0.10 is valid; 00.10 is invalid.",
     lv: "Izmantojiet nenegatīvu decimālskaitli: līdz 18 veseliem cipariem un 4 daļas cipariem; bez zīmes vai eksponenta.",
     ar: "استخدم نصًا عشريًا غير سالب: حتى \u206818\u2069 رقمًا صحيحًا و\u20684\u2069 أرقام كسرية؛ دون إشارة أو أس.",
   },

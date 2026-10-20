@@ -104,7 +104,9 @@ let private pipeline (application: WebApplication) sink readiness =
     application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures sink))
     |> ignore
 
-    application.Use(Func<HttpContext, RequestDelegate, Task>(HostRoutes.health readiness))
+    application.Use(
+        Func<HttpContext, RequestDelegate, Task>(HostRoutes.health (fun _ -> readiness ()))
+    )
     |> ignore
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))

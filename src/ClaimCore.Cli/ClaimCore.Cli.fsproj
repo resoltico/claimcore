@@ -26,6 +26,8 @@
     <ProjectReference Include="../ClaimCore.Wire/ClaimCore.Wire.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../../contracts/locale.*.json" LogicalName="ClaimCore.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../contracts/cli-help.json" LogicalName="ClaimCore.cli-help.json" />
     <EmbeddedResource Include="../../contracts/cli-messages.json" LogicalName="ClaimCore.cli-messages.json" />
     <EmbeddedResource Include="../../contracts/descriptors.json" LogicalName="ClaimCore.descriptors.json" />
     <EmbeddedResource Include="../../contracts/openapi.json" LogicalName="ClaimCore.openapi.json" />

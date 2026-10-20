@@ -6,6 +6,7 @@ open ClaimCore.Wire
 
 type ClientFailure =
     | Configuration
+    | ConfigurationIssue of CliSetting * ConfigurationIssue
     | Authentication
     | Unavailable
     | Cancelled
@@ -44,6 +45,8 @@ module CliReply =
         let code =
             match failure with
             | ClientFailure.Configuration -> LocalFailure.ConfigurationInvalid
+            | ClientFailure.ConfigurationIssue(setting, issue) ->
+                LocalFailure.ConfigurationIssue(setting, issue)
             | ClientFailure.Authentication -> LocalFailure.AuthenticationFailed
             | ClientFailure.Unavailable -> LocalFailure.ServiceUnavailable
             | ClientFailure.Cancelled -> LocalFailure.Cancelled

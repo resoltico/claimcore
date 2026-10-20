@@ -249,7 +249,7 @@ export const OperationForm = ({
     <AuthoringFields model={model} />
     <CorrectionFields model={model} />
     {model.state.message === null ? null : (
-      <p className="error" role="alert">
+      <p className="error" role="alert" tabIndex={-1} data-error-summary>
         <NoticeView value={model.state.message} />
       </p>
     )}

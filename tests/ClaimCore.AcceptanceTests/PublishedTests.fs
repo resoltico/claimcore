@@ -216,10 +216,21 @@ let private inputBoundaries fixture =
     let authored =
         File.ReadAllBytes(Path.Combine(fixture.Root, "examples", "01-open.json"))
 
+    let before = fixture.Administration [ "head" ]
+    Expect.equal before.ExitCode 0 "Accepted state before unauthorized input"
+
     let refused =
         run fixture (interactiveEnvironment fixture "synthetic-reader" "valid") authored 2
 
     Expect.equal (tag refused) "REJECTED" "Reader cannot execute"
+    let after = fixture.Administration [ "head" ]
+    Expect.equal after.ExitCode 0 "Accepted state after unauthorized input"
+    Expect.equal before.StandardOutput after.StandardOutput "Unauthorized input appends nothing"
+
+    Expect.equal
+        (fixture.Administration [ "verify" ]).ExitCode
+        0
+        "Unauthorized input changes no projection"
 
     let environment = interactiveEnvironment fixture "synthetic-owner" "wrong-state"
 
@@ -283,6 +294,7 @@ let private qualify () =
         use fixture = new PublishedFixture.Fixture()
         do! fixture.Start()
         PublishedAssets.qualify fixture
+        CliDiscovery.qualify fixture
         setup fixture
         CliDelivery.qualify fixture
         CliDisclosure.qualify fixture

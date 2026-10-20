@@ -12,6 +12,10 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
+- **Breaking for diagnostic consumers:** CLI local/protocol frames require closed diagnostic objects; known configuration failures identify an allowlisted setting and cause. Authored principal failures use typed field/cause guidance in the existing HTTP 400 host codec. Rebuild and deploy matching service, CLI, browser and generated artifacts together; no database migration or compatibility period is supplied.
+- CLI adds offline task help in English, Latvian and Arabic, exact help aliases and explicit `describe --format text`. JSON discovery defaults, call/session frames and delivery exits retain their meanings. Language options apply only to human output.
+- Runtime identity excludes QA vectors/corpus/evolution fixtures and build-only package metadata while retaining exact freshness checks for every generated artifact.
+
 - **Breaking for integrators:** service, CLI and browser now admit one complete consumer-contract identity over OpenAPI, descriptors, request bindings, localization and delivery/correlation policy. Deploy matching artifacts together; session discovery exposes `contractIdentity`. Presentation changes require matching clients. Core Catalog owns shared vocabulary and authored terminology/translations; thin clients consume generated bindings and policy. CLI discovery and browser sign-in callback responses consume core-authored messages. Input bindings account for every required codec member and variant before publication; declared message identities flow through localized renderers. Independent identity scenarios guard correlation completeness. Instants use six fractional digits and UTC `Z`; JSON escapes only quotes, backslashes and C0 controls. Preview and `OUTCOME_UNKNOWN` payloads omit `requestSha256`, including CLI replies.
 - **Breaking for malformed business input:** invalid business strings now reach Application/Domain and return typed `REJECTED`, field guidance, HTTP 200 and CLI exit 2. Structural or technical identity errors remain host refusals. The public vocabulary removes unreachable input/stored-state diagnostics, including the privacy-hidden `CASE_NOT_FOUND`; unexpected programming failures use `CORE_INTERNAL_ERROR` with `STOP_AND_INVESTIGATE`.
 - **Breaking for advice consumers:** `context.views` advertises allowed navigation. Installation offers contain OPEN or an authority act; case records expose `advice.acts` and `advice.history`, with correction choices only on CORRECT_CASE. Case `state.availableActs`, endpoint-named offers and `historyDetails` are removed.
@@ -26,12 +30,17 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Readiness permits at most two simultaneous probes, refuses saturation without database work and propagates request/shutdown/deadline cancellation through provider cleanup. Liveness remains independent; two seconds is a cancellation deadline, not a hard completion guarantee.
+- Browser context/current reads recover through explicit retry. Keyboard transitions focus destinations, authority technical errors support draft-preserving explicit editing with renewed consent, and unknown delivery remains primary with retained support identities. List messages describe visible scope and actual continuation; amount guidance explains redundant leading-zero refusal.
+
 - Local evaluation and test identity containers have explicit memory budgets, so each JVM no longer sizes its heap from the whole Docker host.
 - CLI loopback authentication releases unused TCP connections so a browser's valid callback can proceed within the existing overall deadline; partial or malformed requests refuse. OAuth state and PKCE validation remain library-owned.
 - Local Compose waits for identity-provider readiness before starting Web, avoiding early OIDC startup refusal while the provider is still initializing. The management health listener is confined to container loopback; public identity traffic remains HTTPS.
 - Checkout and local configuration paths retain dollar signs, quotes, backslashes, spaces, commas and colons through Compose interpolation, bind mounts and the printed Bash start command. Carriage returns and line feeds are refused before creating configuration inputs.
 
 ### Internal
+
+- Growth qualification retains each completed numeric workload atomically, including prior results after interruption. CI retains only schema-checked, source/run-bound summaries through a constructed upload inventory; private raw evidence remains excluded.
 
 - Domain fields, correction groups, business/stewardship acts and Application advice use closed types. Retained snapshot failures have a separate record-violation type; durable codecs expose versioned records only.
 - Authority loads installation and requested case roles, plus the accepted operation’s case scope when identity privacy requires a second case. Case listing uses an assigned-grant semi-join rather than loading every case grant. Authorization remains Application-owned and is rechecked in the same locked/read context.

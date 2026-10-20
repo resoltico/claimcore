@@ -65,7 +65,7 @@
   "ui.copyFallback": "{label} copy fallback",
   "ui.textHint": "Up to {maximum} characters.",
   "ui.dateHint": "Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06.",
-  "ui.amountHint": "Use ASCII digits and a dot, for example 125.50; up to {maximum} decimal places. No signs or commas.",
+  "ui.amountHint": "Use ASCII digits and a dot, for example 0.10; up to {maximum} decimal places. No redundant leading zeros (00.10), signs or commas.",
   "ui.currencyHint": "{length} uppercase ASCII letters (A–Z).",
   "ui.command": "Case action",
   "ui.reference": "{label}: {reference}",
@@ -124,7 +124,7 @@
   "ui.inspectOperationId": "Inspect operation ID",
   "ui.returnToEdit": "Return to editing",
   "ui.retryExact": "Retry the same operation",
-  "ui.retryExactDescription": "The outcome is unknown. Keep this page open and retry the same operation.",
+  "ui.retryExactDescription": "The outcome is unknown. Keep this page open and retry the same operation. Closing or reloading loses this in-memory request. IDs alone do not prove acceptance or reconstruct the request.",
   "ui.reloadContract": "Reload page",
   "ui.lifecycleErased": "Erased — only the case reference and revision remain.",
   "ui.reviewDescription": "Review the proposed values and confirm this exact operation.",
@@ -156,5 +156,14 @@
   "ui.reloadGrants": "Reload grants",
   "ui.moreGrants": "More grants",
   "ui.grantsPartial": "Only part of this actor’s grants is shown.",
-  "ui.grantsEnd": "All grants returned for this review are shown."
+  "ui.grantsEnd": "All grants returned for this review are shown.",
+  "ui.noViews": "No workspace views are available to this actor.",
+  "ui.emptyInput": "Empty input",
+  "ui.editInput": "Edit input",
+  "ui.authorityAction": "Authority action",
+  "ui.noAccessibleCases": "No accessible cases returned.",
+  "ui.noAccessibleActors": "No accessible actors returned.",
+  "ui.pagePartial": "More results are available in this visible scope.",
+  "ui.pageEnd": "End of results in this visible scope.",
+  "ui.noAccessibleHistory": "No accessible history entries returned."
 }

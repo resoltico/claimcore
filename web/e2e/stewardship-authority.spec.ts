@@ -78,7 +78,7 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
   }
 };
 const selectAuthorityAct = async (page: Page, act: "SET_GRANT" | "SET_ENABLED") => {
-  const picker = page.getByRole("combobox", { name: "Case action", exact: true });
+  const picker = page.getByRole("combobox", { name: "Authority action", exact: true });
   const option = picker.locator(`option[value="${act}"]`);
   await expect(picker).toBeEnabled();
   await expect(option).toHaveCount(1);

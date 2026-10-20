@@ -355,6 +355,24 @@ let private unavailableDocker directory =
             [| "info --format {{.ServerVersion}}" |]
             "One daemon preflight"
 
+let private retainedEvidence () =
+    let start =
+        ProcessStartInfo(
+            "python3",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        )
+
+    start.WorkingDirectory <- RepositoryRoot.find ()
+    start.ArgumentList.Add("tests/fixtures/verification_evidence.py")
+    let result = BoundedProcess.run start None 8192 10000
+
+    Expect.equal
+        result.ExitCode
+        0
+        "Safe evidence rejects canaries and retains interrupted completed work"
+
 [<Tests>]
 let tests =
     testCase
@@ -377,5 +395,6 @@ let tests =
                 combinedNativeStages directory
                 unavailableDocker directory
                 nativeUnitFloor directory
+                retainedEvidence ()
             finally
                 Directory.Delete(directory, true))

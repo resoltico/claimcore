@@ -6,8 +6,6 @@ open System.Text
 open System.Text.Json
 
 module Discovery =
-    let help () = ContractDiscovery.help ()
-
     let versionJson () =
         let identity = BuildIdentity.current
 
@@ -53,6 +51,77 @@ module Discovery =
         | [ "endpoints"; id ] -> select (ContractDiscovery.catalogue ()) "endpoints" "id" (Some id)
         | [ "diagnostics" ] -> Some(ContractDiscovery.presentation ())
         | _ -> None
+
+    let private describeMessages language (value: JsonElement) =
+        value.EnumerateObject()
+        |> Seq.filter (fun item ->
+            item.Name.StartsWith("diagnostic.", System.StringComparison.Ordinal))
+        |> Seq.map (fun item ->
+            let template =
+                item.Value.EnumerateArray()
+                |> Seq.map (fun part ->
+                    match part.TryGetProperty "literal" with
+                    | true, text -> text.GetString() |> nonNull
+                    | _ -> "{" + (part.GetProperty("hole").GetString() |> nonNull) + "}")
+                |> String.concat ""
+
+            item.Name + ": " + ContractDiscovery.localized language item.Name template)
+        |> String.concat "\n"
+
+    let describeText language arguments =
+        describe arguments
+        |> Option.map (fun bytes ->
+            use document = JsonDocument.Parse(System.ReadOnlyMemory<byte> bytes)
+
+            let rec render (value: JsonElement) =
+                match value.ValueKind with
+                | JsonValueKind.Array ->
+                    value.EnumerateArray() |> Seq.map render |> String.concat "\n"
+                | JsonValueKind.Object ->
+                    value.EnumerateObject()
+                    |> Seq.filter (fun item ->
+                        List.contains
+                            item.Name
+                            [
+                                "name"
+                                "kind"
+                                "id"
+                                "label"
+                                "meaning"
+                                "inputs"
+                                "fields"
+                                "groups"
+                                "type"
+                                "required"
+                                "path"
+                                "method"
+                            ])
+                    |> Seq.map (fun item ->
+                        let text = render item.Value
+
+                        let text =
+                            match value.TryGetProperty(item.Name + "Id") with
+                            | true, identity ->
+                                ContractDiscovery.localized
+                                    language
+                                    (identity.GetString() |> nonNull)
+                                    text
+                            | _ -> text
+
+                        item.Name + ": " + text)
+                    |> String.concat "\n"
+                | JsonValueKind.String -> value.GetString() |> nonNull
+                | _ -> value.GetRawText()
+
+            let text =
+                if List.isEmpty arguments || arguments = [ "summary" ] then
+                    ContractDiscovery.helpTopic language "describe"
+                elif arguments = [ "diagnostics" ] then
+                    describeMessages language document.RootElement + "\n"
+                else
+                    render document.RootElement + "\nClaimCore.Cli schema invocation\n"
+
+            Encoding.UTF8.GetBytes text)
 
     let schema arguments =
         match arguments with

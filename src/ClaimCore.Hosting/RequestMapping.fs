@@ -94,15 +94,14 @@ module internal RequestMapping =
 
     let authorityRequest
         (value: ClaimCore.Wire.AuthorityRequest)
-        : Result<AuthorityRequest, string> =
+        : Result<AuthorityRequest, HostFailure> =
         let principal =
-            match value.Target.Kind with
-            | PrincipalKinds.Human -> PrincipalKey.human value.Target.Issuer value.Target.Subject
-            | PrincipalKinds.Service ->
-                PrincipalKey.service value.Target.Issuer value.Target.Subject
-            | _ -> Error "ACTOR_PRINCIPAL_INVALID"
+            PrincipalKey.admit value.Target.Kind value.Target.Issuer value.Target.Subject
+            |> Result.mapError HostFailure.PrincipalInput
 
-        match principal, authorityAct value.Act with
+        match
+            principal, authorityAct value.Act |> Result.mapError (fun _ -> HostFailure.InputInvalid)
+        with
         | Ok target, Ok operation ->
             Ok
                 {

@@ -24,7 +24,28 @@ module ContractDiscovery =
 
         document.RootElement.GetProperty(identity: string).GetString() |> nonNull
 
-    let help () = message "cli.help"
+    let localized language identity fallback =
+        if language = "en" then
+            fallback
+        else
+            let domain = (identity: string).Split('.')[0]
+
+            use document =
+                JsonDocument.Parse(
+                    System.ReadOnlyMemory<byte>(
+                        resource ("locale." + language + "." + domain + ".json")
+                    )
+                )
+
+            match document.RootElement.TryGetProperty identity with
+            | true, text -> text.GetString() |> nonNull
+            | _ -> fallback
+
+    let helpTopic language topic =
+        use document =
+            JsonDocument.Parse(System.ReadOnlyMemory<byte>(resource "cli-help.json"))
+
+        document.RootElement.GetProperty(language + "." + topic).GetString() |> nonNull
 
     let descriptors () = resource "descriptors.json"
     let private openapi () = resource "openapi.json"

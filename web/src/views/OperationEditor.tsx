@@ -1,4 +1,5 @@
 import { usePresentation } from "../presentation/context";
+import { CopyValue } from "../components/CopyValue";
 import { NoticeView } from "../presentation/Message";
 import { useEffect, useRef, type RefObject } from "react";
 import { useOperationEditor } from "../hooks/operation/useOperationEditor";
@@ -15,6 +16,9 @@ const useEditorFocus = (
   const previousDelivery = useRef(model.state.delivery);
   useEffect(() => {
     const field = model.state.fieldError?.name;
+    if (model.state.delivery === "DEFINITELY_REJECTED" && field === undefined) {
+      section.current?.querySelector<HTMLElement>("[data-error-summary]")?.focus();
+    }
     if (model.state.delivery !== "DEFINITELY_REJECTED" || field === undefined) {
       return;
     }
@@ -48,7 +52,24 @@ const UnknownOperation = ({ model }: { model: OperationEditorModel }) => {
   const p = usePresentation();
   return (
     <section role="alert" aria-busy={model.state.delivery === "SUBMITTING"}>
-      <NoticeView value={model.state.message ?? { kind: "local", reason: "outcomeUnknown" }} />
+      <NoticeView value={{ kind: "local", reason: "outcomeUnknown" }} />
+      <dl>
+        {(
+          [
+            ["operationId", model.state.operationId],
+            ["act", model.state.command],
+            ["caseReference", model.state.caseReference],
+            ["expectedRevision", String(model.state.prepared?.input.expectedRevision ?? "")],
+          ] as const
+        ).map(([name, value]) => (
+          <div key={name}>
+            <dt>{p.fieldLabel(name)}</dt>
+            <dd>
+              <bdi>{value}</bdi> <CopyValue label={p.fieldLabel(name)} value={value} />
+            </dd>
+          </div>
+        ))}
+      </dl>
       <p>{p.text("ui.retryExactDescription")}</p>
       <button
         type="button"

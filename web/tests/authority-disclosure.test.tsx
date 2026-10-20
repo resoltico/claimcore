@@ -161,7 +161,7 @@ it.each([false, true])(
     } else {
       expect(screen.queryByText(listPrincipal())).toBeNull();
     }
-    fireEvent.click(screen.getByRole("button", { name: "Back to cases" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit input" }));
     expect(screen.queryByRole("option")).toBeNull();
     expect(listing).toHaveBeenCalledTimes(2);
   },
@@ -260,7 +260,7 @@ it.each(["context", "listing"] as const)(
     expect(context).toHaveBeenCalledTimes(2);
     expect(listing).toHaveBeenCalledTimes(2);
     expect(screen.getByText("synthetic-authored")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Back to cases" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit input" }));
     expect(screen.queryByRole("option")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Reload actors" }));
     await waitFor(() => {
@@ -304,7 +304,7 @@ it.each([
       expect(context).toHaveBeenCalledTimes(3);
     });
     if (returned) {
-      await user.click(screen.getByRole("button", { name: "Back to cases" }));
+      await user.click(screen.getByRole("button", { name: "Edit input" }));
     }
     expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Cases" })).toBeDisabled();
@@ -387,10 +387,10 @@ it.each(["lost", "unknown"] as const)(
     await waitFor(() => {
       expect(screen.queryByRole("alert")).toBeNull();
     });
-    expect(screen.getByText(pending.input.operationId, { exact: false })).toHaveAttribute(
-      "role",
-      "status",
-    );
+    expect(
+      screen.getByText(pending.input.operationId, { exact: false }).closest('[role="status"]'),
+    ).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "accepted" })).toHaveFocus();
     expect(screen.queryByRole("button", { name: "Retry the same operation" })).toBeNull();
     expect(execute.mock.calls[1]![0]).toBe(pending);
     expect(execute.mock.calls[1]![0].bytes).toBe(pending.bytes);

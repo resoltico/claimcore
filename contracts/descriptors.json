@@ -1473,7 +1473,7 @@
         "hole": "maximumFractionalDigits"
       },
       {
-        "literal": " fractional digits; no sign or exponent."
+        "literal": " fractional digits; no sign, exponent or redundant leading zeros: 0.10 is valid; 00.10 is invalid."
       }
     ],
     "diagnostic.INPUT_FUTURE_DATE": [
@@ -1525,6 +1525,23 @@
     "diagnostic.OPERATION_CONTENT_CONFLICT": [
       {
         "literal": "This operation ID belongs to different command content. Do not reuse it."
+      }
+    ],
+    "diagnostic.PRINCIPAL_INPUT_INVALID": [
+      {
+        "literal": "Correct principal field "
+      },
+      {
+        "hole": "target"
+      },
+      {
+        "literal": ": "
+      },
+      {
+        "hole": "issue"
+      },
+      {
+        "literal": ". No operation was dispatched by this attempt."
       }
     ],
     "diagnostic.QUERY_CURSOR_INVALID": [

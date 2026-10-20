@@ -50,6 +50,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -261,6 +279,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -475,6 +511,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -689,6 +743,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -903,6 +975,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -1117,6 +1207,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -1331,6 +1439,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -1545,6 +1671,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -1759,6 +1903,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -1973,6 +2135,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -2187,6 +2367,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -2401,6 +2599,24 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/HostFailure.InputInvalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
                     }
                   ]
                 }
@@ -6306,6 +6522,24 @@
           },
           {
             "$ref": "#/components/schemas/HostFailure.CompletedResponseFailed"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
+          },
+          {
+            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
           }
         ]
       },
@@ -6969,6 +7203,438 @@
                 "additionalProperties": false,
                 "properties": {},
                 "required": []
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetIssuer.Invalid": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "issuer"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "INVALID"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetIssuer.Missing": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "issuer"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "MISSING"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetKind.Invalid": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "kind"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "INVALID"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetKind.Missing": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "kind"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "MISSING"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetSubject.Invalid": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "subject"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "INVALID"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
+              }
+            },
+            "required": ["id","parameters"
+            ]
+          },
+          "executionPhase": {
+            "const": "NOT_STARTED"
+          }
+        },
+        "required": ["kind","code","status","message","diagnostic","executionPhase"
+        ]
+      },
+      "HostFailure.PrincipalInput.TargetSubject.Missing": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "const": "HOST_FAILURE"
+              }
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "const": "INPUT_INVALID"
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 400
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "diagnostic": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "oneOf": [
+                  {
+                    "const": "PRINCIPAL_INPUT_INVALID"
+                  }
+                ]
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "oneOf": [
+                      {
+                        "const": "subject"
+                      }
+                    ]
+                  },
+                  "issue": {
+                    "oneOf": [
+                      {
+                        "const": "MISSING"
+                      }
+                    ]
+                  }
+                },
+                "required": ["target","issue"
+                ]
               }
             },
             "required": ["id","parameters"
