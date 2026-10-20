@@ -52,3 +52,18 @@ with tempfile.TemporaryDirectory() as temporary:
     else:
         raise AssertionError('Final upload admitted a poisoned measurement')
     assert not (directory / 'refused').exists()
+
+    evidence.atomic(native / 'summary.json', finished)
+    preexisting = directory / 'preexisting'
+    preexisting.mkdir()
+    (preexisting / 'private-canary.json').write_text('secret')
+    try:
+        evidence.publish(directory, preexisting)
+    except (ValueError, FileExistsError):
+        pass
+    else:
+        raise AssertionError('Existing upload content must refuse')
+    assert (preexisting / 'private-canary.json').read_text() == 'secret'
+    action = (root / '.github/actions/qualification-evidence/action.yml').read_text()
+    assert "if: always() && steps.evidence.outcome == 'success'" in action
+    assert 'id: evidence' in action

@@ -150,7 +150,7 @@ const AuthorityReview = ({ model }: { model: AuthorityOperation }) => {
   return (
     <section>
       <h3>{p.text("ui.reviewExactRequest")}</h3>
-      <ProtocolSummary value={model.prepared?.input} />
+      <ProtocolSummary value={model.prepared?.input} document={document} node={document} />
       {model.uncertain ? (
         <p>{p.text("ui.retryExactDescription")}</p>
       ) : (

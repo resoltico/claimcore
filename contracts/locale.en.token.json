@@ -29,5 +29,9 @@
   "token.PROVISION_OWNER": "Provision owner",
   "token.REGISTER_ACTOR": "Register actor",
   "token.SET_ENABLED": "Set actor enabled state",
-  "token.SET_GRANT": "Set grant"
+  "token.SET_GRANT": "Set grant",
+  "token.HUMAN": "Human",
+  "token.SERVICE": "Service",
+  "token.INSTALLATION": "Installation",
+  "token.CASE": "One case"
 }

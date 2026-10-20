@@ -97,17 +97,11 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh unit
-      - name: Prepare allowlisted qualification evidence
+      - name: Retain allowlisted qualification evidence
         if: always()
-        run: python3 eng/verification_evidence.py publish artifacts/verification artifacts/qualification-upload
-      - name: Retain sanitized qualification summaries
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: ./.github/actions/qualification-evidence # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
         with:
-          name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
-          path: artifacts/qualification-upload/*.json
-          if-no-files-found: error
-          retention-days: 14
+          artifact-name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
 
   integration:
     name: PostgreSQL ${{ matrix.major }} store tests
@@ -127,17 +121,11 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh postgres
-      - name: Prepare allowlisted qualification evidence
+      - name: Retain allowlisted qualification evidence
         if: always()
-        run: python3 eng/verification_evidence.py publish artifacts/verification artifacts/qualification-upload
-      - name: Retain sanitized qualification summaries
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: ./.github/actions/qualification-evidence # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
         with:
-          name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
-          path: artifacts/qualification-upload/*.json
-          if-no-files-found: error
-          retention-days: 14
+          artifact-name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
 
   web:
     name: Web host and identity tests
@@ -151,17 +139,11 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh web
-      - name: Prepare allowlisted qualification evidence
+      - name: Retain allowlisted qualification evidence
         if: always()
-        run: python3 eng/verification_evidence.py publish artifacts/verification artifacts/qualification-upload
-      - name: Retain sanitized qualification summaries
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: ./.github/actions/qualification-evidence # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
         with:
-          name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
-          path: artifacts/qualification-upload/*.json
-          if-no-files-found: error
-          retention-days: 14
+          artifact-name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
 
   frontend:
     name: Frontend checks (SDK-free Node container)
@@ -220,17 +202,11 @@ jobs:
           CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ matrix.engine }}
           CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: ${{ matrix.scope }}
         run: bash eng/verify.sh browsers acceptance
-      - name: Prepare allowlisted qualification evidence
+      - name: Retain allowlisted qualification evidence
         if: always()
-        run: python3 eng/verification_evidence.py publish artifacts/verification artifacts/qualification-upload
-      - name: Retain sanitized qualification summaries
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: ./.github/actions/qualification-evidence # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
         with:
-          name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
-          path: artifacts/qualification-upload/*.json
-          if-no-files-found: error
-          retention-days: 14
+          artifact-name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
       - name: Report browser execution
         env:
           BROWSER_ENGINE: ${{ matrix.engine }}

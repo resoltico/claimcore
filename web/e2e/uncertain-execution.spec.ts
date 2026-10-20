@@ -40,7 +40,14 @@ const refuseRetryBeforeDispatch = async (page: Page, requests: (string | null)[]
       }),
     });
   });
+  const refused = page.waitForResponse(
+    (response) => response.url().endsWith("/api/case.execute") && response.status() === 409,
+  );
   await page.getByRole("button", { name: "Retry the same operation", exact: true }).click();
+  await (await refused).finished();
+  await expect(
+    page.getByRole("button", { name: "Retry the same operation", exact: true }),
+  ).toBeEnabled();
   await expect(page.getByRole("alert")).toContainText("unknown");
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Back to case", exact: true })).toHaveCount(0);

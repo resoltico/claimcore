@@ -1,7 +1,14 @@
 import { parseSync } from "oxc-parser";
 
-const owners = new Set(["CaseReceipt", "AuthorityReceipt", "CaseView", "CaseState_LIVE"]);
-const members = new Set(["act", "disposition"]);
+const owners = new Set([
+  "CaseReceipt",
+  "AuthorityReceipt",
+  "CaseView",
+  "CaseState_LIVE",
+  "Principal",
+]);
+const renderedKindFamilies = ["Scope_", "AuthorityAct_"];
+const members = new Set(["act", "disposition", "kind"]);
 /** @param {import("./tooling-types.mjs").JsonRecord} key */
 const memberName = (key) => (key["type"] === "Identifier" ? key["name"] : key["value"]);
 
@@ -50,7 +57,11 @@ const renderedFamilies = (types, result) => {
   for (const statement of program.body) {
     const declaration =
       statement.type === "ExportNamedDeclaration" ? statement.declaration : statement;
-    if (declaration?.type === "TSTypeAliasDeclaration" && owners.has(declaration.id.name)) {
+    if (
+      declaration?.type === "TSTypeAliasDeclaration" &&
+      (owners.has(declaration.id.name) ||
+        renderedKindFamilies.some((prefix) => declaration.id.name.startsWith(prefix)))
+    ) {
       visit(declaration.typeAnnotation, result);
     }
   }
