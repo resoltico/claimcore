@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
+    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
+    <Compile Include="../../contracts/contract-identity.fs" />
     <Compile Include="Strict.fs" />
     <Compile Include="Codec.fs" />
     <Compile Include="Endpoint.fs" />
@@ -11,11 +14,13 @@
     <Compile Include="ResponseScalars.fs" />
     <Compile Include="ResponseCodecs.fs" />
     <Compile Include="Replies.fs" />
+    <Compile Include="CorrelationBindings.fs" />
+    <Compile Include="CorrelationEvaluation.fs" />
     <Compile Include="Correlation.fs" />
     <Compile Include="HostFailures.fs" />
     <Compile Include="HttpsOrigins.fs" />
     <Compile Include="Frames.fs" />
     <Compile Include="OpenApi.fs" />
-    <Compile Include="Fingerprint.fs" />
+    <Compile Include="ConsumerContract.fs" />
   </ItemGroup>
 </Project>

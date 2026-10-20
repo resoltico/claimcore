@@ -1,5 +1,7 @@
 namespace ClaimCore.Postgres
 
+open ClaimCore.Catalog
+
 open System
 open System.Threading.Tasks
 open ClaimCore.Application
@@ -105,7 +107,7 @@ module internal ReadOperations =
 
                     let forbidden =
                         ActorAuthorization.invalidRoles principal
-                        |> List.map Roles.token
+                        |> List.map RoleTokens.token
                         |> List.toArray
 
                     let! rows =
@@ -116,7 +118,7 @@ module internal ReadOperations =
                                 DatabaseSession.parameter selection.AfterReference
                                 box every
                                 box actorId
-                                box (readRoles |> List.map Roles.token |> List.toArray)
+                                box (readRoles |> List.map RoleTokens.token |> List.toArray)
                                 box forbidden
                                 box (limit + 1)
                             |]
@@ -277,7 +279,7 @@ module internal ReadOperations =
                     [|
                         box targetId
                         DatabaseSession.parameter (
-                            after |> Option.map (fun p -> Roles.token p.Role)
+                            after |> Option.map (fun p -> RoleTokens.token p.Role)
                         )
                         DatabaseSession.parameter (after |> Option.bind _.CaseId)
                         box (limit + 1)

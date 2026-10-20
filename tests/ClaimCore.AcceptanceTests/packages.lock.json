@@ -207,9 +207,16 @@
           "BouncyCastle.Cryptography": "2.7.0"
         }
       },
+      "claimcore.catalog": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.wire": {
         "type": "Project",
         "dependencies": {
+          "ClaimCore.Catalog": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       }

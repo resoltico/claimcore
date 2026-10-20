@@ -161,9 +161,9 @@ let private graphTests =
             reject
                 (fun () -> ProjectGraph.check contract.Value changed)
                 "ClaimCore.Application projectGraph")
-        testCase "Wire rejects every ClaimCore project reference" (fun () ->
+        testCase "Wire rejects dependencies beyond inert Catalog vocabulary" (fun () ->
             for name in contract.Value.Projects.Keys do
-                if name <> "ClaimCore.Wire" then
+                if name <> "ClaimCore.Wire" && name <> "ClaimCore.Catalog" then
                     let changed = actualGraph () |> Map.add "ClaimCore.Wire" (Set.singleton name)
 
                     reject

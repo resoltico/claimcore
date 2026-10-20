@@ -27,7 +27,7 @@ it("encodes every correction action explicitly and refuses an invalid registrati
       ...values,
       registration: { mode: "CLEAR", values: {} },
     }),
-  ).toThrow("Unsupported registration correction choice.");
+  ).toThrow("Unsupported correction choice.");
 });
 
 it("rejects impossible local draft shapes and keeps absent current correction values blank", () => {
@@ -39,7 +39,7 @@ it("rejects impossible local draft shapes and keeps absent current correction va
     Reflect.apply(commandInputs, undefined, [{ ...definition, fields: [] }, "OPEN"]);
   }).toThrow("did not describe");
   expect(() => createDraft(operationId, "CASE-SYNTHETIC", 1, "CORRECT_CASE", {})).toThrow(
-    "CORRECT_CASE requires grouped values.",
+    "Correction requires grouped values.",
   );
   expect(() =>
     createDraft(operationId, "CASE-SYNTHETIC", 1, "OPEN", {
@@ -47,7 +47,7 @@ it("rejects impossible local draft shapes and keeps absent current correction va
       decision: { mode: "KEEP", values: {} },
       payment: { mode: "KEEP", values: {} },
     }),
-  ).toThrow("OPEN requires flat values.");
+  ).toThrow("Operation requires flat values and complete bindings.");
 });
 
 it("retains authored replacement values for every grouped correction field", () => {

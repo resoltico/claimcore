@@ -7878,7 +7878,7 @@
           "authenticated": {
             "type": "boolean"
           },
-          "wireFingerprint": {
+          "contractIdentity": {
             "type": "string",
             "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
             "minLength": 64,
@@ -7897,7 +7897,7 @@
             ]
           }
         },
-        "required": ["authenticated","wireFingerprint","antiforgeryToken"
+        "required": ["authenticated","contractIdentity","antiforgeryToken"
         ]
       },
       "SessionLogoutOutcome": {

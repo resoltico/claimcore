@@ -17,7 +17,7 @@ let private writeBytes (bytes: byte array) =
     output.Flush()
 
 let private unsupported () =
-    Console.Error.WriteLine("Unsupported invocation. Run claimcore help.")
+    Console.Error.WriteLine((ContractDiscovery.message "cli.unsupportedInvocation"))
     64
 
 let private writeDiscovery response =
@@ -90,7 +90,7 @@ let main argv =
         | arguments -> discovery arguments
     with _ ->
         try
-            Console.Error.WriteLine("Unexpected failure before dispatch.")
+            Console.Error.WriteLine((ContractDiscovery.message "cli.beforeDispatchFailure"))
         with _ ->
             ()
 

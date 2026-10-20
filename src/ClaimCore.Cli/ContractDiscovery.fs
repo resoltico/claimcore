@@ -18,6 +18,14 @@ module ContractDiscovery =
         stream.CopyTo output
         output.ToArray()
 
+    let message identity =
+        use document =
+            JsonDocument.Parse(System.ReadOnlyMemory<byte>(resource "cli-messages.json"))
+
+        document.RootElement.GetProperty(identity: string).GetString() |> nonNull
+
+    let help () = message "cli.help"
+
     let descriptors () = resource "descriptors.json"
     let private openapi () = resource "openapi.json"
 
@@ -37,7 +45,7 @@ module ContractDiscovery =
     let presentation () =
         use document = JsonDocument.Parse(System.ReadOnlyMemory<byte>(descriptors ()))
 
-        document.RootElement.GetProperty("diagnostics").GetRawText()
+        document.RootElement.GetProperty("messages").GetRawText()
         |> Encoding.UTF8.GetBytes
 
     let private schemaDocument schema (definitions: Map<string, Schema>) =

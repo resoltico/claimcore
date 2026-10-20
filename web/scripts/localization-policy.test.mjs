@@ -12,7 +12,6 @@ import {
   validateCatalog,
   validateCoverage,
 } from "./localization-policy.mjs";
-import { businessMessages } from "./localization-metadata.mjs";
 import { renderedTokens, validateTokens } from "./localization-tokens.mjs";
 const root = resolve(import.meta.dirname, "../src");
 /** @param {string} path */
@@ -27,13 +26,12 @@ const catalog = (language) =>
   Object.assign(
     language === "en"
       ? {
-          ...businessMessages(descriptors),
-          ...descriptors.diagnostics,
+          ...descriptors.messages,
         }
       : {},
-    ...readdirSync(resolve(root, "presentation/catalogs"))
-      .filter((name) => name.startsWith(`${language}.`))
-      .map((name) => json(`presentation/catalogs/${name}`)),
+    ...readdirSync(contracts)
+      .filter((name) => name.startsWith(`locale.${language}.`))
+      .map((name) => contract(name)),
   );
 
 test("runtime pseudolocalization preserves English source and typed argument ASTs", () => {
@@ -193,31 +191,6 @@ test("default business projection preserves literal apostrophes and braces witho
     assert.deepEqual(args, {});
     assert.equal(new IntlMessageFormat(ast, "en").format(), text);
   }
-  const fixtureDescriptors = {
-    fields: [
-      { name: "insurerName", label: "Responsible insurer", meaning: "Recorded insurer {role}." },
-    ],
-    commands: [
-      {
-        kind: "OPEN",
-        label: "Register case",
-        meaning: "Register the case.",
-        inputs: { groups: [] },
-      },
-    ],
-  };
-  assert.deepEqual(businessMessages(fixtureDescriptors), {
-    "field.insurerName.label": [{ literal: "Responsible insurer" }],
-    "field.insurerName.meaning": [{ literal: "Recorded insurer {role}." }],
-    "command.OPEN.label": [{ literal: "Register case" }],
-    "command.OPEN.meaning": [{ literal: "Register the case." }],
-  });
-  assert.throws(() =>
-    businessMessages({
-      ...fixtureDescriptors,
-      fields: [...fixtureDescriptors.fields, ...fixtureDescriptors.fields],
-    }),
-  );
 });
 
 // Independent oracle: original literals plus supplied hole values, never encoded text.

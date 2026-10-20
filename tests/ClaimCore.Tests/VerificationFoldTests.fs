@@ -1,5 +1,7 @@
 module ClaimCore.Tests.VerificationFoldTests
 
+open ClaimCore.Catalog
+
 open System
 open Expecto
 open ClaimCore.Domain

@@ -1,5 +1,7 @@
 namespace ClaimCore.Wire
 
+open ClaimCore.Catalog
+
 open System
 open System.Text
 
@@ -172,24 +174,8 @@ module Frames =
                 else
                     Ok { Request = value; InputBytes = input }))
 
-    let knowledge =
-        enumeration
-            [
-                AttemptKnowledge.NotSent, "NOT_SENT"
-                AttemptKnowledge.ReadSucceeded, "READ_SUCCEEDED"
-                AttemptKnowledge.ReadFailed, "READ_FAILED"
-                AttemptKnowledge.Accepted, "ACCEPTED"
-                AttemptKnowledge.NotAccepted, "NOT_ACCEPTED"
-                AttemptKnowledge.Unconfirmed, "UNCONFIRMED"
-            ]
-
-    let evidence =
-        enumeration
-            [
-                ResolutionEvidence.NoEvidence, "NONE"
-                ResolutionEvidence.ContentAccepted, "CONTENT_ACCEPTED"
-                ResolutionEvidence.ContentExcluded, "CONTENT_EXCLUDED"
-            ]
+    let knowledge = enumeration DeliveryTokens.knowledgeDefinitions
+    let evidence = enumeration DeliveryTokens.evidenceDefinitions
 
     let private localCode =
         enumeration

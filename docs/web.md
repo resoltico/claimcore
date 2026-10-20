@@ -47,8 +47,8 @@ The [identity-provider flow restrictions](operations.md#access-review-and-sessio
 deployment trust contract. Client classification identifies a client; it does not prove which OAuth
 grant produced a token. Restrict IdP clients before granting SERVICE principals ClaimCore access.
 
-The browser consumes tracked generated types/descriptors and OpenAPI component schemas. Requests
-are typed object literals; a single schema interpreter validates response shapes.
+The browser consumes tracked generated types/descriptors and OpenAPI component schemas. Case requests are assembled through codec-checked core input bindings; authority forms use the
+same typed codec schemas. A single schema interpreter validates response shapes.
 Its production decoder starts with bounded strict UTF-8 bytes and preserves integer lexical checks. Missing or unusable mutation receipt data remains uncertain
 and preserves the original retry identity/content. WITHHELD snapshots show
 metadata without fields; ERASED is distinct. Country display hints use localized names where known,

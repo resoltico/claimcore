@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="BusinessCalendar.fs" />
     <Compile Include="AdmissionGate.fs" />

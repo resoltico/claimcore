@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliTransportTests
 
+open ClaimCore.Catalog
+
 open ClaimCore.Wire
 
 open System
@@ -83,7 +85,7 @@ let private requestBytes () =
 
                     Expect.equal
                         (request.Headers.GetValues("ClaimCore-Contract") |> Seq.toList)
-                        [ Fingerprint.value ]
+                        [ ConsumerContract.identity ]
                         "Compiled handshake"
 
                     if (Endpoint.method endpoint) = "POST" then

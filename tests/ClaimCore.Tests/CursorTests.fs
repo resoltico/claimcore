@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CursorTests
 
+open ClaimCore.Catalog
+
 open System
 open System.IO
 open System.Text
@@ -72,7 +74,7 @@ let private accepted () =
 
                     let expected =
                         {
-                            Role = Roles.tryParse (text "role" position) |> Option.get
+                            Role = RoleTokens.tryParse (text "role" position) |> Option.get
                             CaseId =
                                 if caseId.ValueKind = JsonValueKind.Null then
                                     None

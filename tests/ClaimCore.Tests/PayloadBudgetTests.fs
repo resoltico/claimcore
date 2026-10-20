@@ -1,5 +1,7 @@
 module ClaimCore.Tests.PayloadBudgetTests
 
+open ClaimCore.Catalog
+
 open System
 open Expecto
 open ClaimCore.Application

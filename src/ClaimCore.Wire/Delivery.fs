@@ -1,47 +1,6 @@
 namespace ClaimCore.Wire
 
-[<RequireQualifiedAccess>]
-type ExecutionPhase =
-    | NotStarted
-    | StartedUnconfirmed
-
-[<RequireQualifiedAccess>]
-type OutcomeTag =
-    | Succeeded
-    | Reviewed
-    | Accepted
-    | AlreadyAccepted
-    | Rejected
-    | Failed
-    | Cancelled
-    | OutcomeUnknown
-
-[<RequireQualifiedAccess>]
-type AttemptKnowledge =
-    | NotSent
-    | ReadSucceeded
-    | ReadFailed
-    | Accepted
-    | NotAccepted
-    | Unconfirmed
-
-[<RequireQualifiedAccess>]
-type AccumulatedKnowledge =
-    | Known of AttemptKnowledge
-    | ContentExcluded
-
-[<RequireQualifiedAccess>]
-type ResolutionEvidence =
-    | NoEvidence
-    | ContentAccepted
-    | ContentExcluded
-
-[<RequireQualifiedAccess>]
-type AttemptResult =
-    | NotDispatched
-    | DispatchedWithoutReply
-    | HostFailure of ExecutionPhase option
-    | Outcome of OutcomeTag * diagnostic: string option
+open ClaimCore.Catalog
 
 module Delivery =
     let private outcome mutates =

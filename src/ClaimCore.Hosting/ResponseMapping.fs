@@ -1,5 +1,7 @@
 namespace ClaimCore.Hosting
 
+open ClaimCore.Catalog
+
 open System.Globalization
 open ClaimCore.Application
 open ClaimCore.Domain
@@ -239,7 +241,7 @@ module internal ResponseMapping =
 
     let private grant (value: AuthorityGrant) : ClaimCore.Wire.AuthorityGrant =
         {
-            Role = Roles.token value.Role
+            Role = RoleTokens.token value.Role
             Scope =
                 match value.Scope with
                 | GrantTarget.Installation -> ClaimCore.Wire.Scope.Installation

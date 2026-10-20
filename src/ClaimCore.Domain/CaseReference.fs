@@ -1,5 +1,7 @@
 namespace ClaimCore.Domain
 
+open ClaimCore.Catalog
+
 module CaseReference =
     let validate reference =
         Validation.text InputTarget.CaseReference reference |> Result.map ignore

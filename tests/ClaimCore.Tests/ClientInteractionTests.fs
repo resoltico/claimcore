@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ClientInteractionTests
 
+open ClaimCore.Catalog
+
 open System
 open System.Text
 open System.Text.Json
@@ -84,8 +86,8 @@ let private policyTruthTable () =
 
 let private accumulatedEvidence () =
     let conflict =
-        ClaimCore.Application.RejectionDiagnosticIds.token
-            ClaimCore.Application.RejectionDiagnosticId.IdempotencyConflict
+        ClaimCore.Catalog.RejectionDiagnosticIds.token
+            ClaimCore.Catalog.RejectionDiagnosticId.IdempotencyConflict
 
     Expect.equal
         (Delivery.evidence

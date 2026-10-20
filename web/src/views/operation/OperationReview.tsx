@@ -67,7 +67,7 @@ const authoredFields = (act: CommandDraft["act"]): Readonly<Record<string, strin
   if ("reason" in act) {
     return { reason: act.reason };
   }
-  if (act.kind === "CORRECT_CASE") {
+  if ("groups" in act) {
     return Object.fromEntries(
       Object.values(act.groups).flatMap((group) =>
         group.mode === "REPLACE" ? Object.entries(group.values) : [],
@@ -101,7 +101,7 @@ const AuthoredFields = ({ model }: { model: OperationEditorModel }) => {
 };
 const AuthoredCorrectionModes = ({ act }: { act: CommandDraft["act"] }) => {
   const p = usePresentation();
-  if (act.kind !== "CORRECT_CASE") {
+  if (!("groups" in act)) {
     return null;
   }
   return (
@@ -162,7 +162,7 @@ const ReviewConfirmation = ({ model }: { model: OperationEditorModel }) => {
             <span aria-hidden="true" className="review-checkmark">
               {isSelected ? "✓" : ""}
             </span>
-            {p.text("ui.reviewConfirmation")}
+            {p.text(model.command.confirmationId)}
           </>
         )}
       </CheckboxButton>

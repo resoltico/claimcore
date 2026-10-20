@@ -1,22 +1,6 @@
 namespace ClaimCore.Wire
 
-[<RequireQualifiedAccess>]
-type HostFailure =
-    | ContractMismatch
-    | ConnectionRejected
-    | OriginRejected
-    | MediaTypeRejected
-    | BodyTooLarge
-    | SessionRejected
-    | SessionForbidden
-    | MethodRejected
-    | AntiforgeryRejected
-    | EndpointMissing
-    | RateLimited
-    | InputInvalid
-    | BeforeDispatchFailed
-    | DispatchUnconfirmed
-    | CompletedResponseFailed
+open ClaimCore.Catalog
 
 type HostFailureReply =
     { Reason: HostFailure; Message: string }
@@ -25,101 +9,84 @@ module HostFailures =
     let private policies =
         [
             HostFailure.ContractMismatch,
-            "CONTRACT_MISMATCH",
             409,
             Some ExecutionPhase.NotStarted,
-            "The client contract differs. Reload or use a matching client."
+            (MessageText.literal "diagnostic.HOST_CONTRACTMISMATCH")
             HostFailure.ConnectionRejected,
-            "CONNECTION_REJECTED",
             403,
             Some ExecutionPhase.NotStarted,
-            "Connection was refused."
+            (MessageText.literal "diagnostic.HOST_CONNECTIONREJECTED")
             HostFailure.OriginRejected,
-            "ORIGIN_REJECTED",
             403,
             Some ExecutionPhase.NotStarted,
-            "Origin was refused."
+            (MessageText.literal "diagnostic.HOST_ORIGINREJECTED")
             HostFailure.MediaTypeRejected,
-            "MEDIA_TYPE_REJECTED",
             415,
             Some ExecutionPhase.NotStarted,
-            "Use the endpoint media type."
+            (MessageText.literal "diagnostic.HOST_MEDIATYPEREJECTED")
             HostFailure.BodyTooLarge,
-            "BODY_TOO_LARGE",
             413,
             Some ExecutionPhase.NotStarted,
-            "Request body is too large."
+            (MessageText.literal "diagnostic.HOST_BODYTOOLARGE")
             HostFailure.SessionRejected,
-            "SESSION_REJECTED",
             401,
             Some ExecutionPhase.NotStarted,
-            "Authentication was refused."
+            (MessageText.literal "diagnostic.HOST_SESSIONREJECTED")
             HostFailure.SessionForbidden,
-            "SESSION_FORBIDDEN",
             403,
             Some ExecutionPhase.NotStarted,
-            "Session access was refused."
+            (MessageText.literal "diagnostic.HOST_SESSIONFORBIDDEN")
             HostFailure.MethodRejected,
-            "METHOD_REJECTED",
             405,
             Some ExecutionPhase.NotStarted,
-            "The method is unsupported."
+            (MessageText.literal "diagnostic.HOST_METHODREJECTED")
             HostFailure.AntiforgeryRejected,
-            "ANTIFORGERY_REJECTED",
             403,
             Some ExecutionPhase.NotStarted,
-            "Request verification was refused."
+            (MessageText.literal "diagnostic.HOST_ANTIFORGERYREJECTED")
             HostFailure.EndpointMissing,
-            "ENDPOINT_MISSING",
             404,
             Some ExecutionPhase.NotStarted,
-            "Endpoint was not found."
+            (MessageText.literal "diagnostic.HOST_ENDPOINTMISSING")
             HostFailure.RateLimited,
-            "RATE_LIMITED",
             429,
             Some ExecutionPhase.NotStarted,
-            "Request admission is busy."
+            (MessageText.literal "diagnostic.HOST_RATELIMITED")
             HostFailure.InputInvalid,
-            "INPUT_INVALID",
             400,
             Some ExecutionPhase.NotStarted,
-            "The input does not satisfy the endpoint contract."
+            (MessageText.literal "diagnostic.HOST_INPUTINVALID")
             HostFailure.BeforeDispatchFailed,
-            "INTERNAL",
             500,
             Some ExecutionPhase.NotStarted,
-            "Processing failed before dispatch."
+            (MessageText.literal "diagnostic.HOST_BEFOREDISPATCHFAILED")
             HostFailure.DispatchUnconfirmed,
-            "INTERNAL",
             500,
             Some ExecutionPhase.StartedUnconfirmed,
-            "Preserve the exact request and replay it."
+            (MessageText.literal "diagnostic.HOST_DISPATCHUNCONFIRMED")
             HostFailure.CompletedResponseFailed,
-            "RESPONSE_FAILED",
             500,
             None,
-            "The completed response could not be delivered."
+            (MessageText.literal "diagnostic.HOST_COMPLETEDRESPONSEFAILED")
         ]
 
-    let all = policies |> List.map (fun (reason, _, _, _, _) -> reason)
+    let all = policies |> List.map (fun (reason, _, _, _) -> reason)
 
     let private policy reason =
-        policies |> List.find (fun (value, _, _, _, _) -> value = reason)
+        policies |> List.find (fun (value, _, _, _) -> value = reason)
 
-    let code reason =
-        let _, code, _, _, _ = policy reason in code
+    let code = HostFailureIds.token
 
     let status reason =
-        let _, _, status, _, _ = policy reason in status
+        let _, status, _, _ = policy reason in status
 
     let phase reason =
-        let _, _, _, phase, _ = policy reason in phase
+        let _, _, phase, _ = policy reason in phase
 
     let render reason =
-        let _, _, _, _, message = policy reason in message
+        let _, _, _, message = policy reason in message
 
-    let diagnosticId reason =
-        "HOST_" + (string reason).ToUpperInvariant()
+    let diagnosticId = HostFailureIds.diagnostic
 
     let private diagnostic reason =
         Codec.record (fun () -> ())
@@ -127,13 +94,7 @@ module HostFailures =
         |> Codec.field "parameters" (fun () -> ()) (Codec.record () |> Codec.build)
         |> Codec.build
 
-    let private phaseCodec =
-        Codec.enumeration
-            [
-                ExecutionPhase.NotStarted, "NOT_STARTED"
-                ExecutionPhase.StartedUnconfirmed, "STARTED_UNCONFIRMED"
-            ]
-        |> Codec.nullable
+    let private phaseCodec = Codec.enumeration DeliveryTokens.phases |> Codec.nullable
 
     let private variant reason =
         let fields =
@@ -153,8 +114,10 @@ module HostFailures =
                  |> Codec.constrained
                      (match phase reason with
                       | None -> Schema.Null
-                      | Some ExecutionPhase.NotStarted -> Schema.Const "NOT_STARTED"
-                      | Some ExecutionPhase.StartedUnconfirmed -> Schema.Const "STARTED_UNCONFIRMED")
+                      | Some ExecutionPhase.NotStarted ->
+                          Schema.Const(DeliveryTokens.phase ExecutionPhase.NotStarted)
+                      | Some ExecutionPhase.StartedUnconfirmed ->
+                          Schema.Const(DeliveryTokens.phase ExecutionPhase.StartedUnconfirmed))
                      ((=) (phase reason)))
             |> Codec.build
             |> Codec.named ("HostFailure." + string reason)

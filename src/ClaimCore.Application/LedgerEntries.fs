@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 open System
 open System.Security.Cryptography
 open ClaimCore.Domain
@@ -321,7 +323,7 @@ module internal LedgerEntries =
                     ReceiptScope.Authority
                         {
                             TargetActorId = target
-                            Act = AuthorityKinds.fromRecord act
+                            Act = AuthorityRecordKinds.fromRecord act
                         }
                 )
             | _ -> Error CoreFault.StoreIntegrityError

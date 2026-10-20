@@ -1,5 +1,7 @@
 module ClaimCore.Tests.AuthorizationPolicyTests
 
+open ClaimCore.Catalog
+
 open System
 open Expecto
 open ClaimCore.Domain
@@ -89,10 +91,11 @@ let private expectedPermission role capabilities principal grant resource capabi
     && (not humanRole || principal = human)
 
 let private matrix () =
-    Expect.equal Roles.all.Length 7 "Seven roles"
+    Expect.equal RoleTokens.all.Length 7 "Seven roles"
 
     Expect.isTrue
-        (Set.ofList Roles.all = (expectedRoles |> List.map (fun (role, _, _) -> role) |> Set.ofList))
+        (Set.ofList RoleTokens.all =
+            (expectedRoles |> List.map (fun (role, _, _) -> role) |> Set.ofList))
         "Exact role inventory"
 
     Expect.isTrue
@@ -100,8 +103,8 @@ let private matrix () =
         "Exact capability inventory"
 
     for role, token, capabilities in expectedRoles do
-        Expect.equal (Roles.token role) token "Independent role token"
-        Expect.equal (Roles.tryParse token) (Some role) "Role parser"
+        Expect.equal (RoleTokens.token role) token "Independent role token"
+        Expect.equal (RoleTokens.tryParse token) (Some role) "Role parser"
 
         for principal in [ human; service ] do
             for scope in [ GrantScope.Installation; GrantScope.Case caseId ] do
@@ -128,7 +131,7 @@ let private matrix () =
                             "Independent role, principal and scope expectation"
 
     for token in [ "CASE_EDITOR"; "case_handler"; "" ] do
-        Expect.isNone (Roles.tryParse token) "Unsupported role names refuse"
+        Expect.isNone (RoleTokens.tryParse token) "Unsupported role names refuse"
 
 let private invalidPrincipals () =
     for value in [ String([| char 0xD800 |]); "a\u0000b"; "a\ufdd0b"; "a\uffffb" ] do

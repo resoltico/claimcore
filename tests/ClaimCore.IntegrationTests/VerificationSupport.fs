@@ -1,5 +1,7 @@
 module internal ClaimCore.IntegrationTests.VerificationSupport
 
+open ClaimCore.Catalog
+
 open System
 open System.Threading
 open Expecto

@@ -1,10 +1,12 @@
 namespace ClaimCore.ContractGeneration
 
+open ClaimCore.Catalog
+
 open System.Text
 open System.Text.Json
 open ClaimCore.Wire
 
-/// The browser receives types and immutable data; executable protocol policy stays in its source.
+/// The browser receives types and immutable core policy data for generic interpreters.
 module TypeScript =
     let private quote (value: string) = JsonSerializer.Serialize value
     let private identifier (value: string) = value.Replace('.', '_')
@@ -66,11 +68,7 @@ module TypeScript =
                 code = HostFailures.code reason
                 status = HostFailures.status reason
                 diagnosticId = HostFailures.diagnosticId reason
-                executionPhase =
-                    HostFailures.phase reason
-                    |> Option.map (function
-                        | ExecutionPhase.NotStarted -> "NOT_STARTED"
-                        | ExecutionPhase.StartedUnconfirmed -> "STARTED_UNCONFIRMED")
+                executionPhase = HostFailures.phase reason |> Option.map DeliveryTokens.phase
             |})
         |> JsonSerializer.Serialize
 
@@ -122,9 +120,36 @@ module TypeScript =
         "export type Descriptors = "
         + descriptorType "" document.RootElement
         + ";\n"
-        + "export type ProductMetadata = { readonly descriptors: Descriptors; readonly productVersion: string; readonly wireFingerprint: string };"
+        + "export type ProductMetadata = { readonly descriptors: Descriptors; readonly productVersion: string; readonly contractIdentity: string };"
 
-    let source () =
+    let private presentationConstants () =
+        [
+            "export const presentationLanguageOptions = "
+            + JsonSerializer.Serialize(ClaimCore.Catalog.LocalizationPolicy.languageOptions)
+            + " as const;"
+            "export const presentationDisplayOptions = "
+            + JsonSerializer.Serialize(ClaimCore.Catalog.LocalizationPolicy.displayOptions)
+            + " as const;"
+            "export const presentationPseudolanguage = "
+            + quote ClaimCore.Catalog.LocalizationPolicy.pseudolanguage
+            + ";"
+            "export const presentationLanguages = "
+            + JsonSerializer.Serialize(
+                ClaimCore.Catalog.LocalizationPolicy.languages
+                @ [ ClaimCore.Catalog.LocalizationPolicy.pseudolanguage ]
+            )
+            + " as const;"
+            "export const presentationDisplayLocales = "
+            + JsonSerializer.Serialize(ClaimCore.Catalog.LocalizationPolicy.displayLocales)
+            + " as const;"
+            "export const presentationDefaults = { language: "
+            + quote ClaimCore.Catalog.LocalizationPolicy.defaultLanguage
+            + ", displayLocale: "
+            + quote ClaimCore.Catalog.LocalizationPolicy.defaultDisplayLocale
+            + " } as const;"
+        ]
+
+    let source identity =
         let definitions =
             OpenApi.definitions ()
             |> Map.toList
@@ -138,9 +163,16 @@ module TypeScript =
             endpointMap "RequestByEndpoint" Admission.schema
             endpointMap "ResponseByEndpoint" Replies.schema
             "export type OutcomeByEndpoint = { readonly [E in keyof ResponseByEndpoint]: ResponseByEndpoint[E][\"outcome\"] };"
+            "export const correlationPolicy = "
+            + Encoding.UTF8.GetString(DeliveryTables.correlation ())
+            + " as const;"
+            "export const deliveryPolicy = "
+            + Encoding.UTF8.GetString(DeliveryTables.render ())
+            + " as const;"
             "export const endpoints = " + endpoints () + " as const;"
             "export type EndpointId = (typeof endpoints)[number][\"id\"];"
-            "export const wireContractFingerprint = " + quote Fingerprint.value + ";"
+            yield! presentationConstants ()
+            "export const consumerContractIdentity = " + quote identity + ";"
             "export const hostFailurePolicies = " + hostPolicies () + " as const;"
             "export const strictByteProfile = " + profile () + " as const;"
             "export const limits = { maximumPageSize: "

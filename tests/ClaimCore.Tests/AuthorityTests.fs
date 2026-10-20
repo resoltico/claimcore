@@ -1,5 +1,7 @@
 module ClaimCore.Tests.AuthorityTests
 
+open ClaimCore.Catalog
+
 open System
 open System.Threading
 open Expecto

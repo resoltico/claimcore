@@ -1,18 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><DefineConstants>$(DefineConstants);CONTRACT_GENERATION</DefineConstants></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <Compile Include="../Presentation/RejectionPresentation.fs" Link="RejectionPresentation.fs" />
     <Compile Include="../Presentation/CoreFaultPresentation.fs" Link="CoreFaultPresentation.fs" />
     <Compile Include="CommandInputRendering.fs" />
     <Compile Include="DescriptorRendering.fs" />
     <Compile Include="DefaultPresentation.fs" />
+    <Compile Include="DeliveryTables.fs" />
     <Compile Include="TypeScript.fs" />
     <Compile Include="Samples.fs" />
+    <Compile Include="RequestBindings.fs" />
+    <Compile Include="CatalogValidation.fs" />
     <Compile Include="Documents.fs" />
     <Compile Include="PolicyVectors.fs" />
     <Compile Include="ArtifactPublication.fs" />
+    <Compile Include="ContractIdentity.fs" />
+    <Compile Include="CorrelationValidation.fs" />
     <Compile Include="Artifacts.fs" />
     <Compile Include="Program.fs" />
+    <EmbeddedResource Include="../../src/ClaimCore.Catalog/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
     <EmbeddedResource Include="../../tests/fixtures/delivery-vectors.json" LogicalName="ClaimCore.Oracles.delivery-vectors.json" />
     <EmbeddedResource Include="../../tests/fixtures/correlation-vectors.json" LogicalName="ClaimCore.Oracles.correlation-vectors.json" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />

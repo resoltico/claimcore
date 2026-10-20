@@ -62,7 +62,7 @@ let private caseRequest (local: HttpClient) token browserCookies reference =
         request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + token)
         |> ignore
 
-        request.Headers.TryAddWithoutValidation("ClaimCore-Contract", Fingerprint.value)
+        request.Headers.TryAddWithoutValidation("ClaimCore-Contract", ConsumerContract.identity)
         |> ignore
 
         browserCookies

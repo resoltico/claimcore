@@ -37,6 +37,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.13"
         }
       },
+      "claimcore.catalog": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.hostsecurity": {
         "type": "Project",
         "dependencies": {
@@ -46,6 +52,7 @@
       "claimcore.wire": {
         "type": "Project",
         "dependencies": {
+          "ClaimCore.Catalog": "[0.10.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       }

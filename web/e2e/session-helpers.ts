@@ -4,7 +4,7 @@ import { isAbsolute, resolve } from "node:path";
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 
-import { wireContractFingerprint } from "@contracts/client";
+import { consumerContractIdentity } from "@contracts/client";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import { retainResponseBodies } from "./response-bodies";
 import { observeOidcSubmission, providerFailure } from "./oidc-provider-evidence.mjs";
@@ -132,7 +132,7 @@ export const browserRequest = (
         payload,
       };
     },
-    { requestPath: path, requestInit: init, fingerprint: wireContractFingerprint },
+    { requestPath: path, requestInit: init, fingerprint: consumerContractIdentity },
   );
 
 export const sessionToken = async (page: Page): Promise<string> => {

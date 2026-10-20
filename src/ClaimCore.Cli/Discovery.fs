@@ -6,8 +6,7 @@ open System.Text
 open System.Text.Json
 
 module Discovery =
-    let help () =
-        "ClaimCore: help | version [--json] | describe [summary|fields [name]|commands [kind]|authority [kind]|endpoints [id]|diagnostics] | schema <name> | call | session"
+    let help () = ContractDiscovery.help ()
 
     let versionJson () =
         let identity = BuildIdentity.current

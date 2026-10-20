@@ -1,4 +1,4 @@
-namespace ClaimCore.Domain
+namespace ClaimCore.Catalog
 
 [<RequireQualifiedAccess>]
 type BusinessField =
@@ -65,6 +65,15 @@ module TextFormat =
     [<Literal>]
     let MaximumFreeTextBytes = 1024
 
-module TextAdmission =
-    [<Literal>]
-    let MaximumCharacters = 200
+[<RequireQualifiedAccess>]
+type CorrectionGroupAction =
+    | Keep
+    | Replace
+    | Clear
+
+module CorrectionActions =
+    let token =
+        function
+        | CorrectionGroupAction.Keep -> "KEEP"
+        | CorrectionGroupAction.Replace -> "REPLACE"
+        | CorrectionGroupAction.Clear -> "CLEAR"

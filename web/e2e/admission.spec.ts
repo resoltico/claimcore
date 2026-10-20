@@ -1,5 +1,5 @@
 import { isResponse } from "../src/protocol/client";
-import { wireContractFingerprint } from "@contracts/client";
+import { consumerContractIdentity } from "@contracts/client";
 import { expect, test, type Page } from "@playwright/test";
 
 import { browserRequest, expectHostFailure, login, sessionToken } from "./session-helpers";
@@ -17,7 +17,7 @@ const requestBodyBoundary = async (page: Page, token: string): Promise<void> => 
       Origin: new URL(page.url()).origin,
       Host: new URL(page.url()).host,
       "X-ClaimCore-Antiforgery": token,
-      "ClaimCore-Contract": wireContractFingerprint,
+      "ClaimCore-Contract": consumerContractIdentity,
     },
     maxRedirects: 0,
   };

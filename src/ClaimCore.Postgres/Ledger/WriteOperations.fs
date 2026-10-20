@@ -1,5 +1,7 @@
 namespace ClaimCore.Postgres
 
+open ClaimCore.Catalog
+
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 
@@ -51,7 +53,7 @@ module internal WriteOperations =
         DatabaseSession.rows
             connection
             "SELECT (SELECT count(*)::int FROM claimcore.actors),count(*)::int FROM claimcore.actors a JOIN claimcore.grants g USING(actor_id) WHERE a.enabled AND a.principal_kind='HUMAN' AND g.role=$1 AND g.case_id IS NULL"
-            [| box (Roles.token Role.Owner) |]
+            [| box (RoleTokens.token Role.Owner) |]
             token
 
     let authority

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CanonicalRecordTests
 
+open ClaimCore.Catalog
+
 open System
 open System.IO
 open System.Text

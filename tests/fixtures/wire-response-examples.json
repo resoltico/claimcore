@@ -10,7 +10,7 @@
           "tag": "SUCCEEDED",
           "data": {
             "authenticated": false,
-            "wireFingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+            "contractIdentity": "0000000000000000000000000000000000000000000000000000000000000000",
             "antiforgeryToken": "x"
           }
         }

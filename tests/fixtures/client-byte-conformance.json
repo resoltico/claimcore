@@ -169,28 +169,28 @@
       "endpoint": "session",
       "direction": "response",
       "valid": true,
-      "text": "{\"endpoint\":\"session\",\"outcome\":{\"tag\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"wireFingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null}}}"
+      "text": "{\"endpoint\":\"session\",\"outcome\":{\"tag\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"contractIdentity\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null}}}"
     },
     {
       "id": "response-duplicate",
       "endpoint": "session",
       "direction": "response",
       "valid": false,
-      "text": "{\"endpoint\":\"session\",\"outcome\":{\"tag\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"authenticated\":false,\"wireFingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null}}}"
+      "text": "{\"endpoint\":\"session\",\"outcome\":{\"tag\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"authenticated\":false,\"contractIdentity\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null}}}"
     },
     {
       "id": "response-extra",
       "endpoint": "session",
       "direction": "response",
       "valid": false,
-      "text": "{\"endpoint\":\"session\",\"outcome\":{\"tag\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"extra\":false,\"wireFingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null}}}"
+      "text": "{\"endpoint\":\"session\",\"outcome\":{\"tag\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"extra\":false,\"contractIdentity\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null}}}"
     },
     {
       "id": "response-invalid-json",
       "endpoint": "session",
       "direction": "response",
       "valid": false,
-      "text": "{\"endpoint\":\"session\",\"outcome\":{\"tag\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"wireFingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null}}}x"
+      "text": "{\"endpoint\":\"session\",\"outcome\":{\"tag\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"contractIdentity\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null}}}x"
     },
     {
       "id": "principal-service-normal",

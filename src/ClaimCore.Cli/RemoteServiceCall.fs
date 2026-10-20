@@ -1,5 +1,7 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Catalog
+
 open ClaimCore.Wire
 
 open System
@@ -94,7 +96,7 @@ module RemoteServiceCall =
             request.Headers.Authorization <- authorization
             request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue "application/json")
 
-            request.Headers.Add("ClaimCore-Contract", Fingerprint.value)
+            request.Headers.Add("ClaimCore-Contract", ConsumerContract.identity)
 
             if Endpoint.method endpoint = "POST" then
                 let content = new ByteArrayContent(Frames.inputBytes frame)

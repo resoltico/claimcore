@@ -34,7 +34,7 @@ const Header = ({
         <details>
           <summary>{p.text("ui.technicalDetails")}</summary>
           <p>{p.text("ui.productVersion", { version: definition.productVersion })}</p>
-          <p>{p.text("ui.webIdentity", { digest: definition.wireFingerprint })}</p>
+          <p>{p.text("ui.webIdentity", { digest: definition.contractIdentity })}</p>
         </details>
       </div>
       <Button onPress={() => void onLogout()} isDisabled={locked}>

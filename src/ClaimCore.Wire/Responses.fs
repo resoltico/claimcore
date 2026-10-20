@@ -1,5 +1,7 @@
 namespace ClaimCore.Wire
 
+open ClaimCore.Catalog
+
 open System
 
 type CaseFields =
@@ -177,7 +179,7 @@ type HistoryPage =
 type Session =
     {
         Authenticated: bool
-        WireFingerprint: string
+        ContractIdentity: string
         AntiforgeryToken: string option
     }
 

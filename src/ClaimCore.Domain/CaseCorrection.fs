@@ -1,5 +1,7 @@
 namespace ClaimCore.Domain
 
+open ClaimCore.Catalog
+
 open ClaimCore.Domain.ResultFlow
 
 /// Correction choices are parsed once; KEEP takes typed accepted state under the caller's lock.

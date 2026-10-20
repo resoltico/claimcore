@@ -1,5 +1,7 @@
 namespace ClaimCore.Hosting
 
+open ClaimCore.Catalog
+
 open ClaimCore.Application
 open ClaimCore.Domain
 
@@ -86,7 +88,7 @@ module internal RequestMapping =
         | WireAuthorityAct.RegisterActor -> Ok AuthorityAct.RegisterActor
         | WireAuthorityAct.SetEnabled enabled -> Ok(AuthorityAct.SetEnabled enabled)
         | WireAuthorityAct.SetGrant grant ->
-            match Roles.tryParse grant.Role with
+            match RoleTokens.tryParse grant.Role with
             | Some role -> Ok(AuthorityAct.SetGrant(role, scope grant.Scope, grant.Active))
             | None -> Error "AUTHORITY_ROLE_INVALID"
 
@@ -95,8 +97,9 @@ module internal RequestMapping =
         : Result<AuthorityRequest, string> =
         let principal =
             match value.Target.Kind with
-            | "HUMAN" -> PrincipalKey.human value.Target.Issuer value.Target.Subject
-            | "SERVICE" -> PrincipalKey.service value.Target.Issuer value.Target.Subject
+            | PrincipalKinds.Human -> PrincipalKey.human value.Target.Issuer value.Target.Subject
+            | PrincipalKinds.Service ->
+                PrincipalKey.service value.Target.Issuer value.Target.Subject
             | _ -> Error "ACTOR_PRINCIPAL_INVALID"
 
         match principal, authorityAct value.Act with

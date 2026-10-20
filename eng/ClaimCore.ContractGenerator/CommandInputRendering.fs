@@ -1,5 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
+open ClaimCore.Catalog
+
 open ClaimCore.Wire
 open ClaimCore.ContractGeneration.Presentation
 
@@ -47,8 +49,8 @@ module internal CommandInputRendering =
             |> List.iter (fun group ->
                 writer.WriteStartObject()
                 writer.WriteString("name", CorrectionGroup.token group.Name)
-                writer.WriteString("label", group.Label)
-                writer.WriteString("meaning", group.Meaning)
+                writer.WriteString("label", (MessageText.literal group.LabelId))
+                writer.WriteString("meaning", (MessageText.literal group.MeaningId))
                 writer.WritePropertyName("actions")
                 writer.WriteStartArray()
                 group.Actions |> List.iter (action >> writer.WriteStringValue)

@@ -1,0 +1,1 @@
+{"cli.beforeDispatchFailure":"Unexpected failure before dispatch.","cli.help":"ClaimCore: help | version [--json] | describe [summary|fields [name]|commands [kind]|authority [kind]|endpoints [id]|diagnostics] | schema \u003Cname\u003E | call | session","cli.unsupportedInvocation":"Unsupported invocation. Run claimcore help."}

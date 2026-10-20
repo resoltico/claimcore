@@ -5,6 +5,7 @@
     <WebClientDirectory>$(MSBuildProjectDirectory)/../../web</WebClientDirectory>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <Content Remove="wwwroot/**/*" />
     <None Remove="wwwroot/**/*" />
   </ItemGroup>

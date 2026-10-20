@@ -1,7 +1,8 @@
 # Service and CLI contract
 
 The [OpenAPI 3.1 contract](../contracts/openapi.json) defines twelve endpoints, their strict wire
-schemas and one shared fingerprint. `session` is GET; the others are POST to the literal
+schemas. Service and clients share one consumer-contract identity, described below.
+`session` is GET; the others are POST to the literal
 `/api/<endpoint>` path, including dots in names such as `/api/case.execute`. Session bootstrap is
 anonymous; remaining operations require an authenticated principal. Case and authority work also
 require the current ClaimCore actor grants. Every API request carries the matching
@@ -84,14 +85,18 @@ reply directly. The CLI decodes with the Wire codec and the browser interprets t
 OpenAPI component schemas from bounded strict bytes. Malformed mutation replies preserve exact
 request identity and delivery uncertainty.
 
-The fingerprint is lowercase SHA-256 of the exact deterministic bytes of `openapi.json`. It covers
-wire shape and the declared byte profile, excluding labels, glossary, English messages, descriptors,
-product version and generated client text. Presentation-only changes do not change the fingerprint.
-The generated inventory is `openapi.json`, `client.ts`, `descriptors.json`, `cli-frame.schema.json`,
-`delivery-vectors.json`, `correlation-vectors.json`, `corpus.json` and the TypeScript package metadata.
+The runtime consumer-contract identity is lowercase SHA-256 of the canonical
+[versioned input manifest](../contracts/contract-manifest.json). It covers wire shape, capability
+and request bindings, all authored locale resources, help and delivery/correlation specifications.
+Descriptor-only, locale-only and policy-only changes therefore require matching clients.
+Session discovery exposes `contractIdentity`; `ClaimCore-Contract` carries that identity.
+The manifest excludes identity-bearing generated client/source resources to avoid self-reference.
+This is a breaking replacement of OpenAPI-only admission, with no dual admission period.
 [Development](development.md#generated-contracts-and-boundary-verification) owns generation and
 freshness checks. The [descriptors](../contracts/descriptors.json) carry presentation and typed advice
-vocabularies. `context.views` advertises `CASES`, `AUTHORITY` and `OPERATIONS`; installation offers
+vocabularies. `messages` supplies core-authored default templates; descriptor label, meaning and
+confirmation identities reference core resources. Request bindings are available in discovery and
+[the generated binding document](../contracts/request-bindings.json). `context.views` advertises `CASES`, `AUTHORITY` and `OPERATIONS`; installation offers
 contain only OPEN or an authority act. A case record has `advice.acts` and `advice.history`; correction
 choices belong only to CORRECT_CASE. Endpoint names and duplicated `state.availableActs`, `offers`
 and `historyDetails` are absent from case advice. Execution always rechecks current authority.

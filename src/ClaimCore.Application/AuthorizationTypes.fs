@@ -3,19 +3,6 @@ namespace ClaimCore.Application
 open System
 
 [<RequireQualifiedAccess>]
-type Capability =
-    | ReadCase
-    | ReadHistory
-    | ReadHistoryFull
-    | Register
-    | Decide
-    | RecordPayment
-    | Close
-    | Steward
-    | ManageAuthority
-    | ReadAuthority
-
-[<RequireQualifiedAccess>]
 type ResourceScope =
     | Installation
     | Case of Guid

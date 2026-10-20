@@ -1,11 +1,13 @@
 namespace ClaimCore.Domain
 
+open ClaimCore.Catalog
+
 /// Describes an existing business field; descriptors are not additional claim entries.
 type FieldDefinition =
     {
         Name: BusinessField
-        Label: string
-        Meaning: string
+        LabelId: string
+        MeaningId: string
         Scalar: ScalarRule
         AllowsAbsence: bool
     }
@@ -88,8 +90,8 @@ module FieldDefinitions =
     let private field name label meaning scalar allowsAbsence =
         {
             Name = name
-            Label = label
-            Meaning = meaning
+            LabelId = label
+            MeaningId = meaning
             Scalar = scalar
             AllowsAbsence = allowsAbsence
         }
@@ -98,20 +100,20 @@ module FieldDefinitions =
         [
             field
                 BusinessField.IncidentDate
-                "Incident date"
-                "Date on which the incident occurred."
+                "field.incidentDate.label"
+                "field.incidentDate.meaning"
                 calendarDate
                 false
             field
                 BusinessField.IncidentNotificationDate
-                "Incident notification date (FNOL)"
-                "Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified."
+                "field.incidentNotificationDate.label"
+                "field.incidentNotificationDate.meaning"
                 calendarDate
                 false
             field
                 BusinessField.IncidentCountry
-                "Country of incident (ISO alpha-2 code)"
-                "Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international."
+                "field.incidentCountry.label"
+                "field.incidentCountry.meaning"
                 (ScalarRule.Text(token "[A-Z]{2}"))
                 false
         ]
@@ -120,26 +122,26 @@ module FieldDefinitions =
         [
             field
                 BusinessField.ClaimantName
-                "Claimant name"
-                "Name of the person or company making the claim."
+                "field.claimantName.label"
+                "field.claimantName.meaning"
                 (ScalarRule.Text(text TextAdmission.MaximumCharacters))
                 false
             field
                 BusinessField.InsurerName
-                "Responsible insurer"
-                "Insurer recorded by the claims handler as responsible for this claim."
+                "field.insurerName.label"
+                "field.insurerName.meaning"
                 (ScalarRule.Text(text TextAdmission.MaximumCharacters))
                 false
             field
                 BusinessField.ClaimedAmount
-                "Amount claimed"
-                "Amount requested by the claimant."
+                "field.claimedAmount.label"
+                "field.claimedAmount.meaning"
                 amount
                 false
             field
                 BusinessField.ClaimedCurrency
-                "Currency of claimed amount"
-                "Currency in which the amount is claimed."
+                "field.claimedCurrency.label"
+                "field.claimedCurrency.meaning"
                 currency
                 false
         ]
@@ -148,8 +150,8 @@ module FieldDefinitions =
         [
             field
                 BusinessField.CaseReference
-                "Handler's case reference"
-                "Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained."
+                "field.caseReference.label"
+                "field.caseReference.meaning"
                 (ScalarRule.Text(token "[!-~]{1,80}"))
                 false
         ]
@@ -158,34 +160,29 @@ module FieldDefinitions =
         [
             field
                 BusinessField.PaymentDecisionDate
-                "Payment decision date"
-                "Date when this claims handler decided the amount to be paid. Not recorded until a decision is made."
+                "field.paymentDecisionDate.label"
+                "field.paymentDecisionDate.meaning"
                 calendarDate
                 true
             field
                 BusinessField.PayableAmount
-                "Amount to be paid"
-                "Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount."
+                "field.payableAmount.label"
+                "field.payableAmount.meaning"
                 amount
                 true
             field
                 BusinessField.PayableCurrency
-                "Currency of amount to be paid"
-                "Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency."
+                "field.payableCurrency.label"
+                "field.payableCurrency.meaning"
                 currency
                 true
             field
                 BusinessField.PaymentDate
-                "Payment date"
-                "Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer."
+                "field.paymentDate.label"
+                "field.paymentDate.meaning"
                 calendarDate
                 true
-            field
-                BusinessField.Status
-                "Case status"
-                "Whether the case is open or closed. Closing a case does not mean that payment was made."
-                status
-                false
+            field BusinessField.Status "field.status.label" "field.status.meaning" status false
         ]
 
     let all =

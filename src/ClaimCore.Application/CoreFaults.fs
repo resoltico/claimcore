@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 [<RequireQualifiedAccess>]
 type CoreFault =
     | InternalError
@@ -11,14 +13,20 @@ type CoreFault =
 module CoreFaults =
     let private policies =
         [
-            CoreFault.InternalError, "CORE_INTERNAL_ERROR", RecommendedAction.StopAndInvestigate
-            CoreFault.StoreUnavailable, "CORE_STORE_UNAVAILABLE", RecommendedAction.RetrySafe
-            CoreFault.StoreIntegrityError,
-            "CORE_STORE_INTEGRITY_ERROR",
+            CoreFault.InternalError,
+            FaultDiagnosticIds.InternalError,
             RecommendedAction.StopAndInvestigate
-            CoreFault.SchemaMismatch, "CORE_SCHEMA_MISMATCH", RecommendedAction.StopAndInvestigate
+            CoreFault.StoreUnavailable,
+            FaultDiagnosticIds.StoreUnavailable,
+            RecommendedAction.RetrySafe
+            CoreFault.StoreIntegrityError,
+            FaultDiagnosticIds.StoreIntegrityError,
+            RecommendedAction.StopAndInvestigate
+            CoreFault.SchemaMismatch,
+            FaultDiagnosticIds.SchemaMismatch,
+            RecommendedAction.StopAndInvestigate
             CoreFault.OperationContentConflict,
-            "CORE_OPERATION_CONTENT_CONFLICT",
+            FaultDiagnosticIds.OperationContentConflict,
             RecommendedAction.StopAndInvestigate
         ]
 

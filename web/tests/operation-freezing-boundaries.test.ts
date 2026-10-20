@@ -51,6 +51,12 @@ it("enters submitting with the exact reviewed request and makes authoring unavai
   const submitting = operationReducer(reviewing, { type: "SUBMITTING", requestId: 9 });
   expect(submitting).toEqual({
     ...reviewing,
+    mutation: {
+      phase: "SUBMITTING",
+      prepared: reviewing.prepared,
+      requestId: 9,
+      prior: "NOT_SENT",
+    },
     delivery: "SUBMITTING",
     message: null,
     fieldError: null,

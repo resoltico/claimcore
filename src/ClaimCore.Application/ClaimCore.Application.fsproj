@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="BuildIdentity.fsi" />
     <Compile Include="BuildIdentity.fs" />
-    <Compile Include="RejectionDiagnosticIds.fs" />
     <Compile Include="Rejections.fs" />
     <Compile Include="RejectionDiagnostics.fs" />
     <Compile Include="CoreFaults.fs" />
     <Compile Include="ActorIdentity.fs" />
     <Compile Include="AuthorizationTypes.fs" />
     <Compile Include="AuthorizationPolicy.fs" />
-    <Compile Include="AuthorityKinds.fs" />
+    <Compile Include="AuthorityRecordKinds.fs" />
     <Compile Include="CoreModels.fs" />
     <Compile Include="AuthorityOperationDefinitions.fs" />
     <Compile Include="ServiceLimits.fs" />

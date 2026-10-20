@@ -1,0 +1,15 @@
+{
+  "notice.responseTimeout": "انتهت مهلة انتظار استجابة الخدمة.",
+  "notice.unreachable": "تعذر الوصول إلى الخدمة المحلية.",
+  "notice.invalidHttp": "أعادت الخدمة المحلية استجابة HTTP {status} غير صالحة.",
+  "notice.fileTooLarge": "يتجاوز الملف المحدد {maximumBytes} بايت.",
+  "notice.fileUnreadable": "تعذرت قراءة الملف المحدد.",
+  "notice.definitionMismatch": "لا يطابق عقد الويب المثبّت موارد المتصفح هذه. أعد التحميل بعد نشر الموارد المطابقة.",
+  "notice.invalidSession": "استجابة الجلسة غير صالحة.",
+  "notice.missingCsrf": "لم تتضمن الجلسة الموثّقة رمز الحماية من تزوير الطلبات.",
+  "notice.accepted": "اعتُمدت العملية نفسها {operationId}.",
+  "notice.cancelled": "أُلغي هذا الطلب. لا يحسم هذا الإلغاء نتائج المحاولات السابقة.",
+  "notice.outcomeUnknown": "نتيجة العملية غير معروفة. أعد إرسال العملية نفسها دون تغيير.",
+  "notice.unknownDiagnostic": "تم استلام تشخيص غير مدعوم.",
+  "notice.invalidInput": "أكمل هذا الحقل بالتنسيق المطلوب."
+}

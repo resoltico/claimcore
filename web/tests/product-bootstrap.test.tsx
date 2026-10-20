@@ -17,9 +17,9 @@ it("admits matching public session metadata without protected definition access 
   expect(globalThis.fetch).toHaveBeenCalledOnce();
   expect(vi.mocked(globalThis.fetch).mock.calls[0]?.[0]).toBe("/api/session");
   expect(Object.keys(productMetadata).sort()).toEqual([
+    "contractIdentity",
     "descriptors",
     "productVersion",
-    "wireFingerprint",
   ]);
   expect(productMetadata.descriptors.fields).toHaveLength(13);
   expect(productMetadata.productVersion).not.toBe("");
@@ -30,7 +30,7 @@ it("refuses a host fingerprint mismatch without claiming an invalid actor sessio
     response("session", "SUCCEEDED", {
       authenticated: true,
       antiforgeryToken: "synthetic-token",
-      wireFingerprint: "0".repeat(64),
+      contractIdentity: "0".repeat(64),
     }),
   );
   const { result } = renderHook(() => useSession());
@@ -60,7 +60,7 @@ it("keeps newer session admission when an older fingerprint reply arrives [CC-WE
     response("session", "SUCCEEDED", {
       authenticated: true,
       antiforgeryToken: "old-token",
-      wireFingerprint: "0".repeat(64),
+      contractIdentity: "0".repeat(64),
     }),
   );
   await waitFor(() => {

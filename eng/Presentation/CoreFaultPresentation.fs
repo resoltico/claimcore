@@ -4,15 +4,17 @@ namespace ClaimCore.ContractGeneration.Presentation
 namespace ClaimCore.Hosting.Presentation
 #endif
 
+open ClaimCore.Catalog
+
 open ClaimCore.Application
 
 module internal CoreFaultPresentation =
     let render =
         function
-        | CoreFault.InternalError -> "An internal error occurred. Stop and investigate."
-        | CoreFault.StoreUnavailable -> "The store is unavailable. Retry."
-        | CoreFault.StoreIntegrityError -> "Stored data failed verification. Stop and run verify."
-        | CoreFault.SchemaMismatch ->
-            "The schema differs from this build. Run migrate or use a matching build."
+        | CoreFault.InternalError -> (MessageText.literal "diagnostic.CORE_INTERNAL_ERROR")
+        | CoreFault.StoreUnavailable -> (MessageText.literal "diagnostic.CORE_STORE_UNAVAILABLE")
+        | CoreFault.StoreIntegrityError ->
+            (MessageText.literal "diagnostic.CORE_STORE_INTEGRITY_ERROR")
+        | CoreFault.SchemaMismatch -> (MessageText.literal "diagnostic.CORE_SCHEMA_MISMATCH")
         | CoreFault.OperationContentConflict ->
-            "Stored operation content is inconsistent. Stop and investigate."
+            (MessageText.literal "diagnostic.CORE_OPERATION_CONTENT_CONFLICT")

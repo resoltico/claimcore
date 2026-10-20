@@ -1,5 +1,7 @@
 namespace ClaimCore.Wire
 
+open ClaimCore.Catalog
+
 open System
 open System.Globalization
 open System.Text.RegularExpressions
@@ -43,38 +45,9 @@ module ResponseScalars =
                 )
                 |> fst)
 
-    let businessField =
-        tokens
-            [
-                "incidentDate"
-                "incidentNotificationDate"
-                "incidentCountry"
-                "claimantName"
-                "insurerName"
-                "claimedAmount"
-                "claimedCurrency"
-                "caseReference"
-                "paymentDecisionDate"
-                "payableAmount"
-                "payableCurrency"
-                "paymentDate"
-                "status"
-            ]
+    let businessField = BusinessField.all |> List.map snd |> tokens
 
-    let capability =
-        tokens
-            [
-                "READ_CASE"
-                "READ_HISTORY"
-                "READ_HISTORY_FULL"
-                "REGISTER"
-                "DECIDE"
-                "RECORD_PAYMENT"
-                "CLOSE"
-                "STEWARD"
-                "MANAGE_AUTHORITY"
-                "READ_AUTHORITY"
-            ]
+    let capability = Capabilities.all |> List.map Capabilities.token |> tokens
 
     let fixedField name token (fields: Fields<'Whole, 'Ctor>) : Fields<'Whole, 'Ctor> =
         let codec = constant token

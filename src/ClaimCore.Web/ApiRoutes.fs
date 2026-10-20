@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Catalog
+
 open ClaimCore.Wire
 
 open System.Threading.Tasks
@@ -11,7 +13,7 @@ open ClaimCore.Hosting
 module internal ApiRoutes =
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
-        | true, values when values.Count = 1 -> string values[0] = Fingerprint.value
+        | true, values when values.Count = 1 -> string values[0] = ConsumerContract.identity
         | _ -> false
 
     let ingress (context: HttpContext) (next: RequestDelegate) : Task =

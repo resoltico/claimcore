@@ -1,5 +1,7 @@
 module ClaimCore.Web.Program
 
+open ClaimCore.Catalog
+
 open ClaimCore.Wire
 
 open System

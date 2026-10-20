@@ -158,7 +158,11 @@ const AuthorityReview = ({ model }: { model: AuthorityOperation }) => {
               model.setConfirmed(event.target.checked);
             }}
           />
-          {p.text("ui.confirmExactRequest")}
+          {p.text(
+            productMetadata.descriptors.authorityCommands.find(
+              (command) => command.kind === model.prepared?.input.act.kind,
+            )!.confirmationId,
+          )}
         </label>
       )}
       <button
@@ -173,7 +177,7 @@ const AuthorityReview = ({ model }: { model: AuthorityOperation }) => {
           type="button"
           disabled={model.busy}
           onClick={() => {
-            model.setBytes(null);
+            model.clearPrepared();
             model.setValues({ ...model.values, operationId: crypto.randomUUID() });
           }}
         >

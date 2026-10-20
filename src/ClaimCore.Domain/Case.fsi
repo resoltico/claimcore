@@ -1,5 +1,7 @@
 namespace ClaimCore.Domain
 
+open ClaimCore.Catalog
+
 open System
 
 /// Accepted business state is constructed only by the Domain.

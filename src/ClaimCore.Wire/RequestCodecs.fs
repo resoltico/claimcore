@@ -1,5 +1,9 @@
 namespace ClaimCore.Wire
 
+open ClaimCore.Catalog
+
+open ClaimCore.Catalog
+
 module RequestCodecs =
     open Codec
 
@@ -56,9 +60,11 @@ module RequestCodecs =
             "RegistrationGroup"
             "mode"
             [
-                unitVariant "KEEP" RegistrationGroup.Keep
+                unitVariant
+                    (CorrectionActions.token CorrectionGroupAction.Keep)
+                    RegistrationGroup.Keep
                 variant
-                    "REPLACE"
+                    (CorrectionActions.token CorrectionGroupAction.Replace)
                     RegistrationGroup.Replace
                     (function
                     | RegistrationGroup.Replace value -> Some value
@@ -71,15 +77,17 @@ module RequestCodecs =
             "DecisionGroup"
             "mode"
             [
-                unitVariant "KEEP" DecisionGroup.Keep
+                unitVariant (CorrectionActions.token CorrectionGroupAction.Keep) DecisionGroup.Keep
                 variant
-                    "REPLACE"
+                    (CorrectionActions.token CorrectionGroupAction.Replace)
                     DecisionGroup.Replace
                     (function
                     | DecisionGroup.Replace value -> Some value
                     | _ -> None)
                     (record id |> field "values" id decision)
-                unitVariant "CLEAR" DecisionGroup.Clear
+                unitVariant
+                    (CorrectionActions.token CorrectionGroupAction.Clear)
+                    DecisionGroup.Clear
             ]
 
     let paymentGroup =
@@ -87,15 +95,15 @@ module RequestCodecs =
             "PaymentGroup"
             "mode"
             [
-                unitVariant "KEEP" PaymentGroup.Keep
+                unitVariant (CorrectionActions.token CorrectionGroupAction.Keep) PaymentGroup.Keep
                 variant
-                    "REPLACE"
+                    (CorrectionActions.token CorrectionGroupAction.Replace)
                     PaymentGroup.Replace
                     (function
                     | PaymentGroup.Replace value -> Some value
                     | _ -> None)
                     (record id |> field "values" id payment)
-                unitVariant "CLEAR" PaymentGroup.Clear
+                unitVariant (CorrectionActions.token CorrectionGroupAction.Clear) PaymentGroup.Clear
             ]
 
     let correction =
@@ -115,63 +123,73 @@ module RequestCodecs =
     let private businessActs =
         [
             variant
-                "OPEN"
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
                 CaseAct.Open
                 (function
                 | CaseAct.Open value -> Some value
                 | _ -> None)
                 (record id |> field "values" id registration)
             variant
-                "AMEND_REGISTRATION"
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
                 CaseAct.AmendRegistration
                 (function
                 | CaseAct.AmendRegistration value -> Some value
                 | _ -> None)
                 (record id |> field "values" id registration)
             variant
-                "CORRECT_CASE"
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
                 CaseAct.CorrectCase
                 (function
                 | CaseAct.CorrectCase value -> Some value
                 | _ -> None)
                 (record id |> field "groups" id correction)
             variant
-                "DECIDE"
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
                 CaseAct.Decide
                 (function
                 | CaseAct.Decide value -> Some value
                 | _ -> None)
                 (record id |> field "values" id decision)
-            unitVariant "WITHDRAW_DECISION" CaseAct.WithdrawDecision
+            unitVariant
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
+                CaseAct.WithdrawDecision
             variant
-                "RECORD_PAYMENT"
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
                 CaseAct.RecordPayment
                 (function
                 | CaseAct.RecordPayment value -> Some value
                 | _ -> None)
                 (record id |> field "values" id payment)
-            unitVariant "CLEAR_PAYMENT" CaseAct.ClearPayment
-            unitVariant "CLOSE" CaseAct.Close
-            unitVariant "REOPEN" CaseAct.Reopen
+            unitVariant
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
+                CaseAct.ClearPayment
+            unitVariant
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
+                CaseAct.Close
+            unitVariant
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
+                CaseAct.Reopen
         ]
 
     let private stewardshipActs =
         [
             variant
-                "VOID"
+                (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
                 CaseAct.Void
                 (function
                 | CaseAct.Void value -> Some value
                 | _ -> None)
                 (record id |> field "reason" id text)
             variant
-                "REINSTATE"
+                (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
                 CaseAct.Reinstate
                 (function
                 | CaseAct.Reinstate value -> Some value
                 | _ -> None)
                 (record id |> field "reason" id text)
-            unitVariant "ERASE" CaseAct.Erase
+            unitVariant
+                (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
+                CaseAct.Erase
         ]
 
     let caseAct = tagged "CaseAct" "kind" (businessActs @ stewardshipActs)
@@ -200,7 +218,7 @@ module RequestCodecs =
                 Subject = v2
             })
         : Fields<Principal, _>)
-        |> field "kind" _.Kind (tokens [ "HUMAN"; "SERVICE" ])
+        |> field "kind" _.Kind (tokens PrincipalKinds.all)
         |> field "issuer" _.Issuer (text)
         |> field "subject" _.Subject (text)
         |> build
@@ -229,19 +247,7 @@ module RequestCodecs =
                 Active = v2
             })
         : Fields<GrantChange, _>)
-        |> field
-            "role"
-            _.Role
-            (tokens
-                [
-                    "OWNER"
-                    "CASE_READER"
-                    "CASE_REGISTRAR"
-                    "CASE_HANDLER"
-                    "PAYMENT_RECORDER"
-                    "DATA_STEWARD"
-                    "AUDITOR"
-                ])
+        |> field "role" _.Role (tokens (RoleTokens.all |> List.map RoleTokens.token))
         |> field "scope" _.Scope (scope)
         |> field "active" _.Active (boolean)
         |> build
@@ -252,9 +258,11 @@ module RequestCodecs =
             "AuthorityAct"
             "kind"
             [
-                unitVariant "REGISTER_ACTOR" AuthorityAct.RegisterActor
+                unitVariant
+                    (AuthorityKinds.token AuthorityKind.RegisterActor)
+                    AuthorityAct.RegisterActor
                 variant
-                    "SET_GRANT"
+                    (AuthorityKinds.token AuthorityKind.SetGrant)
                     AuthorityAct.SetGrant
                     (function
                     | AuthorityAct.SetGrant value -> Some value
@@ -266,23 +274,11 @@ module RequestCodecs =
                             Active = active
                         })
                      : Fields<GrantChange, _>)
-                     |> field
-                         "role"
-                         _.Role
-                         (tokens
-                             [
-                                 "OWNER"
-                                 "CASE_READER"
-                                 "CASE_REGISTRAR"
-                                 "CASE_HANDLER"
-                                 "PAYMENT_RECORDER"
-                                 "DATA_STEWARD"
-                                 "AUDITOR"
-                             ])
+                     |> field "role" _.Role (tokens (RoleTokens.all |> List.map RoleTokens.token))
                      |> field "scope" _.Scope scope
                      |> field "active" _.Active boolean)
                 variant
-                    "SET_ENABLED"
+                    (AuthorityKinds.token AuthorityKind.SetEnabled)
                     AuthorityAct.SetEnabled
                     (function
                     | AuthorityAct.SetEnabled value -> Some value

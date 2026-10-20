@@ -1,5 +1,7 @@
 module ClaimCore.Tests.TransitionPropertyTests
 
+open ClaimCore.Catalog
+
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp

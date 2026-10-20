@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <Compile Include="BuildIdentity.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ClientFailures.fs" />
@@ -25,6 +26,7 @@
     <ProjectReference Include="../ClaimCore.Wire/ClaimCore.Wire.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../../contracts/cli-messages.json" LogicalName="ClaimCore.cli-messages.json" />
     <EmbeddedResource Include="../../contracts/descriptors.json" LogicalName="ClaimCore.descriptors.json" />
     <EmbeddedResource Include="../../contracts/openapi.json" LogicalName="ClaimCore.openapi.json" />
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />

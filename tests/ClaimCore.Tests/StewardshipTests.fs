@@ -1,5 +1,7 @@
 module ClaimCore.Tests.StewardshipTests
 
+open ClaimCore.Catalog
+
 open System
 open Expecto
 open Hedgehog

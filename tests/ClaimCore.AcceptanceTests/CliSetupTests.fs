@@ -1,5 +1,7 @@
 module ClaimCore.AcceptanceTests.CliSetupTests
 
+open ClaimCore.Catalog
+
 open System.Text
 open System
 open System.IO

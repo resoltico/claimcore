@@ -1,5 +1,12 @@
-export const languages = ["en", "lv", "ar", "en-XA"] as const;
-export const displayLocales = ["en-GB", "lv-LV", "ar-EG"] as const;
+import {
+  presentationLanguages,
+  presentationDisplayLocales,
+  presentationDefaults,
+  presentationLanguageOptions,
+  presentationPseudolanguage,
+} from "@contracts/client";
+export const languages = presentationLanguages;
+export const displayLocales = presentationDisplayLocales;
 export type Language = (typeof languages)[number];
 export type DisplayLocale = (typeof displayLocales)[number];
 export type Preferences = Readonly<{ language: Language; displayLocale: DisplayLocale }>;
@@ -10,7 +17,7 @@ export const changePreferences = (current: Preferences, change: PreferenceChange
   change.kind === "LANGUAGE"
     ? { ...current, language: change.language }
     : { ...current, displayLocale: change.displayLocale };
-export const defaults: Preferences = Object.freeze({ language: "en", displayLocale: "en-GB" });
+export const defaults: Preferences = Object.freeze(presentationDefaults);
 export const preferenceKey = "claimcore.presentation.v1";
 
 const canonicalTag = (value: unknown): string | null => {
@@ -25,11 +32,11 @@ const canonicalTag = (value: unknown): string | null => {
 };
 export const resolveLanguage = (value: unknown): Language => {
   const tag = canonicalTag(value);
-  if (tag === "en-XA") {
+  if (tag === presentationPseudolanguage) {
     return tag;
   }
   const base = tag?.split("-")[0];
-  return base === "ar" || base === "lv" ? base : "en";
+  return languages.find((language) => language === base) ?? defaults.language;
 };
 export const resolveDisplayLocale = (value: unknown): DisplayLocale => {
   const tag = canonicalTag(value);
@@ -79,4 +86,13 @@ export const savePreferences = (value: Preferences): boolean => {
   } catch {
     return false;
   }
+};
+
+export const languageDirection = (language: Language): "ltr" | "rtl" => {
+  const code = language === presentationPseudolanguage ? defaults.language : language;
+  const option = presentationLanguageOptions.find((candidate) => candidate.value === code);
+  if (option === undefined) {
+    throw new Error("Unsupported core language direction.");
+  }
+  return option.direction;
 };

@@ -9,7 +9,7 @@ import { readUnknown, isObject } from "./contract-corpus.fixtures";
 import requirements from "../src/presentation/generated/diagnostic-parameters.json";
 it("every F# diagnostic template agrees with default browser rendering", () => {
   const raw = readUnknown("descriptors.json");
-  const originals = isObject(raw) ? raw["diagnostics"] : null;
+  const originals = isObject(raw) ? raw["messages"] : null;
   if (!isObject(originals)) {
     throw new Error("Native presentation absent.");
   }

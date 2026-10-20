@@ -1,7 +1,14 @@
-import type { RequestByEndpoint } from "@contracts/client";
+import requestBindings from "@contracts/request-bindings.json" with { type: "json" };
+import wireDocument from "@contracts/openapi.json" with { type: "json" };
+import { validateStructure } from "../protocol/schema";
+import type { RequestByEndpoint, Descriptors } from "@contracts/client";
 export type CommandKind = RequestByEndpoint["case.execute"]["act"]["kind"];
-export type CorrectionGroupName = "registration" | "decision" | "payment";
-export type CorrectionMode = "KEEP" | "REPLACE" | "CLEAR";
+type GroupedInputs = Extract<
+  Descriptors["commands"][number]["inputs"],
+  { kind: "CORRECTION_GROUPS" }
+>;
+export type CorrectionGroupName = GroupedInputs["groups"][number]["name"];
+export type CorrectionMode = GroupedInputs["groups"][number]["actions"][number];
 export type FlatDraftValues = Record<string, string>;
 type CorrectionGroupValues = { mode: CorrectionMode; values: FlatDraftValues };
 export type GroupedDraftValues = Record<string, CorrectionGroupValues>;
@@ -11,12 +18,17 @@ const isFlatValues = (value: unknown): value is FlatDraftValues =>
   value !== null &&
   !Array.isArray(value) &&
   Object.values(value).every((entry) => typeof entry === "string");
+const correctionActions = requestBindings.flatMap((binding) =>
+  (binding.groups ?? []).flatMap((group) => group.actions),
+);
+const isCorrectionMode = (value: unknown): value is CorrectionMode =>
+  typeof value === "string" && correctionActions.includes(value);
 const isGroupValues = (value: unknown): value is CorrectionGroupValues =>
   typeof value === "object" &&
   value !== null &&
   !Array.isArray(value) &&
   "mode" in value &&
-  (value.mode === "KEEP" || value.mode === "REPLACE" || value.mode === "CLEAR") &&
+  isCorrectionMode(value.mode) &&
   "values" in value &&
   isFlatValues(value.values);
 export const isGroupedDraftValues = (value: unknown): value is GroupedDraftValues =>
@@ -30,68 +42,90 @@ export const hasRequiredCorrectionGroups = (
   names: ReadonlyArray<string>,
 ): value is GroupedDraftValues =>
   isGroupedDraftValues(value) && names.every((name) => Object.hasOwn(value, name));
-const registration = (values: FlatDraftValues) => ({
-  incidentDate: values["incidentDate"] ?? "",
-  incidentNotificationDate: values["incidentNotificationDate"] ?? "",
-  incidentCountry: values["incidentCountry"] ?? "",
-  claimantName: values["claimantName"] ?? "",
-  insurerName: values["insurerName"] ?? "",
-  claimedAmount: values["claimedAmount"] ?? "",
-  claimedCurrency: values["claimedCurrency"] ?? "",
-});
-const decision = (values: FlatDraftValues) => ({
-  paymentDecisionDate: values["paymentDecisionDate"] ?? "",
-  payableAmount: values["payableAmount"] ?? "",
-  payableCurrency: values["payableCurrency"] ?? "",
-});
-const payment = (values: FlatDraftValues) => ({ paymentDate: values["paymentDate"] ?? "" });
 type Act = RequestByEndpoint["case.execute"]["act"];
-const correction = (values: DraftValues): Extract<Act, { kind: "CORRECT_CASE" }> => {
-  if (!hasRequiredCorrectionGroups(values, ["registration", "decision", "payment"])) {
-    throw new Error("CORRECT_CASE requires grouped values.");
+type FieldBinding = Readonly<{ fieldName: string; path: ReadonlyArray<string> }>;
+type GroupBinding = Readonly<{
+  name: string;
+  path: ReadonlyArray<string>;
+  actions: ReadonlyArray<string>;
+  fields: ReadonlyArray<FieldBinding>;
+}>;
+type Binding = Readonly<{
+  kind: string;
+  fields?: ReadonlyArray<FieldBinding>;
+  groups?: ReadonlyArray<GroupBinding>;
+}>;
+const bindings: ReadonlyArray<Binding> = requestBindings;
+const assign = (
+  target: Record<string, unknown>,
+  path: ReadonlyArray<string>,
+  value: unknown,
+): void => {
+  const [head, ...tail] = path;
+  if (head === undefined || ["__proto__", "constructor", "prototype"].includes(head)) {
+    throw new Error("Unsupported request binding path.");
   }
-  const r = values["registration"]!;
-  const d = values["decision"]!;
-  const p = values["payment"]!;
-  if (r.mode === "CLEAR") {
-    throw new Error("Unsupported registration correction choice.");
+  if (tail.length === 0) {
+    target[head] = value;
+    return;
   }
-  return {
-    kind: "CORRECT_CASE",
-    groups: {
-      registration:
-        r.mode === "REPLACE"
-          ? { mode: "REPLACE", values: registration(r.values) }
-          : { mode: "KEEP" },
-      decision:
-        d.mode === "REPLACE" ? { mode: "REPLACE", values: decision(d.values) } : { mode: d.mode },
-      payment:
-        p.mode === "REPLACE" ? { mode: "REPLACE", values: payment(p.values) } : { mode: p.mode },
-    },
-  };
+  const child = target[head] ?? {};
+  if (typeof child !== "object" || child === null || Array.isArray(child)) {
+    throw new Error("Contradictory request bindings.");
+  }
+  const nested = Object.fromEntries(Object.entries(child));
+  target[head] = nested;
+  assign(nested, tail, value);
 };
-const reason = (values: FlatDraftValues): string => values["reason"] ?? "";
-const flatAct = (kind: Exclude<CommandKind, "CORRECT_CASE">, values: FlatDraftValues): Act => {
-  switch (kind) {
-    case "OPEN":
-    case "AMEND_REGISTRATION":
-      return { kind, values: registration(values) };
-    case "DECIDE":
-      return { kind, values: decision(values) };
-    case "RECORD_PAYMENT":
-      return { kind, values: payment(values) };
-    case "VOID":
-    case "REINSTATE":
-      return { kind, reason: reason(values) };
-    case "WITHDRAW_DECISION":
-    case "CLEAR_PAYMENT":
-    case "CLOSE":
-    case "REOPEN":
-    case "ERASE":
-      return { kind };
-    default:
-      throw new Error("Unsupported case act.");
+const writeFields = (
+  target: Record<string, unknown>,
+  fields: ReadonlyArray<FieldBinding>,
+  values: FlatDraftValues,
+): void => {
+  for (const field of fields) {
+    assign(target, field.path, values[field.fieldName] ?? "");
   }
+};
+const isAct = (value: unknown): value is Act =>
+  validateStructure({ ...wireDocument, $ref: "#/components/schemas/CaseAct" }, value);
+export const assembleBoundAct = (
+  binding: Binding,
+  values: DraftValues,
+): Record<string, unknown> => {
+  const result: Record<string, unknown> = { kind: binding.kind };
+  if (binding.groups === undefined) {
+    if (isGroupedDraftValues(values) || binding.fields === undefined) {
+      throw new Error("Operation requires flat values and complete bindings.");
+    }
+    writeFields(result, binding.fields, values);
+  } else {
+    if (
+      !hasRequiredCorrectionGroups(
+        values,
+        binding.groups.map((group) => group.name),
+      )
+    ) {
+      throw new Error("Correction requires grouped values.");
+    }
+    for (const group of binding.groups) {
+      const input = values[group.name]!;
+      if (!group.actions.includes(input.mode)) {
+        throw new Error("Unsupported correction choice.");
+      }
+      assign(result, [...group.path, "mode"], input.mode);
+      if (input.mode === "REPLACE") {
+        writeFields(result, group.fields, input.values);
+      }
+    }
+  }
+  return result;
+};
+export const assembleAct = (binding: Binding, values: DraftValues): Act => {
+  const result = assembleBoundAct(binding, values);
+  if (!isAct(result)) {
+    throw new Error("Request binding does not satisfy its typed codec.");
+  }
+  return result;
 };
 export const createDraft = (
   operationId: string,
@@ -100,11 +134,9 @@ export const createDraft = (
   command: CommandKind,
   values: DraftValues,
 ): RequestByEndpoint["case.execute"] => {
-  if (command === "CORRECT_CASE") {
-    return { operationId, caseReference, expectedRevision, act: correction(values) };
+  const binding = bindings.find((item) => item.kind === command);
+  if (binding === undefined) {
+    throw new Error("Unsupported case act binding.");
   }
-  if (isGroupedDraftValues(values)) {
-    throw new Error(`${command} requires flat values.`);
-  }
-  return { operationId, caseReference, expectedRevision, act: flatAct(command, values) };
+  return { operationId, caseReference, expectedRevision, act: assembleAct(binding, values) };
 };

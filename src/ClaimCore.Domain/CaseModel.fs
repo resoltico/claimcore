@@ -1,12 +1,8 @@
 namespace ClaimCore.Domain
 
-open System
+open ClaimCore.Catalog
 
-/// The two case statuses requested by the operator. Payment never changes this implicitly.
-[<RequireQualifiedAccess>]
-type CaseStatus =
-    | Opened
-    | Closed
+open System
 
 /// Exactly the thirteen business fields. Technical revision, receipt and UI metadata are separate.
 /// Optional fields remain absent until the operator records a decision or payment.
@@ -88,36 +84,6 @@ type BusinessCommand =
     | ClearPayment
     | Close
     | Reopen
-
-/// Closed operation vocabulary; names and payload kinds belong to the core, not a renderer.
-[<RequireQualifiedAccess>]
-type BusinessActKind =
-    | Open
-    | AmendRegistration
-    | CorrectCase
-    | Decide
-    | WithdrawDecision
-    | RecordPayment
-    | ClearPayment
-    | Close
-    | Reopen
-
-[<RequireQualifiedAccess>]
-type StewardshipActKind =
-    | Void
-    | Reinstate
-    | Erase
-
-[<RequireQualifiedAccess>]
-type CaseActKind =
-    | Business of BusinessActKind
-    | Stewardship of StewardshipActKind
-
-/// Stewardship changes the case record without asserting business facts.
-[<RequireQualifiedAccess>]
-type Disposition =
-    | Active
-    | Voided
 
 [<RequireQualifiedAccess>]
 type StewardshipAct =

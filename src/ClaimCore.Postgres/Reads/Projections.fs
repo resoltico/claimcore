@@ -1,5 +1,7 @@
 namespace ClaimCore.Postgres
 
+open ClaimCore.Catalog
+
 open System
 open System.Globalization
 open System.Text.RegularExpressions
@@ -135,7 +137,7 @@ module internal Projections =
         }
 
     let private role row =
-        Roles.tryParse (required<string> 0 row)
+        RoleTokens.tryParse (required<string> 0 row)
         |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid stored role."))
 
     let private authorityRows principal (rows: obj array list) =
@@ -148,7 +150,7 @@ module internal Projections =
                     optional<string> 2 row
                     |> Option.map (fun role ->
                         let role =
-                            Roles.tryParse role
+                            RoleTokens.tryParse role
                             |> Option.defaultWith (fun () ->
                                 raise (RecordCorruptException "Invalid stored role."))
 
@@ -196,7 +198,7 @@ module internal Projections =
             | Some actor ->
                 let forbidden =
                     ActorAuthorization.invalidRoles principal
-                    |> List.map Roles.token
+                    |> List.map RoleTokens.token
                     |> List.toArray
 
                 let! rows =
@@ -205,7 +207,7 @@ module internal Projections =
                         "SELECT EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=$1 AND g.case_id IS NOT NULL AND g.role=ANY($2::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=g.actor_id AND bad.case_id=g.case_id AND bad.role=ANY($3::text[])))"
                         [|
                             box actor.ActorId
-                            box (readRoles |> List.map Roles.token |> List.toArray)
+                            box (readRoles |> List.map RoleTokens.token |> List.toArray)
                             box forbidden
                         |]
                         token

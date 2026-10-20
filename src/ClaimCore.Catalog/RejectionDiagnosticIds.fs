@@ -1,4 +1,4 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Catalog
 
 /// Explicit, stable identities. Tokens never derive from a union name or human explanation.
 [<RequireQualifiedAccess>]
@@ -62,6 +62,42 @@ type DiagnosticDefinition =
         Id: string
         Parameters: DiagnosticParameterDefinition list
     }
+
+[<RequireQualifiedAccess>]
+type DiagnosticArgument =
+    | MaximumCharacters
+    | MaximumIntegerDigits
+    | MaximumFractionalDigits
+    | MaximumPageSize
+
+module DiagnosticArguments =
+    let private definitions =
+        [
+            DiagnosticArgument.MaximumCharacters, "maximumCharacters", 0
+            DiagnosticArgument.MaximumIntegerDigits, "maximumIntegerDigits", 1
+            DiagnosticArgument.MaximumFractionalDigits, "maximumFractionalDigits", 0
+            DiagnosticArgument.MaximumPageSize, "maximumPageSize", 1
+        ]
+
+    let token argument =
+        definitions
+        |> List.find (fun (candidate, _, _) -> candidate = argument)
+        |> fun (_, name, _) -> name
+
+    let tryParse name =
+        definitions
+        |> List.tryFind (fun (_, candidate, _) -> candidate = name)
+        |> Option.map (fun (argument, _, _) -> argument)
+
+    let definition argument =
+        let _, name, minimum =
+            definitions |> List.find (fun (candidate, _, _) -> candidate = argument)
+
+        {
+            Name = name
+            Minimum = minimum
+            Maximum = System.Int32.MaxValue
+        }
 
 module RejectionDiagnosticIds =
     let private text =
@@ -144,19 +180,17 @@ module RejectionDiagnosticIds =
     let token identifier =
         all |> List.find (fst >> (=) identifier) |> snd
 
-    let private parameter name minimum =
-        {
-            Name = name
-            Minimum = minimum
-            Maximum = System.Int32.MaxValue
-        }
-
     let parameters =
         function
-        | RejectionDiagnosticId.TextTooLong -> [ parameter "maximumCharacters" 0 ]
+        | RejectionDiagnosticId.TextTooLong ->
+            [ DiagnosticArguments.definition DiagnosticArgument.MaximumCharacters ]
         | RejectionDiagnosticId.DecimalFormat ->
-            [ parameter "maximumIntegerDigits" 1; parameter "maximumFractionalDigits" 0 ]
-        | RejectionDiagnosticId.PageLimitOutOfRange -> [ parameter "maximumPageSize" 1 ]
+            [
+                DiagnosticArguments.definition DiagnosticArgument.MaximumIntegerDigits
+                DiagnosticArguments.definition DiagnosticArgument.MaximumFractionalDigits
+            ]
+        | RejectionDiagnosticId.PageLimitOutOfRange ->
+            [ DiagnosticArguments.definition DiagnosticArgument.MaximumPageSize ]
         | _ -> []
 
     let definitions =
@@ -166,3 +200,10 @@ module RejectionDiagnosticIds =
                 Id = value
                 Parameters = parameters identifier
             })
+
+[<RequireQualifiedAccess>]
+type DiagnosticParameters =
+    | None
+    | MaximumCharacters of int
+    | DecimalDigits of maximumIntegerDigits: int * maximumFractionalDigits: int
+    | MaximumPageSize of int

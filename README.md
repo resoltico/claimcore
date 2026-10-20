@@ -34,7 +34,7 @@ The browser offers English, Latvian and Arabic, right-to-left layout and indepen
 formats. The installation's immutable IANA business time zone governs business dates.
 Seven default-deny role presets and scoped grants control case work and administration.
 Typed core advice drives browser business, stewardship and authority forms. Both clients use one
-[OpenAPI contract](contracts/openapi.json), strict byte admission and correlated delivery replies.
+[consumer contract](contracts/contract-manifest.json), generated from typed core definitions, with strict byte admission and correlated delivery replies.
 
 Every mutation rechecks locked current state. Replaying a retained accepted request returns
 its original acceptance without another ledger entry. If delivery is uncertain, preserve the operation ID, expected

@@ -1,13 +1,8 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Domain
+open ClaimCore.Catalog
 
-[<RequireQualifiedAccess>]
-type DiagnosticParameters =
-    | None
-    | MaximumCharacters of int
-    | DecimalDigits of maximumIntegerDigits: int * maximumFractionalDigits: int
-    | MaximumPageSize of int
+open ClaimCore.Domain
 
 type RejectionDiagnostic =
     private

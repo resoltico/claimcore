@@ -153,7 +153,9 @@ const metadata = (props: OperationEditorProps, state: EditorState): EditorMetada
   const groups = correctionGroups(props.definition.descriptors, state.state.command).map(
     ({ group, fields: groupFields }) => {
       const choices =
-        commandOffer?.act === "CORRECT_CASE" ? commandOffer.correction[group.name] : undefined;
+        commandOffer !== undefined && "correction" in commandOffer
+          ? commandOffer.correction[group.name]
+          : undefined;
       return {
         group: {
           ...group,

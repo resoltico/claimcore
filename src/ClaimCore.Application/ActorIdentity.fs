@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Catalog
+
 open System
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
@@ -67,8 +69,8 @@ module PrincipalKey =
     /// Private storage projection; never infer identity from email, display name or groups.
     let internal storageParts =
         function
-        | HumanPrincipal(issuerValue, subject) -> "HUMAN", issuerValue, subject
-        | ServicePrincipal(issuerValue, clientId) -> "SERVICE", issuerValue, clientId
+        | HumanPrincipal(issuerValue, subject) -> PrincipalKinds.Human, issuerValue, subject
+        | ServicePrincipal(issuerValue, clientId) -> PrincipalKinds.Service, issuerValue, clientId
 
     let describe principal : RecordedPrincipal =
         let kind, issuer, subject = storageParts principal
@@ -90,8 +92,8 @@ module PrincipalKey =
 
     let internal fromStorage kind issuerValue stableValue =
         match kind with
-        | "HUMAN" -> human issuerValue stableValue
-        | "SERVICE" -> service issuerValue stableValue
+        | PrincipalKinds.Human -> human issuerValue stableValue
+        | PrincipalKinds.Service -> service issuerValue stableValue
         | _ -> Error "ACTOR_PRINCIPAL_INVALID"
 
     let internal isHuman =
@@ -99,15 +101,6 @@ module PrincipalKey =
         | HumanPrincipal _ -> true
         | ServicePrincipal _ -> false
 
-[<RequireQualifiedAccess>]
-type Role =
-    | Owner
-    | CaseReader
-    | CaseRegistrar
-    | CaseHandler
-    | PaymentRecorder
-    | DataSteward
-    | Auditor
 
 [<RequireQualifiedAccess>]
 type GrantScope =

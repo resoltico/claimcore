@@ -215,7 +215,12 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
         }
 
     member this.Bootstrap() =
-        this.Send(HttpMethod.Get, "/api/session", None, [ "ClaimCore-Contract", Fingerprint.value ])
+        this.Send(
+            HttpMethod.Get,
+            "/api/session",
+            None,
+            [ "ClaimCore-Contract", ConsumerContract.identity ]
+        )
 
     member this.Token() =
         task {
@@ -242,7 +247,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
             [
                 "Origin", origin.GetLeftPart(UriPartial.Authority)
                 "X-ClaimCore-Antiforgery", token
-                "ClaimCore-Contract", defaultArg fingerprint (Fingerprint.value)
+                "ClaimCore-Contract", defaultArg fingerprint (ConsumerContract.identity)
             ]
         )
 

@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Catalog
+
 open ClaimCore.Wire
 
 open System
@@ -47,7 +49,7 @@ module HostRoutes =
                                     SessionOutcome.Succeeded
                                         {
                                             Authenticated = authenticated
-                                            WireFingerprint = Fingerprint.value
+                                            ContractIdentity = ConsumerContract.identity
                                             AntiforgeryToken = token
                                         }
                             })

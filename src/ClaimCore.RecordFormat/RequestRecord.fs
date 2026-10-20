@@ -1,5 +1,7 @@
 namespace ClaimCore.RecordFormat
 
+open ClaimCore.Catalog
+
 open System.Text.Json
 open ClaimCore.Domain
 
@@ -81,23 +83,35 @@ module RequestRecord =
             read (path + ".values") (Json.required path "values" element)
 
         match kind with
-        | "OPEN" -> BusinessCommand.Open(values Json.registration)
-        | "AMEND_REGISTRATION" -> BusinessCommand.AmendRegistration(values Json.registration)
-        | "CORRECT_CASE" ->
+        | value when value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open)) ->
+            BusinessCommand.Open(values Json.registration)
+        | value when
+            value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
+            ->
+            BusinessCommand.AmendRegistration(values Json.registration)
+        | value when value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase)) ->
             shape [ "groups" ]
             BusinessCommand.CorrectCase(correction (Json.required path "groups" element))
-        | "DECIDE" -> BusinessCommand.Decide(values Json.decision)
-        | "RECORD_PAYMENT" -> BusinessCommand.RecordPayment(values paymentValues)
-        | "WITHDRAW_DECISION" ->
+        | value when value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide)) ->
+            BusinessCommand.Decide(values Json.decision)
+        | value when
+            value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
+            ->
+            BusinessCommand.RecordPayment(values paymentValues)
+        | value when
+            value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
+            ->
             shape []
             BusinessCommand.WithdrawDecision
-        | "CLEAR_PAYMENT" ->
+        | value when
+            value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
+            ->
             shape []
             BusinessCommand.ClearPayment
-        | "CLOSE" ->
+        | value when value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close)) ->
             shape []
             BusinessCommand.Close
-        | "REOPEN" ->
+        | value when value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen)) ->
             shape []
             BusinessCommand.Reopen
         | _ -> Json.reject (path + ".kind") "Unknown case act."
@@ -106,13 +120,15 @@ module RequestRecord =
         let path = "$.act"
 
         match Json.text path "kind" element with
-        | "VOID" ->
+        | value when value = (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void)) ->
             Json.properties path [ "kind"; "reason" ] element
             CaseAct.Stewardship(StewardshipAct.Void(Json.text path "reason" element))
-        | "REINSTATE" ->
+        | value when
+            value = (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
+            ->
             Json.properties path [ "kind"; "reason" ] element
             CaseAct.Stewardship(StewardshipAct.Reinstate(Json.text path "reason" element))
-        | "ERASE" ->
+        | value when value = (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase)) ->
             Json.properties path [ "kind" ] element
             CaseAct.Stewardship StewardshipAct.Erase
         | kind -> CaseAct.Business(business kind element)

@@ -1,3 +1,4 @@
+import { languageDirection } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
 import correctionTargets from "./generated/correction-targets.json";
 import type { Notice } from "../api/notices";
@@ -80,7 +81,7 @@ const hint = (preferences: Preferences, field: FieldDescriptor): string => {
 };
 export const createPresenter = (preferences: Preferences) => ({
   ...preferences,
-  direction: preferences.language === "ar" ? ("rtl" as const) : ("ltr" as const),
+  direction: languageDirection(preferences.language),
   text: <K extends MessageKey>(key: K, ...values: Values<K>) =>
     translate(preferences, key, ...values),
   notice: (notice: Notice) => renderNotice(preferences, notice),
