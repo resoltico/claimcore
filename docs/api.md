@@ -150,7 +150,7 @@ options and selectors refuse atomically with safe corrective commands on stderr,
 and exit 64. Unknown authored tokens are never echoed. No TTY-dependent format or prompt is used.
 
 Local failure frames now require a closed `diagnostic` object. Known configuration failures use
-`CLI_CONFIGURATION_ISSUE` with allowlisted `setting` and `issue` (`MISSING`, `INVALID` or
+`CLI_CONFIGURATION_ISSUE` (also an alias of `help configuration`) with allowlisted `setting` and `issue` (`MISSING`, `INVALID` or
 `PRIVATE_INPUT_REFUSED`); unknown local causes remain broad. Protocol failures carry
 `CLI_PROTOCOL_GUIDANCE`: resolve that exact ID with `help CLI_PROTOCOL_GUIDANCE` or
 `describe diagnostics`. Both project the same generated core guidance for `schema invocation`,
@@ -228,4 +228,11 @@ The automation caller retains prior unresolved knowledge and the original reques
 A later pre-dispatch failure, authorization refusal or NOT_STARTED result cannot resolve its earlier
 uncertainty. The CLI stores no cross-process pending state. Output failure after a dispatched mutation
 uses exit 4 when confirmation could not be safely delivered; read/pre-dispatch output failures do not.
-If both output streams fail, only the nonzero exit can remain available.
+If both output streams fail, only the nonzero exit can remain available. On qualified macOS/Linux,
+one output strategy is selected per inherited sink before writing and retained for the invocation:
+nonseekable pipes/terminals use a borrowed managed stream that surfaces native failures; seekable
+files retain Console's native shared-offset/append behavior. There is no error fallback that hides
+EPIPE. A complete frame, newline and successful flush establish OS acceptance of those writes;
+they cannot establish that a downstream process consumed, parsed or persisted the bytes. No
+consumer acknowledgement protocol is supplied. Windows remote/private-file execution is unqualified;
+offline discovery remains available.

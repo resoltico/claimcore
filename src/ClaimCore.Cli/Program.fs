@@ -8,8 +8,7 @@ open System.Text
 open System.Threading
 open System.Runtime.InteropServices
 
-let private writeBytes (bytes: byte array) =
-    let output = Console.OpenStandardOutput()
+let private writeBytes (output: System.IO.Stream) (bytes: byte array) =
     output.Write bytes
 
     if bytes.Length = 0 || bytes[bytes.Length - 1] <> byte '\n' then
@@ -17,39 +16,43 @@ let private writeBytes (bytes: byte array) =
 
     output.Flush()
 
-let private unsupported language issue =
-    Console.Error.Write(ContractDiscovery.helpTopic language ("usage." + string issue))
+let private writeText (output: System.IO.Stream) (value: string) =
+    output.Write(Encoding.UTF8.GetBytes value)
+    output.Flush()
+
+let private unsupported errors language issue =
+    writeText errors (ContractDiscovery.helpTopic language ("usage." + string issue))
     64
 
-let private writeDiscovery language response =
+let private writeDiscovery output errors language response =
     match response with
     | Some bytes ->
-        writeBytes bytes
+        writeBytes output bytes
         0
-    | None -> unsupported language CliUsageIssue.Selector
+    | None -> unsupported errors language CliUsageIssue.Selector
 
-let private discovery =
+let private discovery output errors =
     function
     | CliInvocation.Help(topic, language) ->
-        Console.Out.Write(ContractDiscovery.helpTopic language topic)
+        writeText output (ContractDiscovery.helpTopic language topic)
         0
     | CliInvocation.Version false ->
-        Console.Out.WriteLine(BuildIdentity.current.Version)
+        writeText output (BuildIdentity.current.Version + Environment.NewLine)
         0
     | CliInvocation.Version true ->
-        Discovery.versionJson () |> writeBytes
+        Discovery.versionJson () |> writeBytes output
         0
     | CliInvocation.Describe(selector, false, _) ->
-        Discovery.describe selector |> writeDiscovery "en"
+        Discovery.describe selector |> writeDiscovery output errors "en"
     | CliInvocation.Describe(selector, true, language) ->
-        Discovery.describeText language selector |> writeDiscovery language
-    | CliInvocation.Schema selection -> Discovery.schema selection |> writeDiscovery "en"
-    | _ -> unsupported "en" CliUsageIssue.Invocation
+        Discovery.describeText language selector
+        |> writeDiscovery output errors language
+    | CliInvocation.Schema selection ->
+        Discovery.schema selection |> writeDiscovery output errors "en"
+    | _ -> unsupported errors "en" CliUsageIssue.Invocation
 
-let private remote session =
+let private remote output errors session =
     use input = Console.OpenStandardInput()
-    use output = Console.OpenStandardOutput()
-    use errors = Console.OpenStandardError()
     use processor = new RemoteFrameProcessor(input, output, errors)
     let stop () = Environment.Exit(processor.Interrupt())
 
@@ -82,20 +85,28 @@ let private remote session =
         Console.CancelKeyPress.RemoveHandler interrupt
         registrations |> List.iter _.Dispose()
 
-[<EntryPoint>]
-let main argv =
+let private dispatch output errors argv =
     try
-        Console.OutputEncoding <- UTF8Encoding(false)
-
         match CliInvocations.admit (Array.toList argv) with
-        | Ok CliInvocation.Call -> remote false
-        | Ok CliInvocation.Session -> remote true
-        | Ok invocation -> discovery invocation
-        | Error issue -> unsupported (CliInvocations.usageLanguage (Array.toList argv)) issue
+        | Ok CliInvocation.Call -> remote output errors false
+        | Ok CliInvocation.Session -> remote output errors true
+        | Ok invocation -> discovery output errors invocation
+        | Error issue -> unsupported errors (CliInvocations.usageLanguage (Array.toList argv)) issue
     with _ ->
         try
-            Console.Error.WriteLine((ContractDiscovery.message "cli.beforeDispatchFailure"))
+            writeText
+                errors
+                (ContractDiscovery.message "cli.beforeDispatchFailure" + Environment.NewLine)
         with _ ->
             ()
 
+        70
+
+[<EntryPoint>]
+let main argv =
+    try
+        use output = StandardSinks.output ()
+        use errors = StandardSinks.errors ()
+        dispatch output errors argv
+    with _ ->
         70

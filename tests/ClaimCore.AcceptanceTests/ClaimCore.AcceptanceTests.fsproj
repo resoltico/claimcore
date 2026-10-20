@@ -36,6 +36,7 @@
     <Compile Include="PublishedAssets.fs" />
     <Compile Include="RejectedDrafts.fs" />
     <Compile Include="CliDelivery.fs" />
+    <Compile Include="CliNativeOutput.fs" />
     <Compile Include="CliDisclosure.fs" />
     <Compile Include="CliDescriptions.fs" />
     <Compile Include="CliDiscovery.fs" />

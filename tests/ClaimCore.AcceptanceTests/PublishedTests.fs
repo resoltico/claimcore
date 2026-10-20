@@ -296,6 +296,7 @@ let private qualify () =
         PublishedAssets.qualify fixture
         CliDiscovery.qualify fixture
         setup fixture
+        CliNativeOutput.qualify fixture
         CliDelivery.qualify fixture
         CliDisclosure.qualify fixture
         inputBoundaries fixture

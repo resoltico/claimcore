@@ -30,6 +30,9 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- CLI native pipe-output failure now preserves uncertain mutation exit 4 and typed stderr fallback where writable. Both broken outputs still leave exit 4, and sessions stop before later frames. Regular-file append/shared-offset behavior is preserved. Success establishes OS acceptance of complete writes, not downstream consumption; see [delivery limits](docs/api.md#cc-cli-003).
+- Configuration refusal IDs resolve to core-authored offline help in English, Latvian and Arabic, including canonical service-root/issuer forms, private-file criteria and shared existing bounds. Admission and trust behavior are unchanged. Regenerated help/identity assets require matching service and clients.
+
 - Readiness permits at most two simultaneous probes, refuses saturation without database work and propagates request/shutdown/deadline cancellation through provider cleanup. Liveness remains independent; two seconds is a cancellation deadline, not a hard completion guarantee.
 - Browser context/current reads recover through explicit retry. Keyboard transitions focus destinations, authority technical errors support draft-preserving explicit editing with renewed consent, and unknown delivery remains primary with retained support identities. List messages describe visible scope and actual continuation; amount guidance explains redundant leading-zero refusal.
 

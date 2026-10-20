@@ -246,3 +246,12 @@ it is a bounded equivalent for this mechanism, not production capacity. Restart-
 absolute deadlines, backwards-time refusal, logout and fsync remain unchanged. Published browser
 qualification separately exercises real HTTPS sessions and all supported engines. Native-language,
 manual assistive-technology and terminal bidi quality require separate human review.
+
+Native CLI sink qualification uses a managed C# fixture calling the actual product sink opener,
+launched through the bounded managed test runner and a Python standard-library Unix descriptor
+harness. It covers native EPIPE, raw PTY lifetime/draining, exact Unicode bytes, actual O_APPEND
+at initial offset zero, positioned/shared descriptors, wrapper disposal and regular-file failure;
+Linux also exercises /dev/full. The Console EPIPE case is an intentional rejecting control.
+Published call/session tests independently compare ledger/history/projections after output failure,
+including both-output failure and session stop. These run in the complete native suites on both
+macOS and Linux; no native product/test code or consumer acknowledgement is introduced.

@@ -35,6 +35,8 @@ module private FrameInvocation =
         task {
             if cancelled.IsCancellationRequested then
                 return CliReply.local ClientFailure.Cancelled
+            elif not StandardSinks.supportsRemote then
+                return CliReply.local ClientFailure.Configuration
             else
                 match holder.Acquire() with
                 | Error failure -> return CliReply.local failure
