@@ -2,7 +2,7 @@
 
 Reads the 0.10.0 policy tables (contracts/delivery-policy.json at df3263f) and writes golden
 vectors that the typed F# implementation (ClaimCore.Wire.Delivery / Correlation) and the
-hand-written TypeScript twin must reproduce. It deliberately does not import or execute any
+generic TypeScript consumer must reproduce. It deliberately does not import or execute any
 ClaimCore code.
 
 Run: python3 -I delivery_oracle.py PATH/TO/delivery-policy.json OUTPUT_DIRECTORY
@@ -247,6 +247,49 @@ def resource_correlation_cases(add):
         {"outcome": {"tag": "SUCCEEDED", "data": {}}})
 
 
+def binding_coverage_cases(add):
+    # Public identity requirements, independent from the F#/TS specification producer.
+    import copy
+    for endpoint in ["case.execute", "case.preview", "authority.execute"]:
+        request = case_request() if endpoint != "authority.execute" else {
+            "operationId": OP, "act": {"kind": "SET_GRANT"}}
+        tags = ["ACCEPTED", "ALREADY_ACCEPTED", "REJECTED", "FAILED", "CANCELLED"]
+        tags += ["REVIEWED"] if endpoint == "case.preview" else ["OUTCOME_UNKNOWN"]
+        for tag in tags:
+            if tag in RECEIPT:
+                reply = case_receipt(tag) if endpoint != "authority.execute" else {
+                    "operationId": OP, "outcome": {"tag": tag, "data": {
+                        "operationId": OP, "act": "SET_GRANT", "scope": "AUTHORITY"}}}
+            elif tag == "REVIEWED":
+                reply = {"operationId": OP, "outcome": {"tag": tag, "data": {
+                    "review": {"after": {"caseReference": "DEMO-0001", "revision": 5}}}}}
+            else:
+                reply = {"operationId": OP, "outcome": {"tag": tag, "data":
+                    {"operationId": OP} if tag == "OUTCOME_UNKNOWN" else {}}}
+            add(f"coverage {endpoint} {tag} matches", endpoint, request, reply)
+            mutations = [(["operationId"], OTHER_OP)]
+            if tag in RECEIPT:
+                mutations += [(["outcome", "data", "operationId"], OTHER_OP),
+                              (["outcome", "data", "act"], "ERASE"),
+                              (["outcome", "data", "scope"], "CASE" if endpoint == "authority.execute" else "AUTHORITY")]
+                if endpoint != "authority.execute":
+                    mutations += [(["outcome", "data", "caseReference"], "OTHER"),
+                                  (["outcome", "data", "revision"], 6)]
+            elif tag == "REVIEWED":
+                mutations += [(["outcome", "data", "review", "after", "caseReference"], "OTHER"),
+                              (["outcome", "data", "review", "after", "revision"], 6)]
+            elif tag == "OUTCOME_UNKNOWN":
+                mutations += [(["outcome", "data", "operationId"], OTHER_OP)]
+            for path, value in mutations:
+                poisoned = copy.deepcopy(reply)
+                target = poisoned
+                for part in path[:-1]:
+                    target = target[part]
+                target[path[-1]] = value
+                add(f"coverage {endpoint} {tag} wrong {'.'.join(path)}",
+                    endpoint, request, poisoned)
+
+
 def correlation_cases():
     cases = []
 
@@ -257,6 +300,7 @@ def correlation_cases():
     case_correlation_cases(add)
     authority_correlation_cases(add)
     resource_correlation_cases(add)
+    binding_coverage_cases(add)
     return cases
 
 

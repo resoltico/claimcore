@@ -17,6 +17,7 @@
     <Compile Include="ArtifactPublication.fs" />
     <Compile Include="ContractIdentity.fs" />
     <Compile Include="CorrelationValidation.fs" />
+    <Compile Include="EvolutionQualification.fs" />
     <Compile Include="Artifacts.fs" />
     <Compile Include="Program.fs" />
     <EmbeddedResource Include="../../src/ClaimCore.Catalog/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />

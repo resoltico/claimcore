@@ -41,3 +41,65 @@ let tests =
                 Expect.throws
                     (fun () -> CorrelationValidation.validate changed)
                     "Invalid core specification must refuse publication")
+
+[<Tests>]
+let coverageTests =
+    testCase
+        "independent identity evidence rejects every omitted comparison and required scope"
+        (fun () ->
+            let rules = CorrelationBindings.all
+
+            let replace target replacement =
+                rules |> List.map (fun rule -> if rule = target then replacement else rule)
+
+            for rule in rules do
+                if not (List.isEmpty rule.Bindings) then
+                    Expect.throws
+                        (fun () ->
+                            CorrelationValidation.validate (
+                                replace rule { rule with Bindings = [] }
+                            ))
+                        "All identity checks cannot disappear"
+
+                for index in 0 .. rule.Bindings.Length - 1 do
+                    let missing =
+                        rule.Bindings
+                        |> List.indexed
+                        |> List.choose (fun (position, binding) ->
+                            if position = index then None else Some binding)
+
+                    Expect.throws
+                        (fun () ->
+                            CorrelationValidation.validate (
+                                replace rule { rule with Bindings = missing }
+                            ))
+                        "Each required comparison has independent rejecting evidence"
+
+                    let wrong =
+                        rule.Bindings
+                        |> List.mapi (fun position binding ->
+                            if position <> index then
+                                binding
+                            else
+                                { binding with
+                                    Comparison =
+                                        if binding.Comparison = CorrelationComparison.Exact then
+                                            CorrelationComparison.AsciiReference
+                                        else
+                                            CorrelationComparison.Exact
+                                })
+
+                    Expect.throws
+                        (fun () ->
+                            CorrelationValidation.validate (
+                                replace rule { rule with Bindings = wrong }
+                            ))
+                        "Inappropriate comparison cannot replace the required one"
+
+                if rule.Scope.IsSome then
+                    Expect.throws
+                        (fun () ->
+                            CorrelationValidation.validate (
+                                replace rule { rule with Scope = None }
+                            ))
+                        "Required scope cannot disappear")

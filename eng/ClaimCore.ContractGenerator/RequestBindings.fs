@@ -14,13 +14,21 @@ module RequestBindings =
 
     let private properties definitions schema =
         match resolve definitions schema with
-        | Schema.Object(fields, []) -> fields
+        | Schema.Object(fields, []) ->
+            let names = fields |> List.map fst
+
+            if (List.distinct names).Length <> names.Length then
+                invalidOp "Duplicate request member bindings."
+
+            fields
         | _ -> invalidOp "Request bindings require a closed required object."
 
     let rec private leaves definitions prefix schema =
         match resolve definitions schema with
-        | Schema.Const _ -> []
+        | Schema.Const _ -> invalidOp "Unsupported literal in request input bindings."
         | Schema.String _ -> [ List.last prefix, prefix ]
+        | Schema.Object([], []) when not (List.isEmpty prefix) ->
+            invalidOp "Unsupported required empty input object."
         | Schema.Object(fields, []) ->
             fields
             |> List.collect (fun (name, child) -> leaves definitions (prefix @ [ name ]) child)
@@ -35,6 +43,60 @@ module RequestBindings =
 
         actual |> List.map (fun (name, path) -> {| fieldName = name; path = path |})
 
+    let private choice definitions (group: CorrectionGroupDefinition) prefix variant =
+        let members = properties definitions variant
+
+        let mode =
+            match List.tryFind (fst >> (=) "mode") members with
+            | Some(_, Schema.Const mode) -> mode
+            | _ -> invalidOp "Correction choice has no constant mode."
+
+        let expected =
+            if mode = "REPLACE" then
+                [ "mode"; "values" ]
+            else
+                [ "mode" ]
+
+        if (members |> List.map fst |> List.sort) <> List.sort expected then
+            invalidOp "Unsupported required correction choice members."
+
+        let bindings =
+            if mode = "REPLACE" then
+                fields
+                    definitions
+                    (prefix @ [ "values" ])
+                    (List.find (fst >> (=) "values") members |> snd)
+                    group.ReplaceFields
+            else
+                []
+
+        mode, bindings
+
+    let private group definitions actual (group: CorrectionGroupDefinition) =
+        let name = CorrectionGroup.token group.Name
+
+        let variants =
+            match resolve definitions (List.find (fst >> (=) name) actual |> snd) with
+            | Schema.OneOf(variants, _) -> variants
+            | _ -> invalidOp "Correction binding requires tagged choices."
+
+        let bindings = variants |> List.map (choice definitions group [ "groups"; name ])
+        let choices = bindings |> List.map fst
+        let expected = group.Actions |> List.map CorrectionActions.token
+
+        if
+            List.sort choices <> List.sort expected
+            || (List.distinct choices).Length <> choices.Length
+        then
+            invalidOp "Correction choices differ from the codec."
+
+        {|
+            name = name
+            path = [ "groups"; name ]
+            actions = choices
+            fields = List.find (fst >> (=) "REPLACE") bindings |> snd
+        |}
+
     let private groups definitions schema definitionsOfGroups =
         let actual = properties definitions schema
 
@@ -46,60 +108,59 @@ module RequestBindings =
         then
             invalidOp "Correction group bindings are incomplete."
 
-        definitionsOfGroups
-        |> List.map (fun group ->
-            let name = CorrectionGroup.token group.Name
+        definitionsOfGroups |> List.map (group definitions actual)
 
-            let variants =
-                match resolve definitions (List.find (fst >> (=) name) actual |> snd) with
-                | Schema.OneOf(variants, _) -> variants |> List.map (properties definitions)
-                | _ -> invalidOp "Correction binding requires tagged choices."
+    let private content definitions kind schema =
+        let members = properties definitions schema
 
-            let choices =
-                variants
-                |> List.map (fun fields ->
-                    match List.find (fst >> (=) "mode") fields |> snd with
-                    | Schema.Const mode -> mode
-                    | _ -> invalidOp "Correction choice has no constant mode.")
+        match List.tryFind (fst >> (=) "kind") members with
+        | Some(_, Schema.Const actual) when actual = kind -> ()
+        | _ -> invalidOp "Command discriminator differs from the semantic act."
 
-            let expected =
-                group.Actions
-                |> List.map (function
-                    | CorrectionGroupAction.Keep -> "KEEP"
-                    | CorrectionGroupAction.Replace -> "REPLACE"
-                    | CorrectionGroupAction.Clear -> "CLEAR")
+        members |> List.filter (fst >> (<>) "kind")
 
-            if List.sort choices <> List.sort expected then
-                invalidOp "Correction choices differ from the codec."
+    let private commandCoverage definitions (commands: CommandDefinition list) =
+        let variants =
+            match resolve definitions (Map.find "CaseAct" definitions) with
+            | Schema.OneOf(variants, _) -> variants
+            | _ -> invalidOp "Case act binding requires a tagged union."
 
-            let replacement =
-                variants |> List.find (List.contains ("mode", Schema.Const "REPLACE"))
+        let actual =
+            variants
+            |> List.map (fun variant ->
+                match properties definitions variant |> List.tryFind (fst >> (=) "kind") with
+                | Some(_, Schema.Const kind) -> kind
+                | _ -> invalidOp "Act variant has no constant discriminator.")
 
-            let values = List.find (fst >> (=) "values") replacement |> snd
+        let expected = commands |> List.map (fun command -> CaseActKinds.token command.Kind)
 
-            {|
-                name = name
-                path = [ "groups"; name ]
-                actions = choices
-                fields = fields definitions [ "groups"; name; "values" ] values group.ReplaceFields
-            |})
+        if
+            List.sort actual <> List.sort expected
+            || (List.distinct expected).Length <> expected.Length
+        then
+            invalidOp "Core commands and codec act variants differ."
 
     let renderFrom definitions (commands: CommandDefinition list) =
+        commandCoverage definitions commands
+
         commands
         |> List.map (fun command ->
             let kind = CaseActKinds.token command.Kind
             let schema = Map.find ("CaseAct." + kind) definitions
+            let members = content definitions kind schema
 
             match command.Inputs with
             | CommandInputShape.Fields inputs ->
                 JsonSerializer.SerializeToNode
                     {|
                         kind = kind
-                        fields = fields definitions [] schema inputs
+                        fields = fields definitions [] (Schema.Object(members, [])) inputs
                     |}
             | CommandInputShape.CorrectionGroups inputs ->
-                let groupSchema =
-                    properties definitions schema |> List.find (fst >> (=) "groups") |> snd
+                if List.map fst members <> [ "groups" ] then
+                    invalidOp "Unsupported grouped command members."
+
+                let groupSchema = members |> List.exactlyOne |> snd
 
                 JsonSerializer.SerializeToNode
                     {|

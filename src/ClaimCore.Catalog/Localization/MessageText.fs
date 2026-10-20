@@ -9,6 +9,11 @@ type MessagePart =
 module MessageText =
     let private definitions =
         [
+            "cli.callbackAccepted",
+            [
+                MessagePart.Literal "Authentication response received. Return to the terminal."
+            ]
+            "cli.callbackRefused", [ MessagePart.Literal "Authentication response refused." ]
             "cli.unsupportedInvocation",
             [ MessagePart.Literal "Unsupported invocation. Run claimcore help." ]
             "cli.beforeDispatchFailure",

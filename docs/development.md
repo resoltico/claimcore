@@ -209,3 +209,11 @@ working set are evidence for that environment only. Peak working set is cumulati
 process; it is not isolated verifier memory. Existing transaction tests exercise lock timeout,
 cancellation and disabled-timeout negative controls. Reports are qualification evidence, not
 production sizing or a readiness mode.
+
+
+The generator's tracked evolution fixture is produced from a fixture-only typed codec and changed
+core descriptors. Browser qualification consumes that emitted metadata/schema to render inputs,
+collect values and assemble bytes identical to those admitted by the codec. It also exercises
+declared message-identity retargeting in en/lv/ar. This fixture adds no production business field
+or operation. Independent correlation oracle coverage includes poisoned individual/all bindings,
+scope removal and incompatible comparisons.

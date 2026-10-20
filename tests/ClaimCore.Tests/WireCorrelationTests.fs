@@ -105,7 +105,7 @@ let private vectors () =
         Expect.equal actual (sample.GetProperty("correlated").GetBoolean()) (text "name" sample)
         count <- count + 1
 
-    Expect.equal count 38 "All frozen independent oracle cases were exercised"
+    Expect.equal count 104 "All frozen independent oracle cases were exercised"
 
 [<Tests>]
 let tests =

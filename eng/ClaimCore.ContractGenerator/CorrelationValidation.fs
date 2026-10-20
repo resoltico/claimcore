@@ -1,6 +1,8 @@
 namespace ClaimCore.ContractGeneration
 
 open ClaimCore.Wire
+open System.Reflection
+open System.Text.Json
 
 /// Reject stale or contradictory binding paths against the codec-owned shapes before publication.
 module CorrelationValidation =
@@ -71,6 +73,35 @@ module CorrelationValidation =
         | Schema.OneOf(variants, _) -> variants |> List.collect (constants definitions)
         | _ -> []
 
+    let private reference definitions schema =
+        match resolve definitions schema with
+        | Schema.String _ as value -> value = ResponseScalars.reference.Schema
+        | _ -> false
+
+    let private evidence rules =
+        use stream =
+            Assembly
+                .GetExecutingAssembly()
+                .GetManifestResourceStream("ClaimCore.Oracles.correlation-vectors.json")
+            |> nonNull
+
+        use document = JsonDocument.Parse stream
+
+        for sample in document.RootElement.GetProperty("cases").EnumerateArray() do
+            let endpoint =
+                Endpoint.tryParse (sample.GetProperty("endpoint").GetString() |> nonNull)
+                |> Option.get
+
+            let actual =
+                CorrelationEvaluation.matchesUsing
+                    rules
+                    endpoint
+                    (sample.GetProperty "request")
+                    (sample.GetProperty "reply")
+
+            if actual <> sample.GetProperty("correlated").GetBoolean() then
+                invalidOp "Correlation specification contradicts independent identity evidence."
+
     let private validateRule (rule: CorrelationRule) =
         let request, requestDefinitions = Admission.schema rule.Endpoint
         let reply, replyDefinitions = response rule
@@ -84,6 +115,8 @@ module CorrelationValidation =
                 || List.isEmpty right
                 || not (List.forall (scalar requestDefinitions binding.Comparison) left)
                 || not (List.forall (scalar replyDefinitions binding.Comparison) right)
+                || (binding.Comparison = CorrelationComparison.AsciiReference
+                    && not (List.forall (reference replyDefinitions) right))
             then
                 invalidOp "Correlation binding is absent or has an incompatible scalar shape."
 
@@ -108,3 +141,4 @@ module CorrelationValidation =
             invalidOp "Correlation specification is duplicate or incomplete."
 
         rules |> List.iter validateRule
+        evidence rules

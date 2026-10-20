@@ -330,7 +330,7 @@ let private nativeUnitFloor directory =
 
     Expect.equal executions.Length 2 "Both complete native suites launch"
 
-    for execution, floor in List.zip (Array.toList executions) [ 417; 41 ] do
+    for execution, floor in List.zip (Array.toList executions) [ 421; 41 ] do
         Expect.stringContains
             execution
             ("--minimum-expected-tests=" + string floor)

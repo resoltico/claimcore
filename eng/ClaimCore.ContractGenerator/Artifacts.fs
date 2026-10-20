@@ -115,6 +115,10 @@ module ContractArtifacts =
         inputs
         @ [
             {
+                Name = "evolution-fixture.json"
+                Bytes = EvolutionQualification.render ()
+            }
+            {
                 Name = "contract-manifest.json"
                 Bytes = manifest
             }

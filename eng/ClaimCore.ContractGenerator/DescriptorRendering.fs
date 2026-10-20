@@ -24,23 +24,36 @@ module internal ContractJson =
 
 /// Presentation names for protocol structure, separate from the thirteen business fields.
 module internal ProtocolFieldPresentation =
-    let authorityFields =
+    let authorityFields
+        (target: AuthorityInputDefinition)
+        (commands: AuthorityOperationDefinition list)
+        =
         [
-            yield "operationId", (MessageText.literal "authority.field.operationId.label")
-            yield "expectedRevision", (MessageText.literal "authority.field.expectedRevision.label")
-            yield "act", (MessageText.literal "authority.field.act.label")
-            yield "kind", (MessageText.literal "authority.field.kind.label")
-            yield "issuer", (MessageText.literal "authority.field.issuer.label")
-            yield "subject", (MessageText.literal "authority.field.subject.label")
-            let target = AuthorityOperationDefinitions.target
-            yield target.Name, (MessageText.literal target.LabelId)
-
-            for definition in AuthorityOperationDefinitions.all do
+            yield "operationId", "authority.field.operationId.label"
+            yield "expectedRevision", "authority.field.expectedRevision.label"
+            yield "act", "authority.field.act.label"
+            yield "kind", "authority.field.kind.label"
+            yield "issuer", "authority.field.issuer.label"
+            yield "subject", "authority.field.subject.label"
+            yield target.Name, target.LabelId
+            for definition in commands do
                 for input in definition.Inputs do
-                    yield input.Name, (MessageText.literal input.LabelId)
+                    yield input.Name, input.LabelId
         ]
         |> List.distinct
-        |> List.map (fun (name, label) -> name, label, "authority.field." + name + ".label")
+        |> List.groupBy fst
+        |> List.map (fun (_, values) ->
+            match values with
+            | [ name, identity ] -> name, MessageText.literal identity, identity
+            | _ -> invalidOp "Protocol field presentation identities disagree.")
+
+type PresentationDefinitions =
+    {
+        Fields: FieldDefinition list
+        Commands: CommandDefinition list
+        AuthorityTarget: AuthorityInputDefinition
+        AuthorityCommands: AuthorityOperationDefinition list
+    }
 
 module ContractDescriptors =
     let private textPolicy (writer: Utf8JsonWriter) (value: TextAdmissionPolicy) =
@@ -99,16 +112,17 @@ module ContractDescriptors =
             value.AllowedValues |> List.iter (CaseStatuses.token >> writer.WriteStringValue)
             writer.WriteEndArray()
 
-    let private fields (writer: Utf8JsonWriter) =
+    let private fields definitions (writer: Utf8JsonWriter) =
         writer.WritePropertyName("fields")
         writer.WriteStartArray()
 
-        for field in FieldDefinitions.all do
+        for field in definitions.Fields do
             writer.WriteStartObject()
             writer.WriteString("name", BusinessField.token field.Name)
             writer.WriteString("label", MessageText.literal field.LabelId)
             writer.WriteString("labelId", field.LabelId)
             writer.WriteString("meaning", (MessageText.literal field.MeaningId))
+            writer.WriteString("meaningId", field.MeaningId)
             writer.WriteBoolean("allowsAbsence", field.AllowsAbsence)
             writer.WritePropertyName("scalar")
             writer.WriteStartObject()
@@ -118,21 +132,18 @@ module ContractDescriptors =
 
         writer.WriteEndArray()
 
-    let private commands (writer: Utf8JsonWriter) =
+    let private commands definitions (writer: Utf8JsonWriter) =
         writer.WritePropertyName("commands")
         writer.WriteStartArray()
 
-        for command in CommandDefinitions.all do
+        for command in definitions.Commands do
             writer.WriteStartObject()
             writer.WriteString("kind", CaseActKinds.token command.Kind)
             writer.WriteString("label", (MessageText.literal command.LabelId))
             writer.WriteString("meaning", (MessageText.literal command.MeaningId))
-            writer.WriteString("labelId", "command." + CaseActKinds.token command.Kind + ".label")
+            writer.WriteString("labelId", command.LabelId)
 
-            writer.WriteString(
-                "meaningId",
-                "command." + CaseActKinds.token command.Kind + ".meaning"
-            )
+            writer.WriteString("meaningId", command.MeaningId)
 
             writer.WriteString("confirmationId", command.ConfirmationId)
             CommandInputRendering.write writer command.Inputs
@@ -145,6 +156,8 @@ module ContractDescriptors =
         writer.WriteStartArray()
         writer.WriteStartObject()
         writer.WriteString("name", "reason")
+        writer.WriteString("labelId", "field.reason.label")
+        writer.WriteString("meaningId", "field.reason.meaning")
         writer.WriteString("label", (MessageText.literal "field.reason.label"))
         writer.WriteString("meaning", (MessageText.literal "field.reason.meaning"))
         writer.WritePropertyName("scalar")
@@ -165,6 +178,7 @@ module ContractDescriptors =
         writer.WriteStartObject()
         writer.WriteString("fieldName", input.Name)
         writer.WriteString("label", (MessageText.literal input.LabelId))
+        writer.WriteString("labelId", input.LabelId)
         writer.WriteString("primitive", authorityPrimitive input.Primitive)
         writer.WritePropertyName("path")
         writer.WriteStartArray()
@@ -175,11 +189,14 @@ module ContractDescriptors =
         writer.WriteEndArray()
         writer.WriteEndObject()
 
-    let private authorityFields (writer: Utf8JsonWriter) =
+    let private authorityFields definitions (writer: Utf8JsonWriter) =
         writer.WritePropertyName("authorityFields")
         writer.WriteStartArray()
 
-        for name, label, labelId in ProtocolFieldPresentation.authorityFields do
+        for name, label, labelId in
+            ProtocolFieldPresentation.authorityFields
+                definitions.AuthorityTarget
+                definitions.AuthorityCommands do
             writer.WriteStartObject()
             writer.WriteString("name", name)
             writer.WriteString("label", label)
@@ -188,27 +205,21 @@ module ContractDescriptors =
 
         writer.WriteEndArray()
 
-    let private authority (writer: Utf8JsonWriter) =
+    let private authority definitions (writer: Utf8JsonWriter) =
         writer.WritePropertyName("authorityTarget")
-        authorityInput writer [] AuthorityOperationDefinitions.target
+        authorityInput writer [] definitions.AuthorityTarget
         writer.WritePropertyName("authorityCommands")
         writer.WriteStartArray()
 
-        for definition in AuthorityOperationDefinitions.all do
+        for definition in definitions.AuthorityCommands do
             writer.WriteStartObject()
             writer.WriteString("kind", AuthorityKinds.token definition.Kind)
             writer.WriteString("label", (MessageText.literal definition.LabelId))
             writer.WriteString("meaning", (MessageText.literal definition.MeaningId))
 
-            writer.WriteString(
-                "labelId",
-                "authority." + AuthorityKinds.token definition.Kind + ".label"
-            )
+            writer.WriteString("labelId", definition.LabelId)
 
-            writer.WriteString(
-                "meaningId",
-                "authority." + AuthorityKinds.token definition.Kind + ".meaning"
-            )
+            writer.WriteString("meaningId", definition.MeaningId)
 
             writer.WriteString("confirmationId", definition.ConfirmationId)
             writer.WritePropertyName("inputs")
@@ -241,14 +252,22 @@ module ContractDescriptors =
 
         writer.WriteEndArray()
 
-    let render () =
+    let defaults =
+        {
+            Fields = FieldDefinitions.all
+            Commands = CommandDefinitions.all
+            AuthorityTarget = AuthorityOperationDefinitions.target
+            AuthorityCommands = AuthorityOperationDefinitions.all
+        }
+
+    let renderFrom definitions =
         ContractJson.contract (fun writer ->
             writer.WriteStartObject()
-            fields writer
-            commands writer
+            fields definitions writer
+            commands definitions writer
             inputFields writer
-            authority writer
-            authorityFields writer
+            authority definitions writer
+            authorityFields definitions writer
             writer.WritePropertyName("statuses")
             writer.WriteStartArray()
             CaseStatuses.all |> List.iter (CaseStatuses.token >> writer.WriteStringValue)
@@ -278,3 +297,5 @@ module ContractDescriptors =
             writer.WriteNumber("requestByteLimit", ServiceLimits.RequestByteLimit)
             writer.WriteEndObject()
             writer.WriteEndObject())
+
+    let render () = renderFrom defaults

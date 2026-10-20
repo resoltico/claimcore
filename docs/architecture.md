@@ -197,3 +197,15 @@ Case and authority clients share a tagged mutation lifecycle. Prepared immutable
 identity and expected revision. Preview and confirmation content remain distinct; disclosure refusal
 clears server views independently from unresolved delivery. Exact accepted content or content-exclusion
 evidence can resolve uncertainty; later availability or permission failure cannot.
+
+
+Generation rejects unsupported required request members, including literals and empty objects
+inside inputs, additional KEEP/CLEAR members, and mismatched command discriminators. Every
+correction variant must be accounted for. Declared label/meaning/confirmation identities survive
+projection directly; renderers do not reconstruct them from operation names.
+
+Correlation publication also executes independent identity scenarios against the candidate
+specification, so removing a required comparison or receipt scope refuses generation. These
+scenarios are test evidence rather than a second production policy. A generated fixture-only
+codec/input/message evolution exercises generic forms and assembly against admitted bytes; its
+qualification artifact is excluded from runtime identity inputs.

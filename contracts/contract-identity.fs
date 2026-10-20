@@ -1,4 +1,4 @@
 namespace ClaimCore.Wire
 
 module internal ConsumerContractIdentity =
-    let Value = "e701cc25dabf93a959739844c36c5cc32b43c468c38296b2f19fdcf548d3cf02"
+    let Value = "bdfe45f7e4a61139e3700f3d210b46d0f6afa1e1d4f88479a0a74caa7b98999f"

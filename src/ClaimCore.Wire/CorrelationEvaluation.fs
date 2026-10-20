@@ -39,7 +39,7 @@ module CorrelationEvaluation =
             | _ -> false
         | _ -> false
 
-    let matches endpoint (request: JsonElement) (reply: JsonElement) =
+    let matchesUsing rules endpoint (request: JsonElement) (reply: JsonElement) =
         let outcome = memberAt [ "outcome"; "tag" ] reply
 
         let tag =
@@ -50,7 +50,7 @@ module CorrelationEvaluation =
                 else
                     None)
 
-        CorrelationBindings.all
+        rules
         |> List.tryFind (fun rule -> rule.Endpoint = endpoint && Some rule.Outcome = tag)
         |> Option.exists (fun rule ->
             let scope = memberAt [ "outcome"; "data"; "scope" ] reply
@@ -69,3 +69,6 @@ module CorrelationEvaluation =
                        binding.Comparison
                        (memberAt binding.RequestPath request)
                        (memberAt binding.ReplyPath reply)))
+
+    let matches endpoint request reply =
+        matchesUsing CorrelationBindings.all endpoint request reply

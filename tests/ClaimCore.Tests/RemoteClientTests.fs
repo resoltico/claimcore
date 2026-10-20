@@ -422,11 +422,38 @@ let private cancelledCallback idle =
             listener.Stop()
     }
 
+let private callbackMessages () =
+    let check (body: byte array) (expected: string) =
+        let source = Encoding.UTF8.GetString body
+        let split = source.IndexOf("\r\n\r\n", StringComparison.Ordinal)
+        Expect.isGreaterThan split 0 "HTTP response contains its header separator"
+        let header = source.Substring(0, split)
+        let text = source.Substring(split + 4)
+        Expect.equal text expected "Response body preserves core-authored text"
+
+        Expect.stringContains
+            header
+            "Content-Type: text/plain; charset=utf-8"
+            "Plain UTF-8 rendering"
+
+        Expect.stringContains
+            header
+            ("Content-Length: " + string (Encoding.UTF8.GetByteCount expected))
+            "Length counts UTF-8 bytes"
+
+    for accepted, identity in [ true, "cli.callbackAccepted"; false, "cli.callbackRefused" ] do
+        check (LoopbackTransport.callbackResponse accepted) (ContractDiscovery.message identity)
+
+    check (LoopbackTransport.response "200 OK" "Sintētisks — العربية") "Sintētisks — العربية"
+
 [<Tests>]
 let tests =
     testList
         "CLI maintained authentication"
         [
+            testCase
+                "loopback response renders generated core messages as framed UTF-8"
+                callbackMessages
             testCase "HTTPS service configuration" validConfiguration
             testCase
                 "unsafe origins and absent automation secret are refused"

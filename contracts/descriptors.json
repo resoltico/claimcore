@@ -5,6 +5,7 @@
       "label": "Incident date",
       "labelId": "field.incidentDate.label",
       "meaning": "Date on which the incident occurred.",
+      "meaningId": "field.incidentDate.meaning",
       "allowsAbsence": false,
       "scalar": {
         "kind": "CALENDAR_DATE",
@@ -18,6 +19,7 @@
       "label": "Incident notification date (FNOL)",
       "labelId": "field.incidentNotificationDate.label",
       "meaning": "Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified.",
+      "meaningId": "field.incidentNotificationDate.meaning",
       "allowsAbsence": false,
       "scalar": {
         "kind": "CALENDAR_DATE",
@@ -31,6 +33,7 @@
       "label": "Country of incident (ISO alpha-2 code)",
       "labelId": "field.incidentCountry.label",
       "meaning": "Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international.",
+      "meaningId": "field.incidentCountry.meaning",
       "allowsAbsence": false,
       "scalar": {
         "kind": "TEXT",
@@ -46,6 +49,7 @@
       "label": "Claimant name",
       "labelId": "field.claimantName.label",
       "meaning": "Name of the person or company making the claim.",
+      "meaningId": "field.claimantName.meaning",
       "allowsAbsence": false,
       "scalar": {
         "kind": "TEXT",
@@ -67,6 +71,7 @@
       "label": "Responsible insurer",
       "labelId": "field.insurerName.label",
       "meaning": "Insurer recorded by the claims handler as responsible for this claim.",
+      "meaningId": "field.insurerName.meaning",
       "allowsAbsence": false,
       "scalar": {
         "kind": "TEXT",
@@ -88,6 +93,7 @@
       "label": "Amount claimed",
       "labelId": "field.claimedAmount.label",
       "meaning": "Amount requested by the claimant.",
+      "meaningId": "field.claimedAmount.meaning",
       "allowsAbsence": false,
       "scalar": {
         "kind": "AMOUNT",
@@ -101,6 +107,7 @@
       "label": "Currency of claimed amount",
       "labelId": "field.claimedCurrency.label",
       "meaning": "Currency in which the amount is claimed.",
+      "meaningId": "field.claimedCurrency.meaning",
       "allowsAbsence": false,
       "scalar": {
         "kind": "CURRENCY",
@@ -113,6 +120,7 @@
       "label": "Handler\u0027s case reference",
       "labelId": "field.caseReference.label",
       "meaning": "Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained.",
+      "meaningId": "field.caseReference.meaning",
       "allowsAbsence": false,
       "scalar": {
         "kind": "TEXT",
@@ -128,6 +136,7 @@
       "label": "Payment decision date",
       "labelId": "field.paymentDecisionDate.label",
       "meaning": "Date when this claims handler decided the amount to be paid. Not recorded until a decision is made.",
+      "meaningId": "field.paymentDecisionDate.meaning",
       "allowsAbsence": true,
       "scalar": {
         "kind": "CALENDAR_DATE",
@@ -141,6 +150,7 @@
       "label": "Amount to be paid",
       "labelId": "field.payableAmount.label",
       "meaning": "Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount.",
+      "meaningId": "field.payableAmount.meaning",
       "allowsAbsence": true,
       "scalar": {
         "kind": "AMOUNT",
@@ -154,6 +164,7 @@
       "label": "Currency of amount to be paid",
       "labelId": "field.payableCurrency.label",
       "meaning": "Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency.",
+      "meaningId": "field.payableCurrency.meaning",
       "allowsAbsence": true,
       "scalar": {
         "kind": "CURRENCY",
@@ -166,6 +177,7 @@
       "label": "Payment date",
       "labelId": "field.paymentDate.label",
       "meaning": "Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer.",
+      "meaningId": "field.paymentDate.meaning",
       "allowsAbsence": true,
       "scalar": {
         "kind": "CALENDAR_DATE",
@@ -179,6 +191,7 @@
       "label": "Case status",
       "labelId": "field.status.label",
       "meaning": "Whether the case is open or closed. Closing a case does not mean that payment was made.",
+      "meaningId": "field.status.meaning",
       "allowsAbsence": false,
       "scalar": {
         "kind": "CASE_STATUS",
@@ -292,7 +305,9 @@
           {
             "name": "registration",
             "label": "Registration",
+            "labelId": "group.registration.label",
             "meaning": "Keep the current registration details or replace all seven details together.",
+            "meaningId": "group.registration.meaning",
             "actions": [
               "KEEP",
               "REPLACE"
@@ -338,7 +353,9 @@
           {
             "name": "decision",
             "label": "Payment decision",
+            "labelId": "group.decision.label",
             "meaning": "Keep the current payment decision, replace its date, amount and currency together, or clear the decision.",
+            "meaningId": "group.decision.meaning",
             "actions": [
               "KEEP",
               "REPLACE",
@@ -365,7 +382,9 @@
           {
             "name": "payment",
             "label": "Payment record",
+            "labelId": "group.payment.label",
             "meaning": "Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money.",
+            "meaningId": "group.payment.meaning",
             "actions": [
               "KEEP",
               "REPLACE",
@@ -525,6 +544,8 @@
   "inputFields": [
     {
       "name": "reason",
+      "labelId": "field.reason.label",
+      "meaningId": "field.reason.meaning",
       "label": "Stewardship reason",
       "meaning": "Explain the record stewardship action.",
       "scalar": {
@@ -546,6 +567,7 @@
   "authorityTarget": {
     "fieldName": "target",
     "label": "Actor principal",
+    "labelId": "authority.field.target.label",
     "primitive": "PRINCIPAL",
     "path": [
       "target"
@@ -572,6 +594,7 @@
         {
           "fieldName": "role",
           "label": "Role",
+          "labelId": "authority.field.role.label",
           "primitive": "ROLE",
           "path": [
             "act",
@@ -581,6 +604,7 @@
         {
           "fieldName": "scope",
           "label": "Grant scope",
+          "labelId": "authority.field.scope.label",
           "primitive": "SCOPE",
           "path": [
             "act",
@@ -590,6 +614,7 @@
         {
           "fieldName": "active",
           "label": "Grant active",
+          "labelId": "authority.field.active.label",
           "primitive": "BOOLEAN",
           "path": [
             "act",
@@ -609,6 +634,7 @@
         {
           "fieldName": "enabled",
           "label": "Actor enabled",
+          "labelId": "authority.field.enabled.label",
           "primitive": "BOOLEAN",
           "path": [
             "act",
