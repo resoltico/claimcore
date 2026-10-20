@@ -8,6 +8,7 @@
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="FrameReader.fs" />
     <Compile Include="ContractDiscovery.fs" />
+    <Compile Include="DescriptorText.fs" />
     <Compile Include="Discovery.fs" />
     <Compile Include="RemoteConfiguration.fs" />
     <Compile Include="RemoteTls.fs" />

@@ -142,15 +142,20 @@ with English as the culture-independent default. Topics include `configuration`,
 use `help call --language lv` for localized help.
 
 `describe` defaults to JSON. Add `--format text` for a concise static descriptor projection;
-only help and explicit text describe admit `--language`. Schemas remain JSON. Duplicate/unknown
+only help and explicit text describe admit `--language`. Selected human descriptions include
+input field IDs with localized labels, prefill sources, correction choices/replacement fields, and
+endpoint mutation nature plus exact request/response schema commands. Schemas remain JSON.
+Duplicate/unknown
 options and selectors refuse atomically with safe corrective commands on stderr, empty stdout
 and exit 64. Unknown authored tokens are never echoed. No TTY-dependent format or prompt is used.
 
 Local failure frames now require a closed `diagnostic` object. Known configuration failures use
 `CLI_CONFIGURATION_ISSUE` with allowlisted `setting` and `issue` (`MISSING`, `INVALID` or
 `PRIVATE_INPUT_REFUSED`); unknown local causes remain broad. Protocol failures carry
-`CLI_PROTOCOL_GUIDANCE`: inspect `schema invocation`, `schema response` and the call/session
-help topics. No parser path, raw key, URL, private filename, provider message or exception text
+`CLI_PROTOCOL_GUIDANCE`: resolve that exact ID with `help CLI_PROTOCOL_GUIDANCE` or
+`describe diagnostics`. Both project the same generated core guidance for `schema invocation`,
+`schema response` and call/document versus session/NDJSON framing. No parser path, raw key, URL,
+private filename, provider message or exception text
 is included. Configuration is checked in service-root, issuer, client-ID, auth-mode, mode-dependent
 secret-path, OIDC-root, service-root order; file admission retains its known cause.
 

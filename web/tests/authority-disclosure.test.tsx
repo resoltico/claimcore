@@ -390,7 +390,9 @@ it.each(["lost", "unknown"] as const)(
     expect(
       screen.getByText(pending.input.operationId, { exact: false }).closest('[role="status"]'),
     ).not.toBeNull();
-    expect(screen.getByRole("heading", { name: "accepted" })).toHaveFocus();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "accepted" })).toHaveFocus();
+    });
     expect(screen.queryByRole("button", { name: "Retry the same operation" })).toBeNull();
     expect(execute.mock.calls[1]![0]).toBe(pending);
     expect(execute.mock.calls[1]![0].bytes).toBe(pending.bytes);

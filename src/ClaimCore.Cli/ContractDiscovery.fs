@@ -24,8 +24,20 @@ module ContractDiscovery =
 
         document.RootElement.GetProperty(identity: string).GetString() |> nonNull
 
+    let helpTopic language topic =
+        use document =
+            JsonDocument.Parse(System.ReadOnlyMemory<byte>(resource "cli-help.json"))
+
+        document.RootElement.GetProperty(language + "." + topic).GetString() |> nonNull
+
     let localized language identity fallback =
-        if language = "en" then
+        let diagnostic =
+            ClaimCore.Catalog.CliHelp.diagnosticTopics
+            |> List.tryFind (fun id -> identity = "diagnostic." + id)
+
+        if diagnostic.IsSome then
+            helpTopic language diagnostic.Value
+        elif language = "en" then
             fallback
         else
             let domain = (identity: string).Split('.')[0]
@@ -40,12 +52,6 @@ module ContractDiscovery =
             match document.RootElement.TryGetProperty identity with
             | true, text -> text.GetString() |> nonNull
             | _ -> fallback
-
-    let helpTopic language topic =
-        use document =
-            JsonDocument.Parse(System.ReadOnlyMemory<byte>(resource "cli-help.json"))
-
-        document.RootElement.GetProperty(language + "." + topic).GetString() |> nonNull
 
     let descriptors () = resource "descriptors.json"
     let private openapi () = resource "openapi.json"
@@ -66,8 +72,18 @@ module ContractDiscovery =
     let presentation () =
         use document = JsonDocument.Parse(System.ReadOnlyMemory<byte>(descriptors ()))
 
-        document.RootElement.GetProperty("messages").GetRawText()
-        |> Encoding.UTF8.GetBytes
+        let messages =
+            JsonNode.Parse(document.RootElement.GetProperty("messages").GetRawText())
+            |> nonNull
+
+        for id in ClaimCore.Catalog.CliHelp.diagnosticTopics do
+            let part = JsonObject()
+            part["literal"] <- JsonValue.Create(helpTopic "en" id)
+            let parts = JsonArray()
+            parts.Add part
+            messages["diagnostic." + id] <- parts
+
+        messages.ToJsonString() |> Encoding.UTF8.GetBytes
 
     let private schemaDocument schema (definitions: Map<string, Schema>) =
         use output = new MemoryStream()

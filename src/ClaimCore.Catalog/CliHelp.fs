@@ -9,6 +9,8 @@ type CliUsageIssue =
 
 /// Offline task guidance. Technical commands and names are never translated.
 module CliHelp =
+    let diagnosticTopics = [ InputDiagnostics.protocolId ]
+
     let topics =
         [
             "overview"
@@ -22,6 +24,7 @@ module CliHelp =
             "delivery"
             "examples"
         ]
+        @ diagnosticTopics
 
     let aliases = [ "--help"; "-h" ]
 
@@ -118,6 +121,14 @@ module CliHelp =
         | "delivery" -> delivery language
         | "call"
         | "session" -> framing language invocationBytes requestBytes responseBytes
+        | topic when List.contains topic diagnosticTopics ->
+            framing language invocationBytes requestBytes responseBytes
+            @ [
+                "ClaimCore.Cli schema response"
+                "ClaimCore.Cli help call"
+                "ClaimCore.Cli help session"
+                "ClaimCore.Cli help delivery"
+            ]
         | "describe" ->
             [
                 "summary | fields [name] | commands [kind] | authority [kind] | endpoints [id] | diagnostics"

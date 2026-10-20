@@ -70,6 +70,7 @@ let private missingConfiguration
 
 let qualify (fixture: PublishedFixture.Fixture) =
     configurationRefusals fixture
+    CliDescriptions.qualify fixture
     let environment = Dictionary<string, string>()
 
     let invoke args input =

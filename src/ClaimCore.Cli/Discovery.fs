@@ -98,45 +98,30 @@ module Discovery =
         |> Option.map (fun bytes ->
             use document = JsonDocument.Parse(System.ReadOnlyMemory<byte> bytes)
 
-            let rec render (value: JsonElement) =
-                match value.ValueKind with
-                | JsonValueKind.Array ->
-                    value.EnumerateArray() |> Seq.map render |> String.concat "\n"
-                | JsonValueKind.Object ->
-                    value.EnumerateObject()
-                    |> Seq.filter (fun item ->
-                        List.contains
-                            item.Name
-                            [
-                                "name"
-                                "kind"
-                                "id"
-                                "label"
-                                "meaning"
-                                "inputs"
-                                "fields"
-                                "groups"
-                                "type"
-                                "required"
-                                "path"
-                                "method"
-                            ])
-                    |> Seq.map (fun item ->
-                        let text = render item.Value
+            use definitions =
+                JsonDocument.Parse(System.ReadOnlyMemory<byte>(ContractDiscovery.descriptors ()))
 
-                        let text =
-                            match value.TryGetProperty(item.Name + "Id") with
-                            | true, identity ->
-                                ContractDiscovery.localized
-                                    language
-                                    (identity.GetString() |> nonNull)
-                                    text
-                            | _ -> text
-
-                        item.Name + ": " + text)
+            let routes =
+                match selection with
+                | CliDescription.Endpoints endpoint ->
+                    (endpoint |> Option.map List.singleton |> Option.defaultValue Endpoint.all)
+                    |> List.collect (fun endpoint ->
+                        [
+                            "ClaimCore.Cli schema " + Endpoint.id endpoint + " request"
+                            "ClaimCore.Cli schema " + Endpoint.id endpoint + " response"
+                        ])
                     |> String.concat "\n"
-                | JsonValueKind.String -> value.GetString() |> nonNull
-                | _ -> value.GetRawText()
+                | _ -> "ClaimCore.Cli schema invocation"
+
+            let target =
+                match selection with
+                | CliDescription.Authority _ ->
+                    DescriptorText.render
+                        language
+                        definitions.RootElement
+                        (definitions.RootElement.GetProperty "authorityTarget")
+                    + "\n"
+                | _ -> ""
 
             let text =
                 if selection = CliDescription.Summary then
@@ -146,7 +131,11 @@ module Discovery =
                 elif selection = CliDescription.Diagnostics then
                     describeMessages language document.RootElement + "\n"
                 else
-                    render document.RootElement + "\nClaimCore.Cli schema invocation\n"
+                    target
+                    + DescriptorText.render language definitions.RootElement document.RootElement
+                    + "\n"
+                    + routes
+                    + "\n"
 
             Encoding.UTF8.GetBytes text)
 

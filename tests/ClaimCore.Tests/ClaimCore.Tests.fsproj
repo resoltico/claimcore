@@ -68,6 +68,7 @@
     <Compile Include="ClientDecoderConformanceTests.fs" />
     <Compile Include="CliReplyLossTests.fs" />
     <Compile Include="CliFrameTests.fs" />
+    <Compile Include="CliDescriptionTests.fs" />
     <Compile Include="CliInvocationTests.fs" />
     <Compile Include="InputDiagnosticTests.fs" />
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
