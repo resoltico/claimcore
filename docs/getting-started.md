@@ -26,9 +26,9 @@ dotnet build src/ClaimCore.Cli --configuration Release --no-restore
 npm --prefix web ci
 ```
 
-Discover the CLI without service credentials. Use `help configuration` for settings,
-`help CLI_CONFIGURATION_ISSUE` resolves the same configuration topic. It includes literal accepted/
-refused service-root forms, exact issuer-path meaning and private-file criteria. Use
+Discover the CLI without service credentials. Use `help configuration` for settings;
+`help CLI_CONFIGURATION_ISSUE` opens the same topic. It includes accepted and refused
+service-root examples, issuer-path rules and private-file criteria. Use
 `help call` versus `help session` for document/NDJSON framing, and `help delivery` before retrying
 an uncertain operation. Help aliases are exact-only; translated help uses `help call --language lv`.
 Describe remains JSON unless `--format text` is explicit:
@@ -143,7 +143,8 @@ printf '%s\n' '{"endpoint":"authority.list","input":{"limit":50}}' | \
   dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call > "$claimcore_config/cli/authority.json"
 ```
 
-Require exit 0. Create one explicit installation grant
+Require exit 0 and a complete JSON reply; the script below checks its endpoint, outcome and
+contents. Create one explicit installation grant
 frame from the returned human principal. The operation ID is generated once and the file refuses
 overwrite; preserve it for exact retries. Use it only for this fresh installation; the script
 refuses an unexpected reply or an actor list other than one human:
@@ -174,8 +175,11 @@ JS
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < "$claimcore_config/cli/grant-case-handler.json"
 ```
 
-Require exit 0 and `ACCEPTED` (`ALREADY_ACCEPTED` on exact replay). If confirmation is uncertain,
-repeat that same command with the same file; do not regenerate its operation ID.
+Require exit 0 and a complete valid reply with outcome `ACCEPTED` (`ALREADY_ACCEPTED` on exact replay).
+The CLI can confirm that the operating system accepted its output; it cannot confirm that a
+downstream program read or retained it. Missing or incomplete output is not acceptance evidence.
+If confirmation is uncertain, repeat that same command with the same file; do not regenerate
+its operation ID.
 `CASE_HANDLER` permits case registration, decisions and closing. Add a separate
 `PAYMENT_RECORDER` grant using the same frame shape and a fresh operation ID when this person
 also records or clears payments.

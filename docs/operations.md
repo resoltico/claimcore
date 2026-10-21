@@ -63,8 +63,9 @@ Pagination follows the [API contract](api.md). The browser retains no pending re
 
 Private inputs are absolute paths with valid UTF-8 and no NUL, supported on Linux and macOS.
 Symbolic links are followed, including Kubernetes secret-volume links. Path mode is checked before
-opening; read-only open runs on a worker bounded to two seconds, so a blocked open refuses as not
-regular. The opened handle must be seekable and satisfy the same mode policy: no other-user access
+opening. The caller applies a two-second timeout to the read-only open worker; a timed-out open
+refuses as not regular. The worker may finish later, in which case its handle is disposed.
+The opened handle must be seekable and satisfy the same mode policy: no other-user access
 and no group write or execute. Group read is allowed, including `0640` and `0440`. Its length must
 fit the caller's bound, all bytes come from that admitted handle, and the caller clears buffers.
 Directories, missing or oversized files and malformed paths refuse. There is no native code.
@@ -81,8 +82,9 @@ trusted ledger sequence/hash checkpoints independently. After restoring, use Dat
 with the expected checkpoint before reopening actor access. A restore from before later erasure
 can resurrect payload; `verify --expect` against a later trusted position refuses that older
 state. Identify and address affected erasures/copies before reopening. A checkpoint can detect
-rollback behind it, not prove that no newer acceptance occurred. No product backup, restore,
-replication, custody, multi-party approval or deployment-readiness engine exists.
+rollback behind it, not prove that no newer acceptance occurred. ClaimCore does not orchestrate
+backup, restore, replication, copy custody or multi-party approval, or decide when restored data
+is ready for use.
 
 ## Before real data
 
@@ -98,38 +100,8 @@ Keep existing installations with their matching software; no conversion is suppl
 Accepted writes intentionally serialize on one ledger head. Verification streams rows but retains
 operation identities and folded case/actor/grant state; its memory grows with accepted history and
 projection cardinality. A streaming reader does not imply constant-memory verification.
-The [synthetic qualification](development.md#synthetic-growth-qualification) measures a bounded
-local envelope. Timeout/cancellation guards remain enforced. Operators must qualify their own
-workload; laptop throughput is not production capacity.
-
-A 2026-10-20 qualification on macOS 27.0.1/ARM64 (10 CPUs, 32 GiB host RAM,
-Docker Engine 29.9.1 reporting 7.75 GiB memory), .NET 10.0.402 and pinned PostgreSQL 18.6 used fresh tmpfs clusters.
-Case writes ran concurrently with actor registration and installation grants; setup is excluded
-from timed writes. Fixed 256-write workloads independently vary cases and actors/grants. The table records one measured run, not a capacity guarantee.
-
-| Ledger entries | Cases | Actors / grants | Writers | Timed seconds | Case writes/s | p95 write ms | Verify ms | Sampled managed peak MiB |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 73 | 4 | 2 / 4 | 1 | 0.648 | 99 | 15.91 | 35.90 | 26.2 |
-| 73 | 4 | 2 / 4 | 4 | 0.297 | 215 | 24.57 | 11.70 | 23.7 |
-| 283 | 16 | 5 / 7 | 1 | 2.430 | 105 | 19.62 | 16.28 | 30.1 |
-| 283 | 16 | 5 / 7 | 4 | 1.081 | 237 | 23.18 | 16.47 | 30.3 |
-| 1091 | 32 | 17 / 19 | 1 | 6.793 | 151 | 14.63 | 38.69 | 28.7 |
-| 1091 | 32 | 17 / 19 | 4 | 2.285 | 448 | 12.93 | 28.04 | 27.1 |
-| 265 | 4 | 2 / 4 | 1 | 0.913 | 280 | 6.00 | 11.54 | 29.7 |
-| 265 | 4 | 2 / 4 | 4 | 0.495 | 517 | 9.97 | 11.51 | 28.5 |
-| 293 | 32 | 2 / 4 | 1 | 0.547 | 468 | 2.65 | 16.14 | 27.9 |
-| 293 | 32 | 2 / 4 | 4 | 0.565 | 453 | 15.65 | 17.28 | 27.9 |
-| 295 | 4 | 17 / 19 | 1 | 0.713 | 359 | 4.88 | 28.62 | 30.3 |
-| 295 | 4 | 17 / 19 | 4 | 0.651 | 393 | 15.78 | 10.54 | 29.2 |
-
-Every workload verified complete ledger/projection state and read bounded FULL history; the
-four-case, 256-write workloads reached 50-entry pages. Forced 100 ms lock timeouts returned
-definite unavailability in 102–121 ms and appended nothing. Unexpected workload errors were zero.
-Sampled process working sets during verification were 137–148 MiB. Heap/process observations
-include harness overhead; the 5 ms sampler can miss shorter peaks. At these small sizes, heap noise
-masks retained-state growth, so the measurements establish no memory scaling bound. The timing series is not monotonic: the small cold run and other variation show that these short
-measurements cannot establish an asymptotic timing bound. Contending writers generally increased
-p95 latency in this run. More writers
-do not remove serialization or promise more throughput. Successful fixture disposal completed for
-all twelve owned clusters; no adopted installation was used. Raw per-workload JSON retains p50,
-maximum latency, memory observations and timeout durations under the ignored qualification path.
+The [synthetic qualification](development.md#synthetic-growth-qualification) exercises bounded
+workloads in isolated databases and retains per-workload reports for their measured environment.
+Those reports do not establish a memory-scaling bound, asymptotic timing bound or production
+capacity. Timeout and cancellation guards remain enforced. More concurrent writers do not remove
+serialization or promise more throughput. Operators must qualify their own workload and storage.

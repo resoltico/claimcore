@@ -2,7 +2,7 @@
 
 React and react-aria-components render the generated service contract. Domain and Application
 own validation, available commands and outcome meaning. The browser is an authenticated
-same-origin HTTPS client with a contract fingerprint header and cookie antiforgery token.
+same-origin HTTPS client with a contract identity header and cookie antiforgery token.
 
 `src/api/transport.ts` owns browser networking; `src/api/service.ts` is its validated service facade.
 A single `src/protocol/schema.ts` interpreter admits bounded strict JSON replies against generated

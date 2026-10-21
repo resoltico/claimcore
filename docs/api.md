@@ -1,13 +1,13 @@
 # Service and CLI contract
 
-The [OpenAPI 3.1 contract](../contracts/openapi.json) defines twelve endpoints, their strict wire
+The [OpenAPI 3.1 contract](../contracts/openapi.json) defines twelve endpoints and their strict wire
 schemas. Service and clients share one consumer-contract identity, described below.
 `session` is GET; the others are POST to the literal
 `/api/<endpoint>` path, including dots in names such as `/api/case.execute`. Session bootstrap is
 anonymous; remaining operations require an authenticated principal. Case and authority work also
 require the current ClaimCore actor grants. Every API request carries the matching
 `ClaimCore-Contract` header.
-Missing or different fingerprints are refused before dispatch. Deploy matching service, CLI and
+Missing or different contract identities are refused before dispatch. Deploy matching service, CLI and
 browser artifacts.
 
 An HTTP POST body is the endpoint's input object with media type `application/json` and must meet
@@ -17,7 +17,7 @@ also carry the antiforgery token returned by `session`; bearer calls authenticat
 
 | Endpoint            | Responsibility                                           |
 | ------------------- | -------------------------------------------------------- |
-| `session`           | Authentication state, fingerprint and antiforgery token  |
+| `session`           | Authentication state, contract identity and antiforgery token |
 | `session.logout`    | End the browser session                                  |
 | `context`           | Runtime context and installation capability advice       |
 | `case.preview`      | Advisory review of a business or stewardship act         |
@@ -91,15 +91,13 @@ and request bindings, all authored locale resources, help and delivery/correlati
 Descriptor-only, locale-only and policy-only changes therefore require matching clients.
 Session discovery exposes `contractIdentity`; `ClaimCore-Contract` carries that identity.
 The manifest excludes identity-bearing generated client/source resources to avoid self-reference.
-This is a breaking replacement of OpenAPI-only admission, with no dual admission period.
 [Development](development.md#generated-contracts-and-boundary-verification) owns generation and
 freshness checks. The [descriptors](../contracts/descriptors.json) carry presentation and typed advice
 vocabularies. `messages` supplies core-authored default templates; descriptor label, meaning and
 confirmation identities reference core resources. Request bindings are available in discovery and
 [the generated binding document](../contracts/request-bindings.json). `context.views` advertises `CASES`, `AUTHORITY` and `OPERATIONS`; installation offers
 contain only OPEN or an authority act. A case record has `advice.acts` and `advice.history`; correction
-choices belong only to CORRECT_CASE. Endpoint names and duplicated `state.availableActs`, `offers`
-and `historyDetails` are absent from case advice. Execution always rechecks current authority.
+choices belong only to CORRECT_CASE. Execution always rechecks current authority.
 
 Pagination uses [plain canonical keysets](architecture.md#cc-auth-001). Editing or sharing a cursor
 conveys no access. Both history details allow 50 rows and complete client replies are bounded to
@@ -119,7 +117,7 @@ invalid identities return INPUT_INVALID/400/NOT_STARTED after authentication. Th
 host failure with exit 3. Decoding wire syntax never promises principal admission.
 
 Deploy matching service, CLI, browser assets and generated artifacts together. Integrations must use
-the generated types and frame format for that fingerprint and follow grant/history continuations
+the generated types and frame format for that contract identity and follow grant/history continuations
 rather than assuming a requested page size is returned. The service accepts one contract; it provides
 no compatibility endpoint or alternative parser. Installation admission follows the
 [database contract](database.md#cc-db-001).
@@ -149,7 +147,7 @@ Duplicate/unknown
 options and selectors refuse atomically with safe corrective commands on stderr, empty stdout
 and exit 64. Unknown authored tokens are never echoed. No TTY-dependent format or prompt is used.
 
-Local failure frames now require a closed `diagnostic` object. Known configuration failures use
+Local failure frames require a closed `diagnostic` object. Known configuration failures use
 `CLI_CONFIGURATION_ISSUE` (also an alias of `help configuration`) with allowlisted `setting` and `issue` (`MISSING`, `INVALID` or
 `PRIVATE_INPUT_REFUSED`); unknown local causes remain broad. Protocol failures carry
 `CLI_PROTOCOL_GUIDANCE`: resolve that exact ID with `help CLI_PROTOCOL_GUIDANCE` or
@@ -157,16 +155,14 @@ Local failure frames now require a closed `diagnostic` object. Known configurati
 `schema response` and call/document versus session/NDJSON framing. No parser path, raw key, URL,
 private filename, provider message or exception text
 is included. Configuration is checked in service-root, issuer, client-ID, auth-mode, mode-dependent
-secret-path, OIDC-root, service-root order; file admission retains its known cause.
+secret-path, OIDC-trust-root, service-trust-root order; file admission retains its known cause.
 
 Authored principal refusals remain HTTP 400 / `INPUT_INVALID` / `NOT_STARTED`, using the same
 host-failure codec with `PRINCIPAL_INPUT_INVALID`, closed `target` (`issuer`, `subject`, `kind`)
 and `issue` (`MISSING`, `INVALID`). Other host status/code/phase combinations refuse that detail.
-Authentication and protected-resource failures remain generic. These are breaking diagnostic frame
-and runtime-identity changes: rebuild all generated consumers and deploy matching clients/service;
-there is no alternate admission period or database migration.
+Authentication and protected-resource failures remain generic.
 
- `describe authority [kind]` exposes the Application-owned
+`describe authority [kind]` exposes the Application-owned
 authority definitions alongside case command discovery:
 
 ```sh
