@@ -10,6 +10,7 @@
     <Compile Include="ApiRules.fs" />
     <Compile Include="FacadeSignatures.fs" />
     <Compile Include="ArchitectureTests.fs" />
+    <ProjectReference Include="../../src/ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
   </ItemGroup>
   <ItemGroup>

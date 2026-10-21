@@ -17,7 +17,7 @@
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Catalog": "[0.10.0, )",
+          "ClaimCore.Catalog": "[0.11.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       }

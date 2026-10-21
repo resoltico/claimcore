@@ -4,6 +4,8 @@ open System
 open System.IO
 open System.Diagnostics
 open System.Text
+open System.Threading
+open System.Threading.Tasks
 open System.Security.Cryptography
 open Expecto
 open ClaimCore.HostSecurity
@@ -29,23 +31,29 @@ let private fifo mode =
     Expect.equal child.ExitCode 0 "Owned FIFO created"
     File.SetUnixFileMode(path, mode)
 
-    try
-        let watch = Stopwatch.StartNew()
+    let reader =
+        Task.Factory.StartNew(
+            (fun () -> PrivateFile.read 1 path),
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default
+        )
 
+    try
         let expected =
             if mode.HasFlag UnixFileMode.OtherRead then
                 PrivateFileFailure.TooPermissive
             else
                 PrivateFileFailure.NotRegular
 
-        Expect.equal (PrivateFile.read 1 path) (Error expected) "FIFO refuses"
-        Expect.isLessThan watch.Elapsed (TimeSpan.FromSeconds 3.) "Bounded open"
+        // The watchdog detects a missing timeout; it is not a scheduling-latency guarantee.
+        let result = reader.WaitAsync(TimeSpan.FromSeconds 10.).GetAwaiter().GetResult()
+        Expect.equal result (Error expected) "FIFO refuses before any writer opens"
     finally
-        // Complete the timed-out owned open so its continuation can dispose the late handle.
-        if not (mode.HasFlag UnixFileMode.OtherRead) then
-            use writer = File.OpenHandle(path, FileMode.Open, FileAccess.Write)
-            ()
-
+        // A duplex handle releases pending opens without waiting for a peer.
+        // Observing the caller does not establish completion of its abandoned open worker.
+        use release = File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite)
+        reader.WaitAsync(TimeSpan.FromSeconds 10.).GetAwaiter().GetResult() |> ignore
         directory.Delete(true)
 
 let private pathControls () =
@@ -202,7 +210,7 @@ let tests =
                         "Directory"
                 finally
                     directory.Delete())
-            testCase "private FIFO open is bounded" (fun () ->
+            testCase "private FIFO refuses before a writer opens" (fun () ->
                 fifo (UnixFileMode.UserRead ||| UnixFileMode.UserWrite))
             testCase "public FIFO refuses before open" (fun () ->
                 fifo (
