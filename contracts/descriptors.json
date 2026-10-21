@@ -997,7 +997,7 @@
     "maximumPageSize": 50,
     "requestByteLimit": 65536
   },
-  "productVersion": "0.10.0",
+  "productVersion": "0.11.0",
   "messages": {
     "authority.REGISTER_ACTOR.label": [
       {
