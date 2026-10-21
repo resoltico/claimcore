@@ -134,11 +134,95 @@ let private helpAlias () =
             "NDJSON"
             "Configuration does not replace framing guidance"
 
+let private operatorPhrases =
+    [
+        "en",
+        "accepted:",
+        "refused:",
+        "accepted syntax:",
+        "(missing explicit /)",
+        "(not a service root)",
+        "Surrounding whitespace is trimmed before the secret is sent."
+        "lv",
+        "pieņemts:",
+        "atteikts:",
+        "pieņemta sintakse:",
+        "(trūkst skaidri norādīta /)",
+        "(nav pakalpojuma sakne)",
+        "Pirms nosūtīšanas noslēpumam tiek noņemtas apkārtējās atstarpes."
+        "ar",
+        "مقبول:",
+        "مرفوض:",
+        "صياغة مقبولة:",
+        "(علامة / الصريحة مفقودة)",
+        "(ليس جذر الخدمة)",
+        "تُزال المسافات المحيطة بالسر قبل إرساله."
+    ]
+
+let private localizedExplanations () =
+    let render language =
+        CliHelp.text
+            language
+            "configuration"
+            Limits.MaximumInvocationBytes
+            Limits.MaximumRequestBytes
+            Limits.MaximumResponseBytes
+
+    for language, accepted, refused, syntax, missingSlash, notRoot, trim in operatorPhrases do
+        let content = render language
+
+        for expected in
+            [
+                "CLAIMCORE_SERVICE_URL " + accepted + " https://localhost/"
+                "CLAIMCORE_SERVICE_URL " + refused + " https://localhost " + missingSlash
+                "CLAIMCORE_SERVICE_URL " + refused + " https://localhost/path " + notRoot
+                "CLAIMCORE_OIDC_ISSUER " + syntax + " https://identity.example/realms/claimcore"
+                trim
+            ] do
+            Expect.stringContains
+                content
+                expected
+                "Operator prose is localized while technical examples remain exact"
+
+        for historical in
+            [
+                "Existing whitespace treatment is unchanged"
+                "Esošā atstarpju apstrāde nemainās"
+                "معالجة المسافات الحالية لا تتغير"
+            ] do
+            Expect.isFalse
+                (content.Contains historical)
+                "Help describes current behavior rather than development history"
+
+        if language <> "en" then
+            for english in
+                [
+                    "accepted:"
+                    "refused:"
+                    "accepted syntax:"
+                    "(missing explicit /)"
+                    "(not a service root)"
+                ] do
+                Expect.isFalse
+                    (content.Contains english)
+                    "Non-English help cannot retain untranslated example explanations"
+
+        let generated = ContractDiscovery.helpTopic language "configuration"
+        Expect.equal generated content "Published generated help matches authored core content"
+
+        Expect.equal
+            (ContractDiscovery.helpTopic language InputDiagnostics.configurationId)
+            content
+            "Diagnostic alias retains identical localized rules"
+
 [<Tests>]
 let tests =
     testList
         "configuration repair help"
         [
+            testCase
+                "operator explanations are localized and state current secret handling"
+                localizedExplanations
             testCase "literal URI and client-ID forms follow current admission" literalForms
             testCase
                 "documented private modes and distinct byte bounds use real admission"

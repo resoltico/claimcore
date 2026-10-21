@@ -73,10 +73,26 @@ module CliHelp =
                 "Service: canonical absolute HTTPS root with path exactly /. No user information, query or fragment; input is not normalized. Issuer: exact canonical HTTPS provider issuer; provider paths are allowed. Syntactic acceptance does not establish TLS/discovery/authentication success."
                 "Pakalpojums: kanoniska absolūta HTTPS sakne ar ceļu tieši /. Bez lietotāja informācijas, vaicājuma vai fragmenta; ievade netiek normalizēta. Izdevējs: precīzs kanonisks HTTPS izdevējs; nodrošinātāja ceļi ir atļauti. Sintakses pieņemšana nepierāda TLS, atklāšanas vai autentifikācijas panākumus."
                 "الخدمة: جذر HTTPS مطلق وقانوني بمسار / فقط، دون معلومات مستخدم أو استعلام أو جزء؛ لا يُطبّع الإدخال. المُصدر: عنوان HTTPS القانوني الدقيق للموفر؛ يُسمح بمسارات الموفر. قبول الصياغة لا يثبت نجاح TLS أو الاكتشاف أو المصادقة."
-            "CLAIMCORE_SERVICE_URL accepted: https://localhost/"
-            "CLAIMCORE_SERVICE_URL refused: https://localhost (missing explicit /)"
-            "CLAIMCORE_SERVICE_URL refused: https://localhost/path (not a service root)"
-            "CLAIMCORE_OIDC_ISSUER accepted syntax: https://identity.example/realms/claimcore"
+            localized
+                language
+                "CLAIMCORE_SERVICE_URL accepted: https://localhost/"
+                "CLAIMCORE_SERVICE_URL pieņemts: https://localhost/"
+                "CLAIMCORE_SERVICE_URL مقبول: https://localhost/"
+            localized
+                language
+                "CLAIMCORE_SERVICE_URL refused: https://localhost (missing explicit /)"
+                "CLAIMCORE_SERVICE_URL atteikts: https://localhost (trūkst skaidri norādīta /)"
+                "CLAIMCORE_SERVICE_URL مرفوض: https://localhost (علامة / الصريحة مفقودة)"
+            localized
+                language
+                "CLAIMCORE_SERVICE_URL refused: https://localhost/path (not a service root)"
+                "CLAIMCORE_SERVICE_URL atteikts: https://localhost/path (nav pakalpojuma sakne)"
+                "CLAIMCORE_SERVICE_URL مرفوض: https://localhost/path (ليس جذر الخدمة)"
+            localized
+                language
+                "CLAIMCORE_OIDC_ISSUER accepted syntax: https://identity.example/realms/claimcore"
+                "CLAIMCORE_OIDC_ISSUER pieņemta sintakse: https://identity.example/realms/claimcore"
+                "CLAIMCORE_OIDC_ISSUER صياغة مقبولة: https://identity.example/realms/claimcore"
         ]
 
     let private credentials language =
@@ -94,9 +110,9 @@ module CliHelp =
                 "الوضع: interactive حرفياً (PKCE في المتصفح لعملية جديدة) أو automation (يتطلب مسار FILE للسر). لا تضع محتوى السر في الوسائط أو قيم البيئة أو التشخيصات."
             localized
                 language
-                "Secret file: absolute admitted path; readable regular UTF-8 nonblank content. Existing whitespace treatment is unchanged. Maximum bytes: "
-                "Noslēpuma fails: absolūts pieņemts ceļš; lasāms parasts fails ar netukšu UTF-8 saturu. Esošā atstarpju apstrāde nemainās. Maksimālais baitu skaits: "
-                "ملف السر: مسار مطلق مقبول؛ ملف عادي قابل للقراءة بمحتوى UTF-8 غير فارغ. معالجة المسافات الحالية لا تتغير. الحد الأقصى للبايتات: "
+                "Secret file: absolute admitted path; readable regular UTF-8 nonblank content. Surrounding whitespace is trimmed before the secret is sent. Maximum bytes: "
+                "Noslēpuma fails: absolūts pieņemts ceļš; lasāms parasts fails ar netukšu UTF-8 saturu. Pirms nosūtīšanas noslēpumam tiek noņemtas apkārtējās atstarpes. Maksimālais baitu skaits: "
+                "ملف السر: مسار مطلق مقبول؛ ملف عادي قابل للقراءة بمحتوى UTF-8 غير فارغ. تُزال المسافات المحيطة بالسر قبل إرساله. الحد الأقصى للبايتات: "
             + string CliConfigurationLimits.MaximumSecretBytes
         ]
 
