@@ -44,6 +44,62 @@ let private configurationRefusals (fixture: PublishedFixture.Fixture) =
 
         Expect.equal (parameters.GetProperty("issue").GetString()) issue "Known cause survives"
 
+let private configurationGuidance (fixture: PublishedFixture.Fixture) =
+    let environment = Dictionary<string, string>()
+    environment["CLAIMCORE_SERVICE_URL"] <- "https://localhost/path?token=SECRET-CANARY"
+
+    let result =
+        ProcessRunner.dotnet
+            8000
+            fixture.Cli
+            [ "call" ]
+            environment
+            (Some(Encoding.UTF8.GetBytes "{\"endpoint\":\"context\",\"input\":{}}"))
+
+    Expect.equal result.ExitCode 3 "Invalid service form remains a safe definite local failure"
+    Expect.equal result.StandardError.Length 0 "One machine stdout frame"
+    use frame = JsonDocument.Parse result.StandardOutput
+
+    Expect.equal
+        (frame.RootElement.GetProperty("attemptKnowledge").GetString())
+        "NOT_SENT"
+        "This attempt was not sent"
+
+    Expect.isFalse
+        (Encoding.UTF8.GetString(result.StandardOutput).Contains "SECRET-CANARY")
+        "No configuration value echo"
+
+    let id =
+        frame.RootElement.GetProperty("diagnostic").GetProperty("id").GetString()
+        |> nonNull
+
+    let invoke args =
+        ProcessRunner.dotnet 8000 fixture.Cli args (Dictionary<string, string>()) None
+
+    let discovery = invoke [ "describe"; "diagnostics" ]
+    use messages = JsonDocument.Parse discovery.StandardOutput
+
+    Expect.isTrue
+        (messages.RootElement.TryGetProperty("diagnostic." + id) |> fst)
+        "Returned ID exists in JSON discovery"
+
+    for language in LocalizationPolicy.languages do
+        let alias = invoke [ "help"; id; "--language"; language ]
+        let topic = invoke [ "help"; "configuration"; "--language"; language ]
+        Expect.equal alias.ExitCode 0 "Actual diagnostic ID resolves offline"
+
+        Expect.isTrue
+            (alias.StandardOutput = topic.StandardOutput)
+            "Both entry points render identical core content"
+
+        let text =
+            invoke [ "describe"; "diagnostics"; "--format"; "text"; "--language"; language ]
+
+        Expect.isTrue
+            (Encoding.UTF8.GetString(text.StandardOutput).Contains
+                "ClaimCore.Cli help configuration")
+            "Text discovery resolves the same topic"
+
 let private missingConfiguration
     (invoke: string list -> byte array option -> ProcessRunner.Result)
     =
@@ -70,6 +126,7 @@ let private missingConfiguration
 
 let qualify (fixture: PublishedFixture.Fixture) =
     configurationRefusals fixture
+    configurationGuidance fixture
     CliDescriptions.qualify fixture
     let environment = Dictionary<string, string>()
 

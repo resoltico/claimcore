@@ -116,6 +116,17 @@ module ContractArtifacts =
                     language + ".usage." + string issue,
                     ClaimCore.Catalog.CliHelp.usage language issue
         ]
+        @ [
+            for language in ClaimCore.Catalog.LocalizationPolicy.languages do
+                for id in ClaimCore.Catalog.CliHelp.diagnosticTopics do
+                    language + ".diagnostic." + id,
+                    ClaimCore.Catalog.CliHelp.diagnosticDiscovery
+                        language
+                        id
+                        Limits.MaximumInvocationBytes
+                        Limits.MaximumRequestBytes
+                        Limits.MaximumResponseBytes
+        ]
         |> Map.ofList
         |> System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
 

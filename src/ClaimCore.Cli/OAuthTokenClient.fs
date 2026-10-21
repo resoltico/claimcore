@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open System
+open ClaimCore.Catalog
 open System.Net.Http
 open System.Threading
 open Duende.IdentityModel.Client
@@ -18,7 +19,7 @@ module OAuthTokenClient =
             if endpoint.Scheme <> Uri.UriSchemeHttps then
                 return Error "OIDC_TOKEN_ENDPOINT_INVALID"
             else
-                match PrivateInputs.text 4096 secretFile with
+                match PrivateInputs.text CliConfigurationLimits.MaximumSecretBytes secretFile with
                 | Error _ -> return Error "OIDC_CREDENTIAL_UNAVAILABLE"
                 | Ok secret when String.IsNullOrWhiteSpace secret ->
                     return Error "OIDC_CREDENTIAL_UNAVAILABLE"

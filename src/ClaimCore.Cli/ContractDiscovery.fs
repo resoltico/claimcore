@@ -36,7 +36,7 @@ module ContractDiscovery =
             |> List.tryFind (fun id -> identity = "diagnostic." + id)
 
         if diagnostic.IsSome then
-            helpTopic language diagnostic.Value
+            helpTopic language ("diagnostic." + diagnostic.Value)
         elif language = "en" then
             fallback
         else
@@ -78,7 +78,7 @@ module ContractDiscovery =
 
         for id in ClaimCore.Catalog.CliHelp.diagnosticTopics do
             let part = JsonObject()
-            part["literal"] <- JsonValue.Create(helpTopic "en" id)
+            part["literal"] <- JsonValue.Create(helpTopic "en" ("diagnostic." + id))
             let parts = JsonArray()
             parts.Add part
             messages["diagnostic." + id] <- parts

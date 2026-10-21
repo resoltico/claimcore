@@ -65,3 +65,9 @@ module InputDiagnostics =
             ConfigurationIssue.Invalid, "INVALID"
             ConfigurationIssue.PrivateInputRefused, "PRIVATE_INPUT_REFUSED"
         ]
+
+/// Existing CLI admission/read bounds; help and boundary consumers share these exact values.
+module CliConfigurationLimits =
+    let MaximumClientIdCodeUnits = 256
+    let MaximumSecretBytes = 4096
+    let MaximumTrustRootBytes = 16384

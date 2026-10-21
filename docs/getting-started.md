@@ -27,6 +27,8 @@ npm --prefix web ci
 ```
 
 Discover the CLI without service credentials. Use `help configuration` for settings,
+`help CLI_CONFIGURATION_ISSUE` resolves the same configuration topic. It includes literal accepted/
+refused service-root forms, exact issuer-path meaning and private-file criteria. Use
 `help call` versus `help session` for document/NDJSON framing, and `help delivery` before retrying
 an uncertain operation. Help aliases are exact-only; translated help uses `help call --language lv`.
 Describe remains JSON unless `--format text` is explicit:

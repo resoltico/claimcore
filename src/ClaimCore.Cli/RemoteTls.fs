@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Wire
+open ClaimCore.Catalog
 
 open System
 open System.Net.Http
@@ -59,7 +60,7 @@ type RemoteTls private (handler: HttpClientHandler, root: X509Certificate2 optio
             )
         | Some _ when not (HttpsOrigins.isLocal endpoint) -> Error "TLS_TRUST_ROOT_SCOPE_INVALID"
         | Some location ->
-            match PrivateFile.read 16384 location with
+            match PrivateFile.read CliConfigurationLimits.MaximumTrustRootBytes location with
             | Error _ -> Error "TLS_TRUST_ROOT_UNAVAILABLE"
             | Ok bytes ->
                 try

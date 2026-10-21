@@ -22,6 +22,7 @@
     <Compile Include="RemoteAccessSession.fs" />
     <Compile Include="RemoteServiceCall.fs" />
     <Compile Include="FrameDelivery.fs" />
+    <Compile Include="StandardSinks.fs" />
     <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="Program.fs" />
     <ProjectReference Include="../ClaimCore.Wire/ClaimCore.Wire.fsproj" />

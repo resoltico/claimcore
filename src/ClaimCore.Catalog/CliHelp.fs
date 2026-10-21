@@ -9,7 +9,19 @@ type CliUsageIssue =
 
 /// Offline task guidance. Technical commands and names are never translated.
 module CliHelp =
-    let diagnosticTopics = [ InputDiagnostics.protocolId ]
+    let diagnosticRoutes =
+        [
+            InputDiagnostics.protocolId, InputDiagnostics.protocolId
+            InputDiagnostics.configurationId, "configuration"
+        ]
+
+    let diagnosticTopics = diagnosticRoutes |> List.map fst
+
+    let private topicFor topic =
+        diagnosticRoutes
+        |> List.tryFind (fst >> (=) topic)
+        |> Option.map snd
+        |> Option.defaultValue topic
 
     let topics =
         [
@@ -54,19 +66,80 @@ module CliHelp =
         | "ar" -> arabic
         | _ -> english
 
-    let private configuration language =
+    let private serviceForms language =
         [
             localized
                 language
-                "Required, in failure-check order: service root, issuer, client ID, auth mode. Auth mode: interactive or automation. Automation requires a private secret file; trust roots are optional and local-only. Missing, invalid and private-file refusal are distinct."
-                "Obligāti pārbaudes secībā: pakalpojuma sakne, izdevējs, klienta ID, autentifikācijas režīms. Režīms: interactive vai automation. Automation pieprasa privātu noslēpuma failu; uzticamības saknes nav obligātas un ir tikai lokālas. Trūkstoša, nederīga un nepieejama privāta ievade ir atšķirīgi gadījumi."
-                "مطلوب بترتيب التحقق: جذر الخدمة، المُصدر، معرّف العميل، وضع المصادقة. الوضع: interactive أو automation. يتطلب automation ملف سر خاصاً؛ جذور الثقة اختيارية ومحلية فقط. الغياب والقيمة غير الصالحة ورفض الملف الخاص أسباب مختلفة."
+                "Service: canonical absolute HTTPS root with path exactly /. No user information, query or fragment; input is not normalized. Issuer: exact canonical HTTPS provider issuer; provider paths are allowed. Syntactic acceptance does not establish TLS/discovery/authentication success."
+                "Pakalpojums: kanoniska absolūta HTTPS sakne ar ceļu tieši /. Bez lietotāja informācijas, vaicājuma vai fragmenta; ievade netiek normalizēta. Izdevējs: precīzs kanonisks HTTPS izdevējs; nodrošinātāja ceļi ir atļauti. Sintakses pieņemšana nepierāda TLS, atklāšanas vai autentifikācijas panākumus."
+                "الخدمة: جذر HTTPS مطلق وقانوني بمسار / فقط، دون معلومات مستخدم أو استعلام أو جزء؛ لا يُطبّع الإدخال. المُصدر: عنوان HTTPS القانوني الدقيق للموفر؛ يُسمح بمسارات الموفر. قبول الصياغة لا يثبت نجاح TLS أو الاكتشاف أو المصادقة."
+            localized
+                language
+                "CLAIMCORE_SERVICE_URL accepted: https://localhost/"
+                "CLAIMCORE_SERVICE_URL pieņemts: https://localhost/"
+                "CLAIMCORE_SERVICE_URL مقبول: https://localhost/"
+            localized
+                language
+                "CLAIMCORE_SERVICE_URL refused: https://localhost (missing explicit /)"
+                "CLAIMCORE_SERVICE_URL atteikts: https://localhost (trūkst skaidri norādīta /)"
+                "CLAIMCORE_SERVICE_URL مرفوض: https://localhost (علامة / الصريحة مفقودة)"
+            localized
+                language
+                "CLAIMCORE_SERVICE_URL refused: https://localhost/path (not a service root)"
+                "CLAIMCORE_SERVICE_URL atteikts: https://localhost/path (nav pakalpojuma sakne)"
+                "CLAIMCORE_SERVICE_URL مرفوض: https://localhost/path (ليس جذر الخدمة)"
+            localized
+                language
+                "CLAIMCORE_OIDC_ISSUER accepted syntax: https://identity.example/realms/claimcore"
+                "CLAIMCORE_OIDC_ISSUER pieņemta sintakse: https://identity.example/realms/claimcore"
+                "CLAIMCORE_OIDC_ISSUER صياغة مقبولة: https://identity.example/realms/claimcore"
         ]
-        @ [
-            InputDiagnostics.configurationId
-            + ": setting / issue — "
-            + (InputDiagnostics.configurationIssues |> List.map snd |> String.concat " | ")
+
+    let private credentials language =
+        [
+            localized
+                language
+                "Client ID: nonblank, no surrounding whitespace; maximum UTF-16 code units: "
+                "Klienta ID: nav tukšs, bez apkārtējām atstarpēm; maksimālais UTF-16 koda vienību skaits: "
+                "معرّف العميل: غير فارغ ودون مسافات محيطة؛ الحد الأقصى لوحدات UTF-16: "
+            + string CliConfigurationLimits.MaximumClientIdCodeUnits
+            localized
+                language
+                "Mode: literal interactive (new-process browser PKCE) or automation (requires a secret FILE path). Never put secret content in argv, environment values or diagnostics."
+                "Režīms: tieši interactive (jauna procesa pārlūka PKCE) vai automation (vajadzīgs noslēpuma FILE ceļš). Nekad nelieciet noslēpuma saturu argumentos, vides vērtībās vai diagnostikā."
+                "الوضع: interactive حرفياً (PKCE في المتصفح لعملية جديدة) أو automation (يتطلب مسار FILE للسر). لا تضع محتوى السر في الوسائط أو قيم البيئة أو التشخيصات."
+            localized
+                language
+                "Secret file: absolute admitted path; readable regular UTF-8 nonblank content. Surrounding whitespace is trimmed before the secret is sent. Maximum bytes: "
+                "Noslēpuma fails: absolūts pieņemts ceļš; lasāms parasts fails ar netukšu UTF-8 saturu. Pirms nosūtīšanas noslēpumam tiek noņemtas apkārtējās atstarpes. Maksimālais baitu skaits: "
+                "ملف السر: مسار مطلق مقبول؛ ملف عادي قابل للقراءة بمحتوى UTF-8 غير فارغ. تُزال المسافات المحيطة بالسر قبل إرساله. الحد الأقصى للبايتات: "
+            + string CliConfigurationLimits.MaximumSecretBytes
         ]
+
+    let private privateInputs language =
+        [
+            localized
+                language
+                "Optional trust-root FILE paths: valid PEM CA roots. Omit for system trust. Overrides only for HTTPS loopback or .localhost endpoints; hostname and certificate checks remain active. Maximum bytes: "
+                "Neobligātie uzticamības sakņu FILE ceļi: derīgas PEM CA saknes. Izlaidiet sistēmas uzticamībai. Aizstāšana tikai HTTPS lokālās cilpas vai .localhost galapunktiem; resursdatora un sertifikāta pārbaudes paliek aktīvas. Maksimālais baitu skaits: "
+                "مسارات FILE الاختيارية لجذور الثقة: جذور CA صالحة بصيغة PEM. احذفها لاستخدام ثقة النظام. التجاوز فقط لنقاط HTTPS المحلية أو .localhost؛ تبقى فحوص اسم المضيف والشهادة مفعّلة. الحد الأقصى للبايتات: "
+            + string CliConfigurationLimits.MaximumTrustRootBytes
+            localized
+                language
+                "Private inputs: absolute valid-UTF-8 path without NUL; readable regular file, no other-user access or group write/execute. Group read is allowed: 0600 is sufficient, 0640 and 0440 can be admitted. This is not a universal chmod repair; Windows private-file runtime is unqualified. See docs/operations.md private-configuration for handle/symlink, ownership and ACL limits."
+                "Privāta ievade: absolūts derīgs UTF-8 ceļš bez NUL; lasāms parasts fails, bez citu lietotāju piekļuves vai grupas rakstīšanas/izpildes. Grupas lasīšana ir atļauta: 0600 pietiek, var pieņemt arī 0640 un 0440. Tas nav universāls chmod labojums; Windows privāto failu izpilde nav kvalificēta. Par rokturu/saišu, īpašumtiesību un ACL robežām skatiet docs/operations.md private-configuration."
+                "الإدخال الخاص: مسار UTF-8 مطلق صالح دون NUL؛ ملف عادي قابل للقراءة، دون وصول للآخرين أو كتابة/تنفيذ للمجموعة. قراءة المجموعة مسموحة: 0600 كافٍ، ويمكن قبول 0640 و0440. هذا ليس إصلاح chmod عاماً؛ تشغيل الملفات الخاصة على Windows غير مؤهل. راجع docs/operations.md private-configuration لحدود المقابض والروابط والملكية وACL."
+            localized
+                language
+                "MISSING, INVALID and PRIVATE_INPUT_REFUSED are distinct known facts. This configuration attempt is NOT_SENT; it does not resolve earlier cross-process mutation uncertainty."
+                "MISSING, INVALID un PRIVATE_INPUT_REFUSED ir atšķirīgi zināmi fakti. Šis konfigurācijas mēģinājums ir NOT_SENT; tas neatrisina agrāku mutācijas nenoteiktību starp procesiem."
+                "MISSING وINVALID وPRIVATE_INPUT_REFUSED حقائق معروفة مختلفة. محاولة التهيئة هذه NOT_SENT؛ ولا تحل عدم يقين سابقاً بشأن تعديل عبر العمليات."
+        ]
+
+    let private configuration language =
+        serviceForms language
+        @ credentials language
+        @ privateInputs language
         @ (InputDiagnostics.settings |> List.map snd)
 
     let private delivery language =
@@ -121,7 +194,7 @@ module CliHelp =
         | "delivery" -> delivery language
         | "call"
         | "session" -> framing language invocationBytes requestBytes responseBytes
-        | topic when List.contains topic diagnosticTopics ->
+        | topic when topic = InputDiagnostics.protocolId ->
             framing language invocationBytes requestBytes responseBytes
             @ [
                 "ClaimCore.Cli schema response"
@@ -164,8 +237,17 @@ module CliHelp =
 
         String.concat
             "\n"
-            (common @ content language topic invocationBytes requestBytes responseBytes)
+            (common
+             @ content language (topicFor topic) invocationBytes requestBytes responseBytes)
         + "\n"
+
+    let diagnosticDiscovery language id invocationBytes requestBytes responseBytes =
+        let topic = topicFor id
+
+        if topic = "configuration" then
+            "ClaimCore.Cli help " + topic + "\n"
+        else
+            text language id invocationBytes requestBytes responseBytes
 
     let usage language issue =
         let category =

@@ -45,7 +45,7 @@ module RemoteConfiguration =
             serviceUri.AbsolutePath = "/"
             && not (String.IsNullOrWhiteSpace(clientId))
             && clientId = clientId.Trim()
-            && clientId.Length <= 256
+            && clientId.Length <= CliConfigurationLimits.MaximumClientIdCodeUnits
             ->
             match mode, secretFile with
             | RemoteClientMode.Interactive, None ->
@@ -148,7 +148,7 @@ module RemoteConfiguration =
                         if
                             String.IsNullOrWhiteSpace clientId
                             || clientId <> clientId.Trim()
-                            || clientId.Length > 256
+                            || clientId.Length > CliConfigurationLimits.MaximumClientIdCodeUnits
                         then
                             invalid CliSetting.ClientId
                         else
