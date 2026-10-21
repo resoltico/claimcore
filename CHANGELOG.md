@@ -4,6 +4,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-21
+
 ### Security
 
 - Pinned .NET/ASP.NET runtime images include the 10.0.13 security fixes.

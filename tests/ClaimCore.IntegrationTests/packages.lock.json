@@ -256,9 +256,9 @@
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Catalog": "[0.10.0, )",
-          "ClaimCore.Domain": "[0.10.0, )",
-          "ClaimCore.RecordFormat": "[0.10.0, )",
+          "ClaimCore.Catalog": "[0.11.0, )",
+          "ClaimCore.Domain": "[0.11.0, )",
+          "ClaimCore.RecordFormat": "[0.11.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -271,27 +271,27 @@
       "claimcore.database": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.10.0, )",
-          "ClaimCore.HostSecurity": "[0.10.0, )",
-          "ClaimCore.Postgres": "[0.10.0, )",
+          "ClaimCore.Application": "[0.11.0, )",
+          "ClaimCore.HostSecurity": "[0.11.0, )",
+          "ClaimCore.Postgres": "[0.11.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Catalog": "[0.10.0, )",
+          "ClaimCore.Catalog": "[0.11.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.hosting": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.10.0, )",
-          "ClaimCore.Catalog": "[0.10.0, )",
-          "ClaimCore.Domain": "[0.10.0, )",
-          "ClaimCore.Postgres": "[0.10.0, )",
-          "ClaimCore.Wire": "[0.10.0, )",
+          "ClaimCore.Application": "[0.11.0, )",
+          "ClaimCore.Catalog": "[0.11.0, )",
+          "ClaimCore.Domain": "[0.11.0, )",
+          "ClaimCore.Postgres": "[0.11.0, )",
+          "ClaimCore.Wire": "[0.11.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -304,10 +304,10 @@
       "claimcore.postgres": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.10.0, )",
-          "ClaimCore.Catalog": "[0.10.0, )",
-          "ClaimCore.Domain": "[0.10.0, )",
-          "ClaimCore.RecordFormat": "[0.10.0, )",
+          "ClaimCore.Application": "[0.11.0, )",
+          "ClaimCore.Catalog": "[0.11.0, )",
+          "ClaimCore.Domain": "[0.11.0, )",
+          "ClaimCore.RecordFormat": "[0.11.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Npgsql": "[10.0.3, )"
         }
@@ -315,18 +315,18 @@
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Catalog": "[0.10.0, )",
-          "ClaimCore.Domain": "[0.10.0, )",
+          "ClaimCore.Catalog": "[0.11.0, )",
+          "ClaimCore.Domain": "[0.11.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.web": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Catalog": "[0.10.0, )",
-          "ClaimCore.HostSecurity": "[0.10.0, )",
-          "ClaimCore.Hosting": "[0.10.0, )",
-          "ClaimCore.Wire": "[0.10.0, )",
+          "ClaimCore.Catalog": "[0.11.0, )",
+          "ClaimCore.HostSecurity": "[0.11.0, )",
+          "ClaimCore.Hosting": "[0.11.0, )",
+          "ClaimCore.Wire": "[0.11.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.13, )"
@@ -335,7 +335,7 @@
       "claimcore.wire": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Catalog": "[0.10.0, )",
+          "ClaimCore.Catalog": "[0.11.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
