@@ -26,7 +26,7 @@ Wire references only Catalog; it carries no Domain/Application policy. Its typed
 schemas for all twelve endpoints. It also owns typed delivery, correlation, CLI frames and finite CLI invocation/selector syntax.
 CLI projects the selected generated resources and admits no independent argv grammar.
 The OpenAPI contract derives from those codecs; the [API contract](api.md) owns the wire profile,
-fingerprint and tracked artifacts. ContractGenerator references Wire, Domain and Application to
+contract identity and tracked artifacts. ContractGenerator references Wire, Domain and Application to
 emit that contract and presentation descriptors. Core input descriptors bind to codec members during generation. The browser assembles requests
 from these checked bindings. Both clients consume generated delivery and correlation descriptions.
 
@@ -41,7 +41,7 @@ Wire request, maps to Application, invokes the actor core and returns a typed Wi
 HTTP authentication, admission, encoding and safe audit logging. Web references Hosting, Wire, HostSecurity and inert Catalog vocabulary;
 CLI references Wire, HostSecurity and Catalog and embeds generated discovery artifacts.
 The published CLI includes inert Catalog vocabulary and excludes server decision and persistence assemblies. Hosting exposes no Domain/Application
-objects through its public facade and needs no optimization-data suppression. Database is the
+objects through its public facade. Database is the
 separate owner administration process; it references Application for shared identities and outcomes.
 
 #### Durable records
@@ -69,9 +69,9 @@ must retain every format a release wrote and schema changes require forward migr
 
 Case requests use format 5 and snapshots format 4. Free-text names and stewardship reasons
 have a permanent bound of 1,024 UTF-8 bytes, inside a 32,768-byte framed payload bound.
-Authority, ledger-entry and case-identity formats remain 2. The independent Python oracle
+Authority, ledger-entry and case-identity records use format 2. The independent Python oracle
 under [tests/fixtures/oracle](../tests/fixtures/oracle/generate_vectors.py) owns regression vectors.
-The replaced baseline refuses installations created by software through 0.10.0 untouched;
+Installations created by software through 0.10.0 are refused untouched;
 keep those installations with their matching software.
 
 <a id="cc-run-001"></a>

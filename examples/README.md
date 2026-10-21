@@ -7,8 +7,8 @@ directory; use the [fresh setup](../docs/getting-started.md) to create it.
 
 Configure `CLAIMCORE_SERVICE_URL`, `CLAIMCORE_OIDC_ISSUER`, `CLAIMCORE_OIDC_CLIENT_ID`
 and `CLAIMCORE_CLI_AUTH_MODE` as described by `ClaimCore.Cli help`. For automation, supply
-its owner-private client-secret file. Local HTTPS also needs the explicit CLI service and
-OIDC trust-root files. The selected actor needs installation `CASE_HANDLER` and `PAYMENT_RECORDER` grants.
+its private client-secret file. For local HTTPS certificates outside system trust, configure
+the explicit CLI service and OIDC trust-root files. The selected actor needs installation `CASE_HANDLER` and `PAYMENT_RECORDER` grants.
 An installation `OWNER` grants authority; that role alone does not grant case work.
 
 From the repository root, execute the six business frames, in order:
@@ -24,8 +24,9 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- cal
 
 Each returns exit 0 and `ACCEPTED`. `DEMO-0001` ends at revision 6, open, with its
 payment date cleared. Payment facts are recorded assertions; no money is transferred.
-Repeat an exact frame: it returns `ALREADY_ACCEPTED` with the same receipt and ledger
-position. A preview is advisory; execution validates the locked current state.
+While its payload is retained and current authority permits replay, an exact retry returns
+`ALREADY_ACCEPTED` with the original acceptance metadata and currently authorized snapshot
+disclosure. A preview is advisory; execution validates the locked current state.
 
 The remaining three frames require a human `DATA_STEWARD` grant. They void the case
 for an entry error, reinstate it and erase it:

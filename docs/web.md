@@ -3,7 +3,7 @@
 Web authenticates OIDC authorization-code PKCE sessions and bearer clients, then supplies verified
 subject facts to Hosting’s protocol service. Hosting binds the actor core and renders typed outcomes. Domain/Application own decisions.
 The browser calls the generated contract using cookie credentials, antiforgery and its
-fingerprint. It has no database credentials or durable operation store.
+contract identity. It has no database credentials or durable operation store.
 
 <a id="cc-web-001"></a>
 
@@ -12,8 +12,8 @@ fingerprint. It has no database credentials or durable operation store.
 Web requires the configured HTTPS origin, admitted OIDC issuer/audience and matching contract.
 Cookie-authenticated POST requests require antiforgery, including reads; bearer delivery is
 separately authenticated. Method, media type, duplicate/extra members, UTF-8, depth 32 and a
-configurable body limit up to 64 KiB are checked before the core factory. API requests do not
-follow redirects. Failed dispatch cannot invent a Domain
+configurable body limit up to 64 KiB are checked before the core factory. Browser and CLI API
+clients do not follow redirects. Failed dispatch cannot invent a Domain
 outcome. Durable execution continues despite an abandoned HTTP caller; loss of confirmation
 is uncertain. Request logs contain only endpoint, outcome, status, durationMs, actorId and
 operationId. Exception diagnostics contain type and method stack, never exception messages.
@@ -31,8 +31,9 @@ operation. Contract mismatch blocks this attempt. Resolve any prior uncertainty 
 loses the in-memory request. Reload before authoring a different request; no draft is replayed automatically. Display safety is distinct
 from business acceptance; authored Unicode is preserved and suspicious code points can be shown as warnings.
 
-Current views distinguish live, voided and erased records. Erased views expose only reference,
-revision and state; history exposes metadata without snapshots. Command advertisements are
+Current views distinguish live, voided and erased records. Erased views expose reference,
+revision, erased state and authorized core advice; their history exposes metadata without
+business snapshots. Command advertisements are
 advice. The service locks and revalidates execution. The browser offers English, Latvian and
 Arabic with independent date/number formats and right-to-left Arabic layout. Latvian and Arabic
 catalogues are machine-drafted and require native-language review. Pseudolocalization supports

@@ -4,8 +4,10 @@
 
 Use the pinned SDK in [global.json](../global.json) and Node/npm versions declared by
 [.node-version](../.node-version) and [web/package.json](../web/package.json). Docker is required
-for integration and published-process/browser acceptance. Integration also uses Bash and OpenSSL
-to check the real local configuration producer.
+for integration, workflow checks and published-process/browser acceptance. Native verification
+also requires Python 3 (standard library only) for qualification summaries and Unix CLI descriptor
+controls. Bash and OpenSSL exercise the local configuration producer; the `workflows` stage also
+requires ShellCheck.
 Restore locked NuGet inputs and build the solution with .NET. Run `npm --prefix web ci`
 and `npm --prefix web run build` for frontend assets. Ordinary .NET builds do not invoke npm;
 frontend consumers use the tracked `contracts/` artifacts and require no .NET process.
@@ -243,7 +245,7 @@ Session latency qualification exercises the real durable ticket store with 1, 8 
 synthetic sessions on a local temporary directory, recording storage/platform and per-batch
 latencies. This isolates persisted activity cost from identity-provider/network/browser latency;
 it is a bounded equivalent for this mechanism, not production capacity. Restart-aware idle,
-absolute deadlines, backwards-time refusal, logout and fsync remain unchanged. Published browser
+absolute deadlines, backwards-time refusal, logout and fsync are exercised alongside activity writes. Published browser
 qualification separately exercises real HTTPS sessions and all supported engines. Native-language,
 manual assistive-technology and terminal bidi quality require separate human review.
 
