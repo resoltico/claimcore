@@ -7,10 +7,10 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
 
-/// Public host runtime: typed core objects remain behind the protocol service.
+/// The HTTPS composition supplies actor-bound Application operations.
 type IServiceRuntime =
     inherit IDisposable
-    abstract Service: IProtocolService
+    abstract Actor: PrincipalKey -> IActorClaimsCore
     abstract Ready: CancellationToken -> Task<bool>
     abstract Shutdown: TimeSpan -> Task<unit>
 
@@ -23,7 +23,7 @@ module ServiceRuntime =
                 return
                     Ok
                         { new IServiceRuntime with
-                            member _.Service = ServiceGateway.bind runtime.Actor
+                            member _.Actor principal = runtime.Actor principal
                             member _.Ready token = runtime.Ready token
 
                             member _.Shutdown bound =

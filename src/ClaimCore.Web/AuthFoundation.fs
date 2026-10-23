@@ -71,13 +71,13 @@ module PrincipalIdentity =
 
     let human (issuer: Uri) subject =
         if nonBlank subject then
-            ClaimCore.Web.Composition.AuthenticatedSubjects.human issuer.AbsoluteUri subject
+            AuthenticatedSubjects.human issuer.AbsoluteUri subject
         else
             Error "OIDC_SUBJECT_INVALID"
 
     let service (issuer: Uri) clientId =
         if nonBlank clientId then
-            ClaimCore.Web.Composition.AuthenticatedSubjects.service issuer.AbsoluteUri clientId
+            AuthenticatedSubjects.service issuer.AbsoluteUri clientId
         else
             Error "OIDC_CLIENT_INVALID"
 

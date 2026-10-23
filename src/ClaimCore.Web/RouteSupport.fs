@@ -38,35 +38,29 @@ module internal RouteSupport =
         | BodyProblem.BodyTooLarge -> hostFailure context HostFailureReason.BodyTooLarge
         | _ -> hostFailure context HostFailureReason.InputInvalid
 
-    let private tag =
-        function
-        | OutcomeTag.Succeeded -> "SUCCEEDED"
-        | OutcomeTag.Reviewed -> "REVIEWED"
-        | OutcomeTag.Accepted -> "ACCEPTED"
-        | OutcomeTag.AlreadyAccepted -> "ALREADY_ACCEPTED"
-        | OutcomeTag.Rejected -> "REJECTED"
-        | OutcomeTag.Failed -> "FAILED"
-        | OutcomeTag.Cancelled -> "CANCELLED"
-        | OutcomeTag.OutcomeUnknown -> "OUTCOME_UNKNOWN"
+    let private memberText name value =
+        JsonValue.tryMember name value
+        |> Option.bind (function
+            | JsonValue.String text -> Some text
+            | _ -> None)
 
-    let outcome value context =
-        match WireReply.attempt value with
-        | AttemptResult.Outcome(outcome, _) -> RequestLog.outcome (tag outcome) context
-        | _ -> invalidArg "value" "Expected a typed service outcome."
+    let reply value context =
+        let outcome = JsonValue.tryMember "outcome" value
+
+        let tag =
+            outcome
+            |> Option.bind (memberText "tag")
+            |> Option.defaultWith (fun () -> invalidOp "Missing typed outcome.")
+
+        RequestLog.outcome tag context
+
+        if tag = "ACCEPTED" then
+            outcome
+            |> Option.bind (JsonValue.tryMember "data")
+            |> Option.bind (memberText "recordedBy")
+            |> Option.iter (fun text -> RequestLog.actor (System.Guid.Parse text) context)
 
         WebWire.reply value
-
-    let reply (value: WireReply) context =
-        match value with
-        | WireReply.CaseExecute {
-                                    Outcome = CaseExecuteOutcome.Accepted receipt
-                                } -> RequestLog.actor receipt.RecordedBy context
-        | WireReply.AuthorityExecute {
-                                         Outcome = AuthorityExecuteOutcome.Accepted receipt
-                                     } -> RequestLog.actor receipt.RecordedBy context
-        | _ -> ()
-
-        outcome value context
 
     let handleFailures (sink: TextWriter) (context: HttpContext) (next: RequestDelegate) : Task =
         task {

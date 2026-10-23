@@ -197,7 +197,7 @@ let private configureRoutes
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
 
-    HostRoutes.map assets configuration runtime.Service application
+    HostRoutes.map assets configuration runtime.Actor application
 
 
 let private runtimeLifetime (runtime: IServiceRuntime) =

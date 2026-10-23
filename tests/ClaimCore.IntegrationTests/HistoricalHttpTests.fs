@@ -12,12 +12,11 @@ open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private httpRequest request =
-    // The dedicated case endpoint uses the same request without durable format or operation scope.
+    // The shared operation input is the durable request grammar without its format number.
     let node =
         System.Text.Json.Nodes.JsonNode.Parse(RequestRecord.encode request) |> nonNull
 
     node.AsObject().Remove("format") |> ignore
-    node.AsObject().Remove("scope") |> ignore
     System.Text.Encoding.UTF8.GetBytes(node.ToJsonString())
 
 let private outcome (bytes: byte array) =
@@ -92,7 +91,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
 
         let reaffirm = request 11 "HISTORICAL-1" 1L (CaseAct.AmendRegistration values)
 
-        let! status, response = host.Call("case.execute", httpRequest reaffirm, csrf)
+        let! status, response = host.Call("operation.execute", httpRequest reaffirm, csrf)
 
         Expect.equal status 200 "Reaffirmation passes intake and response validation"
 
@@ -111,7 +110,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
                         ClaimantName = name + "B"
                     })
 
-        let! status, response = host.Call("case.execute", httpRequest changed, csrf)
+        let! status, response = host.Call("operation.execute", httpRequest changed, csrf)
 
         Expect.equal status 200 "Admission refusal stays a typed outcome"
         let refusal = outcome response

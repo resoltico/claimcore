@@ -15,13 +15,14 @@ open ClaimCore.Web
 open ClaimCore.WebTests.FacadeStub
 open ClaimCore.WebTests.TestServerFixture
 
+let private authorityBody =
+    Encoding.UTF8.GetBytes(
+        $"""{{"scope":"AUTHORITY","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER_ACTOR"}}}}"""
+    )
+
 let private body name =
-    if name = "case.preview" || name = "case.execute" then
+    if name = "operation.preview" || name = "operation.execute" then
         Array.copy commandInput
-    elif name = "authority.execute" then
-        Encoding.UTF8.GetBytes(
-            $"""{{"operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER_ACTOR"}}}}"""
-        )
     elif name = "session" || name = "session.logout" || name = "context" then
         Encoding.UTF8.GetBytes "{}"
     else
@@ -71,30 +72,26 @@ let private catalogueRoutes () =
             let! status, bootstrap = host.Bootstrap()
             Expect.equal status 200 "Bootstrap GET"
 
-            Expect.isOk
-                (Replies.decode ClaimCore.Contract.Protocol.Endpoint.Session bootstrap)
-                "Bootstrap schema"
+            Expect.isOk (Codec.decode 100000 Api.session.Output bootstrap) "Bootstrap schema"
 
             for endpoint in
-                Endpoint.all
-                |> List.filter (fun e ->
-                    (Endpoint.id e) <> "session" && (Endpoint.id e) <> "session.logout") do
-                let! status, response =
-                    host.Call((Endpoint.id endpoint), body (Endpoint.id endpoint), token)
+                Api.all
+                |> List.filter (fun e -> (Api.id e) <> "session" && (Api.id e) <> "session.logout") do
+                let! status, response = host.Call((Api.id endpoint), body (Api.id endpoint), token)
 
-                Expect.equal status 200 (Endpoint.id endpoint)
+                Expect.equal status 200 (Api.id endpoint)
 
-                Expect.isOk (Replies.decode endpoint response) "Typed response schema"
+                Expect.isOk
+                    (StrictJson.read 100000 response |> Result.bind (Api.admitOutput endpoint))
+                    "Typed response schema"
 
-                actorTarget (Endpoint.id endpoint) response
+                actorTarget (Api.id endpoint) response
 
-            Expect.equal host.Facade.Calls.Length 10 "Every core endpoint exactly once"
+            Expect.equal host.Facade.Calls.Length 9 "Every core endpoint exactly once"
             let! status, response = host.Call("session.logout", body "session.logout", token)
             Expect.equal status 200 "Logout"
 
-            Expect.isOk
-                (Replies.decode ClaimCore.Contract.Protocol.Endpoint.SessionLogout response)
-                "Logout schema"
+            Expect.isOk (Codec.decode 100000 Api.logout.Output response) "Logout schema"
 
             let! status, _ = host.Call("context", body "context", token)
             Expect.equal status 401 "Revoked cookie cannot call core"
@@ -106,8 +103,8 @@ let private handshakeRefusals () =
             for fingerprint in [ ""; String.replicate 64 "0" ] do
                 let! status, response =
                     host.Call(
-                        "case.execute",
-                        body "case.execute",
+                        "operation.execute",
+                        body "operation.execute",
                         token,
                         fingerprint = fingerprint
                     )
@@ -116,15 +113,15 @@ let private handshakeRefusals () =
                 use payload = parse response
 
                 Expect.equal
-                    (payload.RootElement.GetProperty("code").GetString())
+                    (payload.RootElement.GetProperty("hostFailure").GetProperty("code").GetString())
                     "CONTRACT_MISMATCH"
                     "Typed host failure"
 
             let! status, _ =
                 host.Send(
                     HttpMethod.Post,
-                    "/api/case.execute",
-                    Some(body "case.execute"),
+                    "/api/operation.execute",
+                    Some(body "operation.execute"),
                     [
                         "Origin", origin.GetLeftPart(UriPartial.Authority)
                         "X-ClaimCore-Antiforgery", token
@@ -134,15 +131,17 @@ let private handshakeRefusals () =
             Expect.equal status 409 "Missing header"
             Expect.isEmpty host.Facade.Calls "No factory/core dispatch on mismatch"
             Expect.isNone host.Facade.Principal "No actor factory on mismatch"
-            let! status, _ = host.Call("case.execute", body "case.execute", token)
+            let! status, _ = host.Call("operation.execute", body "operation.execute", token)
             Expect.equal status 200 "Matching header"
-            Expect.equal host.Facade.Calls [ "case.execute" ] "One matching dispatch"
+            Expect.equal host.Facade.Calls [ "operation.execute" ] "One matching dispatch"
         })
 
 let private admissionRefusals () =
     loggedIn true (fun host token ->
         task {
-            let! status, _ = host.Call("case.execute", body "case.execute", "incorrect")
+            let! status, _ =
+                host.Call("operation.execute", body "operation.execute", "incorrect")
+
             Expect.equal status 403 "Antiforgery"
 
             let! status, _ =
@@ -191,12 +190,12 @@ let private outcomes () =
 
                         Task.FromResult value)
 
-                let! status, response = host.Call("case.execute", body "case.execute", token)
+                let! status, response =
+                    host.Call("operation.execute", body "operation.execute", token)
+
                 Expect.equal status 200 "Outcomes stay typed"
 
-                Expect.isOk
-                    (Replies.decode ClaimCore.Contract.Protocol.Endpoint.CaseExecute response)
-                    "Schema"
+                Expect.isOk (Codec.decode 100000 Api.operationExecute.Output response) "Schema"
 
                 use payload = parse response
 
@@ -223,13 +222,12 @@ let private authorityCancellation () =
 
                     Task.FromResult(ExecuteResult.Accepted(authorityReceipt request))
 
-            let! status, response =
-                host.Call("authority.execute", body "authority.execute", token)
+            let! status, response = host.Call("operation.execute", authorityBody, token)
 
             Expect.equal status 200 "Authority dispatch"
 
             Expect.isOk
-                (Replies.decode ClaimCore.Contract.Protocol.Endpoint.AuthorityExecute response)
+                (Codec.decode 100000 Api.operationExecute.Output response)
                 "Authority response"
         })
 
@@ -250,7 +248,10 @@ let private malformedWire () =
             for before, after in changes do
                 let changed = source.Replace(before, after)
                 Expect.notEqual changed source "Negative control changes actual bytes"
-                let! status, _ = host.Call("case.execute", Encoding.UTF8.GetBytes changed, token)
+
+                let! status, _ =
+                    host.Call("operation.execute", Encoding.UTF8.GetBytes changed, token)
+
                 Expect.equal status 400 "Permanent malformed format refuses before dispatch"
 
             Expect.isEmpty host.Facade.Calls "Malformed wire never reaches Application"
@@ -277,14 +278,14 @@ let private businessFormatRefusals () =
             Expect.notEqual changed source "Control changes the authored input."
 
             let! status, response =
-                host.Call("case.execute", Encoding.UTF8.GetBytes changed, token)
+                host.Call("operation.execute", Encoding.UTF8.GetBytes changed, token)
 
             Expect.equal status 200 "Business format refusal is a typed outcome."
 
-            match Replies.decode Endpoint.CaseExecute response with
-            | Ok(WireReply.CaseExecute {
-                                           Outcome = CaseExecuteOutcome.Rejected value
-                                       }) ->
+            match Codec.decode 100000 Api.operationExecute.Output response with
+            | Ok {
+                     Outcome = ExecuteResult.Rejected value
+                 } ->
                 Expect.equal value.Field (Some field) "The malformed business field is identified."
             | _ -> failtest "Malformed business format must produce a typed rejection."
     }
@@ -304,6 +305,73 @@ let private readiness () =
         Expect.equal actual 405 "Readiness is GET only"
         Expect.isEmpty host.Facade.Calls "Health has no actor facade"
 
+let private authorityPreview () =
+    task {
+        use! fixture = OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
+        use host = new Host(true, forActor = fixture.Actor)
+        let! _ = host.Login()
+        let! token = host.Token()
+        let original = fixture.EntryCount
+        let! status, response = host.Call("operation.preview", authorityBody, token)
+        Expect.equal status 200 "Authority preview uses the unified route"
+
+        match Codec.decode 100000 Api.operationPreview.Output response with
+        | Ok {
+                 OperationId = id
+                 Outcome = PreviewResult.Reviewed(OperationReview.Authority review)
+             } ->
+            Expect.equal id operationId "Original operation identity"
+            Expect.isNone review.Target "Registration has no accepted target yet"
+            Expect.isFalse review.Before.Enabled "Registration begins absent"
+            Expect.isTrue review.After.Enabled "Registration proposes enabled authority"
+        | _ -> failtest "Expected an authority review"
+
+        Expect.equal fixture.EntryCount original "Preview records nothing"
+        let! status, response = host.Call("operation.execute", authorityBody, token)
+        Expect.equal status 200 "Execute the reviewed input unchanged"
+
+        Expect.isOk
+            (Codec.decode 100000 Api.operationExecute.Output response)
+            "Shared execution reply"
+
+        Expect.equal fixture.EntryCount (original + 1) "Execution records once"
+    }
+    |> _.GetAwaiter().GetResult()
+
+let private completionFailure () =
+    loggedIn true (fun host token ->
+        task {
+            let invalid =
+                { receipt operationId "WEB-001" with
+                    Position = { position with EntryHash = "invalid" }
+                }
+
+            host.Facade.Execute <- fun _ -> Task.FromResult(ExecuteResult.Accepted invalid)
+
+            let! status, response =
+                host.Call("operation.execute", body "operation.execute", token)
+
+            Expect.equal status 500 "Encoding rejects the invalid core receipt"
+
+            Expect.equal
+                (HostFailureCodecs.decode response)
+                (Ok(HostFailureCodecs.ofReason HostFailureReason.CompletedResponseFailed))
+                "A returned core result is completed before response encoding"
+        })
+
+let private bindingInventory () =
+    let ids =
+        Api.all
+        |> List.map Api.id
+        |> List.filter (fun id -> id <> "session" && id <> "session.logout")
+
+    ClaimCore.Web.Composition.Dispatch.validate ids
+
+    for changed in [ List.tail ids; ids @ [ List.head ids ]; ids @ [ "unbound.synthetic" ] ] do
+        Expect.throwsT<InvalidOperationException>
+            (fun () -> ClaimCore.Web.Composition.Dispatch.validate changed)
+            "Missing duplicate and extra handlers must fail startup"
+
 let private principalAdmission () =
     task {
         use! fixture = OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
@@ -315,6 +383,7 @@ let private principalAdmission () =
         let target kind issuer subject =
             System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
                 {|
+                    scope = "AUTHORITY"
                     operationId = operationId
                     target =
                         {|
@@ -340,19 +409,17 @@ let private principalAdmission () =
         for kind, issuer, subject in samples do
             let input = target kind issuer subject
 
-            let admitted =
-                ClaimCore.Contract.Protocol.Admission.admit Endpoint.AuthorityExecute input
-                |> Result.isOk
+            let admitted = Codec.decode 100000 Api.operationExecute.Input input |> Result.isOk
 
             Expect.equal admitted true "Generic wire syntax does not claim identity admission"
 
-            let! status, response = host.Call("authority.execute", input, token)
+            let! status, response = host.Call("operation.execute", input, token)
             Expect.equal status 200 "Principal content is an Application refusal."
 
-            match Replies.decode Endpoint.AuthorityExecute response with
-            | Ok(WireReply.AuthorityExecute {
-                                                Outcome = AuthorityExecuteOutcome.Rejected refusal
-                                            }) ->
+            match Codec.decode 100000 Api.operationExecute.Output response with
+            | Ok {
+                     Outcome = ExecuteResult.Rejected refusal
+                 } ->
                 Expect.equal
                     (Error refusal)
                     (PrincipalKey.admit kind issuer subject)
@@ -378,7 +445,12 @@ let tests =
             testCase
                 "business scalar formats reject through real Application after HTTP dispatch"
                 businessFormatRefusals
-            testCase "all twelve endpoints use the one catalogue and typed facade" catalogueRoutes
+            testCase "all eleven endpoints use the registry and typed facade" catalogueRoutes
+            testCase "authority preview reaches the shared core without recording" authorityPreview
+            testCase "core completion precedes response encoding failure" completionFailure
+            testCase
+                "dispatch bindings reject missing duplicate and extra handlers"
+                bindingInventory
             testCase
                 "matching contract dispatches; missing and different contracts never dispatch"
                 handshakeRefusals

@@ -163,12 +163,12 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
         HostRoutes.map
             assets
             (configuration certificate)
-            (ClaimCore.Web.Composition.ServiceGateway.bind (fun principal ->
+            (fun principal ->
                 facade.Principal <- Some principal
 
                 match forActor with
                 | Some factory -> factory principal
-                | None -> facade.ActorCore))
+                | None -> facade.ActorCore)
             application
 
         application.StartAsync().GetAwaiter().GetResult()
@@ -222,7 +222,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
             HttpMethod.Get,
             "/api/session",
             None,
-            [ "ClaimCore-Contract", ConsumerContract.identity ]
+            [ "ClaimCore-Contract", ContractIdentity.value ]
         )
 
     member this.Token() =
@@ -250,7 +250,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
             [
                 "Origin", origin.GetLeftPart(UriPartial.Authority)
                 "X-ClaimCore-Antiforgery", token
-                "ClaimCore-Contract", defaultArg fingerprint (ConsumerContract.identity)
+                "ClaimCore-Contract", defaultArg fingerprint (ContractIdentity.value)
             ]
         )
 

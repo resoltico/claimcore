@@ -145,6 +145,8 @@ module Api =
                 member _.Visit value = value.Id
             }
 
+    let path endpoint = "/api/" + id endpoint
+
     let method (endpoint: AnyEndpoint) =
         endpoint.Accept
             { new IEndpointVisitor<HttpMethod> with

@@ -24,7 +24,7 @@ module internal WebWire =
         EncodedJsonResult(bytes, status) :> IResult
 
     let reply value =
-        let bytes = Replies.encode value
+        let bytes = WireWriter.bytes value
 
         if bytes.Length > Limits.MaximumResponseBytes then
             invalidOp "The encoded response exceeds the response limit."
@@ -32,4 +32,4 @@ module internal WebWire =
         result 200 bytes
 
     let hostFailure reason =
-        HostFailures.encode reason |> result (HostFailures.status reason)
+        HostFailureCodecs.encode reason |> result (HostFailures.status reason)

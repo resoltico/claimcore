@@ -83,10 +83,10 @@ module internal RequestLog =
         task {
             if context.Request.Path.StartsWithSegments(PathString "/api") then
                 let endpoint =
-                    Endpoint.all
+                    Api.all
                     |> List.tryFind (fun e ->
-                        Some(Endpoint.path e) = Option.ofObj context.Request.Path.Value)
-                    |> Option.map Endpoint.id
+                        Some(Api.path e) = Option.ofObj context.Request.Path.Value)
+                    |> Option.map Api.id
                     |> Option.defaultValue "unknown"
 
                 let value = start endpoint context

@@ -42,18 +42,15 @@ module HostRoutes =
                 let token = antiforgery.GetAndStoreTokens(context).RequestToken |> Option.ofObj
 
                 return
-                    RouteSupport.outcome
-                        (WireReply.Session
+                    Api.session.Output.Write(
+                        ReadReply.Succeeded
                             {
-                                Outcome =
-                                    SessionOutcome.Succeeded
-                                        {
-                                            Authenticated = authenticated
-                                            ContractIdentity = ConsumerContract.identity
-                                            AntiforgeryToken = token
-                                        }
-                            })
-                        context
+                                Authenticated = authenticated
+                                ContractIdentity = ContractIdentity.value
+                                AntiforgeryToken = token
+                            }
+                    )
+                    |> fun reply -> RouteSupport.reply reply context
         }
 
     let private logout configuration context =
@@ -73,11 +70,7 @@ module HostRoutes =
                         match! HttpBody.readRequest 1024 context with
                         | Error problem -> return RouteSupport.inputFailure context problem
                         | Ok bytes ->
-                            match
-                                ClaimCore.Contract.Protocol.Admission.admit
-                                    Endpoint.SessionLogout
-                                    bytes
-                            with
+                            match Codec.decode 1024 Api.logout.Input bytes with
                             | Error _ ->
                                 return
                                     RouteSupport.hostFailure context HostFailureReason.InputInvalid
@@ -90,12 +83,8 @@ module HostRoutes =
                                 context.User <- ClaimsPrincipal(ClaimsIdentity())
 
                                 return
-                                    RouteSupport.outcome
-                                        (WireReply.SessionLogout
-                                            {
-                                                Outcome = SessionLogoutOutcome.Succeeded()
-                                            })
-                                        context
+                                    Api.logout.Output.Write(ReadReply.Succeeded())
+                                    |> fun reply -> RouteSupport.reply reply context
                 | _ -> return RouteSupport.hostFailure context HostFailureReason.SessionRejected
         }
 
@@ -123,9 +112,9 @@ module HostRoutes =
 
             if context.Request.Path.StartsWithSegments(PathString "/api") then
                 let known =
-                    Endpoint.all
+                    Api.all
                     |> List.exists (fun endpoint ->
-                        Some(Endpoint.path endpoint) = Option.ofObj context.Request.Path.Value)
+                        Some(Api.path endpoint) = Option.ofObj context.Request.Path.Value)
 
                 let reason =
                     if known then
@@ -142,7 +131,8 @@ module HostRoutes =
                         context
         }
 
-    let map assets configuration (service: IProtocolService) (application: WebApplication) =
+    let map assets configuration forActor (application: WebApplication) =
+        Dispatch.check ()
         let files = StaticFileOptions()
 
         files.OnPrepareResponse <-
@@ -151,19 +141,19 @@ module HostRoutes =
         application.UseDefaultFiles() |> ignore
         application.UseStaticFiles files |> ignore
 
-        for endpoint in Endpoint.all do
+        for endpoint in Api.all do
             let handler =
-                match (Endpoint.id endpoint) with
+                match (Api.id endpoint) with
                 | "session" -> session configuration
                 | "session.logout" -> logout configuration
-                | _ -> ApiRoutes.handle endpoint configuration service
+                | _ -> ApiRoutes.handle endpoint configuration forActor
 
             let exact (context: HttpContext) =
-                if Option.ofObj context.Request.Path.Value <> Some(Endpoint.path endpoint) then
+                if Option.ofObj context.Request.Path.Value <> Some(Api.path endpoint) then
                     Task.FromResult(
                         RouteSupport.hostFailure context HostFailureReason.EndpointMissing
                     )
-                elif context.Request.Method <> (Endpoint.method endpoint) then
+                elif context.Request.Method <> ((Api.method endpoint).Method) then
                     Task.FromResult(
                         RouteSupport.hostFailure context HostFailureReason.MethodRejected
                     )
@@ -172,12 +162,12 @@ module HostRoutes =
 
             let route =
                 application.MapMethods(
-                    (Endpoint.path endpoint),
-                    [| (Endpoint.method endpoint) |],
+                    (Api.path endpoint),
+                    [| ((Api.method endpoint).Method) |],
                     Func<HttpContext, Task<IResult>>(exact)
                 )
 
-            if (Endpoint.id endpoint) <> "session" then
+            if (Api.id endpoint) <> "session" then
                 route.RequireRateLimiting "core" |> ignore
 
         application

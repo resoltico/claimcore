@@ -3,19 +3,9 @@ namespace ClaimCore.Web.Composition
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
+open ClaimCore.Web
 open ClaimCore.Contract
 open ClaimCore.Contract.Protocol
-
-/// Verified identity facts supplied by the HTTP authentication boundary.
-[<StructuralEquality; NoComparison>]
-type AuthenticatedSubject = private AuthenticatedSubject of PrincipalKey
-
-module AuthenticatedSubjects =
-    let human issuer subject =
-        PrincipalKey.human issuer subject |> Result.map AuthenticatedSubject
-
-    let service issuer subject =
-        PrincipalKey.service issuer subject |> Result.map AuthenticatedSubject
 
 type IProtocolService =
     abstract Invoke: AuthenticatedSubject * WireRequest * CancellationToken -> Task<WireReply>
@@ -67,6 +57,6 @@ module ServiceGateway =
 
     let internal bind (forActor: PrincipalKey -> IActorClaimsCore) =
         { new IProtocolService with
-            member _.Invoke(AuthenticatedSubject principal, request, cancellation) =
-                dispatch (forActor principal) request cancellation
+            member _.Invoke(subject, request, cancellation) =
+                dispatch (forActor (AuthenticatedSubjects.key subject)) request cancellation
         }

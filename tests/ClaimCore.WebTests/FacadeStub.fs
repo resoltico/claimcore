@@ -19,6 +19,7 @@ let position: LedgerPosition =
 let commandInput =
     System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
         {|
+            scope = "CASE"
             operationId = operationId.ToString("D")
             caseReference = "WEB-001"
             expectedRevision = 0L
@@ -157,10 +158,10 @@ type Facade() =
                     let! outcome =
                         match input with
                         | OperationInput.Case request ->
-                            calls.Add "case.execute"
+                            calls.Add "operation.execute"
                             this.Execute(request, token)
                         | OperationInput.Authority request ->
-                            calls.Add "authority.execute"
+                            calls.Add "operation.execute"
                             this.ExecuteAuthority(request, token)
 
                     return
