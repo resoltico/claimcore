@@ -29,14 +29,13 @@ module ServiceGateway =
             | WireRequest.Context ->
                 let! value = core.Context token in return OutcomeMapping.context value
             | WireRequest.CaseGet request ->
-                let! value = core.Get(request.CaseReference, token) in
-                return OutcomeMapping.caseGet value
+                let! value = core.Get(request, token) in return OutcomeMapping.caseGet value
             | WireRequest.CaseList request ->
                 let! value = core.List(request, token) in return OutcomeMapping.caseList value
             | WireRequest.CaseHistory request ->
                 let! value = core.History(request, token) in return OutcomeMapping.caseHistory value
             | WireRequest.OperationObserve request ->
-                let! value = core.Observe(request.OperationId, token) in
+                let! value = core.Observe(request, token) in
                 return OutcomeMapping.operationObserve value
             | WireRequest.AuthorityList request ->
                 let! value = core.ListActors(request, token)

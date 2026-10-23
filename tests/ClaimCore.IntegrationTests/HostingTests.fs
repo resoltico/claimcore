@@ -52,7 +52,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let cursor =
             match page with
-            | ClaimCore.Application.QueryOutcome.Succeeded page -> page.NextCursor
+            | ReadReply.Succeeded page -> page.NextCursor
             | _ -> failtest "Missing page"
 
         Expect.isSome cursor "A page is available"
@@ -61,7 +61,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
             (first.Actor database.Fixture.Owner).List({ AfterCursor = cursor; Limit = 2 }, token)
 
         match same with
-        | ClaimCore.Application.QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             Expect.equal page.Items.Length 1 "Every facade accepts the plain position"
         | _ -> failtest "Same-runtime continuation refused"
 
@@ -75,7 +75,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
             (second.Actor database.Fixture.Owner).List({ AfterCursor = cursor; Limit = 2 }, token)
 
         match continued with
-        | ClaimCore.Application.QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             Expect.equal page.Items.Length 1 "Plain positions survive runtime restart"
         | _ -> failtest "Restart continuation refused"
 
@@ -208,8 +208,7 @@ let tests =
 
                         Expect.equal
                             after
-                            (ClaimCore.Application.QueryOutcome.Failed
-                                ClaimCore.Contract.CoreFault.StoreUnavailable)
+                            (ReadReply.Failed ClaimCore.Contract.CoreFault.StoreUnavailable)
                             "Admission closed"
                     }))
             for name, change, expected in

@@ -34,13 +34,6 @@ type AdmittedAuthorityRequest =
     }
 
 [<RequireQualifiedAccess>]
-type QueryOutcome<'value> =
-    | Succeeded of 'value
-    | Rejected of Refusal
-    | Failed of CoreFault
-    | Cancelled
-
-[<RequireQualifiedAccess>]
 type PreviewOutcome =
     | Reviewed of review: AdvisoryReview
     | AlreadyAccepted of OperationReceipt
@@ -58,17 +51,17 @@ type ExecuteOutcome =
     | OutcomeUnknown of operationId: Guid
 
 type IActorClaimsCore =
-    abstract Context: CancellationToken -> Task<QueryOutcome<ActorContext>>
+    abstract Context: CancellationToken -> Task<ReadReply<ActorContext>>
     abstract Preview: CaseRequest * CancellationToken -> Task<PreviewOutcome>
     abstract Execute: CaseRequest * CancellationToken -> Task<ExecuteOutcome>
-    abstract Get: caseReference: string * CancellationToken -> Task<QueryOutcome<CaseReadModel>>
-    abstract List: PageRequest * CancellationToken -> Task<QueryOutcome<CaseSummaryPage>>
-    abstract History: HistoryRequest * CancellationToken -> Task<QueryOutcome<HistoryResultPage>>
-    abstract Observe: operationId: Guid * CancellationToken -> Task<QueryOutcome<OperationReceipt>>
+    abstract Get: CaseGetRequest * CancellationToken -> Task<ReadReply<CaseReadModel>>
+    abstract List: PageRequest * CancellationToken -> Task<ReadReply<CaseSummaryPage>>
+    abstract History: HistoryRequest * CancellationToken -> Task<ReadReply<HistoryResultPage>>
+    abstract Observe: ObserveRequest * CancellationToken -> Task<ReadReply<OperationReceipt>>
 
     abstract ExecuteAuthority:
         ClaimCore.Contract.Protocol.AuthorityRequest * CancellationToken -> Task<ExecuteOutcome>
 
-    abstract ListActors: PageRequest * CancellationToken -> Task<QueryOutcome<ActorReviewPage>>
+    abstract ListActors: PageRequest * CancellationToken -> Task<ReadReply<ActorReviewPage>>
 
-    abstract ListGrants: GrantsRequest * CancellationToken -> Task<QueryOutcome<AuthorityGrantPage>>
+    abstract ListGrants: GrantsRequest * CancellationToken -> Task<ReadReply<AuthorityGrantPage>>

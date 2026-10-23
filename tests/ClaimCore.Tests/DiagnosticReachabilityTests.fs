@@ -77,7 +77,7 @@ let private baselinePolicy code (reason: Refusal) =
 let private diagnostic reason =
     let identifier = (Refusals.row reason).Code
 
-    let reply = OutcomeMapping.caseGet (QueryOutcome.Rejected reason)
+    let reply = OutcomeMapping.caseGet (ReadReply.Rejected reason)
     let encoded = ClaimCore.Contract.Protocol.Replies.encode reply
 
     Expect.equal
@@ -111,7 +111,7 @@ let private refused =
 
 let private queryRefused =
     function
-    | QueryOutcome.Rejected reason -> diagnostic reason
+    | ReadReply.Rejected reason -> diagnostic reason
     | _ -> failtest "The query must produce a public refusal."
 
 let private execute actor pending =
@@ -302,7 +302,7 @@ let private queryEvidence actor =
     task {
         let! limit = (actor: IActorClaimsCore).List({ AfterCursor = None; Limit = 0 }, ct)
         let! cursor = actor.List({ AfterCursor = Some "bad"; Limit = 1 }, ct)
-        let! missing = actor.Get("MISSING", ct)
+        let! missing = actor.Get({ CaseReference = "MISSING" }, ct)
         return [ queryRefused limit; queryRefused cursor; queryRefused missing ]
     }
 

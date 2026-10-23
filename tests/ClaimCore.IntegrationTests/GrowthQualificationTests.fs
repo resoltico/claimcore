@@ -230,7 +230,7 @@ let private measure workload (database: PostgresFixture.Database) =
             )
 
         match history with
-        | QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             Expect.equal
                 page.Entries.Length
                 (min 50 (1 + workload.Writes / workload.Cases))

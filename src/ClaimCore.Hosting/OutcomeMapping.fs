@@ -5,12 +5,11 @@ open ClaimCore.Contract
 open ClaimCore.Application
 
 module internal OutcomeMapping =
-    let private query succeeded rejected failed cancelled map =
+    let private query succeeded rejected failed =
         function
-        | QueryOutcome.Succeeded value -> succeeded (map value)
-        | QueryOutcome.Rejected value -> rejected (value)
-        | QueryOutcome.Failed value -> failed (value)
-        | QueryOutcome.Cancelled -> cancelled ()
+        | ReadReply.Succeeded value -> succeeded value
+        | ReadReply.Rejected value -> rejected value
+        | ReadReply.Failed value -> failed value
 
     let context value =
         let outcome =
@@ -18,8 +17,6 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.ContextOutcome.Succeeded
                 ClaimCore.Contract.Protocol.ContextOutcome.Rejected
                 ClaimCore.Contract.Protocol.ContextOutcome.Failed
-                ClaimCore.Contract.Protocol.ContextOutcome.Cancelled
-                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.Context { Outcome = outcome }
@@ -30,8 +27,6 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.CaseGetOutcome.Succeeded
                 ClaimCore.Contract.Protocol.CaseGetOutcome.Rejected
                 ClaimCore.Contract.Protocol.CaseGetOutcome.Failed
-                ClaimCore.Contract.Protocol.CaseGetOutcome.Cancelled
-                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.CaseGet { Outcome = outcome }
@@ -42,8 +37,6 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.CaseListOutcome.Succeeded
                 ClaimCore.Contract.Protocol.CaseListOutcome.Rejected
                 ClaimCore.Contract.Protocol.CaseListOutcome.Failed
-                ClaimCore.Contract.Protocol.CaseListOutcome.Cancelled
-                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.CaseList { Outcome = outcome }
@@ -54,8 +47,6 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.CaseHistoryOutcome.Succeeded
                 ClaimCore.Contract.Protocol.CaseHistoryOutcome.Rejected
                 ClaimCore.Contract.Protocol.CaseHistoryOutcome.Failed
-                ClaimCore.Contract.Protocol.CaseHistoryOutcome.Cancelled
-                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.CaseHistory { Outcome = outcome }
@@ -66,8 +57,6 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.OperationObserveOutcome.Succeeded
                 ClaimCore.Contract.Protocol.OperationObserveOutcome.Rejected
                 ClaimCore.Contract.Protocol.OperationObserveOutcome.Failed
-                ClaimCore.Contract.Protocol.OperationObserveOutcome.Cancelled
-                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.OperationObserve { Outcome = outcome }
@@ -78,8 +67,6 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.AuthorityListOutcome.Succeeded
                 ClaimCore.Contract.Protocol.AuthorityListOutcome.Rejected
                 ClaimCore.Contract.Protocol.AuthorityListOutcome.Failed
-                ClaimCore.Contract.Protocol.AuthorityListOutcome.Cancelled
-                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.AuthorityList { Outcome = outcome }
@@ -90,8 +77,6 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Succeeded
                 ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Rejected
                 ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Failed
-                ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Cancelled
-                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.AuthorityGrants { Outcome = outcome }

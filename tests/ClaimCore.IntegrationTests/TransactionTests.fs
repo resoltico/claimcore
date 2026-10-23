@@ -217,7 +217,7 @@ let tests =
                             3L
                             "Neither waiter wrote"
 
-                        let! _ = actor.Get("absent", token)
+                        let! _ = actor.Get({ CaseReference = "absent" }, token)
                         return ()
                     }))
             testCaseAsync

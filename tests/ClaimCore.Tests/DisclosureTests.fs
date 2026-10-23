@@ -71,14 +71,14 @@ let private metadata (receipt: OperationReceipt) =
 
 let private observed expected receipt outcome =
     match outcome with
-    | QueryOutcome.Succeeded value ->
+    | ReadReply.Succeeded value ->
         Expect.equal (metadata value) (metadata receipt) "Disclosure changes no acceptance metadata"
         Expect.equal (caseReceipt value).Snapshot expected "Snapshot follows authoritative rights"
     | _ -> failtest "Expected operation observation"
 
-let private fullPage erased (outcome: QueryOutcome<HistoryResultPage>) =
+let private fullPage erased (outcome: ReadReply<HistoryResultPage>) =
     match outcome with
-    | QueryOutcome.Succeeded page ->
+    | ReadReply.Succeeded page ->
         for entry in page.Entries do
             match entry with
             | HistoryEntry.FullEntry receipt ->
@@ -94,16 +94,16 @@ let private fullPage erased (outcome: QueryOutcome<HistoryResultPage>) =
             | _ -> failtest "FULL returns receipt views"
     | _ -> failtest "Expected full history"
 
-let private summaryPage readable (outcome: QueryOutcome<HistoryResultPage>) =
+let private summaryPage readable (outcome: ReadReply<HistoryResultPage>) =
     match outcome, readable with
-    | QueryOutcome.Succeeded page, true ->
+    | ReadReply.Succeeded page, true ->
         Expect.equal page.Entries.Length 2 "Every operation ID remains visible"
 
         for entry in page.Entries do
             match entry with
             | HistoryEntry.SummaryEntry _ -> ()
             | _ -> failtest "Summary contains no snapshot"
-    | QueryOutcome.Rejected Refusal.ResourceUnavailable, false -> ()
+    | ReadReply.Rejected Refusal.ResourceUnavailable, false -> ()
     | _ -> failtest "Unexpected summary disclosure"
 
 let private historyRequest reference detail : HistoryRequest =
@@ -120,8 +120,8 @@ let private roleDisclosure role readable full =
             let! admin = caseWorker fixture
             let! _, first, current = history admin
             let! reader = createReader fixture admin role
-            let! older = reader.Observe(id 10, CancellationToken.None)
-            let! latest = reader.Observe(id 11, CancellationToken.None)
+            let! older = reader.Observe({ OperationId = id 10 }, CancellationToken.None)
+            let! latest = reader.Observe({ OperationId = id 11 }, CancellationToken.None)
 
             if readable then
                 let expected =
@@ -135,7 +135,7 @@ let private roleDisclosure role readable full =
             else
                 Expect.equal
                     older
-                    (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+                    (ReadReply.Rejected Refusal.ResourceUnavailable)
                     "No history right"
 
                 Expect.equal latest older "No current snapshot through observation"
@@ -159,7 +159,7 @@ let private roleDisclosure role readable full =
             else
                 Expect.equal
                     detailed
-                    (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+                    (ReadReply.Rejected Refusal.ResourceUnavailable)
                     "No full history"
         })
 
@@ -218,7 +218,7 @@ let private erasedHistory (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             SnapshotDisclosure.Erased
             "Erase acceptance is explicit"
 
-        let! result = reader.Observe(id 10, CancellationToken.None)
+        let! result = reader.Observe({ OperationId = id 10 }, CancellationToken.None)
         observed SnapshotDisclosure.Erased first result
 
         let! history =
@@ -314,11 +314,13 @@ let private commitSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             "Disclosure uses the write's locked context"
 
         Expect.equal receipt.RecordedBy (id 3) "Original executor"
-        let! denied = (core fixture principal).Get("PROBE-1", CancellationToken.None)
+
+        let! denied =
+            (core fixture principal).Get({ CaseReference = "PROBE-1" }, CancellationToken.None)
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Later reads use revoked authority"
     }
 

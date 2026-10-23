@@ -60,7 +60,7 @@ let private receipt disclosure : OperationReceipt =
 
 let private encodedHistory count disclosure =
     OutcomeMapping.caseHistory (
-        QueryOutcome.Succeeded
+        ReadReply.Succeeded
             {
                 Entries = List.replicate count (HistoryEntry.FullEntry(receipt disclosure))
                 NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
@@ -123,7 +123,7 @@ let private boundedAuthority () =
 
     let actors count =
         OutcomeMapping.authorityList (
-            QueryOutcome.Succeeded
+            ReadReply.Succeeded
                 {
                     Items = List.replicate count actor
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
@@ -133,7 +133,7 @@ let private boundedAuthority () =
 
     let grants count =
         OutcomeMapping.authorityGrants (
-            QueryOutcome.Succeeded
+            ReadReply.Succeeded
                 {
                     Actor = actor
                     Items = List.replicate count grant

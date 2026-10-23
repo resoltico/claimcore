@@ -72,11 +72,13 @@ let private serviceScopeCorruption () =
                     database.Fixture.Calendar
                     principal
 
-            let! hidden = service.Get("SERVICE-1", CancellationToken.None) |> Async.AwaitTask
+            let! hidden =
+                service.Get({ CaseReference = "SERVICE-1" }, CancellationToken.None)
+                |> Async.AwaitTask
 
             Expect.equal
                 hidden
-                (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+                (ReadReply.Rejected Refusal.ResourceUnavailable)
                 "Loaded human-only corruption refuses the scoped view"
 
             let! visible =
@@ -84,7 +86,7 @@ let private serviceScopeCorruption () =
                 |> Async.AwaitTask
 
             match visible with
-            | QueryOutcome.Succeeded page ->
+            | ReadReply.Succeeded page ->
                 Expect.equal
                     (page.Items
                      |> List.map (function

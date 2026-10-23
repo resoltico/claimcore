@@ -607,10 +607,10 @@ let private scopedHandler fixture (admin: IActorClaimsCore) reference =
 
 let private checkScopedAdvice (actor: IActorClaimsCore) reference =
     task {
-        let! result = actor.Get(reference, CancellationToken.None)
+        let! result = actor.Get({ CaseReference = reference }, CancellationToken.None)
 
         match result with
-        | QueryOutcome.Succeeded value ->
+        | ReadReply.Succeeded value ->
             Expect.equal
                 value.Advice.History
                 [ HistoryDetail.Summary; HistoryDetail.Full ]
@@ -666,10 +666,16 @@ let private refusedAdvice fixture (actor: IActorClaimsCore) pending =
             (ExecuteOutcome.Rejected Refusal.ActNotPermitted)
             "Revocation is decided again under lock"
 
-        let! current = actor.Get(pending.CaseReference, CancellationToken.None)
+        let! current =
+            actor.Get(
+                {
+                    CaseReference = pending.CaseReference
+                },
+                CancellationToken.None
+            )
 
         match current with
-        | QueryOutcome.Succeeded value ->
+        | ReadReply.Succeeded value ->
             Expect.equal value.Snapshot.Revision 2L "Refusal preserves the projection"
 
             Expect.equal

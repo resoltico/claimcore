@@ -15,7 +15,7 @@ module internal ActorFacade =
 
     let bind gate (core: IActorClaimsCore) =
         let query () =
-            QueryOutcome.Failed CoreFault.StoreUnavailable
+            ReadReply.Failed CoreFault.StoreUnavailable
 
         let execute = ExecuteOutcome.Failed CoreFault.StoreUnavailable
 
@@ -33,8 +33,8 @@ module internal ActorFacade =
             member _.ExecuteAuthority(request, token) =
                 run gate execute (fun () -> core.ExecuteAuthority(request, token))
 
-            member _.Get(reference, token) =
-                run gate (query ()) (fun () -> core.Get(reference, token))
+            member _.Get(request, token) =
+                run gate (query ()) (fun () -> core.Get(request, token))
 
             member _.List(request, token) =
                 run gate (query ()) (fun () -> core.List(request, token))
@@ -42,8 +42,8 @@ module internal ActorFacade =
             member _.History(request, token) =
                 run gate (query ()) (fun () -> core.History(request, token))
 
-            member _.Observe(id, token) =
-                run gate (query ()) (fun () -> core.Observe(id, token))
+            member _.Observe(request, token) =
+                run gate (query ()) (fun () -> core.Observe(request, token))
 
             member _.ListGrants(request, token) =
                 run gate (query ()) (fun () -> core.ListGrants(request, token))

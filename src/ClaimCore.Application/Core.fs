@@ -198,8 +198,8 @@ module internal Core =
             member _.ExecuteAuthority(request, ct) =
                 authorityWrite store installationId principal request ct
 
-            member _.Get(reference, ct) =
-                Queries.get store installationId principal reference ct
+            member _.Get(request, ct) =
+                Queries.get store installationId principal request.CaseReference ct
 
             member _.List(request, ct) =
                 Queries.list store installationId principal request ct
@@ -207,8 +207,8 @@ module internal Core =
             member _.History(request, ct) =
                 Queries.history store installationId principal request ct
 
-            member _.Observe(id, ct) =
-                Queries.observe store installationId principal id ct
+            member _.Observe(request, ct) =
+                Queries.observe store installationId principal request.OperationId ct
 
             member _.ListGrants(request, ct) =
                 Queries.grants store principal request ct

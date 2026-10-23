@@ -101,7 +101,7 @@ let tests =
 
                     Expect.equal
                         refused
-                        (QueryOutcome.Failed CoreFault.StoreUnavailable)
+                        (ReadReply.Failed CoreFault.StoreUnavailable)
                         "New calls refuse"
 
                     finish.Set()

@@ -116,12 +116,12 @@ let private grandfathering (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
         let name = String.replicate 201 "A"
         do! seed database name
-        let! current = actor.Get("historical-1", token)
+        let! current = actor.Get({ CaseReference = "historical-1" }, token)
 
         match current with
-        | QueryOutcome.Succeeded {
-                                     Snapshot = { View = CaseView.Live(fields, _) }
-                                 } ->
+        | ReadReply.Succeeded {
+                                  Snapshot = { View = CaseView.Live(fields, _) }
+                              } ->
             Expect.equal fields.ClaimantName name "Retained record renders without admission"
         | _ -> failtest "Historical record could not be read"
 
@@ -193,7 +193,7 @@ let private assertRetained name entries =
 
 let private historyPage =
     function
-    | QueryOutcome.Succeeded page -> page
+    | ReadReply.Succeeded page -> page
     | _ -> failtest "Expected accepted history page"
 
 let private remainingHistory (actor: IActorClaimsCore) (query: HistoryRequest) =
@@ -244,11 +244,11 @@ let private assertRemainingHistoryAccess
         let summary = historyPage summary
         Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
 
-        let! observed = actor.Observe(original.OperationId, token)
+        let! observed = actor.Observe({ OperationId = original.OperationId }, token)
 
         Expect.equal
             observed
-            (QueryOutcome.Succeeded(withheldReceipt original))
+            (ReadReply.Succeeded(withheldReceipt original))
             "Superseded OPEN keeps every acceptance metadata field and withholds its snapshot"
     }
 
@@ -293,7 +293,7 @@ let private revokedFullHistory
 
             Expect.equal
                 refused
-                (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+                (ReadReply.Rejected Refusal.ResourceUnavailable)
                 "FULL requires current rights before accepting or comparing a cursor"
 
         do! assertRemainingHistoryAccess actor query original
@@ -352,8 +352,7 @@ let private retainedPages (database: PostgresFixture.Database) =
             )
 
         match summary with
-        | QueryOutcome.Succeeded p ->
-            Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
+        | ReadReply.Succeeded p -> Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
         | _ -> failtest "Retained summary page"
 
         do! revokedFullHistory database actor query first

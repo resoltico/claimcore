@@ -24,10 +24,6 @@ type AuthorityRequest =
         Act: AuthorityAct
     }
 
-type CaseGetRequest = { CaseReference: string }
-
-type ObserveRequest = { OperationId: Guid }
-
 [<RequireQualifiedAccess>]
 type WireRequest =
     | Session

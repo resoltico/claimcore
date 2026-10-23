@@ -131,7 +131,7 @@ type Facade() =
 
     interface IActorClaimsCore with
         member this.Context _ =
-            this.Invoke "context" (QueryOutcome.Succeeded description)
+            this.Invoke "context" (ReadReply.Succeeded description)
 
         member this.Preview(request, _) =
             this.Invoke
@@ -145,10 +145,12 @@ type Facade() =
             | Some error -> raise error
             | None -> this.Execute(request, token)
 
-        member this.Get(reference, _) =
+        member this.Get(request, _) =
+            let reference = request.CaseReference
+
             this.Invoke
                 "case.get"
-                (QueryOutcome.Succeeded
+                (ReadReply.Succeeded
                     {
                         Snapshot = view reference
                         Advice = { Acts = []; History = [] }
@@ -157,7 +159,7 @@ type Facade() =
         member this.List(_, _) =
             this.Invoke
                 "case.list"
-                (QueryOutcome.Succeeded
+                (ReadReply.Succeeded
                     {
                         Items = []
                         NextCursor = None
@@ -165,10 +167,11 @@ type Facade() =
                     })
 
         member this.History(_, _) =
-            this.Invoke "case.history" (QueryOutcome.Succeeded { Entries = []; NextCursor = None })
+            this.Invoke "case.history" (ReadReply.Succeeded { Entries = []; NextCursor = None })
 
-        member this.Observe(id, _) =
-            this.Invoke "operation.observe" (QueryOutcome.Succeeded(receipt id "WEB-001"))
+        member this.Observe(request, _) =
+            let id = request.OperationId
+            this.Invoke "operation.observe" (ReadReply.Succeeded(receipt id "WEB-001"))
 
         member this.ExecuteAuthority(request, token) =
             calls.Add "authority.execute"
@@ -184,7 +187,7 @@ type Facade() =
 
             this.Invoke
                 "authority.grants"
-                (QueryOutcome.Succeeded
+                (ReadReply.Succeeded
                     {
                         Actor =
                             {
@@ -197,4 +200,4 @@ type Facade() =
                     })
 
         member this.ListActors(_, _) =
-            this.Invoke "authority.list" (QueryOutcome.Succeeded { Items = []; NextCursor = None })
+            this.Invoke "authority.list" (ReadReply.Succeeded { Items = []; NextCursor = None })

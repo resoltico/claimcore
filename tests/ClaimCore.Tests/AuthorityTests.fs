@@ -55,7 +55,7 @@ let private lastOwner (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             context
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Disabled owner has no cached authority"
     }
 
@@ -91,11 +91,11 @@ let private exactReplay (store: MemoryLedgerStore.Store) (fixture: Fixture) =
             (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
             "Different content conflicts"
 
-        let! observed = actor.Observe(id 3, CancellationToken.None)
+        let! observed = actor.Observe({ OperationId = id 3 }, CancellationToken.None)
 
         Expect.equal
             observed
-            (QueryOutcome.Succeeded receipt)
+            (ReadReply.Succeeded receipt)
             "Unified observation returns the same metadata"
 
         Expect.equal store.Entries.Length 3 "No extra authority operation"
@@ -190,7 +190,7 @@ let private humanGrantTargets (store: MemoryLedgerStore.Store) (fixture: Fixture
                 .ListActors({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
 
         match review with
-        | QueryOutcome.Succeeded _ -> ()
+        | ReadReply.Succeeded _ -> ()
         | _ -> failtest "Registered service auditor should review authority"
     }
 
@@ -257,7 +257,7 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! context = ungranted.Context CancellationToken.None
 
         match context with
-        | QueryOutcome.Succeeded value ->
+        | ReadReply.Succeeded value ->
             Expect.isEmpty value.Capabilities "Enabled actor may read context without grants"
         | _ -> failtest "Missing enabled-actor context"
 
@@ -266,21 +266,21 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Authority remains default deny"
 
         let! missing = (core fixture (human "absent")).Context CancellationToken.None
 
         Expect.equal
             missing
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Unregistered principal has no context"
 
         let! review =
             actor.ListActors({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
 
         match review with
-        | QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             let found = page.Items |> List.find (fun value -> value.ActorId = id 2)
 
             Expect.equal
@@ -301,7 +301,7 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                 )
 
             match grants with
-            | QueryOutcome.Succeeded value -> Expect.isEmpty value.Items "No implied grants"
+            | ReadReply.Succeeded value -> Expect.isEmpty value.Items "No implied grants"
             | _ -> failtest "Expected grant review"
         | _ -> failtest "Owner review unavailable"
     }
@@ -311,14 +311,14 @@ let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! actor = caseWorker fixture
         let! opened = actor.Execute(openRequest 10 "UNIT-001", CancellationToken.None)
         let receipt = accepted opened
-        let! authority = actor.Observe(id 1, CancellationToken.None)
+        let! authority = actor.Observe({ OperationId = id 1 }, CancellationToken.None)
 
         match authority with
-        | QueryOutcome.Succeeded { Scope = ReceiptScope.Authority _ } -> ()
+        | ReadReply.Succeeded { Scope = ReceiptScope.Authority _ } -> ()
         | _ -> failtest "Unified authority observation failed"
 
-        let! observed = actor.Observe(id 10, CancellationToken.None)
-        Expect.equal observed (QueryOutcome.Succeeded receipt) "Unified case observation"
+        let! observed = actor.Observe({ OperationId = id 10 }, CancellationToken.None)
+        Expect.equal observed (ReadReply.Succeeded receipt) "Unified case observation"
         let reader = human "reader"
         do! register actor 3 reader
 
@@ -326,11 +326,13 @@ let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             grant actor (id 4) reader Role.CaseReader GrantTarget.Installation true
 
         acceptedAuthority granted
-        let! denied = (core fixture reader).Observe(id 1, CancellationToken.None)
+
+        let! denied =
+            (core fixture reader).Observe({ OperationId = id 1 }, CancellationToken.None)
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Case rights do not grant installation authority review"
 
         let auditor = human "case-auditor"
@@ -347,14 +349,14 @@ let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             list
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Case auditor cannot enumerate installation"
 
-        let! denied = scoped.Observe(id 1, CancellationToken.None)
+        let! denied = scoped.Observe({ OperationId = id 1 }, CancellationToken.None)
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Authority observation requires installation ReadAuthority"
     }
 
@@ -363,7 +365,7 @@ let private actorContext (actor: IActorClaimsCore) =
         let! context = actor.Context CancellationToken.None
 
         match context with
-        | QueryOutcome.Succeeded value -> return value
+        | ReadReply.Succeeded value -> return value
         | _ -> return failtest "Expected enabled actor context"
     }
 

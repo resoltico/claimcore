@@ -21,7 +21,7 @@ let private cases (actor: IActorClaimsCore) =
 
 let private succeeded =
     function
-    | QueryOutcome.Succeeded page -> page
+    | ReadReply.Succeeded page -> page
     | _ -> failtest "Missing case page"
 
 let private reference =
@@ -141,7 +141,7 @@ let private elapsedTimeAndRevocation (store: MemoryLedgerStore.Store) (fixture: 
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "A position confers no rights after revocation"
     }
 
@@ -195,7 +195,7 @@ let private differentHistoryResource (actor: IActorClaimsCore) (query: HistoryRe
                 CancellationToken.None
             )
 
-        Expect.equal resource (QueryOutcome.Rejected Refusal.InvalidCursor) "Resource is bound"
+        Expect.equal resource (ReadReply.Rejected Refusal.InvalidCursor) "Resource is bound"
     }
 
 let private historyBinding (_: MemoryLedgerStore.Store) (fixture: Fixture) =
@@ -226,7 +226,7 @@ let private historyBinding (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             )
 
         match rest with
-        | QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             Expect.equal
                 page.Entries.Length
                 2
@@ -286,7 +286,7 @@ let private authorityLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             )
 
         match third with
-        | QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             Expect.equal (page.Items |> List.map _.ActorId) [ id 12 ] "No omission"
             Expect.isNone page.NextCursor "End of review"
         | _ -> failtest "Missing final review page"
@@ -302,7 +302,7 @@ let private authorityLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             wrongEndpoint
-            (QueryOutcome.Rejected Refusal.InvalidCursor)
+            (ReadReply.Rejected Refusal.InvalidCursor)
             "Authority continuation is endpoint-bound even when its position is valid ASCII"
     }
 
@@ -325,7 +325,7 @@ let private malformedAndRestart (_: MemoryLedgerStore.Store) (fixture: Fixture) 
 
             Expect.equal
                 outcome
-                (QueryOutcome.Rejected Refusal.InvalidCursor)
+                (ReadReply.Rejected Refusal.InvalidCursor)
                 "No malformed position is trusted"
 
         let restarted = Core.create installation fixture.Store calendar owner
@@ -366,7 +366,7 @@ let private singleSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             )
 
         match history with
-        | QueryOutcome.Succeeded _ -> ()
+        | ReadReply.Succeeded _ -> ()
         | _ -> failtest "History unavailable"
 
         Expect.equal proxy.ReadCalls 2 "History performs no separate actor read"
@@ -375,7 +375,7 @@ let private singleSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             actor.ListActors({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
 
         match authority with
-        | QueryOutcome.Succeeded _ -> ()
+        | ReadReply.Succeeded _ -> ()
         | _ -> failtest "Authority review unavailable"
 
         Expect.equal proxy.ReadCalls 3 "Authority review performs no separate actor read"
@@ -516,7 +516,7 @@ let private disabledGrantTarget
                 CancellationToken.None
             )
 
-        Expect.equal crossed (QueryOutcome.Rejected Refusal.InvalidCursor) "Cursor binds target"
+        Expect.equal crossed (ReadReply.Rejected Refusal.InvalidCursor) "Cursor binds target"
 
         let! disabled =
             admin.ExecuteAuthority(
@@ -634,7 +634,7 @@ let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture
 
             Expect.equal
                 refused
-                (QueryOutcome.Rejected Refusal.InvalidCursor)
+                (ReadReply.Rejected Refusal.InvalidCursor)
                 "A plain envelope does not admit an invalid grant position"
 
         let! invalidLimit =
@@ -649,7 +649,7 @@ let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture
 
         Expect.equal
             invalidLimit
-            (QueryOutcome.Rejected(
+            (ReadReply.Rejected(
                 Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50)
             ))
             "Public grant page is bounded"

@@ -19,12 +19,12 @@ module internal Queries =
 
     let failure =
         function
-        | StoreFailure.Cancelled -> QueryOutcome.Cancelled
-        | value -> QueryOutcome.Failed(fault value)
+        | StoreFailure.Cancelled -> ReadReply.Failed CoreFault.StoreUnavailable
+        | value -> ReadReply.Failed(fault value)
 
-    let private rejected reason = QueryOutcome.Rejected reason
+    let private rejected reason = ReadReply.Rejected reason
 
-    let private unavailable<'value> : QueryOutcome<'value> =
+    let private unavailable<'value> : ReadReply<'value> =
         rejected Refusal.ResourceUnavailable
 
     let private maximum = ServiceLimits.MaximumPageSize
@@ -57,7 +57,7 @@ module internal Queries =
         principal
         reference
         ct
-        : Task<QueryOutcome<CaseReadModel>> =
+        : Task<ReadReply<CaseReadModel>> =
         task {
             match CaseReference.validate reference with
             | Error error -> return rejected (error)
@@ -73,8 +73,8 @@ module internal Queries =
                 | Ok view ->
                     return
                         caseRecord installationId principal view.Actor (Option.get view.Case)
-                        |> Result.map QueryOutcome.Succeeded
-                        |> Result.defaultWith QueryOutcome.Failed
+                        |> Result.map ReadReply.Succeeded
+                        |> Result.defaultWith ReadReply.Failed
         }
 
     let context
@@ -82,7 +82,7 @@ module internal Queries =
         (calendar: IBusinessCalendar)
         principal
         ct
-        : Task<QueryOutcome<ActorContext>> =
+        : Task<ReadReply<ActorContext>> =
         task {
             let! read = store.ReadActor(principal, ct)
 
@@ -93,7 +93,7 @@ module internal Queries =
                 | Error _ -> return unavailable
                 | Ok _ ->
                     return
-                        QueryOutcome.Succeeded
+                        ReadReply.Succeeded
                             {
                                 Runtime =
                                     {
@@ -174,7 +174,7 @@ module internal Queries =
         principal
         (request: PageRequest)
         ct
-        : Task<QueryOutcome<CaseSummaryPage>> =
+        : Task<ReadReply<CaseSummaryPage>> =
         task {
             if not (validLimit request.Limit) then
                 return invalidLimit ()
@@ -194,8 +194,8 @@ module internal Queries =
                     | Ok(Error reason) -> rejected reason
                     | Ok(Ok page) ->
                         casePage installationId principal page
-                        |> Result.map QueryOutcome.Succeeded
-                        |> Result.defaultWith QueryOutcome.Failed
+                        |> Result.map ReadReply.Succeeded
+                        |> Result.defaultWith ReadReply.Failed
         }
 
     let private selectHistory principal (request: HistoryRequest) (view: HistoryReadView) =
@@ -252,7 +252,7 @@ module internal Queries =
         principal
         (request: HistoryRequest)
         ct
-        : Task<QueryOutcome<HistoryResultPage>> =
+        : Task<ReadReply<HistoryResultPage>> =
         task {
             match CaseReference.validate request.CaseReference with
             | Error error -> return rejected (error)
@@ -273,8 +273,8 @@ module internal Queries =
                     | Ok(Error reason) -> rejected reason
                     | Ok(Ok page) ->
                         historyPage installationId principal request page
-                        |> Result.map QueryOutcome.Succeeded
-                        |> Result.defaultWith QueryOutcome.Failed
+                        |> Result.map ReadReply.Succeeded
+                        |> Result.defaultWith ReadReply.Failed
         }
 
     let observe
@@ -283,7 +283,7 @@ module internal Queries =
         principal
         operationId
         ct
-        : Task<QueryOutcome<OperationReceipt>> =
+        : Task<ReadReply<OperationReceipt>> =
         task {
             if operationId = Guid.Empty then
                 return
@@ -302,15 +302,15 @@ module internal Queries =
                     match view.Entry with
                     | Some entry when LedgerEntries.canObserve principal view.Actor entry.Scope ->
                         if entry.OperationId <> operationId then
-                            return QueryOutcome.Failed CoreFault.StoreIntegrityError
+                            return ReadReply.Failed CoreFault.StoreIntegrityError
                         else
                             return
                                 LedgerEntries.validate installationId entry
                                 |> Result.bind (
                                     LedgerEntries.receipt principal view.Actor view.Case
                                 )
-                                |> Result.map QueryOutcome.Succeeded
-                                |> Result.defaultWith QueryOutcome.Failed
+                                |> Result.map ReadReply.Succeeded
+                                |> Result.defaultWith ReadReply.Failed
                     | _ -> return unavailable
         }
 
@@ -348,7 +348,7 @@ module internal Queries =
         principal
         (request: PageRequest)
         ct
-        : Task<QueryOutcome<ActorReviewPage>> =
+        : Task<ReadReply<ActorReviewPage>> =
         task {
             if not (validLimit request.Limit) then
                 return invalidLimit ()
@@ -362,8 +362,8 @@ module internal Queries =
                     | Ok(Error reason) -> rejected reason
                     | Ok(Ok page) ->
                         actorPage principal page
-                        |> Result.map QueryOutcome.Succeeded
-                        |> Result.defaultWith QueryOutcome.Failed
+                        |> Result.map ReadReply.Succeeded
+                        |> Result.defaultWith ReadReply.Failed
         }
 
     let private selectGrants principal (request: GrantsRequest) (view: GrantReadView) =
@@ -408,7 +408,7 @@ module internal Queries =
         principal
         (request: GrantsRequest)
         ct
-        : Task<QueryOutcome<AuthorityGrantPage>> =
+        : Task<ReadReply<AuthorityGrantPage>> =
         task {
             if not (validLimit request.Limit) then
                 return invalidLimit ()
@@ -430,6 +430,6 @@ module internal Queries =
                     | Ok(Error reason) -> rejected reason
                     | Ok(Ok page) ->
                         grantPage principal request page
-                        |> Result.map QueryOutcome.Succeeded
-                        |> Result.defaultWith QueryOutcome.Failed
+                        |> Result.map ReadReply.Succeeded
+                        |> Result.defaultWith ReadReply.Failed
         }

@@ -155,6 +155,27 @@ let private definiteFailure (store: MemoryLedgerStore.Store) (fixture: Fixture) 
         cancelled.Cancel()
         let! result = actor.Execute(openRequest 10 "UNIT-001", cancelled.Token)
         Expect.equal result ExecuteOutcome.Cancelled "Cancellation before dispatch"
+        let! context = actor.Context cancelled.Token
+
+        Expect.equal
+            context
+            (ReadReply.Failed CoreFault.StoreUnavailable)
+            "A cancelled read maps to the public store fault."
+
+        let! current = actor.Get({ CaseReference = "UNIT-001" }, cancelled.Token)
+
+        Expect.equal
+            current
+            (ReadReply.Failed CoreFault.StoreUnavailable)
+            "Cancelled case reads disclose no snapshot."
+
+        let! observed = actor.Observe({ OperationId = id 10 }, cancelled.Token)
+
+        Expect.equal
+            observed
+            (ReadReply.Failed CoreFault.StoreUnavailable)
+            "Cancelled observations disclose no receipt."
+
         Expect.equal store.Entries.Length 3 "Neither operation wrote"
     }
 
@@ -248,11 +269,11 @@ let private revokedRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         do! revokeCaseWork actor
         let! replay = actor.Execute(original, CancellationToken.None)
         Expect.equal replay unavailable "Current authority precedes replay"
-        let! current = actor.Get("UNIT-001", CancellationToken.None)
+        let! current = actor.Get({ CaseReference = "UNIT-001" }, CancellationToken.None)
 
         Expect.equal
             current
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Facades cache no authority"
     }
 
@@ -279,9 +300,9 @@ let private unavailableResources (_: MemoryLedgerStore.Store) (fixture: Fixture)
             grant actor (id 4) owner Role.DataSteward GrantTarget.Installation false
 
         acceptedAuthority revoked
-        let! absent = actor.Get("ABSENT", CancellationToken.None)
-        let! inaccessible = actor.Get("LIVE", CancellationToken.None)
-        let! erased = actor.Get("ERASED", CancellationToken.None)
+        let! absent = actor.Get({ CaseReference = "ABSENT" }, CancellationToken.None)
+        let! inaccessible = actor.Get({ CaseReference = "LIVE" }, CancellationToken.None)
+        let! erased = actor.Get({ CaseReference = "ERASED" }, CancellationToken.None)
         Expect.equal absent inaccessible "Absent and inaccessible agree"
         Expect.equal erased absent "Erased beyond view agrees"
     }
@@ -355,13 +376,13 @@ let private scopedCreation (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! page = actor.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
 
         match page with
-        | QueryOutcome.Succeeded page -> Expect.equal page.Items.Length 1 "Visible case"
+        | ReadReply.Succeeded page -> Expect.equal page.Items.Length 1 "Visible case"
         | _ -> failtest "Missing scoped page"
 
         let! context = actor.Context CancellationToken.None
 
         match context with
-        | QueryOutcome.Succeeded value ->
+        | ReadReply.Succeeded value ->
             Expect.isFalse
                 (List.contains Capability.Register value.Capabilities)
                 "No installation OPEN advice"
@@ -375,7 +396,7 @@ let private scopedCreation (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Visibility is rechecked per page"
     }
 

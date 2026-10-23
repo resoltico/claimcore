@@ -22,3 +22,7 @@ type GrantsRequest =
         AfterCursor: string option
         Limit: int
     }
+
+type CaseGetRequest = { CaseReference: string }
+
+type ObserveRequest = { OperationId: Guid }

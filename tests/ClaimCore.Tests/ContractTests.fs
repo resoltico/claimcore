@@ -84,7 +84,7 @@ let private wireRequest values : ClaimCore.Contract.CaseRequest =
 
 let private contextCodec () =
     OutcomeMapping.context (
-        QueryOutcome.Succeeded
+        ReadReply.Succeeded
             {
                 Runtime =
                     {
@@ -111,7 +111,7 @@ let private queryCodecs () =
             }
         ] do
         OutcomeMapping.caseGet (
-            QueryOutcome.Succeeded
+            ReadReply.Succeeded
                 {
                     Snapshot = view
                     Advice = { Acts = []; History = [] }
@@ -121,7 +121,7 @@ let private queryCodecs () =
         |> ignore
 
     OutcomeMapping.caseList (
-        QueryOutcome.Succeeded
+        ReadReply.Succeeded
             {
                 Items = []
                 NextCursor = None
@@ -131,15 +131,15 @@ let private queryCodecs () =
     |> admitted
     |> ignore
 
-    OutcomeMapping.caseHistory (QueryOutcome.Succeeded { Entries = []; NextCursor = None })
+    OutcomeMapping.caseHistory (ReadReply.Succeeded { Entries = []; NextCursor = None })
     |> admitted
     |> ignore
 
-    OutcomeMapping.operationObserve (QueryOutcome.Succeeded authority)
+    OutcomeMapping.operationObserve (ReadReply.Succeeded authority)
     |> admitted
     |> ignore
 
-    OutcomeMapping.authorityList (QueryOutcome.Succeeded { Items = []; NextCursor = None })
+    OutcomeMapping.authorityList (ReadReply.Succeeded { Items = []; NextCursor = None })
     |> admitted
     |> ignore
 
@@ -192,8 +192,7 @@ let private disclosures () =
                         }
             }
 
-        let result =
-            OutcomeMapping.operationObserve (QueryOutcome.Succeeded value) |> admitted
+        let result = OutcomeMapping.operationObserve (ReadReply.Succeeded value) |> admitted
 
         Expect.equal
             (result
@@ -231,7 +230,7 @@ let private previewCodecs () =
 
 let private diagnostics () =
     for fault, _ in CoreFaults.all do
-        OutcomeMapping.caseGet (QueryOutcome.Failed fault) |> admitted |> ignore
+        OutcomeMapping.caseGet (ReadReply.Failed fault) |> admitted |> ignore
 
     for value in
         [
@@ -241,7 +240,7 @@ let private diagnostics () =
             ClaimCore.Contract.Refusal.ActNotPermitted
             ClaimCore.Contract.Refusal.ResourceUnavailable
         ] do
-        let result = OutcomeMapping.caseGet (QueryOutcome.Rejected value) |> admitted
+        let result = OutcomeMapping.caseGet (ReadReply.Rejected value) |> admitted
 
         Expect.equal
             (result.GetProperty("outcome").GetProperty("data").GetProperty("code").GetString())
@@ -278,7 +277,7 @@ let private actionEnums () =
 let private positiveActualRevision () =
     Expect.throws
         (fun () ->
-            OutcomeMapping.caseGet (QueryOutcome.Rejected(Refusal.RevisionConflict 0L))
+            OutcomeMapping.caseGet (ReadReply.Rejected(Refusal.RevisionConflict 0L))
             |> Replies.encode
             |> ignore)
         "The captured baseline refuses zero actualRevision on the wire."
@@ -287,7 +286,7 @@ let private actionTokens () =
     positiveActualRevision ()
 
     for refusal, _, expected, field, revision in actionExpectations do
-        let result = OutcomeMapping.caseGet (QueryOutcome.Rejected refusal) |> admitted
+        let result = OutcomeMapping.caseGet (ReadReply.Rejected refusal) |> admitted
 
         let data = result.GetProperty("outcome").GetProperty("data")
 
@@ -381,7 +380,7 @@ let private retainedText () =
         let prior = Case.ofAccepted snapshot |> accepted
 
         OutcomeMapping.caseGet (
-            QueryOutcome.Succeeded
+            ReadReply.Succeeded
                 {
                     Snapshot = snapshot
                     Advice = { Acts = []; History = [] }

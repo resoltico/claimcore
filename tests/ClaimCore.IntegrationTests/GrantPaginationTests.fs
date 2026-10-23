@@ -14,7 +14,7 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 let private page =
     function
-    | QueryOutcome.Succeeded p -> p
+    | ReadReply.Succeeded p -> p
     | _ -> failtest "Expected grant page"
 
 let private seedCases (admin: IActorClaimsCore) target =
@@ -198,7 +198,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Current caller authority precedes token acceptance"
     }
 
@@ -213,17 +213,17 @@ let private cursorIsolation (admin: IActorClaimsCore) (query: GrantsRequest) cur
                 token
             )
 
-        Expect.equal crossTarget (QueryOutcome.Rejected Refusal.InvalidCursor) "Target is bound"
+        Expect.equal crossTarget (ReadReply.Rejected Refusal.InvalidCursor) "Target is bound"
 
         let! crossEndpoint = admin.ListActors({ AfterCursor = cursor; Limit = 50 }, token)
 
-        Expect.equal crossEndpoint (QueryOutcome.Rejected Refusal.InvalidCursor) "Endpoint is bound"
+        Expect.equal crossEndpoint (ReadReply.Rejected Refusal.InvalidCursor) "Endpoint is bound"
 
         let! missing = admin.ListGrants({ query with ActorId = id 999 }, token)
 
         Expect.equal
             missing
-            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Absent target refuses generically"
 
     }
@@ -356,9 +356,8 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
             }
 
         let reading =
-            Task.Run<QueryOutcome<AuthorityGrantPage>>(
-                Func<Task<QueryOutcome<AuthorityGrantPage>>>(fun () ->
-                    actor.ListGrants(query, token))
+            Task.Run<ReadReply<AuthorityGrantPage>>(
+                Func<Task<ReadReply<AuthorityGrantPage>>>(fun () -> actor.ListGrants(query, token))
             )
 
         try
