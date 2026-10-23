@@ -1562,6 +1562,31 @@
         "literal": "Formatting characters are not accepted in a new assertion."
       }
     ],
+    "fault.CORE_INTERNAL_ERROR": [
+      {
+        "literal": "An internal error occurred. Stop and investigate."
+      }
+    ],
+    "fault.CORE_OPERATION_CONTENT_CONFLICT": [
+      {
+        "literal": "Stored operation content is inconsistent. Stop and investigate."
+      }
+    ],
+    "fault.CORE_SCHEMA_MISMATCH": [
+      {
+        "literal": "The schema differs from this build. Run migrate or use a matching build."
+      }
+    ],
+    "fault.CORE_STORE_INTEGRITY_ERROR": [
+      {
+        "literal": "Stored data failed verification. Stop and run verify."
+      }
+    ],
+    "fault.CORE_STORE_UNAVAILABLE": [
+      {
+        "literal": "The store is unavailable. Retry."
+      }
+    ],
     "field.caseReference.label": [
       {
         "literal": "Handler\u0027s case reference"
@@ -1730,6 +1755,1392 @@
     "group.registration.meaning": [
       {
         "literal": "Keep the current registration details or replace all seven details together."
+      }
+    ],
+    "host.ANTIFORGERY_REJECTED": [
+      {
+        "literal": "Request verification was refused."
+      }
+    ],
+    "host.BODY_TOO_LARGE": [
+      {
+        "literal": "Request body is too large."
+      }
+    ],
+    "host.CONNECTION_REJECTED": [
+      {
+        "literal": "Connection was refused."
+      }
+    ],
+    "host.CONTRACT_MISMATCH": [
+      {
+        "literal": "The client contract differs. Reload or use a matching client."
+      }
+    ],
+    "host.ENDPOINT_MISSING": [
+      {
+        "literal": "Endpoint was not found."
+      }
+    ],
+    "host.INPUT_INVALID": [
+      {
+        "literal": "The input does not satisfy the endpoint contract."
+      }
+    ],
+    "host.INTERNAL": [
+      {
+        "literal": "The request could not be completed."
+      }
+    ],
+    "host.MEDIA_TYPE_REJECTED": [
+      {
+        "literal": "Use the endpoint media type."
+      }
+    ],
+    "host.METHOD_REJECTED": [
+      {
+        "literal": "The method is unsupported."
+      }
+    ],
+    "host.ORIGIN_REJECTED": [
+      {
+        "literal": "Origin was refused."
+      }
+    ],
+    "host.RATE_LIMITED": [
+      {
+        "literal": "Request admission is busy."
+      }
+    ],
+    "host.RESPONSE_FAILED": [
+      {
+        "literal": "The completed response could not be delivered."
+      }
+    ],
+    "host.SESSION_FORBIDDEN": [
+      {
+        "literal": "Session access was refused."
+      }
+    ],
+    "host.SESSION_REJECTED": [
+      {
+        "literal": "Authentication was refused."
+      }
+    ],
+    "notice.accepted": [
+      {
+        "literal": "Accepted exact operation "
+      },
+      {
+        "hole": "operationId"
+      },
+      {
+        "literal": "."
+      }
+    ],
+    "notice.cancelled": [
+      {
+        "literal": "This request was cancelled. Earlier attempts are not settled by this cancellation."
+      }
+    ],
+    "notice.definitionMismatch": [
+      {
+        "literal": "The installed Web contract does not match these browser assets. Reload after publishing matching assets."
+      }
+    ],
+    "notice.fileTooLarge": [
+      {
+        "literal": "The selected file exceeds "
+      },
+      {
+        "hole": "maximumBytes"
+      },
+      {
+        "literal": " bytes."
+      }
+    ],
+    "notice.fileUnreadable": [
+      {
+        "literal": "The selected file could not be read."
+      }
+    ],
+    "notice.invalidHttp": [
+      {
+        "literal": "The local service returned an invalid HTTP "
+      },
+      {
+        "hole": "status"
+      },
+      {
+        "literal": " response."
+      }
+    ],
+    "notice.invalidInput": [
+      {
+        "literal": "Complete this input using the required format."
+      }
+    ],
+    "notice.invalidSession": [
+      {
+        "literal": "Invalid session response."
+      }
+    ],
+    "notice.missingCsrf": [
+      {
+        "literal": "Authenticated session did not include an antiforgery token."
+      }
+    ],
+    "notice.outcomeUnknown": [
+      {
+        "literal": "The operation outcome is unknown. Retry the exact same operation."
+      }
+    ],
+    "notice.responseTimeout": [
+      {
+        "literal": "The service response timed out."
+      }
+    ],
+    "notice.unknownDiagnostic": [
+      {
+        "literal": "An unsupported diagnostic was received."
+      }
+    ],
+    "notice.unreachable": [
+      {
+        "literal": "The local service could not be reached."
+      }
+    ],
+    "token.ACTIVE": [
+      {
+        "literal": "Active"
+      }
+    ],
+    "token.AMEND_REGISTRATION": [
+      {
+        "literal": "Amend registration"
+      }
+    ],
+    "token.AUDITOR": [
+      {
+        "literal": "Auditor"
+      }
+    ],
+    "token.CASE": [
+      {
+        "literal": "One case"
+      }
+    ],
+    "token.CASE_HANDLER": [
+      {
+        "literal": "Case handler"
+      }
+    ],
+    "token.CASE_READER": [
+      {
+        "literal": "Case reader"
+      }
+    ],
+    "token.CASE_REGISTRAR": [
+      {
+        "literal": "Case registrar"
+      }
+    ],
+    "token.CLEAR": [
+      {
+        "literal": "Clear recorded value"
+      }
+    ],
+    "token.CLEAR_PAYMENT": [
+      {
+        "literal": "Correct an erroneous payment record"
+      }
+    ],
+    "token.CLOSE": [
+      {
+        "literal": "Close the case"
+      }
+    ],
+    "token.CLOSED": [
+      {
+        "literal": "Closed"
+      }
+    ],
+    "token.CORRECT_CASE": [
+      {
+        "literal": "Correct case facts"
+      }
+    ],
+    "token.DATA_STEWARD": [
+      {
+        "literal": "Data steward"
+      }
+    ],
+    "token.DECIDE": [
+      {
+        "literal": "Record payment decision"
+      }
+    ],
+    "token.ERASE": [
+      {
+        "literal": "Erase"
+      }
+    ],
+    "token.ERASED": [
+      {
+        "literal": "Erased"
+      }
+    ],
+    "token.HUMAN": [
+      {
+        "literal": "Human"
+      }
+    ],
+    "token.INSTALLATION": [
+      {
+        "literal": "Installation"
+      }
+    ],
+    "token.KEEP": [
+      {
+        "literal": "Keep current details"
+      }
+    ],
+    "token.OPEN": [
+      {
+        "literal": "Open a case"
+      }
+    ],
+    "token.OPENED": [
+      {
+        "literal": "Open"
+      }
+    ],
+    "token.OWNER": [
+      {
+        "literal": "Owner"
+      }
+    ],
+    "token.PAYMENT_RECORDER": [
+      {
+        "literal": "Payment recorder"
+      }
+    ],
+    "token.PROVISION_OWNER": [
+      {
+        "literal": "Provision owner"
+      }
+    ],
+    "token.RECORD_PAYMENT": [
+      {
+        "literal": "Record actual payment"
+      }
+    ],
+    "token.REGISTER_ACTOR": [
+      {
+        "literal": "Register actor"
+      }
+    ],
+    "token.REINSTATE": [
+      {
+        "literal": "Reinstate"
+      }
+    ],
+    "token.REOPEN": [
+      {
+        "literal": "Reopen the case"
+      }
+    ],
+    "token.REPLACE": [
+      {
+        "literal": "Replace details"
+      }
+    ],
+    "token.SERVICE": [
+      {
+        "literal": "Service"
+      }
+    ],
+    "token.SET_ENABLED": [
+      {
+        "literal": "Set actor enabled state"
+      }
+    ],
+    "token.SET_GRANT": [
+      {
+        "literal": "Set grant"
+      }
+    ],
+    "token.VOID": [
+      {
+        "literal": "Void"
+      }
+    ],
+    "token.VOIDED": [
+      {
+        "literal": "Voided"
+      }
+    ],
+    "token.WITHDRAW_DECISION": [
+      {
+        "literal": "Withdraw payment decision"
+      }
+    ],
+    "ui.accepted": [
+      {
+        "literal": "accepted"
+      }
+    ],
+    "ui.acceptedContext": [
+      {
+        "literal": "recorded operation "
+      },
+      {
+        "hole": "operationId"
+      }
+    ],
+    "ui.acceptedHistory": [
+      {
+        "literal": "Case history"
+      }
+    ],
+    "ui.acceptedOperation": [
+      {
+        "literal": "Recorded change"
+      }
+    ],
+    "ui.acceptedSummary": [
+      {
+        "literal": "recorded case summary"
+      }
+    ],
+    "ui.action": [
+      {
+        "literal": "Action"
+      }
+    ],
+    "ui.actor": [
+      {
+        "literal": "Actor"
+      }
+    ],
+    "ui.actorGrants": [
+      {
+        "literal": "Actor grants"
+      }
+    ],
+    "ui.actors": [
+      {
+        "literal": "Actors and grants"
+      }
+    ],
+    "ui.after": [
+      {
+        "literal": "After: "
+      },
+      {
+        "hole": "value"
+      }
+    ],
+    "ui.amountHint": [
+      {
+        "literal": "Use ASCII digits and a dot, for example 0.10; up to "
+      },
+      {
+        "hole": "maximum"
+      },
+      {
+        "literal": " decimal places. No redundant leading zeros (00.10), signs or commas."
+      }
+    ],
+    "ui.authority": [
+      {
+        "literal": "Authority"
+      }
+    ],
+    "ui.authorityAction": [
+      {
+        "literal": "Authority action"
+      }
+    ],
+    "ui.authorityReceipt": [
+      {
+        "literal": "Authority act "
+      },
+      {
+        "hole": "act"
+      },
+      {
+        "literal": " for actor "
+      },
+      {
+        "hole": "actor"
+      },
+      {
+        "literal": "."
+      }
+    ],
+    "ui.availableCommands": [
+      {
+        "literal": "Available actions"
+      }
+    ],
+    "ui.backToActors": [
+      {
+        "literal": "Back to actors"
+      }
+    ],
+    "ui.backToCase": [
+      {
+        "literal": "Back to case"
+      }
+    ],
+    "ui.backToCases": [
+      {
+        "literal": "Back to cases"
+      }
+    ],
+    "ui.before": [
+      {
+        "literal": "Before: "
+      },
+      {
+        "hole": "value"
+      }
+    ],
+    "ui.cancel": [
+      {
+        "literal": "Cancel"
+      }
+    ],
+    "ui.canonicalCopyHint": [
+      {
+        "literal": "Copies the exact underlying value. Dates use YYYY-MM-DD and amounts use a decimal point, regardless of display format."
+      }
+    ],
+    "ui.caseDetail": [
+      {
+        "literal": "Case detail"
+      }
+    ],
+    "ui.caseNotFound": [
+      {
+        "literal": "Case was not found."
+      }
+    ],
+    "ui.caseRow": [
+      {
+        "hole": "status"
+      },
+      {
+        "literal": " \u00B7 revision "
+      },
+      {
+        "hole": "revision"
+      }
+    ],
+    "ui.cases": [
+      {
+        "literal": "Cases"
+      }
+    ],
+    "ui.changeCommandDescription": [
+      {
+        "literal": "Discard this draft and choose another command?"
+      }
+    ],
+    "ui.changeCommandTitle": [
+      {
+        "literal": "Discard these draft changes?"
+      }
+    ],
+    "ui.characterWarning": [
+      {
+        "literal": "Contains "
+      },
+      {
+        "hole": "characters"
+      }
+    ],
+    "ui.close": [
+      {
+        "literal": "Close inspection"
+      }
+    ],
+    "ui.command": [
+      {
+        "literal": "Case action"
+      }
+    ],
+    "ui.commandDescription": [
+      {
+        "hole": "label"
+      },
+      {
+        "literal": ": "
+      },
+      {
+        "hole": "meaning"
+      }
+    ],
+    "ui.confirmExactRequest": [
+      {
+        "literal": "I confirm this exact request."
+      }
+    ],
+    "ui.copied": [
+      {
+        "hole": "label"
+      },
+      {
+        "literal": " copied."
+      }
+    ],
+    "ui.copy": [
+      {
+        "literal": "Copy "
+      },
+      {
+        "hole": "label"
+      }
+    ],
+    "ui.copyFallback": [
+      {
+        "hole": "label"
+      },
+      {
+        "literal": " copy fallback"
+      }
+    ],
+    "ui.correctionHint": [
+      {
+        "literal": "Choose an action for each group. Kept details use the current case when recorded."
+      }
+    ],
+    "ui.countryHint": [
+      {
+        "literal": "Use two uppercase letters. ZZ means unknown or international."
+      }
+    ],
+    "ui.countryName": [
+      {
+        "hole": "code"
+      },
+      {
+        "literal": ": "
+      },
+      {
+        "hole": "name"
+      }
+    ],
+    "ui.countryUnassigned": [
+      {
+        "literal": "No country name is available for "
+      },
+      {
+        "hole": "code"
+      },
+      {
+        "literal": ". Check the intended code."
+      }
+    ],
+    "ui.countryUnknown": [
+      {
+        "literal": "Unknown or international"
+      }
+    ],
+    "ui.currencyHint": [
+      {
+        "hole": "length"
+      },
+      {
+        "literal": " uppercase ASCII letters (A\u2013Z)."
+      }
+    ],
+    "ui.currentCase": [
+      {
+        "literal": "current case"
+      }
+    ],
+    "ui.dateHint": [
+      {
+        "literal": "Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06."
+      }
+    ],
+    "ui.discardAndChange": [
+      {
+        "literal": "Discard and change action"
+      }
+    ],
+    "ui.discardAndLeave": [
+      {
+        "literal": "Discard and leave"
+      }
+    ],
+    "ui.displayLocale": [
+      {
+        "literal": "Date and number format"
+      }
+    ],
+    "ui.editInput": [
+      {
+        "literal": "Edit input"
+      }
+    ],
+    "ui.emptyInput": [
+      {
+        "literal": "Empty input"
+      }
+    ],
+    "ui.enabled": [
+      {
+        "literal": "Enabled"
+      }
+    ],
+    "ui.exactCaseReference": [
+      {
+        "hole": "label"
+      },
+      {
+        "literal": " (exact)"
+      }
+    ],
+    "ui.exactOperationId": [
+      {
+        "literal": "Exact operation ID"
+      }
+    ],
+    "ui.exactReference": [
+      {
+        "hole": "label"
+      },
+      {
+        "literal": " (exact): "
+      },
+      {
+        "hole": "reference"
+      }
+    ],
+    "ui.exactReplay": [
+      {
+        "literal": "exact replay"
+      }
+    ],
+    "ui.fieldHelp": [
+      {
+        "literal": "Meaning and exact copy"
+      }
+    ],
+    "ui.findCase": [
+      {
+        "literal": "Find case"
+      }
+    ],
+    "ui.fullHistory": [
+      {
+        "literal": "Full recorded fields"
+      }
+    ],
+    "ui.grantsEnd": [
+      {
+        "literal": "All grants returned for this review are shown."
+      }
+    ],
+    "ui.grantsPartial": [
+      {
+        "literal": "Only part of this actor\u2019s grants is shown."
+      }
+    ],
+    "ui.historyContext": [
+      {
+        "literal": "history operation "
+      },
+      {
+        "hole": "operationId"
+      }
+    ],
+    "ui.historyDetail": [
+      {
+        "literal": "History detail"
+      }
+    ],
+    "ui.historyHint": [
+      {
+        "literal": "History entries are read-only. Expand an entry to see the recorded case details and who recorded them."
+      }
+    ],
+    "ui.historySummary": [
+      {
+        "hole": "command"
+      },
+      {
+        "literal": " \u00B7 revision "
+      },
+      {
+        "hole": "revision"
+      },
+      {
+        "literal": " \u00B7 "
+      },
+      {
+        "hole": "timestamp"
+      }
+    ],
+    "ui.importTarget": [
+      {
+        "literal": "Imported target "
+      },
+      {
+        "hole": "reference"
+      },
+      {
+        "literal": " \u00B7 action "
+      },
+      {
+        "hole": "command"
+      },
+      {
+        "literal": " \u00B7 expected revision "
+      },
+      {
+        "hole": "revision"
+      }
+    ],
+    "ui.inspect": [
+      {
+        "literal": "Inspect"
+      }
+    ],
+    "ui.inspectOperationId": [
+      {
+        "literal": "Inspect operation ID"
+      }
+    ],
+    "ui.inspectRevocation": [
+      {
+        "literal": "Inspect revocation"
+      }
+    ],
+    "ui.keepEditing": [
+      {
+        "literal": "Keep editing"
+      }
+    ],
+    "ui.language": [
+      {
+        "literal": "Interface language"
+      }
+    ],
+    "ui.languageDescription": [
+      {
+        "literal": "Language changes display text and keeps the current draft and review."
+      }
+    ],
+    "ui.leaveDraftDescription": [
+      {
+        "literal": "Discard this draft and leave the editor?"
+      }
+    ],
+    "ui.lifecycleActive": [
+      {
+        "literal": "Active"
+      }
+    ],
+    "ui.lifecycleDisposition": [
+      {
+        "literal": "Disposition: "
+      },
+      {
+        "hole": "value"
+      }
+    ],
+    "ui.lifecycleErased": [
+      {
+        "literal": "Erased \u2014 only the case reference and revision remain."
+      }
+    ],
+    "ui.lifecyclePrivacy": [
+      {
+        "literal": "Privacy phase: "
+      },
+      {
+        "hole": "value"
+      }
+    ],
+    "ui.lifecycleStatus": [
+      {
+        "literal": "Disposition and privacy status"
+      }
+    ],
+    "ui.lifecycleUnavailable": [
+      {
+        "literal": "Lifecycle status is unavailable for this case."
+      }
+    ],
+    "ui.lifecycleVoided": [
+      {
+        "literal": "Voided as a data-entry error"
+      }
+    ],
+    "ui.loading": [
+      {
+        "literal": "Loading\u2026"
+      }
+    ],
+    "ui.loadingCases": [
+      {
+        "literal": "Loading cases\u2026"
+      }
+    ],
+    "ui.loadingCurrentCase": [
+      {
+        "literal": "Loading current case\u2026"
+      }
+    ],
+    "ui.loadingDefinition": [
+      {
+        "literal": "Loading application\u2026"
+      }
+    ],
+    "ui.loadingHistory": [
+      {
+        "literal": "Loading case history\u2026"
+      }
+    ],
+    "ui.loadingLifecycle": [
+      {
+        "literal": "Loading lifecycle status\u2026"
+      }
+    ],
+    "ui.loadingSession": [
+      {
+        "literal": "Loading local session\u2026"
+      }
+    ],
+    "ui.loginInstructions": [
+      {
+        "literal": "Sign in with your organization\u0027s identity provider."
+      }
+    ],
+    "ui.lookingUp": [
+      {
+        "literal": "Looking up\u2026"
+      }
+    ],
+    "ui.moreActors": [
+      {
+        "literal": "More actors"
+      }
+    ],
+    "ui.moreAttempts": [
+      {
+        "literal": "Load more attempts"
+      }
+    ],
+    "ui.moreCases": [
+      {
+        "literal": "Load more cases"
+      }
+    ],
+    "ui.moreGrants": [
+      {
+        "literal": "More grants"
+      }
+    ],
+    "ui.moreHistory": [
+      {
+        "literal": "Load more history"
+      }
+    ],
+    "ui.no": [
+      {
+        "literal": "No"
+      }
+    ],
+    "ui.noAccessibleActors": [
+      {
+        "literal": "No accessible actors returned."
+      }
+    ],
+    "ui.noAccessibleCases": [
+      {
+        "literal": "No accessible cases returned."
+      }
+    ],
+    "ui.noAccessibleHistory": [
+      {
+        "literal": "No accessible history entries returned."
+      }
+    ],
+    "ui.noAuthoredValues": [
+      {
+        "literal": "This action needs no additional details."
+      }
+    ],
+    "ui.noViews": [
+      {
+        "literal": "No workspace views are available to this actor."
+      }
+    ],
+    "ui.notRecorded": [
+      {
+        "literal": "Not recorded"
+      }
+    ],
+    "ui.observation": [
+      {
+        "literal": "Observation: "
+      },
+      {
+        "hole": "state"
+      }
+    ],
+    "ui.observeOperation": [
+      {
+        "literal": "Look up recorded result"
+      }
+    ],
+    "ui.observedAccepted": [
+      {
+        "literal": "Observed accepted operation "
+      },
+      {
+        "hole": "operationId"
+      },
+      {
+        "literal": "."
+      }
+    ],
+    "ui.observedContext": [
+      {
+        "literal": "observed operation "
+      },
+      {
+        "hole": "operationId"
+      }
+    ],
+    "ui.observedReceipt": [
+      {
+        "literal": "Accepted operation "
+      },
+      {
+        "hole": "operationId"
+      },
+      {
+        "literal": " \u00B7 "
+      },
+      {
+        "hole": "command"
+      },
+      {
+        "literal": " \u00B7 recorded by "
+      },
+      {
+        "hole": "actor"
+      }
+    ],
+    "ui.operationAccepted": [
+      {
+        "literal": "Operation "
+      },
+      {
+        "hole": "operationId"
+      },
+      {
+        "literal": " is accepted."
+      }
+    ],
+    "ui.operationDigest": [
+      {
+        "literal": "Operation "
+      },
+      {
+        "hole": "operationId"
+      },
+      {
+        "literal": " \u00B7 digest "
+      },
+      {
+        "hole": "digest"
+      }
+    ],
+    "ui.operationLookup": [
+      {
+        "literal": "Operation lookup"
+      }
+    ],
+    "ui.operationNotObserved": [
+      {
+        "literal": "Operation was not observed."
+      }
+    ],
+    "ui.operations": [
+      {
+        "literal": "Operations"
+      }
+    ],
+    "ui.pageEnd": [
+      {
+        "literal": "End of results in this visible scope."
+      }
+    ],
+    "ui.pagePartial": [
+      {
+        "literal": "More results are available in this visible scope."
+      }
+    ],
+    "ui.pending": [
+      {
+        "literal": "Pending"
+      }
+    ],
+    "ui.preferencesChanged": [
+      {
+        "literal": "Presentation preferences changed."
+      }
+    ],
+    "ui.preferencesHint": [
+      {
+        "literal": "Interface language changes text; date and number format changes displayed values. Enter dates and amounts in the required input format."
+      }
+    ],
+    "ui.preferencesNotSaved": [
+      {
+        "literal": "Preferences work for this session but could not be saved in this browser."
+      }
+    ],
+    "ui.previewOperation": [
+      {
+        "literal": "Review changes"
+      }
+    ],
+    "ui.previewing": [
+      {
+        "literal": "Reviewing\u2026"
+      }
+    ],
+    "ui.primary": [
+      {
+        "literal": "Primary"
+      }
+    ],
+    "ui.principal": [
+      {
+        "literal": "Principal"
+      }
+    ],
+    "ui.productVersion": [
+      {
+        "literal": "Product version: "
+      },
+      {
+        "hole": "version"
+      }
+    ],
+    "ui.provenance": [
+      {
+        "literal": "Prepared with "
+      },
+      {
+        "hole": "version"
+      },
+      {
+        "literal": " \u00B7 "
+      },
+      {
+        "hole": "contract"
+      }
+    ],
+    "ui.pseudo": [
+      {
+        "literal": "Expanded English (layout test)"
+      }
+    ],
+    "ui.receiptAttribution": [
+      {
+        "literal": "Operation "
+      },
+      {
+        "hole": "operationId"
+      },
+      {
+        "literal": " \u00B7 recorded by "
+      },
+      {
+        "hole": "actor"
+      },
+      {
+        "literal": " \u00B7 "
+      },
+      {
+        "hole": "state"
+      }
+    ],
+    "ui.reference": [
+      {
+        "hole": "label"
+      },
+      {
+        "literal": ": "
+      },
+      {
+        "hole": "reference"
+      }
+    ],
+    "ui.referenceHint": [
+      {
+        "literal": "Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained."
+      }
+    ],
+    "ui.registerLabel": [
+      {
+        "literal": "ClaimCore case register"
+      }
+    ],
+    "ui.reload": [
+      {
+        "literal": "Reload"
+      }
+    ],
+    "ui.reloadActors": [
+      {
+        "literal": "Reload actors"
+      }
+    ],
+    "ui.reloadCases": [
+      {
+        "literal": "Reload cases"
+      }
+    ],
+    "ui.reloadContract": [
+      {
+        "literal": "Reload page"
+      }
+    ],
+    "ui.reloadGrants": [
+      {
+        "literal": "Reload grants"
+      }
+    ],
+    "ui.reloadHistory": [
+      {
+        "literal": "Reload history"
+      }
+    ],
+    "ui.requestDigest": [
+      {
+        "literal": "Exact request SHA-256 digest"
+      }
+    ],
+    "ui.resolveConsequence": [
+      {
+        "literal": "The server may record this exact request if still permitted, or show an earlier accepted result. The returned outcome tells you what happened; success is not guaranteed."
+      }
+    ],
+    "ui.resolveExact": [
+      {
+        "literal": "Try to record this request"
+      }
+    ],
+    "ui.resolveTitle": [
+      {
+        "literal": "Try to record the reviewed request?"
+      }
+    ],
+    "ui.retryExact": [
+      {
+        "literal": "Retry the same operation"
+      }
+    ],
+    "ui.retryExactDescription": [
+      {
+        "literal": "The outcome is unknown. Keep this page open and retry the same operation. Closing or reloading loses this in-memory request. IDs alone do not prove acceptance or reconstruct the request."
+      }
+    ],
+    "ui.returnToCase": [
+      {
+        "literal": "Return to case"
+      }
+    ],
+    "ui.returnToEdit": [
+      {
+        "literal": "Return to editing"
+      }
+    ],
+    "ui.reviewConfirmation": [
+      {
+        "literal": "I confirm these changes."
+      }
+    ],
+    "ui.reviewDescription": [
+      {
+        "literal": "Review the proposed values and confirm this exact operation."
+      }
+    ],
+    "ui.reviewExactRequest": [
+      {
+        "literal": "Review exact request"
+      }
+    ],
+    "ui.reviewTarget": [
+      {
+        "literal": "Target "
+      },
+      {
+        "hole": "reference"
+      },
+      {
+        "literal": " \u00B7 expected revision "
+      },
+      {
+        "hole": "revision"
+      }
+    ],
+    "ui.reviewTitle": [
+      {
+        "literal": "Review changes"
+      }
+    ],
+    "ui.revision": [
+      {
+        "literal": "Revision "
+      },
+      {
+        "hole": "revision"
+      }
+    ],
+    "ui.revisionLabel": [
+      {
+        "literal": "Revision"
+      }
+    ],
+    "ui.revocationSummary": [
+      {
+        "literal": "REVOKED \u00B7 "
+      },
+      {
+        "hole": "operationId"
+      },
+      {
+        "literal": " \u00B7 "
+      },
+      {
+        "hole": "timestamp"
+      }
+    ],
+    "ui.revokedHint": [
+      {
+        "literal": "This revoked authority is terminal. It cannot be resurrected or submitted."
+      }
+    ],
+    "ui.revokedOperation": [
+      {
+        "literal": "Operation "
+      },
+      {
+        "hole": "operationId"
+      },
+      {
+        "literal": " was revoked at "
+      },
+      {
+        "hole": "timestamp"
+      },
+      {
+        "literal": "."
+      }
+    ],
+    "ui.signIn": [
+      {
+        "literal": "Sign in"
+      }
+    ],
+    "ui.signOut": [
+      {
+        "literal": "Sign out"
+      }
+    ],
+    "ui.snapshotWithheld": [
+      {
+        "literal": "The recorded fields are withheld under your current access rights."
+      }
+    ],
+    "ui.submitExact": [
+      {
+        "literal": "Record changes"
+      }
+    ],
+    "ui.submitOperation": [
+      {
+        "literal": "Submit operation"
+      }
+    ],
+    "ui.submitting": [
+      {
+        "literal": "Recording\u2026"
+      }
+    ],
+    "ui.summaryHistory": [
+      {
+        "literal": "Summary"
+      }
+    ],
+    "ui.technicalDetails": [
+      {
+        "literal": "Technical details for support"
+      }
+    ],
+    "ui.terminal": [
+      {
+        "literal": "Terminal"
+      }
+    ],
+    "ui.textHint": [
+      {
+        "literal": "Up to "
+      },
+      {
+        "hole": "maximum"
+      },
+      {
+        "literal": " characters."
+      }
+    ],
+    "ui.tryAgain": [
+      {
+        "literal": "Try again"
+      }
+    ],
+    "ui.unavailable": [
+      {
+        "literal": "Unavailable"
+      }
+    ],
+    "ui.unchangedUntilSubmit": [
+      {
+        "literal": "Review is advisory. The case changes only when the operation is accepted."
+      }
+    ],
+    "ui.viewGrants": [
+      {
+        "literal": "View grants"
+      }
+    ],
+    "ui.webIdentity": [
+      {
+        "literal": "Wire contract: "
+      },
+      {
+        "hole": "digest"
+      }
+    ],
+    "ui.working": [
+      {
+        "literal": "Working\u2026"
+      }
+    ],
+    "ui.yes": [
+      {
+        "literal": "Yes"
       }
     ]
   },

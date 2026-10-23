@@ -50,7 +50,7 @@ module ContractDiscovery =
             JsonNode.Parse(document.RootElement.GetProperty("messages").GetRawText())
             |> nonNull
 
-        for id in ClaimCore.Contract.CliHelp.diagnosticTopics do
+        for id in ClaimCore.Contract.CliCommands.diagnosticTopics do
             let part = JsonObject()
             part["literal"] <- JsonValue.Create(helpTopic "en" ("diagnostic." + id))
             let parts = JsonArray()

@@ -165,7 +165,7 @@ let private embeddedCatalogs () =
                     expected
                     "The shipped CLI embeds every authored message, including English."
 
-        for topic in CliHelp.topics do
+        for topic in CliCommands.topics do
             let text = ContractDiscovery.helpTopic language topic
             Expect.isGreaterThan text.Length 100 "Every admitted help topic renders offline."
             Expect.isFalse (text.Contains "{maximum") "Help interpolates its authoritative bounds."

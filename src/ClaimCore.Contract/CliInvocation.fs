@@ -46,7 +46,7 @@ module CliInvocations =
         collect [] None None arguments
 
     let private help topic language =
-        if List.contains topic CliHelp.topics then
+        if List.contains topic CliCommands.topics then
             Ok(CliInvocation.Help(topic, language))
         else
             Error CliUsageIssue.Topic
@@ -107,12 +107,13 @@ module CliInvocations =
                     )))
 
     let private alias command flag =
-        List.contains command CliHelp.commands && List.contains flag CliHelp.aliases
+        List.contains command CliCommands.commands
+        && List.contains flag CliCommands.aliases
 
     let admit arguments =
         match arguments with
         | [] -> help "overview" "en"
-        | [ flag ] when List.contains flag CliHelp.aliases -> help "overview" "en"
+        | [ flag ] when List.contains flag CliCommands.aliases -> help "overview" "en"
         | [ command; flag ] when alias command flag -> help command "en"
         | [ "call" ] -> Ok(CliInvocation.Call false)
         | [ "call"; "--retry" ] -> Ok(CliInvocation.Call true)

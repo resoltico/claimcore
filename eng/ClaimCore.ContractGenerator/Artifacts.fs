@@ -96,14 +96,8 @@ module ContractArtifacts =
     let private helpDocument () =
         [
             for language in ClaimCore.Contract.LocalizationPolicy.languages do
-                for topic in ClaimCore.Contract.CliHelp.topics do
-                    language + "." + topic,
-                    ClaimCore.Contract.CliHelp.text
-                        language
-                        topic
-                        Limits.MaximumInvocationBytes
-                        Limits.MaximumRequestBytes
-                        Limits.MaximumResponseBytes
+                for topic in ClaimCore.Contract.CliCommands.topics do
+                    language + "." + topic, AuthoredMessages.help language topic
         ]
         @ [
             for language in ClaimCore.Contract.LocalizationPolicy.languages do
@@ -115,18 +109,12 @@ module ContractArtifacts =
                         ClaimCore.Contract.CliUsageIssue.Selector
                     ] do
                     language + ".usage." + string issue,
-                    ClaimCore.Contract.CliHelp.usage language issue
+                    AuthoredMessages.help language ("usage." + string issue)
         ]
         @ [
             for language in ClaimCore.Contract.LocalizationPolicy.languages do
-                for id in ClaimCore.Contract.CliHelp.diagnosticTopics do
-                    language + ".diagnostic." + id,
-                    ClaimCore.Contract.CliHelp.diagnosticDiscovery
-                        language
-                        id
-                        Limits.MaximumInvocationBytes
-                        Limits.MaximumRequestBytes
-                        Limits.MaximumResponseBytes
+                for id in ClaimCore.Contract.CliCommands.diagnosticTopics do
+                    language + ".diagnostic." + id, AuthoredMessages.help language id
         ]
         |> Map.ofList
         |> System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
@@ -158,10 +146,9 @@ module ContractArtifacts =
                 Name = "cli-messages.json"
                 Role = ArtifactRole.RuntimePrecursor
                 Bytes =
-                    ClaimCore.Contract.MessageText.all
-                    |> Map.filter (fun key _ ->
-                        key.StartsWith("cli.", System.StringComparison.Ordinal))
-                    |> Map.map (fun key _ -> ClaimCore.Contract.MessageText.literal key)
+                    [ "cli.callbackAccepted"; "cli.callbackRefused"; "cli.beforeDispatchFailure" ]
+                    |> List.map (fun key -> key, AuthoredMessages.literal key)
+                    |> Map.ofList
                     |> System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
             }
         ]

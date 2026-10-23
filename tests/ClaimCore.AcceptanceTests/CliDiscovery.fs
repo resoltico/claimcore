@@ -134,7 +134,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
         ProcessRunner.dotnet 8_000 fixture.Cli args environment input
 
     for language in LocalizationPolicy.languages do
-        for topic in CliHelp.topics do
+        for topic in CliCommands.topics do
             let result = invoke [ "help"; topic; "--language"; language ] None
             Expect.equal result.ExitCode 0 "All topics work offline"
             Expect.equal result.StandardError.Length 0 "Human help has no errors"
@@ -153,7 +153,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
                 identity
                 "Human summary includes exact generated capability and field identities"
 
-    for command in CliHelp.commands do
+    for command in CliCommands.commands do
         for alias in [ "--help"; "-h" ] do
             let result = invoke [ command; alias ] None
             Expect.equal result.ExitCode 0 "Alias never opens stdin/config/network"

@@ -20,7 +20,7 @@
     <Compile Include="Vocabulary/DeliveryVocabulary.fs" />
     <Compile Include="Vocabulary/InputDiagnostics.fs" />
     <Compile Include="Vocabulary/ProtocolFailures.fs" />
-    <Compile Include="Vocabulary/CliHelp.fs" />
+    <Compile Include="Vocabulary/CliCommands.fs" />
     <Compile Include="../../contracts/contract-identity.fs" />
     <Compile Include="Json/JsonValue.fs" />
     <Compile Include="Json/StrictJson.fs" />

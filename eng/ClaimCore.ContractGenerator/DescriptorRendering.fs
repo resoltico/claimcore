@@ -43,7 +43,7 @@ module internal ProtocolFieldPresentation =
         |> List.groupBy fst
         |> List.map (fun (_, values) ->
             match values with
-            | [ name, identity ] -> name, MessageText.literal identity, identity
+            | [ name, identity ] -> name, AuthoredMessages.literal identity, identity
             | _ -> invalidOp "Protocol field presentation identities disagree.")
 
 type FieldPresentationDefinition =
@@ -127,9 +127,9 @@ module ContractDescriptors =
         for field in definitions.Fields do
             writer.WriteStartObject()
             writer.WriteString("name", BusinessField.token field.Name)
-            writer.WriteString("label", MessageText.literal field.LabelId)
+            writer.WriteString("label", AuthoredMessages.literal field.LabelId)
             writer.WriteString("labelId", field.LabelId)
-            writer.WriteString("meaning", (MessageText.literal field.MeaningId))
+            writer.WriteString("meaning", (AuthoredMessages.literal field.MeaningId))
             writer.WriteString("meaningId", field.MeaningId)
             writer.WriteBoolean("allowsAbsence", field.AllowsAbsence)
             writer.WritePropertyName("scalar")
@@ -147,8 +147,8 @@ module ContractDescriptors =
         for command in definitions.Commands do
             writer.WriteStartObject()
             writer.WriteString("kind", CaseActKinds.token command.Kind)
-            writer.WriteString("label", (MessageText.literal command.LabelId))
-            writer.WriteString("meaning", (MessageText.literal command.MeaningId))
+            writer.WriteString("label", (AuthoredMessages.literal command.LabelId))
+            writer.WriteString("meaning", (AuthoredMessages.literal command.MeaningId))
             writer.WriteString("labelId", command.LabelId)
 
             writer.WriteString("meaningId", command.MeaningId)
@@ -166,8 +166,8 @@ module ContractDescriptors =
         writer.WriteString("name", "reason")
         writer.WriteString("labelId", "field.reason.label")
         writer.WriteString("meaningId", "field.reason.meaning")
-        writer.WriteString("label", (MessageText.literal "field.reason.label"))
-        writer.WriteString("meaning", (MessageText.literal "field.reason.meaning"))
+        writer.WriteString("label", (AuthoredMessages.literal "field.reason.label"))
+        writer.WriteString("meaning", (AuthoredMessages.literal "field.reason.meaning"))
         writer.WritePropertyName("scalar")
         writer.WriteStartObject()
         scalar writer (FieldDefinitions.scalar InputTarget.Reason)
@@ -185,7 +185,7 @@ module ContractDescriptors =
     let private authorityInput (writer: Utf8JsonWriter) prefix (input: AuthorityInputDefinition) =
         writer.WriteStartObject()
         writer.WriteString("fieldName", input.Name)
-        writer.WriteString("label", (MessageText.literal input.LabelId))
+        writer.WriteString("label", (AuthoredMessages.literal input.LabelId))
         writer.WriteString("labelId", input.LabelId)
         writer.WriteString("primitive", authorityPrimitive input.Primitive)
         writer.WritePropertyName("path")
@@ -222,8 +222,8 @@ module ContractDescriptors =
         for definition in definitions.AuthorityCommands do
             writer.WriteStartObject()
             writer.WriteString("kind", AuthorityKinds.token definition.Kind)
-            writer.WriteString("label", (MessageText.literal definition.LabelId))
-            writer.WriteString("meaning", (MessageText.literal definition.MeaningId))
+            writer.WriteString("label", (AuthoredMessages.literal definition.LabelId))
+            writer.WriteString("meaning", (AuthoredMessages.literal definition.MeaningId))
 
             writer.WriteString("labelId", definition.LabelId)
 

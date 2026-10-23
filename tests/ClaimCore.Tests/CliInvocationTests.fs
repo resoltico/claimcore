@@ -9,7 +9,7 @@ open ClaimCore.Contract.Protocol
 open ClaimCore.Application
 
 let private aliases () =
-    for command in CliHelp.commands do
+    for command in CliCommands.commands do
         for alias in [ "--help"; "-h" ] do
             Expect.equal
                 (CliInvocations.admit [ command; alias ])
@@ -21,20 +21,14 @@ let private aliases () =
                 "Extra operands never dispatch"
 
     for language in LocalizationPolicy.languages do
-        for topic in CliHelp.topics do
+        for topic in CliCommands.topics do
             Expect.equal
                 (CliInvocations.admit [ "help"; topic; "--language"; language ])
                 (Ok(CliInvocation.Help(topic, language)))
                 "Canonical localized help"
 
             Expect.isGreaterThan
-                (CliHelp.text
-                    language
-                    topic
-                    Limits.MaximumInvocationBytes
-                    Limits.MaximumRequestBytes
-                    Limits.MaximumResponseBytes)
-                    .Length
+                (ClaimCore.Cli.ContractDiscovery.helpTopic language topic).Length
                 100
                 "Useful guidance"
 

@@ -1,4 +1,4 @@
 namespace ClaimCore.Contract.Protocol
 
 module internal ConsumerContractIdentity =
-    let Value = "c95ca92a242b620d03849e5a6136fb6e13584ad64d72b416c623a0ef3e320bed"
+    let Value = "48dedc95200dbcc3ff697e72d7e44e6850189f9d0b17f78b15505d1c679c093d"

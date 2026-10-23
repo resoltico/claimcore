@@ -19,7 +19,6 @@ module CatalogValidation =
             use document = JsonDocument.Parse source
             document.RootElement.EnumerateObject() |> Seq.map _.Name |> Seq.toArray)
         |> Set.ofArray
-        |> Set.union (MessageText.all |> Map.keys |> Set.ofSeq)
 
     let validateIdentity known identity =
         if not (Set.contains identity known) then
