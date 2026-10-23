@@ -83,14 +83,14 @@ export const useSession = () => {
       return;
     }
     const value =
-      result.kind === "outcome"
+      result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED"
         ? {
             authenticated: false,
             antiforgeryToken: null,
             contractIdentity: consumerContractIdentity,
           }
         : null;
-    // A successful logout response is an anonymous snapshot. No claimant-bearing state survives its epoch.
+    // Only successful unit replies confirm logout; every result advances the privacy epoch.
     setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch)));
   };
 

@@ -7,7 +7,10 @@ export const runtime = {
   businessDate: "2026-09-09",
   timeZone: "Etc/UTC",
 };
-const fixtureData = (endpoint: string, data: unknown): unknown => {
+const fixtureData = (endpoint: string, tag: string, data: unknown): unknown => {
+  if (tag !== "SUCCEEDED") {
+    return data;
+  }
   if (endpoint === "session.logout") {
     return null;
   }
@@ -20,7 +23,7 @@ const fixtureData = (endpoint: string, data: unknown): unknown => {
   return data;
 };
 export const response = (endpoint: string, tag: string, data: unknown, status = 200): Response =>
-  transportResponse(endpoint, tag, fixtureData(endpoint, data), status);
+  transportResponse(endpoint, tag, fixtureData(endpoint, tag, data), status);
 
 export const context = {
   ...runtime,
