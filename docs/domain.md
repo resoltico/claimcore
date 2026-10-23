@@ -52,12 +52,11 @@ reserve, banking, address, notes, attachments or correction-reason fields.
 Status is either `OPENED` or `CLOSED`. Status is independent of payment: recording payment does not close a
 case, and a case may close without a decision or payment.
 
-`OPEN` creates an undecided case at revision zero; AMEND_REGISTRATION replaces registration;
+`OPEN` creates an undecided case at revision one from expected revision zero; AMEND_REGISTRATION replaces registration;
 DECIDE/WITHDRAW_DECISION record/remove an unpaid decision; RECORD_PAYMENT/CLEAR_PAYMENT record/remove payment.
 CLOSE/REOPEN change status. CORRECT_CASE atomically changes existing facts without changing reference/status.
 `claimcore describe commands` owns the current input and correction vocabulary.
 
-Status/payment are independent: payment never closes a case and closure requires neither decision nor payment.
 CLEAR_PAYMENT returns to unpaid decided state; every new acceptance advances one revision.
 
 Ordinary editing of a closed case requires reopening it; `CORRECT_CASE` can correct its facts while keeping it
