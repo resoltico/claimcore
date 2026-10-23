@@ -26,7 +26,7 @@ The human verbs use the same typed inputs. For example, after step three, this p
 same request frame as `04-close.json` without authentication or a network call:
 
 ```sh
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- case close DEMO-0001 --expected-revision 3 --id 10000000-0000-4000-8000-000000000004 --dry-run
+dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- case close DEMO-0001 --expected-revision 3 --operation-id 10000000-0000-4000-8000-000000000004 --dry-run
 ```
 
 Use `help verbs` for the registry-derived grammar; omit `--dry-run` to execute, or send the
@@ -55,7 +55,8 @@ Do not change their request bytes to retry an uncertain operation.
 
 A structured reply has exactly `endpoint`, `operationId`, `delivery` and `result`.
 The first two are nullable when no request was admitted. Delivery is `NOT_SENT`,
-`UNCONFIRMED` or `ACCEPTED`; the result contains the typed outcome, host failure or local failure.
+`DELIVERED` or `UNCERTAIN`; the result contains the typed outcome, host failure or local failure.
+Delivery does not establish acceptance; inspect the typed outcome in `result`.
 Host failures carry `code` and `phase`; HTTP status comes from the response.
 
 An uncertain mutation exits 4 and writes the exact request frame as the last stderr line.
