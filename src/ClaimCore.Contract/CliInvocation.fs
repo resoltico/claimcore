@@ -111,6 +111,12 @@ module CliInvocations =
         List.contains command CliCommands.commands
         && List.contains flag CliCommands.aliases
 
+    let private admitVersion =
+        function
+        | [] -> Ok(CliInvocation.Version false)
+        | [ "--json" ] -> Ok(CliInvocation.Version true)
+        | _ -> Error CliUsageIssue.Invocation
+
     let admit arguments =
         match arguments with
         | [] -> help "overview" "en"
@@ -119,8 +125,7 @@ module CliInvocations =
         | [ "call" ] -> Ok(CliInvocation.Call false)
         | [ "call"; "--retry" ] -> Ok(CliInvocation.Call true)
         | [ "session" ] -> Ok CliInvocation.Session
-        | [ "version" ] -> Ok(CliInvocation.Version false)
-        | [ "version"; "--json" ] -> Ok(CliInvocation.Version true)
+        | "version" :: tail -> admitVersion tail
         | "help" :: tail -> admitHelp tail
         | "describe" :: tail -> admitDescribe tail
         | "schema" :: tail when
