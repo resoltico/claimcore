@@ -37,6 +37,43 @@ let private decided = (CaseAct.Decide decision)
 let private closed = CaseAct.Close
 let private voided = (CaseAct.Void "Synthetic reason")
 
+let private baseline =
+    lazy
+        (let path =
+            System.IO.Path.Combine(
+                ClaimCore.TestSupport.RepositoryRoot.find (),
+                "tests/fixtures/refusal-baseline.json"
+            )
+
+         use document = JsonDocument.Parse(System.IO.File.ReadAllBytes path)
+
+         document.RootElement.GetProperty("observations").EnumerateArray()
+         |> Seq.map (fun row ->
+             (row.GetProperty("code").GetString() |> nonNull,
+              row.GetProperty("target").GetString() |> Option.ofObj),
+             (row.GetProperty("action").GetString() |> nonNull))
+         |> Map.ofSeq)
+
+let private baselinePolicy code (reason: Refusal) =
+    match Map.tryFind (code, reason.Field) baseline.Value with
+    | Some action ->
+        Expect.equal (string reason.Action) action "Captured baseline action is preserved."
+    | None ->
+        Expect.contains
+            [ Some "principal.issuer"; Some "principal.subject" ]
+            reason.Field
+            "Only principal targets extend the captured baseline."
+
+        Expect.contains
+            [ "INPUT_TEXT_REQUIRED"; "INPUT_PRINCIPAL_FORMAT" ]
+            code
+            "Only principal admission extends the captured baseline."
+
+        Expect.equal
+            reason.Action
+            RecommendedAction.CorrectInput
+            "Principal admission is repairable input."
+
 let private diagnostic reason =
     let identifier = (Refusals.row reason).Code
 
@@ -64,6 +101,7 @@ let private diagnostic reason =
         (identifier)
         "The public diagnostic token agrees with the request-producing Application refusal"
 
+    baselinePolicy identifier reason
     identifier, reason.Field
 
 let private refused =
@@ -398,6 +436,19 @@ let private completeVocabulary () =
         let! boundaries = boundaryEvidence () |> Async.AwaitTask
         let evidence = scalar @ List.ofArray states @ boundaries
         let identifiers = evidence |> List.map fst |> Set.ofList
+
+        let baselineCodes = baseline.Value.Keys |> Seq.map fst |> Set.ofSeq
+
+        Expect.equal
+            (Set.ofList Refusals.codes)
+            (Set.add "INPUT_PRINCIPAL_FORMAT" baselineCodes)
+            "The code table preserves every captured refusal with the adopted principal extension."
+
+        let produced = Set.ofList evidence
+
+        Expect.isEmpty
+            (Set.difference (baseline.Value.Keys |> Set.ofSeq) produced |> Set.toList)
+            "Every captured code and target still has a producing request."
 
         let expected = Refusals.codes |> Set.ofList
 

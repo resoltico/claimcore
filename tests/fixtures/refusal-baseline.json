@@ -1,0 +1,265 @@
+{
+  "revision": "5b15553172396ad6a7cbd04c1c79179cc3a8bd5e",
+  "observations": [
+    {
+      "code": "ACCESS_RESOURCE_UNAVAILABLE",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "ACTOR_ALREADY_REGISTERED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "ACTOR_UNKNOWN",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "ACT_NOT_PERMITTED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "ALREADY_VOIDED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_ALREADY_CLOSED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_ALREADY_EXISTS",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_ALREADY_OPENED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_AMENDMENT_REQUIRES_UNDECIDED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_CLOSED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_DECISION_ALREADY_PAID",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_DECISION_REQUIRED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_ERASED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_PAYMENT_ALREADY_RECORDED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_PAYMENT_NOT_RECORDED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_REVISION_CONFLICT",
+      "action": "ReadCurrent",
+      "target": null
+    },
+    {
+      "code": "CASE_VOIDED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CASE_ZERO_DECISION_CANNOT_BE_PAID",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "COMMAND_EXPECTED_REVISION_RANGE",
+      "action": "CorrectInput",
+      "target": "expectedRevision"
+    },
+    {
+      "code": "COMMAND_OPERATION_ID_REQUIRED",
+      "action": "CorrectInput",
+      "target": "operationId"
+    },
+    {
+      "code": "CORRECTION_EXISTING_VALUE_REQUIRED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CORRECTION_NO_CHANGES",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+      "action": "CorrectInput",
+      "target": "payment"
+    },
+    {
+      "code": "CORRECTION_PAYMENT_CLEAR_REQUIRED",
+      "action": "CorrectInput",
+      "target": "payment"
+    },
+    {
+      "code": "HUMAN_PRINCIPAL_REQUIRED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "INPUT_CALENDAR_DATE_REQUIRED",
+      "action": "CorrectInput",
+      "target": "incidentDate"
+    },
+    {
+      "code": "INPUT_CALENDAR_DATE_REQUIRED",
+      "action": "CorrectInput",
+      "target": "incidentNotificationDate"
+    },
+    {
+      "code": "INPUT_CALENDAR_DATE_REQUIRED",
+      "action": "CorrectInput",
+      "target": "paymentDate"
+    },
+    {
+      "code": "INPUT_CALENDAR_DATE_REQUIRED",
+      "action": "CorrectInput",
+      "target": "paymentDecisionDate"
+    },
+    {
+      "code": "INPUT_CASE_REFERENCE_FORMAT",
+      "action": "CorrectInput",
+      "target": "caseReference"
+    },
+    {
+      "code": "INPUT_CONTROL_CHARACTERS",
+      "action": "CorrectInput",
+      "target": "claimantName"
+    },
+    {
+      "code": "INPUT_COUNTRY_FORMAT",
+      "action": "CorrectInput",
+      "target": "incidentCountry"
+    },
+    {
+      "code": "INPUT_CURRENCY_FORMAT",
+      "action": "CorrectInput",
+      "target": "claimedCurrency"
+    },
+    {
+      "code": "INPUT_CURRENCY_FORMAT",
+      "action": "CorrectInput",
+      "target": "payableCurrency"
+    },
+    {
+      "code": "INPUT_DATE_ORDER",
+      "action": "CorrectInput",
+      "target": "incidentNotificationDate"
+    },
+    {
+      "code": "INPUT_DECIMAL_FORMAT",
+      "action": "CorrectInput",
+      "target": "claimedAmount"
+    },
+    {
+      "code": "INPUT_DECIMAL_FORMAT",
+      "action": "CorrectInput",
+      "target": "payableAmount"
+    },
+    {
+      "code": "INPUT_FUTURE_DATE",
+      "action": "CorrectInput",
+      "target": "incidentDate"
+    },
+    {
+      "code": "INPUT_MALFORMED_UNICODE",
+      "action": "CorrectInput",
+      "target": "claimantName"
+    },
+    {
+      "code": "INPUT_SURROUNDING_WHITESPACE",
+      "action": "CorrectInput",
+      "target": "claimantName"
+    },
+    {
+      "code": "INPUT_TEXT_REQUIRED",
+      "action": "CorrectInput",
+      "target": "claimantName"
+    },
+    {
+      "code": "INPUT_TEXT_REQUIRED",
+      "action": "CorrectInput",
+      "target": "insurerName"
+    },
+    {
+      "code": "INPUT_TEXT_REQUIRED",
+      "action": "CorrectInput",
+      "target": "reason"
+    },
+    {
+      "code": "INPUT_TEXT_TOO_LONG",
+      "action": "CorrectInput",
+      "target": "claimantName"
+    },
+    {
+      "code": "LAST_OWNER",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "LEDGER_SEQUENCE_EXHAUSTED",
+      "action": "StopAndInvestigate",
+      "target": null
+    },
+    {
+      "code": "NOT_VOIDED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "OPERATION_CONTENT_CONFLICT",
+      "action": "StopAndInvestigate",
+      "target": null
+    },
+    {
+      "code": "QUERY_CURSOR_INVALID",
+      "action": "ReadCurrent",
+      "target": "cursor"
+    },
+    {
+      "code": "QUERY_PAGE_LIMIT_RANGE",
+      "action": "CorrectInput",
+      "target": "limit"
+    },
+    {
+      "code": "REVISION_EXHAUSTED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "TEXT_FORMATTING_CHARACTER",
+      "action": "CorrectInput",
+      "target": "claimantName"
+    }
+  ]
+}

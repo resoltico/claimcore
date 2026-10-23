@@ -12,11 +12,12 @@ open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private httpRequest request =
-    // This test authors a wire body from a retained Domain request; production has distinct codecs.
+    // The dedicated case endpoint uses the same request without durable format or operation scope.
     let node =
         System.Text.Json.Nodes.JsonNode.Parse(RequestRecord.encode request) |> nonNull
 
     node.AsObject().Remove("format") |> ignore
+    node.AsObject().Remove("scope") |> ignore
     System.Text.Encoding.UTF8.GetBytes(node.ToJsonString())
 
 let private outcome (bytes: byte array) =
@@ -115,7 +116,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
         Expect.equal (refusal.GetProperty("tag").GetString()) "REJECTED" "Changed assertion refused"
 
         Expect.equal
-            (refusal.GetProperty("data").GetProperty("diagnostic").GetProperty("id").GetString())
+            (refusal.GetProperty("data").GetProperty("code").GetString())
             "INPUT_TEXT_TOO_LONG"
             "Current policy owns the refusal"
 

@@ -164,7 +164,7 @@ let private differentContent fixture source operationId =
     let refusal = require "REJECTED" excluded
 
     Expect.equal
-        (refusal.GetProperty("diagnostic").GetProperty("id").GetString())
+        (refusal.GetProperty("code").GetString())
         "OPERATION_CONTENT_CONFLICT"
         "Immutable ID excludes this different content"
 
