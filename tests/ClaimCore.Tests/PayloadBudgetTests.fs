@@ -5,7 +5,6 @@ open ClaimCore.Contract
 open System
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Web.Composition
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
@@ -59,14 +58,13 @@ let private receipt disclosure : OperationReceipt =
     }
 
 let private encodedHistory count disclosure =
-    OutcomeMapping.caseHistory (
-        ReadReply.Succeeded
+    Codec.encode
+        Api.caseHistory.Output
+        (ReadReply.Succeeded
             {
                 Entries = List.replicate count (HistoryEntry.FullEntry(receipt disclosure))
                 NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
-            }
-    )
-    |> ClaimCore.Contract.Protocol.Replies.encode
+            })
 
 let private fullHistoryBudget () =
     let accepted = snapshot TextFormat.MaximumFreeTextBytes
@@ -122,25 +120,23 @@ let private boundedAuthority () =
     let actor, grant = authorityFixture ()
 
     let actors count =
-        OutcomeMapping.authorityList (
-            ReadReply.Succeeded
+        Codec.encode
+            Api.authorityList.Output
+            (ReadReply.Succeeded
                 {
                     Items = List.replicate count actor
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
-                }
-        )
-        |> ClaimCore.Contract.Protocol.Replies.encode
+                })
 
     let grants count =
-        OutcomeMapping.authorityGrants (
-            ReadReply.Succeeded
+        Codec.encode
+            Api.authorityGrants.Output
+            (ReadReply.Succeeded
                 {
                     Actor = actor
                     Items = List.replicate count grant
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
-                }
-        )
-        |> ClaimCore.Contract.Protocol.Replies.encode
+                })
 
     Expect.isLessThan
         (actors 50).Length

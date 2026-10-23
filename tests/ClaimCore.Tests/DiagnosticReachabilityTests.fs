@@ -9,7 +9,6 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
-open ClaimCore.Web.Composition
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.Tests.ApplicationFixtures
 
@@ -77,13 +76,11 @@ let private baselinePolicy code (reason: Refusal) =
 let private diagnostic reason =
     let identifier = (Refusals.row reason).Code
 
-    let reply = OutcomeMapping.caseGet (ReadReply.Rejected reason)
-    let encoded = ClaimCore.Contract.Protocol.Replies.encode reply
+    let reply: ReadReply<CaseReadModel> = ReadReply.Rejected reason
+    let encoded = Codec.encode Api.caseGet.Output reply
 
     Expect.equal
-        (ClaimCore.Contract.Protocol.Replies.decode
-            ClaimCore.Contract.Protocol.Endpoint.CaseGet
-            encoded)
+        (Codec.decode Limits.MaximumResponseBytes Api.caseGet.Output encoded)
         (Ok reply)
         "Every request-produced refusal crosses the typed Wire boundary"
 
