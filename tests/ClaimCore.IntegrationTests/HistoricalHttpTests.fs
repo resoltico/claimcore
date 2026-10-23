@@ -87,8 +87,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
                 InsurerName = "Corrected insurer"
             }
 
-        let reaffirm =
-            request 11 "HISTORICAL-1" 1L (BusinessCommand.AmendRegistration values)
+        let reaffirm = request 11 "HISTORICAL-1" 1L (CaseAct.AmendRegistration values)
 
         let! status, response = host.Call("case.execute", httpRequest reaffirm, csrf)
 
@@ -104,7 +103,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
                 12
                 "HISTORICAL-1"
                 2L
-                (BusinessCommand.AmendRegistration
+                (CaseAct.AmendRegistration
                     { values with
                         ClaimantName = name + "B"
                     })

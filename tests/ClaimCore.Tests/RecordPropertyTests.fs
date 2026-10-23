@@ -61,7 +61,7 @@ let private commandsGenerator =
                         PaymentGroup.Clear
                     ]
                     |> List.map (fun payment ->
-                        BusinessCommand.CorrectCase
+                        CaseAct.CorrectCase
                             {
                                 Registration = registration
                                 Decision = decision
@@ -70,14 +70,14 @@ let private commandsGenerator =
 
         return
             [
-                BusinessCommand.Open registration
-                BusinessCommand.AmendRegistration registration
-                BusinessCommand.Decide decision
-                BusinessCommand.WithdrawDecision
-                BusinessCommand.RecordPayment "2026-08-20"
-                BusinessCommand.ClearPayment
-                BusinessCommand.Close
-                BusinessCommand.Reopen
+                CaseAct.Open registration
+                CaseAct.AmendRegistration registration
+                CaseAct.Decide decision
+                CaseAct.WithdrawDecision
+                CaseAct.RecordPayment { PaymentDate = "2026-08-20" }
+                CaseAct.ClearPayment
+                CaseAct.Close
+                CaseAct.Reopen
             ]
             @ corrections
     }
@@ -100,7 +100,7 @@ let private requestsGenerator =
                             operationId
                     CaseReference = reference
                     ExpectedRevision = version
-                    Act = CaseAct.Business command
+                    Act = command
                 })
     }
 
@@ -108,7 +108,7 @@ let private limit = 65536
 
 let private correctionModesMatch (request: CaseRequest) (encoded: byte array) =
     match request.Act with
-    | CaseAct.Business(BusinessCommand.CorrectCase correction) ->
+    | (CaseAct.CorrectCase correction) ->
         let registration =
             match correction.Registration with
             | RegistrationGroup.Keep -> "KEEP"
@@ -185,8 +185,8 @@ let private identityChanges (request: CaseRequest) =
 
     let differentAct =
         match request.Act with
-        | CaseAct.Business BusinessCommand.Close -> CaseAct.Business BusinessCommand.Reopen
-        | _ -> CaseAct.Business BusinessCommand.Close
+        | CaseAct.Close -> CaseAct.Reopen
+        | _ -> CaseAct.Close
 
     let changed =
         [

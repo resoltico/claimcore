@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ScalarPropertyTests
 
+open ClaimCore.Contract
+
 open System
 open System.Globalization
 open Expecto
@@ -108,7 +110,7 @@ let private amountProperty =
         let candidate =
             request
                 0L
-                (BusinessCommand.Open
+                (CaseAct.Open
                     { registration with
                         ClaimedAmount = sample.Raw
                     })
@@ -176,7 +178,7 @@ let private validateText target value =
             }
         | Reference -> registration
 
-    let candidate = request 0L (BusinessCommand.Open facts)
+    let candidate = request 0L (CaseAct.Open facts)
 
     let candidate =
         if target = Reference then

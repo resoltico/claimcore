@@ -29,15 +29,13 @@ let private keep: Correction =
         Payment = PaymentGroup.Keep
     }
 
-let private business = CaseAct.Business
+let private correction value = (CaseAct.CorrectCase value)
 
-let private correction value =
-    business (BusinessCommand.CorrectCase value)
+let private payment = (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
 
-let private payment = business (BusinessCommand.RecordPayment "2026-08-20")
-let private decided = business (BusinessCommand.Decide decision)
-let private closed = business BusinessCommand.Close
-let private voided = CaseAct.Stewardship(StewardshipAct.Void "Synthetic reason")
+let private decided = (CaseAct.Decide decision)
+let private closed = CaseAct.Close
+let private voided = (CaseAct.Void "Synthetic reason")
 
 let private diagnostic reason =
     let identifier =
@@ -85,7 +83,7 @@ let private execute actor pending =
 
 let private opening values =
     { openRequest 10 "REACH-1" with
-        Act = business (BusinessCommand.Open values)
+        Act = (CaseAct.Open values)
     }
 
 let private textRequests () =
@@ -164,21 +162,21 @@ let private progressRequests () =
             10
             "REACH-1"
             1L
-            (BusinessCommand.Decide
+            (CaseAct.Decide
                 { decision with
                     PaymentDecisionDate = "bad"
                 })
-        request 10 "REACH-1" 1L (BusinessCommand.Decide { decision with PayableAmount = "bad" })
+        request 10 "REACH-1" 1L (CaseAct.Decide { decision with PayableAmount = "bad" })
         request
             10
             "REACH-1"
             1L
-            (BusinessCommand.Decide
+            (CaseAct.Decide
                 { decision with
                     PayableCurrency = "bad"
                 })
-        request 10 "REACH-1" 1L (BusinessCommand.RecordPayment "bad")
-        actRequest 10 "REACH-1" 1L (CaseAct.Stewardship(StewardshipAct.Void ""))
+        request 10 "REACH-1" 1L (CaseAct.RecordPayment { PaymentDate = "bad" })
+        actRequest 10 "REACH-1" 1L ((CaseAct.Void ""))
     ]
 
 let private scalarRequests () =
@@ -203,11 +201,11 @@ let private scalarEvidence () =
 
 let private stateScenarios () =
     [
-        [], business (BusinessCommand.Open registration)
-        [], business BusinessCommand.Reopen
-        [ closed ], business BusinessCommand.Close
+        [], (CaseAct.Open registration)
+        [], CaseAct.Reopen
+        [ closed ], CaseAct.Close
         [ closed ], decided
-        [ decided ], business (BusinessCommand.AmendRegistration registration)
+        [ decided ], (CaseAct.AmendRegistration registration)
         [ decided ],
         correction
             { keep with
@@ -219,14 +217,14 @@ let private stateScenarios () =
                 Decision = DecisionGroup.Clear
             }
         [], payment
-        [], business BusinessCommand.ClearPayment
+        [], CaseAct.ClearPayment
         [ decided; payment ], payment
-        [ decided; payment ], business BusinessCommand.WithdrawDecision
-        [ business (BusinessCommand.Decide { decision with PayableAmount = "0" }) ], payment
+        [ decided; payment ], CaseAct.WithdrawDecision
+        [ (CaseAct.Decide { decision with PayableAmount = "0" }) ], payment
         [ voided ], closed
         [ voided ], voided
-        [], CaseAct.Stewardship(StewardshipAct.Reinstate "Synthetic reason")
-        [ CaseAct.Stewardship StewardshipAct.Erase ], closed
+        [], (CaseAct.Reinstate "Synthetic reason")
+        [ CaseAct.Erase ], closed
         [ decided; payment ],
         correction
             { keep with
@@ -299,7 +297,7 @@ let private identityEvidence actor =
         let! opening = execute actor pending
         accepted opening |> ignore
         let! conflict = execute actor { pending with ExpectedRevision = 1L }
-        let! revision = execute actor (request 11 "REACH-1" 0L BusinessCommand.Close)
+        let! revision = execute actor (request 11 "REACH-1" 0L CaseAct.Close)
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "reader"
@@ -324,8 +322,7 @@ let private boundaryEvidence () =
         let! actor = caseWorker fixture
         let! identity, reader = identityEvidence actor
 
-        let! denied =
-            execute (core fixture reader) (request 37 "REACH-1" 1L BusinessCommand.Close)
+        let! denied = execute (core fixture reader) (request 37 "REACH-1" 1L CaseAct.Close)
 
         let! queries = queryEvidence actor
         let! authority = authorityEvidence actor
@@ -338,8 +335,7 @@ let private boundaryEvidence () =
             }
         )
 
-        let! revision =
-            execute actor (request 40 "REACH-1" Revision.Maximum BusinessCommand.Close)
+        let! revision = execute actor (request 40 "REACH-1" Revision.Maximum CaseAct.Close)
 
         store.ReplaceCaseSnapshot("REACH-1", original)
 
@@ -350,7 +346,7 @@ let private boundaryEvidence () =
                     EntryHash = Array.zeroCreate 32
                 }
 
-        let! ledger = execute actor (request 41 "REACH-1" 1L BusinessCommand.Close)
+        let! ledger = execute actor (request 41 "REACH-1" 1L CaseAct.Close)
 
         return
             identity

@@ -1,5 +1,7 @@
 module internal ClaimCore.Tests.ApplicationFixtures
 
+open ClaimCore.Contract
+
 open System
 open System.Threading.Tasks
 open Expecto
@@ -45,7 +47,7 @@ let run action =
     }
 
 let openRequest n reference =
-    request n reference 0L (BusinessCommand.Open registration)
+    request n reference 0L (CaseAct.Open registration)
 
 /// A write can finish before another accepted change is observed by its caller.
 type AfterCaseWriteStore(inner: ILedgerStore, afterWrite: unit -> Task<unit>) =

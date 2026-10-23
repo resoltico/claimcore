@@ -9,8 +9,7 @@ open Hedgehog.FSharp
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
-let private request revision action =
-    actRequest revision (CaseAct.Stewardship action)
+let private request revision action = actRequest revision (action)
 
 let private current revision disposition =
     let original = Case.snapshot (opened ())
@@ -24,16 +23,12 @@ let private current revision disposition =
 
 let private transitions =
     [
-        Disposition.Active, StewardshipAct.Void "Recorded in error", Ok(Some Disposition.Voided)
-        Disposition.Voided, StewardshipAct.Void "Recorded in error", Error CaseRefusal.AlreadyVoided
-        Disposition.Active,
-        StewardshipAct.Reinstate "Reference confirmed",
-        Error CaseRefusal.NotVoided
-        Disposition.Voided,
-        StewardshipAct.Reinstate "Reference confirmed",
-        Ok(Some Disposition.Active)
-        Disposition.Active, StewardshipAct.Erase, Ok None
-        Disposition.Voided, StewardshipAct.Erase, Ok None
+        Disposition.Active, CaseAct.Void "Recorded in error", Ok(Some Disposition.Voided)
+        Disposition.Voided, CaseAct.Void "Recorded in error", Error CaseRefusal.AlreadyVoided
+        Disposition.Active, CaseAct.Reinstate "Reference confirmed", Error CaseRefusal.NotVoided
+        Disposition.Voided, CaseAct.Reinstate "Reference confirmed", Ok(Some Disposition.Active)
+        Disposition.Active, CaseAct.Erase, Ok None
+        Disposition.Voided, CaseAct.Erase, Ok None
     ]
 
 let private invalidReasons =
@@ -56,10 +51,7 @@ let private revisionProperty =
         let! disposition = Gen.item [ Disposition.Active; Disposition.Voided ]
 
         let result =
-            Case.decide
-                today
-                (request revision StewardshipAct.Erase)
-                (Some(current revision disposition))
+            Case.decide today (request revision CaseAct.Erase) (Some(current revision disposition))
 
         return
             result
@@ -95,8 +87,8 @@ let private reasonTest () =
     for reason in invalidReasons do
         for disposition, action in
             [
-                Disposition.Active, StewardshipAct.Void reason
-                Disposition.Voided, StewardshipAct.Reinstate reason
+                Disposition.Active, CaseAct.Void reason
+                Disposition.Voided, CaseAct.Reinstate reason
             ] do
             Expect.isError
                 (Case.decide today (request 7L action) (Some(current 7L disposition)))
@@ -107,14 +99,14 @@ let private reasonBounds () =
         Expect.isOk
             (Case.decide
                 today
-                (request 7L (StewardshipAct.Void reason))
+                (request 7L (CaseAct.Void reason))
                 (Some(current 7L Disposition.Active)))
             "Exactly 200 Unicode scalars accepted"
 
     Expect.isError
         (Case.decide
             today
-            (request 7L (StewardshipAct.Void(String.replicate 201 "😀")))
+            (request 7L (CaseAct.Void(String.replicate 201 "😀")))
             (Some(current 7L Disposition.Active)))
         "201 Unicode scalars refuse"
 
@@ -122,7 +114,7 @@ let private staleRevision () =
     let outcome =
         Case.decide
             today
-            (request 6L (StewardshipAct.Void " leading"))
+            (request 6L (CaseAct.Void " leading"))
             (Some(current 7L Disposition.Voided))
 
     Expect.isTrue
@@ -133,7 +125,7 @@ let private exhausted () =
     let outcome =
         Case.decide
             today
-            (request Revision.Maximum StewardshipAct.Erase)
+            (request Revision.Maximum CaseAct.Erase)
             (Some(current Revision.Maximum Disposition.Active))
 
     Expect.isTrue
@@ -143,13 +135,12 @@ let private exhausted () =
 let private vocabulary () =
     for action, expected in
         [
-            StewardshipAct.Void "Reason", (CaseActKind.Stewardship StewardshipActKind.Void)
-            StewardshipAct.Reinstate "Reason",
-            (CaseActKind.Stewardship StewardshipActKind.Reinstate)
-            StewardshipAct.Erase, (CaseActKind.Stewardship StewardshipActKind.Erase)
+            CaseAct.Void "Reason", (CaseActKind.Stewardship StewardshipActKind.Void)
+            CaseAct.Reinstate "Reason", (CaseActKind.Stewardship StewardshipActKind.Reinstate)
+            CaseAct.Erase, (CaseActKind.Stewardship StewardshipActKind.Erase)
         ] do
         Expect.equal
-            (CaseActs.kind (CaseAct.Stewardship action))
+            (CaseActs.kind (action))
             expected
             "Stewardship remains distinct from business commands"
 

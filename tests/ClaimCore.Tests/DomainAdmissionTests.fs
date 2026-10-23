@@ -40,7 +40,7 @@ let private payload =
         "[CC-DOM-002] malformed payload admission precedes stale revision and eligibility"
         (fun () ->
             let malformed =
-                BusinessCommand.Decide
+                CaseAct.Decide
                     { decision with
                         PaymentDecisionDate = "not-a-date"
                     }

@@ -34,12 +34,10 @@ let private replayAndSpelling (store: MemoryLedgerStore.Store) (fixture: Fixture
         let changed =
             { original with
                 Act =
-                    CaseAct.Business(
-                        BusinessCommand.Open
-                            { registration with
-                                ClaimedAmount = "1000"
-                            }
-                    )
+                    (CaseAct.Open
+                        { registration with
+                            ClaimedAmount = "1000"
+                        })
             }
 
         let! conflict = actor.Execute(changed, CancellationToken.None)
@@ -87,8 +85,7 @@ let private decodeWire (text: string) =
         ClaimCore.Contract.Protocol.Endpoint.CaseExecute
         (Text.Encoding.UTF8.GetBytes text)
     |> Result.map (function
-        | ClaimCore.Contract.Protocol.WireRequest.CaseExecute value ->
-            RequestMapping.caseRequest value
+        | ClaimCore.Contract.Protocol.WireRequest.CaseExecute value -> value
         | _ -> failtest "Expected a case execution request")
     |> Result.defaultWith (fun _ -> failtest "Synthetic raw request must decode")
 
@@ -134,12 +131,7 @@ let private malformed (store: MemoryLedgerStore.Store) (fixture: Fixture) =
         | ExecuteOutcome.Rejected(Rejection.Case _) -> ()
         | _ -> failtest "Malformed request admitted"
 
-        let bad =
-            actRequest
-                11
-                "UNIT-001"
-                1L
-                (CaseAct.Stewardship(StewardshipAct.Void Unchecked.defaultof<string>))
+        let bad = actRequest 11 "UNIT-001" 1L ((CaseAct.Void Unchecked.defaultof<string>))
 
         let! result = actor.Execute(bad, CancellationToken.None)
 
@@ -285,10 +277,7 @@ let private unavailableResources (_: MemoryLedgerStore.Store) (fixture: Fixture)
             accepted opened |> ignore
 
         let! erased =
-            actor.Execute(
-                actRequest 12 "ERASED" 1L (CaseAct.Stewardship StewardshipAct.Erase),
-                CancellationToken.None
-            )
+            actor.Execute(actRequest 12 "ERASED" 1L (CaseAct.Erase), CancellationToken.None)
 
         accepted erased |> ignore
         do! revokeCaseWork actor
@@ -317,18 +306,14 @@ let private lifecycle (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! voided =
             actor.Execute(
-                actRequest
-                    11
-                    "UNIT-001"
-                    1L
-                    (CaseAct.Stewardship(StewardshipAct.Void "Wrong reference")),
+                actRequest 11 "UNIT-001" 1L ((CaseAct.Void "Wrong reference")),
                 CancellationToken.None
             )
 
         Expect.equal (accepted voided |> caseReceipt).Revision 2L "One revision"
 
         let! blocked =
-            actor.Execute(request 12 "UNIT-001" 2L BusinessCommand.Close, CancellationToken.None)
+            actor.Execute(request 12 "UNIT-001" 2L CaseAct.Close, CancellationToken.None)
 
         Expect.equal
             blocked
@@ -337,18 +322,14 @@ let private lifecycle (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! restored =
             actor.Execute(
-                actRequest
-                    13
-                    "UNIT-001"
-                    2L
-                    (CaseAct.Stewardship(StewardshipAct.Reinstate "Reference confirmed")),
+                actRequest 13 "UNIT-001" 2L ((CaseAct.Reinstate "Reference confirmed")),
                 CancellationToken.None
             )
 
         Expect.equal (accepted restored |> caseReceipt).Revision 3L "Reinstatement revision"
 
         let! closed =
-            actor.Execute(request 14 "UNIT-001" 3L BusinessCommand.Close, CancellationToken.None)
+            actor.Execute(request 14 "UNIT-001" 3L CaseAct.Close, CancellationToken.None)
 
         accepted closed |> ignore
     }
@@ -479,7 +460,7 @@ let private privateIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! refused =
             (core fixture target)
-                .Execute(request 11 "VISIBLE" 1L BusinessCommand.Close, CancellationToken.None)
+                .Execute(request 11 "VISIBLE" 1L CaseAct.Close, CancellationToken.None)
 
         Expect.equal refused unavailable "No conflict oracle for an inaccessible operation"
     }
@@ -547,7 +528,7 @@ let private replayAfterRevision (_: MemoryLedgerStore.Store) (fixture: Fixture) 
         let receipt = accepted first
 
         let! closed =
-            actor.Execute(request 11 "unit-001" 1L BusinessCommand.Close, CancellationToken.None)
+            actor.Execute(request 11 "unit-001" 1L CaseAct.Close, CancellationToken.None)
 
         Expect.equal
             (accepted closed |> caseReceipt).Reference
@@ -585,7 +566,7 @@ let private headExhaustion (store: MemoryLedgerStore.Store) (fixture: Fixture) =
                 }
 
         let! fresh =
-            actor.Execute(request 11 "UNIT-001" 1L BusinessCommand.Close, CancellationToken.None)
+            actor.Execute(request 11 "UNIT-001" 1L CaseAct.Close, CancellationToken.None)
 
         Expect.equal
             fresh

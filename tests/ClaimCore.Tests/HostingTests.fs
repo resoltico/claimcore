@@ -1,5 +1,7 @@
 module ClaimCore.Tests.HostingTests
 
+open ClaimCore.Contract
+
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -88,7 +90,7 @@ let tests =
                                         10
                                         "synthetic-lifetime"
                                         0L
-                                        (ClaimCore.Domain.BusinessCommand.Open registration),
+                                        (ClaimCore.Contract.CaseAct.Open registration),
                                     CancellationToken.None
                                 ))
                         )

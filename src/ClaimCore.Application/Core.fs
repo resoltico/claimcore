@@ -93,8 +93,10 @@ module internal Core =
 
     let private changes act before after =
         match act with
-        | CaseAct.Stewardship _ -> []
-        | CaseAct.Business _ ->
+        | CaseAct.Void _
+        | CaseAct.Reinstate _
+        | CaseAct.Erase -> []
+        | _ ->
             let previous = businessFields before
             let next = businessFields (Some after)
 

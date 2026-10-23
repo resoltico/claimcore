@@ -284,8 +284,7 @@ let private exampleFrames () =
 
         let request =
             match Frames.request invocation with
-            | WireRequest.CaseExecute request ->
-                ClaimCore.Hosting.RequestMapping.caseRequest request
+            | WireRequest.CaseExecute request -> request
             | _ -> failtest "Example must be a case request"
 
         let next =

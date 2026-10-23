@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.CommitTests
 
+open ClaimCore.Contract
+
 open System
 open System.Threading
 open Expecto
@@ -126,7 +128,7 @@ let tests =
                                     20
                                     "synthetic-commit"
                                     0L
-                                    (ClaimCore.Domain.BusinessCommand.Open registration)
+                                    (ClaimCore.Contract.CaseAct.Open registration)
 
                             let! result = throughProxy.Execute(operation, token)
 

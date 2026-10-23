@@ -128,7 +128,7 @@ module ActorAuthorization =
     /// Reaffirmation is still a requested replacement and requires its group's capability.
     let requiredCapabilities =
         function
-        | CaseAct.Business(BusinessCommand.CorrectCase correction) ->
+        | (CaseAct.CorrectCase correction) ->
             [
                 match correction.Registration with
                 | RegistrationGroup.Keep -> ()

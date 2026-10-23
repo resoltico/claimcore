@@ -93,11 +93,10 @@ module ServiceGateway =
         task {
             match input with
             | WireRequest.CasePreview request ->
-                let! value = core.Preview(RequestMapping.caseRequest request, token)
+                let! value = core.Preview(request, token)
                 return OutcomeMapping.preview request.OperationId value
             | WireRequest.CaseExecute request ->
-                let! value =
-                    core.Execute(RequestMapping.caseRequest request, CancellationToken.None)
+                let! value = core.Execute(request, CancellationToken.None)
 
                 return OutcomeMapping.execute request.OperationId value
             | WireRequest.AuthorityExecute request ->

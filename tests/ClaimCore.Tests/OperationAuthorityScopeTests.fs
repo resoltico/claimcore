@@ -44,8 +44,7 @@ let private existingCaseAuthority (_: MemoryLedgerStore.Store) fixture =
     task {
         let! principal = prepare fixture
 
-        let duplicate =
-            request 12 "CASE-A" 1L (BusinessCommand.AmendRegistration registration)
+        let duplicate = request 12 "CASE-A" 1L (CaseAct.AmendRegistration registration)
 
         let! current = (core fixture principal).Execute(duplicate, CancellationToken.None)
 

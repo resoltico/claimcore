@@ -28,7 +28,7 @@ let internal request n reference revision command : CaseRequest =
         OperationId = id n
         CaseReference = reference
         ExpectedRevision = revision
-        Act = CaseAct.Business command
+        Act = command
     }
 
 let internal actRequest n reference revision act : CaseRequest =
@@ -202,7 +202,7 @@ let private genesis fixture =
 let private replayAndRefusal fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (BusinessCommand.Open registration)
+        let original = request 10 "CONTRACT-001" 0L (CaseAct.Open registration)
         let! result = actor.Execute(original, CancellationToken.None)
         let receipt = accepted result
 
@@ -215,10 +215,7 @@ let private replayAndRefusal fixture =
         Expect.equal replay (ExecuteOutcome.AlreadyAccepted receipt) "Original receipt"
 
         let! stale =
-            actor.Execute(
-                request 11 "CONTRACT-001" 0L BusinessCommand.Close,
-                CancellationToken.None
-            )
+            actor.Execute(request 11 "CONTRACT-001" 0L CaseAct.Close, CancellationToken.None)
 
         Expect.equal
             stale
@@ -243,7 +240,7 @@ let private replayAndRefusal fixture =
 let private lockedView fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (BusinessCommand.Open registration)
+        let original = request 10 "CONTRACT-001" 0L (CaseAct.Open registration)
         let! opened = actor.Execute(original, CancellationToken.None)
         let first = accepted opened
         let mutable calls = 0
@@ -296,17 +293,14 @@ let private caseUpdate fixture =
 
         let! opened =
             actor.Execute(
-                request 10 "CONTRACT-001" 0L (BusinessCommand.Open registration),
+                request 10 "CONTRACT-001" 0L (CaseAct.Open registration),
                 CancellationToken.None
             )
 
         accepted opened |> ignore
 
         let! closed =
-            actor.Execute(
-                request 11 "CONTRACT-001" 1L BusinessCommand.Close,
-                CancellationToken.None
-            )
+            actor.Execute(request 11 "CONTRACT-001" 1L CaseAct.Close, CancellationToken.None)
 
         let receipt = accepted closed
         Expect.equal (caseReceipt receipt).Revision 2L "One revision"
@@ -363,7 +357,7 @@ let private erasureReadback fixture (actor: IActorClaimsCore) =
 
         let! replay =
             actor.Execute(
-                request 10 "CONTRACT-001" 0L (BusinessCommand.Open registration),
+                request 10 "CONTRACT-001" 0L (CaseAct.Open registration),
                 CancellationToken.None
             )
 
@@ -374,7 +368,7 @@ let private erasureReadback fixture (actor: IActorClaimsCore) =
 
         let! reopen =
             actor.Execute(
-                request 13 "contract-001" 0L (BusinessCommand.Open registration),
+                request 13 "contract-001" 0L (CaseAct.Open registration),
                 CancellationToken.None
             )
 
@@ -396,14 +390,13 @@ let private caseErasure fixture =
         for n, reference in [ 10, "CONTRACT-001"; 11, "CONTRACT-002" ] do
             let! opened =
                 actor.Execute(
-                    request n reference 0L (BusinessCommand.Open registration),
+                    request n reference 0L (CaseAct.Open registration),
                     CancellationToken.None
                 )
 
             accepted opened |> ignore
 
-        let erase =
-            actRequest 12 "CONTRACT-001" 1L (CaseAct.Stewardship StewardshipAct.Erase)
+        let erase = actRequest 12 "CONTRACT-001" 1L (CaseAct.Erase)
 
         let! result = actor.Execute(erase, CancellationToken.None)
 
@@ -455,7 +448,7 @@ let private caseVisibility fixture =
         for n, reference in [ 10, "C"; 11, "A"; 12, "B" ] do
             let! result =
                 actor.Execute(
-                    request n reference 0L (BusinessCommand.Open registration),
+                    request n reference 0L (CaseAct.Open registration),
                     CancellationToken.None
                 )
 
@@ -563,7 +556,7 @@ let private foldedOrdering fixture =
         for n, reference in [ 20, "Ref-b"; 21, "ref-A"; 22, "REF-C" ] do
             let! result =
                 actor.Execute(
-                    request n reference 0L (BusinessCommand.Open registration),
+                    request n reference 0L (CaseAct.Open registration),
                     CancellationToken.None
                 )
 
@@ -639,7 +632,7 @@ let private advisedCase fixture reference =
 
         let! opened =
             admin.Execute(
-                request 20 reference 0L (BusinessCommand.Open registration),
+                request 20 reference 0L (CaseAct.Open registration),
                 CancellationToken.None
             )
 
@@ -653,10 +646,7 @@ let private advisedCase fixture reference =
             }
 
         let! decided =
-            admin.Execute(
-                request 21 reference 1L (BusinessCommand.Decide decision),
-                CancellationToken.None
-            )
+            admin.Execute(request 21 reference 1L (CaseAct.Decide decision), CancellationToken.None)
 
         accepted decided |> ignore
         return admin
@@ -716,7 +706,7 @@ let private revokedAdvice fixture =
                 Payment = PaymentGroup.Keep
             }
 
-        let pending = request 35 reference 2L (BusinessCommand.CorrectCase correction)
+        let pending = request 35 reference 2L (CaseAct.CorrectCase correction)
         let! preview = actor.Preview(pending, CancellationToken.None)
 
         match preview with
@@ -761,7 +751,7 @@ let private scopedWorker fixture =
 
             let! opened =
                 admin.Execute(
-                    request (100 + number) reference 0L (BusinessCommand.Open registration),
+                    request (100 + number) reference 0L (CaseAct.Open registration),
                     CancellationToken.None
                 )
 
@@ -817,8 +807,7 @@ let private scopedAuthority fixture =
         Expect.isEmpty context.Actor.Cases "Context never enumerates assigned grants"
         Expect.isTrue context.Actor.HasAssignedCases "EXISTS reports assigned visibility"
 
-        let pending =
-            request 102 "SCOPE-1" 1L (BusinessCommand.AmendRegistration registration)
+        let pending = request 102 "SCOPE-1" 1L (CaseAct.AmendRegistration registration)
 
         let! conflict =
             (Core.create fixture.InstallationId fixture.Store fixture.Calendar principal)

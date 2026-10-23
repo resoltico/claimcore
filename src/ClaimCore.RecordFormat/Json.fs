@@ -69,39 +69,6 @@ module internal Json =
         | JsonValue.Null -> None
         | value -> Some(stringValue (path + "." + name) value)
 
-    let registration path element : Registration =
-        properties
-            path
-            [
-                "incidentDate"
-                "incidentNotificationDate"
-                "incidentCountry"
-                "claimantName"
-                "insurerName"
-                "claimedAmount"
-                "claimedCurrency"
-            ]
-            element
-
-        {
-            IncidentDate = text path "incidentDate" element
-            IncidentNotificationDate = text path "incidentNotificationDate" element
-            IncidentCountry = text path "incidentCountry" element
-            ClaimantName = text path "claimantName" element
-            InsurerName = text path "insurerName" element
-            ClaimedAmount = text path "claimedAmount" element
-            ClaimedCurrency = text path "claimedCurrency" element
-        }
-
-    let decision path element : Decision =
-        properties path [ "paymentDecisionDate"; "payableAmount"; "payableCurrency" ] element
-
-        {
-            PaymentDecisionDate = text path "paymentDecisionDate" element
-            PayableAmount = text path "payableAmount" element
-            PayableCurrency = text path "payableCurrency" element
-        }
-
     let bounded maxBytes bytes read =
         StrictJson.read maxBytes bytes
         |> Result.mapError (fun problem ->
@@ -121,23 +88,3 @@ module internal Json =
         match decoders |> List.tryFind (fst >> (=) format) with
         | Some(_, read) -> read root
         | None -> reject "$.format" "Unsupported record format."
-
-    let registrationValue (registration: Registration) =
-        JsonValue.Object
-            [
-                "incidentDate", JsonValue.String registration.IncidentDate
-                "incidentNotificationDate", JsonValue.String registration.IncidentNotificationDate
-                "incidentCountry", JsonValue.String registration.IncidentCountry
-                "claimantName", JsonValue.String registration.ClaimantName
-                "insurerName", JsonValue.String registration.InsurerName
-                "claimedAmount", JsonValue.String registration.ClaimedAmount
-                "claimedCurrency", JsonValue.String registration.ClaimedCurrency
-            ]
-
-    let decisionValue (decision: Decision) =
-        JsonValue.Object
-            [
-                "paymentDecisionDate", JsonValue.String decision.PaymentDecisionDate
-                "payableAmount", JsonValue.String decision.PayableAmount
-                "payableCurrency", JsonValue.String decision.PayableCurrency
-            ]

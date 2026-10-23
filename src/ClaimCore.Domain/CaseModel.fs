@@ -23,39 +23,6 @@ type CaseFields =
         Status: CaseStatus
     }
 
-/// Commands only maintain the requested fields. No correction-note or other business field is added.
-[<RequireQualifiedAccess>]
-type BusinessCommand =
-    | Open of registration: Registration
-    | AmendRegistration of registration: Registration
-    | CorrectCase of correction: Correction
-    | Decide of decision: Decision
-    | WithdrawDecision
-    | RecordPayment of paymentDate: string
-    | ClearPayment
-    | Close
-    | Reopen
-
-[<RequireQualifiedAccess>]
-type StewardshipAct =
-    | Void of reason: string
-    | Reinstate of reason: string
-    | Erase
-
-[<RequireQualifiedAccess>]
-type CaseAct =
-    | Business of BusinessCommand
-    | Stewardship of StewardshipAct
-
-/// Caller-authored content remains exact even when its target compares case-insensitively.
-type CaseRequest =
-    {
-        OperationId: Guid
-        CaseReference: string
-        ExpectedRevision: int64
-        Act: CaseAct
-    }
-
 [<RequireQualifiedAccess>]
 type CaseView =
     | Live of fields: CaseFields * disposition: Disposition

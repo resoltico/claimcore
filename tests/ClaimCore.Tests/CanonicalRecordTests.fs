@@ -48,7 +48,7 @@ let private requests () =
         Expect.equal first.ExpectedRevision 0L "Independent initial revision"
 
         match first.Act with
-        | CaseAct.Business(BusinessCommand.Open registration) ->
+        | (CaseAct.Open registration) ->
             Expect.equal
                 registration.ClaimantName
                 "Rīgas Tulkojumu Birojs SIA"

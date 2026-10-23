@@ -75,12 +75,12 @@ let private wireRegistration (value: Registration) : Registration =
         ClaimedCurrency = value.ClaimedCurrency
     }
 
-let private wireRequest values : ClaimCore.Contract.Protocol.CaseRequest =
+let private wireRequest values : ClaimCore.Contract.CaseRequest =
     {
         OperationId = id
         CaseReference = "UNIT-001"
         ExpectedRevision = 0L
-        Act = ClaimCore.Contract.Protocol.CaseAct.Open(wireRegistration values)
+        Act = ClaimCore.Contract.CaseAct.Open(wireRegistration values)
     }
 
 let private contextCodec () =
@@ -403,12 +403,12 @@ let private retainedText () =
                 InsurerName = "Changed insurer"
             }
 
-        let reaffirm = request 1L (BusinessCommand.AmendRegistration values)
+        let reaffirm = request 1L (CaseAct.AmendRegistration values)
 
         let input =
             { wireRequest values with
                 ExpectedRevision = 1L
-                Act = ClaimCore.Contract.Protocol.CaseAct.AmendRegistration(wireRegistration values)
+                Act = ClaimCore.Contract.CaseAct.AmendRegistration(wireRegistration values)
             }
 
         Admission.admit Endpoint.CaseExecute (Admission.encode (WireRequest.CaseExecute input))
@@ -420,12 +420,10 @@ let private retainedText () =
         let changed =
             { reaffirm with
                 Act =
-                    ClaimCore.Domain.CaseAct.Business(
-                        BusinessCommand.AmendRegistration
-                            { values with
-                                ClaimantName = name + "B"
-                            }
-                    )
+                    (CaseAct.AmendRegistration
+                        { values with
+                            ClaimantName = name + "B"
+                        })
             }
 
         Expect.isError

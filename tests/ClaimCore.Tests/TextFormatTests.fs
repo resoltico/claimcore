@@ -25,7 +25,7 @@ let private format name =
             InsurerName = name
         }
 
-    Case.validateRequest (request 0L (BusinessCommand.Open input))
+    Case.validateRequest (request 0L (CaseAct.Open input))
 
 let private formatBoundaries () =
     for value in [ String('a', 1024); String.replicate 256 "😀"; String('\u0001', 1024) ] do
@@ -53,25 +53,19 @@ let private admissionInsideFormat () =
             InsurerName = name
         }
 
-    Expect.isOk
-        (Case.decide today (request 0L (BusinessCommand.Open input)) None)
-        "800 UTF-8 bytes admit"
+    Expect.isOk (Case.decide today (request 0L (CaseAct.Open input)) None) "800 UTF-8 bytes admit"
 
     let input = { input with ClaimantName = name + "😀" }
 
-    Expect.isOk
-        (Case.validateRequest (request 0L (BusinessCommand.Open input)))
-        "Format still admits"
+    Expect.isOk (Case.validateRequest (request 0L (CaseAct.Open input))) "Format still admits"
 
-    Expect.isError
-        (Case.decide today (request 0L (BusinessCommand.Open input)) None)
-        "Admission refuses"
+    Expect.isError (Case.decide today (request 0L (CaseAct.Open input)) None) "Admission refuses"
 
 let private stewardshipBoundaries () =
-    for act in [ StewardshipAct.Void; StewardshipAct.Reinstate ] do
+    for act in [ CaseAct.Void; CaseAct.Reinstate ] do
         let proposed value =
-            { request 1L BusinessCommand.Close with
-                Act = CaseAct.Stewardship(act value)
+            { request 1L CaseAct.Close with
+                Act = (act value)
             }
 
         Expect.isOk

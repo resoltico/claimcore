@@ -48,7 +48,7 @@ let private populated (database: PostgresFixture.Database) =
 
         let! outcome =
             actor.Execute(
-                request 10 "synthetic-a" 0L (ClaimCore.Domain.BusinessCommand.Open registration),
+                request 10 "synthetic-a" 0L (ClaimCore.Contract.CaseAct.Open registration),
                 token
             )
 
@@ -56,7 +56,7 @@ let private populated (database: PostgresFixture.Database) =
 
         let! second =
             actor.Execute(
-                request 11 "synthetic-b" 0L (ClaimCore.Domain.BusinessCommand.Open registration),
+                request 11 "synthetic-b" 0L (ClaimCore.Contract.CaseAct.Open registration),
                 token
             )
 
@@ -103,12 +103,7 @@ let private erasureFixture (database: PostgresFixture.Database) =
 
 let private erased (actor: IActorClaimsCore) =
     task {
-        let request =
-            actRequest
-                13
-                "synthetic-a"
-                1L
-                (ClaimCore.Domain.CaseAct.Stewardship ClaimCore.Domain.StewardshipAct.Erase)
+        let request = actRequest 13 "synthetic-a" 1L (ClaimCore.Contract.CaseAct.Erase)
 
         let! result = actor.Execute(request, token)
         return accepted result

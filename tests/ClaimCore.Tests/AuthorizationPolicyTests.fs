@@ -196,17 +196,17 @@ let private invalidActors () =
 let private ordinaryActs () =
     let cases =
         [
-            CaseAct.Business(BusinessCommand.Open registration), Capability.Register
-            CaseAct.Business(BusinessCommand.AmendRegistration registration), Capability.Register
-            CaseAct.Business(BusinessCommand.Decide decision), Capability.Decide
-            CaseAct.Business BusinessCommand.WithdrawDecision, Capability.Decide
-            CaseAct.Business(BusinessCommand.RecordPayment "2026-08-20"), Capability.RecordPayment
-            CaseAct.Business BusinessCommand.ClearPayment, Capability.RecordPayment
-            CaseAct.Business BusinessCommand.Close, Capability.Close
-            CaseAct.Business BusinessCommand.Reopen, Capability.Close
-            CaseAct.Stewardship(StewardshipAct.Void "Reason"), Capability.Steward
-            CaseAct.Stewardship(StewardshipAct.Reinstate "Reason"), Capability.Steward
-            CaseAct.Stewardship StewardshipAct.Erase, Capability.Steward
+            CaseAct.Open registration, Capability.Register
+            CaseAct.AmendRegistration registration, Capability.Register
+            CaseAct.Decide decision, Capability.Decide
+            CaseAct.WithdrawDecision, Capability.Decide
+            CaseAct.RecordPayment { PaymentDate = "2026-08-20" }, Capability.RecordPayment
+            CaseAct.ClearPayment, Capability.RecordPayment
+            CaseAct.Close, Capability.Close
+            CaseAct.Reopen, Capability.Close
+            CaseAct.Void "Reason", Capability.Steward
+            CaseAct.Reinstate "Reason", Capability.Steward
+            CaseAct.Erase, Capability.Steward
         ]
 
     for act, capability in cases do
@@ -251,7 +251,7 @@ let private corrections () =
         let correction =
             replacementCorrection registrationChanged decisionChanged paymentChanged
 
-        let act = CaseAct.Business(BusinessCommand.CorrectCase correction)
+        let act = (CaseAct.CorrectCase correction)
 
         Expect.equal
             (ActorAuthorization.requiredCapabilities act)
@@ -277,9 +277,7 @@ let private corrections () =
             }
 
         Expect.equal
-            (ActorAuthorization.requiredCapabilities (
-                CaseAct.Business(BusinessCommand.CorrectCase cleared)
-            ))
+            (ActorAuthorization.requiredCapabilities ((CaseAct.CorrectCase cleared)))
             expected
             "CLEAR selects the same capability"
 
@@ -295,14 +293,12 @@ let private reaffirmations () =
             ]
 
     let paymentReaffirmation =
-        CaseAct.Business(
-            BusinessCommand.CorrectCase
-                {
-                    Registration = RegistrationGroup.Keep
-                    Decision = DecisionGroup.Keep
-                    Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
-                }
-        )
+        (CaseAct.CorrectCase
+            {
+                Registration = RegistrationGroup.Keep
+                Decision = DecisionGroup.Keep
+                Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
+            })
 
     Expect.isFalse
         (ActorAuthorization.canAct
@@ -313,14 +309,12 @@ let private reaffirmations () =
         "An unchanged payment assertion still requires payment authority"
 
     let keep =
-        CaseAct.Business(
-            BusinessCommand.CorrectCase
-                {
-                    Registration = RegistrationGroup.Keep
-                    Decision = DecisionGroup.Keep
-                    Payment = PaymentGroup.Keep
-                }
-        )
+        (CaseAct.CorrectCase
+            {
+                Registration = RegistrationGroup.Keep
+                Decision = DecisionGroup.Keep
+                Payment = PaymentGroup.Keep
+            })
 
     Expect.isError
         (Case.decide today (actRequest ((Case.snapshot (paid ())).Revision) keep) (Some(paid ())))
@@ -402,7 +396,7 @@ let private absentCorrectionValues () =
 
 let private noUsableCorrectionOffer () =
     let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
-    let snapshot = opened () |> apply BusinessCommand.Close |> accepted |> Case.snapshot
+    let snapshot = opened () |> apply CaseAct.Close |> accepted |> Case.snapshot
 
     let target =
         ClaimCore.RecordFormat.CaseReferenceId.encode installation snapshot.Reference

@@ -244,21 +244,24 @@ module Case =
 
     let private steward act claim disposition =
         match act, disposition with
-        | StewardshipAct.Void _, Disposition.Voided -> Error CaseRefusal.AlreadyVoided
-        | StewardshipAct.Reinstate _, Disposition.Active -> Error CaseRefusal.NotVoided
-        | StewardshipAct.Void reason, Disposition.Active ->
+        | CaseAct.Void _, Disposition.Voided -> Error CaseRefusal.AlreadyVoided
+        | CaseAct.Reinstate _, Disposition.Active -> Error CaseRefusal.NotVoided
+        | CaseAct.Void reason, Disposition.Active ->
             Validation.admission InputTarget.Reason reason
             |> Result.map (fun () -> CaseState.Live(claim, Disposition.Voided))
-        | StewardshipAct.Reinstate reason, Disposition.Voided ->
+        | CaseAct.Reinstate reason, Disposition.Voided ->
             Validation.admission InputTarget.Reason reason
             |> Result.map (fun () -> CaseState.Live(claim, Disposition.Active))
-        | StewardshipAct.Erase, _ -> Ok CaseState.Erased
+        | CaseAct.Erase, _ -> Ok CaseState.Erased
+        | _ -> invalidArg (nameof act) "Expected a stewardship act."
 
     let private transition today act claim disposition =
         match act with
-        | CaseAct.Stewardship act -> steward act claim disposition
-        | CaseAct.Business _ when disposition = Disposition.Voided -> Error CaseRefusal.CaseVoided
-        | CaseAct.Business command ->
+        | CaseAct.Void _
+        | CaseAct.Reinstate _
+        | CaseAct.Erase -> steward act claim disposition
+        | _ when disposition = Disposition.Voided -> Error CaseRefusal.CaseVoided
+        | command ->
             result {
                 let! parsed = RequestValidation.business command
 
@@ -270,9 +273,9 @@ module Case =
 
     let private create today (request: CaseRequest) =
         match request.Act with
-        | CaseAct.Business(BusinessCommand.Open _) when request.ExpectedRevision <> 0L ->
+        | (CaseAct.Open _) when request.ExpectedRevision <> 0L ->
             Error(CaseRefusal.RevisionConflict 0L)
-        | CaseAct.Business(BusinessCommand.Open values) ->
+        | (CaseAct.Open values) ->
             result {
                 let! facts = Validation.registration values
                 let! claim = BusinessState.openCase today facts
@@ -292,7 +295,7 @@ module Case =
         else
             match record.State, request.Act with
             | CaseState.Erased, _ -> Error CaseRefusal.CaseErased
-            | _, CaseAct.Business(BusinessCommand.Open _) -> Error CaseRefusal.AlreadyExists
+            | _, (CaseAct.Open _) -> Error CaseRefusal.AlreadyExists
             | _ when record.Revision <> request.ExpectedRevision ->
                 Error(CaseRefusal.RevisionConflict record.Revision)
             | _ when record.Revision = Revision.Maximum -> Error CaseRefusal.RevisionExhausted

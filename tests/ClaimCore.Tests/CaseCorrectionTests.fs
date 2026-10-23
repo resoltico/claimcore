@@ -7,7 +7,7 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private correct registration decision payment =
-    BusinessCommand.CorrectCase
+    CaseAct.CorrectCase
         {
             Registration = registration
             Decision = decision
@@ -77,7 +77,7 @@ let private closedCorrectionTests =
         "closed correction"
         [
             testCase "closed cases may correct facts while retaining CLOSED status" (fun () ->
-                let closed = paid () |> apply BusinessCommand.Close |> accepted
+                let closed = paid () |> apply CaseAct.Close |> accepted
 
                 let after =
                     closed

@@ -7,13 +7,13 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private decisionWith amount =
-    BusinessCommand.Decide { decision with PayableAmount = amount }
+    CaseAct.Decide { decision with PayableAmount = amount }
 
 let private states () =
     let zero = opened () |> apply (decisionWith "0") |> accepted
 
     [ opened (); decided (); zero; paid () ]
-    |> List.collect (fun claim -> [ claim; claim |> apply BusinessCommand.Close |> accepted ])
+    |> List.collect (fun claim -> [ claim; claim |> apply CaseAct.Close |> accepted ])
 
 let private registrationChoices =
     [
@@ -97,7 +97,7 @@ let private checkChoice
     let snapshot = Case.snapshot before
 
     let command =
-        BusinessCommand.CorrectCase
+        CaseAct.CorrectCase
             {
                 Registration = registration
                 Decision = decision
@@ -142,7 +142,7 @@ let private zeroPaid =
         "[CC-DOM-001] explicit paid reaffirmation cannot retain a zero replacement decision"
         (fun () ->
             let command =
-                BusinessCommand.CorrectCase
+                CaseAct.CorrectCase
                     {
                         Registration = RegistrationGroup.Keep
                         Decision = DecisionGroup.Replace { decision with PayableAmount = "0" }
@@ -156,8 +156,8 @@ let private zeroPaid =
 
             let cleared =
                 match command with
-                | BusinessCommand.CorrectCase value ->
-                    BusinessCommand.CorrectCase
+                | CaseAct.CorrectCase value ->
+                    CaseAct.CorrectCase
                         { value with
                             Payment = PaymentGroup.Clear
                         }

@@ -23,10 +23,7 @@ let private seedCases (admin: IActorClaimsCore) target =
             let reference = "GRANT-" + string n
 
             let! opened =
-                admin.Execute(
-                    request (300 + n) reference 0L (BusinessCommand.Open registration),
-                    token
-                )
+                admin.Execute(request (300 + n) reference 0L (CaseAct.Open registration), token)
 
             accepted opened |> ignore
 
@@ -61,7 +58,7 @@ let private eraseCase (database: PostgresFixture.Database) (admin: IActorClaimsC
                 OperationId = id 605
                 CaseReference = "GRANT-1"
                 ExpectedRevision = 1L
-                Act = CaseAct.Stewardship(StewardshipAct.Erase)
+                Act = (CaseAct.Erase)
             }
 
         let! erased = admin.Execute(erase, token)

@@ -26,7 +26,7 @@ let private amendmentRetainsDates =
             }
 
         let after =
-            applyAt (DateOnly(2026, 7, 31)) (BusinessCommand.AmendRegistration changed) before
+            applyAt (DateOnly(2026, 7, 31)) (CaseAct.AmendRegistration changed) before
             |> accepted
             |> Case.snapshot
 
@@ -44,7 +44,7 @@ let private newIncidentIsBounded =
             }
 
         opened ()
-        |> applyAt (DateOnly(2026, 7, 31)) (BusinessCommand.AmendRegistration changed)
+        |> applyAt (DateOnly(2026, 7, 31)) (CaseAct.AmendRegistration changed)
         |> future InputTarget.IncidentDate)
 
 let private newNotificationIsBounded =
@@ -55,7 +55,7 @@ let private newNotificationIsBounded =
             }
 
         opened ()
-        |> applyAt (DateOnly(2026, 8, 3)) (BusinessCommand.AmendRegistration changed)
+        |> applyAt (DateOnly(2026, 8, 3)) (CaseAct.AmendRegistration changed)
         |> future InputTarget.IncidentNotificationDate)
 
 let private decisionRetainsDate =
@@ -66,7 +66,7 @@ let private decisionRetainsDate =
 
             let after =
                 decided ()
-                |> applyAt (DateOnly(2026, 8, 10)) (BusinessCommand.Decide changed)
+                |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide changed)
                 |> accepted
                 |> Case.snapshot
 
@@ -84,13 +84,13 @@ let private newDecisionDateIsBounded =
             }
 
         decided ()
-        |> applyAt (DateOnly(2026, 8, 10)) (BusinessCommand.Decide changed)
+        |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide changed)
         |> future InputTarget.PaymentDecisionDate)
 
 let private initialDecisionIsBounded =
     testCase "[CC-DOM-002] initial decisions cannot reuse a future historical date" (fun () ->
         opened ()
-        |> applyAt (DateOnly(2026, 8, 10)) (BusinessCommand.Decide decision)
+        |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide decision)
         |> future InputTarget.PaymentDecisionDate)
 
 let private withdrawnDateIsAbsent =
@@ -98,27 +98,27 @@ let private withdrawnDateIsAbsent =
         "[CC-DOM-002] withdrawing a decision removes its date reaffirmation authority"
         (fun () ->
             decided ()
-            |> apply BusinessCommand.WithdrawDecision
+            |> apply CaseAct.WithdrawDecision
             |> accepted
-            |> applyAt (DateOnly(2026, 8, 10)) (BusinessCommand.Decide decision)
+            |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide decision)
             |> future InputTarget.PaymentDecisionDate)
 
 let private clearedPaymentDateIsAbsent =
     testCase "[CC-DOM-002] clearing payment removes its date reaffirmation authority" (fun () ->
         paid ()
-        |> apply BusinessCommand.ClearPayment
+        |> apply CaseAct.ClearPayment
         |> accepted
-        |> applyAt (DateOnly(2026, 8, 16)) (BusinessCommand.RecordPayment "2026-08-20")
+        |> applyAt (DateOnly(2026, 8, 16)) (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
         |> future InputTarget.PaymentDate)
 
 let private closedCorrectionRetainsDates =
     testCase
         "[CC-DOM-002] a closed paid correction reaffirms accepted dates after rollback"
         (fun () ->
-            let before = paid () |> apply BusinessCommand.Close |> accepted
+            let before = paid () |> apply CaseAct.Close |> accepted
 
             let command =
-                BusinessCommand.CorrectCase
+                CaseAct.CorrectCase
                     {
                         Registration =
                             RegistrationGroup.Replace
@@ -145,7 +145,7 @@ let private correctionIncidentIsBounded =
         "[CC-DOM-002] a correction cannot hide a new future incident behind accepted dates"
         (fun () ->
             let command =
-                BusinessCommand.CorrectCase
+                CaseAct.CorrectCase
                     {
                         Registration =
                             RegistrationGroup.Replace
@@ -165,7 +165,7 @@ let private spellingDoesNotRevise =
         "[CC-DOM-002] equivalent amount spelling remains a correction no-op after rollback"
         (fun () ->
             let command =
-                BusinessCommand.CorrectCase
+                CaseAct.CorrectCase
                     {
                         Registration = RegistrationGroup.Keep
                         Decision = DecisionGroup.Replace decision

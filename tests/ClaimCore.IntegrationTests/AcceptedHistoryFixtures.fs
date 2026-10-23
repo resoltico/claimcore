@@ -46,7 +46,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             10
             "HISTORICAL-1"
             0L
-            (BusinessCommand.Open
+            (CaseAct.Open
                 { registration with
                     ClaimantName = claimant
                 })
@@ -132,10 +132,7 @@ let private grandfathering (database: PostgresFixture.Database) =
             }
 
         let! reaffirm =
-            actor.Execute(
-                request 11 "HISTORICAL-1" 1L (BusinessCommand.AmendRegistration values),
-                token
-            )
+            actor.Execute(request 11 "HISTORICAL-1" 1L (CaseAct.AmendRegistration values), token)
 
         accepted reaffirm |> ignore
 
@@ -145,7 +142,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                     12
                     "HISTORICAL-1"
                     2L
-                    (BusinessCommand.AmendRegistration
+                    (CaseAct.AmendRegistration
                         { values with
                             ClaimantName = name + "B"
                         }),
@@ -171,11 +168,7 @@ let private grandfathering (database: PostgresFixture.Database) =
 let private appendTransitions (actor: IActorClaimsCore) =
     task {
         for revision in 1L .. 59L do
-            let act =
-                if revision % 2L = 1L then
-                    BusinessCommand.Close
-                else
-                    BusinessCommand.Reopen
+            let act = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
 
             let! result =
                 actor.Execute(request (100 + int revision) "HISTORICAL-1" revision act, token)

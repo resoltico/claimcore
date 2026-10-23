@@ -48,7 +48,7 @@ let private history (admin: IActorClaimsCore) =
                 11
                 "PROBE-1"
                 1L
-                (BusinessCommand.AmendRegistration
+                (CaseAct.AmendRegistration
                     { registration with
                         ClaimantName = "Corrected Party"
                     })
@@ -211,10 +211,7 @@ let private erasedHistory (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         acceptedAuthority steward
 
         let! erase =
-            admin.Execute(
-                actRequest 12 "probe-1" 2L (CaseAct.Stewardship StewardshipAct.Erase),
-                CancellationToken.None
-            )
+            admin.Execute(actRequest 12 "probe-1" 2L (CaseAct.Erase), CancellationToken.None)
 
         Expect.equal
             (accepted erase |> caseReceipt).Snapshot
@@ -236,19 +233,14 @@ let private stewardshipReplay (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! _ = admin.Execute(openRequest 10 "PROBE-1", CancellationToken.None)
         let! reader = createReader fixture admin Role.DataSteward
 
-        let original =
-            actRequest 11 "PROBE-1" 1L (CaseAct.Stewardship(StewardshipAct.Void "Entered in error"))
+        let original = actRequest 11 "PROBE-1" 1L ((CaseAct.Void "Entered in error"))
 
         let! voided = reader.Execute(original, CancellationToken.None)
         let first = accepted voided
 
         let! reinstated =
             reader.Execute(
-                actRequest
-                    12
-                    "PROBE-1"
-                    2L
-                    (CaseAct.Stewardship(StewardshipAct.Reinstate "Entry confirmed")),
+                actRequest 12 "PROBE-1" 2L ((CaseAct.Reinstate "Entry confirmed")),
                 CancellationToken.None
             )
 
@@ -294,7 +286,7 @@ let private commitSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                         11
                         "PROBE-1"
                         1L
-                        (BusinessCommand.AmendRegistration
+                        (CaseAct.AmendRegistration
                             { registration with
                                 ClaimantName = "Later Party"
                             })

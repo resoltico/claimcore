@@ -63,50 +63,40 @@ let private live status decided paid =
 
 let private acts =
     [
-        (CaseActKind.Business BusinessActKind.Open),
-        CaseAct.Business(BusinessCommand.Open registration)
+        (CaseActKind.Business BusinessActKind.Open), (CaseAct.Open registration)
         (CaseActKind.Business BusinessActKind.AmendRegistration),
-        CaseAct.Business(
-            BusinessCommand.AmendRegistration
-                { registration with
-                    ClaimantName = "Changed Party"
-                }
-        )
+        (CaseAct.AmendRegistration
+            { registration with
+                ClaimantName = "Changed Party"
+            })
         (CaseActKind.Business BusinessActKind.CorrectCase),
-        CaseAct.Business(
-            BusinessCommand.CorrectCase
-                {
-                    Registration =
-                        RegistrationGroup.Replace
-                            { registration with
-                                ClaimantName = "Changed Party"
-                            }
-                    Decision = DecisionGroup.Keep
-                    Payment = PaymentGroup.Keep
-                }
-        )
+        (CaseAct.CorrectCase
+            {
+                Registration =
+                    RegistrationGroup.Replace
+                        { registration with
+                            ClaimantName = "Changed Party"
+                        }
+                Decision = DecisionGroup.Keep
+                Payment = PaymentGroup.Keep
+            })
         (CaseActKind.Business BusinessActKind.Decide),
-        CaseAct.Business(
-            BusinessCommand.Decide
-                {
-                    PaymentDecisionDate = "2026-08-15"
-                    PayableAmount = "750"
-                    PayableCurrency = "EUR"
-                }
-        )
-        (CaseActKind.Business BusinessActKind.WithdrawDecision),
-        CaseAct.Business BusinessCommand.WithdrawDecision
+        (CaseAct.Decide
+            {
+                PaymentDecisionDate = "2026-08-15"
+                PayableAmount = "750"
+                PayableCurrency = "EUR"
+            })
+        (CaseActKind.Business BusinessActKind.WithdrawDecision), CaseAct.WithdrawDecision
         (CaseActKind.Business BusinessActKind.RecordPayment),
-        CaseAct.Business(BusinessCommand.RecordPayment "2026-08-20")
-        (CaseActKind.Business BusinessActKind.ClearPayment),
-        CaseAct.Business BusinessCommand.ClearPayment
-        (CaseActKind.Business BusinessActKind.Close), CaseAct.Business BusinessCommand.Close
-        (CaseActKind.Business BusinessActKind.Reopen), CaseAct.Business BusinessCommand.Reopen
-        (CaseActKind.Stewardship StewardshipActKind.Void),
-        CaseAct.Stewardship(StewardshipAct.Void "Entry error")
+        (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+        (CaseActKind.Business BusinessActKind.ClearPayment), CaseAct.ClearPayment
+        (CaseActKind.Business BusinessActKind.Close), CaseAct.Close
+        (CaseActKind.Business BusinessActKind.Reopen), CaseAct.Reopen
+        (CaseActKind.Stewardship StewardshipActKind.Void), (CaseAct.Void "Entry error")
         (CaseActKind.Stewardship StewardshipActKind.Reinstate),
-        CaseAct.Stewardship(StewardshipAct.Reinstate "Entry confirmed")
-        (CaseActKind.Stewardship StewardshipActKind.Erase), CaseAct.Stewardship StewardshipAct.Erase
+        (CaseAct.Reinstate "Entry confirmed")
+        (CaseActKind.Stewardship StewardshipActKind.Erase), CaseAct.Erase
     ]
 
 let private stateExpectations =
@@ -167,14 +157,12 @@ let private matrix =
                     "Independent advertisement expectation")
 
 let private allKeep =
-    CaseAct.Business(
-        BusinessCommand.CorrectCase
-            {
-                Registration = RegistrationGroup.Keep
-                Decision = DecisionGroup.Keep
-                Payment = PaymentGroup.Keep
-            }
-    )
+    (CaseAct.CorrectCase
+        {
+            Registration = RegistrationGroup.Keep
+            Decision = DecisionGroup.Keep
+            Payment = PaymentGroup.Keep
+        })
 
 let private allKeepStates =
     [
@@ -243,24 +231,20 @@ let private grandfathering =
                 "Retained fields are exact"
 
             let reaffirm =
-                CaseAct.Business(
-                    BusinessCommand.AmendRegistration
-                        { registration with
-                            ClaimantName = oldName
-                        }
-                )
+                (CaseAct.AmendRegistration
+                    { registration with
+                        ClaimantName = oldName
+                    })
 
             Expect.isOk
                 (Case.decide today (request 1L reaffirm) (Some current))
                 "Unchanged policy violation is grandfathered"
 
             let changed =
-                CaseAct.Business(
-                    BusinessCommand.AmendRegistration
-                        { registration with
-                            ClaimantName = oldName + "x"
-                        }
-                )
+                (CaseAct.AmendRegistration
+                    { registration with
+                        ClaimantName = oldName + "x"
+                    })
 
             Expect.isError
                 (Case.decide today (request 1L changed) (Some current))
@@ -275,10 +259,7 @@ let private revisionBounds =
         let prior = retained (Revision.Maximum - 1L) (live CaseStatus.Opened false false)
 
         let next =
-            Case.decide
-                today
-                (request (Revision.Maximum - 1L) (CaseAct.Business BusinessCommand.Close))
-                (Some prior)
+            Case.decide today (request (Revision.Maximum - 1L) (CaseAct.Close)) (Some prior)
             |> accepted
 
         Expect.equal
@@ -295,13 +276,11 @@ let private revisionBounds =
 
         for value in [ -1L; Revision.Maximum + 1L; Int64.MaxValue ] do
             Expect.isError
-                (Case.validateRequest (request value (CaseAct.Stewardship StewardshipAct.Erase)))
+                (Case.validateRequest (request value (CaseAct.Erase)))
                 "Expected revision bounds"
 
         Expect.isOk
-            (Case.validateRequest (
-                request Revision.Maximum (CaseAct.Stewardship StewardshipAct.Erase)
-            ))
+            (Case.validateRequest (request Revision.Maximum (CaseAct.Erase)))
             "Expected M is valid syntax")
 
 let private identifiers =
@@ -318,7 +297,7 @@ let private identifiers =
             let current = retained 1L (live CaseStatus.Opened false false)
 
             let recased =
-                { request 1L (CaseAct.Business BusinessCommand.Close) with
+                { request 1L (CaseAct.Close) with
                     CaseReference = "DEMO-1"
                 }
 
@@ -327,23 +306,19 @@ let private identifiers =
 
             for country in [ "LV"; "ZZ"; "QQ" ] do
                 let act =
-                    CaseAct.Business(
-                        BusinessCommand.Open
-                            { registration with
-                                IncidentCountry = country
-                            }
-                    )
+                    (CaseAct.Open
+                        { registration with
+                            IncidentCountry = country
+                        })
 
                 Expect.isOk (Case.decide today (request 0L act) None) "Membership is unchecked"
 
             for country in [ "Latvia"; "lv"; "L"; "LV\n"; "ĀĀ" ] do
                 let act =
-                    CaseAct.Business(
-                        BusinessCommand.Open
-                            { registration with
-                                IncidentCountry = country
-                            }
-                    )
+                    (CaseAct.Open
+                        { registration with
+                            IncidentCountry = country
+                        })
 
                 Expect.isError (Case.validateRequest (request 0L act)) "Country syntax refusal")
 
@@ -373,18 +348,14 @@ let private refusedScalars =
 
 let private textActs value =
     [
-        CaseAct.Business(
-            BusinessCommand.Open
-                { registration with
-                    ClaimantName = value
-                }
-        )
-        CaseAct.Business(
-            BusinessCommand.Open
-                { registration with
-                    InsurerName = value
-                }
-        )
+        (CaseAct.Open
+            { registration with
+                ClaimantName = value
+            })
+        (CaseAct.Open
+            { registration with
+                InsurerName = value
+            })
     ]
 
 let private checkText expected scalar =
@@ -397,7 +368,7 @@ let private checkText expected scalar =
             "Business text scalar policy"
 
     let current = retained 1L (live CaseStatus.Opened false false)
-    let act = CaseAct.Stewardship(StewardshipAct.Void value)
+    let act = (CaseAct.Void value)
 
     Expect.equal
         (Case.decide today (request 1L act) (Some current) |> Result.isOk)

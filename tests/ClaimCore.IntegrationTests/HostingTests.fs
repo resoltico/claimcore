@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.HostingTests
 
+open ClaimCore.Contract
+
 open System
 open System.Threading
 open Expecto
@@ -34,7 +36,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         for n, reference in [ 10, "CURSOR-A"; 11, "CURSOR-B" ] do
             let! result =
                 owner.Execute(
-                    request n reference 0L (ClaimCore.Domain.BusinessCommand.Open registration),
+                    request n reference 0L (ClaimCore.Contract.CaseAct.Open registration),
                     token
                 )
 
@@ -195,7 +197,7 @@ let tests =
                                     30
                                     "synthetic-hosting"
                                     0L
-                                    (ClaimCore.Domain.BusinessCommand.Open registration),
+                                    (ClaimCore.Contract.CaseAct.Open registration),
                                 token
                             )
 
@@ -309,7 +311,7 @@ let tests =
                                         40
                                         "synthetic-drain"
                                         0L
-                                        (ClaimCore.Domain.BusinessCommand.Open registration),
+                                        (ClaimCore.Contract.CaseAct.Open registration),
                                     token
                                 )
 

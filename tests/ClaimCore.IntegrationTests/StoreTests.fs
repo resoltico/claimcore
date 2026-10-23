@@ -24,7 +24,7 @@ let private serviceCases (admin: IActorClaimsCore) principal =
 
             let! opened =
                 admin.Execute(
-                    request (410 + number) reference 0L (BusinessCommand.Open registration),
+                    request (410 + number) reference 0L (CaseAct.Open registration),
                     CancellationToken.None
                 )
 

@@ -8,38 +8,6 @@ open ClaimCore.Domain
 module internal RequestMapping =
     type private WireAuthorityAct = ClaimCore.Contract.Protocol.AuthorityAct
 
-    let private business =
-        function
-        | ClaimCore.Contract.Protocol.CaseAct.Open value -> BusinessCommand.Open value
-        | ClaimCore.Contract.Protocol.CaseAct.AmendRegistration value ->
-            BusinessCommand.AmendRegistration value
-        | ClaimCore.Contract.Protocol.CaseAct.CorrectCase value -> BusinessCommand.CorrectCase value
-        | ClaimCore.Contract.Protocol.CaseAct.Decide value -> BusinessCommand.Decide value
-        | ClaimCore.Contract.Protocol.CaseAct.WithdrawDecision -> BusinessCommand.WithdrawDecision
-        | ClaimCore.Contract.Protocol.CaseAct.RecordPayment value ->
-            BusinessCommand.RecordPayment value.PaymentDate
-        | ClaimCore.Contract.Protocol.CaseAct.ClearPayment -> BusinessCommand.ClearPayment
-        | ClaimCore.Contract.Protocol.CaseAct.Close -> BusinessCommand.Close
-        | ClaimCore.Contract.Protocol.CaseAct.Reopen -> BusinessCommand.Reopen
-        | _ -> invalidArg "act" "Expected a business operation."
-
-    let private act =
-        function
-        | ClaimCore.Contract.Protocol.CaseAct.Void reason ->
-            CaseAct.Stewardship(StewardshipAct.Void reason)
-        | ClaimCore.Contract.Protocol.CaseAct.Reinstate reason ->
-            CaseAct.Stewardship(StewardshipAct.Reinstate reason)
-        | ClaimCore.Contract.Protocol.CaseAct.Erase -> CaseAct.Stewardship StewardshipAct.Erase
-        | value -> CaseAct.Business(business value)
-
-    let caseRequest (value: ClaimCore.Contract.Protocol.CaseRequest) : CaseRequest =
-        {
-            OperationId = value.OperationId
-            CaseReference = value.CaseReference
-            ExpectedRevision = value.ExpectedRevision
-            Act = act value.Act
-        }
-
     let private scope =
         function
         | ClaimCore.Contract.Protocol.Scope.Installation -> GrantTarget.Installation

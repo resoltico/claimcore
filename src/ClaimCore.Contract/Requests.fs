@@ -4,29 +4,6 @@ open ClaimCore.Contract
 
 open System
 
-[<RequireQualifiedAccess>]
-type CaseAct =
-    | Open of Registration
-    | AmendRegistration of Registration
-    | CorrectCase of Correction
-    | Decide of Decision
-    | WithdrawDecision
-    | RecordPayment of Payment
-    | ClearPayment
-    | Close
-    | Reopen
-    | Void of string
-    | Reinstate of string
-    | Erase
-
-type CaseRequest =
-    {
-        OperationId: Guid
-        CaseReference: string
-        ExpectedRevision: int64
-        Act: CaseAct
-    }
-
 type Principal =
     {
         Kind: string

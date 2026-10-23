@@ -138,11 +138,7 @@ let private start (database: PostgresFixture.Database) =
                 { scope with
                     Act = (CaseActKind.Business BusinessActKind.Close)
                 })
-            |> updateCase
-                { request with
-                    Act = CaseAct.Business BusinessCommand.Close
-                }
-                { snapshot with View = view }
+            |> updateCase { request with Act = CaseAct.Close } { snapshot with View = view }
 
         do! rewrite database 4L change
         do! finding VerificationFinding.HistoryStart database
@@ -151,7 +147,7 @@ let private start (database: PostgresFixture.Database) =
 let private disposition (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
-        let! closed = actor.Execute(request 11 "synthetic-a" 1L BusinessCommand.Close, token)
+        let! closed = actor.Execute(request 11 "synthetic-a" 1L CaseAct.Close, token)
         let position = (accepted closed).Position.Sequence
 
         let change value =
@@ -164,7 +160,7 @@ let private disposition (database: PostgresFixture.Database) =
                 })
             |> updateCase
                 { request with
-                    Act = CaseAct.Stewardship(StewardshipAct.Reinstate "Confirmed")
+                    Act = (CaseAct.Reinstate "Confirmed")
                 }
                 snapshot
 
@@ -182,11 +178,7 @@ let private erasure (database: PostgresFixture.Database) =
 
         acceptedAuthority granted
 
-        let! erased =
-            actor.Execute(
-                actRequest 11 "synthetic-a" 1L (CaseAct.Stewardship StewardshipAct.Erase),
-                token
-            )
+        let! erased = actor.Execute(actRequest 11 "synthetic-a" 1L (CaseAct.Erase), token)
 
         accepted erased |> ignore
         let! _ = verified database
@@ -271,14 +263,7 @@ let private human (database: PostgresFixture.Database) =
         acceptedAuthority added
 
         let! voided =
-            actor.Execute(
-                actRequest
-                    11
-                    "synthetic-a"
-                    1L
-                    (CaseAct.Stewardship(StewardshipAct.Void "Entered in error")),
-                token
-            )
+            actor.Execute(actRequest 11 "synthetic-a" 1L ((CaseAct.Void "Entered in error")), token)
 
         do!
             rewrite database (accepted voided).Position.Sequence (fun value ->
@@ -402,7 +387,7 @@ let private disabledExecutor (database: PostgresFixture.Database) =
         acceptedAuthority disabled
 
         let! opened =
-            actor.Execute(request 11 "another" 0L (BusinessCommand.Open registration), token)
+            actor.Execute(request 11 "another" 0L (CaseAct.Open registration), token)
 
         do!
             rewrite database (accepted opened).Position.Sequence (fun value ->
@@ -462,7 +447,7 @@ let private permanentPolicyOnly (database: PostgresFixture.Database) =
         do! register actor 3 reader
 
         let! opened =
-            actor.Execute(request 10 "synthetic-a" 0L (BusinessCommand.Open registration), token)
+            actor.Execute(request 10 "synthetic-a" 0L (CaseAct.Open registration), token)
 
         do!
             rewrite database (accepted opened).Position.Sequence (fun value ->
@@ -558,7 +543,7 @@ let private malformedOptionalDate (database: PostgresFixture.Database) =
             }
 
         let! decided =
-            actor.Execute(request 11 "synthetic-a" 1L (BusinessCommand.Decide decision), token)
+            actor.Execute(request 11 "synthetic-a" 1L (CaseAct.Decide decision), token)
 
         accepted decided |> ignore
         let! _ = verified database

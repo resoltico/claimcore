@@ -45,18 +45,16 @@ let view reference =
             CaseReference = reference
             ExpectedRevision = 0L
             Act =
-                CaseAct.Business(
-                    BusinessCommand.Open
-                        {
-                            IncidentDate = "2026-08-01"
-                            IncidentNotificationDate = "2026-08-03"
-                            IncidentCountry = "LV"
-                            ClaimantName = "Synthetic claimant"
-                            InsurerName = "Synthetic insurer"
-                            ClaimedAmount = "1.00"
-                            ClaimedCurrency = "EUR"
-                        }
-                )
+                (CaseAct.Open
+                    {
+                        IncidentDate = "2026-08-01"
+                        IncidentNotificationDate = "2026-08-03"
+                        IncidentCountry = "LV"
+                        ClaimantName = "Synthetic claimant"
+                        InsurerName = "Synthetic insurer"
+                        ClaimedAmount = "1.00"
+                        ClaimedCurrency = "EUR"
+                    })
         }
 
     Case.decide (DateOnly(2026, 10, 13)) request None

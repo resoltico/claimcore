@@ -62,7 +62,7 @@ let private openCases (actor: IActorClaimsCore) count =
                         (1000 + index)
                         ("synthetic-growth-" + string index)
                         0L
-                        (BusinessCommand.Open registration),
+                        (CaseAct.Open registration),
                     token
                 )
 
@@ -78,11 +78,7 @@ let private writeLane (actor: IActorClaimsCore) workload lane =
             let target = index % workload.Cases
             let revision = revisions[target]
 
-            let command =
-                if revision % 2L = 1L then
-                    BusinessCommand.Close
-                else
-                    BusinessCommand.Reopen
+            let command = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
 
             let authored =
                 request (200000 + index) ("synthetic-growth-" + string target) revision command

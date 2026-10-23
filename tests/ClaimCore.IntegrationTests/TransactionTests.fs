@@ -130,7 +130,7 @@ let tests =
                                             (100 + index)
                                             ($"synthetic-{index}")
                                             0L
-                                            (ClaimCore.Domain.BusinessCommand.Open registration),
+                                            (ClaimCore.Contract.CaseAct.Open registration),
                                         token
                                     )
                             |]
@@ -312,7 +312,7 @@ let tests =
                                 20
                                 "synthetic-deferred"
                                 0L
-                                (ClaimCore.Domain.BusinessCommand.Open registration)
+                                (ClaimCore.Contract.CaseAct.Open registration)
 
                         let! failed = actor.Execute(operation, token)
 
@@ -373,7 +373,7 @@ let tests =
                                     20
                                     "synthetic-snapshot"
                                     0L
-                                    (ClaimCore.Domain.BusinessCommand.Open registration),
+                                    (ClaimCore.Contract.CaseAct.Open registration),
                                 token
                             )
 

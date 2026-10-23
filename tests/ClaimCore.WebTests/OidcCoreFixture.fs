@@ -59,7 +59,7 @@ let createFor issuer subject =
 
             let! opened =
                 owner.Execute(
-                    request 10 "SYNTHETIC-001" 0L (BusinessCommand.Open registration),
+                    request 10 "SYNTHETIC-001" 0L (CaseAct.Open registration),
                     CancellationToken.None
                 )
 

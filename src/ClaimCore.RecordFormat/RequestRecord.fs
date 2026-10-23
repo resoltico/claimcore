@@ -1,223 +1,41 @@
 namespace ClaimCore.RecordFormat
 
 open ClaimCore.Contract
-
-open System.Text.Json
+open ClaimCore.Contract.Protocol
 open ClaimCore.Domain
 
-/// Case-request parsing and canonical encoding.
 module RequestRecord =
-    let private registrationGroup (value: JsonValue) =
-        let path = "$.act.groups.registration"
+    let private codec =
+        RequestCodecs.caseRequest
+        |> Codec.withFormat (int64 RecordVersions.CaseRequest)
+        |> Codec.named "CaseRequestRecord"
 
-        match Json.text path "mode" value with
-        | "KEEP" ->
-            Json.properties path [ "mode" ] value
-            RegistrationGroup.Keep
-        | "REPLACE" ->
-            Json.properties path [ "mode"; "values" ] value
-
-            RegistrationGroup.Replace(
-                Json.registration (path + ".values") (Json.required path "values" value)
-            )
-        | _ -> Json.reject (path + ".mode") "Use KEEP or REPLACE."
-
-    let private decisionGroup (value: JsonValue) =
-        let path = "$.act.groups.decision"
-
-        match Json.text path "mode" value with
-        | "KEEP" ->
-            Json.properties path [ "mode" ] value
-            DecisionGroup.Keep
-        | "REPLACE" ->
-            Json.properties path [ "mode"; "values" ] value
-
-            DecisionGroup.Replace(
-                Json.decision (path + ".values") (Json.required path "values" value)
-            )
-        | "CLEAR" ->
-            Json.properties path [ "mode" ] value
-            DecisionGroup.Clear
-        | _ -> Json.reject (path + ".mode") "Use KEEP, REPLACE or CLEAR."
-
-    let private paymentValues path element =
-        Json.properties path [ "paymentDate" ] element
-        Json.text path "paymentDate" element
-
-    let private paymentGroup (value: JsonValue) =
-        let path = "$.act.groups.payment"
-
-        match Json.text path "mode" value with
-        | "KEEP" ->
-            Json.properties path [ "mode" ] value
-            PaymentGroup.Keep
-        | "REPLACE" ->
-            Json.properties path [ "mode"; "values" ] value
-
-            PaymentGroup.Replace
+    let private validate request =
+        match Case.validateRequest request with
+        | Ok() -> Ok request
+        | Error(CaseRefusal.InvalidInput(target, _)) ->
+            Error
                 {
-                    PaymentDate =
-                        paymentValues (path + ".values") (Json.required path "values" value)
+                    Field = "$." + InputTargets.token target
+                    Message = "Invalid case-request format."
                 }
-        | "CLEAR" ->
-            Json.properties path [ "mode" ] value
-            PaymentGroup.Clear
-        | _ -> Json.reject (path + ".mode") "Use KEEP, REPLACE or CLEAR."
+        | Error _ ->
+            Error
+                {
+                    Field = "$.act"
+                    Message = "Invalid case-request format."
+                }
 
-    let private correction element =
-        let path = "$.act.groups"
-        Json.properties path [ "registration"; "decision"; "payment" ] element
-
-        {
-            Registration = registrationGroup (Json.required path "registration" element)
-            Decision = decisionGroup (Json.required path "decision" element)
-            Payment = paymentGroup (Json.required path "payment" element)
-        }
-
-    let private business kind element =
-        let path = "$.act"
-
-        let shape fields =
-            Json.properties path ("kind" :: fields) element
-
-        let values read =
-            shape [ "values" ]
-            read (path + ".values") (Json.required path "values" element)
-
-        match kind with
-        | value when value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open)) ->
-            BusinessCommand.Open(values Json.registration)
-        | value when
-            value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
-            ->
-            BusinessCommand.AmendRegistration(values Json.registration)
-        | value when value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase)) ->
-            shape [ "groups" ]
-            BusinessCommand.CorrectCase(correction (Json.required path "groups" element))
-        | value when value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide)) ->
-            BusinessCommand.Decide(values Json.decision)
-        | value when
-            value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
-            ->
-            BusinessCommand.RecordPayment(values paymentValues)
-        | value when
-            value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
-            ->
-            shape []
-            BusinessCommand.WithdrawDecision
-        | value when
-            value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
-            ->
-            shape []
-            BusinessCommand.ClearPayment
-        | value when value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close)) ->
-            shape []
-            BusinessCommand.Close
-        | value when value = (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen)) ->
-            shape []
-            BusinessCommand.Reopen
-        | _ -> Json.reject (path + ".kind") "Unknown case act."
-
-    let private act element =
-        let path = "$.act"
-
-        match Json.text path "kind" element with
-        | value when value = (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void)) ->
-            Json.properties path [ "kind"; "reason" ] element
-            CaseAct.Stewardship(StewardshipAct.Void(Json.text path "reason" element))
-        | value when
-            value = (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
-            ->
-            Json.properties path [ "kind"; "reason" ] element
-            CaseAct.Stewardship(StewardshipAct.Reinstate(Json.text path "reason" element))
-        | value when value = (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase)) ->
-            Json.properties path [ "kind" ] element
-            CaseAct.Stewardship StewardshipAct.Erase
-        | kind -> CaseAct.Business(business kind element)
-
-    let private read root =
-        let members = [ "operationId"; "caseReference"; "expectedRevision"; "act" ]
-        Json.properties "$" ("format" :: members) root
-
-        let request =
-            {
-                OperationId = Json.guid "$" "operationId" root
-                CaseReference = Json.text "$" "caseReference" root
-                ExpectedRevision = Json.integer "$" "expectedRevision" root
-                Act = act (Json.required "$" "act" root)
-            }
-
-        match Case.validateRequest request with
-        | Ok() -> request
-        | Error(CaseRefusal.InvalidInput(field, _)) ->
-            Json.reject ("$." + InputTargets.token field) "Invalid case-request format."
-        | Error _ -> Json.reject "$.act" "Invalid case-request format."
-
-    // Append decoders when supporting another durable format; never reinterpret existing bytes.
     let decode maxBytes bytes =
-        Json.bounded maxBytes bytes (Json.dispatch [ int64 RecordVersions.CaseRequest, read ])
+        Codec.decode maxBytes codec bytes
+        |> Result.mapError (fun problem ->
+            {
+                Field = problem.Path
+                Message = problem.Reason
+            })
+        |> Result.bind validate
 
-    let private mode name = "mode", JsonValue.String name
-
-    let private group name value =
-        JsonValue.Object [ mode name; "values", value ]
-
-    let private correctionValue (correction: Correction) =
-        let registration =
-            match correction.Registration with
-            | RegistrationGroup.Keep -> JsonValue.Object [ mode "KEEP" ]
-            | RegistrationGroup.Replace value -> group "REPLACE" (Json.registrationValue value)
-
-        let decision =
-            match correction.Decision with
-            | DecisionGroup.Keep -> JsonValue.Object [ mode "KEEP" ]
-            | DecisionGroup.Clear -> JsonValue.Object [ mode "CLEAR" ]
-            | DecisionGroup.Replace value -> group "REPLACE" (Json.decisionValue value)
-
-        let payment =
-            match correction.Payment with
-            | PaymentGroup.Keep -> JsonValue.Object [ mode "KEEP" ]
-            | PaymentGroup.Clear -> JsonValue.Object [ mode "CLEAR" ]
-            | PaymentGroup.Replace date ->
-                group
-                    "REPLACE"
-                    (JsonValue.Object [ "paymentDate", JsonValue.String date.PaymentDate ])
-
-        JsonValue.Object [ "registration", registration; "decision", decision; "payment", payment ]
-
-    let private actValue act =
-        let payload =
-            match act with
-            | CaseAct.Business(BusinessCommand.Open value)
-            | CaseAct.Business(BusinessCommand.AmendRegistration value) ->
-                [ "values", Json.registrationValue value ]
-            | CaseAct.Business(BusinessCommand.Decide value) ->
-                [ "values", Json.decisionValue value ]
-            | CaseAct.Business(BusinessCommand.RecordPayment date) ->
-                [ "values", JsonValue.Object [ "paymentDate", JsonValue.String date ] ]
-            | CaseAct.Business(BusinessCommand.CorrectCase value) ->
-                [ "groups", correctionValue value ]
-            | CaseAct.Stewardship(StewardshipAct.Void reason)
-            | CaseAct.Stewardship(StewardshipAct.Reinstate reason) ->
-                [ "reason", JsonValue.String reason ]
-            | _ -> []
-
-        JsonValue.Object(("kind", JsonValue.String(CaseActs.name act)) :: payload)
-
-    let private value (request: CaseRequest) =
-        match Case.validateRequest request with
+    let encode request =
+        match validate request with
         | Error _ -> invalidArg (nameof request) "Invalid case-request format."
-        | Ok() ->
-            let fields =
-                [
-                    "operationId", JsonValue.String(request.OperationId.ToString("D"))
-                    "caseReference", JsonValue.String request.CaseReference
-                    "expectedRevision", JsonValue.Integer request.ExpectedRevision
-                    "act", actValue request.Act
-                ]
-
-            JsonValue.Object(
-                ("format", JsonValue.Integer(int64 RecordVersions.CaseRequest)) :: fields
-            )
-
-    let encode request = value request |> CanonicalWriter.bytes
+        | Ok value -> codec.Write value |> CanonicalWriter.bytes

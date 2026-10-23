@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open System
+
 type Registration =
     {
         IncidentDate: string
@@ -42,4 +44,27 @@ type Correction =
         Registration: RegistrationGroup
         Decision: DecisionGroup
         Payment: PaymentGroup
+    }
+
+[<RequireQualifiedAccess>]
+type CaseAct =
+    | Open of Registration
+    | AmendRegistration of Registration
+    | CorrectCase of Correction
+    | Decide of Decision
+    | WithdrawDecision
+    | RecordPayment of Payment
+    | ClearPayment
+    | Close
+    | Reopen
+    | Void of string
+    | Reinstate of string
+    | Erase
+
+type CaseRequest =
+    {
+        OperationId: Guid
+        CaseReference: string
+        ExpectedRevision: int64
+        Act: CaseAct
     }

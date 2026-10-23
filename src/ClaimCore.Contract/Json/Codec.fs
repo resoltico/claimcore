@@ -605,6 +605,40 @@ module Codec =
             | _ -> invalidArg "codec" "A discriminator requires a named choice."
         | _ -> invalidArg "codec" "A discriminator requires a named choice."
 
+    let rec private objectShape definitions =
+        function
+        | Schema.Ref name -> objectShape definitions (Map.find name definitions)
+        | Schema.Object(properties, optional) -> properties, optional
+        | _ -> invalidArg "codec" "A format member requires an object codec."
+
+    /// RecordFormat chooses the format number and owns the named durable codec value.
+    let withFormat format (codec: Codec<'T>) : Codec<'T> =
+        let properties, optional = objectShape codec.Definitions codec.Schema
+        let number = integer format format
+
+        if properties |> List.exists (fst >> (=) "format") then
+            invalidArg (nameof codec) "The object already declares a format."
+
+        {
+            Read =
+                fun path value ->
+                    match value with
+                    | JsonValue.Object members ->
+                        match members |> List.partition (fst >> (=) "format") with
+                        | [ _, JsonValue.Integer actual ], remaining when actual = format ->
+                            codec.Read path (JsonValue.Object remaining)
+                        | _ -> fail (path + ".format") "unsupported record format"
+                    | _ -> fail path "expected an object"
+            Write =
+                fun value ->
+                    match codec.Write value with
+                    | JsonValue.Object members ->
+                        JsonValue.Object(members @ [ "format", number.Write format ])
+                    | _ -> invalidOp "A format codec must write an object."
+            Schema = Schema.Object(properties @ [ "format", number.Schema ], optional)
+            Definitions = codec.Definitions
+        }
+
     // ----- bytes --------------------------------------------------------------------------
 
     let encode (codec: Codec<'T>) (value: 'T) = codec.Write value |> WireWriter.bytes
