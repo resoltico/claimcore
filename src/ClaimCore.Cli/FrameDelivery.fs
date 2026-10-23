@@ -20,12 +20,13 @@ type FrameDelivery(output: Stream, errors: Stream) =
                 action ())
 
     let retryFrame () =
-        match pending with
-        | None -> ()
-        | Some frame ->
-            errors.Write(Frames.encodeInvocation frame)
-            errors.WriteByte(byte '\n')
-            errors.Flush()
+        lock gate (fun () ->
+            match pending with
+            | None -> ()
+            | Some frame ->
+                errors.Write(Frames.encodeInvocation frame)
+                errors.WriteByte(byte '\n')
+                errors.Flush())
 
     member _.BeginFrame() =
         advance (fun () ->
@@ -93,13 +94,14 @@ type FrameDelivery(output: Stream, errors: Stream) =
             | None -> reply
 
         try
-            errors.Write reply.Bytes
-            errors.WriteByte(byte '\n')
+            lock gate (fun () ->
+                errors.Write reply.Bytes
+                errors.WriteByte(byte '\n')
 
-            if uncertain then
-                retryFrame ()
+                if uncertain then
+                    retryFrame ()
 
-            errors.Flush()
+                errors.Flush())
         with _ ->
             ()
 

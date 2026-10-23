@@ -113,6 +113,11 @@ let private beforeDispatch () =
 
     Expect.equal code 2 "Retry context is only valid for mutation frames."
 
+    let code, _, _ =
+        runFrame true [||] (fun _ _ _ -> failtest "Empty retry must not dispatch.")
+
+    Expect.equal code 2 "An empty retry is an invalid frame, never a successful operation."
+
 [<Tests>]
 let tests =
     testList
