@@ -1,0 +1,20 @@
+{
+  "accepted": [
+    { "source": "Accepted.", "arguments": {}, "expected": "Accepted." },
+    { "source": "Hello {name}.", "arguments": { "name": "Ada" }, "expected": "Hello Ada." },
+    { "source": "{name}, then {name}.", "arguments": { "name": "Ada" }, "expected": "Ada, then Ada." },
+    { "source": "Don't change {operationId}.", "arguments": { "operationId": "synthetic-id" }, "expected": "Don't change synthetic-id." },
+    { "source": "It''s {name}.", "arguments": { "name": "Ada" }, "expected": "It's Ada." },
+    { "source": "'{name}' is literal.", "arguments": {}, "expected": "{name} is literal." },
+    { "source": "'{'{name}'}'", "arguments": { "name": "Ada" }, "expected": "{Ada}" },
+    { "source": "This '{isn''t}' obvious.", "arguments": {}, "expected": "This {isn't} obvious." },
+    { "source": "'{unterminated", "arguments": {}, "expected": "{unterminated" },
+    { "source": "{value}", "arguments": { "value": "{name} '<script>'" }, "expected": "{name} '<script>'" },
+    { "source": "إجراء {name}\nDarbība {name}", "arguments": { "name": "synthetic" }, "expected": "إجراء synthetic\nDarbība synthetic" }
+  ],
+  "rejected": [
+    "", "   ", "{", "}", "{name", "{0}", "{a_b}", "{constructor}", "{toString}",
+    "{count, number}", "{when, date}", "{count, plural, other {items}}",
+    "{kind, select, other {item}}", "{outer{inner}}", "unsafe\u001b[31m", "unsafe\u202e", "unsafe\u0000"
+  ]
+}

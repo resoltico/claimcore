@@ -27,6 +27,8 @@
     <Compile Include="Json/Writers.fs" />
     <Compile Include="Json/Codec.fs" />
     <Compile Include="Json/SchemaJson.fs" />
+    <Compile Include="Messages/Templates.fs" />
+    <Compile Include="Messages/Messages.fs" />
     <Compile Include="Api/Limits.fs" />
     <Compile Include="Endpoint.fs" />
     <Compile Include="Delivery.fs" />
