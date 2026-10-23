@@ -46,8 +46,10 @@ let createFor issuer subject =
             let service = PrincipalKey.service issuer "service" |> Result.defaultWith invalidOp
 
             let! registered =
-                owner.ExecuteAuthority(
-                    authorityRequest (id 20) service AdmittedAuthorityAct.RegisterActor,
+                owner.Execute(
+                    OperationInput.Authority(
+                        authorityRequest (id 20) service AdmittedAuthorityAct.RegisterActor
+                    ),
                     CancellationToken.None
                 )
 
@@ -60,7 +62,7 @@ let createFor issuer subject =
 
             let! opened =
                 owner.Execute(
-                    request 10 "SYNTHETIC-001" 0L (CaseAct.Open registration),
+                    OperationInput.Case(request 10 "SYNTHETIC-001" 0L (CaseAct.Open registration)),
                     CancellationToken.None
                 )
 

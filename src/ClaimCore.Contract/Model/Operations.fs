@@ -10,7 +10,7 @@ module OperationScopes =
 [<RequireQualifiedAccess>]
 type OperationInput =
     | Case of CaseRequest
-    | Authority of ClaimCore.Contract.Protocol.AuthorityRequest
+    | Authority of ClaimCore.Contract.AuthorityRequest
 
 module OperationInput =
     let operationId =

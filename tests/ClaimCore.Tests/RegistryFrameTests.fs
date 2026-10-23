@@ -56,6 +56,73 @@ let private frozen () =
         (Some id)
         "Preparation and retry retain the caller's ID."
 
+let private preparedEncoding () =
+    let literal =
+        source.Replace("synthetic", "synthetic-e\u0301")
+        |> bytes
+        |> Frames.admit
+        |> accepted
+
+    let escaped =
+        source.Replace("synthetic", "synth\\u0065tic-\\u0065\\u0301")
+        |> bytes
+        |> Frames.admit
+        |> accepted
+
+    Expect.equal
+        (Frames.inputBytes escaped)
+        (Frames.inputBytes literal)
+        "Preparation removes JSON escape spelling without changing string contents."
+
+    let subject =
+        Frames.input escaped
+        |> JsonValue.tryMember "target"
+        |> Option.bind (JsonValue.tryMember "subject")
+
+    Expect.equal
+        subject
+        (Some(JsonValue.String "synthetic-e\u0301"))
+        "Preparation preserves combining characters without Unicode normalization."
+
+    let replay = Frames.encodeInvocation escaped |> Frames.admit |> accepted
+
+    Expect.equal
+        (Frames.inputBytes replay)
+        (Frames.inputBytes escaped)
+        "The exported one-line frame reproduces the exact prepared HTTP body."
+
+let private byteBoundaries () =
+    let padded =
+        source.Replace("\"input\":", "\"input\":" + String.replicate Limits.MaximumRequestBytes " ")
+        |> bytes
+
+    Expect.isGreaterThan
+        padded.Length
+        Limits.MaximumRequestBytes
+        "Original formatting exceeds the HTTP body allowance."
+
+    let prepared = Frames.admit padded |> accepted
+
+    Expect.isLessThan
+        (Frames.inputBytes prepared).Length
+        Limits.MaximumRequestBytes
+        "The HTTP allowance applies to the compact body prepared before dispatch."
+
+    let large =
+        source.Replace("synthetic", String.replicate Limits.MaximumRequestBytes "x")
+        |> bytes
+
+    match Frames.admit large with
+    | Error problem ->
+        Expect.equal problem.Path "$.input" "An oversized prepared body fails at the body limit."
+    | Ok _ -> failtest "A compact body beyond the HTTP limit must refuse."
+
+    let excessive = bytes (String.replicate Limits.MaximumInvocationBytes " " + source)
+
+    Expect.isError
+        (Frames.admit excessive)
+        "The original stdin bytes retain their independent invocation bound."
+
 let private reply result delivery =
     {
         Endpoint = Some "operation.execute"
@@ -232,6 +299,10 @@ let tests =
         "registry CLI frames"
         [
             testCase "preparation freezes one-line exact retry bytes" frozen
+            testCase
+                "preparation freezes compact encoding and preserves Unicode contents"
+                preparedEncoding
+            testCase "invocation and prepared HTTP body have independent byte bounds" byteBoundaries
             testCase "result frames carry only delivery and validated results" results
             testCase "uncertainty and local failures retain exit semantics" exits
             testCase "invalid frame boundaries reject" refusingFrames

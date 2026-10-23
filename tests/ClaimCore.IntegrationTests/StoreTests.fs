@@ -12,8 +12,10 @@ open ClaimCore.TestSupport.StoreContractTests
 let private serviceCases (admin: IActorClaimsCore) principal =
     task {
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 400) principal AdmittedAuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 400) principal AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 
@@ -24,7 +26,9 @@ let private serviceCases (admin: IActorClaimsCore) principal =
 
             let! opened =
                 admin.Execute(
-                    request (410 + number) reference 0L (CaseAct.Open registration),
+                    OperationInput.Case(
+                        request (410 + number) reference 0L (CaseAct.Open registration)
+                    ),
                     CancellationToken.None
                 )
 

@@ -8,7 +8,7 @@ open ClaimCore.Application.VerificationChecks
 
 /// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
-    type private WireAuthorityAct = ClaimCore.Contract.Protocol.AuthorityAct
+    type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
 
     let private ownerGrant: ActorGrant =
         {
@@ -156,16 +156,16 @@ module internal AuthorityFold =
         =
         match request.Act with
         | RecordedAuthorityAct.ProvisionOwner -> register actors entry id principal true
-        | RecordedAuthorityAct.Operation(WireAuthorityAct.RegisterActor) ->
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.RegisterActor) ->
             register actors entry id principal false
-        | RecordedAuthorityAct.Operation(WireAuthorityAct.SetEnabled enabled) ->
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetEnabled enabled) ->
             target actors entry id principal
             |> Result.map (fun actor -> Map.add id { actor with Enabled = enabled } actors)
-        | RecordedAuthorityAct.Operation(WireAuthorityAct.SetGrant {
-                                                                       Role = role
-                                                                       Scope = scope
-                                                                       Active = active
-                                                                   }) ->
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetGrant {
+                                                                         Role = role
+                                                                         Scope = scope
+                                                                         Active = active
+                                                                     }) ->
             target actors entry id principal
             |> Result.bind (fun actor ->
                 grant installationId caseExists entry actor role scope active

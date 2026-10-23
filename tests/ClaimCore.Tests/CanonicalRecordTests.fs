@@ -99,7 +99,7 @@ let private authority () =
         Expect.equal
             request.Act
             (RecordedAuthorityAct.Operation(
-                ClaimCore.Contract.Protocol.AuthorityAct.SetGrant
+                ClaimCore.Contract.AuthorityAct.SetGrant
                     {
                         Role = "CASE_HANDLER"
                         Scope = GrantTarget.CaseReference "Demo-0001"

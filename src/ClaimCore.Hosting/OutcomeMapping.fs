@@ -84,8 +84,10 @@ module internal OutcomeMapping =
     let preview operationId value =
         let outcome =
             match value with
-            | PreviewOutcome.Reviewed review ->
+            | PreviewOutcome.Reviewed(OperationReview.Case review) ->
                 ClaimCore.Contract.Protocol.CasePreviewOutcome.Reviewed { Review = review }
+            | PreviewOutcome.Reviewed(OperationReview.Authority _) ->
+                invalidArg (nameof value) "Expected a case preview for this protocol endpoint."
             | PreviewOutcome.AlreadyAccepted receipt ->
                 ClaimCore.Contract.Protocol.CasePreviewOutcome.AlreadyAccepted(receipt)
             | PreviewOutcome.Rejected reason ->

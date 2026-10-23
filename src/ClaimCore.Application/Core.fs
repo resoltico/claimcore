@@ -53,22 +53,23 @@ module internal Core =
                         |> Result.defaultWith (mutationFailure request.OperationId)
         }
 
+    let private admitAuthority input =
+        AuthorityRequests.admit input
+        |> Result.bind (fun request ->
+            AuthorityRequests.validate request |> Result.map (fun () -> request))
+
     let private authorityWrite
         (store: ILedgerStore)
         installationId
         principal
-        (input: ClaimCore.Contract.Protocol.AuthorityRequest)
+        (input: ClaimCore.Contract.AuthorityRequest)
         (ct: CancellationToken)
         =
         task {
             if ct.IsCancellationRequested then
                 return ExecuteOutcome.Cancelled
             else
-                match
-                    AuthorityRequests.admit input
-                    |> Result.bind (fun request ->
-                        AuthorityRequests.validate request |> Result.map (fun () -> request))
-                with
+                match admitAuthority input with
                 | Error error -> return ExecuteOutcome.Rejected error
                 | Ok request ->
                     let decide = AuthorityDecisions.execute installationId principal request
@@ -172,6 +173,49 @@ module internal Core =
                                 PreviewOutcome.AlreadyAccepted receipt
                             | CaseReviewDecision.Proposed(before, after) ->
                                 advisory calendar view.ObservedAt request.Act before after
+                                |> OperationReview.Case
+                                |> PreviewOutcome.Reviewed
+        }
+
+    let private authorityPreview
+        (store: ILedgerStore)
+        installationId
+        principal
+        input
+        (ct: CancellationToken)
+        =
+        task {
+            if ct.IsCancellationRequested then
+                return PreviewOutcome.Cancelled
+            else
+                match admitAuthority input with
+                | Error refusal -> return PreviewOutcome.Rejected refusal
+                | Ok request ->
+                    let! read =
+                        store.ReadAuthorityTarget(
+                            principal,
+                            request.OperationId,
+                            request.Target,
+                            AuthorityRequests.targetCase request,
+                            ct
+                        )
+
+                    match read with
+                    | Error StoreFailure.Cancelled -> return PreviewOutcome.Cancelled
+                    | Error failure -> return PreviewOutcome.Failed(Queries.fault failure)
+                    | Ok view ->
+                        return
+                            match
+                                AuthorityDecisions.review installationId principal request view
+                            with
+                            | AuthorityReviewDecision.Refuse refusal ->
+                                PreviewOutcome.Rejected refusal
+                            | AuthorityReviewDecision.Fail fault -> PreviewOutcome.Failed fault
+                            | AuthorityReviewDecision.Replay receipt ->
+                                PreviewOutcome.AlreadyAccepted receipt
+                            | AuthorityReviewDecision.Proposed(_, projection) ->
+                                AuthorityReviews.describe view projection
+                                |> OperationReview.Authority
                                 |> PreviewOutcome.Reviewed
         }
 
@@ -189,14 +233,19 @@ module internal Core =
             member _.Context ct =
                 Queries.context store calendar principal ct
 
-            member _.Preview(request, ct) =
-                preview store installationId calendar principal request ct
+            member _.Preview(input, ct) =
+                match input with
+                | OperationInput.Case request ->
+                    preview store installationId calendar principal request ct
+                | OperationInput.Authority request ->
+                    authorityPreview store installationId principal request ct
 
-            member _.Execute(request, ct) =
-                caseWrite store installationId calendar principal request ct
-
-            member _.ExecuteAuthority(request, ct) =
-                authorityWrite store installationId principal request ct
+            member _.Execute(input, ct) =
+                match input with
+                | OperationInput.Case request ->
+                    caseWrite store installationId calendar principal request ct
+                | OperationInput.Authority request ->
+                    authorityWrite store installationId principal request ct
 
             member _.Get(request, ct) =
                 Queries.get store installationId principal request.CaseReference ct

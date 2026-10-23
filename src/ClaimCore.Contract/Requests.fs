@@ -4,26 +4,6 @@ open ClaimCore.Contract
 
 open System
 
-type GrantChange =
-    {
-        Role: string
-        Scope: GrantTarget
-        Active: bool
-    }
-
-[<RequireQualifiedAccess>]
-type AuthorityAct =
-    | RegisterActor
-    | SetGrant of GrantChange
-    | SetEnabled of bool
-
-type AuthorityRequest =
-    {
-        OperationId: Guid
-        Target: Principal
-        Act: AuthorityAct
-    }
-
 [<RequireQualifiedAccess>]
 type WireRequest =
     | Session

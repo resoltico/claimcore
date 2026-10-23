@@ -132,20 +132,25 @@ let private grandfathering (database: PostgresFixture.Database) =
             }
 
         let! reaffirm =
-            actor.Execute(request 11 "HISTORICAL-1" 1L (CaseAct.AmendRegistration values), token)
+            actor.Execute(
+                OperationInput.Case(request 11 "HISTORICAL-1" 1L (CaseAct.AmendRegistration values)),
+                token
+            )
 
         accepted reaffirm |> ignore
 
         let! changed =
             actor.Execute(
-                request
-                    12
-                    "HISTORICAL-1"
-                    2L
-                    (CaseAct.AmendRegistration
-                        { values with
-                            ClaimantName = name + "B"
-                        }),
+                OperationInput.Case(
+                    request
+                        12
+                        "HISTORICAL-1"
+                        2L
+                        (CaseAct.AmendRegistration
+                            { values with
+                                ClaimantName = name + "B"
+                            })
+                ),
                 token
             )
 
@@ -169,7 +174,10 @@ let private appendTransitions (actor: IActorClaimsCore) =
             let act = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
 
             let! result =
-                actor.Execute(request (100 + int revision) "HISTORICAL-1" revision act, token)
+                actor.Execute(
+                    OperationInput.Case(request (100 + int revision) "HISTORICAL-1" revision act),
+                    token
+                )
 
             accepted result |> ignore
 

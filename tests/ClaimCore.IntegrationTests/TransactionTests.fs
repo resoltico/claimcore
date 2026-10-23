@@ -126,11 +126,13 @@ let tests =
                             [|
                                 for index in 1..20 ->
                                     actor.Execute(
-                                        request
-                                            (100 + index)
-                                            ($"synthetic-{index}")
-                                            0L
-                                            (ClaimCore.Contract.CaseAct.Open registration),
+                                        OperationInput.Case(
+                                            request
+                                                (100 + index)
+                                                ($"synthetic-{index}")
+                                                0L
+                                                (ClaimCore.Contract.CaseAct.Open registration)
+                                        ),
                                         token
                                     )
                             |]
@@ -314,7 +316,7 @@ let tests =
                                 0L
                                 (ClaimCore.Contract.CaseAct.Open registration)
 
-                        let! failed = actor.Execute(operation, token)
+                        let! failed = actor.Execute(OperationInput.Case operation, token)
 
                         Expect.equal
                             failed
@@ -329,7 +331,7 @@ let tests =
                             "Failed commit did not append"
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
-                        let! retry = actor.Execute(operation, token)
+                        let! retry = actor.Execute(OperationInput.Case operation, token)
                         accepted retry |> ignore
                     }))
             testCaseAsync
@@ -369,11 +371,13 @@ let tests =
 
                         let! opened =
                             actor.Execute(
-                                request
-                                    20
-                                    "synthetic-snapshot"
-                                    0L
-                                    (ClaimCore.Contract.CaseAct.Open registration),
+                                OperationInput.Case(
+                                    request
+                                        20
+                                        "synthetic-snapshot"
+                                        0L
+                                        (ClaimCore.Contract.CaseAct.Open registration)
+                                ),
                                 token
                             )
 

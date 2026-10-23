@@ -65,11 +65,9 @@ let private authorityProperty =
         let! action =
             Gen.item
                 [
+                    RecordedAuthorityAct.Operation(ClaimCore.Contract.AuthorityAct.RegisterActor)
                     RecordedAuthorityAct.Operation(
-                        ClaimCore.Contract.Protocol.AuthorityAct.RegisterActor
-                    )
-                    RecordedAuthorityAct.Operation(
-                        ClaimCore.Contract.Protocol.AuthorityAct.SetGrant
+                        ClaimCore.Contract.AuthorityAct.SetGrant
                             {
                                 Role = role
                                 Scope = scope
@@ -77,7 +75,7 @@ let private authorityProperty =
                             }
                     )
                     RecordedAuthorityAct.Operation(
-                        ClaimCore.Contract.Protocol.AuthorityAct.SetEnabled active
+                        ClaimCore.Contract.AuthorityAct.SetEnabled active
                     )
                 ]
 
@@ -100,7 +98,7 @@ let private decoderProperty =
             steward (CaseAct.Void "Reason") |> RequestRecord.encode
             authority (
                 RecordedAuthorityAct.Operation(
-                    ClaimCore.Contract.Protocol.AuthorityAct.SetGrant
+                    ClaimCore.Contract.AuthorityAct.SetGrant
                         {
                             Role = "CASE_HANDLER"
                             Scope = GrantTarget.Installation
@@ -158,7 +156,7 @@ let private strictRecords () =
     let grant =
         authority (
             RecordedAuthorityAct.Operation(
-                ClaimCore.Contract.Protocol.AuthorityAct.SetGrant
+                ClaimCore.Contract.AuthorityAct.SetGrant
                     {
                         Role = "CASE_HANDLER"
                         Scope = GrantTarget.Installation
@@ -203,7 +201,7 @@ let tests =
                 Expect.equal
                     (authority (
                         RecordedAuthorityAct.Operation(
-                            ClaimCore.Contract.Protocol.AuthorityAct.RegisterActor
+                            ClaimCore.Contract.AuthorityAct.RegisterActor
                         )
                      )
                      |> AuthorityRecord.encode

@@ -23,7 +23,10 @@ let private seedCases (admin: IActorClaimsCore) target =
             let reference = "GRANT-" + string n
 
             let! opened =
-                admin.Execute(request (300 + n) reference 0L (CaseAct.Open registration), token)
+                admin.Execute(
+                    OperationInput.Case(request (300 + n) reference 0L (CaseAct.Open registration)),
+                    token
+                )
 
             accepted opened |> ignore
 
@@ -61,7 +64,7 @@ let private eraseCase (database: PostgresFixture.Database) (admin: IActorClaimsC
                 Act = (CaseAct.Erase)
             }
 
-        let! erased = admin.Execute(erase, token)
+        let! erased = admin.Execute(OperationInput.Case erase, token)
         accepted erased |> ignore
     }
 
@@ -74,8 +77,10 @@ let private prepare (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 200) target AdmittedAuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 200) target AdmittedAuthorityAct.RegisterActor
+                ),
                 token
             )
 
@@ -95,8 +100,10 @@ let private prepare (database: PostgresFixture.Database) =
             |> _.ActorId
 
         let! disabled =
-            admin.ExecuteAuthority(
-                authorityRequest (id 603) target (AdmittedAuthorityAct.SetEnabled false),
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 603) target (AdmittedAuthorityAct.SetEnabled false)
+                ),
                 token
             )
 
@@ -167,8 +174,10 @@ let private callerRevocation (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 620) target AdmittedAuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 620) target AdmittedAuthorityAct.RegisterActor
+                ),
                 token
             )
 
@@ -315,8 +324,10 @@ let private changeTarget (admin: IActorClaimsCore) =
             |> Result.defaultWith failtest
 
         let! enabled =
-            admin.ExecuteAuthority(
-                authorityRequest (id 630) target (AdmittedAuthorityAct.SetEnabled true),
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 630) target (AdmittedAuthorityAct.SetEnabled true)
+                ),
                 token
             )
 

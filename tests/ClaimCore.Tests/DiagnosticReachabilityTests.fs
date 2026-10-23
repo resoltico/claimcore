@@ -115,7 +115,7 @@ let private queryRefused =
     | _ -> failtest "The query must produce a public refusal."
 
 let private execute actor pending =
-    (actor: IActorClaimsCore).Execute(pending, ct)
+    (actor: IActorClaimsCore).Execute(OperationInput.Case pending, ct)
 
 let private opening values =
     { openRequest 10 "REACH-1" with
@@ -313,7 +313,8 @@ let private authorityEvidence actor =
             |> Result.defaultWith failtest
 
         let send n target act =
-            (actor: IActorClaimsCore).ExecuteAuthority(authorityRequest (id n) target act, ct)
+            (actor: IActorClaimsCore)
+                .Execute(OperationInput.Authority(authorityRequest (id n) target act), ct)
 
         let! registered = send 30 owner AdmittedAuthorityAct.RegisterActor
         let! unknown = send 31 service (AdmittedAuthorityAct.SetEnabled false)
@@ -340,8 +341,10 @@ let private identityEvidence actor =
             |> Result.defaultWith failtest
 
         let! registered =
-            actor.ExecuteAuthority(
-                authorityRequest (id 35) reader AdmittedAuthorityAct.RegisterActor,
+            actor.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 35) reader AdmittedAuthorityAct.RegisterActor
+                ),
                 ct
             )
 
@@ -366,7 +369,7 @@ let private principalEvidence (actor: IActorClaimsCore) =
                     "invalid", "valid"
                     "https://issuer.example/", String('x', 513)
                 ] do
-            let request: ClaimCore.Contract.Protocol.AuthorityRequest =
+            let request: ClaimCore.Contract.AuthorityRequest =
                 {
                     OperationId = id (60 + index)
                     Target =
@@ -375,10 +378,10 @@ let private principalEvidence (actor: IActorClaimsCore) =
                             Issuer = issuer
                             Subject = subject
                         }
-                    Act = ClaimCore.Contract.Protocol.AuthorityAct.RegisterActor
+                    Act = ClaimCore.Contract.AuthorityAct.RegisterActor
                 }
 
-            let! outcome = actor.ExecuteAuthority(request, ct)
+            let! outcome = actor.Execute(OperationInput.Authority request, ct)
             evidence.Add(refused outcome)
 
         return List.ofSeq evidence

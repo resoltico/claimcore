@@ -30,7 +30,10 @@ let private setup (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CASE-A"; 11, "CASE-B"; 12, "CASE-C" ] do
             let! result =
-                admin.Execute(request n reference 0L (CaseAct.Open registration), token)
+                admin.Execute(
+                    OperationInput.Case(request n reference 0L (CaseAct.Open registration)),
+                    token
+                )
 
             accepted result |> ignore
 
@@ -39,8 +42,10 @@ let private setup (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 3) principal AdmittedAuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 3) principal AdmittedAuthorityAct.RegisterActor
+                ),
                 token
             )
 
@@ -172,7 +177,10 @@ let private snapshot (database: PostgresFixture.Database) =
             acceptedAuthority revoked
 
             let! later =
-                admin.Execute(request 13 "CASE-AFTER" 0L (CaseAct.Open registration), token)
+                admin.Execute(
+                    OperationInput.Case(request 13 "CASE-AFTER" 0L (CaseAct.Open registration)),
+                    token
+                )
 
             accepted later |> ignore
         finally

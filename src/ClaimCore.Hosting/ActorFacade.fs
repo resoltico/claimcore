@@ -30,9 +30,6 @@ module internal ActorFacade =
             member _.Execute(request, token) =
                 run gate execute (fun () -> core.Execute(request, token))
 
-            member _.ExecuteAuthority(request, token) =
-                run gate execute (fun () -> core.ExecuteAuthority(request, token))
-
             member _.Get(request, token) =
                 run gate (query ()) (fun () -> core.Get(request, token))
 

@@ -4,12 +4,12 @@ open System
 open ClaimCore.Contract
 open ClaimCore.Domain
 
-type private SharedAuthorityAct = ClaimCore.Contract.Protocol.AuthorityAct
+type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
 
 [<RequireQualifiedAccess>]
 type RecordedAuthorityAct =
     | ProvisionOwner
-    | Operation of ClaimCore.Contract.Protocol.AuthorityAct
+    | Operation of ClaimCore.Contract.AuthorityAct
 
 type AuthorityRequestRecord =
     {

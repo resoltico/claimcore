@@ -24,7 +24,7 @@ let private token = CancellationToken.None
 
 let private replay (database: PostgresFixture.Database) (actor: IActorClaimsCore) operation landed =
     task {
-        let! replay = actor.Execute(operation, token)
+        let! replay = actor.Execute(OperationInput.Case operation, token)
 
         if landed then
             Expect.isTrue
@@ -82,6 +82,31 @@ let private repeatedInitialization (database: PostgresFixture.Database) =
         Expect.equal repeated id "Repetition preserves the landed or freshly installed identity"
     }
 
+let private commitEvidence drop (operation: CaseRequest) (proxy: CommitProxy.Proxy) result =
+    task {
+        if drop = CommitProxy.Drop.Never then
+            accepted result |> ignore
+        else
+            do! proxy.Intercepted.WaitAsync(TimeSpan.FromSeconds 3.)
+
+            Expect.isTrue
+                (match result with
+                 | ExecuteOutcome.OutcomeUnknown id -> id = operation.OperationId
+                 | _ -> false)
+                "Lost commit reply stays unknown"
+
+            Expect.equal
+                (Transactions.failure false (IO.IOException()))
+                StoreFailure.Unavailable
+                "Misclassifying as pre-commit fails the control"
+
+        if drop = CommitProxy.Drop.AfterCommitFatal then
+            Expect.equal
+                proxy.FatalSqlState
+                (Some "57P01")
+                "The server sent a real fatal SQLSTATE after committing"
+    }
+
 [<Tests>]
 let tests =
     testList
@@ -130,30 +155,10 @@ let tests =
                                     0L
                                     (ClaimCore.Contract.CaseAct.Open registration)
 
-                            let! result = throughProxy.Execute(operation, token)
+                            let! result =
+                                throughProxy.Execute(OperationInput.Case operation, token)
 
-                            if drop = CommitProxy.Drop.Never then
-                                accepted result |> ignore
-                            else
-                                do! proxy.Intercepted.WaitAsync(TimeSpan.FromSeconds 3.)
-
-                                Expect.isTrue
-                                    (match result with
-                                     | ExecuteOutcome.OutcomeUnknown id ->
-                                         id = operation.OperationId
-                                     | _ -> false)
-                                    "Lost commit reply stays unknown"
-
-                                Expect.equal
-                                    (Transactions.failure false (IO.IOException()))
-                                    StoreFailure.Unavailable
-                                    "Misclassifying as pre-commit fails the control"
-
-                            if drop = CommitProxy.Drop.AfterCommitFatal then
-                                Expect.equal
-                                    proxy.FatalSqlState
-                                    (Some "57P01")
-                                    "The server sent a real fatal SQLSTATE after committing"
+                            do! commitEvidence drop operation proxy result
 
                             do! replay database actor operation landed
                         }))

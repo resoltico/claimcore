@@ -86,11 +86,13 @@ let tests =
                         Task.Run<ExecuteOutcome>(
                             Func<Task<ExecuteOutcome>>(fun () ->
                                 actor.Execute(
-                                    request
-                                        10
-                                        "synthetic-lifetime"
-                                        0L
-                                        (ClaimCore.Contract.CaseAct.Open registration),
+                                    OperationInput.Case(
+                                        request
+                                            10
+                                            "synthetic-lifetime"
+                                            0L
+                                            (ClaimCore.Contract.CaseAct.Open registration)
+                                    ),
                                     CancellationToken.None
                                 ))
                         )

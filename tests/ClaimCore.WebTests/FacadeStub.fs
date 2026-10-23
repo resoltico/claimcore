@@ -77,7 +77,7 @@ let receipt id reference =
         RecordedBy = operationId
     }
 
-let authorityReceipt (request: ClaimCore.Contract.Protocol.AuthorityRequest) =
+let authorityReceipt (request: ClaimCore.Contract.AuthorityRequest) =
     { receipt request.OperationId "WEB-001" with
         Scope =
             ReceiptScope.Authority
@@ -114,7 +114,7 @@ type Facade() =
                 ExecuteOutcome.Accepted(receipt request.OperationId request.CaseReference)
             )) with get, set
 
-    member val ExecuteAuthority: ClaimCore.Contract.Protocol.AuthorityRequest * CancellationToken
+    member val ExecuteAuthority: ClaimCore.Contract.AuthorityRequest * CancellationToken
         -> Task<ExecuteOutcome> =
         (fun (request, _) -> Task.FromResult(ExecuteOutcome.Accepted(authorityReceipt request))) with get, set
 
@@ -133,17 +133,30 @@ type Facade() =
         member this.Context _ =
             this.Invoke "context" (ReadReply.Succeeded description)
 
-        member this.Preview(request, _) =
-            this.Invoke
-                "case.preview"
-                (PreviewOutcome.AlreadyAccepted(receipt request.OperationId request.CaseReference))
+        member this.Preview(input, _) =
+            match input with
+            | OperationInput.Case request ->
+                this.Invoke
+                    "case.preview"
+                    (PreviewOutcome.AlreadyAccepted(
+                        receipt request.OperationId request.CaseReference
+                    ))
+            | OperationInput.Authority request ->
+                this.Invoke
+                    "authority.preview"
+                    (PreviewOutcome.AlreadyAccepted(authorityReceipt request))
 
-        member this.Execute(request, token) =
-            calls.Add "case.execute"
-
+        member this.Execute(input, token) =
             match this.Error with
             | Some error -> raise error
-            | None -> this.Execute(request, token)
+            | None ->
+                match input with
+                | OperationInput.Case request ->
+                    calls.Add "case.execute"
+                    this.Execute(request, token)
+                | OperationInput.Authority request ->
+                    calls.Add "authority.execute"
+                    this.ExecuteAuthority(request, token)
 
         member this.Get(request, _) =
             let reference = request.CaseReference
@@ -172,13 +185,6 @@ type Facade() =
         member this.Observe(request, _) =
             let id = request.OperationId
             this.Invoke "operation.observe" (ReadReply.Succeeded(receipt id "WEB-001"))
-
-        member this.ExecuteAuthority(request, token) =
-            calls.Add "authority.execute"
-
-            match this.Error with
-            | Some error -> raise error
-            | None -> this.ExecuteAuthority(request, token)
 
         member this.ListGrants(request, _) =
             let principal =

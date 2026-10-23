@@ -20,7 +20,10 @@ let private service subject =
     |> Result.defaultWith failtest
 
 let private execute (actor: IActorClaimsCore) n target act =
-    actor.ExecuteAuthority(authorityRequest (id n) target act, CancellationToken.None)
+    actor.Execute(
+        OperationInput.Authority(authorityRequest (id n) target act),
+        CancellationToken.None
+    )
 
 let private register actor n target =
     task {
@@ -165,7 +168,10 @@ let private humanGrantTargets (store: MemoryLedgerStore.Store) (fixture: Fixture
         let! actor = caseWorker fixture
         let target = service "automation"
         do! register actor 3 target
-        let! opened = actor.Execute(openRequest 10 "SCOPED", CancellationToken.None)
+
+        let! opened =
+            actor.Execute(OperationInput.Case(openRequest 10 "SCOPED"), CancellationToken.None)
+
         accepted opened |> ignore
         let before = store.Entries.Length
         let mutable n = 20
@@ -203,7 +209,9 @@ let private uncertainty (store: MemoryLedgerStore.Store) (fixture: Fixture) =
             let request = authorityRequest (id n) target AdmittedAuthorityAct.RegisterActor
             store.UnknownCommitLands <- lands
             store.NextFailure <- StoreFailure.CommitOutcomeUnknown
-            let! outcome = actor.ExecuteAuthority(request, CancellationToken.None)
+
+            let! outcome =
+                actor.Execute(OperationInput.Authority request, CancellationToken.None)
 
             match outcome with
             | ExecuteOutcome.OutcomeUnknown operationId ->
@@ -211,7 +219,7 @@ let private uncertainty (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
             | _ -> failtest "Authority uncertainty relabeled"
 
-            let! retry = actor.ExecuteAuthority(request, CancellationToken.None)
+            let! retry = actor.Execute(OperationInput.Authority request, CancellationToken.None)
 
             match retry, lands with
             | ExecuteOutcome.AlreadyAccepted _, true
@@ -234,7 +242,9 @@ let private failureAndCancellation (store: MemoryLedgerStore.Store) (fixture: Fi
             authorityRequest (id 10) (human "reader") AdmittedAuthorityAct.RegisterActor
 
         store.NextFailure <- StoreFailure.Unavailable
-        let! failure = actor.ExecuteAuthority(request, CancellationToken.None)
+
+        let! failure =
+            actor.Execute(OperationInput.Authority request, CancellationToken.None)
 
         Expect.equal
             failure
@@ -243,7 +253,7 @@ let private failureAndCancellation (store: MemoryLedgerStore.Store) (fixture: Fi
 
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
-        let! cancelled = actor.ExecuteAuthority(request, cancellation.Token)
+        let! cancelled = actor.Execute(OperationInput.Authority request, cancellation.Token)
         Expect.equal cancelled ExecuteOutcome.Cancelled "Before dispatch"
         Expect.equal store.Entries.Length 1 "No authority acceptance"
     }
@@ -309,7 +319,10 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        let! opened = actor.Execute(openRequest 10 "UNIT-001", CancellationToken.None)
+
+        let! opened =
+            actor.Execute(OperationInput.Case(openRequest 10 "UNIT-001"), CancellationToken.None)
+
         let receipt = accepted opened
         let! authority = actor.Observe({ OperationId = id 1 }, CancellationToken.None)
 
@@ -389,7 +402,10 @@ let private contextOffers (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             grant admin (id 2) owner Role.CaseHandler GrantTarget.Installation true
 
         acceptedAuthority handler
-        let! opened = admin.Execute(openRequest 3 "OFFER-1", CancellationToken.None)
+
+        let! opened =
+            admin.Execute(OperationInput.Case(openRequest 3 "OFFER-1"), CancellationToken.None)
+
         accepted opened |> ignore
         let target = service "scoped-reader"
         do! register admin 4 target
@@ -432,27 +448,15 @@ let private exhaustedHead (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let input = authorityRequest (id 2) fixture.Owner AdmittedAuthorityAct.RegisterActor
 
-        let admitted =
-            AuthorityRequests.admit input
-            |> Result.defaultWith (fun _ -> failtest "Synthetic input must admit.")
-
-        let! read =
-            fixture.Store.ReadAuthorityTarget(
-                fixture.Owner,
-                id 2,
-                fixture.Owner,
-                None,
-                CancellationToken.None
-            )
-
-        let view = read |> Result.defaultWith (fun _ -> failtest "Preview view must load.")
+        let! preview = actor.Preview(OperationInput.Authority input, CancellationToken.None)
 
         Expect.equal
-            (AuthorityDecisions.review fixture.InstallationId fixture.Owner admitted view)
-            (AuthorityReviewDecision.Refuse Refusal.ActorAlreadyRegistered)
+            preview
+            (PreviewOutcome.Rejected Refusal.ActorAlreadyRegistered)
             "Advisory preview applies target rules without a ledger head."
 
-        let! execution = actor.ExecuteAuthority(input, CancellationToken.None)
+        let! execution =
+            actor.Execute(OperationInput.Authority input, CancellationToken.None)
 
         Expect.equal
             execution

@@ -220,7 +220,7 @@ let private previewCodecs () =
 
     for value in
         [
-            PreviewOutcome.Reviewed review
+            PreviewOutcome.Reviewed(OperationReview.Case review)
             PreviewOutcome.AlreadyAccepted receipt
             PreviewOutcome.Rejected ClaimCore.Contract.Refusal.ActNotPermitted
             PreviewOutcome.Failed CoreFault.StoreIntegrityError

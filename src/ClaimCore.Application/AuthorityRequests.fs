@@ -7,18 +7,18 @@ open ClaimCore.RecordFormat
 
 /// Shared conversion between the primitive record codec and admitted application identities.
 module AuthorityRequests =
-    type private WireAuthorityAct = ClaimCore.Contract.Protocol.AuthorityAct
+    type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
 
     let toRecord (request: AdmittedAuthorityRequest) : AuthorityRequestRecord =
         let act =
             match request.Act with
             | AdmittedAuthorityAct.RegisterActor ->
-                RecordedAuthorityAct.Operation(WireAuthorityAct.RegisterActor)
+                RecordedAuthorityAct.Operation(SharedAuthorityAct.RegisterActor)
             | AdmittedAuthorityAct.SetEnabled value ->
-                RecordedAuthorityAct.Operation(WireAuthorityAct.SetEnabled value)
+                RecordedAuthorityAct.Operation(SharedAuthorityAct.SetEnabled value)
             | AdmittedAuthorityAct.SetGrant(role, target, active) ->
                 RecordedAuthorityAct.Operation(
-                    WireAuthorityAct.SetGrant
+                    SharedAuthorityAct.SetGrant
                         {
                             Role = RoleTokens.token role
                             Scope = target
@@ -34,15 +34,15 @@ module AuthorityRequests =
 
     let private admittedAct =
         function
-        | RecordedAuthorityAct.Operation(WireAuthorityAct.RegisterActor) ->
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.RegisterActor) ->
             Ok AdmittedAuthorityAct.RegisterActor
-        | RecordedAuthorityAct.Operation(WireAuthorityAct.SetEnabled value) ->
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetEnabled value) ->
             Ok(AdmittedAuthorityAct.SetEnabled value)
-        | RecordedAuthorityAct.Operation(WireAuthorityAct.SetGrant {
-                                                                       Role = role
-                                                                       Scope = scope
-                                                                       Active = active
-                                                                   }) ->
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetGrant {
+                                                                         Role = role
+                                                                         Scope = scope
+                                                                         Active = active
+                                                                     }) ->
             match RoleTokens.tryParse role with
             | Some role -> Ok(AdmittedAuthorityAct.SetGrant(role, scope, active))
             | None -> Error "AUTHORITY_ROLE_INVALID"
@@ -73,7 +73,7 @@ module AuthorityRequests =
             Act = RecordedAuthorityAct.ProvisionOwner
         }
 
-    let toInput (request: AdmittedAuthorityRequest) : ClaimCore.Contract.Protocol.AuthorityRequest =
+    let toInput (request: AdmittedAuthorityRequest) : ClaimCore.Contract.AuthorityRequest =
         let record = toRecord request
 
         {
@@ -87,7 +87,7 @@ module AuthorityRequests =
         }
 
     let admit
-        (request: ClaimCore.Contract.Protocol.AuthorityRequest)
+        (request: ClaimCore.Contract.AuthorityRequest)
         : Result<AdmittedAuthorityRequest, Refusal> =
         match
             PrincipalKey.admit request.Target.Kind request.Target.Issuer request.Target.Subject,

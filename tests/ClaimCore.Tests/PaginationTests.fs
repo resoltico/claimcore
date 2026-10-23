@@ -15,7 +15,9 @@ open ClaimCore.Tests.ApplicationFixtures
 let private cases (actor: IActorClaimsCore) =
     task {
         for n, reference in [ 10, "Case-c"; 11, "case-A"; 12, "CASE-B" ] do
-            let! result = actor.Execute(openRequest n reference, CancellationToken.None)
+            let! result =
+                actor.Execute(OperationInput.Case(openRequest n reference), CancellationToken.None)
+
             accepted result |> ignore
     }
 
@@ -41,8 +43,10 @@ let private reader fixture (admin: IActorClaimsCore) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 20) target AdmittedAuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 20) target AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 
@@ -131,8 +135,10 @@ let private elapsedTimeAndRevocation (store: MemoryLedgerStore.Store) (fixture: 
         store.Instant <- instant
 
         let! disabled =
-            admin.ExecuteAuthority(
-                authorityRequest (id 22) target (AdmittedAuthorityAct.SetEnabled false),
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 22) target (AdmittedAuthorityAct.SetEnabled false)
+                ),
                 CancellationToken.None
             )
 
@@ -147,7 +153,9 @@ let private elapsedTimeAndRevocation (store: MemoryLedgerStore.Store) (fixture: 
 
 let private createHistory (actor: IActorClaimsCore) =
     task {
-        let! opened = actor.Execute(openRequest 10 "HISTORY-1", CancellationToken.None)
+        let! opened =
+            actor.Execute(OperationInput.Case(openRequest 10 "HISTORY-1"), CancellationToken.None)
+
         accepted opened |> ignore
 
         for n, revision in [ 11, 1L; 12, 2L ] do
@@ -158,7 +166,9 @@ let private createHistory (actor: IActorClaimsCore) =
 
             let! amended =
                 actor.Execute(
-                    request n "HISTORY-1" revision (CaseAct.AmendRegistration values),
+                    OperationInput.Case(
+                        request n "HISTORY-1" revision (CaseAct.AmendRegistration values)
+                    ),
                     CancellationToken.None
                 )
 
@@ -173,8 +183,10 @@ let private registerActors (actor: IActorClaimsCore) =
                 |> Result.defaultWith failtest
 
             let! registered =
-                actor.ExecuteAuthority(
-                    authorityRequest (id n) target AdmittedAuthorityAct.RegisterActor,
+                actor.Execute(
+                    OperationInput.Authority(
+                        authorityRequest (id n) target AdmittedAuthorityAct.RegisterActor
+                    ),
                     CancellationToken.None
                 )
 
@@ -183,7 +195,9 @@ let private registerActors (actor: IActorClaimsCore) =
 
 let private differentHistoryResource (actor: IActorClaimsCore) (query: HistoryRequest) cursor =
     task {
-        let! other = actor.Execute(openRequest 13 "OTHER", CancellationToken.None)
+        let! other =
+            actor.Execute(OperationInput.Case(openRequest 13 "OTHER"), CancellationToken.None)
+
         accepted other |> ignore
 
         let! resource =
@@ -437,7 +451,7 @@ let private appendHistory (actor: IActorClaimsCore) =
 
             let! result =
                 actor.Execute(
-                    request (20 + int revision) "LONG-HISTORY" revision act,
+                    OperationInput.Case(request (20 + int revision) "LONG-HISTORY" revision act),
                     CancellationToken.None
                 )
 
@@ -448,7 +462,13 @@ let private appendHistory (actor: IActorClaimsCore) =
 let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        let! opened = actor.Execute(openRequest 10 "LONG-HISTORY", CancellationToken.None)
+
+        let! opened =
+            actor.Execute(
+                OperationInput.Case(openRequest 10 "LONG-HISTORY"),
+                CancellationToken.None
+            )
+
         accepted opened |> ignore
 
         do! appendHistory actor
@@ -519,8 +539,10 @@ let private disabledGrantTarget
         Expect.equal crossed (ReadReply.Rejected Refusal.InvalidCursor) "Cursor binds target"
 
         let! disabled =
-            admin.ExecuteAuthority(
-                authorityRequest (id 31) target (AdmittedAuthorityAct.SetEnabled false),
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 31) target (AdmittedAuthorityAct.SetEnabled false)
+                ),
                 CancellationToken.None
             )
 

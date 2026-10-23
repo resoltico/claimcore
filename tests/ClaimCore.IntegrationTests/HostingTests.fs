@@ -36,7 +36,9 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         for n, reference in [ 10, "CURSOR-A"; 11, "CURSOR-B" ] do
             let! result =
                 owner.Execute(
-                    request n reference 0L (ClaimCore.Contract.CaseAct.Open registration),
+                    OperationInput.Case(
+                        request n reference 0L (ClaimCore.Contract.CaseAct.Open registration)
+                    ),
                     token
                 )
 
@@ -193,11 +195,13 @@ let tests =
 
                         let! result =
                             actor.Execute(
-                                request
-                                    30
-                                    "synthetic-hosting"
-                                    0L
-                                    (ClaimCore.Contract.CaseAct.Open registration),
+                                OperationInput.Case(
+                                    request
+                                        30
+                                        "synthetic-hosting"
+                                        0L
+                                        (ClaimCore.Contract.CaseAct.Open registration)
+                                ),
                                 token
                             )
 
@@ -306,11 +310,13 @@ let tests =
                         let running =
                             (runtime.Actor database.Fixture.Owner)
                                 .Execute(
-                                    request
-                                        40
-                                        "synthetic-drain"
-                                        0L
-                                        (ClaimCore.Contract.CaseAct.Open registration),
+                                    OperationInput.Case(
+                                        request
+                                            40
+                                            "synthetic-drain"
+                                            0L
+                                            (ClaimCore.Contract.CaseAct.Open registration)
+                                    ),
                                     token
                                 )
 

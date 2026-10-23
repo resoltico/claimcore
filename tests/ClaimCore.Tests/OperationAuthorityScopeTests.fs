@@ -15,7 +15,12 @@ let private prepare fixture =
         let! admin = caseWorker fixture
 
         for number, reference in [ 11, "CASE-A"; 12, "CASE-B" ] do
-            let! outcome = admin.Execute(openRequest number reference, CancellationToken.None)
+            let! outcome =
+                admin.Execute(
+                    OperationInput.Case(openRequest number reference),
+                    CancellationToken.None
+                )
+
             accepted outcome |> ignore
 
         let principal =
@@ -23,8 +28,10 @@ let private prepare fixture =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 20) principal AdmittedAuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 20) principal AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 
@@ -46,7 +53,8 @@ let private existingCaseAuthority (_: MemoryLedgerStore.Store) fixture =
 
         let duplicate = request 12 "CASE-A" 1L (CaseAct.AmendRegistration registration)
 
-        let! current = (core fixture principal).Execute(duplicate, CancellationToken.None)
+        let! current =
+            (core fixture principal).Execute(OperationInput.Case duplicate, CancellationToken.None)
 
         Expect.equal
             current

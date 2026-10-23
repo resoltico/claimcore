@@ -34,11 +34,13 @@ let private authority (actor: IActorClaimsCore) principals =
     task {
         for index, principal in principals |> List.indexed do
             let! registered =
-                actor.ExecuteAuthority(
-                    authorityRequest
-                        (id (100000 + index * 2))
-                        principal
-                        AdmittedAuthorityAct.RegisterActor,
+                actor.Execute(
+                    OperationInput.Authority(
+                        authorityRequest
+                            (id (100000 + index * 2))
+                            principal
+                            AdmittedAuthorityAct.RegisterActor
+                    ),
                     token
                 )
 
@@ -61,11 +63,13 @@ let private openCases (actor: IActorClaimsCore) count =
         for index in 0 .. count - 1 do
             let! result =
                 actor.Execute(
-                    request
-                        (1000 + index)
-                        ("synthetic-growth-" + string index)
-                        0L
-                        (CaseAct.Open registration),
+                    OperationInput.Case(
+                        request
+                            (1000 + index)
+                            ("synthetic-growth-" + string index)
+                            0L
+                            (CaseAct.Open registration)
+                    ),
                     token
                 )
 
@@ -87,7 +91,7 @@ let private writeLane (actor: IActorClaimsCore) workload lane =
                 request (200000 + index) ("synthetic-growth-" + string target) revision command
 
             let watch = Stopwatch.StartNew()
-            let! result = actor.Execute(authored, token)
+            let! result = actor.Execute(OperationInput.Case authored, token)
             accepted result |> ignore
             durations.Add watch.Elapsed.TotalMilliseconds
             revisions[target] <- revision + 1L

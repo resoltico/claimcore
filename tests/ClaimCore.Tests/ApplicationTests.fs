@@ -26,9 +26,9 @@ let private replayAndSpelling (store: MemoryLedgerStore.Store) (fixture: Fixture
     task {
         let! actor = caseWorker fixture
         let original = openRequest 10 "UNIT-001"
-        let! first = actor.Execute(original, CancellationToken.None)
+        let! first = actor.Execute(OperationInput.Case original, CancellationToken.None)
         let receipt = accepted first
-        let! replay = actor.Execute(original, CancellationToken.None)
+        let! replay = actor.Execute(OperationInput.Case original, CancellationToken.None)
         Expect.equal replay (ExecuteOutcome.AlreadyAccepted receipt) "Original receipt"
 
         let changed =
@@ -40,7 +40,7 @@ let private replayAndSpelling (store: MemoryLedgerStore.Store) (fixture: Fixture
                         })
             }
 
-        let! conflict = actor.Execute(changed, CancellationToken.None)
+        let! conflict = actor.Execute(OperationInput.Case changed, CancellationToken.None)
 
         Expect.equal
             conflict
@@ -52,7 +52,8 @@ let private replayAndSpelling (store: MemoryLedgerStore.Store) (fixture: Fixture
                 CaseReference = "unit-001"
             }
 
-        let! caseConflict = actor.Execute(recased, CancellationToken.None)
+        let! caseConflict =
+            actor.Execute(OperationInput.Case recased, CancellationToken.None)
 
         Expect.equal
             caseConflict
@@ -93,19 +94,26 @@ let private rawWireReplay (store: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         let before = store.Entries.Length
-        let! first = actor.Execute(decodeWire rawOpening, CancellationToken.None)
+
+        let! first =
+            actor.Execute(OperationInput.Case(decodeWire rawOpening), CancellationToken.None)
+
         let receipt = accepted first
         Expect.equal receipt.RecordedBy (id 1) "Original executor attribution"
         Expect.equal receipt.RecordedAt instant "Original database instant"
         Expect.notEqual rawOpening respelledOpening "Different raw JSON spellings"
         store.Instant <- instant.AddMinutes 1.0
-        let! replay = actor.Execute(decodeWire respelledOpening, CancellationToken.None)
+
+        let! replay =
+            actor.Execute(OperationInput.Case(decodeWire respelledOpening), CancellationToken.None)
+
         Expect.equal replay (ExecuteOutcome.AlreadyAccepted receipt) "Original entire receipt"
 
         let changed =
             respelledOpening.Replace("1000.00", "1000.0", StringComparison.Ordinal)
 
-        let! conflict = actor.Execute(decodeWire changed, CancellationToken.None)
+        let! conflict =
+            actor.Execute(OperationInput.Case(decodeWire changed), CancellationToken.None)
 
         Expect.equal
             conflict
@@ -121,9 +129,11 @@ let private malformed (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! invalid =
             actor.Execute(
-                { openRequest 10 "UNIT-001" with
-                    OperationId = Guid.Empty
-                },
+                OperationInput.Case(
+                    { openRequest 10 "UNIT-001" with
+                        OperationId = Guid.Empty
+                    }
+                ),
                 CancellationToken.None
             )
 
@@ -133,7 +143,7 @@ let private malformed (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let bad = actRequest 11 "UNIT-001" 1L ((CaseAct.Void Unchecked.defaultof<string>))
 
-        let! result = actor.Execute(bad, CancellationToken.None)
+        let! result = actor.Execute(OperationInput.Case bad, CancellationToken.None)
 
         Expect.equal
             result
@@ -149,11 +159,17 @@ let private definiteFailure (store: MemoryLedgerStore.Store) (fixture: Fixture) 
     task {
         let! actor = caseWorker fixture
         store.NextFailure <- StoreFailure.Unavailable
-        let! failure = actor.Execute(openRequest 10 "UNIT-001", CancellationToken.None)
+
+        let! failure =
+            actor.Execute(OperationInput.Case(openRequest 10 "UNIT-001"), CancellationToken.None)
+
         Expect.equal failure (ExecuteOutcome.Failed CoreFault.StoreUnavailable) "Definite failure"
         use cancelled = new CancellationTokenSource()
         cancelled.Cancel()
-        let! result = actor.Execute(openRequest 10 "UNIT-001", cancelled.Token)
+
+        let! result =
+            actor.Execute(OperationInput.Case(openRequest 10 "UNIT-001"), cancelled.Token)
+
         Expect.equal result ExecuteOutcome.Cancelled "Cancellation before dispatch"
         let! context = actor.Context cancelled.Token
 
@@ -187,7 +203,7 @@ let private unknownCommit (store: MemoryLedgerStore.Store) (fixture: Fixture) =
             store.UnknownCommitLands <- lands
             store.NextFailure <- StoreFailure.CommitOutcomeUnknown
             let original = openRequest n (if lands then "LANDED" else "NOT-LANDED")
-            let! uncertain = actor.Execute(original, CancellationToken.None)
+            let! uncertain = actor.Execute(OperationInput.Case original, CancellationToken.None)
 
             match uncertain with
             | ExecuteOutcome.OutcomeUnknown operationId ->
@@ -195,7 +211,7 @@ let private unknownCommit (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
             | _ -> failtest "Lost confirmation relabeled"
 
-            let! result = actor.Execute(original, CancellationToken.None)
+            let! result = actor.Execute(OperationInput.Case original, CancellationToken.None)
 
             match result, lands with
             | ExecuteOutcome.AlreadyAccepted _, true
@@ -215,7 +231,10 @@ let private acceptedAfterCancellation (store: MemoryLedgerStore.Store) (fixture:
         let! actor = caseWorker fixture
         use cancellation = new CancellationTokenSource()
         store.AfterCommit <- cancellation.Cancel
-        let! result = actor.Execute(openRequest 10 "UNIT-001", cancellation.Token)
+
+        let! result =
+            actor.Execute(OperationInput.Case(openRequest 10 "UNIT-001"), cancellation.Token)
+
         accepted result |> ignore
         Expect.isTrue cancellation.IsCancellationRequested "Cancellation reached the boundary"
     }
@@ -224,16 +243,20 @@ let private previewAdvice (store: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         let original = openRequest 10 "UNIT-001"
-        let! preview = actor.Preview(original, CancellationToken.None)
+        let! preview = actor.Preview(OperationInput.Case original, CancellationToken.None)
 
         match preview with
-        | PreviewOutcome.Reviewed review -> Expect.isNone review.Before "Advisory initial state"
+        | PreviewOutcome.Reviewed(OperationReview.Case review) ->
+            Expect.isNone review.Before "Advisory initial state"
         | _ -> failtest "Preview failed"
 
         Expect.equal store.Entries.Length 3 "Preview stores nothing"
-        let! other = actor.Execute(openRequest 11 "UNIT-001", CancellationToken.None)
+
+        let! other =
+            actor.Execute(OperationInput.Case(openRequest 11 "UNIT-001"), CancellationToken.None)
+
         accepted other |> ignore
-        let! result = actor.Execute(original, CancellationToken.None)
+        let! result = actor.Execute(OperationInput.Case original, CancellationToken.None)
 
         Expect.equal
             result
@@ -245,7 +268,9 @@ let private businessDate (store: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         store.Instant <- DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero)
-        let! result = actor.Execute(openRequest 10 "UNIT-001", CancellationToken.None)
+
+        let! result =
+            actor.Execute(OperationInput.Case(openRequest 10 "UNIT-001"), CancellationToken.None)
 
         Expect.equal
             result
@@ -264,10 +289,10 @@ let private revokedRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         let original = openRequest 10 "UNIT-001"
-        let! result = actor.Execute(original, CancellationToken.None)
+        let! result = actor.Execute(OperationInput.Case original, CancellationToken.None)
         accepted result |> ignore
         do! revokeCaseWork actor
-        let! replay = actor.Execute(original, CancellationToken.None)
+        let! replay = actor.Execute(OperationInput.Case original, CancellationToken.None)
         Expect.equal replay unavailable "Current authority precedes replay"
         let! current = actor.Get({ CaseReference = "UNIT-001" }, CancellationToken.None)
 
@@ -287,11 +312,16 @@ let private unavailableResources (_: MemoryLedgerStore.Store) (fixture: Fixture)
         acceptedAuthority granted
 
         for n, reference in [ 10, "LIVE"; 11, "ERASED" ] do
-            let! opened = actor.Execute(openRequest n reference, CancellationToken.None)
+            let! opened =
+                actor.Execute(OperationInput.Case(openRequest n reference), CancellationToken.None)
+
             accepted opened |> ignore
 
         let! erased =
-            actor.Execute(actRequest 12 "ERASED" 1L (CaseAct.Erase), CancellationToken.None)
+            actor.Execute(
+                OperationInput.Case(actRequest 12 "ERASED" 1L (CaseAct.Erase)),
+                CancellationToken.None
+            )
 
         accepted erased |> ignore
         do! revokeCaseWork actor
@@ -315,19 +345,25 @@ let private lifecycle (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             grant actor (id 3) owner Role.DataSteward GrantTarget.Installation true
 
         acceptedAuthority granted
-        let! opened = actor.Execute(openRequest 10 "UNIT-001", CancellationToken.None)
+
+        let! opened =
+            actor.Execute(OperationInput.Case(openRequest 10 "UNIT-001"), CancellationToken.None)
+
         accepted opened |> ignore
 
         let! voided =
             actor.Execute(
-                actRequest 11 "UNIT-001" 1L ((CaseAct.Void "Wrong reference")),
+                OperationInput.Case(actRequest 11 "UNIT-001" 1L ((CaseAct.Void "Wrong reference"))),
                 CancellationToken.None
             )
 
         Expect.equal (accepted voided |> caseReceipt).Revision 2L "One revision"
 
         let! blocked =
-            actor.Execute(request 12 "UNIT-001" 2L CaseAct.Close, CancellationToken.None)
+            actor.Execute(
+                OperationInput.Case(request 12 "UNIT-001" 2L CaseAct.Close),
+                CancellationToken.None
+            )
 
         Expect.equal
             blocked
@@ -336,14 +372,19 @@ let private lifecycle (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! restored =
             actor.Execute(
-                actRequest 13 "UNIT-001" 2L ((CaseAct.Reinstate "Reference confirmed")),
+                OperationInput.Case(
+                    actRequest 13 "UNIT-001" 2L ((CaseAct.Reinstate "Reference confirmed"))
+                ),
                 CancellationToken.None
             )
 
         Expect.equal (accepted restored |> caseReceipt).Revision 3L "Reinstatement revision"
 
         let! closed =
-            actor.Execute(request 14 "UNIT-001" 3L CaseAct.Close, CancellationToken.None)
+            actor.Execute(
+                OperationInput.Case(request 14 "UNIT-001" 3L CaseAct.Close),
+                CancellationToken.None
+            )
 
         accepted closed |> ignore
     }
@@ -351,7 +392,10 @@ let private lifecycle (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 let private scopedCreation (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
-        let! opened = admin.Execute(openRequest 10 "VISIBLE", CancellationToken.None)
+
+        let! opened =
+            admin.Execute(OperationInput.Case(openRequest 10 "VISIBLE"), CancellationToken.None)
+
         accepted opened |> ignore
 
         let scoped =
@@ -359,8 +403,10 @@ let private scopedCreation (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 3) scoped AdmittedAuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 3) scoped AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 
@@ -371,7 +417,10 @@ let private scopedCreation (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         acceptedAuthority granted
         let actor = core fixture scoped
-        let! refused = actor.Execute(openRequest 11 "OTHER", CancellationToken.None)
+
+        let! refused =
+            actor.Execute(OperationInput.Case(openRequest 11 "OTHER"), CancellationToken.None)
+
         Expect.equal refused unavailable "Creation requires installation registration authority"
         let! page = actor.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
 
@@ -404,7 +453,7 @@ let private corruptIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         let original = openRequest 10 "UNIT-001"
-        let! opened = actor.Execute(original, CancellationToken.None)
+        let! opened = actor.Execute(OperationInput.Case original, CancellationToken.None)
         accepted opened |> ignore
 
         let decide (view: CaseLockedView) =
@@ -452,7 +501,9 @@ let private privateIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! admin = caseWorker fixture
 
         for n, reference in [ 10, "VISIBLE"; 11, "PRIVATE" ] do
-            let! result = admin.Execute(openRequest n reference, CancellationToken.None)
+            let! result =
+                admin.Execute(OperationInput.Case(openRequest n reference), CancellationToken.None)
+
             accepted result |> ignore
 
         let target =
@@ -460,8 +511,10 @@ let private privateIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 3) target AdmittedAuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 3) target AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 
@@ -474,7 +527,10 @@ let private privateIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! refused =
             (core fixture target)
-                .Execute(request 11 "VISIBLE" 1L CaseAct.Close, CancellationToken.None)
+                .Execute(
+                    OperationInput.Case(request 11 "VISIBLE" 1L CaseAct.Close),
+                    CancellationToken.None
+                )
 
         Expect.equal refused unavailable "No conflict oracle for an inaccessible operation"
     }
@@ -482,7 +538,10 @@ let private privateIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 let private failedProjection (store: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        let! opened = actor.Execute(openRequest 10 "UNIT-001", CancellationToken.None)
+
+        let! opened =
+            actor.Execute(OperationInput.Case(openRequest 10 "UNIT-001"), CancellationToken.None)
+
         let placeholder = accepted opened
         let before = store.Entries.Length
 
@@ -520,14 +579,14 @@ let private interruptedCommit (store: MemoryLedgerStore.Store) (fixture: Fixture
         let! actor = caseWorker fixture
         store.AfterCommit <- fun () -> raise (OperationCanceledException())
         let original = openRequest 10 "UNIT-001"
-        let! result = actor.Execute(original, CancellationToken.None)
+        let! result = actor.Execute(OperationInput.Case original, CancellationToken.None)
 
         match result with
         | ExecuteOutcome.OutcomeUnknown _ -> ()
         | _ -> failtest "Lost confirmation relabeled"
 
         store.AfterCommit <- ignore
-        let! retry = actor.Execute(original, CancellationToken.None)
+        let! retry = actor.Execute(OperationInput.Case original, CancellationToken.None)
 
         match retry with
         | ExecuteOutcome.AlreadyAccepted _ -> ()
@@ -538,25 +597,28 @@ let private replayAfterRevision (_: MemoryLedgerStore.Store) (fixture: Fixture) 
     task {
         let! actor = caseWorker fixture
         let original = openRequest 10 "UNIT-001"
-        let! first = actor.Execute(original, CancellationToken.None)
+        let! first = actor.Execute(OperationInput.Case original, CancellationToken.None)
         let receipt = accepted first
 
         let! closed =
-            actor.Execute(request 11 "unit-001" 1L CaseAct.Close, CancellationToken.None)
+            actor.Execute(
+                OperationInput.Case(request 11 "unit-001" 1L CaseAct.Close),
+                CancellationToken.None
+            )
 
         Expect.equal
             (accepted closed |> caseReceipt).Reference
             "UNIT-001"
             "Initial authored reference is retained"
 
-        let! replay = actor.Execute(original, CancellationToken.None)
+        let! replay = actor.Execute(OperationInput.Case original, CancellationToken.None)
 
         Expect.equal
             replay
             (ExecuteOutcome.AlreadyAccepted receipt)
             "Full-history actor sees the original snapshot"
 
-        let! preview = actor.Preview(original, CancellationToken.None)
+        let! preview = actor.Preview(OperationInput.Case original, CancellationToken.None)
 
         Expect.equal
             preview
@@ -568,7 +630,7 @@ let private headExhaustion (store: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         let original = openRequest 10 "UNIT-001"
-        let! opened = actor.Execute(original, CancellationToken.None)
+        let! opened = actor.Execute(OperationInput.Case original, CancellationToken.None)
         let receipt = accepted opened
         let before = store.Entries.Length
 
@@ -580,14 +642,17 @@ let private headExhaustion (store: MemoryLedgerStore.Store) (fixture: Fixture) =
                 }
 
         let! fresh =
-            actor.Execute(request 11 "UNIT-001" 1L CaseAct.Close, CancellationToken.None)
+            actor.Execute(
+                OperationInput.Case(request 11 "UNIT-001" 1L CaseAct.Close),
+                CancellationToken.None
+            )
 
         Expect.equal
             fresh
             (ExecuteOutcome.Rejected Refusal.LedgerExhausted)
             "No global sequence arithmetic at M"
 
-        let! replay = actor.Execute(original, CancellationToken.None)
+        let! replay = actor.Execute(OperationInput.Case original, CancellationToken.None)
 
         Expect.equal
             replay
@@ -599,8 +664,10 @@ let private headExhaustion (store: MemoryLedgerStore.Store) (fixture: Fixture) =
             |> Result.defaultWith failtest
 
         let! authority =
-            actor.ExecuteAuthority(
-                authorityRequest (id 12) target AdmittedAuthorityAct.RegisterActor,
+            actor.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 12) target AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 

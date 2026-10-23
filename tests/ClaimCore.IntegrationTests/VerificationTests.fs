@@ -46,8 +46,10 @@ let private target subject =
 let private register (actor: IActorClaimsCore) n principal =
     task {
         let! outcome =
-            actor.ExecuteAuthority(
-                authorityRequest (id n) principal AdmittedAuthorityAct.RegisterActor,
+            actor.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id n) principal AdmittedAuthorityAct.RegisterActor
+                ),
                 token
             )
 
@@ -147,7 +149,10 @@ let private start (database: PostgresFixture.Database) =
 let private disposition (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
-        let! closed = actor.Execute(request 11 "synthetic-a" 1L CaseAct.Close, token)
+
+        let! closed =
+            actor.Execute(OperationInput.Case(request 11 "synthetic-a" 1L CaseAct.Close), token)
+
         let position = (accepted closed).Position.Sequence
 
         let change value =
@@ -178,7 +183,11 @@ let private erasure (database: PostgresFixture.Database) =
 
         acceptedAuthority granted
 
-        let! erased = actor.Execute(actRequest 11 "synthetic-a" 1L (CaseAct.Erase), token)
+        let! erased =
+            actor.Execute(
+                OperationInput.Case(actRequest 11 "synthetic-a" 1L (CaseAct.Erase)),
+                token
+            )
 
         accepted erased |> ignore
         let! _ = verified database
@@ -265,7 +274,12 @@ let private human (database: PostgresFixture.Database) =
         acceptedAuthority added
 
         let! voided =
-            actor.Execute(actRequest 11 "synthetic-a" 1L ((CaseAct.Void "Entered in error")), token)
+            actor.Execute(
+                OperationInput.Case(
+                    actRequest 11 "synthetic-a" 1L ((CaseAct.Void "Entered in error"))
+                ),
+                token
+            )
 
         do!
             rewrite database (accepted voided).Position.Sequence (fun value ->
@@ -283,8 +297,10 @@ let private owner (database: PostgresFixture.Database) =
         do! register actor 3 reader
 
         let! changed =
-            actor.ExecuteAuthority(
-                authorityRequest (id 4) reader (AdmittedAuthorityAct.SetEnabled true),
+            actor.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 4) reader (AdmittedAuthorityAct.SetEnabled true)
+                ),
                 token
             )
 
@@ -381,15 +397,20 @@ let private disabledExecutor (database: PostgresFixture.Database) =
         do! register actor 3 reader
 
         let! disabled =
-            actor.ExecuteAuthority(
-                authorityRequest (id 4) reader (AdmittedAuthorityAct.SetEnabled false),
+            actor.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 4) reader (AdmittedAuthorityAct.SetEnabled false)
+                ),
                 token
             )
 
         acceptedAuthority disabled
 
         let! opened =
-            actor.Execute(request 11 "another" 0L (CaseAct.Open registration), token)
+            actor.Execute(
+                OperationInput.Case(request 11 "another" 0L (CaseAct.Open registration)),
+                token
+            )
 
         do!
             rewrite database (accepted opened).Position.Sequence (fun value ->
@@ -431,11 +452,13 @@ let private lastOwner (database: PostgresFixture.Database) =
         let! actor = populated database
 
         let! unchanged =
-            actor.ExecuteAuthority(
-                authorityRequest
-                    (id 20)
-                    database.Fixture.Owner
-                    (AdmittedAuthorityAct.SetEnabled true),
+            actor.Execute(
+                OperationInput.Authority(
+                    authorityRequest
+                        (id 20)
+                        database.Fixture.Owner
+                        (AdmittedAuthorityAct.SetEnabled true)
+                ),
                 token
             )
 
@@ -456,7 +479,10 @@ let private permanentPolicyOnly (database: PostgresFixture.Database) =
         do! register actor 3 reader
 
         let! opened =
-            actor.Execute(request 10 "synthetic-a" 0L (CaseAct.Open registration), token)
+            actor.Execute(
+                OperationInput.Case(request 10 "synthetic-a" 0L (CaseAct.Open registration)),
+                token
+            )
 
         do!
             rewrite database (accepted opened).Position.Sequence (fun value ->
@@ -554,7 +580,10 @@ let private malformedOptionalDate (database: PostgresFixture.Database) =
             }
 
         let! decided =
-            actor.Execute(request 11 "synthetic-a" 1L (CaseAct.Decide decision), token)
+            actor.Execute(
+                OperationInput.Case(request 11 "synthetic-a" 1L (CaseAct.Decide decision)),
+                token
+            )
 
         accepted decided |> ignore
         let! _ = verified database

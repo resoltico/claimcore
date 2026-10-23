@@ -206,7 +206,7 @@ let private authorityChecks =
                     Target = PrincipalKey.describe human
                     Act =
                         RecordedAuthorityAct.Operation(
-                            ClaimCore.Contract.Protocol.AuthorityAct.RegisterActor
+                            ClaimCore.Contract.AuthorityAct.RegisterActor
                         )
                 }
 
