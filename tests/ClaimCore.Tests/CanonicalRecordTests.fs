@@ -100,7 +100,7 @@ let private authority () =
             request.Act
             (RecordedAuthorityAct.SetGrant(
                 "CASE_HANDLER",
-                RecordedGrantScope.CaseReference "Demo-0001",
+                GrantTarget.CaseReference "Demo-0001",
                 true
             ))
             "Independent grant meaning"

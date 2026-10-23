@@ -48,8 +48,7 @@ let private authorityProperty =
         let! active = Gen.bool
 
         let! scope =
-            Gen.item
-                [ RecordedGrantScope.Installation; RecordedGrantScope.CaseReference "UNIT-001" ]
+            Gen.item [ GrantTarget.Installation; GrantTarget.CaseReference "UNIT-001" ]
 
         let! role =
             Gen.item
@@ -89,7 +88,7 @@ let private decoderProperty =
             Fixtures.opened () |> Case.snapshot |> CaseRecord.encodeSnapshot
             steward (CaseAct.Void "Reason") |> RequestRecord.encode
             authority (
-                RecordedAuthorityAct.SetGrant("CASE_HANDLER", RecordedGrantScope.Installation, true)
+                RecordedAuthorityAct.SetGrant("CASE_HANDLER", GrantTarget.Installation, true)
             )
             |> AuthorityRecord.encode
             LedgerEntry.encodePayload
@@ -139,9 +138,7 @@ let private strictRecords () =
         Expect.isError (RequestRecord.decode 65536 bytes) "Invalid record is refused"
 
     let grant =
-        authority (
-            RecordedAuthorityAct.SetGrant("CASE_HANDLER", RecordedGrantScope.Installation, true)
-        )
+        authority (RecordedAuthorityAct.SetGrant("CASE_HANDLER", GrantTarget.Installation, true))
 
     let encoded = AuthorityRecord.encode grant |> Encoding.UTF8.GetString
 

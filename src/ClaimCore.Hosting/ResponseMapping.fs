@@ -227,30 +227,17 @@ module internal ResponseMapping =
             NextCursor = value.NextCursor
         }
 
-    let private principal value : ClaimCore.Contract.Protocol.Principal =
-        let parts = PrincipalKey.description value
-
-        {
-            Kind = parts.Kind
-            Issuer = parts.Issuer
-            Subject = parts.Subject
-        }
-
     let private actor (value: ActorSummary) : ClaimCore.Contract.Protocol.ActorSummary =
         {
             ActorId = value.ActorId
-            Principal = principal value.Principal
+            Principal = PrincipalKey.describe value.Principal
             Enabled = value.Enabled
         }
 
     let private grant (value: AuthorityGrant) : ClaimCore.Contract.Protocol.AuthorityGrant =
         {
             Role = RoleTokens.token value.Role
-            Scope =
-                match value.Scope with
-                | GrantTarget.Installation -> ClaimCore.Contract.Protocol.Scope.Installation
-                | GrantTarget.CaseReference reference ->
-                    ClaimCore.Contract.Protocol.Scope.Case reference
+            Scope = value.Scope
         }
 
     let actorsPage (value: ActorReviewPage) : ClaimCore.Contract.Protocol.ActorsPage =

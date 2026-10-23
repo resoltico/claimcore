@@ -1,5 +1,7 @@
 namespace ClaimCore.Hosting
 
+open ClaimCore.Contract
+
 open System
 open System.Threading.Tasks
 open System.Threading

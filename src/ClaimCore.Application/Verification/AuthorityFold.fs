@@ -127,8 +127,8 @@ module internal AuthorityFold =
 
             let! scope =
                 match scope with
-                | RecordedGrantScope.Installation -> Ok GrantScope.Installation
-                | RecordedGrantScope.CaseReference reference ->
+                | GrantTarget.Installation -> Ok GrantScope.Installation
+                | GrantTarget.CaseReference reference ->
                     let id = CaseReferenceId.encode installationId reference
 
                     require (Some entry.Sequence) VerificationFinding.AuthorityFold (caseExists id)

@@ -228,12 +228,12 @@ module RequestCodecs =
             "Scope"
             "kind"
             [
-                unitVariant "INSTALLATION" Scope.Installation
+                unitVariant "INSTALLATION" GrantTarget.Installation
                 variant
                     "CASE"
-                    Scope.Case
+                    GrantTarget.CaseReference
                     (function
-                    | Scope.Case value -> Some value
+                    | GrantTarget.CaseReference value -> Some value
                     | _ -> None)
                     (record id |> field "caseReference" id text)
             ]

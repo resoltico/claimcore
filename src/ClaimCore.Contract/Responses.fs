@@ -149,7 +149,7 @@ type ActorSummary =
         Enabled: bool
     }
 
-type AuthorityGrant = { Role: string; Scope: Scope }
+type AuthorityGrant = { Role: string; Scope: GrantTarget }
 
 type GrantsPage =
     {

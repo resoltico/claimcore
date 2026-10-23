@@ -8,18 +8,13 @@ open ClaimCore.Domain
 module internal RequestMapping =
     type private WireAuthorityAct = ClaimCore.Contract.Protocol.AuthorityAct
 
-    let private scope =
-        function
-        | ClaimCore.Contract.Protocol.Scope.Installation -> GrantTarget.Installation
-        | ClaimCore.Contract.Protocol.Scope.Case reference -> GrantTarget.CaseReference reference
-
     let private authorityAct =
         function
         | WireAuthorityAct.RegisterActor -> Ok AuthorityAct.RegisterActor
         | WireAuthorityAct.SetEnabled enabled -> Ok(AuthorityAct.SetEnabled enabled)
         | WireAuthorityAct.SetGrant grant ->
             match RoleTokens.tryParse grant.Role with
-            | Some role -> Ok(AuthorityAct.SetGrant(role, scope grant.Scope, grant.Active))
+            | Some role -> Ok(AuthorityAct.SetGrant(role, grant.Scope, grant.Active))
             | None -> Error "AUTHORITY_ROLE_INVALID"
 
     let authorityRequest

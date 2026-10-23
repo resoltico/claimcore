@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.LocalConfigurationTests
 
+open ClaimCore.Contract
+
 open System
 open System.IO
 open System.Diagnostics

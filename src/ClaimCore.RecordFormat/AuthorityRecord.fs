@@ -5,19 +5,6 @@ open ClaimCore.Contract
 open System
 open ClaimCore.Domain
 
-/// Primitive format values; Application owns principal admission and the role matrix.
-type RecordedPrincipal =
-    {
-        Kind: string
-        Issuer: string
-        Subject: string
-    }
-
-[<RequireQualifiedAccess>]
-type RecordedGrantScope =
-    | Installation
-    | CaseReference of string
-
 [<RequireQualifiedAccess>]
 type RecordedAuthorityKind =
     | ProvisionOwner
@@ -29,13 +16,13 @@ type RecordedAuthorityKind =
 type RecordedAuthorityAct =
     | RegisterActor
     | ProvisionOwner
-    | SetGrant of role: string * scope: RecordedGrantScope * active: bool
+    | SetGrant of role: string * scope: GrantTarget * active: bool
     | SetEnabled of enabled: bool
 
 type AuthorityRequestRecord =
     {
         OperationId: Guid
-        Target: RecordedPrincipal
+        Target: Principal
         Act: RecordedAuthorityAct
     }
 
@@ -71,13 +58,13 @@ module AuthorityRecord =
         match Json.text path "kind" root with
         | "INSTALLATION" ->
             Json.properties path [ "kind" ] root
-            RecordedGrantScope.Installation
+            GrantTarget.Installation
         | "CASE" ->
             Json.properties path [ "kind"; "caseReference" ] root
             let reference = Json.text path "caseReference" root
 
             match CaseReference.validate reference with
-            | Ok() -> RecordedGrantScope.CaseReference reference
+            | Ok() -> GrantTarget.CaseReference reference
             | Error _ -> Json.reject (path + ".caseReference") "Invalid case reference."
         | _ -> Json.reject (path + ".kind") "Unknown grant scope."
 
@@ -130,9 +117,8 @@ module AuthorityRecord =
 
     let private scopeValue =
         function
-        | RecordedGrantScope.Installation ->
-            JsonValue.Object [ "kind", JsonValue.String "INSTALLATION" ]
-        | RecordedGrantScope.CaseReference reference ->
+        | GrantTarget.Installation -> JsonValue.Object [ "kind", JsonValue.String "INSTALLATION" ]
+        | GrantTarget.CaseReference reference ->
             match CaseReference.validate reference with
             | Error _ -> invalidArg (nameof reference) "Invalid case reference."
             | Ok() ->

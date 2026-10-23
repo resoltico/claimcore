@@ -7,18 +7,13 @@ open ClaimCore.RecordFormat
 
 /// Shared conversion between the primitive record codec and admitted application identities.
 module AuthorityRequests =
-    let private scope =
-        function
-        | GrantTarget.Installation -> RecordedGrantScope.Installation
-        | GrantTarget.CaseReference reference -> RecordedGrantScope.CaseReference reference
-
     let toRecord (request: AuthorityRequest) : AuthorityRequestRecord =
         let act =
             match request.Act with
             | AuthorityAct.RegisterActor -> RecordedAuthorityAct.RegisterActor
             | AuthorityAct.SetEnabled value -> RecordedAuthorityAct.SetEnabled value
             | AuthorityAct.SetGrant(role, target, active) ->
-                RecordedAuthorityAct.SetGrant(RoleTokens.token role, scope target, active)
+                RecordedAuthorityAct.SetGrant(RoleTokens.token role, target, active)
 
         {
             OperationId = request.OperationId
@@ -26,18 +21,13 @@ module AuthorityRequests =
             Act = act
         }
 
-    let private grantScope =
-        function
-        | RecordedGrantScope.Installation -> GrantTarget.Installation
-        | RecordedGrantScope.CaseReference reference -> GrantTarget.CaseReference reference
-
     let private admittedAct =
         function
         | RecordedAuthorityAct.RegisterActor -> Ok AuthorityAct.RegisterActor
         | RecordedAuthorityAct.SetEnabled value -> Ok(AuthorityAct.SetEnabled value)
         | RecordedAuthorityAct.SetGrant(role, scope, active) ->
             match RoleTokens.tryParse role with
-            | Some role -> Ok(AuthorityAct.SetGrant(role, grantScope scope, active))
+            | Some role -> Ok(AuthorityAct.SetGrant(role, scope, active))
             | None -> Error "AUTHORITY_ROLE_INVALID"
         | RecordedAuthorityAct.ProvisionOwner -> Error "AUTHORITY_ACT_INVALID"
 

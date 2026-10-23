@@ -4,22 +4,10 @@ open ClaimCore.Contract
 
 open System
 
-type Principal =
-    {
-        Kind: string
-        Issuer: string
-        Subject: string
-    }
-
-[<RequireQualifiedAccess>]
-type Scope =
-    | Installation
-    | Case of string
-
 type GrantChange =
     {
         Role: string
-        Scope: Scope
+        Scope: GrantTarget
         Active: bool
     }
 

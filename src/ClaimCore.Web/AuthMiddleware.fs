@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Contract
+
 open System
 open System.Security.Claims
 open System.Net.Http

@@ -1,5 +1,7 @@
 module ClaimCore.ArchitectureTests.ArchitectureTests
 
+open ClaimCore.Contract
+
 open System
 open System.Reflection
 open Expecto

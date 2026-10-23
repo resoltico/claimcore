@@ -14,13 +14,6 @@ type PrincipalKey =
     | HumanPrincipal of issuer: string * subject: string
     | ServicePrincipal of issuer: string * clientId: string
 
-type PrincipalDescription =
-    {
-        Kind: string
-        Issuer: string
-        Subject: string
-    }
-
 module PrincipalKey =
     let private issuer value =
         try
@@ -92,16 +85,7 @@ module PrincipalKey =
         | HumanPrincipal(issuerValue, subject) -> PrincipalKinds.Human, issuerValue, subject
         | ServicePrincipal(issuerValue, clientId) -> PrincipalKinds.Service, issuerValue, clientId
 
-    let describe principal : RecordedPrincipal =
-        let kind, issuer, subject = storageParts principal
-
-        {
-            Kind = kind
-            Issuer = issuer
-            Subject = subject
-        }
-
-    let description principal : PrincipalDescription =
+    let describe principal : Principal =
         let kind, issuer, subject = storageParts principal
 
         {
@@ -196,8 +180,3 @@ module AuthorityView =
                 Cases = cases
                 HasAssignedCases = false
             }
-
-[<RequireQualifiedAccess>]
-type GrantTarget =
-    | Installation
-    | CaseReference of string

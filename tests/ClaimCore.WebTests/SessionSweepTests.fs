@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.SessionSweepTests
 
+open ClaimCore.Contract
+
 open System
 open System.Security.Claims
 open Expecto
