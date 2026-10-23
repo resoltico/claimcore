@@ -11,6 +11,13 @@ type internal AuthorityAction =
     | User of AdmittedAuthorityAct
     | ProvisionOwner
 
+[<RequireQualifiedAccess; NoComparison>]
+type internal AuthorityReviewDecision =
+    | Proposed of targetActorId: Guid * AuthorityProjection
+    | Replay of OperationReceipt
+    | Refuse of Refusal
+    | Fail of CoreFault
+
 module internal AuthorityDecisions =
     let private owner (view: AuthorityView) =
         view.Actor
@@ -94,6 +101,34 @@ module internal AuthorityDecisions =
                         Error CoreFault.StoreIntegrityError)
             | _ -> Ok()
 
+    let private admission installationId principal operationId bytes (view: AuthorityReadView) =
+        if
+            not (
+                ActorAuthorization.can
+                    principal
+                    view.Actor
+                    Capability.ManageAuthority
+                    ResourceScope.Installation
+            )
+        then
+            IdentityDecision.Refuse Refusal.ResourceUnavailable
+        else
+            OperationIdentity.decide
+                installationId
+                principal
+                view.Actor
+                operationId
+                bytes
+                view.ExistingOperation
+
+    let private propose installationId operationId target action view =
+        match targets installationId target action view with
+        | Error fault -> AuthorityReviewDecision.Fail fault
+        | Ok() ->
+            match projection operationId target action view with
+            | Error refusal -> AuthorityReviewDecision.Refuse refusal
+            | Ok(targetId, projection) -> AuthorityReviewDecision.Proposed(targetId, projection)
+
     let private provisionIdentity installationId operationId bytes (view: AuthorityLockedView) =
         if view.Read.ActorCount = 0 then
             if view.Head.Sequence = 0L && view.Read.ExistingOperation.IsNone then
@@ -164,13 +199,12 @@ module internal AuthorityDecisions =
         bytes
         (view: AuthorityLockedView)
         =
-        match targets installationId target action view.Read with
-        | Error fault -> LedgerDecision.Fail fault
-        | Ok() ->
-            match projection operationId target action view.Read with
-            | Error reason -> LedgerDecision.Refuse reason
-            | Ok(targetId, projection) ->
-                append installationId principal operationId action bytes view targetId projection
+        match propose installationId operationId target action view.Read with
+        | AuthorityReviewDecision.Fail fault -> LedgerDecision.Fail fault
+        | AuthorityReviewDecision.Refuse refusal -> LedgerDecision.Refuse refusal
+        | AuthorityReviewDecision.Replay receipt -> LedgerDecision.Replay receipt
+        | AuthorityReviewDecision.Proposed(targetId, projection) ->
+            append installationId principal operationId action bytes view targetId projection
 
     let private decide
         installationId
@@ -181,42 +215,47 @@ module internal AuthorityDecisions =
         bytes
         (view: AuthorityLockedView)
         =
-        if
-            action <> AuthorityAction.ProvisionOwner
-            && not (
-                ActorAuthorization.can
-                    principal
-                    view.Read.Actor
-                    Capability.ManageAuthority
-                    ResourceScope.Installation
-            )
-        then
-            LedgerDecision.Refuse Refusal.ResourceUnavailable
-        else
-            let identity =
-                match action with
-                | AuthorityAction.ProvisionOwner ->
-                    provisionIdentity installationId operationId bytes view
-                | _ ->
-                    OperationIdentity.decide
-                        installationId
-                        principal
-                        view.Read.Actor
-                        operationId
-                        bytes
-                        view.Read.ExistingOperation
+        let identity =
+            match action with
+            | AuthorityAction.ProvisionOwner ->
+                provisionIdentity installationId operationId bytes view
+            | AuthorityAction.User _ ->
+                admission installationId principal operationId bytes view.Read
 
-            match identity with
-            | IdentityDecision.Replay entry ->
-                LedgerEntries.receipt principal view.Read.Actor None entry
-                |> Result.map LedgerDecision.Replay
-                |> Result.defaultWith LedgerDecision.Fail
-            | IdentityDecision.Refuse reason -> LedgerDecision.Refuse reason
-            | IdentityDecision.Fail fault -> LedgerDecision.Fail fault
-            | IdentityDecision.Fresh when view.Head.Sequence = Revision.Maximum ->
-                LedgerDecision.Refuse Refusal.LedgerExhausted
-            | IdentityDecision.Fresh ->
-                fresh installationId principal operationId target action bytes view
+        match identity with
+        | IdentityDecision.Replay entry ->
+            LedgerEntries.receipt principal view.Read.Actor None entry
+            |> Result.map LedgerDecision.Replay
+            |> Result.defaultWith LedgerDecision.Fail
+        | IdentityDecision.Refuse reason -> LedgerDecision.Refuse reason
+        | IdentityDecision.Fail fault -> LedgerDecision.Fail fault
+        | IdentityDecision.Fresh when view.Head.Sequence = Revision.Maximum ->
+            LedgerDecision.Refuse Refusal.LedgerExhausted
+        | IdentityDecision.Fresh ->
+            fresh installationId principal operationId target action bytes view
+
+    let review
+        installationId
+        principal
+        (request: AdmittedAuthorityRequest)
+        (view: AuthorityReadView)
+        =
+        let bytes = AuthorityRequests.toRecord request |> AuthorityRecord.encode
+
+        match admission installationId principal request.OperationId bytes view with
+        | IdentityDecision.Refuse refusal -> AuthorityReviewDecision.Refuse refusal
+        | IdentityDecision.Fail fault -> AuthorityReviewDecision.Fail fault
+        | IdentityDecision.Replay entry ->
+            LedgerEntries.receipt principal view.Actor None entry
+            |> Result.map AuthorityReviewDecision.Replay
+            |> Result.defaultWith AuthorityReviewDecision.Fail
+        | IdentityDecision.Fresh ->
+            propose
+                installationId
+                request.OperationId
+                request.Target
+                (AuthorityAction.User request.Act)
+                view
 
     let execute
         installationId

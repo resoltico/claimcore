@@ -127,6 +127,14 @@ type Actor =
         Enabled: bool
     }
 
+module internal Actor =
+    let describe (actor: Actor) : ActorSummary =
+        {
+            ActorId = actor.ActorId
+            Principal = PrincipalKey.describe actor.Principal
+            Enabled = actor.Enabled
+        }
+
 /// Only roles that can influence this decision are loaded. Operation identity may add a second case.
 type AuthorityView =
     {

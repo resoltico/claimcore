@@ -15,6 +15,7 @@
     <Compile Include="LedgerEntries.fs" />
     <Compile Include="CaseDecisions.fs" />
     <Compile Include="AuthorityDecisions.fs" />
+    <Compile Include="AuthorityReviews.fs" />
     <Compile Include="Advice.fs" />
     <Compile Include="Queries.fs" />
     <Compile Include="Core.fs" />

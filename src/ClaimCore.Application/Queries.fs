@@ -329,13 +329,6 @@ module internal Queries =
             currentActor principal view.Actor
             |> Result.bind (fun _ -> cursor Cursors.decodeActors request.AfterCursor)
 
-    let private describeActor (actor: Actor) : ActorSummary =
-        {
-            ActorId = actor.ActorId
-            Principal = PrincipalKey.describe actor.Principal
-            Enabled = actor.Enabled
-        }
-
     let private actorPage principal (page: StoredActorPage) : Result<ActorReviewPage, CoreFault> =
         currentActor principal page.Actor
         |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
@@ -345,7 +338,7 @@ module internal Queries =
             else
                 Ok
                     {
-                        Items = List.map describeActor page.Items
+                        Items = List.map Actor.describe page.Items
                         NextCursor =
                             page.NextAfterActorId |> Option.map (fun id -> Cursors.encodeActors id)
                     })
@@ -402,7 +395,7 @@ module internal Queries =
             else
                 Ok
                     {
-                        Actor = describeActor page.Target
+                        Actor = Actor.describe page.Target
                         Items = page.Items
                         NextCursor =
                             page.NextAfterGrant

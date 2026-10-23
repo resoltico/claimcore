@@ -417,11 +417,53 @@ let private contextOffers (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         Expect.isEmpty context.Views "Revoked reads remove every view"
     }
 
+let private exhaustedHead (store: MemoryLedgerStore.Store) (fixture: Fixture) =
+    task {
+        let! actor = bootstrap fixture
+
+        store.HeadOverride <-
+            Some
+                {
+                    Sequence = Revision.Maximum
+                    EntryHash = Array.zeroCreate 32
+                }
+
+        let input = authorityRequest (id 2) fixture.Owner AdmittedAuthorityAct.RegisterActor
+
+        let admitted =
+            AuthorityRequests.admit input
+            |> Result.defaultWith (fun _ -> failtest "Synthetic input must admit.")
+
+        let! read =
+            fixture.Store.ReadAuthorityTarget(
+                fixture.Owner,
+                id 2,
+                fixture.Owner,
+                None,
+                CancellationToken.None
+            )
+
+        let view = read |> Result.defaultWith (fun _ -> failtest "Preview view must load.")
+
+        Expect.equal
+            (AuthorityDecisions.review fixture.InstallationId fixture.Owner admitted view)
+            (AuthorityReviewDecision.Refuse Refusal.ActorAlreadyRegistered)
+            "Advisory preview applies target rules without a ledger head."
+
+        let! execution = actor.ExecuteAuthority(input, CancellationToken.None)
+
+        Expect.equal
+            execution
+            (ExecuteOutcome.Rejected Refusal.LedgerExhausted)
+            "Locked execution preserves capacity refusal before projection validation."
+    }
+
 [<Tests>]
 let tests =
     testList
         "authority decisions and review"
         [
+            testCaseAsync "ledger capacity retains execution refusal precedence" (run exhaustedHead)
             testCaseAsync
                 "installation offers respect scope principal and revocation"
                 (run contextOffers)

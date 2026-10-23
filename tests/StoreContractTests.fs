@@ -824,10 +824,361 @@ let private scopedAuthority fixture =
             "Both scopes preserve content exclusion"
     }
 
+let private authorityReview fixture principal input =
+    task {
+        let request =
+            AuthorityRequests.admit input
+            |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit.")
+
+        AuthorityRequests.validate request
+        |> Result.defaultWith (fun _ -> failtest "Synthetic authority request must validate.")
+
+        let! read =
+            fixture.Store.ReadAuthorityTarget(
+                principal,
+                request.OperationId,
+                request.Target,
+                AuthorityRequests.targetCase request,
+                CancellationToken.None
+            )
+
+        let view =
+            read |> Result.defaultWith (fun _ -> failtest "Authority snapshot must load.")
+
+        return AuthorityDecisions.review fixture.InstallationId principal request view, view
+    }
+
+let private ledgerHead fixture =
+    task {
+        let mutable loaded = None
+
+        let decide (view: AuthorityLockedView) =
+            loaded <- Some view.Head
+            LedgerDecision.Refuse Refusal.ResourceUnavailable
+
+        let! result =
+            fixture.Store.WriteAuthority(
+                fixture.Owner,
+                id 999999,
+                fixture.Owner,
+                None,
+                decide,
+                CancellationToken.None
+            )
+
+        Expect.equal
+            result
+            (Ok(LedgerWriteResult.Refused Refusal.ResourceUnavailable))
+            "The head probe appends nothing."
+
+        return loaded |> Option.get
+    }
+
+let private authorityReviewRefusals fixture =
+    task {
+        let! actor = bootstrap fixture
+        let! before = ledgerHead fixture
+
+        for index, act, expected in
+            [
+                10, AdmittedAuthorityAct.RegisterActor, Refusal.ActorAlreadyRegistered
+                11, AdmittedAuthorityAct.SetEnabled false, Refusal.LastOwner
+                12,
+                AdmittedAuthorityAct.SetGrant(Role.Owner, GrantTarget.Installation, false),
+                Refusal.LastOwner
+            ] do
+            let input = authorityRequest (id index) fixture.Owner act
+            let! preview, _ = authorityReview fixture fixture.Owner input
+
+            Expect.equal
+                preview
+                (AuthorityReviewDecision.Refuse expected)
+                "Fresh authority preview enforces the execution refusal."
+
+            let! execution = actor.ExecuteAuthority(input, CancellationToken.None)
+
+            Expect.equal
+                execution
+                (ExecuteOutcome.Rejected expected)
+                "Locked execution preserves the same refusal."
+
+        let! after = ledgerHead fixture
+        Expect.equal after before "Refused previews and executions leave the ledger head unchanged."
+    }
+
+let private authorityReadIsNotManage fixture =
+    task {
+        let! actor = bootstrap fixture
+
+        let auditor =
+            PrincipalKey.human "https://issuer.example/" "preview-auditor"
+            |> Result.defaultWith failtest
+
+        let! registered =
+            actor.ExecuteAuthority(
+                authorityRequest (id 2) auditor AdmittedAuthorityAct.RegisterActor,
+                CancellationToken.None
+            )
+
+        acceptedAuthority registered
+        let! granted = grant actor (id 3) auditor Role.Auditor GrantTarget.Installation true
+        acceptedAuthority granted
+
+        let input =
+            authorityRequest (id 4) fixture.Owner (AdmittedAuthorityAct.SetEnabled false)
+
+        let! preview, view = authorityReview fixture auditor input
+
+        Expect.isTrue
+            (ActorAuthorization.can
+                auditor
+                view.Actor
+                Capability.ReadAuthority
+                ResourceScope.Installation)
+            "The rejecting control really has authority read."
+
+        Expect.equal
+            preview
+            (AuthorityReviewDecision.Refuse Refusal.ResourceUnavailable)
+            "Read authority cannot authorize mutation preview."
+
+        let! execution =
+            (core fixture auditor).ExecuteAuthority(input, CancellationToken.None)
+
+        Expect.equal
+            execution
+            (ExecuteOutcome.Rejected Refusal.ResourceUnavailable)
+            "Preview and execution conceal the same inaccessible operation."
+    }
+
+let private authorityReviewReplay fixture =
+    task {
+        let! actor = bootstrap fixture
+
+        let target =
+            PrincipalKey.human "https://issuer.example/" "preview-target"
+            |> Result.defaultWith failtest
+
+        let input = authorityRequest (id 2) target AdmittedAuthorityAct.RegisterActor
+        let! before = ledgerHead fixture
+        let! preview, view = authorityReview fixture fixture.Owner input
+
+        match preview with
+        | AuthorityReviewDecision.Proposed(_, projection) ->
+            let review = AuthorityReviews.describe view projection
+            Expect.isNone review.Target "The unregistered principal has no current actor."
+            Expect.equal review.Before { Enabled = false; Grants = [] } "Unregistered before state."
+
+            Expect.equal
+                review.After
+                { Enabled = true; Grants = [] }
+                "Registration proposes an enabled actor without grants."
+        | _ -> failtest "Expected an authority proposal."
+
+        let! after = ledgerHead fixture
+        Expect.equal after before "A successful preview appends no entry."
+        let! execution = actor.ExecuteAuthority(input, CancellationToken.None)
+        let receipt = accepted execution
+
+        Expect.equal
+            receipt.Position.Sequence
+            (before.Sequence + 1L)
+            "Only execution advances the head."
+
+        let! replay, _ = authorityReview fixture fixture.Owner input
+
+        Expect.equal
+            replay
+            (AuthorityReviewDecision.Replay receipt)
+            "Accepted registration replays before fresh-state refusal."
+
+        let changed = authorityRequest (id 2) target (AdmittedAuthorityAct.SetEnabled false)
+        let! conflict, _ = authorityReview fixture fixture.Owner changed
+
+        Expect.equal
+            conflict
+            (AuthorityReviewDecision.Refuse Refusal.IdempotencyConflict)
+            "Changed authority content conflicts with its accepted identity."
+    }
+
+let private grantReviewTarget fixture =
+    task {
+        let! actor = caseWorker fixture
+
+        let! opened =
+            actor.Execute(
+                request 10 "REVIEW-CASE" 0L (CaseAct.Open registration),
+                CancellationToken.None
+            )
+
+        accepted opened |> ignore
+
+        let target =
+            PrincipalKey.human "https://issuer.example/" "grant-preview-target"
+            |> Result.defaultWith failtest
+
+        let! registered =
+            actor.ExecuteAuthority(
+                authorityRequest (id 11) target AdmittedAuthorityAct.RegisterActor,
+                CancellationToken.None
+            )
+
+        acceptedAuthority registered
+
+        let! installed =
+            grant actor (id 12) target Role.CaseRegistrar GrantTarget.Installation true
+
+        acceptedAuthority installed
+
+        let! scoped =
+            grant
+                actor
+                (id 13)
+                target
+                Role.CaseReader
+                (GrantTarget.CaseReference "REVIEW-CASE")
+                true
+
+        acceptedAuthority scoped
+
+        let input =
+            authorityRequest
+                (id 14)
+                target
+                (AdmittedAuthorityAct.SetGrant(
+                    Role.CaseReader,
+                    GrantTarget.CaseReference "review-case",
+                    false
+                ))
+
+        return target, input
+    }
+
+let private assertGrantRevocation view projection =
+    let review = AuthorityReviews.describe view projection
+    Expect.isTrue review.Before.Enabled "Grant changes preserve actor enabled state."
+
+    Expect.equal
+        review.Before.Grants
+        [
+            {
+                Role = Role.CaseReader
+                Scope = GrantTarget.CaseReference "REVIEW-CASE"
+            }
+        ]
+        "Only the touched grant is shown, with the authoritative reference spelling."
+
+    Expect.equal
+        review.After
+        { Enabled = true; Grants = [] }
+        "The revoked grant is absent after the proposal."
+
+    Expect.equal
+        (review.Target |> Option.map _.ActorId)
+        (Some(id 11))
+        "Review identifies the existing target actor."
+
+let private authorityGrantReview fixture =
+    task {
+        let! target, input = grantReviewTarget fixture
+        let! before = ledgerHead fixture
+        let! preview, view = authorityReview fixture fixture.Owner input
+
+        match preview with
+        | AuthorityReviewDecision.Proposed(_, projection) -> assertGrantRevocation view projection
+        | _ -> failtest "Expected a case-grant revocation proposal."
+
+        let! after = ledgerHead fixture
+        Expect.equal after before "Grant preview writes neither ledger nor projections."
+
+        let! targetRead =
+            fixture.Store.ReadAuthorityTarget(
+                fixture.Owner,
+                id 14,
+                target,
+                Some "REVIEW-CASE",
+                CancellationToken.None
+            )
+
+        let targetRead =
+            targetRead
+            |> Result.defaultWith (fun _ -> failtest "Scoped authority must remain readable.")
+
+        Expect.equal
+            targetRead.Target.Installation
+            [ Role.CaseRegistrar ]
+            "Unrelated installation grants are untouched."
+
+        Expect.equal
+            (targetRead.Target.Cases
+             |> Map.values
+             |> Seq.collect (fun roles -> roles)
+             |> Seq.toList)
+            [ Role.CaseReader ]
+            "The proposed revocation has not changed the stored case grant."
+    }
+
+let private authorityReviewRechecks fixture =
+    task {
+        let! actor = bootstrap fixture
+
+        let other =
+            PrincipalKey.human "https://issuer.example/" "other-preview-owner"
+            |> Result.defaultWith failtest
+
+        let! registered =
+            actor.ExecuteAuthority(
+                authorityRequest (id 2) other AdmittedAuthorityAct.RegisterActor,
+                CancellationToken.None
+            )
+
+        acceptedAuthority registered
+        let! granted = grant actor (id 3) other Role.Owner GrantTarget.Installation true
+        acceptedAuthority granted
+
+        let input =
+            authorityRequest (id 4) fixture.Owner (AdmittedAuthorityAct.SetEnabled false)
+
+        let! preview, view = authorityReview fixture fixture.Owner input
+        Expect.equal view.EnabledHumanOwners 2 "The preview sees two enabled owners."
+
+        match preview with
+        | AuthorityReviewDecision.Proposed _ -> ()
+        | _ -> failtest "Disabling one of two owners is initially permitted."
+
+        let! revoked = grant actor (id 5) other Role.Owner GrantTarget.Installation false
+        acceptedAuthority revoked
+        let! before = ledgerHead fixture
+        let! execution = actor.ExecuteAuthority(input, CancellationToken.None)
+
+        Expect.equal
+            execution
+            (ExecuteOutcome.Rejected Refusal.LastOwner)
+            "Execution decides again against its locked authority state."
+
+        let! after = ledgerHead fixture
+        Expect.equal after before "Stale preview cannot authorize a write."
+    }
+
 let internal tests factory =
     testList
         "ledger store contract"
         [
+            testCaseAsync
+                "authority grant review shows only touched facts and writes nothing"
+                (withFixture factory authorityGrantReview)
+            testCaseAsync
+                "authority execution rechecks a stale owner preview"
+                (withFixture factory authorityReviewRechecks)
+            testCaseAsync
+                "authority previews preserve last-owner and registered-principal refusals"
+                (withFixture factory authorityReviewRefusals)
+            testCaseAsync
+                "authority read capability cannot authorize mutation preview"
+                (withFixture factory authorityReadIsNotManage)
+            testCaseAsync
+                "authority preview writes nothing and exact replay precedes fresh-state refusal"
+                (withFixture factory authorityReviewReplay)
             testCaseAsync
                 "authority loading stays bounded to the requested and accepted scopes"
                 (withFixture factory scopedAuthority)
