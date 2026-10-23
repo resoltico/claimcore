@@ -30,28 +30,37 @@ const Choice = ({
   onChange,
   options,
   errorPath,
+  errorNotice,
 }: Omit<Props, "document" | "node"> & { options: ReadonlyArray<unknown> }) => {
   const p = usePresentation();
   return (
-    <label>
-      {path.endsWith(".mode") ? p.text("ui.action") : p.fieldLabel(path.split(".").at(-1)!)}
-      <select
-        id={path.endsWith(".mode") ? `correction-${path.split(".").at(-2)}-mode` : undefined}
-        name={path}
-        value={text(values[path] ?? options[0])}
-        disabled={disabled}
-        aria-invalid={errorPath === path || undefined}
-        onChange={(event) => {
-          onChange(path, event.target.value);
-        }}
-      >
-        {options.map((value) => (
-          <option key={text(value)} value={text(value)}>
-            {p.token(text(value))}
-          </option>
-        ))}
-      </select>
-    </label>
+    <>
+      <label>
+        {path.endsWith(".mode") ? p.text("ui.action") : p.fieldLabel(path.split(".").at(-1)!)}
+        <select
+          id={path.endsWith(".mode") ? `correction-${path.split(".").at(-2)}-mode` : undefined}
+          name={path}
+          value={text(values[path] ?? options[0])}
+          disabled={disabled}
+          aria-invalid={errorPath === path || undefined}
+          aria-describedby={errorPath === path && errorNotice ? `${path}-error` : undefined}
+          onChange={(event) => {
+            onChange(path, event.target.value);
+          }}
+        >
+          {options.map((value) => (
+            <option key={text(value)} value={text(value)}>
+              {p.token(text(value))}
+            </option>
+          ))}
+        </select>
+      </label>
+      {errorPath === path && errorNotice ? (
+        <small id={`${path}-error`}>
+          <NoticeView value={errorNotice} />
+        </small>
+      ) : null}
+    </>
   );
 };
 const BooleanInput = ({ path, values, disabled, onChange, errorPath }: Props) => {

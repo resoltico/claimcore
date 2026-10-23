@@ -131,6 +131,11 @@ export const OperationReview = ({ model }: { model: OperationModel }) => {
             ? p.commandLabel(input.act.kind)
             : p.authorityLabel(input.act.kind)}
         </h3>
+        <p>
+          {input.scope === "CASE"
+            ? p.commandMeaning(input.act.kind)
+            : p.authorityMeaning(input.act.kind)}
+        </p>
         <ProtocolSummary value={input} document={operationDocument} node={operationDocument} />
         {model.review.scope === "CASE" ? (
           <ReviewValues review={model.review} />

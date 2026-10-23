@@ -22,7 +22,7 @@ const CommandPicker = ({ model, offered, onCommand }: OperationFormProps) => {
       <select
         id="command-picker"
         value={String(model.values["act.kind"])}
-        disabled={model.busy || model.priorUncertain}
+        disabled={model.busy || model.phase === "REVIEWING" || model.priorUncertain}
         onChange={(event) => {
           onCommand(event.target.value);
         }}
@@ -59,7 +59,7 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
           node={visibleOperationSchema(model.values, current)}
           path=""
           values={model.values}
-          disabled={model.busy || !allowed}
+          disabled={model.busy || model.phase === "REVIEWING" || !allowed}
           errorPath={model.fieldError}
           errorNotice={model.notice}
           onChange={model.edit}
@@ -100,7 +100,7 @@ export const OperationForm = (props: OperationFormProps) => {
       <CommandPicker {...props} />
       <OperationInputs {...props} />
       <div className="actions">
-        <button type="submit" disabled={model.busy || !allowed}>
+        <button type="submit" disabled={model.busy || model.phase === "REVIEWING" || !allowed}>
           {p.text(model.phase === "PREVIEWING" ? "ui.previewing" : "ui.previewOperation")}
         </button>
         {onClose === undefined ? null : (

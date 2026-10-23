@@ -135,6 +135,8 @@ export const createPresenter = (
   fieldLabel: (name: string) => metadata(preferences, "field", name, "label", definitions),
   fieldMeaning: (name: string) => metadata(preferences, "field", name, "meaning", definitions),
   authorityLabel: (name: string) => metadata(preferences, "authority", name, "label", definitions),
+  authorityMeaning: (name: string) =>
+    metadata(preferences, "authority", name, "meaning", definitions),
   commandLabel: (name: string) => metadata(preferences, "command", name, "label", definitions),
   commandMeaning: (name: string) => metadata(preferences, "command", name, "meaning", definitions),
   groupLabel: (name: string) => metadata(preferences, "group", name, "label", definitions),

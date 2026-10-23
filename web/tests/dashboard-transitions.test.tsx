@@ -62,8 +62,12 @@ const queueAcceptedOpen = (): void => {
   fetch.mockResolvedValueOnce(
     response("operation.execute", "ACCEPTED", {
       ...receipt,
-      caseReference: fields.caseReference,
-      snapshot: { tag: "DISCLOSED", state: { tag: "LIVE", disposition: "ACTIVE", fields } },
+      scope: {
+        ...receipt.scope,
+        kind: "CASE",
+        caseReference: fields.caseReference,
+        snapshot: { disclosure: "DISCLOSED", view: { tag: "LIVE", disposition: "ACTIVE", fields } },
+      },
     }),
   );
 };
