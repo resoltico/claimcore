@@ -27,26 +27,6 @@ module ServiceGateway =
             RequestMapping.authorityRequest value |> Result.map (fun _ -> request)
         | _ -> Ok request
 
-    let private history
-        (request: ClaimCore.Contract.Protocol.HistoryRequest)
-        : ClaimCore.Application.HistoryRequest =
-        {
-            CaseReference = request.CaseReference
-            AfterCursor = request.Cursor
-            Limit = int request.Limit
-            Detail =
-                if request.Detail = "FULL" then
-                    HistoryDetail.Full
-                else
-                    HistoryDetail.Summary
-        }
-
-    let private page (request: PageRequest) : CaseListRequest =
-        {
-            AfterCursor = request.Cursor
-            Limit = int request.Limit
-        }
-
     let private reads (core: IActorClaimsCore) input token =
         task {
             match input with
@@ -56,35 +36,17 @@ module ServiceGateway =
                 let! value = core.Get(request.CaseReference, token) in
                 return OutcomeMapping.caseGet value
             | WireRequest.CaseList request ->
-                let! value = core.List(page request, token) in return OutcomeMapping.caseList value
+                let! value = core.List(request, token) in return OutcomeMapping.caseList value
             | WireRequest.CaseHistory request ->
-                let! value = core.History(history request, token) in
-                return OutcomeMapping.caseHistory value
+                let! value = core.History(request, token) in return OutcomeMapping.caseHistory value
             | WireRequest.OperationObserve request ->
                 let! value = core.Observe(request.OperationId, token) in
                 return OutcomeMapping.operationObserve value
             | WireRequest.AuthorityList request ->
-                let! value =
-                    core.ListActors(
-                        {
-                            AfterCursor = request.Cursor
-                            Limit = int request.Limit
-                        },
-                        token
-                    )
-
+                let! value = core.ListActors(request, token)
                 return OutcomeMapping.authorityList value
             | WireRequest.AuthorityGrants request ->
-                let! value =
-                    core.ListGrants(
-                        {
-                            ActorId = request.ActorId
-                            AfterCursor = request.Cursor
-                            Limit = int request.Limit
-                        },
-                        token
-                    )
-
+                let! value = core.ListGrants(request, token)
                 return OutcomeMapping.authorityGrants value
             | _ -> return invalidArg "request" "Expected an application query."
         }

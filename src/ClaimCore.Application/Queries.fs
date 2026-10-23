@@ -119,7 +119,7 @@ module internal Queries =
         | None -> Ok None
         | Some token -> decode token |> Result.map Some
 
-    let private selectCases principal (request: CaseListRequest) (view: ActorReadView) =
+    let private selectCases principal (request: PageRequest) (view: ActorReadView) =
         currentActor principal view.Actor
         |> Result.bind (fun actor ->
             match ActorAuthorization.visibility principal actor with
@@ -172,7 +172,7 @@ module internal Queries =
         (store: ILedgerStore)
         installationId
         principal
-        (request: CaseListRequest)
+        (request: PageRequest)
         ct
         : Task<QueryOutcome<CaseSummaryPage>> =
         task {
@@ -316,7 +316,7 @@ module internal Queries =
                     | _ -> return unavailable
         }
 
-    let private selectActors principal (request: AuthorityListRequest) (view: ActorReadView) =
+    let private selectActors principal (request: PageRequest) (view: ActorReadView) =
         if
             not (
                 ActorAuthorization.can
@@ -348,7 +348,7 @@ module internal Queries =
     let actors
         (store: ILedgerStore)
         principal
-        (request: AuthorityListRequest)
+        (request: PageRequest)
         ct
         : Task<QueryOutcome<ActorReviewPage>> =
         task {
@@ -368,7 +368,7 @@ module internal Queries =
                         |> Result.defaultWith QueryOutcome.Failed
         }
 
-    let private selectGrants principal (request: AuthorityGrantListRequest) (view: GrantReadView) =
+    let private selectGrants principal (request: GrantsRequest) (view: GrantReadView) =
         if
             not (
                 ActorAuthorization.can
@@ -385,7 +385,7 @@ module internal Queries =
                 cursor (Cursors.decodeGrants request.ActorId) request.AfterCursor
             | _ -> Error Rejection.ResourceUnavailable
 
-    let private grantPage principal (request: AuthorityGrantListRequest) (page: StoredGrantPage) =
+    let private grantPage principal (request: GrantsRequest) (page: StoredGrantPage) =
         currentActor principal page.Actor
         |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
         |> Result.bind (fun _ ->
@@ -408,7 +408,7 @@ module internal Queries =
     let grants
         (store: ILedgerStore)
         principal
-        (request: AuthorityGrantListRequest)
+        (request: GrantsRequest)
         ct
         : Task<QueryOutcome<AuthorityGrantPage>> =
         task {

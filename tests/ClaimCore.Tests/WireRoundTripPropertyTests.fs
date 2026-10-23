@@ -274,7 +274,7 @@ let private generatedString response (source: Seeds) context =
         || context.StartsWith("InstallationOffer.AuthorityAct", StringComparison.Ordinal)
     then
         Gen.item (source.Tokens[context] |> Seq.distinct |> Seq.toArray)
-    elif field = "Cursor" then
+    elif field = "Cursor" || field = "AfterCursor" then
         scalarText
     elif response then
         responseString field
@@ -359,6 +359,8 @@ let rec private fresh response source context (kind: Type) (value: obj | null) =
         generatedString response source context |> Gen.map box
     elif kind = typeof<Guid> then
         guid |> Gen.map box
+    elif kind = typeof<int> then
+        integer response context |> Gen.map (int >> box)
     elif kind = typeof<int64> then
         integer response context |> Gen.map box
     elif kind = typeof<DateOnly> then

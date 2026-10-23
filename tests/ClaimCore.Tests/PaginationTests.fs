@@ -503,7 +503,7 @@ let private disabledGrantTarget
     (store: MemoryLedgerStore.Store)
     (admin: IActorClaimsCore)
     target
-    (query: AuthorityGrantListRequest)
+    (query: GrantsRequest)
     cursor
     =
     task {

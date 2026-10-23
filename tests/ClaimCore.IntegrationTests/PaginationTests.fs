@@ -12,7 +12,7 @@ open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private query after limit : CaseListRequest = { AfterCursor = after; Limit = limit }
+let private query after limit : PageRequest = { AfterCursor = after; Limit = limit }
 
 let private page =
     function

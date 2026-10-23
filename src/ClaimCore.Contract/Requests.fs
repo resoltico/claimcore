@@ -24,24 +24,7 @@ type AuthorityRequest =
         Act: AuthorityAct
     }
 
-type PageRequest = { Cursor: string option; Limit: int64 }
-
 type CaseGetRequest = { CaseReference: string }
-
-type HistoryRequest =
-    {
-        CaseReference: string
-        Detail: string
-        Cursor: string option
-        Limit: int64
-    }
-
-type GrantsRequest =
-    {
-        ActorId: Guid
-        Cursor: string option
-        Limit: int64
-    }
 
 type ObserveRequest = { OperationId: Guid }
 

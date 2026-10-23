@@ -316,9 +316,14 @@ module RequestCodecs =
         |> discriminated "scope"
 
     let pageRequest =
-        (record (fun v0 v1 -> { PageRequest.Cursor = v0; Limit = v1 }): Fields<PageRequest, _>)
-        |> optionalField "cursor" _.Cursor (boundedText 1 512)
-        |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize))
+        (record (fun v0 v1 ->
+            {
+                PageRequest.AfterCursor = v0
+                Limit = v1
+            })
+        : Fields<PageRequest, _>)
+        |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
+        |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize) |> map int int64)
         |> build
         |> named "PageRequest"
 
@@ -333,14 +338,17 @@ module RequestCodecs =
             {
                 HistoryRequest.CaseReference = v0
                 Detail = v1
-                Cursor = v2
+                AfterCursor = v2
                 Limit = v3
             })
         : Fields<HistoryRequest, _>)
         |> field "caseReference" _.CaseReference (text)
-        |> field "detail" _.Detail (tokens [ "SUMMARY"; "FULL" ])
-        |> optionalField "cursor" _.Cursor (boundedText 1 512)
-        |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize))
+        |> field
+            "detail"
+            _.Detail
+            (enumeration [ HistoryDetail.Summary, "SUMMARY"; HistoryDetail.Full, "FULL" ])
+        |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
+        |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize) |> map int int64)
         |> build
         |> named "HistoryRequest"
 
@@ -348,13 +356,13 @@ module RequestCodecs =
         (record (fun v0 v1 v2 ->
             {
                 GrantsRequest.ActorId = v0
-                Cursor = v1
+                AfterCursor = v1
                 Limit = v2
             })
         : Fields<GrantsRequest, _>)
         |> field "actorId" _.ActorId (uuid)
-        |> optionalField "cursor" _.Cursor (boundedText 1 512)
-        |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize))
+        |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
+        |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize) |> map int int64)
         |> build
         |> named "GrantsRequest"
 

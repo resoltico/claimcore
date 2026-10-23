@@ -65,25 +65,11 @@ type CaseSummary =
         disposition: Disposition
     | Erased of caseReference: string * revision: int64
 
-type CaseListRequest =
-    {
-        AfterCursor: string option
-        Limit: int
-    }
-
 type CaseSummaryPage =
     {
         Items: CaseSummary list
         Offers: InstallationOffer list
         NextCursor: string option
-    }
-
-type HistoryRequest =
-    {
-        CaseReference: string
-        AfterCursor: string option
-        Limit: int
-        Detail: HistoryDetail
     }
 
 type ChangeSummary =
@@ -107,12 +93,6 @@ type HistoryResultPage =
         NextCursor: string option
     }
 
-type AuthorityListRequest =
-    {
-        AfterCursor: string option
-        Limit: int
-    }
-
 type AuthorityGrant = { Role: Role; Scope: GrantTarget }
 
 type ActorSummary =
@@ -126,13 +106,6 @@ type ActorReviewPage =
     {
         Items: ActorSummary list
         NextCursor: string option
-    }
-
-type AuthorityGrantListRequest =
-    {
-        ActorId: Guid
-        AfterCursor: string option
-        Limit: int
     }
 
 type AuthorityGrantPage =
@@ -184,13 +157,11 @@ type IActorClaimsCore =
     abstract Preview: CaseRequest * CancellationToken -> Task<PreviewOutcome>
     abstract Execute: CaseRequest * CancellationToken -> Task<ExecuteOutcome>
     abstract Get: caseReference: string * CancellationToken -> Task<QueryOutcome<CaseReadModel>>
-    abstract List: CaseListRequest * CancellationToken -> Task<QueryOutcome<CaseSummaryPage>>
+    abstract List: PageRequest * CancellationToken -> Task<QueryOutcome<CaseSummaryPage>>
     abstract History: HistoryRequest * CancellationToken -> Task<QueryOutcome<HistoryResultPage>>
     abstract Observe: operationId: Guid * CancellationToken -> Task<QueryOutcome<OperationReceipt>>
     abstract ExecuteAuthority: AuthorityRequest * CancellationToken -> Task<ExecuteOutcome>
 
-    abstract ListActors:
-        AuthorityListRequest * CancellationToken -> Task<QueryOutcome<ActorReviewPage>>
+    abstract ListActors: PageRequest * CancellationToken -> Task<QueryOutcome<ActorReviewPage>>
 
-    abstract ListGrants:
-        AuthorityGrantListRequest * CancellationToken -> Task<QueryOutcome<AuthorityGrantPage>>
+    abstract ListGrants: GrantsRequest * CancellationToken -> Task<QueryOutcome<AuthorityGrantPage>>

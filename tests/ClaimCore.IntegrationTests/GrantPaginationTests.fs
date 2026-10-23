@@ -200,7 +200,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
             "Current caller authority precedes token acceptance"
     }
 
-let private cursorIsolation (admin: IActorClaimsCore) (query: AuthorityGrantListRequest) cursor =
+let private cursorIsolation (admin: IActorClaimsCore) (query: GrantsRequest) cursor =
     task {
         let! crossTarget =
             admin.ListGrants(
