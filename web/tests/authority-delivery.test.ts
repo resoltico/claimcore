@@ -91,17 +91,22 @@ const retryDelivery = (next: "failed" | "conflict" | "replay") => {
         ...accepted,
         outcome: {
           tag: "REJECTED",
-          data: {
-            diagnostic: {
-              id:
-                next === "conflict" ? "OPERATION_CONTENT_CONFLICT" : "ACCESS_RESOURCE_UNAVAILABLE",
-              parameters: {},
-            },
-            message: "Synthetic refusal",
-            field: null,
-            actualRevision: null,
-            recommendedAction: "NONE_REQUIRED",
-          },
+          data:
+            next === "conflict"
+              ? {
+                  code: "OPERATION_CONTENT_CONFLICT",
+                  action: "STOP_AND_INVESTIGATE",
+                  target: null,
+                  actualRevision: null,
+                  limits: {},
+                }
+              : {
+                  code: "ACCESS_RESOURCE_UNAVAILABLE",
+                  action: "NONE_REQUIRED",
+                  target: null,
+                  actualRevision: null,
+                  limits: {},
+                },
         },
       },
     });

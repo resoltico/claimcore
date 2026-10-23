@@ -5,24 +5,27 @@ open ClaimCore.Contract
 open ClaimCore.Domain
 
 // This oracle covers the fixed synthetic vocabulary in TransitionPropertyTests, not arbitrary drafts.
-let private eligible (fields: CaseFields) command =
+let private activeEligible (fields: CaseFields) =
     let decided = fields.PaymentDecisionDate.IsSome
     let paid = fields.PaymentDate.IsSome
 
-    match command with
-    | CaseAct.Open _ -> false
-    | CaseAct.Reopen -> fields.Status = CaseStatus.Closed
-    | CaseAct.CorrectCase _ -> fields.Status = CaseStatus.Closed || decided
-    | _ when fields.Status = CaseStatus.Closed -> false
+    function
     | CaseAct.Close -> true
     | CaseAct.AmendRegistration _ -> not decided
     | CaseAct.Decide _ -> not paid
     | CaseAct.WithdrawDecision -> decided && not paid
     | CaseAct.RecordPayment _ -> decided && not paid && fields.PayableAmount <> Some "0"
     | CaseAct.ClearPayment -> paid
-    | CaseAct.Void _
-    | CaseAct.Reinstate _
-    | CaseAct.Erase -> false
+    | _ -> false
+
+let private eligible (fields: CaseFields) command =
+    match command with
+    | CaseAct.Open _ -> false
+    | CaseAct.Reopen -> fields.Status = CaseStatus.Closed
+    | CaseAct.CorrectCase _ ->
+        fields.Status = CaseStatus.Closed || fields.PaymentDecisionDate.IsSome
+    | _ when fields.Status = CaseStatus.Closed -> false
+    | _ -> activeEligible fields command
 
 let private registration (value: Registration) (fields: CaseFields) =
     { fields with
@@ -35,13 +38,15 @@ let private registration (value: Registration) (fields: CaseFields) =
         ClaimedCurrency = value.ClaimedCurrency
     }
 
+let private correctedRegistration fields =
+    function
+    | RegistrationGroup.Replace value -> registration value fields
+    | RegistrationGroup.Keep -> fields
+
 let private changed fields command =
     match command with
     | CaseAct.AmendRegistration value -> registration value fields
-    | CaseAct.CorrectCase value ->
-        match value.Registration with
-        | RegistrationGroup.Replace value -> registration value fields
-        | RegistrationGroup.Keep -> fields
+    | CaseAct.CorrectCase value -> correctedRegistration fields value.Registration
     | CaseAct.Decide value ->
         { fields with
             PaymentDecisionDate = Some value.PaymentDecisionDate

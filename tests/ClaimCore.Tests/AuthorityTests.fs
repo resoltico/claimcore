@@ -24,14 +24,14 @@ let private execute (actor: IActorClaimsCore) n target act =
 
 let private register actor n target =
     task {
-        let! result = execute actor n target AuthorityAct.RegisterActor
+        let! result = execute actor n target AdmittedAuthorityAct.RegisterActor
         acceptedAuthority result
     }
 
 let private lastOwner (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = bootstrap fixture
-        let! disabled = execute actor 2 owner (AuthorityAct.SetEnabled false)
+        let! disabled = execute actor 2 owner (AdmittedAuthorityAct.SetEnabled false)
 
         Expect.equal
             disabled
@@ -49,7 +49,7 @@ let private lastOwner (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         do! register actor 4 other
         let! granted = grant actor (id 5) other Role.Owner GrantTarget.Installation true
         acceptedAuthority granted
-        let! disabled = execute actor 6 owner (AuthorityAct.SetEnabled false)
+        let! disabled = execute actor 6 owner (AdmittedAuthorityAct.SetEnabled false)
         acceptedAuthority disabled
         let! context = actor.Context CancellationToken.None
 
@@ -200,7 +200,7 @@ let private uncertainty (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         for n, lands in [ 10, true; 11, false ] do
             let target = human (if lands then "landed" else "not-landed")
-            let request = authorityRequest (id n) target AuthorityAct.RegisterActor
+            let request = authorityRequest (id n) target AdmittedAuthorityAct.RegisterActor
             store.UnknownCommitLands <- lands
             store.NextFailure <- StoreFailure.CommitOutcomeUnknown
             let! outcome = actor.ExecuteAuthority(request, CancellationToken.None)
@@ -229,7 +229,10 @@ let private uncertainty (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 let private failureAndCancellation (store: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = bootstrap fixture
-        let request = authorityRequest (id 10) (human "reader") AuthorityAct.RegisterActor
+
+        let request =
+            authorityRequest (id 10) (human "reader") AdmittedAuthorityAct.RegisterActor
+
         store.NextFailure <- StoreFailure.Unavailable
         let! failure = actor.ExecuteAuthority(request, CancellationToken.None)
 

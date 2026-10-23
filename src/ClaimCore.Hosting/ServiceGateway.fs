@@ -21,11 +21,7 @@ type IProtocolService =
     abstract Invoke: AuthenticatedSubject * WireRequest * CancellationToken -> Task<WireReply>
 
 module ServiceGateway =
-    let admitTechnical request =
-        match request with
-        | WireRequest.AuthorityExecute value ->
-            RequestMapping.authorityRequest value |> Result.map (fun _ -> request)
-        | _ -> Ok request
+    let admitTechnical request = Ok request
 
     let private reads (core: IActorClaimsCore) input token =
         task {
@@ -62,12 +58,7 @@ module ServiceGateway =
 
                 return OutcomeMapping.execute request.OperationId value
             | WireRequest.AuthorityExecute request ->
-                let admitted =
-                    RequestMapping.authorityRequest request
-                    |> Result.defaultWith (fun _ ->
-                        invalidArg "request" "Technical admission is required.")
-
-                let! value = core.ExecuteAuthority(admitted, CancellationToken.None)
+                let! value = core.ExecuteAuthority(request, CancellationToken.None)
                 return OutcomeMapping.authorityExecute request.OperationId value
             | WireRequest.Session
             | WireRequest.SessionLogout ->

@@ -14,8 +14,8 @@ const diagnosticText = (
   preferences: Preferences,
   diagnostic: Extract<Notice, { kind: "diagnostic" }>["diagnostic"],
 ): string => {
-  const expected = Object.hasOwn(limits, diagnostic.id) ? limits[diagnostic.id] : undefined;
-  const supplied: Readonly<Record<string, number | string>> = diagnostic.parameters;
+  const expected = Object.hasOwn(limits, diagnostic.code) ? limits[diagnostic.code] : undefined;
+  const supplied: Readonly<Record<string, number | string>> = diagnostic.limits;
   if (typeof supplied !== "object" || supplied === null || Array.isArray(supplied)) {
     return translate(preferences, "notice.unknownDiagnostic");
   }
@@ -39,7 +39,7 @@ const diagnosticText = (
       typeof v === "string" ? v : exactInteger(String(v), preferences.displayLocale),
     ]),
   );
-  return renderKey(preferences, `diagnostic.${diagnostic.id}`, parameters);
+  return renderKey(preferences, `diagnostic.${diagnostic.code}`, parameters);
 };
 export const renderNotice = (preferences: Preferences, notice: Notice): string => {
   switch (notice.kind) {

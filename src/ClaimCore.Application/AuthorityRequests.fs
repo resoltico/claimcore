@@ -9,14 +9,14 @@ open ClaimCore.RecordFormat
 module AuthorityRequests =
     type private WireAuthorityAct = ClaimCore.Contract.Protocol.AuthorityAct
 
-    let toRecord (request: AuthorityRequest) : AuthorityRequestRecord =
+    let toRecord (request: AdmittedAuthorityRequest) : AuthorityRequestRecord =
         let act =
             match request.Act with
-            | AuthorityAct.RegisterActor ->
+            | AdmittedAuthorityAct.RegisterActor ->
                 RecordedAuthorityAct.Operation(WireAuthorityAct.RegisterActor)
-            | AuthorityAct.SetEnabled value ->
+            | AdmittedAuthorityAct.SetEnabled value ->
                 RecordedAuthorityAct.Operation(WireAuthorityAct.SetEnabled value)
-            | AuthorityAct.SetGrant(role, target, active) ->
+            | AdmittedAuthorityAct.SetGrant(role, target, active) ->
                 RecordedAuthorityAct.Operation(
                     WireAuthorityAct.SetGrant
                         {
@@ -35,20 +35,20 @@ module AuthorityRequests =
     let private admittedAct =
         function
         | RecordedAuthorityAct.Operation(WireAuthorityAct.RegisterActor) ->
-            Ok AuthorityAct.RegisterActor
+            Ok AdmittedAuthorityAct.RegisterActor
         | RecordedAuthorityAct.Operation(WireAuthorityAct.SetEnabled value) ->
-            Ok(AuthorityAct.SetEnabled value)
+            Ok(AdmittedAuthorityAct.SetEnabled value)
         | RecordedAuthorityAct.Operation(WireAuthorityAct.SetGrant {
                                                                        Role = role
                                                                        Scope = scope
                                                                        Active = active
                                                                    }) ->
             match RoleTokens.tryParse role with
-            | Some role -> Ok(AuthorityAct.SetGrant(role, scope, active))
+            | Some role -> Ok(AdmittedAuthorityAct.SetGrant(role, scope, active))
             | None -> Error "AUTHORITY_ROLE_INVALID"
         | RecordedAuthorityAct.ProvisionOwner -> Error "AUTHORITY_ACT_INVALID"
 
-    let fromRecord (request: AuthorityRequestRecord) : Result<AuthorityRequest, string> =
+    let fromRecord (request: AuthorityRequestRecord) : Result<AdmittedAuthorityRequest, string> =
         match
             PrincipalKey.fromStorage
                 request.Target.Kind
@@ -73,6 +73,36 @@ module AuthorityRequests =
             Act = RecordedAuthorityAct.ProvisionOwner
         }
 
+    let toInput (request: AdmittedAuthorityRequest) : ClaimCore.Contract.Protocol.AuthorityRequest =
+        let record = toRecord request
+
+        {
+            OperationId = record.OperationId
+            Target = record.Target
+            Act =
+                match record.Act with
+                | RecordedAuthorityAct.Operation act -> act
+                | RecordedAuthorityAct.ProvisionOwner ->
+                    invalidOp "Owner provisioning is administrative."
+        }
+
+    let admit
+        (request: ClaimCore.Contract.Protocol.AuthorityRequest)
+        : Result<AdmittedAuthorityRequest, Refusal> =
+        match
+            PrincipalKey.admit request.Target.Kind request.Target.Issuer request.Target.Subject,
+            admittedAct (RecordedAuthorityAct.Operation request.Act)
+        with
+        | Error reason, _ -> Error reason
+        | _, Error _ -> Error Refusal.ActNotPermitted
+        | Ok target, Ok act ->
+            Ok
+                {
+                    OperationId = request.OperationId
+                    Target = target
+                    Act = act
+                }
+
     /// Permanent record interpretation does not replay today's grants or capability policy.
     let internal validRecord (request: AuthorityRequestRecord) =
         let principal =
@@ -85,12 +115,12 @@ module AuthorityRequests =
         | RecordedAuthorityAct.ProvisionOwner -> principal |> Result.exists PrincipalKey.isHuman
         | _ -> fromRecord request |> Result.isOk
 
-    let internal targetCase (request: AuthorityRequest) =
+    let internal targetCase (request: AdmittedAuthorityRequest) =
         match request.Act with
-        | AuthorityAct.SetGrant(_, GrantTarget.CaseReference reference, _) -> Some reference
+        | AdmittedAuthorityAct.SetGrant(_, GrantTarget.CaseReference reference, _) -> Some reference
         | _ -> None
 
-    let internal validate (request: AuthorityRequest) =
+    let internal validate (request: AdmittedAuthorityRequest) =
         if request.OperationId = System.Guid.Empty then
             Error((Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)))
         else

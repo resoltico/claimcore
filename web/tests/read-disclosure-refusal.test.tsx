@@ -42,11 +42,11 @@ const unavailable: ApiResult<ListResponse> = {
     outcome: {
       tag: "REJECTED",
       data: {
-        message: "Translated text is not the policy",
-        diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
-        field: null,
+        code: "ACCESS_RESOURCE_UNAVAILABLE",
+        action: "NONE_REQUIRED",
+        target: null,
         actualRevision: null,
-        recommendedAction: "NONE_REQUIRED",
+        limits: {},
       },
     },
   },
@@ -107,7 +107,7 @@ it("does not interpret a local delivery notice as a definite server refusal", ()
       kind: "deliveryFailure",
       notice: {
         kind: "diagnostic",
-        diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
+        diagnostic: { code: "ACCESS_RESOURCE_UNAVAILABLE", limits: {} },
       },
     }),
   ).toBe(false);
@@ -123,11 +123,11 @@ it("resets an invalid continuation locally and waits for a deliberate fresh relo
       outcome: {
         tag: "REJECTED",
         data: {
-          diagnostic: { id: "QUERY_CURSOR_INVALID", parameters: {} },
-          message: "Synthetic invalid continuation",
-          field: null,
+          code: "QUERY_CURSOR_INVALID",
+          action: "READ_CURRENT",
+          target: "cursor",
           actualRevision: null,
-          recommendedAction: "READ_CURRENT",
+          limits: {},
         },
       },
     },

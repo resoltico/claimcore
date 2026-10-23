@@ -84,28 +84,22 @@ module FieldDefinitions =
 
     let private status = ScalarRule.CaseStatus { AllowedValues = CaseStatuses.all }
 
-    let private forScalar field =
-        match field with
-        | BusinessField.IncidentDate
-        | BusinessField.IncidentNotificationDate
-        | BusinessField.PaymentDecisionDate
-        | BusinessField.PaymentDate -> calendarDate
-        | BusinessField.IncidentCountry -> ScalarRule.Text(token "[A-Z]{2}")
-        | BusinessField.CaseReference -> ScalarRule.Text(token "[!-~]{1,80}")
-        | BusinessField.ClaimantName
-        | BusinessField.InsurerName -> ScalarRule.Text(text TextAdmission.MaximumCharacters)
-        | BusinessField.ClaimedAmount
-        | BusinessField.PayableAmount -> amount
-        | BusinessField.ClaimedCurrency
-        | BusinessField.PayableCurrency -> currency
-        | BusinessField.Status -> status
+    let private forScalar =
+        function
+        | ScalarKind.Date -> calendarDate
+        | ScalarKind.Country -> ScalarRule.Text(token "[A-Z]{2}")
+        | ScalarKind.Reference -> ScalarRule.Text(token "[!-~]{1,80}")
+        | ScalarKind.Text -> ScalarRule.Text(text TextAdmission.MaximumCharacters)
+        | ScalarKind.Amount -> amount
+        | ScalarKind.Currency -> currency
+        | ScalarKind.Status -> status
 
     let all =
         FieldTable.rows
         |> List.map (fun row ->
             {
                 Field = row.Field
-                Scalar = forScalar row.Field
+                Scalar = forScalar row.Kind
             })
 
     let forField field =
@@ -119,20 +113,22 @@ module FieldDefinitions =
 
     /// Exact values follow the authoritative field-table order.
     let values (fields: CaseFields) =
-        let value =
-            function
-            | BusinessField.IncidentDate -> Some fields.IncidentDate
-            | BusinessField.IncidentNotificationDate -> Some fields.IncidentNotificationDate
-            | BusinessField.IncidentCountry -> Some fields.IncidentCountry
-            | BusinessField.ClaimantName -> Some fields.ClaimantName
-            | BusinessField.InsurerName -> Some fields.InsurerName
-            | BusinessField.ClaimedAmount -> Some fields.ClaimedAmount
-            | BusinessField.ClaimedCurrency -> Some fields.ClaimedCurrency
-            | BusinessField.CaseReference -> Some fields.CaseReference
-            | BusinessField.PaymentDecisionDate -> fields.PaymentDecisionDate
-            | BusinessField.PayableAmount -> fields.PayableAmount
-            | BusinessField.PayableCurrency -> fields.PayableCurrency
-            | BusinessField.PaymentDate -> fields.PaymentDate
-            | BusinessField.Status -> Some(CaseStatuses.token fields.Status)
+        let values =
+            [
+                BusinessField.IncidentDate, Some fields.IncidentDate
+                BusinessField.IncidentNotificationDate, Some fields.IncidentNotificationDate
+                BusinessField.IncidentCountry, Some fields.IncidentCountry
+                BusinessField.ClaimantName, Some fields.ClaimantName
+                BusinessField.InsurerName, Some fields.InsurerName
+                BusinessField.ClaimedAmount, Some fields.ClaimedAmount
+                BusinessField.ClaimedCurrency, Some fields.ClaimedCurrency
+                BusinessField.CaseReference, Some fields.CaseReference
+                BusinessField.PaymentDecisionDate, fields.PaymentDecisionDate
+                BusinessField.PayableAmount, fields.PayableAmount
+                BusinessField.PayableCurrency, fields.PayableCurrency
+                BusinessField.PaymentDate, fields.PaymentDate
+                BusinessField.Status, Some(CaseStatuses.token fields.Status)
+            ]
+            |> Map.ofList
 
-        FieldTable.rows |> List.map (fun row -> row.Field, value row.Field)
+        FieldTable.rows |> List.map (fun row -> row.Field, Map.find row.Field values)

@@ -64,5 +64,5 @@
   "diagnostic.QUERY_PAGE_LIMIT_RANGE": "Izmantojiet vērtību no 1 līdz {maximumPageSize}.",
   "diagnostic.REVISION_EXHAUSTED": "Lieta ir sasniegusi savu pēdējo redakciju.",
   "diagnostic.TEXT_FORMATTING_CHARACTER": "Jaunā apgalvojumā formatēšanas rakstzīmes nav atļautas.",
-  "diagnostic.PRINCIPAL_INPUT_INVALID": "Labojiet identitātes lauku {target}: {issue}. Šis mēģinājums nenosūtīja darbību izpildei."
+  "diagnostic.INPUT_PRINCIPAL_FORMAT": "Izmantojiet kanonisku HTTPS izdevēju un šim identitātes veidam derīgu subjektu."
 }

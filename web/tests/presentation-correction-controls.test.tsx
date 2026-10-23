@@ -85,11 +85,11 @@ it("associates payment acknowledgement with the generated mode control [CC-DOM-0
     vi.fn().mockImplementation(() =>
       Promise.resolve(
         response("case.preview", "REJECTED", {
-          field: "payment",
+          code: "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+          action: "CORRECT_INPUT",
+          target: "payment",
           actualRevision: null,
-          recommendedAction: "CORRECT_INPUT",
-          message: "Synthetic payment acknowledgement refusal.",
-          diagnostic: { id: "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED", parameters: {} },
+          limits: {},
         }),
       ),
     ),

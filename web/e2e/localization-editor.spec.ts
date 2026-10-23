@@ -66,7 +66,7 @@ const unacceptedCase = async (page: Page, reference: string) => {
   }
   expect(reply.payload.outcome.tag).toBe("REJECTED");
   if (reply.payload.outcome.tag === "REJECTED") {
-    expect(reply.payload.outcome.data.diagnostic.id).toBe("ACCESS_RESOURCE_UNAVAILABLE");
+    expect(reply.payload.outcome.data.code).toBe("ACCESS_RESOURCE_UNAVAILABLE");
   }
 };
 const invalidCalendar = async (page: Page, requests: string[]) => {
@@ -98,11 +98,9 @@ const policyRefusal = async (page: Page, requests: string[]) => {
     const { outcome } = (await pending.ready).reply;
     expect(outcome.tag).toBe("REJECTED");
     if (outcome.tag === "REJECTED") {
-      expect(outcome.data.field).toBe("claimantName");
-      expect(outcome.data.diagnostic).toEqual({
-        id: "INPUT_TEXT_TOO_LONG",
-        parameters: { maximumCharacters: 200 },
-      });
+      expect(outcome.data.target).toBe("claimantName");
+      expect(outcome.data.code).toBe("INPUT_TEXT_TOO_LONG");
+      expect(outcome.data.limits).toEqual({ maximumCharacters: 200 });
     }
     await selectLanguage(page, "lv");
     pending.release();

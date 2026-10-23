@@ -339,7 +339,7 @@ let private scopedCreation (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! registered =
             admin.ExecuteAuthority(
-                authorityRequest (id 3) scoped AuthorityAct.RegisterActor,
+                authorityRequest (id 3) scoped AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 
@@ -440,7 +440,7 @@ let private privateIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! registered =
             admin.ExecuteAuthority(
-                authorityRequest (id 3) target AuthorityAct.RegisterActor,
+                authorityRequest (id 3) target AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 
@@ -579,7 +579,7 @@ let private headExhaustion (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! authority =
             actor.ExecuteAuthority(
-                authorityRequest (id 12) target AuthorityAct.RegisterActor,
+                authorityRequest (id 12) target AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 

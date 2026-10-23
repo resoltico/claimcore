@@ -38,8 +38,7 @@ let private closed = CaseAct.Close
 let private voided = (CaseAct.Void "Synthetic reason")
 
 let private diagnostic reason =
-    let identifier =
-        RejectionDiagnostics.describe reason |> RejectionDiagnostics.identifier
+    let identifier = (Refusals.row reason).Code
 
     let reply = OutcomeMapping.caseGet (QueryOutcome.Rejected reason)
     let encoded = ClaimCore.Contract.Protocol.Replies.encode reply
@@ -57,13 +56,12 @@ let private diagnostic reason =
         document.RootElement
             .GetProperty("outcome")
             .GetProperty("data")
-            .GetProperty("diagnostic")
-            .GetProperty("id")
+            .GetProperty("code")
             .GetString()
 
     Expect.equal
         token
-        (RejectionDiagnosticIds.token identifier)
+        (identifier)
         "The public diagnostic token agrees with the request-producing Application refusal"
 
     identifier, reason.Field
@@ -279,10 +277,10 @@ let private authorityEvidence actor =
         let send n target act =
             (actor: IActorClaimsCore).ExecuteAuthority(authorityRequest (id n) target act, ct)
 
-        let! registered = send 30 owner AuthorityAct.RegisterActor
-        let! unknown = send 31 service (AuthorityAct.SetEnabled false)
-        let! last = send 32 owner (AuthorityAct.SetEnabled false)
-        let! admitted = send 33 service AuthorityAct.RegisterActor
+        let! registered = send 30 owner AdmittedAuthorityAct.RegisterActor
+        let! unknown = send 31 service (AdmittedAuthorityAct.SetEnabled false)
+        let! last = send 32 owner (AdmittedAuthorityAct.SetEnabled false)
+        let! admitted = send 33 service AdmittedAuthorityAct.RegisterActor
         acceptedAuthority admitted
 
         let! human =
@@ -304,7 +302,10 @@ let private identityEvidence actor =
             |> Result.defaultWith failtest
 
         let! registered =
-            actor.ExecuteAuthority(authorityRequest (id 35) reader AuthorityAct.RegisterActor, ct)
+            actor.ExecuteAuthority(
+                authorityRequest (id 35) reader AdmittedAuthorityAct.RegisterActor,
+                ct
+            )
 
         acceptedAuthority registered
 
@@ -313,6 +314,36 @@ let private identityEvidence actor =
 
         acceptedAuthority granted
         return [ refused conflict; refused revision ], reader
+    }
+
+let private principalEvidence (actor: IActorClaimsCore) =
+    task {
+        let evidence = ResizeArray<_>()
+
+        for index, (issuer, subject) in
+            List.indexed
+                [
+                    "", "valid"
+                    "https://issuer.example/", ""
+                    "invalid", "valid"
+                    "https://issuer.example/", String('x', 513)
+                ] do
+            let request: ClaimCore.Contract.Protocol.AuthorityRequest =
+                {
+                    OperationId = id (60 + index)
+                    Target =
+                        {
+                            Kind = PrincipalKinds.Human
+                            Issuer = issuer
+                            Subject = subject
+                        }
+                    Act = ClaimCore.Contract.Protocol.AuthorityAct.RegisterActor
+                }
+
+            let! outcome = actor.ExecuteAuthority(request, ct)
+            evidence.Add(refused outcome)
+
+        return List.ofSeq evidence
     }
 
 let private boundaryEvidence () =
@@ -326,6 +357,7 @@ let private boundaryEvidence () =
 
         let! queries = queryEvidence actor
         let! authority = authorityEvidence actor
+        let! principals = principalEvidence actor
         let original = store.Cases.Head.Snapshot
 
         store.ReplaceCaseSnapshot(
@@ -353,6 +385,7 @@ let private boundaryEvidence () =
             @ [ refused denied; refused revision; refused ledger ]
             @ queries
             @ authority
+            @ principals
     }
 
 let private completeVocabulary () =
@@ -366,7 +399,7 @@ let private completeVocabulary () =
         let evidence = scalar @ List.ofArray states @ boundaries
         let identifiers = evidence |> List.map fst |> Set.ofList
 
-        let expected = RejectionDiagnosticIds.all |> List.map fst |> Set.ofList
+        let expected = Refusals.codes |> Set.ofList
 
         Expect.isEmpty
             (Set.difference expected identifiers |> Set.toList)
@@ -417,11 +450,11 @@ let private missingCasePrivacy () =
 
             Expect.equal
                 (refused outcome |> fst)
-                RejectionDiagnosticId.ResourceUnavailable
+                "ACCESS_RESOURCE_UNAVAILABLE"
                 "Missing case stays private"
 
         Expect.isFalse
-            (RejectionDiagnosticIds.all |> List.exists (snd >> (=) "CASE_NOT_FOUND"))
+            (Refusals.codes |> List.contains "CASE_NOT_FOUND")
             "Domain-only missing state has no public diagnostic"
     }
 

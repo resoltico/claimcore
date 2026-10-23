@@ -8,7 +8,7 @@ open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess>]
 type internal AuthorityAction =
-    | User of AuthorityAct
+    | User of AdmittedAuthorityAct
     | ProvisionOwner
 
 module internal AuthorityDecisions =
@@ -65,17 +65,17 @@ module internal AuthorityDecisions =
         | AuthorityAction.ProvisionOwner, None when view.ActorCount = 0 ->
             Ok(operationId, AuthorityProjection.ProvisionOwner(operationId, target))
         | AuthorityAction.ProvisionOwner, _
-        | AuthorityAction.User AuthorityAct.RegisterActor, Some _ ->
+        | AuthorityAction.User AdmittedAuthorityAct.RegisterActor, Some _ ->
             Error Refusal.ActorAlreadyRegistered
-        | AuthorityAction.User AuthorityAct.RegisterActor, None ->
+        | AuthorityAction.User AdmittedAuthorityAct.RegisterActor, None ->
             Ok(operationId, AuthorityProjection.RegisterActor(operationId, target))
         | _, None -> Error Refusal.ActorUnknown
-        | AuthorityAction.User(AuthorityAct.SetEnabled enabled), Some actor ->
+        | AuthorityAction.User(AdmittedAuthorityAct.SetEnabled enabled), Some actor ->
             if not enabled && owner view.Target && view.EnabledHumanOwners <= 1 then
                 Error Refusal.LastOwner
             else
                 Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, enabled))
-        | AuthorityAction.User(AuthorityAct.SetGrant(role, scope, active)), Some _ ->
+        | AuthorityAction.User(AdmittedAuthorityAct.SetGrant(role, scope, active)), Some _ ->
             grantProjection role scope active view.Target view
 
     let private targets installationId target action (view: AuthorityLockedView) =
@@ -86,7 +86,9 @@ module internal AuthorityDecisions =
             Error CoreFault.StoreIntegrityError
         else
             match action, view.TargetCase with
-            | AuthorityAction.User(AuthorityAct.SetGrant(_, GrantTarget.CaseReference reference, _)),
+            | AuthorityAction.User(AdmittedAuthorityAct.SetGrant(_,
+                                                                 GrantTarget.CaseReference reference,
+                                                                 _)),
               Some record ->
                 CaseDecisions.current installationId record
                 |> Result.bind (fun _ ->
@@ -222,7 +224,12 @@ module internal AuthorityDecisions =
             | IdentityDecision.Fresh ->
                 fresh installationId principal operationId target action bytes view
 
-    let execute installationId principal (request: AuthorityRequest) (view: AuthorityLockedView) =
+    let execute
+        installationId
+        principal
+        (request: AdmittedAuthorityRequest)
+        (view: AuthorityLockedView)
+        =
         let bytes = AuthorityRequests.toRecord request |> AuthorityRecord.encode
 
         decide

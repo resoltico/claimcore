@@ -290,9 +290,29 @@ let private integer response context =
             0L, 0L
         elif field = "Limit" then
             1L, 50L
-        elif field = "MaximumCharacters" || field = "MaximumFractionalDigits" then
+        elif
+            Set.contains
+                field
+                (set
+                    [
+                        "MaximumCharacters"
+                        "MaximumFractionalDigits"
+                        "maximumCharacters"
+                        "fractionDigits"
+                    ])
+        then
             0L, int64 Int32.MaxValue
-        elif field = "MaximumPageSize" || field = "MaximumIntegerDigits" then
+        elif
+            Set.contains
+                field
+                (set
+                    [
+                        "MaximumPageSize"
+                        "MaximumIntegerDigits"
+                        "maximumPageSize"
+                        "integerDigits"
+                    ])
+        then
             1L, int64 Int32.MaxValue
         elif not response || field = "ExpectedRevision" || field = "expectedRevision" then
             0L, JsonValue.MaximumInteger

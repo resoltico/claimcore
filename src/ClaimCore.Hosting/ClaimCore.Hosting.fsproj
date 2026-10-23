@@ -5,10 +5,6 @@
     <Compile Include="BusinessCalendar.fs" />
     <Compile Include="AdmissionGate.fs" />
     <Compile Include="ActorFacade.fs" />
-    <Compile Include="../../eng/Presentation/RejectionPresentation.fs" Link="RejectionPresentation.fs" />
-    <Compile Include="../../eng/Presentation/CoreFaultPresentation.fs" Link="CoreFaultPresentation.fs" />
-    <Compile Include="RequestMapping.fs" />
-    <Compile Include="ResponseMapping.fs" />
     <Compile Include="OutcomeMapping.fs" />
     <Compile Include="ServiceGateway.fs" />
     <Compile Include="Runtime.fs" />

@@ -42,7 +42,7 @@ let private reader fixture (admin: IActorClaimsCore) =
 
         let! registered =
             admin.ExecuteAuthority(
-                authorityRequest (id 20) target AuthorityAct.RegisterActor,
+                authorityRequest (id 20) target AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 
@@ -132,7 +132,7 @@ let private elapsedTimeAndRevocation (store: MemoryLedgerStore.Store) (fixture: 
 
         let! disabled =
             admin.ExecuteAuthority(
-                authorityRequest (id 22) target (AuthorityAct.SetEnabled false),
+                authorityRequest (id 22) target (AdmittedAuthorityAct.SetEnabled false),
                 CancellationToken.None
             )
 
@@ -174,7 +174,7 @@ let private registerActors (actor: IActorClaimsCore) =
 
             let! registered =
                 actor.ExecuteAuthority(
-                    authorityRequest (id n) target AuthorityAct.RegisterActor,
+                    authorityRequest (id n) target AdmittedAuthorityAct.RegisterActor,
                     CancellationToken.None
                 )
 
@@ -520,7 +520,7 @@ let private disabledGrantTarget
 
         let! disabled =
             admin.ExecuteAuthority(
-                authorityRequest (id 31) target (AuthorityAct.SetEnabled false),
+                authorityRequest (id 31) target (AdmittedAuthorityAct.SetEnabled false),
                 CancellationToken.None
             )
 

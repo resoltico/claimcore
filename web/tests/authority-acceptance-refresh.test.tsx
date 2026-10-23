@@ -167,11 +167,7 @@ const failedContext = (
       endpoint: "context",
       outcome: {
         tag: "FAILED",
-        data: {
-          diagnostic: { id: "CORE_STORE_UNAVAILABLE", parameters: {} },
-          message: "Synthetic unavailable store",
-          recommendedAction: "RETRY_SAFE",
-        },
+        data: { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" },
       },
     },
   };

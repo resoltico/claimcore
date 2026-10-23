@@ -745,6 +745,10 @@
       "parameters": []
     },
     {
+      "id": "INPUT_PRINCIPAL_FORMAT",
+      "parameters": []
+    },
+    {
       "id": "INPUT_CALENDAR_DATE_REQUIRED",
       "parameters": []
     },
@@ -784,8 +788,14 @@
       "parameters": []
     },
     {
-      "id": "REVISION_EXHAUSTED",
-      "parameters": []
+      "id": "QUERY_PAGE_LIMIT_RANGE",
+      "parameters": [
+        {
+          "name": "maximumPageSize",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      ]
     },
     {
       "id": "CORRECTION_PAYMENT_CLEAR_REQUIRED",
@@ -796,11 +806,27 @@
       "parameters": []
     },
     {
+      "id": "CASE_REVISION_CONFLICT",
+      "parameters": []
+    },
+    {
       "id": "CASE_ALREADY_EXISTS",
       "parameters": []
     },
     {
-      "id": "CASE_REVISION_CONFLICT",
+      "id": "CASE_ERASED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_VOIDED",
+      "parameters": []
+    },
+    {
+      "id": "ALREADY_VOIDED",
+      "parameters": []
+    },
+    {
+      "id": "NOT_VOIDED",
       "parameters": []
     },
     {
@@ -848,21 +874,7 @@
       "parameters": []
     },
     {
-      "id": "QUERY_PAGE_LIMIT_RANGE",
-      "parameters": [
-        {
-          "name": "maximumPageSize",
-          "minimum": 1,
-          "maximum": 2147483647
-        }
-      ]
-    },
-    {
-      "id": "QUERY_CURSOR_INVALID",
-      "parameters": []
-    },
-    {
-      "id": "ACT_NOT_PERMITTED",
+      "id": "REVISION_EXHAUSTED",
       "parameters": []
     },
     {
@@ -878,19 +890,7 @@
       "parameters": []
     },
     {
-      "id": "CASE_VOIDED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_ERASED",
-      "parameters": []
-    },
-    {
-      "id": "ALREADY_VOIDED",
-      "parameters": []
-    },
-    {
-      "id": "NOT_VOIDED",
+      "id": "ACT_NOT_PERMITTED",
       "parameters": []
     },
     {
@@ -907,6 +907,10 @@
     },
     {
       "id": "HUMAN_PRINCIPAL_REQUIRED",
+      "parameters": []
+    },
+    {
+      "id": "QUERY_CURSOR_INVALID",
       "parameters": []
     }
   ],
@@ -1486,6 +1490,11 @@
         "literal": "Malformed Unicode is not accepted."
       }
     ],
+    "diagnostic.INPUT_PRINCIPAL_FORMAT": [
+      {
+        "literal": "Use a canonical HTTPS issuer and a valid subject for the principal kind."
+      }
+    ],
     "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
       {
         "literal": "Leading or trailing whitespace is not accepted."
@@ -1525,23 +1534,6 @@
     "diagnostic.OPERATION_CONTENT_CONFLICT": [
       {
         "literal": "This operation ID belongs to different command content. Do not reuse it."
-      }
-    ],
-    "diagnostic.PRINCIPAL_INPUT_INVALID": [
-      {
-        "literal": "Correct principal field "
-      },
-      {
-        "hole": "target"
-      },
-      {
-        "literal": ": "
-      },
-      {
-        "hole": "issue"
-      },
-      {
-        "literal": ". No operation was dispatched by this attempt."
       }
     ],
     "diagnostic.QUERY_CURSOR_INVALID": [

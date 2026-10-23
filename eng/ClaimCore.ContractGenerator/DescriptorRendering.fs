@@ -3,7 +3,6 @@ namespace ClaimCore.ContractGeneration
 open ClaimCore.Contract
 
 open ClaimCore.Contract.Protocol
-open ClaimCore.ContractGeneration.Presentation
 
 open System
 open System.Buffers
@@ -290,7 +289,7 @@ module ContractDescriptors =
             writer.WriteStartArray()
             CaseStatuses.all |> List.iter (CaseStatuses.token >> writer.WriteStringValue)
             writer.WriteEndArray()
-            diagnostics writer "rejectionDiagnostics" RejectionDiagnosticIds.definitions
+            diagnostics writer "rejectionDiagnostics" Refusals.definitions
             diagnostics writer "faultDiagnostics" CoreFaults.definitions
             writer.WritePropertyName("roles")
             writer.WriteStartArray()

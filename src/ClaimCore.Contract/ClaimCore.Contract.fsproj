@@ -7,7 +7,7 @@
     <Compile Include="Vocabulary/CaseVocabulary.fs" />
     <Compile Include="Vocabulary/CaseTokens.fs" />
     <Compile Include="Vocabulary/InputTargets.fs" />
-    <Compile Include="Vocabulary/RejectionDiagnosticIds.fs" />
+    <Compile Include="Refusals/DiagnosticMetadata.fs" />
     <Compile Include="Refusals/Refusals.fs" />
     <Compile Include="Vocabulary/Capabilities.fs" />
     <Compile Include="Vocabulary/Roles.fs" />
@@ -43,6 +43,7 @@
     <Compile Include="Admission.fs" />
     <Compile Include="Responses.fs" />
     <Compile Include="ResponseScalars.fs" />
+    <Compile Include="DiagnosticCodecs.fs" />
     <Compile Include="ResponseCodecs.fs" />
     <Compile Include="Replies.fs" />
     <Compile Include="CorrelationBindings.fs" />

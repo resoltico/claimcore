@@ -39,12 +39,17 @@ let internal actRequest n reference revision act : CaseRequest =
         Act = act
     }
 
-let internal authorityRequest operationId target act : AuthorityRequest =
+let internal authorityRequest
+    operationId
+    target
+    act
+    : ClaimCore.Contract.Protocol.AuthorityRequest =
     {
         OperationId = operationId
         Target = target
         Act = act
     }
+    |> AuthorityRequests.toInput
 
 let internal registration: Registration =
     {
@@ -101,7 +106,7 @@ let internal bootstrap fixture =
 
 let internal grant (actor: IActorClaimsCore) operationId target role scope active =
     actor.ExecuteAuthority(
-        authorityRequest operationId target (AuthorityAct.SetGrant(role, scope, active)),
+        authorityRequest operationId target (AdmittedAuthorityAct.SetGrant(role, scope, active)),
         CancellationToken.None
     )
 
@@ -427,7 +432,7 @@ let private assignedReader (actor: IActorClaimsCore) =
 
         let! registered =
             actor.ExecuteAuthority(
-                authorityRequest (id 15) principal AuthorityAct.RegisterActor,
+                authorityRequest (id 15) principal AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 
@@ -497,7 +502,7 @@ let private registerReader (owner: IActorClaimsCore) target =
     task {
         let! registered =
             owner.ExecuteAuthority(
-                authorityRequest (id 2) target AuthorityAct.RegisterActor,
+                authorityRequest (id 2) target AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 
@@ -533,7 +538,7 @@ let private authorityChanges fixture =
 
         let! disabled =
             owner.ExecuteAuthority(
-                authorityRequest (id 5) target (AuthorityAct.SetEnabled false),
+                authorityRequest (id 5) target (AdmittedAuthorityAct.SetEnabled false),
                 CancellationToken.None
             )
 
@@ -587,7 +592,7 @@ let private scopedHandler fixture (admin: IActorClaimsCore) reference =
 
         let! registered =
             admin.ExecuteAuthority(
-                authorityRequest (id 30) target AuthorityAct.RegisterActor,
+                authorityRequest (id 30) target AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 
@@ -735,7 +740,7 @@ let private scopedWorker fixture =
 
         let! registered =
             admin.ExecuteAuthority(
-                authorityRequest (id 20) principal AuthorityAct.RegisterActor,
+                authorityRequest (id 20) principal AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 

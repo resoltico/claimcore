@@ -486,7 +486,9 @@ let private frameResponseBounds () =
             if failure then
                 Expect.isOk (HostFailures.decode body) "Host failure body is well formed."
             else
-                Expect.isOk (Replies.decode selected body) "Outcome body is well formed."
+                Expect.isError
+                    (Replies.decode selected body)
+                    "Structured refusals reject an injected prose member."
 
             use handler =
                 new Handler(fun _ -> Task.FromResult(response (if failure then 500 else 200) body))

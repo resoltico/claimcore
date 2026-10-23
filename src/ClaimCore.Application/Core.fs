@@ -57,16 +57,20 @@ module internal Core =
         (store: ILedgerStore)
         installationId
         principal
-        (request: AuthorityRequest)
+        (input: ClaimCore.Contract.Protocol.AuthorityRequest)
         (ct: CancellationToken)
         =
         task {
             if ct.IsCancellationRequested then
                 return ExecuteOutcome.Cancelled
             else
-                match AuthorityRequests.validate request with
+                match
+                    AuthorityRequests.admit input
+                    |> Result.bind (fun request ->
+                        AuthorityRequests.validate request |> Result.map (fun () -> request))
+                with
                 | Error error -> return ExecuteOutcome.Rejected error
-                | Ok() ->
+                | Ok request ->
                     let decide = AuthorityDecisions.execute installationId principal request
 
                     let! result =

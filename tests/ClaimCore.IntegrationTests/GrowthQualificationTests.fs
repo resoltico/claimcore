@@ -35,7 +35,10 @@ let private authority (actor: IActorClaimsCore) principals =
         for index, principal in principals |> List.indexed do
             let! registered =
                 actor.ExecuteAuthority(
-                    authorityRequest (id (100000 + index * 2)) principal AuthorityAct.RegisterActor,
+                    authorityRequest
+                        (id (100000 + index * 2))
+                        principal
+                        AdmittedAuthorityAct.RegisterActor,
                     token
                 )
 

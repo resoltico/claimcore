@@ -21,16 +21,16 @@ type RuntimeOpenFault =
     | Cancelled
 
 [<RequireQualifiedAccess>]
-type AuthorityAct =
+type AdmittedAuthorityAct =
     | RegisterActor
     | SetGrant of role: Role * scope: GrantTarget * active: bool
     | SetEnabled of enabled: bool
 
-type AuthorityRequest =
+type AdmittedAuthorityRequest =
     {
         OperationId: Guid
         Target: PrincipalKey
-        Act: AuthorityAct
+        Act: AdmittedAuthorityAct
     }
 
 [<RequireQualifiedAccess>]
@@ -65,7 +65,9 @@ type IActorClaimsCore =
     abstract List: PageRequest * CancellationToken -> Task<QueryOutcome<CaseSummaryPage>>
     abstract History: HistoryRequest * CancellationToken -> Task<QueryOutcome<HistoryResultPage>>
     abstract Observe: operationId: Guid * CancellationToken -> Task<QueryOutcome<OperationReceipt>>
-    abstract ExecuteAuthority: AuthorityRequest * CancellationToken -> Task<ExecuteOutcome>
+
+    abstract ExecuteAuthority:
+        ClaimCore.Contract.Protocol.AuthorityRequest * CancellationToken -> Task<ExecuteOutcome>
 
     abstract ListActors: PageRequest * CancellationToken -> Task<QueryOutcome<ActorReviewPage>>
 

@@ -79,7 +79,7 @@ let private authoritativeIdentityAdmission () =
                  |> Result.mapError _.Reason
                  |> Result.bind (function
                      | WireRequest.AuthorityExecute request ->
-                         ClaimCore.Hosting.RequestMapping.authorityRequest request
+                         ClaimCore.Application.AuthorityRequests.admit request
                          |> Result.mapError (fun _ -> "invalid principal")
                      | _ -> Error "Expected authority request")
                  |> Result.isOk)

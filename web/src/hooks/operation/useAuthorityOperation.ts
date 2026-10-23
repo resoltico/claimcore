@@ -2,7 +2,7 @@ import { prepareRequest, ProtocolInputError } from "../../protocol/preparedReque
 import { useEffect, useState, useRef } from "react";
 import { useMutationLifecycle } from "./useMutationLifecycle";
 import { buildRequest, wireSchemas } from "../../protocol/client";
-import { service, resultNotice } from "../../api/service";
+import { service, resultNotice, type ApiResult, type ServiceResponse } from "../../api/service";
 import { localNotice, type Notice } from "../../api/notices";
 import { formValue, type FormValues } from "../../protocol/forms";
 import { attemptKnowledge, resolutionEvidence } from "../../protocol/delivery";
@@ -53,6 +53,19 @@ const reviewAuthority = (state: State, fallback: string) => {
     state.setNotice(localNotice("invalidInput"));
   }
 };
+const principalError = (result: ApiResult<ServiceResponse<"authority.execute">>): string | null => {
+  if (result.kind !== "outcome" || result.value.outcome.tag !== "REJECTED") {
+    return null;
+  }
+  switch (result.value.outcome.data.target) {
+    case "principal.issuer":
+      return "target.issuer";
+    case "principal.subject":
+      return "target.subject";
+    default:
+      return null;
+  }
+};
 type DeliveryControl = { busy: boolean; serial: number; dispatched: boolean; token: string };
 const executeAuthority = async (
   state: State,
@@ -87,9 +100,7 @@ const executeAuthority = async (
     invalidateDisclosure(true);
     return;
   }
-  if (result.kind === "hostFailure" && result.failure.diagnostic.id === "PRINCIPAL_INPUT_INVALID") {
-    state.setFieldError(`target.${result.failure.diagnostic.parameters.target}`);
-  }
+  state.setFieldError(principalError(result));
   state.setNotice(resultNotice(result));
 };
 const authorityDraftActions = (state: State) => {

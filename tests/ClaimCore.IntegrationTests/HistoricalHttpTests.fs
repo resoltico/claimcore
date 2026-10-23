@@ -35,7 +35,7 @@ let private caller (database: PostgresFixture.Database) =
 
         let! registered =
             owner.ExecuteAuthority(
-                authorityRequest (id 20) principal AuthorityAct.RegisterActor,
+                authorityRequest (id 20) principal AdmittedAuthorityAct.RegisterActor,
                 token
             )
 

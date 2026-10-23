@@ -15,7 +15,7 @@ const attemptKey = (result: ApiResult<EndpointOutcome>, dispatched: boolean): st
   }
   const conflict =
     result.value.outcome.tag === "REJECTED" &&
-    result.value.outcome.data.diagnostic.id === "OPERATION_CONTENT_CONFLICT";
+    result.value.outcome.data.code === "OPERATION_CONTENT_CONFLICT";
   return `OUTCOME/${result.value.outcome.tag}${conflict ? "/CONFLICT" : ""}`;
 };
 const classification = (

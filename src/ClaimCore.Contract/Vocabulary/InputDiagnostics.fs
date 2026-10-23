@@ -1,23 +1,6 @@
 namespace ClaimCore.Contract
 
 [<RequireQualifiedAccess>]
-type PrincipalInputTarget =
-    | TargetIssuer
-    | TargetSubject
-    | TargetKind
-
-[<RequireQualifiedAccess>]
-type InputIssue =
-    | Missing
-    | Invalid
-
-type PrincipalInputIssue =
-    {
-        Target: PrincipalInputTarget
-        Issue: InputIssue
-    }
-
-[<RequireQualifiedAccess>]
 type CliSetting =
     | ServiceUrl
     | Issuer
@@ -34,19 +17,9 @@ type ConfigurationIssue =
     | PrivateInputRefused
 
 module InputDiagnostics =
-    let principalId = "PRINCIPAL_INPUT_INVALID"
     let configurationId = "CLI_CONFIGURATION_ISSUE"
     let localId = "CLI_LOCAL_FAILURE"
     let protocolId = "CLI_PROTOCOL_GUIDANCE"
-
-    let targets =
-        [
-            PrincipalInputTarget.TargetIssuer, "issuer"
-            PrincipalInputTarget.TargetSubject, "subject"
-            PrincipalInputTarget.TargetKind, "kind"
-        ]
-
-    let issues = [ InputIssue.Missing, "MISSING"; InputIssue.Invalid, "INVALID" ]
 
     let settings =
         [

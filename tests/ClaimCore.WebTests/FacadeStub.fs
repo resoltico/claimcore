@@ -77,15 +77,15 @@ let receipt id reference =
         RecordedBy = operationId
     }
 
-let authorityReceipt (request: AuthorityRequest) =
+let authorityReceipt (request: ClaimCore.Contract.Protocol.AuthorityRequest) =
     { receipt request.OperationId "WEB-001" with
         Scope =
             ReceiptScope.Authority
                 {
                     TargetActorId = operationId
                     Act =
-                        AuthorityRequests.toRecord request
-                        |> fun value -> ClaimCore.RecordFormat.RecordedAuthorityActs.kind value.Act
+                        ClaimCore.RecordFormat.RecordedAuthorityAct.Operation request.Act
+                        |> fun value -> ClaimCore.RecordFormat.RecordedAuthorityActs.kind value
                         |> AuthorityRecordKinds.fromRecord
                 }
     }
@@ -114,7 +114,8 @@ type Facade() =
                 ExecuteOutcome.Accepted(receipt request.OperationId request.CaseReference)
             )) with get, set
 
-    member val ExecuteAuthority: AuthorityRequest * CancellationToken -> Task<ExecuteOutcome> =
+    member val ExecuteAuthority: ClaimCore.Contract.Protocol.AuthorityRequest * CancellationToken
+        -> Task<ExecuteOutcome> =
         (fun (request, _) -> Task.FromResult(ExecuteOutcome.Accepted(authorityReceipt request))) with get, set
 
     member val Principal: PrincipalKey option = None with get, set

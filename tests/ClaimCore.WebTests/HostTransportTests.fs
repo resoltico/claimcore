@@ -306,59 +306,63 @@ let private readiness () =
         Expect.isEmpty host.Facade.Calls "Health has no actor facade"
 
 let private principalAdmission () =
-    loggedIn true (fun host token ->
-        task {
-            let target kind issuer subject =
-                System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
-                    {|
-                        operationId = operationId
-                        target =
-                            {|
-                                kind = kind
-                                issuer = issuer
-                                subject = subject
-                            |}
-                        act = {| kind = "REGISTER_ACTOR" |}
-                    |}
+    task {
+        use! fixture = OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
+        use host = new Host(true, forActor = fixture.Actor)
+        let! _ = host.Login()
+        let! token = host.Token()
+        let originalEntries = fixture.EntryCount
 
-            let samples =
-                [
-                    "HUMAN", "https://ISSUER.example.test/realm", "person"
-                    "HUMAN", "https://issuer.example.test/realm?x=1", "person"
-                    "HUMAN", "https://user@issuer.example.test/realm", "person"
-                    "HUMAN", "https://issuer.example.test/realm#part", "person"
-                    "HUMAN", "https://issuer.example.test/realm", " "
-                    "HUMAN", "https://issuer.example.test/realm", String.replicate 257 "🙂"
-                    "SERVICE", "https://issuer.example.test/realm", String.replicate 257 "x"
-                    "HUMAN", "https://issuer.example.test/" + String.replicate 2048 "x", "person"
-                ]
+        let target kind issuer subject =
+            System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
+                {|
+                    operationId = operationId
+                    target =
+                        {|
+                            kind = kind
+                            issuer = issuer
+                            subject = subject
+                        |}
+                    act = {| kind = "REGISTER_ACTOR" |}
+                |}
 
-            for kind, issuer, subject in samples do
-                let input = target kind issuer subject
+        let samples =
+            [
+                "HUMAN", "https://ISSUER.example.test/realm", "person"
+                "HUMAN", "https://issuer.example.test/realm?x=1", "person"
+                "HUMAN", "https://user@issuer.example.test/realm", "person"
+                "HUMAN", "https://issuer.example.test/realm#part", "person"
+                "HUMAN", "https://issuer.example.test/realm", " "
+                "HUMAN", "https://issuer.example.test/realm", String.replicate 257 "🙂"
+                "SERVICE", "https://issuer.example.test/realm", String.replicate 257 "x"
+                "HUMAN", "https://issuer.example.test/" + String.replicate 2048 "x", "person"
+            ]
 
-                let admitted =
-                    ClaimCore.Contract.Protocol.Admission.admit Endpoint.AuthorityExecute input
-                    |> Result.isOk
+        for kind, issuer, subject in samples do
+            let input = target kind issuer subject
 
-                Expect.equal admitted true "Generic wire syntax does not claim identity admission"
+            let admitted =
+                ClaimCore.Contract.Protocol.Admission.admit Endpoint.AuthorityExecute input
+                |> Result.isOk
 
-                let! status, response = host.Call("authority.execute", input, token)
-                Expect.equal status 400 "Typed principal refusal occurs before core dispatch"
-                use failure = JsonDocument.Parse response
+            Expect.equal admitted true "Generic wire syntax does not claim identity admission"
 
+            let! status, response = host.Call("authority.execute", input, token)
+            Expect.equal status 200 "Principal content is an Application refusal."
+
+            match Replies.decode Endpoint.AuthorityExecute response with
+            | Ok(WireReply.AuthorityExecute {
+                                                Outcome = AuthorityExecuteOutcome.Rejected refusal
+                                            }) ->
                 Expect.equal
-                    (failure.RootElement.GetProperty("code").GetString())
-                    "INPUT_INVALID"
-                    "Defined failure"
+                    (Error refusal)
+                    (PrincipalKey.admit kind issuer subject)
+                    "Application preserves the authoritative identity refusal."
+            | _ -> failtest "Invalid principal must receive a typed refusal."
 
-                Expect.equal
-                    (failure.RootElement.GetProperty("executionPhase").GetString())
-                    "NOT_STARTED"
-                    "No dispatch"
-
-            Expect.isEmpty host.Facade.Calls "Identity failure never invokes the actor core"
-            Expect.isNone host.Facade.Principal "Identity failure never creates an actor facade"
-        })
+        Expect.equal fixture.EntryCount originalEntries "Refused principal inputs append nothing."
+    }
+    |> _.GetAwaiter().GetResult()
 
 [<Tests>]
 let tests =
@@ -366,7 +370,7 @@ let tests =
         "HTTP service"
         [
             testCase
-                "generic wire principal syntax is separate from authoritative pre-dispatch admission"
+                "generic principal syntax reaches Application admission without recording refusals"
                 principalAdmission
             testCase
                 "authority execution preserves mutation cancellation semantics"

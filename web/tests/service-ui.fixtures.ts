@@ -30,9 +30,9 @@ export const context = {
 };
 
 export const unavailable = {
-  diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
-  message: "Synthetic unavailable resource",
-  field: null,
+  code: "ACCESS_RESOURCE_UNAVAILABLE",
+  action: "NONE_REQUIRED",
+  target: null,
   actualRevision: null,
-  recommendedAction: "NONE_REQUIRED",
+  limits: {},
 } as const;

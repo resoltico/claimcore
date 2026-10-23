@@ -51,25 +51,24 @@ module PrincipalKey =
 
     let admit kind issuerValue subject =
         let issue target value =
-            {
-                Target = target
-                Issue =
-                    if String.IsNullOrWhiteSpace value then
-                        InputIssue.Missing
-                    else
-                        InputIssue.Invalid
-            }
+            Refusal.InvalidInput(
+                target,
+                if String.IsNullOrWhiteSpace value then
+                    Violation.TextRequired
+                else
+                    Violation.PrincipalFormat
+            )
 
         let maximum = if kind = PrincipalKinds.Human then 512 else 256
 
         match issuer issuerValue, identifier maximum subject with
-        | Error _, _ -> Error(issue PrincipalInputTarget.TargetIssuer issuerValue)
-        | _, Error _ -> Error(issue PrincipalInputTarget.TargetSubject subject)
+        | Error _, _ -> Error(issue InputTarget.PrincipalIssuer issuerValue)
+        | _, Error _ -> Error(issue InputTarget.PrincipalSubject subject)
         | Ok validIssuer, Ok validSubject when kind = PrincipalKinds.Human ->
             Ok(HumanPrincipal(validIssuer, validSubject))
         | Ok validIssuer, Ok validSubject when kind = PrincipalKinds.Service ->
             Ok(ServicePrincipal(validIssuer, validSubject))
-        | _ -> Error(issue PrincipalInputTarget.TargetKind kind)
+        | _ -> Error(issue InputTarget.PrincipalSubject kind)
 
     let human issuerValue subject =
         admit PrincipalKinds.Human issuerValue subject

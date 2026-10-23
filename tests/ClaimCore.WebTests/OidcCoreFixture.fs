@@ -15,6 +15,7 @@ type Fixture
         fixture: ClaimCore.TestSupport.StoreContractTests.Fixture
     ) =
     member _.Actor principal = core fixture principal
+    member _.EntryCount = store.Entries.Length
 
     interface IDisposable with
         member _.Dispose() = (store :> IDisposable).Dispose()
@@ -46,7 +47,7 @@ let createFor issuer subject =
 
             let! registered =
                 owner.ExecuteAuthority(
-                    authorityRequest (id 20) service AuthorityAct.RegisterActor,
+                    authorityRequest (id 20) service AdmittedAuthorityAct.RegisterActor,
                     CancellationToken.None
                 )
 

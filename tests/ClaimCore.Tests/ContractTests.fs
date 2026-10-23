@@ -12,7 +12,6 @@ open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Application
 open ClaimCore.Hosting
-open ClaimCore.Hosting.Presentation
 open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.Domain
@@ -231,11 +230,6 @@ let private previewCodecs () =
         OutcomeMapping.preview id value |> admitted |> ignore
 
 let private diagnostics () =
-    for identifier, _ in RejectionDiagnosticIds.all do
-        Expect.isNonEmpty
-            (RejectionPresentation.template identifier)
-            "Every public diagnostic has presentation"
-
     for fault, _ in CoreFaults.all do
         OutcomeMapping.caseGet (QueryOutcome.Failed fault) |> admitted |> ignore
 
@@ -249,9 +243,10 @@ let private diagnostics () =
         ] do
         let result = OutcomeMapping.caseGet (QueryOutcome.Rejected value) |> admitted
 
-        Expect.isFalse
-            (result.GetProperty("outcome").GetProperty("data").TryGetProperty("code") |> fst)
-            "No coarse refusal code"
+        Expect.equal
+            (result.GetProperty("outcome").GetProperty("data").GetProperty("code").GetString())
+            (Refusals.row value).Code
+            "The refusal carries its stable code"
 
 let private actionExpectations =
     [
@@ -286,13 +281,10 @@ let private actionTokens () =
 
         let data = result.GetProperty("outcome").GetProperty("data")
 
-        Expect.equal
-            (data.GetProperty("recommendedAction").GetString())
-            expected
-            "Literal wire guidance"
+        Expect.equal (data.GetProperty("action").GetString()) expected "Literal wire guidance"
 
         Expect.equal
-            (data.GetProperty("field").GetString())
+            (data.GetProperty("target").GetString())
             (Option.toObj field)
             "Serialized field metadata is retained"
 
@@ -467,7 +459,10 @@ let private principalAdmission () =
         let syntax = Admission.admit Endpoint.AuthorityExecute wire |> accepted
 
         Expect.equal
-            (ServiceGateway.admitTechnical syntax |> Result.isOk)
+            (match syntax with
+             | WireRequest.AuthorityExecute request ->
+                 AuthorityRequests.admit request |> Result.isOk
+             | _ -> false)
             admitted
             "Only authoritative principal admission judges identity semantics"
 

@@ -9,14 +9,6 @@ type MessagePart =
 module MessageText =
     let private definitions =
         [
-            "diagnostic.PRINCIPAL_INPUT_INVALID",
-            [
-                MessagePart.Literal "Correct principal field "
-                MessagePart.Hole "target"
-                MessagePart.Literal ": "
-                MessagePart.Hole "issue"
-                MessagePart.Literal ". No operation was dispatched by this attempt."
-            ]
             "cli.callbackAccepted",
             [
                 MessagePart.Literal "Authentication response received. Return to the terminal."
@@ -113,6 +105,11 @@ module MessageText =
             "command.WITHDRAW_DECISION.meaning",
             [
                 MessagePart.Literal "Clear the unpaid decision while preserving its history."
+            ]
+            "diagnostic.INPUT_PRINCIPAL_FORMAT",
+            [
+                MessagePart.Literal
+                    "Use a canonical HTTPS issuer and a valid subject for the principal kind."
             ]
             "diagnostic.ACCESS_RESOURCE_UNAVAILABLE",
             [ MessagePart.Literal "The requested resource is unavailable." ]

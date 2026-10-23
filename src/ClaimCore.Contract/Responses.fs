@@ -15,86 +15,6 @@ type OutcomeUnknown = { OperationId: Guid }
 
 type Reviewed = { Review: AdvisoryReview }
 
-type EmptyParameters = unit
-
-type TextLengthParameters = { MaximumCharacters: int64 }
-
-type DecimalParameters =
-    {
-        MaximumIntegerDigits: int64
-        MaximumFractionalDigits: int64
-    }
-
-type PageParameters = { MaximumPageSize: int64 }
-
-[<RequireQualifiedAccess>]
-type Diagnostic =
-    | TextRequired of unit
-    | MalformedUnicode of unit
-    | SurroundingWhitespace of unit
-    | TextTooLong of TextLengthParameters
-    | ControlCharacters of unit
-    | FormattingCharacter of unit
-    | ReferenceFormat of unit
-    | CountryFormat of unit
-    | CalendarDateRequired of unit
-    | ChronologicalOrder of unit
-    | FutureDate of unit
-    | DecimalFormat of DecimalParameters
-    | CurrencyFormat of unit
-    | EmptyOperationId of unit
-    | ExpectedRevisionOutOfRange of unit
-    | RevisionExhausted of unit
-    | PaymentClearRequired of unit
-    | PaymentAcknowledgementRequired of unit
-    | CaseAlreadyExists of unit
-    | RevisionConflict of unit
-    | CaseClosed of unit
-    | AlreadyClosed of unit
-    | AlreadyOpened of unit
-    | AmendmentRequiresUndecided of unit
-    | CorrectionNoChanges of unit
-    | CorrectionRequiresExistingValue of unit
-    | DecisionRequired of unit
-    | PaymentAlreadyRecorded of unit
-    | PaymentNotRecorded of unit
-    | DecisionAlreadyPaid of unit
-    | ZeroDecisionCannotBePaid of unit
-    | PageLimitOutOfRange of PageParameters
-    | InvalidCursor of unit
-    | ActNotPermitted of unit
-    | LedgerExhausted of unit
-    | IdempotencyConflict of unit
-    | ResourceUnavailable of unit
-    | CaseVoided of unit
-    | CaseErased of unit
-    | AlreadyVoided of unit
-    | NotVoided of unit
-    | LastOwner of unit
-    | ActorAlreadyRegistered of unit
-    | ActorUnknown of unit
-    | HumanPrincipalRequired of unit
-
-type Rejection =
-    {
-        Diagnostic: Diagnostic
-        Message: string
-        Field: string option
-        ActualRevision: int64 option
-        RecommendedAction: string
-    }
-
-[<RequireQualifiedAccess>]
-type FaultReason =
-    | InternalError
-    | StoreUnavailable
-    | StoreIntegrityError
-    | SchemaMismatch
-    | OperationContentConflict
-
-type Fault =
-    { Reason: FaultReason; Message: string }
-
 [<RequireQualifiedAccess>]
 type SessionOutcome = Succeeded of Session
 
@@ -108,8 +28,8 @@ type SessionLogoutReply = { Outcome: SessionLogoutOutcome }
 [<RequireQualifiedAccess>]
 type ContextOutcome =
     | Succeeded of ActorContext
-    | Rejected of Rejection
-    | Failed of Fault
+    | Rejected of Refusal
+    | Failed of CoreFault
     | Cancelled of unit
 
 type ContextReply = { Outcome: ContextOutcome }
@@ -117,8 +37,8 @@ type ContextReply = { Outcome: ContextOutcome }
 [<RequireQualifiedAccess>]
 type CaseGetOutcome =
     | Succeeded of CaseReadModel
-    | Rejected of Rejection
-    | Failed of Fault
+    | Rejected of Refusal
+    | Failed of CoreFault
     | Cancelled of unit
 
 type CaseGetReply = { Outcome: CaseGetOutcome }
@@ -126,8 +46,8 @@ type CaseGetReply = { Outcome: CaseGetOutcome }
 [<RequireQualifiedAccess>]
 type CaseListOutcome =
     | Succeeded of CaseSummaryPage
-    | Rejected of Rejection
-    | Failed of Fault
+    | Rejected of Refusal
+    | Failed of CoreFault
     | Cancelled of unit
 
 type CaseListReply = { Outcome: CaseListOutcome }
@@ -135,8 +55,8 @@ type CaseListReply = { Outcome: CaseListOutcome }
 [<RequireQualifiedAccess>]
 type CaseHistoryOutcome =
     | Succeeded of HistoryResultPage
-    | Rejected of Rejection
-    | Failed of Fault
+    | Rejected of Refusal
+    | Failed of CoreFault
     | Cancelled of unit
 
 type CaseHistoryReply = { Outcome: CaseHistoryOutcome }
@@ -145,8 +65,8 @@ type CaseHistoryReply = { Outcome: CaseHistoryOutcome }
 type CasePreviewOutcome =
     | Reviewed of Reviewed
     | AlreadyAccepted of OperationReceipt
-    | Rejected of Rejection
-    | Failed of Fault
+    | Rejected of Refusal
+    | Failed of CoreFault
     | Cancelled of unit
 
 type CasePreviewReply =
@@ -160,8 +80,8 @@ type CaseExecuteOutcome =
     | Accepted of OperationReceipt
     | AlreadyAccepted of OperationReceipt
     | OutcomeUnknown of OutcomeUnknown
-    | Rejected of Rejection
-    | Failed of Fault
+    | Rejected of Refusal
+    | Failed of CoreFault
     | Cancelled of unit
 
 type CaseExecuteReply =
@@ -173,8 +93,8 @@ type CaseExecuteReply =
 [<RequireQualifiedAccess>]
 type OperationObserveOutcome =
     | Succeeded of OperationReceipt
-    | Rejected of Rejection
-    | Failed of Fault
+    | Rejected of Refusal
+    | Failed of CoreFault
     | Cancelled of unit
 
 type OperationObserveReply = { Outcome: OperationObserveOutcome }
@@ -182,8 +102,8 @@ type OperationObserveReply = { Outcome: OperationObserveOutcome }
 [<RequireQualifiedAccess>]
 type AuthorityListOutcome =
     | Succeeded of ActorReviewPage
-    | Rejected of Rejection
-    | Failed of Fault
+    | Rejected of Refusal
+    | Failed of CoreFault
     | Cancelled of unit
 
 type AuthorityListReply = { Outcome: AuthorityListOutcome }
@@ -191,8 +111,8 @@ type AuthorityListReply = { Outcome: AuthorityListOutcome }
 [<RequireQualifiedAccess>]
 type AuthorityGrantsOutcome =
     | Succeeded of AuthorityGrantPage
-    | Rejected of Rejection
-    | Failed of Fault
+    | Rejected of Refusal
+    | Failed of CoreFault
     | Cancelled of unit
 
 type AuthorityGrantsReply = { Outcome: AuthorityGrantsOutcome }
@@ -202,8 +122,8 @@ type AuthorityExecuteOutcome =
     | Accepted of OperationReceipt
     | AlreadyAccepted of OperationReceipt
     | OutcomeUnknown of OutcomeUnknown
-    | Rejected of Rejection
-    | Failed of Fault
+    | Rejected of Refusal
+    | Failed of CoreFault
     | Cancelled of unit
 
 type AuthorityExecuteReply =
@@ -263,8 +183,8 @@ module WireReply =
         | ContextOutcome.Succeeded _ -> AttemptResult.Outcome(OutcomeTag.Succeeded, None)
         | ContextOutcome.Rejected value ->
             let diagnostic =
-                match value.Diagnostic with
-                | Diagnostic.IdempotencyConflict() -> Some "OPERATION_CONTENT_CONFLICT"
+                match value with
+                | Refusal.IdempotencyConflict -> Some "OPERATION_CONTENT_CONFLICT"
                 | _ -> None
 
             AttemptResult.Outcome(OutcomeTag.Rejected, diagnostic)
@@ -276,8 +196,8 @@ module WireReply =
         | CaseGetOutcome.Succeeded _ -> AttemptResult.Outcome(OutcomeTag.Succeeded, None)
         | CaseGetOutcome.Rejected value ->
             let diagnostic =
-                match value.Diagnostic with
-                | Diagnostic.IdempotencyConflict() -> Some "OPERATION_CONTENT_CONFLICT"
+                match value with
+                | Refusal.IdempotencyConflict -> Some "OPERATION_CONTENT_CONFLICT"
                 | _ -> None
 
             AttemptResult.Outcome(OutcomeTag.Rejected, diagnostic)
@@ -289,8 +209,8 @@ module WireReply =
         | CaseListOutcome.Succeeded _ -> AttemptResult.Outcome(OutcomeTag.Succeeded, None)
         | CaseListOutcome.Rejected value ->
             let diagnostic =
-                match value.Diagnostic with
-                | Diagnostic.IdempotencyConflict() -> Some "OPERATION_CONTENT_CONFLICT"
+                match value with
+                | Refusal.IdempotencyConflict -> Some "OPERATION_CONTENT_CONFLICT"
                 | _ -> None
 
             AttemptResult.Outcome(OutcomeTag.Rejected, diagnostic)
@@ -302,8 +222,8 @@ module WireReply =
         | CaseHistoryOutcome.Succeeded _ -> AttemptResult.Outcome(OutcomeTag.Succeeded, None)
         | CaseHistoryOutcome.Rejected value ->
             let diagnostic =
-                match value.Diagnostic with
-                | Diagnostic.IdempotencyConflict() -> Some "OPERATION_CONTENT_CONFLICT"
+                match value with
+                | Refusal.IdempotencyConflict -> Some "OPERATION_CONTENT_CONFLICT"
                 | _ -> None
 
             AttemptResult.Outcome(OutcomeTag.Rejected, diagnostic)
@@ -317,8 +237,8 @@ module WireReply =
             AttemptResult.Outcome(OutcomeTag.AlreadyAccepted, None)
         | CasePreviewOutcome.Rejected value ->
             let diagnostic =
-                match value.Diagnostic with
-                | Diagnostic.IdempotencyConflict() -> Some "OPERATION_CONTENT_CONFLICT"
+                match value with
+                | Refusal.IdempotencyConflict -> Some "OPERATION_CONTENT_CONFLICT"
                 | _ -> None
 
             AttemptResult.Outcome(OutcomeTag.Rejected, diagnostic)
@@ -334,8 +254,8 @@ module WireReply =
             AttemptResult.Outcome(OutcomeTag.OutcomeUnknown, None)
         | CaseExecuteOutcome.Rejected value ->
             let diagnostic =
-                match value.Diagnostic with
-                | Diagnostic.IdempotencyConflict() -> Some "OPERATION_CONTENT_CONFLICT"
+                match value with
+                | Refusal.IdempotencyConflict -> Some "OPERATION_CONTENT_CONFLICT"
                 | _ -> None
 
             AttemptResult.Outcome(OutcomeTag.Rejected, diagnostic)
@@ -347,8 +267,8 @@ module WireReply =
         | OperationObserveOutcome.Succeeded _ -> AttemptResult.Outcome(OutcomeTag.Succeeded, None)
         | OperationObserveOutcome.Rejected value ->
             let diagnostic =
-                match value.Diagnostic with
-                | Diagnostic.IdempotencyConflict() -> Some "OPERATION_CONTENT_CONFLICT"
+                match value with
+                | Refusal.IdempotencyConflict -> Some "OPERATION_CONTENT_CONFLICT"
                 | _ -> None
 
             AttemptResult.Outcome(OutcomeTag.Rejected, diagnostic)
@@ -360,8 +280,8 @@ module WireReply =
         | AuthorityListOutcome.Succeeded _ -> AttemptResult.Outcome(OutcomeTag.Succeeded, None)
         | AuthorityListOutcome.Rejected value ->
             let diagnostic =
-                match value.Diagnostic with
-                | Diagnostic.IdempotencyConflict() -> Some "OPERATION_CONTENT_CONFLICT"
+                match value with
+                | Refusal.IdempotencyConflict -> Some "OPERATION_CONTENT_CONFLICT"
                 | _ -> None
 
             AttemptResult.Outcome(OutcomeTag.Rejected, diagnostic)
@@ -373,8 +293,8 @@ module WireReply =
         | AuthorityGrantsOutcome.Succeeded _ -> AttemptResult.Outcome(OutcomeTag.Succeeded, None)
         | AuthorityGrantsOutcome.Rejected value ->
             let diagnostic =
-                match value.Diagnostic with
-                | Diagnostic.IdempotencyConflict() -> Some "OPERATION_CONTENT_CONFLICT"
+                match value with
+                | Refusal.IdempotencyConflict -> Some "OPERATION_CONTENT_CONFLICT"
                 | _ -> None
 
             AttemptResult.Outcome(OutcomeTag.Rejected, diagnostic)
@@ -390,8 +310,8 @@ module WireReply =
             AttemptResult.Outcome(OutcomeTag.OutcomeUnknown, None)
         | AuthorityExecuteOutcome.Rejected value ->
             let diagnostic =
-                match value.Diagnostic with
-                | Diagnostic.IdempotencyConflict() -> Some "OPERATION_CONTENT_CONFLICT"
+                match value with
+                | Refusal.IdempotencyConflict -> Some "OPERATION_CONTENT_CONFLICT"
                 | _ -> None
 
             AttemptResult.Outcome(OutcomeTag.Rejected, diagnostic)

@@ -131,7 +131,7 @@ for (const status of ["CLOSED"] as const) {
         } else {
           expect(captured.reply.outcome.tag).toBe("REJECTED");
           if (captured.reply.outcome.tag === "REJECTED") {
-            expect(captured.reply.outcome.data.diagnostic.id).toBe(refusal);
+            expect(captured.reply.outcome.data.code).toBe(refusal);
           }
           await expect(page.getByRole("alert")).toBeVisible();
           await expectPaymentGuidance(page, refusal);

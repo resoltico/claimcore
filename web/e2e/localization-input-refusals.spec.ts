@@ -42,7 +42,7 @@ const forgedCorrection = async (page: Page, reference: string) => {
   const { outcome } = reply.payload;
   expect(outcome.tag).toBe("REJECTED");
   if (outcome.tag === "REJECTED") {
-    expect(outcome.data.diagnostic.id).toBe("CORRECTION_EXISTING_VALUE_REQUIRED");
+    expect(outcome.data.code).toBe("CORRECTION_EXISTING_VALUE_REQUIRED");
   }
 };
 const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {

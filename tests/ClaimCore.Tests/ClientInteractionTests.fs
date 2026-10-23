@@ -85,9 +85,7 @@ let private policyTruthTable () =
         "Unknown wire tags refuse."
 
 let private accumulatedEvidence () =
-    let conflict =
-        ClaimCore.Contract.RejectionDiagnosticIds.token
-            ClaimCore.Contract.RejectionDiagnosticId.IdempotencyConflict
+    let conflict = "OPERATION_CONTENT_CONFLICT"
 
     Expect.equal
         (Delivery.evidence

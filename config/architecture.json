@@ -2,58 +2,52 @@
   "description": "Every project the repository builds and the project references it may declare. tests/ClaimCore.ArchitectureTests holds each .fsproj to this file in both directions: an undeclared reference fails, and so does a declared one that no longer exists. Adding an edge is a reviewed change to the architecture.",
   "product": {
     "ClaimCore.Domain": [
-      "ClaimCore.Catalog"
+      "ClaimCore.Contract"
     ],
     "ClaimCore.RecordFormat": [
       "ClaimCore.Domain",
-      "ClaimCore.Catalog"
+      "ClaimCore.Contract"
     ],
     "ClaimCore.Application": [
       "ClaimCore.Domain",
       "ClaimCore.RecordFormat",
-      "ClaimCore.Catalog"
+      "ClaimCore.Contract"
     ],
     "ClaimCore.HostSecurity": [],
     "ClaimCore.Postgres": [
       "ClaimCore.Application",
       "ClaimCore.Domain",
       "ClaimCore.RecordFormat",
-      "ClaimCore.Catalog"
+      "ClaimCore.Contract"
     ],
     "ClaimCore.Hosting": [
       "ClaimCore.Application",
       "ClaimCore.Postgres",
       "ClaimCore.Domain",
-      "ClaimCore.Wire",
-      "ClaimCore.Catalog"
+      "ClaimCore.Contract"
     ],
     "ClaimCore.Web": [
       "ClaimCore.HostSecurity",
       "ClaimCore.Hosting",
-      "ClaimCore.Wire",
-      "ClaimCore.Catalog"
+      "ClaimCore.Contract"
     ],
     "ClaimCore.Cli": [
       "ClaimCore.HostSecurity",
-      "ClaimCore.Wire",
-      "ClaimCore.Catalog"
+      "ClaimCore.Contract"
     ],
     "ClaimCore.Database": [
       "ClaimCore.HostSecurity",
       "ClaimCore.Postgres",
-      "ClaimCore.Application"
+      "ClaimCore.Application",
+      "ClaimCore.Contract"
     ],
-    "ClaimCore.Wire": [
-      "ClaimCore.Catalog"
-    ],
-    "ClaimCore.Catalog": []
+    "ClaimCore.Contract": []
   },
   "tooling": {
     "ClaimCore.ContractGenerator": [
-      "ClaimCore.Wire",
+      "ClaimCore.Contract",
       "ClaimCore.Domain",
-      "ClaimCore.Application",
-      "ClaimCore.Catalog"
+      "ClaimCore.Application"
     ]
   },
   "rules": {
@@ -68,8 +62,7 @@
       "ClaimCore.Domain",
       "ClaimCore.RecordFormat",
       "ClaimCore.Application",
-      "ClaimCore.Wire",
-      "ClaimCore.Catalog"
+      "ClaimCore.Contract"
     ],
     "onlyTheseMayUseTimeZoneInfo": [
       "ClaimCore.Hosting",
@@ -81,7 +74,7 @@
     ],
     "clientAvoidsServerSemantics": [
       "ClaimCore.Cli",
-      "ClaimCore.Wire"
+      "ClaimCore.Contract"
     ],
     "httpHostAvoidsDirectSemantics": [
       "ClaimCore.Web"

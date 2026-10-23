@@ -221,11 +221,11 @@ export const expectBusinessFormatRefusal = async (
     if (outcome.tag !== "REJECTED") {
       throw new Error("Expected a typed business format refusal.");
     }
-    expect(outcome.data.field).toBe(field);
-    expect(outcome.data.diagnostic.id).toBe(diagnostic);
-    expect(outcome.data.recommendedAction).toBe("CORRECT_INPUT");
+    expect(outcome.data.target).toBe(field);
+    expect(outcome.data.code).toBe(diagnostic);
+    expect(outcome.data.action).toBe("CORRECT_INPUT");
     if (diagnostic === "INPUT_DECIMAL_FORMAT") {
-      expect(outcome.data.diagnostic.parameters).toEqual({
+      expect(outcome.data.limits).toEqual({
         maximumIntegerDigits: 18,
         maximumFractionalDigits: 4,
       });

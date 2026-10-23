@@ -177,11 +177,11 @@ const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =
           outcome: {
             tag: "REJECTED",
             data: {
-              diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
-              message: "Synthetic",
-              field: null,
+              code: "ACCESS_RESOURCE_UNAVAILABLE",
+              action: "NONE_REQUIRED",
+              target: null,
               actualRevision: null,
-              recommendedAction: "NONE_REQUIRED",
+              limits: {},
             },
           },
         },
@@ -306,11 +306,11 @@ it("resets only the selected grant page on invalid continuation and reloads it w
         outcome: {
           tag: "REJECTED",
           data: {
-            diagnostic: { id: "QUERY_CURSOR_INVALID", parameters: {} },
-            message: "Synthetic cursor failure",
-            field: null,
+            code: "QUERY_CURSOR_INVALID",
+            action: "READ_CURRENT",
+            target: "cursor",
             actualRevision: null,
-            recommendedAction: "READ_CURRENT",
+            limits: {},
           },
         },
       },

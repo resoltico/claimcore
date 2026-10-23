@@ -188,6 +188,150 @@ module Refusals =
             [ "maximumPageSize", maximum ]
         | _ -> []
 
+    let all =
+        [
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.TextRequired
+            )
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.MalformedUnicode
+            )
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.SurroundingWhitespace
+            )
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.TooLong 200
+            )
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.ControlCharacters
+            )
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.FormattingCharacter
+            )
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.ReferenceFormat
+            )
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.CountryFormat
+            )
+            Refusal.InvalidInput(InputTarget.PrincipalIssuer, Violation.PrincipalFormat)
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.CalendarDateRequired
+            )
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.ChronologicalOrder
+            )
+            Refusal.InvalidInput(InputTarget.Field BusinessField.ClaimantName, Violation.FutureDate)
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.DecimalFormat(18, 4)
+            )
+            Refusal.InvalidInput(
+                InputTarget.Field BusinessField.ClaimantName,
+                Violation.CurrencyFormat
+            )
+            Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
+            Refusal.InvalidInput(InputTarget.ExpectedRevision, Violation.ExpectedRevisionRange)
+            Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50)
+            Refusal.InvalidInput(InputTarget.PaymentGroup, Violation.PaymentClearRequired)
+            Refusal.InvalidInput(InputTarget.PaymentGroup, Violation.PaymentAcknowledgementRequired)
+            Refusal.RevisionConflict 0L
+            Refusal.CaseAlreadyExists
+            Refusal.CaseErased
+            Refusal.CaseVoided
+            Refusal.AlreadyVoided
+            Refusal.NotVoided
+            Refusal.CaseClosed
+            Refusal.AlreadyClosed
+            Refusal.AlreadyOpened
+            Refusal.AmendmentRequiresUndecided
+            Refusal.CorrectionNoChanges
+            Refusal.CorrectionRequiresExistingValue
+            Refusal.DecisionRequired
+            Refusal.PaymentAlreadyRecorded
+            Refusal.PaymentNotRecorded
+            Refusal.DecisionAlreadyPaid
+            Refusal.ZeroDecisionCannotBePaid
+            Refusal.RevisionExhausted
+            Refusal.LedgerExhausted
+            Refusal.IdempotencyConflict
+            Refusal.ResourceUnavailable
+            Refusal.ActNotPermitted
+            Refusal.LastOwner
+            Refusal.ActorAlreadyRegistered
+            Refusal.ActorUnknown
+            Refusal.HumanPrincipalRequired
+            Refusal.InvalidCursor
+        ]
+        |> List.map (fun value -> value, row value)
+
+    let codes = all |> List.map (fun (_, row) -> row.Code) |> List.distinct
+
+    let fromDiagnostic code target revision limits =
+        let exemplar, _ = all |> List.find (fun (_, row) -> row.Code = code)
+
+        match exemplar with
+        | Refusal.InvalidInput(_, Violation.TooLong _) ->
+            Refusal.InvalidInput(
+                Option.get target,
+                Violation.TooLong(Map.find "maximumCharacters" limits)
+            )
+        | Refusal.InvalidInput(_, Violation.DecimalFormat _) ->
+            Refusal.InvalidInput(
+                Option.get target,
+                Violation.DecimalFormat(
+                    Map.find "maximumIntegerDigits" limits,
+                    Map.find "maximumFractionalDigits" limits
+                )
+            )
+        | Refusal.InvalidInput(_, Violation.PageLimitRange _) ->
+            Refusal.InvalidInput(
+                Option.get target,
+                Violation.PageLimitRange(Map.find "maximumPageSize" limits)
+            )
+        | Refusal.InvalidInput(_, violation) -> Refusal.InvalidInput(Option.get target, violation)
+        | Refusal.RevisionConflict _ -> Refusal.RevisionConflict(Option.get revision)
+        | value -> value
+
+    let definitions =
+        all
+        |> List.map (fun (reason, row) ->
+            {
+                Id = row.Code
+                Parameters =
+                    parameters reason
+                    |> List.map (fun (name, _) ->
+                        DiagnosticArguments.tryParse name
+                        |> Option.get
+                        |> DiagnosticArguments.definition)
+            })
+        |> List.distinctBy _.Id
+
+module RecommendedActions =
+    let all =
+        [
+            RecommendedAction.CorrectInput, "CORRECT_INPUT"
+            RecommendedAction.ReadCurrent, "READ_CURRENT"
+            RecommendedAction.RetrySafe, "RETRY_SAFE"
+            RecommendedAction.ReplayExact, "REPLAY_EXACT"
+            RecommendedAction.Reauthenticate, "REAUTHENTICATE"
+            RecommendedAction.StopAndInvestigate, "STOP_AND_INVESTIGATE"
+            RecommendedAction.NoneRequired, "NONE_REQUIRED"
+        ]
+
+    let token action =
+        all |> List.find (fst >> (=) action) |> snd
+
 type Refusal with
     member this.Field = Refusals.field this
     member this.ActualRevision = Refusals.actualRevision this

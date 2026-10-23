@@ -348,7 +348,7 @@
             "const": "REJECTED"
           },
           "data": {
-            "$ref": "#/components/schemas/Rejection"
+            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": ["tag","data"
@@ -451,7 +451,7 @@
             "const": "REJECTED"
           },
           "data": {
-            "$ref": "#/components/schemas/Rejection"
+            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": ["tag","data"
@@ -532,7 +532,7 @@
             "const": "REJECTED"
           },
           "data": {
-            "$ref": "#/components/schemas/Rejection"
+            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": ["tag","data"
@@ -1014,7 +1014,7 @@
             "const": "REJECTED"
           },
           "data": {
-            "$ref": "#/components/schemas/Rejection"
+            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": ["tag","data"
@@ -1201,7 +1201,7 @@
             "const": "REJECTED"
           },
           "data": {
-            "$ref": "#/components/schemas/Rejection"
+            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": ["tag","data"
@@ -1293,7 +1293,7 @@
             "const": "REJECTED"
           },
           "data": {
-            "$ref": "#/components/schemas/Rejection"
+            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": ["tag","data"
@@ -1374,7 +1374,7 @@
             "const": "REJECTED"
           },
           "data": {
-            "$ref": "#/components/schemas/Rejection"
+            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": ["tag","data"
@@ -1473,7 +1473,7 @@
             "const": "REJECTED"
           },
           "data": {
-            "$ref": "#/components/schemas/Rejection"
+            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": ["tag","data"
@@ -6896,7 +6896,7 @@
             "const": "REJECTED"
           },
           "data": {
-            "$ref": "#/components/schemas/Rejection"
+            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": ["tag","data"
@@ -7015,24 +7015,6 @@
         "required": ["act","expectedRevision","correction"
         ]
       },
-      "DecimalParameters": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "maximumIntegerDigits": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 2147483647
-          },
-          "maximumFractionalDigits": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 2147483647
-          }
-        },
-        "required": ["maximumIntegerDigits","maximumFractionalDigits"
-        ]
-      },
       "Decision": {
         "type": "object",
         "additionalProperties": false,
@@ -7110,820 +7092,667 @@
       "Diagnostic": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_TEXT_REQUIRED"
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "INPUT_TEXT_REQUIRED"
+                  },
+                  {
+                    "const": "INPUT_MALFORMED_UNICODE"
+                  },
+                  {
+                    "const": "INPUT_SURROUNDING_WHITESPACE"
+                  },
+                  {
+                    "const": "INPUT_CONTROL_CHARACTERS"
+                  },
+                  {
+                    "const": "TEXT_FORMATTING_CHARACTER"
+                  },
+                  {
+                    "const": "INPUT_CASE_REFERENCE_FORMAT"
+                  },
+                  {
+                    "const": "INPUT_COUNTRY_FORMAT"
+                  },
+                  {
+                    "const": "INPUT_PRINCIPAL_FORMAT"
+                  },
+                  {
+                    "const": "INPUT_CALENDAR_DATE_REQUIRED"
+                  },
+                  {
+                    "const": "INPUT_DATE_ORDER"
+                  },
+                  {
+                    "const": "INPUT_FUTURE_DATE"
+                  },
+                  {
+                    "const": "INPUT_CURRENCY_FORMAT"
+                  },
+                  {
+                    "const": "COMMAND_OPERATION_ID_REQUIRED"
+                  },
+                  {
+                    "const": "COMMAND_EXPECTED_REVISION_RANGE"
+                  },
+                  {
+                    "const": "CORRECTION_PAYMENT_CLEAR_REQUIRED"
+                  },
+                  {
+                    "const": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
+                  }
+                ]
+              },
+              "action": {
+                "oneOf": [
+                  {
+                    "const": "CORRECT_INPUT"
+                  }
+                ]
+              },
+              "target": {
+                "oneOf": [
+                  {
+                    "const": "incidentDate"
+                  },
+                  {
+                    "const": "incidentNotificationDate"
+                  },
+                  {
+                    "const": "incidentCountry"
+                  },
+                  {
+                    "const": "claimantName"
+                  },
+                  {
+                    "const": "insurerName"
+                  },
+                  {
+                    "const": "claimedAmount"
+                  },
+                  {
+                    "const": "claimedCurrency"
+                  },
+                  {
+                    "const": "caseReference"
+                  },
+                  {
+                    "const": "paymentDecisionDate"
+                  },
+                  {
+                    "const": "payableAmount"
+                  },
+                  {
+                    "const": "payableCurrency"
+                  },
+                  {
+                    "const": "paymentDate"
+                  },
+                  {
+                    "const": "operationId"
+                  },
+                  {
+                    "const": "expectedRevision"
+                  },
+                  {
+                    "const": "payment"
+                  },
+                  {
+                    "const": "reason"
+                  },
+                  {
+                    "const": "principal.issuer"
+                  },
+                  {
+                    "const": "principal.subject"
+                  },
+                  {
+                    "const": "limit"
+                  },
+                  {
+                    "const": "cursor"
+                  }
+                ]
+              },
+              "actualRevision": {
+                "type": "null"
+              },
+              "limits": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {},
+                "required": []
+              }
+            },
+            "required": ["code","action","target","actualRevision","limits"
+            ]
           },
           {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_MALFORMED_UNICODE"
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "INPUT_TEXT_TOO_LONG"
+                  }
+                ]
+              },
+              "action": {
+                "oneOf": [
+                  {
+                    "const": "CORRECT_INPUT"
+                  }
+                ]
+              },
+              "target": {
+                "oneOf": [
+                  {
+                    "const": "incidentDate"
+                  },
+                  {
+                    "const": "incidentNotificationDate"
+                  },
+                  {
+                    "const": "incidentCountry"
+                  },
+                  {
+                    "const": "claimantName"
+                  },
+                  {
+                    "const": "insurerName"
+                  },
+                  {
+                    "const": "claimedAmount"
+                  },
+                  {
+                    "const": "claimedCurrency"
+                  },
+                  {
+                    "const": "caseReference"
+                  },
+                  {
+                    "const": "paymentDecisionDate"
+                  },
+                  {
+                    "const": "payableAmount"
+                  },
+                  {
+                    "const": "payableCurrency"
+                  },
+                  {
+                    "const": "paymentDate"
+                  },
+                  {
+                    "const": "operationId"
+                  },
+                  {
+                    "const": "expectedRevision"
+                  },
+                  {
+                    "const": "payment"
+                  },
+                  {
+                    "const": "reason"
+                  },
+                  {
+                    "const": "principal.issuer"
+                  },
+                  {
+                    "const": "principal.subject"
+                  },
+                  {
+                    "const": "limit"
+                  },
+                  {
+                    "const": "cursor"
+                  }
+                ]
+              },
+              "actualRevision": {
+                "type": "null"
+              },
+              "limits": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "maximumCharacters": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": ["maximumCharacters"
+                ]
+              }
+            },
+            "required": ["code","action","target","actualRevision","limits"
+            ]
           },
           {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_SURROUNDING_WHITESPACE"
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "INPUT_DECIMAL_FORMAT"
+                  }
+                ]
+              },
+              "action": {
+                "oneOf": [
+                  {
+                    "const": "CORRECT_INPUT"
+                  }
+                ]
+              },
+              "target": {
+                "oneOf": [
+                  {
+                    "const": "incidentDate"
+                  },
+                  {
+                    "const": "incidentNotificationDate"
+                  },
+                  {
+                    "const": "incidentCountry"
+                  },
+                  {
+                    "const": "claimantName"
+                  },
+                  {
+                    "const": "insurerName"
+                  },
+                  {
+                    "const": "claimedAmount"
+                  },
+                  {
+                    "const": "claimedCurrency"
+                  },
+                  {
+                    "const": "caseReference"
+                  },
+                  {
+                    "const": "paymentDecisionDate"
+                  },
+                  {
+                    "const": "payableAmount"
+                  },
+                  {
+                    "const": "payableCurrency"
+                  },
+                  {
+                    "const": "paymentDate"
+                  },
+                  {
+                    "const": "operationId"
+                  },
+                  {
+                    "const": "expectedRevision"
+                  },
+                  {
+                    "const": "payment"
+                  },
+                  {
+                    "const": "reason"
+                  },
+                  {
+                    "const": "principal.issuer"
+                  },
+                  {
+                    "const": "principal.subject"
+                  },
+                  {
+                    "const": "limit"
+                  },
+                  {
+                    "const": "cursor"
+                  }
+                ]
+              },
+              "actualRevision": {
+                "type": "null"
+              },
+              "limits": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "maximumFractionalDigits": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "maximumIntegerDigits": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": ["maximumFractionalDigits","maximumIntegerDigits"
+                ]
+              }
+            },
+            "required": ["code","action","target","actualRevision","limits"
+            ]
           },
           {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_TEXT_TOO_LONG"
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "QUERY_PAGE_LIMIT_RANGE"
+                  }
+                ]
+              },
+              "action": {
+                "oneOf": [
+                  {
+                    "const": "CORRECT_INPUT"
+                  }
+                ]
+              },
+              "target": {
+                "oneOf": [
+                  {
+                    "const": "incidentDate"
+                  },
+                  {
+                    "const": "incidentNotificationDate"
+                  },
+                  {
+                    "const": "incidentCountry"
+                  },
+                  {
+                    "const": "claimantName"
+                  },
+                  {
+                    "const": "insurerName"
+                  },
+                  {
+                    "const": "claimedAmount"
+                  },
+                  {
+                    "const": "claimedCurrency"
+                  },
+                  {
+                    "const": "caseReference"
+                  },
+                  {
+                    "const": "paymentDecisionDate"
+                  },
+                  {
+                    "const": "payableAmount"
+                  },
+                  {
+                    "const": "payableCurrency"
+                  },
+                  {
+                    "const": "paymentDate"
+                  },
+                  {
+                    "const": "operationId"
+                  },
+                  {
+                    "const": "expectedRevision"
+                  },
+                  {
+                    "const": "payment"
+                  },
+                  {
+                    "const": "reason"
+                  },
+                  {
+                    "const": "principal.issuer"
+                  },
+                  {
+                    "const": "principal.subject"
+                  },
+                  {
+                    "const": "limit"
+                  },
+                  {
+                    "const": "cursor"
+                  }
+                ]
+              },
+              "actualRevision": {
+                "type": "null"
+              },
+              "limits": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "maximumPageSize": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": ["maximumPageSize"
+                ]
+              }
+            },
+            "required": ["code","action","target","actualRevision","limits"
+            ]
           },
           {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_CONTROL_CHARACTERS"
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CASE_REVISION_CONFLICT"
+                  }
+                ]
+              },
+              "action": {
+                "oneOf": [
+                  {
+                    "const": "READ_CURRENT"
+                  }
+                ]
+              },
+              "target": {
+                "type": "null"
+              },
+              "actualRevision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "limits": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {},
+                "required": []
+              }
+            },
+            "required": ["code","action","target","actualRevision","limits"
+            ]
           },
           {
-            "$ref": "#/components/schemas/Diagnostic.TEXT_FORMATTING_CHARACTER"
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CASE_ALREADY_EXISTS"
+                  },
+                  {
+                    "const": "CASE_ERASED"
+                  },
+                  {
+                    "const": "CASE_VOIDED"
+                  },
+                  {
+                    "const": "ALREADY_VOIDED"
+                  },
+                  {
+                    "const": "NOT_VOIDED"
+                  },
+                  {
+                    "const": "CASE_CLOSED"
+                  },
+                  {
+                    "const": "CASE_ALREADY_CLOSED"
+                  },
+                  {
+                    "const": "CASE_ALREADY_OPENED"
+                  },
+                  {
+                    "const": "CASE_AMENDMENT_REQUIRES_UNDECIDED"
+                  },
+                  {
+                    "const": "CORRECTION_NO_CHANGES"
+                  },
+                  {
+                    "const": "CORRECTION_EXISTING_VALUE_REQUIRED"
+                  },
+                  {
+                    "const": "CASE_DECISION_REQUIRED"
+                  },
+                  {
+                    "const": "CASE_PAYMENT_ALREADY_RECORDED"
+                  },
+                  {
+                    "const": "CASE_PAYMENT_NOT_RECORDED"
+                  },
+                  {
+                    "const": "CASE_DECISION_ALREADY_PAID"
+                  },
+                  {
+                    "const": "CASE_ZERO_DECISION_CANNOT_BE_PAID"
+                  },
+                  {
+                    "const": "REVISION_EXHAUSTED"
+                  },
+                  {
+                    "const": "ACCESS_RESOURCE_UNAVAILABLE"
+                  },
+                  {
+                    "const": "ACT_NOT_PERMITTED"
+                  },
+                  {
+                    "const": "LAST_OWNER"
+                  },
+                  {
+                    "const": "ACTOR_ALREADY_REGISTERED"
+                  },
+                  {
+                    "const": "ACTOR_UNKNOWN"
+                  },
+                  {
+                    "const": "HUMAN_PRINCIPAL_REQUIRED"
+                  }
+                ]
+              },
+              "action": {
+                "oneOf": [
+                  {
+                    "const": "NONE_REQUIRED"
+                  }
+                ]
+              },
+              "target": {
+                "type": "null"
+              },
+              "actualRevision": {
+                "type": "null"
+              },
+              "limits": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {},
+                "required": []
+              }
+            },
+            "required": ["code","action","target","actualRevision","limits"
+            ]
           },
           {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_CASE_REFERENCE_FORMAT"
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "LEDGER_SEQUENCE_EXHAUSTED"
+                  },
+                  {
+                    "const": "OPERATION_CONTENT_CONFLICT"
+                  }
+                ]
+              },
+              "action": {
+                "oneOf": [
+                  {
+                    "const": "STOP_AND_INVESTIGATE"
+                  }
+                ]
+              },
+              "target": {
+                "type": "null"
+              },
+              "actualRevision": {
+                "type": "null"
+              },
+              "limits": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {},
+                "required": []
+              }
+            },
+            "required": ["code","action","target","actualRevision","limits"
+            ]
           },
           {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_COUNTRY_FORMAT"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_CALENDAR_DATE_REQUIRED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_DATE_ORDER"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_FUTURE_DATE"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_DECIMAL_FORMAT"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.INPUT_CURRENCY_FORMAT"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.COMMAND_OPERATION_ID_REQUIRED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.COMMAND_EXPECTED_REVISION_RANGE"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.REVISION_EXHAUSTED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_REVISION_CONFLICT"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_CLOSED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_ALREADY_CLOSED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_ALREADY_OPENED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CORRECTION_NO_CHANGES"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_DECISION_REQUIRED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_PAYMENT_ALREADY_RECORDED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_PAYMENT_NOT_RECORDED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_DECISION_ALREADY_PAID"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.QUERY_PAGE_LIMIT_RANGE"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.QUERY_CURSOR_INVALID"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.ACT_NOT_PERMITTED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.LEDGER_SEQUENCE_EXHAUSTED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.OPERATION_CONTENT_CONFLICT"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.ACCESS_RESOURCE_UNAVAILABLE"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_VOIDED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_ERASED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.ALREADY_VOIDED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.NOT_VOIDED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.LAST_OWNER"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.ACTOR_ALREADY_REGISTERED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.ACTOR_UNKNOWN"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.HUMAN_PRINCIPAL_REQUIRED"
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "QUERY_CURSOR_INVALID"
+                  }
+                ]
+              },
+              "action": {
+                "oneOf": [
+                  {
+                    "const": "READ_CURRENT"
+                  }
+                ]
+              },
+              "target": {
+                "oneOf": [
+                  {
+                    "const": "cursor"
+                  }
+                ]
+              },
+              "actualRevision": {
+                "type": "null"
+              },
+              "limits": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {},
+                "required": []
+              }
+            },
+            "required": ["code","action","target","actualRevision","limits"
+            ]
           }
-        ],
-        "discriminator": {
-          "propertyName": "id",
-          "mapping": {
-            "INPUT_TEXT_REQUIRED": "#/components/schemas/Diagnostic.INPUT_TEXT_REQUIRED",
-            "INPUT_MALFORMED_UNICODE": "#/components/schemas/Diagnostic.INPUT_MALFORMED_UNICODE",
-            "INPUT_SURROUNDING_WHITESPACE": "#/components/schemas/Diagnostic.INPUT_SURROUNDING_WHITESPACE",
-            "INPUT_TEXT_TOO_LONG": "#/components/schemas/Diagnostic.INPUT_TEXT_TOO_LONG",
-            "INPUT_CONTROL_CHARACTERS": "#/components/schemas/Diagnostic.INPUT_CONTROL_CHARACTERS",
-            "TEXT_FORMATTING_CHARACTER": "#/components/schemas/Diagnostic.TEXT_FORMATTING_CHARACTER",
-            "INPUT_CASE_REFERENCE_FORMAT": "#/components/schemas/Diagnostic.INPUT_CASE_REFERENCE_FORMAT",
-            "INPUT_COUNTRY_FORMAT": "#/components/schemas/Diagnostic.INPUT_COUNTRY_FORMAT",
-            "INPUT_CALENDAR_DATE_REQUIRED": "#/components/schemas/Diagnostic.INPUT_CALENDAR_DATE_REQUIRED",
-            "INPUT_DATE_ORDER": "#/components/schemas/Diagnostic.INPUT_DATE_ORDER",
-            "INPUT_FUTURE_DATE": "#/components/schemas/Diagnostic.INPUT_FUTURE_DATE",
-            "INPUT_DECIMAL_FORMAT": "#/components/schemas/Diagnostic.INPUT_DECIMAL_FORMAT",
-            "INPUT_CURRENCY_FORMAT": "#/components/schemas/Diagnostic.INPUT_CURRENCY_FORMAT",
-            "COMMAND_OPERATION_ID_REQUIRED": "#/components/schemas/Diagnostic.COMMAND_OPERATION_ID_REQUIRED",
-            "COMMAND_EXPECTED_REVISION_RANGE": "#/components/schemas/Diagnostic.COMMAND_EXPECTED_REVISION_RANGE",
-            "REVISION_EXHAUSTED": "#/components/schemas/Diagnostic.REVISION_EXHAUSTED",
-            "CORRECTION_PAYMENT_CLEAR_REQUIRED": "#/components/schemas/Diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED",
-            "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": "#/components/schemas/Diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-            "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "CASE_REVISION_CONFLICT": "#/components/schemas/Diagnostic.CASE_REVISION_CONFLICT",
-            "CASE_CLOSED": "#/components/schemas/Diagnostic.CASE_CLOSED",
-            "CASE_ALREADY_CLOSED": "#/components/schemas/Diagnostic.CASE_ALREADY_CLOSED",
-            "CASE_ALREADY_OPENED": "#/components/schemas/Diagnostic.CASE_ALREADY_OPENED",
-            "CASE_AMENDMENT_REQUIRES_UNDECIDED": "#/components/schemas/Diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED",
-            "CORRECTION_NO_CHANGES": "#/components/schemas/Diagnostic.CORRECTION_NO_CHANGES",
-            "CORRECTION_EXISTING_VALUE_REQUIRED": "#/components/schemas/Diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED",
-            "CASE_DECISION_REQUIRED": "#/components/schemas/Diagnostic.CASE_DECISION_REQUIRED",
-            "CASE_PAYMENT_ALREADY_RECORDED": "#/components/schemas/Diagnostic.CASE_PAYMENT_ALREADY_RECORDED",
-            "CASE_PAYMENT_NOT_RECORDED": "#/components/schemas/Diagnostic.CASE_PAYMENT_NOT_RECORDED",
-            "CASE_DECISION_ALREADY_PAID": "#/components/schemas/Diagnostic.CASE_DECISION_ALREADY_PAID",
-            "CASE_ZERO_DECISION_CANNOT_BE_PAID": "#/components/schemas/Diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID",
-            "QUERY_PAGE_LIMIT_RANGE": "#/components/schemas/Diagnostic.QUERY_PAGE_LIMIT_RANGE",
-            "QUERY_CURSOR_INVALID": "#/components/schemas/Diagnostic.QUERY_CURSOR_INVALID",
-            "ACT_NOT_PERMITTED": "#/components/schemas/Diagnostic.ACT_NOT_PERMITTED",
-            "LEDGER_SEQUENCE_EXHAUSTED": "#/components/schemas/Diagnostic.LEDGER_SEQUENCE_EXHAUSTED",
-            "OPERATION_CONTENT_CONFLICT": "#/components/schemas/Diagnostic.OPERATION_CONTENT_CONFLICT",
-            "ACCESS_RESOURCE_UNAVAILABLE": "#/components/schemas/Diagnostic.ACCESS_RESOURCE_UNAVAILABLE",
-            "CASE_VOIDED": "#/components/schemas/Diagnostic.CASE_VOIDED",
-            "CASE_ERASED": "#/components/schemas/Diagnostic.CASE_ERASED",
-            "ALREADY_VOIDED": "#/components/schemas/Diagnostic.ALREADY_VOIDED",
-            "NOT_VOIDED": "#/components/schemas/Diagnostic.NOT_VOIDED",
-            "LAST_OWNER": "#/components/schemas/Diagnostic.LAST_OWNER",
-            "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.ACTOR_ALREADY_REGISTERED",
-            "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.ACTOR_UNKNOWN",
-            "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.HUMAN_PRINCIPAL_REQUIRED"
-          }
-        }
-      },
-      "Diagnostic.ACCESS_RESOURCE_UNAVAILABLE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "ACCESS_RESOURCE_UNAVAILABLE"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.ACTOR_ALREADY_REGISTERED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "ACTOR_ALREADY_REGISTERED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.ACTOR_UNKNOWN": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "ACTOR_UNKNOWN"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.ACT_NOT_PERMITTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "ACT_NOT_PERMITTED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.ALREADY_VOIDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "ALREADY_VOIDED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_ALREADY_CLOSED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_ALREADY_CLOSED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_ALREADY_EXISTS": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_ALREADY_EXISTS"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_ALREADY_OPENED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_ALREADY_OPENED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_AMENDMENT_REQUIRES_UNDECIDED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_CLOSED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_CLOSED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_DECISION_ALREADY_PAID": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_DECISION_ALREADY_PAID"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_DECISION_REQUIRED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_DECISION_REQUIRED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_ERASED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_ERASED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_PAYMENT_ALREADY_RECORDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_PAYMENT_ALREADY_RECORDED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_PAYMENT_NOT_RECORDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_PAYMENT_NOT_RECORDED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_REVISION_CONFLICT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_REVISION_CONFLICT"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_VOIDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_VOIDED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CASE_ZERO_DECISION_CANNOT_BE_PAID"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.COMMAND_EXPECTED_REVISION_RANGE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "COMMAND_EXPECTED_REVISION_RANGE"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.COMMAND_OPERATION_ID_REQUIRED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "COMMAND_OPERATION_ID_REQUIRED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CORRECTION_EXISTING_VALUE_REQUIRED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CORRECTION_NO_CHANGES": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CORRECTION_NO_CHANGES"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "CORRECTION_PAYMENT_CLEAR_REQUIRED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.HUMAN_PRINCIPAL_REQUIRED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "HUMAN_PRINCIPAL_REQUIRED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_CALENDAR_DATE_REQUIRED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_CALENDAR_DATE_REQUIRED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_CASE_REFERENCE_FORMAT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_CASE_REFERENCE_FORMAT"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_CONTROL_CHARACTERS": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_CONTROL_CHARACTERS"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_COUNTRY_FORMAT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_COUNTRY_FORMAT"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_CURRENCY_FORMAT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_CURRENCY_FORMAT"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_DATE_ORDER": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_DATE_ORDER"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_DECIMAL_FORMAT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_DECIMAL_FORMAT"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/DecimalParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_FUTURE_DATE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_FUTURE_DATE"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_MALFORMED_UNICODE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_MALFORMED_UNICODE"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_SURROUNDING_WHITESPACE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_SURROUNDING_WHITESPACE"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_TEXT_REQUIRED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_TEXT_REQUIRED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.INPUT_TEXT_TOO_LONG": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "INPUT_TEXT_TOO_LONG"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/TextLengthParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.LAST_OWNER": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "LAST_OWNER"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.LEDGER_SEQUENCE_EXHAUSTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "LEDGER_SEQUENCE_EXHAUSTED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.NOT_VOIDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "NOT_VOIDED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.OPERATION_CONTENT_CONFLICT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "OPERATION_CONTENT_CONFLICT"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.QUERY_CURSOR_INVALID": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "QUERY_CURSOR_INVALID"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.QUERY_PAGE_LIMIT_RANGE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "QUERY_PAGE_LIMIT_RANGE"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/PageParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.REVISION_EXHAUSTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "REVISION_EXHAUSTED"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
-        ]
-      },
-      "Diagnostic.TEXT_FORMATTING_CHARACTER": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "const": "TEXT_FORMATTING_CHARACTER"
-          },
-          "parameters": {
-            "$ref": "#/components/schemas/EmptyParameters"
-          }
-        },
-        "required": ["id","parameters"
         ]
       },
       "Disclosure": {
@@ -7989,42 +7818,29 @@
         "properties": {},
         "required": []
       },
-      "EmptyParameters": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {},
-        "required": []
-      },
       "Fault": {
         "oneOf": [
           {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "diagnostic": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "oneOf": [
-                      {
-                        "const": "CORE_INTERNAL_ERROR"
-                      }
-                    ]
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CORE_INTERNAL_ERROR"
                   },
-                  "parameters": {
-                    "$ref": "#/components/schemas/EmptyParameters"
+                  {
+                    "const": "CORE_STORE_INTEGRITY_ERROR"
+                  },
+                  {
+                    "const": "CORE_SCHEMA_MISMATCH"
+                  },
+                  {
+                    "const": "CORE_OPERATION_CONTENT_CONFLICT"
                   }
-                },
-                "required": ["id","parameters"
                 ]
               },
-              "message": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 2147483647
-              },
-              "recommendedAction": {
+              "action": {
                 "oneOf": [
                   {
                     "const": "STOP_AND_INVESTIGATE"
@@ -8032,37 +7848,21 @@
                 ]
               }
             },
-            "required": ["diagnostic","message","recommendedAction"
+            "required": ["code","action"
             ]
           },
           {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "diagnostic": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "oneOf": [
-                      {
-                        "const": "CORE_STORE_UNAVAILABLE"
-                      }
-                    ]
-                  },
-                  "parameters": {
-                    "$ref": "#/components/schemas/EmptyParameters"
+              "code": {
+                "oneOf": [
+                  {
+                    "const": "CORE_STORE_UNAVAILABLE"
                   }
-                },
-                "required": ["id","parameters"
                 ]
               },
-              "message": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 2147483647
-              },
-              "recommendedAction": {
+              "action": {
                 "oneOf": [
                   {
                     "const": "RETRY_SAFE"
@@ -8070,121 +7870,7 @@
                 ]
               }
             },
-            "required": ["diagnostic","message","recommendedAction"
-            ]
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "diagnostic": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "oneOf": [
-                      {
-                        "const": "CORE_STORE_INTEGRITY_ERROR"
-                      }
-                    ]
-                  },
-                  "parameters": {
-                    "$ref": "#/components/schemas/EmptyParameters"
-                  }
-                },
-                "required": ["id","parameters"
-                ]
-              },
-              "message": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 2147483647
-              },
-              "recommendedAction": {
-                "oneOf": [
-                  {
-                    "const": "STOP_AND_INVESTIGATE"
-                  }
-                ]
-              }
-            },
-            "required": ["diagnostic","message","recommendedAction"
-            ]
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "diagnostic": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "oneOf": [
-                      {
-                        "const": "CORE_SCHEMA_MISMATCH"
-                      }
-                    ]
-                  },
-                  "parameters": {
-                    "$ref": "#/components/schemas/EmptyParameters"
-                  }
-                },
-                "required": ["id","parameters"
-                ]
-              },
-              "message": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 2147483647
-              },
-              "recommendedAction": {
-                "oneOf": [
-                  {
-                    "const": "STOP_AND_INVESTIGATE"
-                  }
-                ]
-              }
-            },
-            "required": ["diagnostic","message","recommendedAction"
-            ]
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "diagnostic": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "oneOf": [
-                      {
-                        "const": "CORE_OPERATION_CONTENT_CONFLICT"
-                      }
-                    ]
-                  },
-                  "parameters": {
-                    "$ref": "#/components/schemas/EmptyParameters"
-                  }
-                },
-                "required": ["id","parameters"
-                ]
-              },
-              "message": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 2147483647
-              },
-              "recommendedAction": {
-                "oneOf": [
-                  {
-                    "const": "STOP_AND_INVESTIGATE"
-                  }
-                ]
-              }
-            },
-            "required": ["diagnostic","message","recommendedAction"
+            "required": ["code","action"
             ]
           }
         ]
@@ -8493,24 +8179,6 @@
           },
           {
             "$ref": "#/components/schemas/HostFailure.CompletedResponseFailed"
-          },
-          {
-            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Missing"
-          },
-          {
-            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetIssuer.Invalid"
-          },
-          {
-            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Missing"
-          },
-          {
-            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetSubject.Invalid"
-          },
-          {
-            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Missing"
-          },
-          {
-            "$ref": "#/components/schemas/HostFailure.PrincipalInput.TargetKind.Invalid"
           }
         ]
       },
@@ -9186,438 +8854,6 @@
         "required": ["kind","code","status","message","diagnostic","executionPhase"
         ]
       },
-      "HostFailure.PrincipalInput.TargetIssuer.Invalid": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "oneOf": [
-              {
-                "const": "HOST_FAILURE"
-              }
-            ]
-          },
-          "code": {
-            "oneOf": [
-              {
-                "const": "INPUT_INVALID"
-              }
-            ]
-          },
-          "status": {
-            "type": "integer",
-            "minimum": 400,
-            "maximum": 400
-          },
-          "message": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "diagnostic": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "oneOf": [
-                  {
-                    "const": "PRINCIPAL_INPUT_INVALID"
-                  }
-                ]
-              },
-              "parameters": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "target": {
-                    "oneOf": [
-                      {
-                        "const": "issuer"
-                      }
-                    ]
-                  },
-                  "issue": {
-                    "oneOf": [
-                      {
-                        "const": "INVALID"
-                      }
-                    ]
-                  }
-                },
-                "required": ["target","issue"
-                ]
-              }
-            },
-            "required": ["id","parameters"
-            ]
-          },
-          "executionPhase": {
-            "const": "NOT_STARTED"
-          }
-        },
-        "required": ["kind","code","status","message","diagnostic","executionPhase"
-        ]
-      },
-      "HostFailure.PrincipalInput.TargetIssuer.Missing": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "oneOf": [
-              {
-                "const": "HOST_FAILURE"
-              }
-            ]
-          },
-          "code": {
-            "oneOf": [
-              {
-                "const": "INPUT_INVALID"
-              }
-            ]
-          },
-          "status": {
-            "type": "integer",
-            "minimum": 400,
-            "maximum": 400
-          },
-          "message": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "diagnostic": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "oneOf": [
-                  {
-                    "const": "PRINCIPAL_INPUT_INVALID"
-                  }
-                ]
-              },
-              "parameters": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "target": {
-                    "oneOf": [
-                      {
-                        "const": "issuer"
-                      }
-                    ]
-                  },
-                  "issue": {
-                    "oneOf": [
-                      {
-                        "const": "MISSING"
-                      }
-                    ]
-                  }
-                },
-                "required": ["target","issue"
-                ]
-              }
-            },
-            "required": ["id","parameters"
-            ]
-          },
-          "executionPhase": {
-            "const": "NOT_STARTED"
-          }
-        },
-        "required": ["kind","code","status","message","diagnostic","executionPhase"
-        ]
-      },
-      "HostFailure.PrincipalInput.TargetKind.Invalid": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "oneOf": [
-              {
-                "const": "HOST_FAILURE"
-              }
-            ]
-          },
-          "code": {
-            "oneOf": [
-              {
-                "const": "INPUT_INVALID"
-              }
-            ]
-          },
-          "status": {
-            "type": "integer",
-            "minimum": 400,
-            "maximum": 400
-          },
-          "message": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "diagnostic": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "oneOf": [
-                  {
-                    "const": "PRINCIPAL_INPUT_INVALID"
-                  }
-                ]
-              },
-              "parameters": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "target": {
-                    "oneOf": [
-                      {
-                        "const": "kind"
-                      }
-                    ]
-                  },
-                  "issue": {
-                    "oneOf": [
-                      {
-                        "const": "INVALID"
-                      }
-                    ]
-                  }
-                },
-                "required": ["target","issue"
-                ]
-              }
-            },
-            "required": ["id","parameters"
-            ]
-          },
-          "executionPhase": {
-            "const": "NOT_STARTED"
-          }
-        },
-        "required": ["kind","code","status","message","diagnostic","executionPhase"
-        ]
-      },
-      "HostFailure.PrincipalInput.TargetKind.Missing": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "oneOf": [
-              {
-                "const": "HOST_FAILURE"
-              }
-            ]
-          },
-          "code": {
-            "oneOf": [
-              {
-                "const": "INPUT_INVALID"
-              }
-            ]
-          },
-          "status": {
-            "type": "integer",
-            "minimum": 400,
-            "maximum": 400
-          },
-          "message": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "diagnostic": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "oneOf": [
-                  {
-                    "const": "PRINCIPAL_INPUT_INVALID"
-                  }
-                ]
-              },
-              "parameters": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "target": {
-                    "oneOf": [
-                      {
-                        "const": "kind"
-                      }
-                    ]
-                  },
-                  "issue": {
-                    "oneOf": [
-                      {
-                        "const": "MISSING"
-                      }
-                    ]
-                  }
-                },
-                "required": ["target","issue"
-                ]
-              }
-            },
-            "required": ["id","parameters"
-            ]
-          },
-          "executionPhase": {
-            "const": "NOT_STARTED"
-          }
-        },
-        "required": ["kind","code","status","message","diagnostic","executionPhase"
-        ]
-      },
-      "HostFailure.PrincipalInput.TargetSubject.Invalid": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "oneOf": [
-              {
-                "const": "HOST_FAILURE"
-              }
-            ]
-          },
-          "code": {
-            "oneOf": [
-              {
-                "const": "INPUT_INVALID"
-              }
-            ]
-          },
-          "status": {
-            "type": "integer",
-            "minimum": 400,
-            "maximum": 400
-          },
-          "message": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "diagnostic": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "oneOf": [
-                  {
-                    "const": "PRINCIPAL_INPUT_INVALID"
-                  }
-                ]
-              },
-              "parameters": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "target": {
-                    "oneOf": [
-                      {
-                        "const": "subject"
-                      }
-                    ]
-                  },
-                  "issue": {
-                    "oneOf": [
-                      {
-                        "const": "INVALID"
-                      }
-                    ]
-                  }
-                },
-                "required": ["target","issue"
-                ]
-              }
-            },
-            "required": ["id","parameters"
-            ]
-          },
-          "executionPhase": {
-            "const": "NOT_STARTED"
-          }
-        },
-        "required": ["kind","code","status","message","diagnostic","executionPhase"
-        ]
-      },
-      "HostFailure.PrincipalInput.TargetSubject.Missing": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "oneOf": [
-              {
-                "const": "HOST_FAILURE"
-              }
-            ]
-          },
-          "code": {
-            "oneOf": [
-              {
-                "const": "INPUT_INVALID"
-              }
-            ]
-          },
-          "status": {
-            "type": "integer",
-            "minimum": 400,
-            "maximum": 400
-          },
-          "message": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "diagnostic": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "oneOf": [
-                  {
-                    "const": "PRINCIPAL_INPUT_INVALID"
-                  }
-                ]
-              },
-              "parameters": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "target": {
-                    "oneOf": [
-                      {
-                        "const": "subject"
-                      }
-                    ]
-                  },
-                  "issue": {
-                    "oneOf": [
-                      {
-                        "const": "MISSING"
-                      }
-                    ]
-                  }
-                },
-                "required": ["target","issue"
-                ]
-              }
-            },
-            "required": ["id","parameters"
-            ]
-          },
-          "executionPhase": {
-            "const": "NOT_STARTED"
-          }
-        },
-        "required": ["kind","code","status","message","diagnostic","executionPhase"
-        ]
-      },
       "HostFailure.RateLimited": {
         "type": "object",
         "additionalProperties": false,
@@ -10181,7 +9417,7 @@
             "const": "REJECTED"
           },
           "data": {
-            "$ref": "#/components/schemas/Rejection"
+            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": ["tag","data"
@@ -10264,19 +9500,6 @@
           }
         },
         "required": ["operationId"
-        ]
-      },
-      "PageParameters": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "maximumPageSize": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 2147483647
-          }
-        },
-        "required": ["maximumPageSize"
         ]
       },
       "PageRequest": {
@@ -10496,115 +9719,6 @@
         "required": ["mode","values"
         ]
       },
-      "Rejection": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "diagnostic": {
-            "$ref": "#/components/schemas/Diagnostic"
-          },
-          "message": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "field": {
-            "oneOf": [
-              {
-                "oneOf": [
-                  {
-                    "const": "incidentDate"
-                  },
-                  {
-                    "const": "incidentNotificationDate"
-                  },
-                  {
-                    "const": "incidentCountry"
-                  },
-                  {
-                    "const": "claimantName"
-                  },
-                  {
-                    "const": "insurerName"
-                  },
-                  {
-                    "const": "claimedAmount"
-                  },
-                  {
-                    "const": "claimedCurrency"
-                  },
-                  {
-                    "const": "caseReference"
-                  },
-                  {
-                    "const": "paymentDecisionDate"
-                  },
-                  {
-                    "const": "payableAmount"
-                  },
-                  {
-                    "const": "payableCurrency"
-                  },
-                  {
-                    "const": "paymentDate"
-                  },
-                  {
-                    "const": "operationId"
-                  },
-                  {
-                    "const": "expectedRevision"
-                  },
-                  {
-                    "const": "payment"
-                  },
-                  {
-                    "const": "reason"
-                  },
-                  {
-                    "const": "limit"
-                  },
-                  {
-                    "const": "cursor"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "actualRevision": {
-            "oneOf": [
-              {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "recommendedAction": {
-            "oneOf": [
-              {
-                "const": "CORRECT_INPUT"
-              },
-              {
-                "const": "READ_CURRENT"
-              },
-              {
-                "const": "STOP_AND_INVESTIGATE"
-              },
-              {
-                "const": "NONE_REQUIRED"
-              }
-            ]
-          }
-        },
-        "required": ["diagnostic","message","field","actualRevision","recommendedAction"
-        ]
-      },
       "Review": {
         "type": "object",
         "additionalProperties": false,
@@ -10796,19 +9910,6 @@
           }
         },
         "required": ["tag","data"
-        ]
-      },
-      "TextLengthParameters": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "maximumCharacters": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 2147483647
-          }
-        },
-        "required": ["maximumCharacters"
         ]
       }
     }

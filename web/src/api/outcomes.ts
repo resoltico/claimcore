@@ -8,11 +8,23 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
   if (result.kind === "hostFailure") {
     return result.failure.code === "CONTRACT_MISMATCH"
       ? localNotice("definitionMismatch")
-      : { kind: "diagnostic", diagnostic: result.failure.diagnostic };
+      : {
+          kind: "diagnostic",
+          diagnostic: {
+            code: result.failure.diagnostic.id,
+            limits: result.failure.diagnostic.parameters,
+          },
+        };
   }
   const { outcome } = result.value;
   if (outcome.tag === "REJECTED" || outcome.tag === "FAILED") {
-    return { kind: "diagnostic", diagnostic: outcome.data.diagnostic };
+    return {
+      kind: "diagnostic",
+      diagnostic: {
+        code: outcome.data.code,
+        limits: "limits" in outcome.data ? outcome.data.limits : {},
+      },
+    };
   }
   if (outcome.tag === "CANCELLED") {
     return localNotice("cancelled");
@@ -30,4 +42,4 @@ export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean
     (result.failure.code === "SESSION_REJECTED" || result.failure.code === "SESSION_FORBIDDEN")) ||
   (result.kind === "outcome" &&
     result.value.outcome.tag === "REJECTED" &&
-    result.value.outcome.data.diagnostic.id === "ACCESS_RESOURCE_UNAVAILABLE");
+    result.value.outcome.data.code === "ACCESS_RESOURCE_UNAVAILABLE");

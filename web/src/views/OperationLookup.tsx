@@ -68,7 +68,7 @@ export const OperationLookup = ({
   const p = usePresentation();
   const { operationId, setOperationId, receipt, message, loading, observe } =
     useOperationObservation(token, initialOperationId);
-  const invalid = message?.kind === "diagnostic" && message.diagnostic.id === "HOST_INPUTINVALID";
+  const invalid = message?.kind === "diagnostic" && message.diagnostic.code === "HOST_INPUTINVALID";
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (invalid && !loading) {

@@ -1,13 +1,16 @@
 import { it, expect } from "vitest";
 import { resultNotice } from "../src/api/service";
 import { createPresenter } from "../src/presentation/presenter";
+import { isResponse } from "../src/protocol/client";
 import type { Fault } from "@contracts/client";
 it("diagnostics remain typed and never expose server prose", () => {
-  const fault: Fault = {
-    diagnostic: { id: "CORE_STORE_UNAVAILABLE", parameters: {} },
-    message: "PRIVATE_PROVIDER_CANARY",
-    recommendedAction: "RETRY_SAFE",
-  };
+  const fault: Fault = { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" };
+  expect(
+    isResponse("case.get", {
+      endpoint: "case.get",
+      outcome: { tag: "FAILED", data: { ...fault, message: "PRIVATE_PROVIDER_CANARY" } },
+    }),
+  ).toBe(false);
   const notice = resultNotice({
     kind: "outcome",
     status: 200,

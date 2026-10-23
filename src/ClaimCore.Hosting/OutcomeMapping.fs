@@ -8,8 +8,8 @@ module internal OutcomeMapping =
     let private query succeeded rejected failed cancelled map =
         function
         | QueryOutcome.Succeeded value -> succeeded (map value)
-        | QueryOutcome.Rejected value -> rejected (ResponseMapping.rejection value)
-        | QueryOutcome.Failed value -> failed (ResponseMapping.fault value)
+        | QueryOutcome.Rejected value -> rejected (value)
+        | QueryOutcome.Failed value -> failed (value)
         | QueryOutcome.Cancelled -> cancelled ()
 
     let context value =
@@ -104,11 +104,9 @@ module internal OutcomeMapping =
             | PreviewOutcome.AlreadyAccepted receipt ->
                 ClaimCore.Contract.Protocol.CasePreviewOutcome.AlreadyAccepted(receipt)
             | PreviewOutcome.Rejected reason ->
-                ClaimCore.Contract.Protocol.CasePreviewOutcome.Rejected(
-                    ResponseMapping.rejection reason
-                )
+                ClaimCore.Contract.Protocol.CasePreviewOutcome.Rejected(reason)
             | PreviewOutcome.Failed fault ->
-                ClaimCore.Contract.Protocol.CasePreviewOutcome.Failed(ResponseMapping.fault fault)
+                ClaimCore.Contract.Protocol.CasePreviewOutcome.Failed(fault)
             | PreviewOutcome.Cancelled -> ClaimCore.Contract.Protocol.CasePreviewOutcome.Cancelled()
 
         ClaimCore.Contract.Protocol.WireReply.CasePreview
@@ -127,11 +125,9 @@ module internal OutcomeMapping =
             | ExecuteOutcome.OutcomeUnknown id ->
                 ClaimCore.Contract.Protocol.CaseExecuteOutcome.OutcomeUnknown { OperationId = id }
             | ExecuteOutcome.Rejected reason ->
-                ClaimCore.Contract.Protocol.CaseExecuteOutcome.Rejected(
-                    ResponseMapping.rejection reason
-                )
+                ClaimCore.Contract.Protocol.CaseExecuteOutcome.Rejected(reason)
             | ExecuteOutcome.Failed fault ->
-                ClaimCore.Contract.Protocol.CaseExecuteOutcome.Failed(ResponseMapping.fault fault)
+                ClaimCore.Contract.Protocol.CaseExecuteOutcome.Failed(fault)
             | ExecuteOutcome.Cancelled -> ClaimCore.Contract.Protocol.CaseExecuteOutcome.Cancelled()
 
         ClaimCore.Contract.Protocol.WireReply.CaseExecute
@@ -151,13 +147,9 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.OutcomeUnknown
                     { OperationId = id }
             | ExecuteOutcome.Rejected reason ->
-                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Rejected(
-                    ResponseMapping.rejection reason
-                )
+                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Rejected(reason)
             | ExecuteOutcome.Failed fault ->
-                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Failed(
-                    ResponseMapping.fault fault
-                )
+                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Failed(fault)
             | ExecuteOutcome.Cancelled ->
                 ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Cancelled()
 

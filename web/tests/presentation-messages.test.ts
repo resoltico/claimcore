@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { localNotice, type Diagnostic, type LocalNoticeReason } from "../src/api/notices";
+import { localNotice, type DiagnosticNotice, type LocalNoticeReason } from "../src/api/notices";
 import {
   hasMessage,
   renderKey,
@@ -99,7 +99,7 @@ it("renders every specific diagnostic using only its closed safe parameter contr
         range.enum?.[0] ?? range.minimum ?? 0,
       ]),
     );
-    const diagnostic = { id, parameters: values } as Diagnostic;
+    const diagnostic = { code: id, limits: values } as DiagnosticNotice;
     for (const language of languages) {
       const p = { ...defaults, language };
       expect(renderNotice(p, { kind: "diagnostic", diagnostic })).not.toBe(
@@ -113,7 +113,7 @@ it("renders every specific diagnostic using only its closed safe parameter contr
     { maximumCharacters: 2147483648 },
     { maximumCharacters: 1.5 },
   ]) {
-    const diagnostic = { id: "INPUT_TEXT_TOO_LONG", parameters } as Diagnostic;
+    const diagnostic = { code: "INPUT_TEXT_TOO_LONG", limits: parameters } as DiagnosticNotice;
     expect(renderNotice(defaults, { kind: "diagnostic", diagnostic })).toBe(
       translate(defaults, "notice.unknownDiagnostic"),
     );
@@ -121,7 +121,7 @@ it("renders every specific diagnostic using only its closed safe parameter contr
   expect(
     renderNotice(defaults, {
       kind: "diagnostic",
-      diagnostic: { id: "secret", parameters: {} } as unknown as Diagnostic,
+      diagnostic: { code: "secret", limits: {} } as unknown as DiagnosticNotice,
     }),
   ).toBe(translate(defaults, "notice.unknownDiagnostic"));
 });

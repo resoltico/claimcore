@@ -28,7 +28,7 @@ let private createReader fixture (admin: IActorClaimsCore) role =
 
         let! registered =
             admin.ExecuteAuthority(
-                authorityRequest (id 3) principal AuthorityAct.RegisterActor,
+                authorityRequest (id 3) principal AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 
@@ -268,7 +268,7 @@ let private commitSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! registered =
             admin.ExecuteAuthority(
-                authorityRequest (id 3) principal AuthorityAct.RegisterActor,
+                authorityRequest (id 3) principal AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 

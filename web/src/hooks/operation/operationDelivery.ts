@@ -53,7 +53,7 @@ export const sendPreview = async (
   }
   const field =
     result.kind === "outcome" && result.value.outcome.tag === "REJECTED"
-      ? result.value.outcome.data.field
+      ? result.value.outcome.data.target
       : null;
   state.dispatch({
     type: "DEFINITELY_REJECTED",
@@ -86,7 +86,7 @@ export const sendSubmit = async ({
   }
   const field =
     result.kind === "outcome" && result.value.outcome.tag === "REJECTED"
-      ? result.value.outcome.data.field
+      ? result.value.outcome.data.target
       : null;
   dispatch({
     type: "DEFINITELY_REJECTED",

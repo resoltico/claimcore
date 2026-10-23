@@ -40,11 +40,7 @@
             "timeZone": "x",
             "offers": [],
             "capabilities": [],
-            "views": [
-              "CASES",
-              "AUTHORITY",
-              "OPERATIONS"
-            ]
+            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
           }
         }
       }
@@ -57,14 +53,11 @@
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "diagnostic": {
-              "id": "INPUT_TEXT_REQUIRED",
-              "parameters": {}
-            },
-            "message": "x",
-            "field": "incidentDate",
-            "actualRevision": 1,
-            "recommendedAction": "CORRECT_INPUT"
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
           }
         }
       }
@@ -77,12 +70,8 @@
         "outcome": {
           "tag": "FAILED",
           "data": {
-            "diagnostic": {
-              "id": "CORE_STORE_UNAVAILABLE",
-              "parameters": {}
-            },
-            "message": "x",
-            "recommendedAction": "RETRY_SAFE"
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
           }
         }
       }
@@ -143,14 +132,11 @@
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "diagnostic": {
-              "id": "INPUT_TEXT_REQUIRED",
-              "parameters": {}
-            },
-            "message": "x",
-            "field": "incidentDate",
-            "actualRevision": 1,
-            "recommendedAction": "CORRECT_INPUT"
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
           }
         }
       }
@@ -163,12 +149,8 @@
         "outcome": {
           "tag": "FAILED",
           "data": {
-            "diagnostic": {
-              "id": "CORE_STORE_UNAVAILABLE",
-              "parameters": {}
-            },
-            "message": "x",
-            "recommendedAction": "RETRY_SAFE"
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
           }
         }
       }
@@ -207,14 +189,11 @@
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "diagnostic": {
-              "id": "INPUT_TEXT_REQUIRED",
-              "parameters": {}
-            },
-            "message": "x",
-            "field": "incidentDate",
-            "actualRevision": 1,
-            "recommendedAction": "CORRECT_INPUT"
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
           }
         }
       }
@@ -227,12 +206,8 @@
         "outcome": {
           "tag": "FAILED",
           "data": {
-            "diagnostic": {
-              "id": "CORE_STORE_UNAVAILABLE",
-              "parameters": {}
-            },
-            "message": "x",
-            "recommendedAction": "RETRY_SAFE"
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
           }
         }
       }
@@ -285,14 +260,11 @@
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "diagnostic": {
-              "id": "INPUT_TEXT_REQUIRED",
-              "parameters": {}
-            },
-            "message": "x",
-            "field": "incidentDate",
-            "actualRevision": 1,
-            "recommendedAction": "CORRECT_INPUT"
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
           }
         }
       }
@@ -305,12 +277,8 @@
         "outcome": {
           "tag": "FAILED",
           "data": {
-            "diagnostic": {
-              "id": "CORE_STORE_UNAVAILABLE",
-              "parameters": {}
-            },
-            "message": "x",
-            "recommendedAction": "RETRY_SAFE"
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
           }
         }
       }
@@ -448,14 +416,11 @@
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "diagnostic": {
-              "id": "INPUT_TEXT_REQUIRED",
-              "parameters": {}
-            },
-            "message": "x",
-            "field": "incidentDate",
-            "actualRevision": 1,
-            "recommendedAction": "CORRECT_INPUT"
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
           }
         }
       }
@@ -469,12 +434,8 @@
         "outcome": {
           "tag": "FAILED",
           "data": {
-            "diagnostic": {
-              "id": "CORE_STORE_UNAVAILABLE",
-              "parameters": {}
-            },
-            "message": "x",
-            "recommendedAction": "RETRY_SAFE"
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
           }
         }
       }
@@ -606,14 +567,11 @@
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "diagnostic": {
-              "id": "INPUT_TEXT_REQUIRED",
-              "parameters": {}
-            },
-            "message": "x",
-            "field": "incidentDate",
-            "actualRevision": 1,
-            "recommendedAction": "CORRECT_INPUT"
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
           }
         }
       }
@@ -627,12 +585,8 @@
         "outcome": {
           "tag": "FAILED",
           "data": {
-            "diagnostic": {
-              "id": "CORE_STORE_UNAVAILABLE",
-              "parameters": {}
-            },
-            "message": "x",
-            "recommendedAction": "RETRY_SAFE"
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
           }
         }
       }
@@ -702,14 +656,11 @@
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "diagnostic": {
-              "id": "INPUT_TEXT_REQUIRED",
-              "parameters": {}
-            },
-            "message": "x",
-            "field": "incidentDate",
-            "actualRevision": 1,
-            "recommendedAction": "CORRECT_INPUT"
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
           }
         }
       }
@@ -722,12 +673,8 @@
         "outcome": {
           "tag": "FAILED",
           "data": {
-            "diagnostic": {
-              "id": "CORE_STORE_UNAVAILABLE",
-              "parameters": {}
-            },
-            "message": "x",
-            "recommendedAction": "RETRY_SAFE"
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
           }
         }
       }
@@ -812,14 +759,11 @@
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "diagnostic": {
-              "id": "INPUT_TEXT_REQUIRED",
-              "parameters": {}
-            },
-            "message": "x",
-            "field": "incidentDate",
-            "actualRevision": 1,
-            "recommendedAction": "CORRECT_INPUT"
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
           }
         }
       }
@@ -833,12 +777,8 @@
         "outcome": {
           "tag": "FAILED",
           "data": {
-            "diagnostic": {
-              "id": "CORE_STORE_UNAVAILABLE",
-              "parameters": {}
-            },
-            "message": "x",
-            "recommendedAction": "RETRY_SAFE"
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
           }
         }
       }
@@ -877,14 +817,11 @@
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "diagnostic": {
-              "id": "INPUT_TEXT_REQUIRED",
-              "parameters": {}
-            },
-            "message": "x",
-            "field": "incidentDate",
-            "actualRevision": 1,
-            "recommendedAction": "CORRECT_INPUT"
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
           }
         }
       }
@@ -897,12 +834,8 @@
         "outcome": {
           "tag": "FAILED",
           "data": {
-            "diagnostic": {
-              "id": "CORE_STORE_UNAVAILABLE",
-              "parameters": {}
-            },
-            "message": "x",
-            "recommendedAction": "RETRY_SAFE"
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
           }
         }
       }
@@ -949,14 +882,11 @@
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "diagnostic": {
-              "id": "INPUT_TEXT_REQUIRED",
-              "parameters": {}
-            },
-            "message": "x",
-            "field": "incidentDate",
-            "actualRevision": 1,
-            "recommendedAction": "CORRECT_INPUT"
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
           }
         }
       }
@@ -969,12 +899,8 @@
         "outcome": {
           "tag": "FAILED",
           "data": {
-            "diagnostic": {
-              "id": "CORE_STORE_UNAVAILABLE",
-              "parameters": {}
-            },
-            "message": "x",
-            "recommendedAction": "RETRY_SAFE"
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
           }
         }
       }

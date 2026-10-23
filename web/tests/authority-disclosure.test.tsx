@@ -86,11 +86,11 @@ const unavailable = (): ApiResult<ServiceResponse<"authority.execute">> => ({
     outcome: {
       tag: "REJECTED",
       data: {
-        diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
-        message: "Synthetic unavailable actor",
-        field: null,
+        code: "ACCESS_RESOURCE_UNAVAILABLE",
+        action: "NONE_REQUIRED",
+        target: null,
         actualRevision: null,
-        recommendedAction: "NONE_REQUIRED",
+        limits: {},
       },
     },
   },

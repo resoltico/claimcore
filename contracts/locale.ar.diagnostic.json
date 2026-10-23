@@ -64,5 +64,5 @@
   "diagnostic.QUERY_PAGE_LIMIT_RANGE": "استخدم قيمة من 1 إلى {maximumPageSize}.",
   "diagnostic.REVISION_EXHAUSTED": "وصلت الحالة إلى مراجعتها الأخيرة.",
   "diagnostic.TEXT_FORMATTING_CHARACTER": "لا تُقبل محارف التنسيق في البيانات الجديدة.",
-  "diagnostic.PRINCIPAL_INPUT_INVALID": "صحّح حقل الهوية {target}: {issue}. لم تُرسل عملية للتنفيذ في هذه المحاولة."
+  "diagnostic.INPUT_PRINCIPAL_FORMAT": "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية."
 }

@@ -7,7 +7,7 @@ import type {
 } from "@contracts/client";
 import type { productMetadata } from "../protocol/productMetadata";
 import type { Notice } from "./notices";
-export type { CaseFields, CaseView, CaseReceipt, Review, Rejection } from "@contracts/client";
+export type { CaseFields, CaseView, CaseReceipt, Review, Diagnostic } from "@contracts/client";
 export type HistoryEntry = HistoryEntries[number];
 export type { Receipt as OperationReceipt } from "@contracts/client";
 export type Descriptors = typeof productMetadata.descriptors;

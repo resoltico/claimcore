@@ -35,16 +35,21 @@ const rejected = (conflict: boolean): ApiResult<ServiceResponse<"case.execute">>
     operationId: "10000000-0000-4000-8000-000000000001",
     outcome: {
       tag: "REJECTED",
-      data: {
-        diagnostic: {
-          id: conflict ? "OPERATION_CONTENT_CONFLICT" : "ACCESS_RESOURCE_UNAVAILABLE",
-          parameters: {},
-        },
-        message: "Synthetic refusal",
-        field: null,
-        actualRevision: null,
-        recommendedAction: "NONE_REQUIRED",
-      },
+      data: conflict
+        ? {
+            code: "OPERATION_CONTENT_CONFLICT",
+            action: "STOP_AND_INVESTIGATE",
+            target: null,
+            actualRevision: null,
+            limits: {},
+          }
+        : {
+            code: "ACCESS_RESOURCE_UNAVAILABLE",
+            action: "NONE_REQUIRED",
+            target: null,
+            actualRevision: null,
+            limits: {},
+          },
     },
   },
 });

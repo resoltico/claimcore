@@ -33,7 +33,7 @@ const result = (endpoint: string, attempt: Attempt): ApiResult<EndpointOutcome> 
     value: {
       endpoint,
       operationId: "10000000-0000-4000-8000-000000000001",
-      outcome: { tag: attempt.tag, data: { diagnostic: { id: attempt.diagnostic } } },
+      outcome: { tag: attempt.tag, data: { code: attempt.diagnostic } },
     },
   } as unknown as ApiResult<EndpointOutcome>;
 };

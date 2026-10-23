@@ -106,11 +106,11 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   await user.selectOptions(languageControl(), "lv");
   pending.resolve(
     response("case.preview", "REJECTED", {
-      message: "UNTRUSTED_ENGLISH_CANARY",
-      field: "claimantName",
+      code: "INPUT_TEXT_REQUIRED",
+      action: "CORRECT_INPUT",
+      target: "claimantName",
       actualRevision: null,
-      recommendedAction: "CORRECT_INPUT",
-      diagnostic: { id: "INPUT_TEXT_REQUIRED", parameters: {} },
+      limits: {},
     }),
   );
   await waitFor(() => {

@@ -70,22 +70,9 @@ module HostFailures =
             (MessageText.literal "diagnostic.HOST_COMPLETEDRESPONSEFAILED")
         ]
 
-    let private principalFailures =
-        [
-            for target, _ in InputDiagnostics.targets do
-                for issue, _ in InputDiagnostics.issues do
-                    HostFailure.PrincipalInput { Target = target; Issue = issue }
-        ]
-
-    let all =
-        (policies |> List.map (fun (reason, _, _, _) -> reason)) @ principalFailures
+    let all = policies |> List.map (fun (reason, _, _, _) -> reason)
 
     let private policy reason =
-        let reason =
-            match reason with
-            | HostFailure.PrincipalInput _ -> HostFailure.InputInvalid
-            | value -> value
-
         policies |> List.find (fun (value, _, _, _) -> value = reason)
 
     let code = HostFailureIds.token
@@ -99,41 +86,17 @@ module HostFailures =
     let render reason =
         let _, _, _, message = policy reason in message
 
-    let diagnosticId =
-        function
-        | HostFailure.PrincipalInput _ -> InputDiagnostics.principalId
-        | value -> HostFailureIds.diagnostic value
+    let diagnosticId = HostFailureIds.diagnostic
 
     let private diagnostic reason =
-        match reason with
-        | HostFailure.PrincipalInput issue ->
-            let parameters =
-                Codec.record ()
-                |> ResponseScalars.fixedField
-                    "target"
-                    (InputDiagnostics.targets |> List.find (fst >> (=) issue.Target) |> snd)
-                |> ResponseScalars.fixedField
-                    "issue"
-                    (InputDiagnostics.issues |> List.find (fst >> (=) issue.Issue) |> snd)
-                |> Codec.build
-
-            Codec.record (fun () -> ())
-            |> ResponseScalars.fixedField "id" (diagnosticId reason)
-            |> Codec.field "parameters" id parameters
-            |> Codec.build
-        | _ ->
-            Codec.record (fun () -> ())
-            |> ResponseScalars.fixedField "id" (diagnosticId reason)
-            |> Codec.field "parameters" (fun () -> ()) (Codec.record () |> Codec.build)
-            |> Codec.build
+        Codec.record (fun () -> ())
+        |> ResponseScalars.fixedField "id" (diagnosticId reason)
+        |> Codec.field "parameters" (fun () -> ()) (Codec.record () |> Codec.build)
+        |> Codec.build
 
     let private phaseCodec = Codec.enumeration DeliveryTokens.phases |> Codec.nullable
 
-    let private name =
-        function
-        | HostFailure.PrincipalInput issue ->
-            "PrincipalInput." + string issue.Target + "." + string issue.Issue
-        | reason -> string reason
+    let private name reason = string reason
 
     let private variant reason =
         let fields =

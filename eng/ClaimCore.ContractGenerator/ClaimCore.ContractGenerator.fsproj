@@ -2,8 +2,6 @@
   <PropertyGroup><OutputType>Exe</OutputType><DefineConstants>$(DefineConstants);CONTRACT_GENERATION</DefineConstants></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
-    <Compile Include="../Presentation/RejectionPresentation.fs" Link="RejectionPresentation.fs" />
-    <Compile Include="../Presentation/CoreFaultPresentation.fs" Link="CoreFaultPresentation.fs" />
     <Compile Include="CommandInputRendering.fs" />
     <Compile Include="DescriptorRendering.fs" />
     <Compile Include="DefaultPresentation.fs" />

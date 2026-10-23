@@ -3,7 +3,6 @@ namespace ClaimCore.ContractGeneration
 open ClaimCore.Contract
 
 open ClaimCore.Contract.Protocol
-open ClaimCore.ContractGeneration.Presentation
 
 open System.Text.Json
 open ClaimCore.Domain

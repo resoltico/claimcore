@@ -24,7 +24,7 @@ let private prepare fixture =
 
         let! registered =
             admin.ExecuteAuthority(
-                authorityRequest (id 20) principal AuthorityAct.RegisterActor,
+                authorityRequest (id 20) principal AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 

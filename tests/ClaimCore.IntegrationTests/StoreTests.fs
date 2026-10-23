@@ -13,7 +13,7 @@ let private serviceCases (admin: IActorClaimsCore) principal =
     task {
         let! registered =
             admin.ExecuteAuthority(
-                authorityRequest (id 400) principal AuthorityAct.RegisterActor,
+                authorityRequest (id 400) principal AdmittedAuthorityAct.RegisterActor,
                 CancellationToken.None
             )
 
