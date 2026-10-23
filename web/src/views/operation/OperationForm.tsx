@@ -6,6 +6,7 @@ import { usePresentation } from "../../presentation/context";
 import { operationDocument, visibleOperationSchema } from "../../interaction/operationForm";
 import type { CurrentCase } from "../../api/service";
 import type { OperationModel } from "../../hooks/operation/useOperation";
+import { productMetadata } from "../../protocol/productMetadata";
 
 export type OperationFormProps = {
   model: OperationModel;
@@ -39,6 +40,9 @@ const CommandPicker = ({ model, offered, onCommand }: OperationFormProps) => {
 const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
   const p = usePresentation();
   const allowed = offered.includes(String(model.values["act.kind"]));
+  const command = productMetadata.descriptors.commands.find(
+    (item) => model.values["scope"] === "CASE" && item.kind === model.values["act.kind"],
+  );
   return (
     <>
       {" "}
@@ -53,6 +57,7 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
           />
         </p>
       )}
+      {command?.inputs.kind === "CORRECTION_GROUPS" ? <p>{p.text("ui.correctionHint")}</p> : null}
       {offered.length === 0 ? null : (
         <ProtocolFields
           document={operationDocument}
