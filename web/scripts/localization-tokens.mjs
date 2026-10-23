@@ -9,7 +9,6 @@ const owners = new Set([
 ]);
 const renderedKindFamilies = ["Scope_", "AuthorityAct_", "ReceiptScope_", "CaseReceiptScope_"];
 const members = new Set(["act", "disposition", "kind"]);
-const operationInputFamily = (/** @type {string} */ name) => name.startsWith("OperationInput_");
 /** @param {import("./tooling-types.mjs").JsonRecord} key */
 const memberName = (key) => (key["type"] === "Identifier" ? key["name"] : key["value"]);
 
@@ -61,13 +60,10 @@ const renderedFamilies = (types, result) => {
     if (
       declaration?.type === "TSTypeAliasDeclaration" &&
       (owners.has(declaration.id.name) ||
-        operationInputFamily(declaration.id.name) ||
         renderedKindFamilies.some((prefix) => declaration.id.name.startsWith(prefix)))
     ) {
       let selected = members;
-      if (operationInputFamily(declaration.id.name)) {
-        selected = new Set(["scope"]);
-      } else if (/^(CaseReceiptScope|ReceiptScope)_/u.test(declaration.id.name)) {
+      if (/^(CaseReceiptScope|ReceiptScope)_/u.test(declaration.id.name)) {
         selected = new Set(["act"]);
       }
       visit(declaration.typeAnnotation, result, selected);

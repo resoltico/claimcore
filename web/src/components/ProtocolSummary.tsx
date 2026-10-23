@@ -1,3 +1,4 @@
+import { productMetadata } from "../protocol/productMetadata";
 import { CharacterWarning } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
 import { resolveSchema, selectedSchema, unionSelector } from "../protocol/forms";
@@ -19,6 +20,31 @@ const summarySchema = ({ value, document, node }: Props): SchemaNode => {
   return typeof token === "string"
     ? selectedSchema(document, schema, "", { [selector]: token })
     : schema;
+};
+type SummaryEntry = { name: string; value: unknown; node: SchemaNode };
+const entries = (
+  value: Record<string, unknown>,
+  schema: SchemaNode,
+  document: SchemaDocument,
+): SummaryEntry[] =>
+  Object.entries(value).flatMap(([name, child]) => {
+    const node = schema.properties?.[name] ?? {};
+    const childSchema = summarySchema({ value: child, node, document });
+    return ["values", "groups"].includes(name) && isRecord(child) && childSchema.type === "object"
+      ? entries(child, childSchema, document)
+      : [{ name, value: child, node }];
+  });
+const isCorrectionGroup = (name: string): boolean =>
+  productMetadata.descriptors.commands.some(
+    (command) =>
+      command.inputs.kind === "CORRECTION_GROUPS" &&
+      command.inputs.groups.some((group) => group.name === name),
+  );
+const entryLabel = (name: string, p: ReturnType<typeof usePresentation>): string => {
+  if (isCorrectionGroup(name)) {
+    return p.groupLabel(name);
+  }
+  return name === "mode" ? p.text("ui.action") : p.fieldLabel(name);
 };
 const primitiveText = (value: unknown, p: ReturnType<typeof usePresentation>): string => {
   if (typeof value === "boolean") {
@@ -78,15 +104,11 @@ export const ProtocolSummary = (props: Props) => {
   const schema = summarySchema(props);
   return (
     <dl>
-      {Object.entries(value).map(([name, child]) => (
+      {entries(value, schema, document).map(({ name, value: child, node }) => (
         <div key={name}>
-          <dt>{p.fieldLabel(name)}</dt>
+          <dt>{entryLabel(name, p)}</dt>
           <dd>
-            <ProtocolSummary
-              value={child}
-              document={document}
-              node={schema.properties?.[name] ?? {}}
-            />
+            <ProtocolSummary value={child} document={document} node={node} />
           </dd>
         </div>
       ))}

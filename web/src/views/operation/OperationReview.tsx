@@ -5,9 +5,13 @@ import { usePresentation } from "../../presentation/context";
 import { productMetadata } from "../../protocol/productMetadata";
 import { operationDocument } from "../../interaction/operationForm";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import { resolveSchema } from "../../protocol/forms";
+import { resolveSchema, selectedSchema } from "../../protocol/forms";
 import type { OperationReview as Review, CaseReview } from "../../api/types";
 import { lifecycleMessageKey } from "../LifecycleStatus";
+type ReviewModel = Pick<
+  OperationModel,
+  "prepared" | "review" | "phase" | "busy" | "confirmed" | "confirm" | "execute" | "returnToEdit"
+>;
 const ReviewValues = ({ review }: { review: CaseReview }) => {
   const p = usePresentation();
   return (
@@ -76,7 +80,7 @@ const ReviewConfirmation = ({
   model,
   confirmationId,
 }: {
-  model: OperationModel;
+  model: ReviewModel;
   confirmationId:
     | (typeof productMetadata.descriptors.commands)[number]["confirmationId"]
     | (typeof productMetadata.descriptors.authorityCommands)[number]["confirmationId"];
@@ -106,12 +110,14 @@ const ReviewConfirmation = ({
     </>
   );
 };
-export const OperationReview = ({ model }: { model: OperationModel }) => {
+export const OperationReview = ({ model }: { model: ReviewModel }) => {
   const p = usePresentation();
   if (model.review === null || model.prepared === null) {
     return null;
   }
   const { input } = model.prepared;
+  const schema = selectedSchema(operationDocument, operationDocument, "", { scope: input.scope });
+  const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "scope"));
   const command =
     input.scope === "CASE"
       ? productMetadata.descriptors.commands.find((item) => item.kind === input.act.kind)!
@@ -136,7 +142,7 @@ export const OperationReview = ({ model }: { model: OperationModel }) => {
             ? p.commandMeaning(input.act.kind)
             : p.authorityMeaning(input.act.kind)}
         </p>
-        <ProtocolSummary value={input} document={operationDocument} node={operationDocument} />
+        <ProtocolSummary value={display} document={operationDocument} node={schema} />
         {model.review.scope === "CASE" ? (
           <ReviewValues review={model.review} />
         ) : (

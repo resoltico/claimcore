@@ -123,6 +123,6 @@ test("metadata omissions, obsolete keys, wrong arguments and token drift fail", 
   const tokens = renderedTokens(descriptors, readFileSync(resolve(contracts, "client.ts"), "utf8"));
   assert.throws(() => validateTokens({ ...english, "token.UNREVIEWED": "unknown" }, tokens));
   const missingScope = { ...english };
-  delete missingScope["token.AUTHORITY"];
+  delete missingScope["token.INSTALLATION"];
   assert.throws(() => validateTokens(missingScope, tokens));
 });

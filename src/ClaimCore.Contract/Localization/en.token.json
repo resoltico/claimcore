@@ -33,6 +33,5 @@
   "token.HUMAN": "Human",
   "token.SERVICE": "Service",
   "token.INSTALLATION": "Installation",
-  "token.CASE": "One case",
-  "token.AUTHORITY": "Authority"
+  "token.CASE": "One case"
 }

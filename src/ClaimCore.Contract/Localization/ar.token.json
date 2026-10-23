@@ -33,6 +33,5 @@
   "token.HUMAN": "شخص",
   "token.SERVICE": "خدمة",
   "token.INSTALLATION": "التثبيت",
-  "token.CASE": "قضية واحدة",
-  "token.AUTHORITY": "الصلاحيات"
+  "token.CASE": "قضية واحدة"
 }
