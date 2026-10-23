@@ -1,7 +1,7 @@
 import type { Response } from "@playwright/test";
 import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure } from "../src/protocol/client";
-export const loginAdmissionWindow = 61_000;
+const loginAdmissionWindow = 61_000;
 export const loginNavigationTimeout = 30_000;
 export const freshLoginWorkflowTimeout = loginAdmissionWindow + loginNavigationTimeout;
 export const loginAdmissionStatus = (
