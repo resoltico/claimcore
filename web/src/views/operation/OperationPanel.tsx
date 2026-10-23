@@ -7,16 +7,16 @@ import { OperationForm, type OperationFormProps } from "./OperationForm";
 import { OperationReview } from "./OperationReview";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 
-type Discard = { model: OperationModel; onDiscard: () => void };
-const DiscardButton = ({ model, onDiscard }: Discard) => {
+type Discard = { model: OperationModel; onDiscard: () => void; hidden: boolean };
+const DiscardButton = ({ model, onDiscard, hidden }: Discard) => {
   const p = usePresentation();
   return (
-    <button type="button" disabled={model.busy} onClick={onDiscard}>
+    <button type="button" hidden={hidden} disabled={model.busy} onClick={onDiscard}>
       {p.text("ui.discardAndLeave")}
     </button>
   );
 };
-const UnknownOperation = ({ model, onDiscard }: Discard) => {
+const UnknownOperation = ({ model }: { model: OperationModel }) => {
   const p = usePresentation();
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -57,12 +57,15 @@ const UnknownOperation = ({ model, onDiscard }: Discard) => {
       <button type="button" disabled={model.busy} onClick={() => void model.execute()}>
         {p.text("ui.retryExact")}
       </button>
-      <DiscardButton model={model} onDiscard={onDiscard} />
     </section>
   );
 };
 type Props = Omit<OperationFormProps, "onCommand">;
-type DialogProps = Props & { pending: string | null; setPending: (kind: string | null) => void };
+type DiscardProps = { model: OperationModel; onClose?: () => void };
+type DialogProps = DiscardProps & {
+  pending: string | null;
+  setPending: (kind: string | null) => void;
+};
 const DiscardDialog = ({ model, onClose, pending, setPending }: DialogProps) => {
   const p = usePresentation();
   let description = "ui.changeCommandDescription" as
@@ -102,14 +105,15 @@ const DiscardDialog = ({ model, onClose, pending, setPending }: DialogProps) => 
     </AccessibleModal>
   );
 };
-const PanelContent = (props: DialogProps) => {
-  const { model, onClose, setPending } = props;
+export const OperationPanel = (props: Props) => {
+  const { model, onClose } = props;
+  const setPending = model.requestDiscard;
   const p = usePresentation();
   const requestDiscard = () => {
     setPending("LEAVE");
   };
   if (model.priorUncertain) {
-    return <UnknownOperation model={model} onDiscard={requestDiscard} />;
+    return <UnknownOperation model={model} />;
   }
   if (model.disclosureRefused || model.contextChanged || !model.disclosureCurrent) {
     return (
@@ -120,7 +124,6 @@ const PanelContent = (props: DialogProps) => {
             {p.text("ui.previewOperation")}
           </button>
         ) : null}
-        <DiscardButton model={model} onDiscard={requestDiscard} />
       </section>
     );
   }
@@ -145,20 +148,29 @@ const PanelContent = (props: DialogProps) => {
         {...(onClose === undefined ? {} : { onClose: leave })}
         onCommand={requestChange}
       />
-      {onClose === undefined && model.dirty ? (
-        <DiscardButton model={model} onDiscard={requestDiscard} />
-      ) : null}
       <OperationReview model={model} />
     </>
   );
 };
-export const OperationPanel = (props: Props) => {
-  const pending = props.model.pendingDiscard;
-  const setPending = props.model.requestDiscard;
+/** Mutation consent stays mounted when independently authorized read panes are replaced. */
+export const OperationDiscard = (props: DiscardProps) => {
+  const { model, onClose } = props;
+  const show =
+    model.priorUncertain ||
+    model.disclosureRefused ||
+    model.contextChanged ||
+    !model.disclosureCurrent ||
+    (onClose === undefined && model.dirty);
   return (
     <>
-      <PanelContent {...props} pending={pending} setPending={setPending} />
-      <DiscardDialog {...props} pending={pending} setPending={setPending} />
+      <DiscardButton
+        model={model}
+        hidden={!show}
+        onDiscard={() => {
+          model.requestDiscard("LEAVE");
+        }}
+      />
+      <DiscardDialog {...props} pending={model.pendingDiscard} setPending={model.requestDiscard} />
     </>
   );
 };

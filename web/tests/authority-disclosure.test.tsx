@@ -230,6 +230,23 @@ const revalidatingReads = async () => {
   });
   return { context, listing, finishContext, finishListing };
 };
+it("keeps discard actionable when readonly restoration completes during a pointer press", async () => {
+  const { finishContext, finishListing } = await revalidatingReads();
+  const user = userEvent.setup();
+  const discard = screen.getByRole("button", { name: "Discard and leave" });
+  expect(discard).not.toBeDisabled();
+  await user.pointer({ target: discard, keys: "[MouseLeft>]" });
+  await finishRead(() => {
+    finishContext?.(emptyOffers());
+    finishListing?.(success("authority.list"));
+  });
+  expect(screen.getByRole("button", { name: "Discard and leave" })).toBe(discard);
+  await user.pointer({ keys: "[/MouseLeft]" });
+  const dialog = screen.getByRole("dialog");
+  expect(dialog).toBeVisible();
+  await user.click(within(dialog).getByRole("button", { name: "Discard and leave" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
 it.each(["context", "listing"] as const)(
   "a %s success during revalidation cannot survive the other read's refusal",
   async (first) => {

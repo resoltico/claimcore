@@ -1,7 +1,7 @@
 import { usePresentation } from "../presentation/context";
 import { useOperation } from "../hooks/operation/useOperation";
 import { AcceptedOperation } from "./operation/OperationDialogs";
-import { OperationPanel } from "./operation/OperationPanel";
+import { OperationPanel, OperationDiscard } from "./operation/OperationPanel";
 import type { OperationEditorProps } from "../interaction/editorTypes";
 
 export const OperationEditor = (props: OperationEditorProps) => {
@@ -29,6 +29,7 @@ export const OperationEditor = (props: OperationEditorProps) => {
       <h2 id="operation-title">{p.commandLabel(String(model.values["act.kind"]))}</h2>
       <p>{p.commandMeaning(String(model.values["act.kind"]))}</p>
       <p>{p.text("ui.unchangedUntilSubmit")}</p>
+      <OperationDiscard model={model} onClose={props.onClose} />
       <OperationPanel
         model={model}
         current={props.current}

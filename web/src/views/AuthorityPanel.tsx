@@ -10,7 +10,7 @@ import { usePresentation } from "../presentation/context";
 import { useRead } from "../hooks/useRead";
 import { useAuthorityDisclosure } from "../hooks/operation/useAuthorityDisclosure";
 import { useOperation, type OperationModel } from "../hooks/operation/useOperation";
-import { OperationPanel } from "./operation/OperationPanel";
+import { OperationPanel, OperationDiscard } from "./operation/OperationPanel";
 const contextData = (response: ServiceResponse<"context">) =>
   response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
 type Disclosure = ReturnType<typeof useAuthorityDisclosure>;
@@ -151,6 +151,7 @@ const AuthorityLayout = ({
           <NoticeView value={disclosure.notice} />
         </p>
       )}
+      <OperationDiscard model={model} />
       {disclosure.active ? (
         <AuthorityWorkspace
           key={`${token}:${disclosure.revision}`}

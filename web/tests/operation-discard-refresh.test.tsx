@@ -3,7 +3,7 @@ import { expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import { within } from "@testing-library/react";
 import { useOperation } from "../src/hooks/operation/useOperation";
-import { OperationPanel } from "../src/views/operation/OperationPanel";
+import { OperationPanel, OperationDiscard } from "../src/views/operation/OperationPanel";
 const locked = vi.fn();
 const Workspace = ({ epoch }: { epoch: number }) => {
   const model = useOperation({
@@ -13,7 +13,12 @@ const Workspace = ({ epoch }: { epoch: number }) => {
     token: "synthetic",
     onLockChange: locked,
   });
-  return <OperationPanel key={epoch} model={model} current={null} offered={["REGISTER_ACTOR"]} />;
+  return (
+    <>
+      <OperationDiscard model={model} />
+      <OperationPanel key={epoch} model={model} current={null} offered={["REGISTER_ACTOR"]} />
+    </>
+  );
 };
 it("preserves an open discard warning when a readonly workspace epoch is replaced", async () => {
   const user = userEvent.setup();
