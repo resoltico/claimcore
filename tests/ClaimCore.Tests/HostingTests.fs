@@ -83,8 +83,8 @@ let tests =
                                 failtest "Release missing"
 
                     let running =
-                        Task.Run<ExecuteOutcome>(
-                            Func<Task<ExecuteOutcome>>(fun () ->
+                        Task.Run<ExecuteReply>(
+                            Func<Task<ExecuteReply>>(fun () ->
                                 actor.Execute(
                                     OperationInput.Case(
                                         request

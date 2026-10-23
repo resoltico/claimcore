@@ -236,7 +236,9 @@ let tests =
                                 database.Fixture.Owner
                                 token
 
-                        acceptedAuthority first
+                        match first with
+                        | ProvisionOwnerOutcome.Accepted { Scope = ReceiptScope.Authority _ } -> ()
+                        | _ -> failtest "Expected accepted owner provisioning."
 
                         let! repeated =
                             LedgerAdministration.provisionOwner
@@ -247,7 +249,7 @@ let tests =
 
                         Expect.isTrue
                             (match repeated with
-                             | ExecuteOutcome.AlreadyAccepted _ -> true
+                             | ProvisionOwnerOutcome.AlreadyAccepted _ -> true
                              | _ -> false)
                             "Exact repeat"
 
@@ -264,7 +266,7 @@ let tests =
 
                         Expect.equal
                             otherResult
-                            (ExecuteOutcome.Rejected Refusal.ActorAlreadyRegistered)
+                            (ProvisionOwnerOutcome.Rejected Refusal.ActorAlreadyRegistered)
                             "No second bootstrap"
 
                         let! changed =
@@ -276,7 +278,7 @@ let tests =
 
                         Expect.equal
                             changed
-                            (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
+                            (ProvisionOwnerOutcome.Rejected Refusal.IdempotencyConflict)
                             "Different principal is a conflict"
                     }))
             testCaseAsync

@@ -37,15 +37,15 @@ let private lastOwner (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! disabled = execute actor 2 owner (AdmittedAuthorityAct.SetEnabled false)
 
         Expect.equal
-            disabled
-            (ExecuteOutcome.Rejected Refusal.LastOwner)
+            disabled.Outcome
+            (ExecuteResult.Rejected Refusal.LastOwner)
             "Last owner disable refuses"
 
         let! removed = grant actor (id 3) owner Role.Owner GrantTarget.Installation false
 
         Expect.equal
-            removed
-            (ExecuteOutcome.Rejected Refusal.LastOwner)
+            removed.Outcome
+            (ExecuteResult.Rejected Refusal.LastOwner)
             "Last installation grant removal refuses"
 
         let other = human "other-owner"
@@ -75,8 +75,8 @@ let private exactReplay (store: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! replay = grant actor (id 3) target Role.CaseReader GrantTarget.Installation true
 
         Expect.equal
-            replay
-            (ExecuteOutcome.AlreadyAccepted receipt)
+            replay.Outcome
+            (ExecuteResult.AlreadyAccepted receipt)
             "Original accepted authority receipt"
 
         match receipt.Scope with
@@ -90,8 +90,8 @@ let private exactReplay (store: MemoryLedgerStore.Store) (fixture: Fixture) =
             grant actor (id 3) target Role.CaseReader GrantTarget.Installation false
 
         Expect.equal
-            conflict
-            (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
+            conflict.Outcome
+            (ExecuteResult.Rejected Refusal.IdempotencyConflict)
             "Different content conflicts"
 
         let! observed = actor.Observe({ OperationId = id 3 }, CancellationToken.None)
@@ -183,8 +183,8 @@ let private humanGrantTargets (store: MemoryLedgerStore.Store) (fixture: Fixture
                     n <- n + 1
 
                     Expect.equal
-                        outcome
-                        (ExecuteOutcome.Rejected Refusal.HumanPrincipalRequired)
+                        outcome.Outcome
+                        (ExecuteResult.Rejected Refusal.HumanPrincipalRequired)
                         "Locked grant-target rule"
 
         Expect.equal store.Entries.Length before "Invalid grants append nothing"
@@ -213,17 +213,17 @@ let private uncertainty (store: MemoryLedgerStore.Store) (fixture: Fixture) =
             let! outcome =
                 actor.Execute(OperationInput.Authority request, CancellationToken.None)
 
-            match outcome with
-            | ExecuteOutcome.OutcomeUnknown operationId ->
-                Expect.equal operationId request.OperationId "Original authority identity"
+            match outcome.Outcome with
+            | ExecuteResult.OutcomeUnknown ->
+                Expect.equal outcome.OperationId request.OperationId "Original authority identity"
 
             | _ -> failtest "Authority uncertainty relabeled"
 
             let! retry = actor.Execute(OperationInput.Authority request, CancellationToken.None)
 
-            match retry, lands with
-            | ExecuteOutcome.AlreadyAccepted _, true
-            | ExecuteOutcome.Accepted _, false -> ()
+            match retry.Outcome, lands with
+            | ExecuteResult.AlreadyAccepted _, true
+            | ExecuteResult.Accepted _, false -> ()
             | _ -> failtest "Exact authority retry failed"
 
             Expect.equal
@@ -247,14 +247,36 @@ let private failureAndCancellation (store: MemoryLedgerStore.Store) (fixture: Fi
             actor.Execute(OperationInput.Authority request, CancellationToken.None)
 
         Expect.equal
-            failure
-            (ExecuteOutcome.Failed CoreFault.StoreUnavailable)
+            failure.Outcome
+            (ExecuteResult.Failed CoreFault.StoreUnavailable)
             "Definite authority failure"
 
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
         let! cancelled = actor.Execute(OperationInput.Authority request, cancellation.Token)
-        Expect.equal cancelled ExecuteOutcome.Cancelled "Before dispatch"
+
+        Expect.equal
+            cancelled.Outcome
+            (ExecuteResult.Failed CoreFault.StoreUnavailable)
+            "Before dispatch"
+
+        Expect.equal
+            cancelled.OperationId
+            request.OperationId
+            "Cancelled authority keeps original identity"
+
+        let! preview = actor.Preview(OperationInput.Authority request, cancellation.Token)
+
+        Expect.equal
+            preview.OperationId
+            request.OperationId
+            "Cancelled authority preview keeps original identity"
+
+        Expect.equal
+            preview.Outcome
+            (PreviewResult.Failed CoreFault.StoreUnavailable)
+            "Cancelled authority preview is a definite failure"
+
         Expect.equal store.Entries.Length 1 "No authority acceptance"
     }
 
@@ -451,16 +473,16 @@ let private exhaustedHead (store: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! preview = actor.Preview(OperationInput.Authority input, CancellationToken.None)
 
         Expect.equal
-            preview
-            (PreviewOutcome.Rejected Refusal.ActorAlreadyRegistered)
+            preview.Outcome
+            (PreviewResult.Rejected Refusal.ActorAlreadyRegistered)
             "Advisory preview applies target rules without a ledger head."
 
         let! execution =
             actor.Execute(OperationInput.Authority input, CancellationToken.None)
 
         Expect.equal
-            execution
-            (ExecuteOutcome.Rejected Refusal.LedgerExhausted)
+            execution.Outcome
+            (ExecuteResult.Rejected Refusal.LedgerExhausted)
             "Locked execution preserves capacity refusal before projection validation."
     }
 

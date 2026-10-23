@@ -319,8 +319,8 @@ let tests =
                         let! failed = actor.Execute(OperationInput.Case operation, token)
 
                         Expect.equal
-                            failed
-                            (ExecuteOutcome.Failed CoreFault.StoreUnavailable)
+                            failed.Outcome
+                            (ExecuteResult.Failed CoreFault.StoreUnavailable)
                             "SQLSTATE is definite"
 
                         let! head = Verification.verify database.OwnerSource None token

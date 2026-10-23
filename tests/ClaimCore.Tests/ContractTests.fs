@@ -149,12 +149,11 @@ let private executeOutcomes () =
         [ OutcomeMapping.execute, receipt; OutcomeMapping.authorityExecute, authority ] do
         for outcome, exit in
             [
-                ExecuteOutcome.Accepted receiptValue, 0
-                ExecuteOutcome.AlreadyAccepted receiptValue, 0
-                ExecuteOutcome.Rejected ClaimCore.Contract.Refusal.ActNotPermitted, 2
-                ExecuteOutcome.Failed CoreFault.StoreUnavailable, 3
-                ExecuteOutcome.Cancelled, 130
-                ExecuteOutcome.OutcomeUnknown id, 4
+                ExecuteResult.Accepted receiptValue, 0
+                ExecuteResult.AlreadyAccepted receiptValue, 0
+                ExecuteResult.Rejected ClaimCore.Contract.Refusal.ActNotPermitted, 2
+                ExecuteResult.Failed CoreFault.StoreUnavailable, 3
+                ExecuteResult.OutcomeUnknown, 4
             ] do
             let reply = map id outcome
             admitted reply |> ignore
@@ -220,11 +219,10 @@ let private previewCodecs () =
 
     for value in
         [
-            PreviewOutcome.Reviewed(OperationReview.Case review)
-            PreviewOutcome.AlreadyAccepted receipt
-            PreviewOutcome.Rejected ClaimCore.Contract.Refusal.ActNotPermitted
-            PreviewOutcome.Failed CoreFault.StoreIntegrityError
-            PreviewOutcome.Cancelled
+            PreviewResult.Reviewed(OperationReview.Case review)
+            PreviewResult.AlreadyAccepted receipt
+            PreviewResult.Rejected ClaimCore.Contract.Refusal.ActNotPermitted
+            PreviewResult.Failed CoreFault.StoreIntegrityError
         ] do
         OutcomeMapping.preview id value |> admitted |> ignore
 
@@ -355,7 +353,7 @@ let private integerLexemes () =
             (fun () ->
                 OutcomeMapping.execute
                     id
-                    (ExecuteOutcome.Accepted
+                    (ExecuteResult.Accepted
                         { receipt with
                             Position = { position with Sequence = sequence }
                         })

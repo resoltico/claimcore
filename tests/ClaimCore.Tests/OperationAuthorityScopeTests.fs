@@ -57,8 +57,8 @@ let private existingCaseAuthority (_: MemoryLedgerStore.Store) fixture =
             (core fixture principal).Execute(OperationInput.Case duplicate, CancellationToken.None)
 
         Expect.equal
-            current
-            (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
+            current.Outcome
+            (ExecuteResult.Rejected Refusal.IdempotencyConflict)
             "A used ID on readable CASE-B is a content conflict for a CASE-A request"
 
         let! read =

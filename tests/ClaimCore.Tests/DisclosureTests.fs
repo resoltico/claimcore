@@ -173,8 +173,8 @@ let private replayAndPreview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! replay = reader.Execute(OperationInput.Case original, CancellationToken.None)
 
         let receipt =
-            match replay with
-            | ExecuteOutcome.AlreadyAccepted receipt -> receipt
+            match replay.Outcome with
+            | ExecuteResult.AlreadyAccepted receipt -> receipt
             | _ -> failtest "Authorized exact replay missing"
 
         Expect.equal
@@ -190,8 +190,8 @@ let private replayAndPreview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! preview = reader.Preview(OperationInput.Case original, CancellationToken.None)
 
         Expect.equal
-            preview
-            (PreviewOutcome.AlreadyAccepted receipt)
+            preview.Outcome
+            (PreviewResult.AlreadyAccepted receipt)
             "Preview acceptance follows the same disclosure rule"
 
         let! fresh =
@@ -258,8 +258,8 @@ let private stewardshipReplay (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         accepted reinstated |> ignore
         let! replay = reader.Execute(OperationInput.Case original, CancellationToken.None)
 
-        match replay with
-        | ExecuteOutcome.AlreadyAccepted receipt ->
+        match replay.Outcome with
+        | ExecuteResult.AlreadyAccepted receipt ->
             Expect.equal (metadata receipt) (metadata first) "Stewardship metadata is stable"
 
             Expect.equal

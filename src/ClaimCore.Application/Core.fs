@@ -10,16 +10,16 @@ open ClaimCore.Domain
 module internal Core =
     let private mutationResult =
         function
-        | LedgerWriteResult.Refused error -> ExecuteOutcome.Rejected error
-        | LedgerWriteResult.Failed fault -> ExecuteOutcome.Failed fault
-        | LedgerWriteResult.Appended receipt -> ExecuteOutcome.Accepted receipt
-        | LedgerWriteResult.Replayed receipt -> ExecuteOutcome.AlreadyAccepted receipt
+        | LedgerWriteResult.Refused error -> ExecuteResult.Rejected error
+        | LedgerWriteResult.Failed fault -> ExecuteResult.Failed fault
+        | LedgerWriteResult.Appended receipt -> ExecuteResult.Accepted receipt
+        | LedgerWriteResult.Replayed receipt -> ExecuteResult.AlreadyAccepted receipt
 
-    let private mutationFailure operationId =
+    let private mutationFailure =
         function
-        | StoreFailure.Cancelled -> ExecuteOutcome.Cancelled
-        | StoreFailure.CommitOutcomeUnknown -> ExecuteOutcome.OutcomeUnknown operationId
-        | failure -> ExecuteOutcome.Failed(Queries.fault failure)
+        | StoreFailure.Cancelled -> ExecuteResult.Failed CoreFault.StoreUnavailable
+        | StoreFailure.CommitOutcomeUnknown -> ExecuteResult.OutcomeUnknown
+        | failure -> ExecuteResult.Failed(Queries.fault failure)
 
     let private caseWrite
         (store: ILedgerStore)
@@ -31,10 +31,10 @@ module internal Core =
         =
         task {
             if ct.IsCancellationRequested then
-                return ExecuteOutcome.Cancelled
+                return ExecuteResult.Failed CoreFault.StoreUnavailable
             else
                 match Case.validateRequest request with
-                | Error error -> return ExecuteOutcome.Rejected(error)
+                | Error error -> return ExecuteResult.Rejected(error)
                 | Ok() ->
                     let decide = CaseDecisions.execute installationId calendar principal request
 
@@ -47,10 +47,7 @@ module internal Core =
                             ct
                         )
 
-                    return
-                        result
-                        |> Result.map mutationResult
-                        |> Result.defaultWith (mutationFailure request.OperationId)
+                    return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
         }
 
     let private admitAuthority input =
@@ -67,10 +64,10 @@ module internal Core =
         =
         task {
             if ct.IsCancellationRequested then
-                return ExecuteOutcome.Cancelled
+                return ExecuteResult.Failed CoreFault.StoreUnavailable
             else
                 match admitAuthority input with
-                | Error error -> return ExecuteOutcome.Rejected error
+                | Error error -> return ExecuteResult.Rejected error
                 | Ok request ->
                     let decide = AuthorityDecisions.execute installationId principal request
 
@@ -84,10 +81,7 @@ module internal Core =
                             ct
                         )
 
-                    return
-                        result
-                        |> Result.map mutationResult
-                        |> Result.defaultWith (mutationFailure request.OperationId)
+                    return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
         }
 
     let private businessFields =
@@ -146,10 +140,10 @@ module internal Core =
         =
         task {
             if ct.IsCancellationRequested then
-                return PreviewOutcome.Cancelled
+                return PreviewResult.Failed CoreFault.StoreUnavailable
             else
                 match Case.validateRequest request with
-                | Error error -> return PreviewOutcome.Rejected(error)
+                | Error error -> return PreviewResult.Rejected(error)
                 | Ok() ->
                     let! result =
                         store.ReadCase(
@@ -160,21 +154,22 @@ module internal Core =
                         )
 
                     match result with
-                    | Error StoreFailure.Cancelled -> return PreviewOutcome.Cancelled
-                    | Error error -> return PreviewOutcome.Failed(Queries.fault error)
+                    | Error StoreFailure.Cancelled ->
+                        return PreviewResult.Failed CoreFault.StoreUnavailable
+                    | Error error -> return PreviewResult.Failed(Queries.fault error)
                     | Ok view ->
                         return
                             match
                                 CaseDecisions.review installationId calendar principal request view
                             with
-                            | CaseReviewDecision.Refuse error -> PreviewOutcome.Rejected error
-                            | CaseReviewDecision.Fail error -> PreviewOutcome.Failed error
+                            | CaseReviewDecision.Refuse error -> PreviewResult.Rejected error
+                            | CaseReviewDecision.Fail error -> PreviewResult.Failed error
                             | CaseReviewDecision.Replay receipt ->
-                                PreviewOutcome.AlreadyAccepted receipt
+                                PreviewResult.AlreadyAccepted receipt
                             | CaseReviewDecision.Proposed(before, after) ->
                                 advisory calendar view.ObservedAt request.Act before after
                                 |> OperationReview.Case
-                                |> PreviewOutcome.Reviewed
+                                |> PreviewResult.Reviewed
         }
 
     let private authorityPreview
@@ -186,10 +181,10 @@ module internal Core =
         =
         task {
             if ct.IsCancellationRequested then
-                return PreviewOutcome.Cancelled
+                return PreviewResult.Failed CoreFault.StoreUnavailable
             else
                 match admitAuthority input with
-                | Error refusal -> return PreviewOutcome.Rejected refusal
+                | Error refusal -> return PreviewResult.Rejected refusal
                 | Ok request ->
                     let! read =
                         store.ReadAuthorityTarget(
@@ -201,23 +196,59 @@ module internal Core =
                         )
 
                     match read with
-                    | Error StoreFailure.Cancelled -> return PreviewOutcome.Cancelled
-                    | Error failure -> return PreviewOutcome.Failed(Queries.fault failure)
+                    | Error StoreFailure.Cancelled ->
+                        return PreviewResult.Failed CoreFault.StoreUnavailable
+                    | Error failure -> return PreviewResult.Failed(Queries.fault failure)
                     | Ok view ->
                         return
                             match
                                 AuthorityDecisions.review installationId principal request view
                             with
                             | AuthorityReviewDecision.Refuse refusal ->
-                                PreviewOutcome.Rejected refusal
-                            | AuthorityReviewDecision.Fail fault -> PreviewOutcome.Failed fault
+                                PreviewResult.Rejected refusal
+                            | AuthorityReviewDecision.Fail fault -> PreviewResult.Failed fault
                             | AuthorityReviewDecision.Replay receipt ->
-                                PreviewOutcome.AlreadyAccepted receipt
+                                PreviewResult.AlreadyAccepted receipt
                             | AuthorityReviewDecision.Proposed(_, projection) ->
                                 AuthorityReviews.describe view projection
                                 |> OperationReview.Authority
-                                |> PreviewOutcome.Reviewed
+                                |> PreviewResult.Reviewed
         }
+
+    let private previewOperation store installationId calendar principal input ct =
+        task {
+            let! outcome =
+                match input with
+                | OperationInput.Case request ->
+                    preview store installationId calendar principal request ct
+                | OperationInput.Authority request ->
+                    authorityPreview store installationId principal request ct
+
+            return
+                ({
+                    OperationId = OperationInput.operationId input
+                    Outcome = outcome
+                }
+                : PreviewReply)
+        }
+
+    let private executeOperation store installationId calendar principal input ct =
+        task {
+            let! outcome =
+                match input with
+                | OperationInput.Case request ->
+                    caseWrite store installationId calendar principal request ct
+                | OperationInput.Authority request ->
+                    authorityWrite store installationId principal request ct
+
+            return
+                ({
+                    OperationId = OperationInput.operationId input
+                    Outcome = outcome
+                }
+                : ExecuteReply)
+        }
+
 
     /// Every facade authorizes each read against current authoritative state.
     let create
@@ -234,18 +265,10 @@ module internal Core =
                 Queries.context store calendar principal ct
 
             member _.Preview(input, ct) =
-                match input with
-                | OperationInput.Case request ->
-                    preview store installationId calendar principal request ct
-                | OperationInput.Authority request ->
-                    authorityPreview store installationId principal request ct
+                previewOperation store installationId calendar principal input ct
 
             member _.Execute(input, ct) =
-                match input with
-                | OperationInput.Case request ->
-                    caseWrite store installationId calendar principal request ct
-                | OperationInput.Authority request ->
-                    authorityWrite store installationId principal request ct
+                executeOperation store installationId calendar principal input ct
 
             member _.Get(request, ct) =
                 Queries.get store installationId principal request.CaseReference ct

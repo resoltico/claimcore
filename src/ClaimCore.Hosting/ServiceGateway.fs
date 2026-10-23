@@ -51,14 +51,14 @@ module ServiceGateway =
             match input with
             | WireRequest.CasePreview request ->
                 let! value = core.Preview(OperationInput.Case request, token)
-                return OutcomeMapping.preview request.OperationId value
+                return OutcomeMapping.preview request.OperationId value.Outcome
             | WireRequest.CaseExecute request ->
                 let! value = core.Execute(OperationInput.Case request, CancellationToken.None)
 
-                return OutcomeMapping.execute request.OperationId value
+                return OutcomeMapping.execute request.OperationId value.Outcome
             | WireRequest.AuthorityExecute request ->
                 let! value = core.Execute(OperationInput.Authority request, CancellationToken.None)
-                return OutcomeMapping.authorityExecute request.OperationId value
+                return OutcomeMapping.authorityExecute request.OperationId value.Outcome
             | WireRequest.Session
             | WireRequest.SessionLogout ->
                 return invalidArg "request" "The HTTPS host owns session operations."

@@ -34,12 +34,12 @@ module Replies =
 
     let authority =
         function
-        | ExecuteOutcome.Accepted receipt -> accepted "ACCEPTED" receipt
-        | ExecuteOutcome.AlreadyAccepted receipt -> accepted "ALREADY_ACCEPTED" receipt
-        | ExecuteOutcome.Rejected _ -> tag "REFUSED" 2
-        | ExecuteOutcome.Failed _ -> tag "FAILED" 3
-        | ExecuteOutcome.Cancelled -> tag "CANCELLED" 3
-        | ExecuteOutcome.OutcomeUnknown operationId ->
+        | ProvisionOwnerOutcome.Accepted receipt -> accepted "ACCEPTED" receipt
+        | ProvisionOwnerOutcome.AlreadyAccepted receipt -> accepted "ALREADY_ACCEPTED" receipt
+        | ProvisionOwnerOutcome.Rejected _ -> tag "REFUSED" 2
+        | ProvisionOwnerOutcome.Failed _ -> tag "FAILED" 3
+        | ProvisionOwnerOutcome.Cancelled -> tag "CANCELLED" 3
+        | ProvisionOwnerOutcome.OutcomeUnknown operationId ->
             encode
                 {|
                     tag = "OUTCOME_UNKNOWN"

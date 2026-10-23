@@ -174,12 +174,11 @@ let private outcomes () =
 
             let values =
                 [
-                    ExecuteOutcome.Accepted accepted, "ACCEPTED"
-                    ExecuteOutcome.AlreadyAccepted accepted, "ALREADY_ACCEPTED"
-                    ExecuteOutcome.Rejected((ClaimCore.Contract.Refusal.CaseVoided)), "REJECTED"
-                    ExecuteOutcome.Failed CoreFault.StoreUnavailable, "FAILED"
-                    ExecuteOutcome.Cancelled, "CANCELLED"
-                    ExecuteOutcome.OutcomeUnknown operationId, "OUTCOME_UNKNOWN"
+                    ExecuteResult.Accepted accepted, "ACCEPTED"
+                    ExecuteResult.AlreadyAccepted accepted, "ALREADY_ACCEPTED"
+                    ExecuteResult.Rejected((ClaimCore.Contract.Refusal.CaseVoided)), "REJECTED"
+                    ExecuteResult.Failed CoreFault.StoreUnavailable, "FAILED"
+                    ExecuteResult.OutcomeUnknown, "OUTCOME_UNKNOWN"
                 ]
 
             for value, tag in values do
@@ -222,7 +221,7 @@ let private authorityCancellation () =
                         CancellationToken.None
                         "Authority mutations are not request-cancellable"
 
-                    Task.FromResult(ExecuteOutcome.Accepted(authorityReceipt request))
+                    Task.FromResult(ExecuteResult.Accepted(authorityReceipt request))
 
             let! status, response =
                 host.Call("authority.execute", body "authority.execute", token)

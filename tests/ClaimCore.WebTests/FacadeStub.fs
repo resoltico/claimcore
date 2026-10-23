@@ -108,15 +108,15 @@ type Facade() =
     member _.Calls = List.ofSeq calls
     member val Error: exn option = None with get, set
 
-    member val Execute: CaseRequest * CancellationToken -> Task<ExecuteOutcome> =
+    member val Execute: CaseRequest * CancellationToken -> Task<ExecuteResult> =
         (fun (request, _) ->
             Task.FromResult(
-                ExecuteOutcome.Accepted(receipt request.OperationId request.CaseReference)
+                ExecuteResult.Accepted(receipt request.OperationId request.CaseReference)
             )) with get, set
 
     member val ExecuteAuthority: ClaimCore.Contract.AuthorityRequest * CancellationToken
-        -> Task<ExecuteOutcome> =
-        (fun (request, _) -> Task.FromResult(ExecuteOutcome.Accepted(authorityReceipt request))) with get, set
+        -> Task<ExecuteResult> =
+        (fun (request, _) -> Task.FromResult(ExecuteResult.Accepted(authorityReceipt request))) with get, set
 
     member val Principal: PrincipalKey option = None with get, set
 
@@ -134,29 +134,41 @@ type Facade() =
             this.Invoke "context" (ReadReply.Succeeded description)
 
         member this.Preview(input, _) =
-            match input with
-            | OperationInput.Case request ->
-                this.Invoke
-                    "case.preview"
-                    (PreviewOutcome.AlreadyAccepted(
-                        receipt request.OperationId request.CaseReference
-                    ))
-            | OperationInput.Authority request ->
-                this.Invoke
-                    "authority.preview"
-                    (PreviewOutcome.AlreadyAccepted(authorityReceipt request))
-
-        member this.Execute(input, token) =
-            match this.Error with
-            | Some error -> raise error
-            | None ->
+            let outcome =
                 match input with
                 | OperationInput.Case request ->
-                    calls.Add "case.execute"
-                    this.Execute(request, token)
+                    PreviewResult.AlreadyAccepted(receipt request.OperationId request.CaseReference)
                 | OperationInput.Authority request ->
-                    calls.Add "authority.execute"
-                    this.ExecuteAuthority(request, token)
+                    PreviewResult.AlreadyAccepted(authorityReceipt request)
+
+            this.Invoke
+                "operation.preview"
+                ({
+                    OperationId = OperationInput.operationId input
+                    Outcome = outcome
+                }
+                : PreviewReply)
+
+        member this.Execute(input, token) =
+            task {
+                match this.Error with
+                | Some error -> return raise error
+                | None ->
+                    let! outcome =
+                        match input with
+                        | OperationInput.Case request ->
+                            calls.Add "case.execute"
+                            this.Execute(request, token)
+                        | OperationInput.Authority request ->
+                            calls.Add "authority.execute"
+                            this.ExecuteAuthority(request, token)
+
+                    return
+                        {
+                            OperationId = OperationInput.operationId input
+                            Outcome = outcome
+                        }
+            }
 
         member this.Get(request, _) =
             let reference = request.CaseReference

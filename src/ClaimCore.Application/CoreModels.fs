@@ -33,27 +33,10 @@ type AdmittedAuthorityRequest =
         Act: AdmittedAuthorityAct
     }
 
-[<RequireQualifiedAccess>]
-type PreviewOutcome =
-    | Reviewed of review: OperationReview
-    | AlreadyAccepted of OperationReceipt
-    | Rejected of Refusal
-    | Failed of CoreFault
-    | Cancelled
-
-[<RequireQualifiedAccess>]
-type ExecuteOutcome =
-    | Accepted of OperationReceipt
-    | AlreadyAccepted of OperationReceipt
-    | Rejected of Refusal
-    | Failed of CoreFault
-    | Cancelled
-    | OutcomeUnknown of operationId: Guid
-
 type IActorClaimsCore =
     abstract Context: CancellationToken -> Task<ReadReply<ActorContext>>
-    abstract Preview: OperationInput * CancellationToken -> Task<PreviewOutcome>
-    abstract Execute: OperationInput * CancellationToken -> Task<ExecuteOutcome>
+    abstract Preview: OperationInput * CancellationToken -> Task<PreviewReply>
+    abstract Execute: OperationInput * CancellationToken -> Task<ExecuteReply>
     abstract Get: CaseGetRequest * CancellationToken -> Task<ReadReply<CaseReadModel>>
     abstract List: PageRequest * CancellationToken -> Task<ReadReply<CaseSummaryPage>>
     abstract History: HistoryRequest * CancellationToken -> Task<ReadReply<HistoryResultPage>>

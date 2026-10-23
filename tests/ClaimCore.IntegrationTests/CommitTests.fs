@@ -28,8 +28,8 @@ let private replay (database: PostgresFixture.Database) (actor: IActorClaimsCore
 
         if landed then
             Expect.isTrue
-                (match replay with
-                 | ExecuteOutcome.AlreadyAccepted _ -> true
+                (match replay.Outcome with
+                 | ExecuteResult.AlreadyAccepted _ -> true
                  | _ -> false)
                 "Commit landed exactly once"
         else
@@ -90,8 +90,8 @@ let private commitEvidence drop (operation: CaseRequest) (proxy: CommitProxy.Pro
             do! proxy.Intercepted.WaitAsync(TimeSpan.FromSeconds 3.)
 
             Expect.isTrue
-                (match result with
-                 | ExecuteOutcome.OutcomeUnknown id -> id = operation.OperationId
+                (match result.Outcome with
+                 | ExecuteResult.OutcomeUnknown -> result.OperationId = operation.OperationId
                  | _ -> false)
                 "Lost commit reply stays unknown"
 

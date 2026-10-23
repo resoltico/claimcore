@@ -104,9 +104,9 @@ let private diagnostic reason =
     baselinePolicy identifier reason
     identifier, reason.Field
 
-let private refused =
-    function
-    | ExecuteOutcome.Rejected reason -> diagnostic reason
+let private refused (reply: ExecuteReply) =
+    match reply.Outcome with
+    | ExecuteResult.Rejected reason -> diagnostic reason
     | _ -> failtest "The request must produce a public refusal."
 
 let private queryRefused =

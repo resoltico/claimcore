@@ -17,18 +17,29 @@ module internal ActorFacade =
         let query () =
             ReadReply.Failed CoreFault.StoreUnavailable
 
-        let execute = ExecuteOutcome.Failed CoreFault.StoreUnavailable
 
         { new IActorClaimsCore with
             member _.Context token =
                 run gate (query ()) (fun () -> core.Context token)
 
             member _.Preview(request, token) =
-                run gate (PreviewOutcome.Failed CoreFault.StoreUnavailable) (fun () ->
-                    core.Preview(request, token))
+                run
+                    gate
+                    ({
+                        OperationId = OperationInput.operationId request
+                        Outcome = PreviewResult.Failed CoreFault.StoreUnavailable
+                    }
+                    : PreviewReply)
+                    (fun () -> core.Preview(request, token))
 
             member _.Execute(request, token) =
-                run gate execute (fun () -> core.Execute(request, token))
+                run
+                    gate
+                    {
+                        OperationId = OperationInput.operationId request
+                        Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
+                    }
+                    (fun () -> core.Execute(request, token))
 
             member _.Get(request, token) =
                 run gate (query ()) (fun () -> core.Get(request, token))

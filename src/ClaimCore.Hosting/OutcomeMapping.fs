@@ -84,17 +84,16 @@ module internal OutcomeMapping =
     let preview operationId value =
         let outcome =
             match value with
-            | PreviewOutcome.Reviewed(OperationReview.Case review) ->
+            | PreviewResult.Reviewed(OperationReview.Case review) ->
                 ClaimCore.Contract.Protocol.CasePreviewOutcome.Reviewed { Review = review }
-            | PreviewOutcome.Reviewed(OperationReview.Authority _) ->
+            | PreviewResult.Reviewed(OperationReview.Authority _) ->
                 invalidArg (nameof value) "Expected a case preview for this protocol endpoint."
-            | PreviewOutcome.AlreadyAccepted receipt ->
+            | PreviewResult.AlreadyAccepted receipt ->
                 ClaimCore.Contract.Protocol.CasePreviewOutcome.AlreadyAccepted(receipt)
-            | PreviewOutcome.Rejected reason ->
+            | PreviewResult.Rejected reason ->
                 ClaimCore.Contract.Protocol.CasePreviewOutcome.Rejected(reason)
-            | PreviewOutcome.Failed fault ->
+            | PreviewResult.Failed fault ->
                 ClaimCore.Contract.Protocol.CasePreviewOutcome.Failed(fault)
-            | PreviewOutcome.Cancelled -> ClaimCore.Contract.Protocol.CasePreviewOutcome.Cancelled()
 
         ClaimCore.Contract.Protocol.WireReply.CasePreview
             {
@@ -105,17 +104,17 @@ module internal OutcomeMapping =
     let execute operationId value =
         let outcome =
             match value with
-            | ExecuteOutcome.Accepted receipt ->
+            | ExecuteResult.Accepted receipt ->
                 ClaimCore.Contract.Protocol.CaseExecuteOutcome.Accepted(receipt)
-            | ExecuteOutcome.AlreadyAccepted receipt ->
+            | ExecuteResult.AlreadyAccepted receipt ->
                 ClaimCore.Contract.Protocol.CaseExecuteOutcome.AlreadyAccepted(receipt)
-            | ExecuteOutcome.OutcomeUnknown id ->
-                ClaimCore.Contract.Protocol.CaseExecuteOutcome.OutcomeUnknown { OperationId = id }
-            | ExecuteOutcome.Rejected reason ->
+            | ExecuteResult.OutcomeUnknown ->
+                ClaimCore.Contract.Protocol.CaseExecuteOutcome.OutcomeUnknown
+                    { OperationId = operationId }
+            | ExecuteResult.Rejected reason ->
                 ClaimCore.Contract.Protocol.CaseExecuteOutcome.Rejected(reason)
-            | ExecuteOutcome.Failed fault ->
+            | ExecuteResult.Failed fault ->
                 ClaimCore.Contract.Protocol.CaseExecuteOutcome.Failed(fault)
-            | ExecuteOutcome.Cancelled -> ClaimCore.Contract.Protocol.CaseExecuteOutcome.Cancelled()
 
         ClaimCore.Contract.Protocol.WireReply.CaseExecute
             {
@@ -126,19 +125,17 @@ module internal OutcomeMapping =
     let authorityExecute operationId value =
         let outcome =
             match value with
-            | ExecuteOutcome.Accepted receipt ->
+            | ExecuteResult.Accepted receipt ->
                 ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Accepted(receipt)
-            | ExecuteOutcome.AlreadyAccepted receipt ->
+            | ExecuteResult.AlreadyAccepted receipt ->
                 ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.AlreadyAccepted(receipt)
-            | ExecuteOutcome.OutcomeUnknown id ->
+            | ExecuteResult.OutcomeUnknown ->
                 ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.OutcomeUnknown
-                    { OperationId = id }
-            | ExecuteOutcome.Rejected reason ->
+                    { OperationId = operationId }
+            | ExecuteResult.Rejected reason ->
                 ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Rejected(reason)
-            | ExecuteOutcome.Failed fault ->
+            | ExecuteResult.Failed fault ->
                 ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Failed(fault)
-            | ExecuteOutcome.Cancelled ->
-                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Cancelled()
 
         ClaimCore.Contract.Protocol.WireReply.AuthorityExecute
             {

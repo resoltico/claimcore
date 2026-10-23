@@ -119,7 +119,7 @@ let private cancellationPolicy () =
 
         match preview with
         | WireReply.CasePreview {
-                                    Outcome = CasePreviewOutcome.Cancelled _
+                                    Outcome = CasePreviewOutcome.Failed CoreFault.StoreUnavailable
                                 } -> ()
         | _ -> failtest "Preview observes caller cancellation."
 

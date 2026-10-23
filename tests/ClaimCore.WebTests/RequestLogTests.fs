@@ -77,8 +77,8 @@ let private actorIdentity () =
 
         for outcome, known in
             [
-                ExecuteOutcome.Accepted(receipt operationId "WEB-001"), true
-                ExecuteOutcome.AlreadyAccepted(receipt operationId "WEB-001"), false
+                ExecuteResult.Accepted(receipt operationId "WEB-001"), true
+                ExecuteResult.AlreadyAccepted(receipt operationId "WEB-001"), false
             ] do
             host.ClearLog()
             host.Facade.Execute <- (fun _ -> Task.FromResult outcome)

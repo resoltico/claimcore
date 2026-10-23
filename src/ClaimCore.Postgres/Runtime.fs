@@ -65,6 +65,16 @@ module Runtime =
                     )
         }
 
+/// Owner provisioning retains its administration-process outcome contract.
+[<RequireQualifiedAccess>]
+type ProvisionOwnerOutcome =
+    | Accepted of OperationReceipt
+    | AlreadyAccepted of OperationReceipt
+    | Rejected of Refusal
+    | Failed of CoreFault
+    | Cancelled
+    | OutcomeUnknown of operationId: Guid
+
 module internal LedgerAdministration =
     let verify source expected cancellationToken =
         Verification.verify source expected cancellationToken
@@ -96,16 +106,17 @@ module internal LedgerAdministration =
 
     let private provisionResult operationId result =
         match result with
-        | Ok(LedgerWriteResult.Appended receipt) -> ExecuteOutcome.Accepted receipt
-        | Ok(LedgerWriteResult.Replayed receipt) -> ExecuteOutcome.AlreadyAccepted receipt
-        | Ok(LedgerWriteResult.Refused reason) -> ExecuteOutcome.Rejected reason
-        | Ok(LedgerWriteResult.Failed fault) -> ExecuteOutcome.Failed fault
-        | Error StoreFailure.Cancelled -> ExecuteOutcome.Cancelled
-        | Error StoreFailure.CommitOutcomeUnknown -> ExecuteOutcome.OutcomeUnknown operationId
-        | Error StoreFailure.SchemaMismatch -> ExecuteOutcome.Failed CoreFault.SchemaMismatch
-        | Error StoreFailure.Internal -> ExecuteOutcome.Failed CoreFault.InternalError
-        | Error StoreFailure.Integrity -> ExecuteOutcome.Failed CoreFault.StoreIntegrityError
-        | Error StoreFailure.Unavailable -> ExecuteOutcome.Failed CoreFault.StoreUnavailable
+        | Ok(LedgerWriteResult.Appended receipt) -> ProvisionOwnerOutcome.Accepted receipt
+        | Ok(LedgerWriteResult.Replayed receipt) -> ProvisionOwnerOutcome.AlreadyAccepted receipt
+        | Ok(LedgerWriteResult.Refused reason) -> ProvisionOwnerOutcome.Rejected reason
+        | Ok(LedgerWriteResult.Failed fault) -> ProvisionOwnerOutcome.Failed fault
+        | Error StoreFailure.Cancelled -> ProvisionOwnerOutcome.Cancelled
+        | Error StoreFailure.CommitOutcomeUnknown ->
+            ProvisionOwnerOutcome.OutcomeUnknown operationId
+        | Error StoreFailure.SchemaMismatch -> ProvisionOwnerOutcome.Failed CoreFault.SchemaMismatch
+        | Error StoreFailure.Internal -> ProvisionOwnerOutcome.Failed CoreFault.InternalError
+        | Error StoreFailure.Integrity -> ProvisionOwnerOutcome.Failed CoreFault.StoreIntegrityError
+        | Error StoreFailure.Unavailable -> ProvisionOwnerOutcome.Failed CoreFault.StoreUnavailable
 
     let provisionOwner source operationId principal cancellationToken =
         task {
