@@ -75,7 +75,9 @@ module Api =
             HttpMethod.Post
             false
             RequestCodecs.historyRequest
-            (ReplyCodecs.readReply "HistoryReply" ResponseCodecs.historyPage)
+            (ReplyCodecs.readReply
+                "HistoryReply"
+                (ResponseCodecs.historyPageFor ReceiptCodecs.caseReceipt))
 
     let operationPreview =
         endpoint

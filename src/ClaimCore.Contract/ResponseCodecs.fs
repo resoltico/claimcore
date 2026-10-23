@@ -480,16 +480,16 @@ module ResponseCodecs =
             | HistoryEntry.SummaryEntry value -> value
             | _ -> invalidArg "entry" "Expected summary history.")
 
-    let private fullEntry =
+    let private fullEntry receiptCodec =
         record id
         |> fixedField "tag" "FULL"
-        |> field "receipt" id caseReceipt
+        |> field "receipt" id receiptCodec
         |> build
         |> map HistoryEntry.FullEntry (function
             | HistoryEntry.FullEntry value -> value
             | _ -> invalidArg "entry" "Expected full history.")
 
-    let historyEntries =
+    let private historyEntriesFor receiptCodec =
         let nonempty predicate entries =
             not (List.isEmpty entries) && List.forall predicate entries
 
@@ -529,16 +529,18 @@ module ResponseCodecs =
                             Some entries
                         else
                             None)
-                    (boundedList 1 Limits.MaximumPageSize fullEntry)
+                    (boundedList 1 Limits.MaximumPageSize (fullEntry receiptCodec))
             ]
 
-    let historyPage =
+    let historyPageFor receiptCodec =
         (record (fun entries next -> { Entries = entries; NextCursor = next })
         : Fields<HistoryResultPage, _>)
-        |> field "entries" _.Entries historyEntries
+        |> field "entries" _.Entries (historyEntriesFor receiptCodec)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
         |> named "HistoryPage"
+
+    let historyPage = historyPageFor caseReceipt
 
     let session =
         (record (fun v0 v1 v2 ->

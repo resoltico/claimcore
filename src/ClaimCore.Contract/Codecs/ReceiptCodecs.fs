@@ -48,18 +48,21 @@ module ReceiptCodecs =
             _.Act
             (enumeration (AuthorityKinds.all |> List.map (fun act -> act, AuthorityKinds.token act)))
 
+    let private caseVariant =
+        variant
+            OperationScopes.Case
+            ReceiptScope.Case
+            (function
+            | ReceiptScope.Case value -> Some value
+            | _ -> None)
+            caseFields
+
     let scope =
         tagged
             "ReceiptScope"
             "kind"
             [
-                variant
-                    OperationScopes.Case
-                    ReceiptScope.Case
-                    (function
-                    | ReceiptScope.Case value -> Some value
-                    | _ -> None)
-                    caseFields
+                caseVariant
                 variant
                     OperationScopes.Authority
                     ReceiptScope.Authority
@@ -69,7 +72,7 @@ module ReceiptCodecs =
                     authorityFields
             ]
 
-    let receipt =
+    let private header scopeCodec =
         (record (fun id position at by scope ->
             {
                 OperationId = id
@@ -83,6 +86,12 @@ module ReceiptCodecs =
         |> field "position" _.Position ResponseCodecs.position
         |> field "recordedAt" _.RecordedAt Codec.instant
         |> field "recordedBy" _.RecordedBy Codec.uuid
-        |> field "scope" _.Scope scope
+        |> field "scope" _.Scope scopeCodec
         |> build
-        |> named "OperationReceipt"
+
+    let receipt = header scope |> named "OperationReceipt"
+
+    let caseReceipt =
+        tagged "CaseReceiptScope" "kind" [ caseVariant ]
+        |> header
+        |> named "CaseReceipt"

@@ -70,6 +70,7 @@
     <Compile Include="RemoteTlsTests.fs" />
     <Compile Include="TokenLifetimeTests.fs" />
     <Compile Include="CliReplyFixtures.fs" />
+    <Compile Include="HistoryReplyTests.fs" />
     <Compile Include="CliTransportFixture.fs" />
     <Compile Include="CliTransportTests.fs" />
     <Compile Include="CliRetryTests.fs" />
