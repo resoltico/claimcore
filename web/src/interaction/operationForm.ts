@@ -120,7 +120,9 @@ export const refusalPath = (target: string | null, values: FormValues): string |
   if (target === null) {
     return null;
   }
-  if (Object.hasOwn(values, target)) {return target;}
+  if (Object.hasOwn(values, target)) {
+    return target;
+  }
   if (target.startsWith("principal.")) {
     return target.replace("principal.", "target.");
   }

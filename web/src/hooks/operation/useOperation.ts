@@ -295,7 +295,9 @@ const editing = (model: Model, options: Options) => {
 };
 const disclosureActions = (model: Model) => ({
   requestDiscard: (kind: string | null) => {
-    if (!model.control.current.busy) {model.dispatch({ type: "DISCARD", kind });}
+    if (!model.control.current.busy) {
+      model.dispatch({ type: "DISCARD", kind });
+    }
   },
   restoreDisclosure: () => {
     if (model.latest.current.disclosureRefused) {
