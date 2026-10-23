@@ -63,6 +63,54 @@ let private domain () =
         (set [ "Field"; "Scalar" ])
         "Domain does not duplicate presentation metadata"
 
+let private commandGroups () =
+    let expected group =
+        FieldTable.rows
+        |> List.filter (fun row -> row.Group = group)
+        |> List.map (fun row -> InputTarget.Field row.Field)
+
+    let actual kind =
+        match (CommandDefinitions.forKind (CaseActKind.Business kind)).Inputs with
+        | CommandInputShape.Fields fields -> fields |> List.map _.FieldName
+        | _ -> failtest "Expected flat command fields"
+
+    for act, group in
+        [
+            BusinessActKind.Open, FieldGroup.Registration
+            BusinessActKind.AmendRegistration, FieldGroup.Registration
+            BusinessActKind.Decide, FieldGroup.Decision
+            BusinessActKind.RecordPayment, FieldGroup.Payment
+        ] do
+        Expect.equal
+            (actual act)
+            (expected group)
+            "Command fields follow their source group's order"
+
+    let correction =
+        CommandDefinitions.forKind (CaseActKind.Business BusinessActKind.CorrectCase)
+
+    match correction.Inputs with
+    | CommandInputShape.CorrectionGroups groups ->
+        for group in groups do
+            let fields = group.ReplaceFields |> List.map _.FieldName
+
+            let kind =
+                match group.Name with
+                | CorrectionGroup.Registration -> FieldGroup.Registration
+                | CorrectionGroup.Decision -> FieldGroup.Decision
+                | CorrectionGroup.Payment -> FieldGroup.Payment
+
+            Expect.equal
+                fields
+                (expected kind)
+                "Correction replacements use the same field group order"
+    | _ -> failtest "Expected grouped correction fields"
+
+    Expect.notEqual
+        (actual BusinessActKind.Open |> List.rev)
+        (expected FieldGroup.Registration)
+        "A reordered dependent inventory is detectable"
+
 let private locales () =
     let directory =
         Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Contract/Localization")
@@ -90,5 +138,6 @@ let tests =
         [
             testCase "codecs and snapshot agree" codecs
             testCase "Domain coverage and ownership agree" domain
+            testCase "command and correction groups follow field-table order" commandGroups
             testCase "locales cover field messages" locales
         ]

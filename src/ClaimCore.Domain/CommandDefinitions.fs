@@ -13,16 +13,12 @@ type CommandDefinition =
     }
 
 module CommandDefinitions =
-    let private registrationFields =
-        [
-            (InputTarget.Field BusinessField.IncidentDate)
-            (InputTarget.Field BusinessField.IncidentNotificationDate)
-            (InputTarget.Field BusinessField.IncidentCountry)
-            (InputTarget.Field BusinessField.ClaimantName)
-            (InputTarget.Field BusinessField.InsurerName)
-            (InputTarget.Field BusinessField.ClaimedAmount)
-            (InputTarget.Field BusinessField.ClaimedCurrency)
-        ]
+    let private groupFields group =
+        FieldTable.rows
+        |> List.filter (fun row -> row.Group = group)
+        |> List.map (fun row -> InputTarget.Field row.Field)
+
+    let private registrationFields = groupFields FieldGroup.Registration
 
     let private blank fieldName : FieldInputDefinition =
         {
@@ -69,11 +65,7 @@ module CommandDefinitions =
                         CorrectionGroupAction.Replace
                         CorrectionGroupAction.Clear
                     ]
-                    [
-                        current (InputTarget.Field BusinessField.PaymentDecisionDate)
-                        current (InputTarget.Field BusinessField.PayableAmount)
-                        current (InputTarget.Field BusinessField.PayableCurrency)
-                    ]
+                    (groupFields FieldGroup.Decision |> List.map current)
                 correctionGroup
                     CorrectionGroup.Payment
                     "group.payment.label"
@@ -83,7 +75,7 @@ module CommandDefinitions =
                         CorrectionGroupAction.Replace
                         CorrectionGroupAction.Clear
                     ]
-                    [ current (InputTarget.Field BusinessField.PaymentDate) ]
+                    (groupFields FieldGroup.Payment |> List.map current)
             ]
 
     let private definition kind label meaning inputs =
@@ -122,12 +114,7 @@ module CommandDefinitions =
                 (CaseActKind.Business BusinessActKind.Decide)
                 "command.DECIDE.label"
                 "command.DECIDE.meaning"
-                (fields
-                    [
-                        current (InputTarget.Field BusinessField.PaymentDecisionDate)
-                        current (InputTarget.Field BusinessField.PayableAmount)
-                        current (InputTarget.Field BusinessField.PayableCurrency)
-                    ])
+                (fields (groupFields FieldGroup.Decision |> List.map current))
             definition
                 (CaseActKind.Business BusinessActKind.WithdrawDecision)
                 "command.WITHDRAW_DECISION.label"
@@ -137,7 +124,7 @@ module CommandDefinitions =
                 (CaseActKind.Business BusinessActKind.RecordPayment)
                 "command.RECORD_PAYMENT.label"
                 "command.RECORD_PAYMENT.meaning"
-                (fields [ blank (InputTarget.Field BusinessField.PaymentDate) ])
+                (groupFields FieldGroup.Payment |> List.map blank |> fields)
             definition
                 (CaseActKind.Business BusinessActKind.ClearPayment)
                 "command.CLEAR_PAYMENT.label"
