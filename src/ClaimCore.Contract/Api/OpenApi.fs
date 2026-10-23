@@ -23,6 +23,25 @@ module OpenApi =
     let private content shape =
         object [ "application/json", object [ "schema", schema shape ] ]
 
+    let private hostContent status =
+        object
+            [
+                "application/json",
+                object
+                    [
+                        "schema",
+                        object
+                            [
+                                "allOf",
+                                array
+                                    [
+                                        schema HostFailureCodecs.reply.Schema
+                                        schema (HostFailureCodecs.responseSchema status)
+                                    ]
+                            ]
+                    ]
+            ]
+
     let private header name required shape =
         object
             [
@@ -74,7 +93,7 @@ module OpenApi =
                             "HTTP "
                             + status.ToString(System.Globalization.CultureInfo.InvariantCulture)
                         )
-                        "content", content HostFailureCodecs.reply.Schema
+                        "content", hostContent status
                     ])
 
         object (success :: failures)
@@ -145,10 +164,21 @@ module OpenApi =
     let private endpoints = Api.all |> List.map inspected
 
     let definitions =
+        let roots =
+            Api.all
+            |> List.collect (fun endpoint ->
+                endpoint.Accept
+                    { new IEndpointVisitor<_> with
+                        member _.Visit value =
+                            [ value.Input.Schema; value.Output.Schema ]
+                    })
+
         endpoints
         |> List.fold
             (fun state (_, _, _, definitions) -> merge state definitions)
             HostFailureCodecs.reply.Definitions
+        |> fun definitions ->
+            SchemaJson.reachable definitions (HostFailureCodecs.reply.Schema :: roots)
 
     let document =
         object

@@ -92,7 +92,7 @@ let private results () =
                     DeliveryState.NotSent
             )
 
-    for phase in [ None; Some ExecutionPhase.NotStarted; Some ExecutionPhase.StartedUnconfirmed ] do
+    for phase in [ Some ExecutionPhase.NotStarted; Some ExecutionPhase.StartedUnconfirmed ] do
         frameRoundTrip (
             reply
                 (FrameResult.HostFailure { Code = "INTERNAL"; Phase = phase })

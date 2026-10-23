@@ -1,6 +1,30 @@
 namespace ClaimCore.Contract
 
 module SchemaJson =
+    let rec private references =
+        function
+        | Schema.Ref name -> [ name ]
+        | Schema.Object(properties, _) -> properties |> List.collect (snd >> references)
+        | Schema.Array(items, _, _) -> references items
+        | Schema.OneOf(variants, discriminator) ->
+            (variants |> List.collect references)
+            @ (discriminator |> Option.map (snd >> List.map snd) |> Option.defaultValue [])
+        | _ -> []
+
+    /// Publish exactly the definitions reachable from the public roots, including discriminator targets.
+    let reachable definitions roots =
+        let rec visit seen =
+            function
+            | [] -> seen
+            | name :: rest when Set.contains name seen -> visit seen rest
+            | name :: rest ->
+                match Map.tryFind name definitions with
+                | None -> invalidOp ("Missing schema definition: " + name)
+                | Some shape -> visit (Set.add name seen) (references shape @ rest)
+
+        let names = roots |> List.collect references |> visit Set.empty
+        definitions |> Map.filter (fun name _ -> Set.contains name names)
+
     let private text value = JsonValue.String value
     let private number value = JsonValue.Integer(int64 value)
 
