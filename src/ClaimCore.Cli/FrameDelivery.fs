@@ -1,13 +1,10 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract
-
-open ClaimCore.Contract.Protocol
-
 open System
 open System.IO
+open ClaimCore.Contract
 
-/// A successful flush clears the current frame's dispatch knowledge.
+/// The current request stays frozen until its complete reply is flushed.
 type FrameDelivery(output: Stream, errors: Stream) =
     let gate = obj ()
     let mutable interrupted = false
@@ -19,8 +16,16 @@ type FrameDelivery(output: Stream, errors: Stream) =
         lock gate (fun () ->
             if interrupted then
                 raise (OperationCanceledException())
+            else
+                action ())
 
-            action ())
+    let retryFrame () =
+        match pending with
+        | None -> ()
+        | Some frame ->
+            errors.Write(Frames.encodeInvocation frame)
+            errors.WriteByte(byte '\n')
+            errors.Flush()
 
     member _.BeginFrame() =
         advance (fun () ->
@@ -29,13 +34,13 @@ type FrameDelivery(output: Stream, errors: Stream) =
             pending <- None)
 
     member _.Prepare frame =
-        advance (fun () -> pending <- Some frame)
+        advance (fun () ->
+            pending <- Some frame
+            potentiallyChanged <- Frames.retryingUncertain frame)
 
     member _.BeforeDispatch frame =
         advance (fun () ->
-            potentiallyChanged <-
-                (Frames.request frame |> WireRequest.endpoint |> Endpoint.mutates)
-
+            potentiallyChanged <- Frames.endpoint frame |> Api.mutates
             dispatched <- true
             pending <- Some frame)
 
@@ -44,23 +49,32 @@ type FrameDelivery(output: Stream, errors: Stream) =
         output.Write reply.Bytes
         output.WriteByte(byte '\n')
         output.Flush()
-        lock gate (fun () -> potentiallyChanged <- false)
+
+        if reply.ExitCode = 4 then
+            retryFrame ()
+
+        lock gate (fun () -> potentiallyChanged <- reply.ExitCode = 4)
 
     member _.Interrupt() =
         lock gate (fun () ->
             interrupted <- true
-            if potentiallyChanged then 4 else 130)
+
+            if potentiallyChanged then
+                try
+                    retryFrame ()
+                with _ ->
+                    ()
+
+                4
+            else
+                130)
 
     member _.Failure(error: exn) =
         let uncertain, sent = lock gate (fun () -> potentiallyChanged, dispatched)
 
         let reply =
             if uncertain then
-                let reply = CliReply.unknown (CliReply.local ClientFailure.Unavailable)
-
-                match pending with
-                | Some frame -> CliReply.forAttempt frame AttemptKnowledge.Unconfirmed reply
-                | None -> reply
+                CliReply.unknown (CliReply.local ClientFailure.Unavailable)
             elif error :? OperationCanceledException then
                 CliReply.local ClientFailure.Cancelled
             else
@@ -68,21 +82,23 @@ type FrameDelivery(output: Stream, errors: Stream) =
 
         let reply =
             match pending with
-            | Some frame when not uncertain ->
+            | Some frame ->
                 CliReply.forAttempt
                     frame
-                    (Delivery.knowledge
-                        (Frames.request frame |> WireRequest.endpoint)
-                        (if sent then
-                             AttemptResult.DispatchedWithoutReply
-                         else
-                             AttemptResult.NotDispatched))
+                    (if sent then
+                         DeliveryState.Uncertain
+                     else
+                         DeliveryState.NotSent)
                     reply
-            | _ -> reply
+            | None -> reply
 
         try
             errors.Write reply.Bytes
             errors.WriteByte(byte '\n')
+
+            if uncertain then
+                retryFrame ()
+
             errors.Flush()
         with _ ->
             ()

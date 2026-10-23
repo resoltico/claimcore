@@ -51,9 +51,9 @@ let private discovery output errors =
         Discovery.schema selection |> writeDiscovery output errors "en"
     | _ -> unsupported errors "en" CliUsageIssue.Invocation
 
-let private remote output errors session =
+let private remote output errors session retry =
     use input = Console.OpenStandardInput()
-    use processor = new RemoteFrameProcessor(input, output, errors)
+    use processor = new RemoteFrameProcessor(input, output, errors, retry)
     let stop () = Environment.Exit(processor.Interrupt())
 
     let interrupt =
@@ -88,8 +88,8 @@ let private remote output errors session =
 let private dispatch output errors argv =
     try
         match CliInvocations.admit (Array.toList argv) with
-        | Ok CliInvocation.Call -> remote output errors false
-        | Ok CliInvocation.Session -> remote output errors true
+        | Ok(CliInvocation.Call retry) -> remote output errors false retry
+        | Ok CliInvocation.Session -> remote output errors true false
         | Ok invocation -> discovery output errors invocation
         | Error issue -> unsupported errors (CliInvocations.usageLanguage (Array.toList argv)) issue
     with _ ->

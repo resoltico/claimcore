@@ -23,7 +23,7 @@ type CliInvocation =
     | Version of json: bool
     | Describe of selector: CliDescription * text: bool * language: string
     | Schema of selection: CliSchema
-    | Call
+    | Call of retry: bool
     | Session
 
 module CliInvocations =
@@ -114,7 +114,8 @@ module CliInvocations =
         | [] -> help "overview" "en"
         | [ flag ] when List.contains flag CliHelp.aliases -> help "overview" "en"
         | [ command; flag ] when alias command flag -> help command "en"
-        | [ "call" ] -> Ok CliInvocation.Call
+        | [ "call" ] -> Ok(CliInvocation.Call false)
+        | [ "call"; "--retry" ] -> Ok(CliInvocation.Call true)
         | [ "session" ] -> Ok CliInvocation.Session
         | [ "version" ] -> Ok(CliInvocation.Version false)
         | [ "version"; "--json" ] -> Ok(CliInvocation.Version true)

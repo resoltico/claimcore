@@ -1,7 +1,6 @@
 module ClaimCore.Tests.CliFrameTests
 
 open ClaimCore.Contract
-open ClaimCore.Contract.Protocol
 
 open System
 open System.IO
@@ -33,12 +32,12 @@ let private deliveryKnowledge () =
     Expect.equal (delivery.Interrupt()) 130 "Before dispatch cancellation"
     let mutation = ClaimCore.Cli.FrameDelivery(output, errors)
     mutation.BeginFrame()
-    mutation.BeforeDispatch(frame "case.execute")
+    mutation.BeforeDispatch(frame "operation.execute")
     Expect.equal (mutation.Interrupt()) 4 "Cancellation after mutation dispatch"
     let completed = ClaimCore.Cli.FrameDelivery(output, errors)
     completed.BeginFrame()
-    completed.BeforeDispatch(frame "case.execute")
-    completed.Write(CliReply.protocol ProtocolFailure.InvalidResponse)
+    completed.BeforeDispatch(frame "operation.execute")
+    completed.Write(CliReply.protocol CliFailure.InvalidResponse)
     completed.BeginFrame()
 
     Expect.equal
@@ -49,7 +48,7 @@ let private deliveryKnowledge () =
     use broken = new BrokenOutput()
     let lost = ClaimCore.Cli.FrameDelivery(broken, errors)
     lost.BeginFrame()
-    lost.BeforeDispatch(frame "authority.execute")
+    lost.BeforeDispatch(frame "operation.execute")
 
     try
         lost.Write(CliReply.local ClientFailure.Unavailable)
@@ -58,7 +57,7 @@ let private deliveryKnowledge () =
         Expect.equal (lost.Failure error) 4 "Stdout loss retains uncertainty"
 
 let private readOutputFailure () =
-    for dispatched, expected in [ false, "NOT_SENT"; true, "READ_FAILED" ] do
+    for dispatched, expected in [ false, "NOT_SENT"; true, "UNCERTAIN" ] do
         use output = new BrokenOutput()
         use errors = new MemoryStream()
         let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
@@ -81,7 +80,7 @@ let private readOutputFailure () =
         let failure = replyJson (errors.ToArray())
 
         Expect.equal
-            (failure.GetProperty("attemptKnowledge").GetString())
+            (failure.GetProperty("delivery").GetString())
             expected
             "Read output failure retains actual dispatch facts"
 
@@ -92,7 +91,7 @@ let private readOutputFailure () =
 
 let private partialOutputKnowledge () =
     for endpoint, code, knowledge in
-        [ "case.execute", 4, "UNCONFIRMED"; "case.get", 70, "READ_FAILED" ] do
+        [ "operation.execute", 4, "UNCERTAIN"; "case.get", 70, "UNCERTAIN" ] do
         use output = new PartialOutput()
         use errors = new MemoryStream()
         let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
@@ -112,7 +111,7 @@ let private partialOutputKnowledge () =
         let failure = replyJson (errors.ToArray())
 
         Expect.equal
-            (failure.GetProperty("attemptKnowledge").GetString())
+            (failure.GetProperty("delivery").GetString())
             knowledge
             "Stderr safely reports the attempt knowledge"
 
@@ -198,7 +197,7 @@ let private sessionLines () =
         Expect.isOk (Frames.decode (bytes line)) "Every response is a valid frame"
 
 let private uncertainSession () =
-    let first = frameBytes (frame "authority.execute") |> Encoding.UTF8.GetString
+    let first = frameBytes (frame "operation.execute") |> Encoding.UTF8.GetString
     let next = frameBytes (frame "case.get") |> Encoding.UTF8.GetString
     use input = new MemoryStream(bytes (first + "\n" + next + "\n"))
     use output = new MemoryStream()
@@ -216,7 +215,7 @@ let private uncertainSession () =
                 let reply = CliReply.local ClientFailure.Unavailable
 
                 Task.FromResult(
-                    if (frameEndpoint invocation |> Endpoint.mutates) then
+                    if (frameEndpoint invocation |> Api.mutates) then
                         CliReply.unknown reply
                     else
                         reply
@@ -231,13 +230,14 @@ let private uncertainSession () =
     Expect.equal invoked 1 "Uncertainty ends the session at the replayable frame"
 
 let private describe arguments =
-    match CliInvocations.admit ("describe" :: arguments) with
-    | Ok(CliInvocation.Describe(selector, _, _)) -> Discovery.describe selector
+    match ClaimCore.Contract.Protocol.CliInvocations.admit ("describe" :: arguments) with
+    | Ok(ClaimCore.Contract.Protocol.CliInvocation.Describe(selector, _, _)) ->
+        Discovery.describe selector
     | _ -> None
 
 let private schema arguments =
-    match CliInvocations.admit ("schema" :: arguments) with
-    | Ok(CliInvocation.Schema selection) -> Discovery.schema selection
+    match ClaimCore.Contract.Protocol.CliInvocations.admit ("schema" :: arguments) with
+    | Ok(ClaimCore.Contract.Protocol.CliInvocation.Schema selection) -> Discovery.schema selection
     | _ -> None
 
 let private offlineDiscovery () =
@@ -278,13 +278,16 @@ let private exampleFrames () =
         let invocation = Frames.admit (File.ReadAllBytes path) |> Fixtures.accepted
 
         Expect.equal
-            (frameEndpoint invocation |> Endpoint.id)
-            "case.execute"
+            (frameEndpoint invocation |> Api.id)
+            "operation.execute"
             "Business and stewardship share execution"
 
         let request =
-            match Frames.request invocation with
-            | WireRequest.CaseExecute request -> request
+            match
+                Api.operationExecute.Input.Read "$" (Frames.input invocation)
+                |> Fixtures.accepted
+            with
+            | OperationInput.Case request -> request
             | _ -> failtest "Example must be a case request"
 
         let next =

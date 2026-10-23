@@ -1,7 +1,6 @@
 module ClaimCore.Tests.CliReplyLossTests
 
 open ClaimCore.Contract
-open ClaimCore.Contract.Protocol
 
 open System
 open System.IO
@@ -106,7 +105,7 @@ let private physicalReplyLoss () =
 
     use client = new HttpClient(handler)
     client.Timeout <- TimeSpan.FromSeconds 5.
-    let invocation = frame "authority.execute"
+    let invocation = authorityFrame ()
     let mutable dispatched = false
 
     let reply =
@@ -124,7 +123,7 @@ let private physicalReplyLoss () =
 
     Expect.stringStarts
         headers
-        "POST /api/authority.execute HTTP/1.1"
+        "POST /api/operation.execute HTTP/1.1"
         "Actual mutation reached peer"
 
     Expect.equal body (Frames.inputBytes invocation) "Entire original request reached peer"

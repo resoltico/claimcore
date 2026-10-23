@@ -39,6 +39,16 @@ let private aliases () =
                 "Useful guidance"
 
 let private options () =
+    Expect.equal
+        (CliInvocations.admit [ "call"; "--retry" ])
+        (Ok(CliInvocation.Call true))
+        "Retry context is explicit and leaves the request frame unchanged."
+
+    Expect.equal
+        (CliInvocations.admit [ "call" ])
+        (Ok(CliInvocation.Call false))
+        "An ordinary call starts a fresh attempt."
+
     for args in
         [
             [ "call"; "--format"; "text" ]

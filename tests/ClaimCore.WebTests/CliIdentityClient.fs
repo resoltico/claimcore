@@ -1,7 +1,6 @@
 module internal ClaimCore.WebTests.CliIdentityClient
 
 open ClaimCore.Contract
-open ClaimCore.Contract.Protocol
 
 open System
 open System.IO

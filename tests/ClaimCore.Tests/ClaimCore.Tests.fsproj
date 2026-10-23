@@ -67,8 +67,10 @@
     <Compile Include="RemoteClientTests.fs" />
     <Compile Include="RemoteTlsTests.fs" />
     <Compile Include="TokenLifetimeTests.fs" />
+    <Compile Include="CliReplyFixtures.fs" />
     <Compile Include="CliTransportFixture.fs" />
     <Compile Include="CliTransportTests.fs" />
+    <Compile Include="CliRetryTests.fs" />
     <Compile Include="ClientInteractionTests.fs" />
     <Compile Include="ClientDecoderConformanceTests.fs" />
     <Compile Include="CliReplyLossTests.fs" />
