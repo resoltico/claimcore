@@ -275,7 +275,17 @@ let private actionEnums () =
             expected
             "Input correction and current-state recovery are distinct"
 
+let private positiveActualRevision () =
+    Expect.throws
+        (fun () ->
+            OutcomeMapping.caseGet (QueryOutcome.Rejected(Refusal.RevisionConflict 0L))
+            |> Replies.encode
+            |> ignore)
+        "The captured baseline refuses zero actualRevision on the wire."
+
 let private actionTokens () =
+    positiveActualRevision ()
+
     for refusal, _, expected, field, revision in actionExpectations do
         let result = OutcomeMapping.caseGet (QueryOutcome.Rejected refusal) |> admitted
 

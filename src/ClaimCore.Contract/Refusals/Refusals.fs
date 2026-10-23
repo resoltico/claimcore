@@ -245,7 +245,7 @@ module Refusals =
             Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50)
             Refusal.InvalidInput(InputTarget.PaymentGroup, Violation.PaymentClearRequired)
             Refusal.InvalidInput(InputTarget.PaymentGroup, Violation.PaymentAcknowledgementRequired)
-            Refusal.RevisionConflict 0L
+            Refusal.RevisionConflict 1L
             Refusal.CaseAlreadyExists
             Refusal.CaseErased
             Refusal.CaseVoided
