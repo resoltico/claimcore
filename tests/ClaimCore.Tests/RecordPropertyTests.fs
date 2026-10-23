@@ -205,8 +205,10 @@ let private identityChanges (request: CaseRequest) =
     changed
 
 let private identityMatches request =
+    let original = fingerprint request
+
     identityChanges request
-    |> List.forall (fun changed -> fingerprint changed <> fingerprint request)
+    |> List.forall (fun changed -> fingerprint changed <> original)
 
 let private fingerprintProperty =
     property {

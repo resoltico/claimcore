@@ -134,7 +134,7 @@ let private sequenceProperty =
 
     property {
         let! steps = sequenceGenerator
-        return checkSequence acceptingPath && checkSequence steps
+        return checkSequence steps
     }
 
 let private negativeControls () =
@@ -276,6 +276,7 @@ let tests =
         "Hedgehog state invariants"
         [
             testCase "accepted and rejected sequences match complete independent state" (fun () ->
+                Expect.isTrue (checkSequence acceptingPath) "Complete fixed acceptance path"
                 run "CC-PROP-TRANSITION-001" sequenceProperty)
             testCase
                 "sequence oracle rejects refusal-only and corrupt accepted outcomes"

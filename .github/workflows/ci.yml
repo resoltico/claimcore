@@ -143,7 +143,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/claimcore-npm-cache
-          key: frontend-npm-${{ runner.os }}-${{ hashFiles('.node-version', 'web/package-lock.json', 'deployment/Dockerfile') }}
+          key: npm-downloads-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
       - name: Run frontend in the deployment Node image
         env:
           NODE_IMAGE: ${{ needs.configuration.outputs.node_image }}

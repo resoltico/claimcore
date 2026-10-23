@@ -88,11 +88,18 @@ The container build likewise builds frontend assets in a Node stage and publishe
 in the pinned .NET SDK stage.
 
 CI toolchain jobs cache NuGet packages and npm downloads using the tracked lockfiles. The
-SDK-free frontend container mounts a download-only npm cache keyed by its pinned toolchain,
-lockfile and deployment image. Every run still performs
+SDK-free frontend container mounts a download-only npm cache keyed by the OS and package
+lockfile. Every run still performs
 locked restore or `npm ci` and the dependency audit; caches do not substitute for checks.
-Product build outputs, `node_modules`, generated assets and test results are not cached. GitHub
+The SDK-free frontend and published-client jobs share one exact-lockfile npm download key;
+Node/image changes do not duplicate integrity-checked package downloads. There are no broad
+fallback keys. Product build outputs, `node_modules`, generated assets and test results are not cached. GitHub
 scopes caches by branch; untrusted pull requests do not populate the default branch cache.
+
+Chromium installation retains the headless shell used by tests and CLI PKCE, and omits the
+unused full browser. Firefox/WebKit qualification still installs its selected engine plus that
+shell. Recovery checks poll the real rate limiter within its existing deadline and stop as soon
+as it admits login; engine coverage, shared-state isolation and zero retries are unchanged.
 
 The integration CI matrix derives every major from `db/postgresql-baseline.json` and passes it
 as `CLAIMCORE_TEST_POSTGRES_MAJOR`. Both integration and published acceptance fixtures select
@@ -127,6 +134,22 @@ localizations/assets, private inputs and reports stay ignored. Only remove resou
 by the current run. CSS has formatting and browser accessibility/layout checks, with no dedicated
 semantic lint stage.
 
+## Disk use and retained evidence
+
+Properties generate bounded values in memory; there is no mutation or standalone fuzz campaign,
+corpus directory or per-case disk output. Disk use comes from restored dependencies, toolchains,
+browser engines, build/publication directories, disposable databases and retained test evidence.
+The PostgreSQL runner overlaps at most two databases; browser fixtures are serial per engine.
+Successful owned fixtures remove their resources; failed private evidence remains available.
+
+There is no enforced whole-run disk quota or fixed maximum: package/image sizes can change and
+local reports deliberately accumulate across runs. Measure the selected workload and leave space
+for its concurrent databases and publication copies. Shared NuGet/npm/browser caches may serve
+other repositories; verification never clears them or prunes Docker globally. CI uses fresh hosted
+runners and exact-lockfile download caches; repository cache size and eviction are GitHub policy,
+not a bound on runner peak disk use. Reclaim only resources whose ownership and evidential value
+have been established; never discard a failed run merely to satisfy a disk target.
+
 ## Test process lifetime
 
 Test processes start directly with managed APIs. Bounded readers retain partial stdout and
@@ -150,7 +173,12 @@ contract projection, consumers and independent tests. Do not add adapter-only ru
 Function/member/lambda length 50 and complexity 12 remain absolute across production and tests.
 Inline tool exceptions name one rule and their reason. File/module/value size is not a gate;
 organize by capability. Required properties execute fixed 200 cases with state sequences up to 20
-and deterministic seeds. Failure diagnostics retain safe replay information, not generated payload.
+and deterministic seeds. Failure minimization stops after 100 successful shrink steps; the original
+failure still fails and retains its deterministic replay token even when the example is not minimal.
+The bound limits failure-path work without shortening successful qualification. Decoder fuzzing is
+in memory: random byte arrays contain at most 4,096 bytes; fixed hostile JSON examples include a
+12,008-byte escaped-control string. No corpus, per-case report, mutation worktree or standalone
+campaign is written to disk. Failure diagnostics retain safe replay information, not generated payload.
 No environment switch selects a longer campaign or silently bypasses other properties.
 
 ## Dependency pins

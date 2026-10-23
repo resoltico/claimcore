@@ -1,26 +1,37 @@
-import { expect, test, type APIResponse, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
+import { waitForLoginPermit } from "./admission-window";
 import { expectAccessible, expectHostFailure, login, progress } from "./session-helpers";
 
 test.use({ storageState: { cookies: [], origins: [] } });
-const cleanup: { required: boolean; batch: Promise<PromiseSettledResult<APIResponse>[]> | null } = {
-  required: false,
-  batch: null,
+const awaitWindowRecovery = async (page: Page) => {
+  await progress("rate-window-wait");
+  await waitForLoginPermit(
+    async (remainingMilliseconds) => {
+      const response = await page.request.get("/auth/login", {
+        maxRedirects: 0,
+        timeout: remainingMilliseconds,
+      });
+      try {
+        if (response.status() === 429) {
+          expectHostFailure(
+            {
+              status: 429,
+              cacheControl: response.headers()["cache-control"] ?? null,
+              payload: await response.json(),
+            },
+            429,
+            "RATE_LIMITED",
+          );
+        }
+        return response.status();
+      } finally {
+        await response.dispose();
+      }
+    },
+    (milliseconds) => page.waitForTimeout(milliseconds),
+  );
 };
-const resetWindow = async (page: Page) => {
-  if (cleanup.required) {
-    if (cleanup.batch !== null) {
-      await cleanup.batch;
-    }
-    await progress("rate-window-wait");
-    await page.waitForTimeout(61_000);
-    cleanup.required = false;
-    cleanup.batch = null;
-  }
-};
-test.afterEach(async ({ page }) => {
-  await resetWindow(page);
-});
 
 test("bounds repeated published login admission and recovers after its window", async ({
   page,
@@ -32,12 +43,10 @@ test("bounds repeated published login admission and recovers after its window", 
   let bounded = false;
   // The shared host may already have consumed permits. A burst crosses at most one
   // window boundary; eleven requests exceed both possible five-permit allocations.
-  cleanup.required = true;
   const began = performance.now();
-  cleanup.batch = Promise.allSettled(
+  const responses = await Promise.allSettled(
     Array.from({ length: 11 }, () => page.request.get("/auth/login", { maxRedirects: 0 })),
   );
-  const responses = await cleanup.batch;
   expect(performance.now() - began).toBeLessThan(60_000);
   for (const result of responses) {
     if (result.status !== "fulfilled") {
@@ -62,7 +71,7 @@ test("bounds repeated published login admission and recovers after its window", 
     }
   }
   expect(bounded).toBe(true);
-  await resetWindow(page);
+  await awaitWindowRecovery(page);
   await progress("rate-window-ended");
   await page.reload({ waitUntil: "commit" });
   await login(page);

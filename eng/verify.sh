@@ -220,14 +220,14 @@ browsers() {
       *) echo "invalid browser engine" >&2; return 64 ;;
     esac
   fi
-  # Published CLI PKCE setup uses Chromium even when specifications select another engine.
+  # Every Chromium launch is headless; CLI PKCE also needs its shell for other engines.
   restore_node
   local platform
   platform="$(uname -s)"
   if [[ "${platform}" == Linux ]]; then
-    npm --prefix web exec -- playwright install --with-deps "${engines[@]}"
+    npm --prefix web exec -- playwright install --with-deps --only-shell "${engines[@]}"
   else
-    npm --prefix web exec -- playwright install "${engines[@]}"
+    npm --prefix web exec -- playwright install --only-shell "${engines[@]}"
   fi
 }
 

@@ -26,6 +26,25 @@ let private configurationTests =
                 Expect.throws
                     (fun () -> run "unregistered-property" counted)
                     "An unregistered property cannot claim qualification")
+            testCase "failure minimization stops after 100 successful shrink steps" (fun () ->
+                let mutable evaluations = 0
+
+                let countdown =
+                    Gen.constant 1000
+                    |> Gen.shrink (fun value -> if value > 0 then [ value - 1 ] else [])
+
+                let rejected =
+                    property {
+                        let! _ = countdown
+                        evaluations <- evaluations + 1
+                        return false
+                    }
+
+                Expect.throws
+                    (fun () -> run "CC-PROP-TEXT-001" rejected)
+                    "A bounded failing property still fails"
+
+                Expect.equal evaluations 101 "Initial failure plus 100 shrinking steps")
             testCase "the same property uses the same seed and rejects a false result" (fun () ->
                 let samples () =
                     let values = ResizeArray<int>()

@@ -22,7 +22,7 @@ const fixture = (directory) => {
   mkdirSync(join(directory, "contracts"));
   symlinkSync(join(web, "node_modules"), join(target, "node_modules"), "dir");
   copyFileSync(join(repository, "contracts/client.ts"), join(directory, "contracts/client.ts"));
-  writeFileSync(join(target, "package.json"), JSON.stringify({ type: "module", private: true }));
+  writeFileSync(join(directory, "package.json"), JSON.stringify({ type: "module", private: true }));
   writeFileSync(
     join(target, "tsconfig.json"),
     JSON.stringify({ compilerOptions: { paths: { "@contracts/*": ["../contracts/*"] } } }),
@@ -37,14 +37,10 @@ const fixture = (directory) => {
   );
   return target;
 };
-test("generated ESM data loads from its tracked package and missing exports refuse", () => {
+test("generated ESM data loads in its consumer and missing exports refuse", () => {
   const directory = mkdtempSync(join(tmpdir(), "claimcore-module-boundary-"));
   try {
     const target = fixture(directory);
-    copyFileSync(
-      join(repository, "contracts/package.json"),
-      join(directory, "contracts/package.json"),
-    );
     const present = discover(target, []);
     assert.equal(present.status, 0, present.stderr);
     assert.match(present.stdout, /Total: 1 test in 1 file/u);
