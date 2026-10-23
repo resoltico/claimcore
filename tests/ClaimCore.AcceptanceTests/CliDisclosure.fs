@@ -45,7 +45,7 @@ let private staleReview fixture input reference =
     let refused = automation fixture "case.execute" pending 2 |> require "REJECTED"
 
     Expect.equal
-        (refused.GetProperty("diagnostic").GetProperty("id").GetString())
+        (refused.GetProperty("code").GetString())
         "CASE_REVISION_CONFLICT"
         "Preview cannot authorize a stale write"
 
