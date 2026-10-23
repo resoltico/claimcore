@@ -11,6 +11,7 @@ RUN --mount=type=cache,target=/root/.npm \
     && npm install --global "npm@$(node -p 'require("./web/package.json").engines.npm')" \
     && npm --prefix web ci
 COPY contracts ./contracts
+COPY src/ClaimCore.Contract/Localization ./src/ClaimCore.Contract/Localization
 COPY web ./web
 COPY prettier.config.mjs LICENSE ./
 RUN npm --prefix web run build

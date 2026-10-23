@@ -20,7 +20,7 @@
   "cli.help.examples": "printf ''%s\\n'' '''{\"endpoint\":\"context\",\"input\":{}}''' | ClaimCore.Cli call\nClaimCore.Cli describe commands OPEN --format text --language lv\nClaimCore.Cli schema operation.execute request",
   "cli.help.help": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | command --help | command -h",
   "cli.help.layout": "ClaimCore strukturēts HTTPS klients. Palīdzība un apraksti darbojas bez savienojuma; call un session pieprasa autentifikāciju.\nClaimCore.Cli help [topic] [--language en|lv|ar]\nClaimCore.Cli describe [selector] [--format json|text]\n{body}\n",
-  "cli.help.overview": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | command --help | command -h",
+  "cli.help.overview": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | command --help | command -h\nClaimCore.Cli help verbs\n",
   "cli.help.schema": "ClaimCore.Cli schema name\nClaimCore.Cli schema endpoint request|response\nopenapi | invocation | response | host-failure\nTikai JSON.",
   "cli.help.session": "call: viens UTF-8 JSON dokuments; atļautas vairākas rindas; aizveriet stdin (EOF).\nsession: NDJSON, viens pilns ziņojums katrā rindā; pierakstīšanās tiek atkārtoti izmantota tikai procesā, bez saglabātiem akreditācijas datiem.\nInvocation bytes ≤ {maximumInvocationBytes}; request input bytes ≤ {maximumRequestBytes}; response bytes ≤ {maximumResponseBytes}\nSaglabājiet sākotnējos pieprasījuma baitus, operationId un expectedRevision. Nezināms iznākums nav atteikums. Atkārtojiet tikai precīzu pieprasījumu.\nClaimCore.Cli schema invocation\nClaimCore.Cli help configuration",
   "cli.help.version": "ClaimCore.Cli version [--json]",
@@ -28,5 +28,11 @@
   "cli.usage.Invocation": "Neatbalstīts izsaukums.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
   "cli.usage.Options": "Neatbalstītas vai atkārtotas opcijas.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
   "cli.usage.Selector": "Nezināms apraksta atlasītājs.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
-  "cli.usage.Topic": "Nezināma palīdzības tēma.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n"
+  "cli.usage.Topic": "Nezināma palīdzības tēma.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
+  "cli.text.state": "Stāvoklis",
+  "cli.text.next": "Nākamais",
+  "cli.text.code": "Kods",
+  "cli.text.uncertain": "Operācijas iznākums nav zināms. Saglabājiet precīzo atkārtošanas pieprasījumu stderr pēdējā rindā; identisku pieprasījumu var droši atkārtot.",
+  "cli.help.verbs": "Komandas cilvēkiem. Lietišķās vērtības tiek nodotas precīzi. Esošas lietas darbībai norādiet revīziju. --preview rāda priekšskatījumu; --dry-run izdrukā precīzo pieprasījumu bez autentifikācijas. Izvade: --format text|json --language en|lv|ar. Darbības opcijas: --operation-id UUID --preview --dry-run. Lasīšana: case get REF; case list; case history REF [--full]; operation observe UUID; authority list; authority grants UUID; context. Lapošana: --cursor C --limit N. Pilnās shēmas ir reģistrā. Aizstāšanas laukus rāda describe commands CORRECT_CASE.\n{grammar}\n",
+  "cli.text.grants": "Lomas"
 }

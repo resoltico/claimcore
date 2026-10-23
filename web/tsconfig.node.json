@@ -9,7 +9,8 @@
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "scripts", "lint"]
+  "include": ["vite.config.ts", "playwright.config.ts", "scripts", "lint", "../contracts/client.ts"]
 }

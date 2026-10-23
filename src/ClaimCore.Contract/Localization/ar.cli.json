@@ -20,7 +20,7 @@
   "cli.help.examples": "printf ''%s\\n'' '''{\"endpoint\":\"context\",\"input\":{}}''' | ClaimCore.Cli call\nClaimCore.Cli describe commands OPEN --format text --language lv\nClaimCore.Cli schema operation.execute request",
   "cli.help.help": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | command --help | command -h",
   "cli.help.layout": "ClaimCore عميل HTTPS منظّم. المساعدة والوصف يعملان دون اتصال؛ يتطلب call وsession المصادقة.\nClaimCore.Cli help [topic] [--language en|lv|ar]\nClaimCore.Cli describe [selector] [--format json|text]\n{body}\n",
-  "cli.help.overview": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | command --help | command -h",
+  "cli.help.overview": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | command --help | command -h\nClaimCore.Cli help verbs\n",
   "cli.help.schema": "ClaimCore.Cli schema name\nClaimCore.Cli schema endpoint request|response\nopenapi | invocation | response | host-failure\nJSON فقط.",
   "cli.help.session": "call: مستند JSON واحد بترميز UTF-8؛ يسمح بعدة أسطر؛ أغلق stdin (EOF).\nsession: NDJSON، إطار كامل في كل سطر؛ تُستخدم المصادقة داخل العملية فقط دون حفظ بيانات الاعتماد.\nInvocation bytes ≤ {maximumInvocationBytes}; request input bytes ≤ {maximumRequestBytes}; response bytes ≤ {maximumResponseBytes}\nاحتفظ ببايتات الطلب الأصلية وoperationId وexpectedRevision. النتيجة المجهولة ليست رفضاً. أعد الطلب نفسه فقط.\nClaimCore.Cli schema invocation\nClaimCore.Cli help configuration",
   "cli.help.version": "ClaimCore.Cli version [--json]",
@@ -28,5 +28,11 @@
   "cli.usage.Invocation": "استدعاء غير مدعوم.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
   "cli.usage.Options": "خيارات غير مدعومة أو مكررة.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
   "cli.usage.Selector": "محدد استكشاف غير معروف.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
-  "cli.usage.Topic": "موضوع مساعدة غير معروف.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n"
+  "cli.usage.Topic": "موضوع مساعدة غير معروف.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
+  "cli.text.state": "الحالة",
+  "cli.text.next": "التالي",
+  "cli.text.code": "الرمز",
+  "cli.text.uncertain": "نتيجة العملية غير معروفة. احتفظ بإطار إعادة المحاولة الدقيق في آخر سطر من stderr؛ يمكن إعادة الطلب نفسه بأمان.",
+  "cli.help.verbs": "أوامر المستخدم. تُمرَّر قيم العمل كما هي. يجب تحديد المراجعة لكل عملية على حالة موجودة. يعرض --preview المعاينة، ويطبع --dry-run الطلب الدقيق دون مصادقة. الإخراج: --format text|json --language en|lv|ar. خيارات العملية: --operation-id UUID --preview --dry-run. القراءة: case get REF; case list; case history REF [--full]; operation observe UUID; authority list; authority grants UUID; context. الصفحات: --cursor C --limit N. المخططات الكاملة في السجل. يعرض describe commands CORRECT_CASE حقول الاستبدال.\n{grammar}\n",
+  "cli.text.grants": "الأدوار"
 }

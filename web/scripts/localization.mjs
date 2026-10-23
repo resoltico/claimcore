@@ -1,3 +1,4 @@
+import { presentationLanguages, presentationPseudolanguage } from "../../contracts/client.ts";
 import { correctionTargets } from "./localization-metadata.mjs";
 import { renderedTokens, validateTokens } from "./localization-tokens.mjs";
 import { format, resolveConfig } from "prettier";
@@ -16,9 +17,8 @@ const root = resolve(import.meta.dirname, "..");
 const input = resolve(root, "../src/ClaimCore.Contract/Localization");
 const output = resolve(root, "src/presentation/generated");
 const generate = process.argv.slice(2).includes("--write");
-/** @type {{languages: string[]}} */
-const { languages } = JSON.parse(
-  await readFile(resolve(root, "../contracts/localization-policy.json"), "utf8"),
+const languages = presentationLanguages.filter(
+  (language) => language !== presentationPseudolanguage,
 );
 /** @type {Record<string, Record<string, import("./localization-policy.mjs").Message>>} */
 const catalogs = {};
@@ -58,7 +58,6 @@ for (const lang of languages) {
 const generated = resolve(root, "../contracts");
 const descriptors = JSON.parse(await readFile(resolve(generated, "descriptors.json"), "utf8"));
 const host = JSON.parse(await readFile(resolve(generated, "openapi.json"), "utf8"));
-Object.assign(catalogs["en"] ?? {}, descriptors.messages);
 for (const lang of languages) {
   validateCatalog(catalogs["en"] ?? {}, catalogs[lang] ?? {}, lang);
 }
@@ -72,19 +71,24 @@ const expected = {};
 /** @type {Record<string, Record<string, string>>} */
 const args = {};
 for (const [lang, catalog] of Object.entries(catalogs)) {
-  /** @type {Record<string, import("@formatjs/icu-messageformat-parser").MessageFormatElement[]>} */
-  const compiled = {};
   for (const [key, message] of Object.entries(catalog)) {
     const shape = messageShape(message, lang);
-    compiled[key] = shape.ast;
     if (lang === "en") {
       args[key] = shape.args;
     }
   }
-  expected[`${lang}.json`] = `${JSON.stringify(compiled)}\n`;
 }
-expected["catalogs.ts"] =
-  `${languages.map((language) => `import ${language} from "./${language}.json";`).join("\n")}\nexport const catalogs = { ${languages.join(", ")} };\n`;
+expected["catalogs.ts"] = `${languages
+  .flatMap((language) =>
+    domains.map(
+      (domain) => `import ${language}_${domain} from "@locales/${language}.${domain}.json";`,
+    ),
+  )
+  .join("\n")}\nexport const catalogs = {${languages
+  .map(
+    (language) => `${language}: {${domains.map((domain) => `...${language}_${domain}`).join(",")}}`,
+  )
+  .join(",")}};\n`;
 expected["diagnostic-parameters.json"] = `${JSON.stringify(requirements, null, 2)}\n`;
 for (const domain of domains) {
   const entries = Object.entries(args).filter(([k]) => k.startsWith(`${domain}.`));
@@ -116,6 +120,16 @@ for (const [file, raw] of Object.entries(expected)) {
     }
   } else if (existing !== text) {
     throw new Error(`Localization generated file drift: ${file}`);
+  }
+}
+if (generate) {
+  const { unlink } = await import("node:fs/promises");
+  for (const language of languages) {
+    await unlink(resolve(output, `${language}.json`)).catch((error) => {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    });
   }
 }
 const extras = (await readdir(output)).filter((f) => !Object.hasOwn(expected, f));

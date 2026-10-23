@@ -20,7 +20,7 @@
   "cli.help.examples": "printf ''%s\\n'' '''{\"endpoint\":\"context\",\"input\":{}}''' | ClaimCore.Cli call\nClaimCore.Cli describe commands OPEN --format text --language lv\nClaimCore.Cli schema operation.execute request",
   "cli.help.help": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | command --help | command -h",
   "cli.help.layout": "ClaimCore structured HTTPS client. Help and discovery work offline; call and session require authentication.\nClaimCore.Cli help [topic] [--language en|lv|ar]\nClaimCore.Cli describe [selector] [--format json|text]\n{body}\n",
-  "cli.help.overview": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | command --help | command -h",
+  "cli.help.overview": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | command --help | command -h\nClaimCore.Cli help verbs\n",
   "cli.help.schema": "ClaimCore.Cli schema name\nClaimCore.Cli schema endpoint request|response\nopenapi | invocation | response | host-failure\nJSON only.",
   "cli.help.session": "call: one UTF-8 JSON document, multiline allowed; close stdin (EOF).\nsession: NDJSON, one complete frame per physical line; process-local sign-in reuse, no saved credentials.\nInvocation bytes ≤ {maximumInvocationBytes}; request input bytes ≤ {maximumRequestBytes}; response bytes ≤ {maximumResponseBytes}\nPreserve original request bytes, operationId and expectedRevision. Unknown outcome is not refusal. Retry only the exact request.\nClaimCore.Cli schema invocation\nClaimCore.Cli help configuration",
   "cli.help.version": "ClaimCore.Cli version [--json]",
@@ -28,5 +28,11 @@
   "cli.usage.Invocation": "Unsupported invocation.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
   "cli.usage.Options": "Unsupported or duplicate options.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
   "cli.usage.Selector": "Unknown discovery selector.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
-  "cli.usage.Topic": "Unknown help topic.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n"
+  "cli.usage.Topic": "Unknown help topic.\nClaimCore.Cli help\nClaimCore.Cli help describe\nClaimCore.Cli help schema\n",
+  "cli.text.state": "State",
+  "cli.text.next": "Next",
+  "cli.text.code": "Code",
+  "cli.text.uncertain": "Outcome unresolved. Keep the exact retry frame on the last stderr line; retrying the identical request is safe.",
+  "cli.help.verbs": "Human commands. Business values are passed exactly. Each existing-case act requires an explicit revision. Use --preview for advice and --dry-run to print the exact frame without authentication. Commands default to text; --format json selects the closed reply frame. Mutation options: --operation-id UUID, --preview, --dry-run. Read commands: case get REF; case list; case history REF [--full]; operation observe UUID; authority list; authority grants UUID; context. Paging: --cursor C --limit N. Output: --language en|lv|ar --format text|json. Complete request schemas follow the registry. Run describe commands CORRECT_CASE to discover replacement fields.\n{grammar}\n",
+  "cli.text.grants": "Grants"
 }

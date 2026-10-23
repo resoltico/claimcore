@@ -2,21 +2,13 @@ export { pseudolocalize } from "../src/presentation/pseudolocalization.mjs";
 import { parse, TYPE } from "@formatjs/icu-messageformat-parser";
 import { parseDocument } from "yaml";
 
-/** @typedef {string | ({literal: string} | {hole: string})[]} Message */
+/** @typedef {string} Message */
 
 /** @param {unknown} value @returns {value is Record<string, unknown>} */
 const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-/** @param {unknown} value @returns {value is {literal: string} | {hole: string}} */
-const isMessagePart = (value) =>
-  isRecord(value) &&
-  Object.keys(value).length === 1 &&
-  ((Object.hasOwn(value, "literal") && typeof value["literal"] === "string") ||
-    (Object.hasOwn(value, "hole") && typeof value["hole"] === "string"));
-/** @param {unknown} value @returns {value is Message} */
-const isMessage = (value) =>
-  typeof value === "string" || (Array.isArray(value) && value.every(isMessagePart));
 /** @param {unknown} value @returns {value is Record<string, Message>} */
-const isCatalog = (value) => isRecord(value) && Object.values(value).every(isMessage);
+const isCatalog = (value) =>
+  isRecord(value) && Object.values(value).every((message) => typeof message === "string");
 
 /** @param {string} source @returns {Record<string, Message>} */
 export const readCatalog = (source) => {
@@ -43,6 +35,11 @@ export const addDomain = (catalog, entries, domain) => {
 const forbidden = /[<>\u202a-\u202e\u2066-\u2069\u200e\u200f]/u;
 /** @param {string} text */
 const unsafeText = (text) =>
+  !text.isWellFormed() ||
+  Array.from(text).some((character) => {
+    const scalar = character.codePointAt(0) ?? 0;
+    return (scalar >= 0xfdd0 && scalar <= 0xfdef) || (scalar & 0xfffe) === 0xfffe;
+  }) ||
   forbidden.test(text) ||
   Array.from(text).some((character) => {
     const code = character.charCodeAt(0);
@@ -73,41 +70,36 @@ const inspectNodes = (nodes, args) => {
   }
 };
 /** @param {string} message */
+const assertBraceSyntax = (message) => {
+  let quoted = false;
+  let depth = 0;
+  for (let index = 0; index < message.length; index++) {
+    const character = message[index];
+    if (character === "'" && message[index + 1] === "'") {
+      index++;
+    } else if (character === "'" && (quoted || ["{", "}"].includes(message.charAt(index + 1)))) {
+      quoted = !quoted;
+    } else if (!quoted && character === "{") {
+      depth++;
+    } else if (!quoted && character === "}" && --depth < 0) {
+      throw new Error("Unexpected closing message brace.");
+    }
+  }
+};
+/** @param {string} message */
 const parseCatalogText = (message) => {
   if (message.trim() === "" || message.length > 8000 || unsafeText(message)) {
     throw new Error("Invalid catalog text.");
   }
+  assertBraceSyntax(message);
   return parse(message, { requiresOtherClause: true });
-};
-/** @param {Exclude<Message, string> | undefined} parts @returns {import("@formatjs/icu-messageformat-parser").MessageFormatElement[]} */
-const literalParts = (parts) => {
-  if (!Array.isArray(parts) || parts.length === 0 || parts.length > 8000) {
-    throw new Error("Invalid presentation parts.");
-  }
-  let length = 0;
-  const ast = parts.map(
-    /** @returns {import("@formatjs/icu-messageformat-parser").LiteralElement | import("@formatjs/icu-messageformat-parser").ArgumentElement} */
-    (part) => {
-      if (!part || typeof part !== "object" || Object.keys(part).length !== 1) {
-        throw new Error("Invalid presentation part.");
-      }
-      const literal = "literal" in part;
-      const value = literal ? part.literal : part.hole;
-      if (typeof value !== "string") {
-        throw new Error("Invalid presentation part value.");
-      }
-      length += value.length + (literal ? 0 : 2);
-      return literal ? { type: TYPE.literal, value } : { type: TYPE.argument, value };
-    },
-  );
-  if (length === 0 || length > 8000 || ast.every((node) => node.value.trim() === "")) {
-    throw new Error("Invalid complete presentation message.");
-  }
-  return ast;
 };
 /** @param {Message | undefined} message @param {string} _language */
 export const messageShape = (message, _language) => {
-  const ast = typeof message === "string" ? parseCatalogText(message) : literalParts(message);
+  if (typeof message !== "string") {
+    throw new Error("Catalog messages must be ICU strings.");
+  }
+  const ast = parseCatalogText(message);
   /** @type {Record<string, string>} */
   const args = {};
   inspectNodes(ast, args);
@@ -131,68 +123,30 @@ export const validateCatalog = (source, translated, language) => {
     }
   }
 };
-const diagnosticIds = (/** @type {import("./tooling-types.mjs").JsonRecord} */ node) =>
-  node["enum"] ??
-  node["oneOf"]?.map((/** @type {{const:string}} */ branch) => branch.const) ?? [node["const"]];
-/** @param {import("./tooling-types.mjs").JsonRecord | undefined} previous @param {import("./tooling-types.mjs").JsonRecord} properties */
-const mergeParameterRules = (previous, properties) => {
-  const merged = { ...previous };
-  for (const [name, schema] of Object.entries(properties)) {
-    const alternatives = schema.oneOf ?? [schema];
-    if (
-      alternatives.every((/** @type {{const?:string}} */ item) => typeof item.const === "string")
-    ) {
-      merged[name] = {
-        enum: [
-          ...new Set([
-            ...(merged[name]?.enum ?? []),
-            ...alternatives.map((/** @type {{const:string}} */ item) => item.const),
-          ]),
-        ],
-      };
-    } else {
-      merged[name] = schema;
-    }
-  }
-  return merged;
-};
 /** @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {import("./tooling-types.mjs").JsonRecord} hostSchema @returns {Record<string, Record<string, unknown>>} */
-export const diagnosticRequirements = (descriptors, hostSchema) => {
-  const result = Object.fromEntries(
-    [descriptors["rejectionDiagnostics"], descriptors["faultDiagnostics"]]
-      .flat()
-      .map((d) => [
-        d.id,
+export const diagnosticRequirements = (descriptors, hostSchema) =>
+  Object.fromEntries([
+    ...descriptors["rejectionDiagnostics"].map(
+      (/** @type {import("./tooling-types.mjs").JsonRecord} */ d) => [
+        `diagnostic.${d["id"]}`,
         Object.fromEntries(
-          d.parameters.map((/** @type {{name: string, minimum: number, maximum: number}} */ p) => [
-            p.name,
-            { minimum: p.minimum, maximum: p.maximum },
+          d["parameters"].map((/** @type {import("./tooling-types.mjs").JsonRecord} */ p) => [
+            p["name"],
+            { minimum: p["minimum"], maximum: p["maximum"] },
           ]),
         ),
-      ]),
-  );
-  /** @param {import("./tooling-types.mjs").JsonRecord} node */
-  const visit = (node) => {
-    if (!node || typeof node !== "object") {
-      return;
-    }
-    const d = node["properties"];
-    if (d?.id && d.parameters?.properties) {
-      for (const id of diagnosticIds(d.id)) {
-        result[id] = mergeParameterRules(result[id], d.parameters.properties);
-      }
-    }
-    for (const value of Object.values(node)) {
-      if (Array.isArray(value)) {
-        value.forEach(visit);
-      } else {
-        visit(value);
-      }
-    }
-  };
-  visit(hostSchema);
-  return result;
-};
+      ],
+    ),
+    ...descriptors["faultDiagnostics"].map(
+      (/** @type {import("./tooling-types.mjs").JsonRecord} */ d) => [`fault.${d["id"]}`, {}],
+    ),
+    ...hostSchema["components"].schemas.HostFailure.oneOf.map(
+      (/** @type {import("./tooling-types.mjs").JsonRecord} */ branch) => [
+        `host.${branch["properties"].code.const}`,
+        {},
+      ],
+    ),
+  ]);
 /** @param {Message | undefined} message @param {Record<string, unknown>} args @param {string} id */
 const assertDiagnosticShape = (message, args, id) => {
   const actual = messageShape(message, "en").args;
@@ -238,7 +192,7 @@ export const validateCoverage = (catalog, descriptors, requirements) => {
   }
   keys.push(...authorityKeys(descriptors));
   for (const [id, args] of Object.entries(requirements)) {
-    const key = `diagnostic.${id}`;
+    const key = id;
     keys.push(key);
     assertDiagnosticShape(catalog[key], args, id);
   }
@@ -246,7 +200,7 @@ export const validateCoverage = (catalog, descriptors, requirements) => {
     throw new Error("Catalog omits authoritative metadata.");
   }
   const owned = Object.keys(catalog).filter((k) =>
-    /^(field|command|group|authority|diagnostic)\./u.test(k),
+    /^(field|command|group|authority|diagnostic|fault|host)\./u.test(k),
   );
   if (owned.some((k) => !keys.includes(k))) {
     throw new Error("Catalog contains obsolete metadata.");

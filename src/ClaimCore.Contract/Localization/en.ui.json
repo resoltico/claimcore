@@ -164,5 +164,6 @@
   "ui.noAccessibleActors": "No accessible actors returned.",
   "ui.pagePartial": "More results are available in this visible scope.",
   "ui.pageEnd": "End of results in this visible scope.",
-  "ui.noAccessibleHistory": "No accessible history entries returned."
+  "ui.noAccessibleHistory": "No accessible history entries returned.",
+  "ui.discardUnknownDescription": "The operation may already be accepted. Discarding loses this exact request and does not cancel it. Continue only if you accept losing the ability to retry from this page."
 }

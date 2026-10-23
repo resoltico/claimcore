@@ -7,8 +7,9 @@ const owners = new Set([
   "CaseState_LIVE",
   "Principal",
 ]);
-const renderedKindFamilies = ["Scope_", "AuthorityAct_"];
+const renderedKindFamilies = ["Scope_", "AuthorityAct_", "ReceiptScope_", "CaseReceiptScope_"];
 const members = new Set(["act", "disposition", "kind"]);
+const operationInputFamily = (/** @type {string} */ name) => name.startsWith("OperationInput_");
 /** @param {import("./tooling-types.mjs").JsonRecord} key */
 const memberName = (key) => (key["type"] === "Identifier" ? key["name"] : key["value"]);
 
@@ -27,24 +28,24 @@ const literalsOf = (signature) => {
     );
 };
 
-/** @param {import("./tooling-types.mjs").JsonRecord | null} node @param {Set<string>} result */
-const visit = (node, result) => {
+/** @param {import("./tooling-types.mjs").JsonRecord | null} node @param {Set<string>} result @param {Set<string>} selected */
+const visit = (node, result, selected) => {
   if (node === null || typeof node !== "object") {
     return;
   }
   if (Array.isArray(node)) {
     for (const item of node) {
-      visit(item, result);
+      visit(item, result, selected);
     }
     return;
   }
-  if (node["type"] === "TSPropertySignature" && members.has(memberName(node["key"]))) {
+  if (node["type"] === "TSPropertySignature" && selected.has(memberName(node["key"]))) {
     for (const literal of literalsOf(node)) {
       result.add(literal);
     }
   }
   for (const child of Object.values(node)) {
-    visit(child, result);
+    visit(child, result, selected);
   }
 };
 
@@ -60,9 +61,16 @@ const renderedFamilies = (types, result) => {
     if (
       declaration?.type === "TSTypeAliasDeclaration" &&
       (owners.has(declaration.id.name) ||
+        operationInputFamily(declaration.id.name) ||
         renderedKindFamilies.some((prefix) => declaration.id.name.startsWith(prefix)))
     ) {
-      visit(declaration.typeAnnotation, result);
+      let selected = members;
+      if (operationInputFamily(declaration.id.name)) {
+        selected = new Set(["scope"]);
+      } else if (/^(CaseReceiptScope|ReceiptScope)_/u.test(declaration.id.name)) {
+        selected = new Set(["act"]);
+      }
+      visit(declaration.typeAnnotation, result, selected);
     }
   }
 };

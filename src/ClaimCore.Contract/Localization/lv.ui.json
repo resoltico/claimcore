@@ -164,5 +164,6 @@
   "ui.noAccessibleActors": "Nav atgrieztu pieejamu dalībnieku.",
   "ui.pagePartial": "Šajā redzamajā tvērumā ir vēl rezultāti.",
   "ui.pageEnd": "Rezultātu beigas šajā redzamajā tvērumā.",
-  "ui.noAccessibleHistory": "Nav atgrieztu pieejamu vēstures ierakstu."
+  "ui.noAccessibleHistory": "Nav atgrieztu pieejamu vēstures ierakstu.",
+  "ui.discardUnknownDescription": "Operācija, iespējams, jau ir pieņemta. Atmetot tiks zaudēts šis precīzais pieprasījums, bet operācija netiks atcelta. Turpiniet tikai tad, ja piekrītat zaudēt iespēju atkārtot pieprasījumu no šīs lapas."
 }

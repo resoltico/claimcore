@@ -14,8 +14,10 @@ export default {
     alias: [
       { find: "@contracts", replacement: fileURLToPath(new URL("../contracts", import.meta.url)) },
       {
-        find: /^@formatjs\/icu-messageformat-parser$/u,
-        replacement: "@formatjs/icu-messageformat-parser/no-parser.js",
+        find: "@locales",
+        replacement: fileURLToPath(
+          new URL("../src/ClaimCore.Contract/Localization", import.meta.url),
+        ),
       },
     ],
   },

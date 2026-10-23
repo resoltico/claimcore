@@ -33,5 +33,6 @@
   "token.HUMAN": "Cilvēks",
   "token.SERVICE": "Pakalpojums",
   "token.INSTALLATION": "Instalācija",
-  "token.CASE": "Viena lieta"
+  "token.CASE": "Viena lieta",
+  "token.AUTHORITY": "Pilnvaras"
 }
