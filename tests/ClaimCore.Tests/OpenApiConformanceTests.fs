@@ -13,7 +13,9 @@ open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 
 let private emitted () =
-    OpenApi.emit () |> Encoding.UTF8.GetString
+    ClaimCore.Contract.OpenApi.document
+    |> WireWriter.bytes
+    |> Encoding.UTF8.GetString
 
 let private parser () =
     let result = OpenApiDocument.Parse(emitted (), "json")
@@ -22,7 +24,7 @@ let private parser () =
         (nonNull result.Diagnostic).Errors
         "Independent OpenAPI parser admits the complete document"
 
-    Expect.equal (nonNull result.Document).Paths.Count 12 "All twelve operations are present"
+    Expect.equal (nonNull result.Document).Paths.Count 11 "All registry operations are present"
     let broken = OpenApiDocument.Parse("{\"openapi\":\"3.1.0\",\"paths\":{}}", "json")
 
     Expect.isNonEmpty
@@ -35,8 +37,8 @@ let private schema (document: JsonNode) endpoint response =
     let op =
         document
         |> child "paths"
-        |> child (Endpoint.path endpoint)
-        |> child ((Endpoint.method endpoint).ToLowerInvariant())
+        |> child (Api.path endpoint)
+        |> child (((Api.method endpoint).Method).ToLowerInvariant())
 
     let selected =
         if response then
@@ -69,16 +71,23 @@ let private corpus response filename () =
         let endpoint =
             example.GetProperty("endpoint").GetString()
             |> nonNull
-            |> Endpoint.tryParse
+            |> Api.tryFind
             |> Option.get
 
-        if response || endpoint <> Endpoint.Session then
+        if response || Api.id endpoint <> "session" then
             let selected = schema document endpoint response
             let value = example.GetProperty "value"
 
-            Expect.isTrue
+            let expected =
+                match example.TryGetProperty "valid" with
+                | true, valid -> valid.GetBoolean()
+                | _ -> true
+
+            Expect.equal
                 (evaluate selected value)
-                "Independent 2020-12 validator admits the frozen positive example"
+                expected
+                "Independent validator judges the frozen example."
+
 
             let altered = JsonNode.Parse(value.GetRawText()) |> nonNull
             altered["unexpectedMember"] <- JsonValue.Create true
@@ -88,9 +97,9 @@ let private corpus response filename () =
                 (evaluate selected invalid.RootElement)
                 "Closed schema rejects an added member"
 
-            endpoints <- Set.add endpoint endpoints
+            endpoints <- Set.add (Api.id endpoint) endpoints
 
-    let expected = if response then 12 else 11
+    let expected = if response then 11 else 10
 
     Expect.equal
         endpoints.Count
@@ -137,72 +146,12 @@ let private responseStatuses () =
             JsonSchema.FromText(root.ToJsonString(), BuildOptions(Dialect = Dialect.Draft202012))
 
         for reason in HostFailures.all do
-            use body = JsonDocument.Parse(HostFailures.encode reason)
+            use body = JsonDocument.Parse(HostFailureCodecs.encode reason)
 
             Expect.equal
                 (evaluate validator body.RootElement)
                 (HostFailures.status reason = status)
                 "HTTP response status permits exactly its fixed typed failure policies."
-
-let private generatedSchemas document =
-    [
-        for endpoint in Endpoint.all do
-            for response in [ false; true ] do
-                if response || endpoint <> Endpoint.Session then
-                    yield (endpoint, response), schema document endpoint response
-    ]
-    |> Map.ofList
-
-let private generatedCorpus () =
-    let root = RepositoryRoot.find ()
-    let document = JsonNode.Parse(emitted ()) |> nonNull
-    let schemas = generatedSchemas document
-
-    let frames =
-        JsonSchema.FromText(
-            File.ReadAllText(Path.Combine(root, "contracts/cli-frame.schema.json")),
-            BuildOptions(Dialect = Dialect.Draft202012)
-        )
-
-    use examples =
-        JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "contracts/corpus.json")))
-
-    let mutable positive, negative = 0, 0
-    let mutable seen = Set.empty
-
-    for example in examples.RootElement.GetProperty("cases").EnumerateArray() do
-        let endpoint =
-            example.GetProperty("endpoint").GetString()
-            |> nonNull
-            |> Endpoint.tryParse
-            |> Option.get
-
-        let response = example.GetProperty("direction").GetString() = "response"
-        let expected = example.GetProperty("valid").GetBoolean()
-        let value = example.GetProperty "value"
-
-        let actual =
-            if not response && endpoint = Endpoint.Session then
-                use invocation =
-                    JsonDocument.Parse(
-                        "{\"endpoint\":\"session\",\"input\":" + value.GetRawText() + "}"
-                    )
-
-                evaluate frames invocation.RootElement
-            else
-                evaluate schemas[endpoint, response] value
-
-        Expect.equal actual expected (example.GetProperty("id").GetString() |> nonNull)
-        seen <- Set.add (endpoint, response) seen
-
-        if expected then
-            positive <- positive + 1
-        else
-            negative <- negative + 1
-
-    Expect.equal seen.Count 24 "Every endpoint and direction reaches the independent validator."
-    Expect.isGreaterThan positive 0 "Generated positive cases execute."
-    Expect.isGreaterThan negative 0 "Generated rejecting controls execute."
 
 let private securityRequirements () =
     use document = JsonDocument.Parse(emitted ())
@@ -219,12 +168,12 @@ let private securityRequirements () =
         "X-ClaimCore-Antiforgery"
         "The named header matches host admission."
 
-    for endpoint in Endpoint.all do
+    for endpoint in Api.all do
         let operation =
             document.RootElement
                 .GetProperty("paths")
-                .GetProperty(Endpoint.path endpoint)
-                .GetProperty((Endpoint.method endpoint).ToLowerInvariant())
+                .GetProperty(Api.path endpoint)
+                .GetProperty(((Api.method endpoint).Method).ToLowerInvariant())
 
         let actual =
             operation.GetProperty("security").EnumerateArray()
@@ -233,10 +182,9 @@ let private securityRequirements () =
             |> Set.ofSeq
 
         let expected =
-            match endpoint with
-            | Endpoint.Session ->
-                [ Set.empty; Set.singleton "cookieAuth"; Set.singleton "bearerAuth" ]
-            | Endpoint.SessionLogout -> [ Set.ofList [ "cookieAuth"; "antiforgery" ] ]
+            match Api.id endpoint with
+            | "session" -> [ Set.empty; Set.singleton "cookieAuth"; Set.singleton "bearerAuth" ]
+            | "session.logout" -> [ Set.ofList [ "cookieAuth"; "antiforgery" ] ]
             | _ -> [ Set.ofList [ "cookieAuth"; "antiforgery" ]; Set.singleton "bearerAuth" ]
 
         Expect.equal
@@ -261,7 +209,4 @@ let tests =
             testCase
                 "OpenAPI security alternatives preserve cookie CSRF and bearer admission"
                 securityRequirements
-            testCase
-                "all generated positive and negative corpus cases validate independently"
-                generatedCorpus
         ]

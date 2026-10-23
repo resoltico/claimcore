@@ -27,23 +27,37 @@ let private examples () =
 
     for sample in fixture.RootElement.GetProperty("cases").EnumerateArray() do
         let endpoint =
-            Endpoint.tryParse (sample.GetProperty("endpoint").GetString() |> nonNull)
+            Api.tryFind (sample.GetProperty("endpoint").GetString() |> nonNull)
             |> Option.get
 
-        let value =
-            Replies.decode endpoint (bytes (sample.GetProperty("value").GetRawText()))
-            |> accepted
+        let raw = bytes (sample.GetProperty("value").GetRawText())
+        let value = StrictJson.read Limits.MaximumResponseBytes raw |> accepted
+        let expected = sample.GetProperty("valid").GetBoolean()
 
-        Expect.equal (WireReply.endpoint value) endpoint "Reply endpoint is a closed union"
+        let encoded =
+            endpoint.Accept
+                { new IEndpointVisitor<Result<ClaimCore.Contract.JsonValue, Problem>> with
+                    member _.Visit endpoint =
+                        endpoint.Output.Read "$" value |> Result.map endpoint.Output.Write
+                }
 
         Expect.equal
-            (Replies.decode endpoint (Replies.encode value))
-            (Ok value)
-            "Every outcome round trips"
+            (Result.isOk encoded)
+            expected
+            (sample.GetProperty("name").GetString() |> nonNull)
 
-        seen <- Set.add endpoint seen
+        if expected then
+            Expect.equal
+                (CanonicalWriter.bytes (encoded |> accepted))
+                (CanonicalWriter.bytes value)
+                "Typed replies preserve admitted values."
 
-    Expect.equal seen (Set.ofList Endpoint.all) "All twelve response codecs are exercised"
+        seen <- Set.add (Api.id endpoint) seen
+
+    Expect.equal
+        seen
+        (Api.all |> List.map Api.id |> Set.ofList)
+        "All registry response codecs are exercised."
 
 let private malformed () =
     let fault =
@@ -54,15 +68,20 @@ let private malformed () =
         "Fault action belongs to its reason"
 
     for reason in HostFailures.all do
-        let encoded = HostFailures.encode reason
-        let decoded = HostFailures.decode encoded |> accepted
-        Expect.equal decoded.Reason reason "All fixed host policies round trip"
+        let encoded = HostFailureCodecs.encode reason
+        let decoded = HostFailureCodecs.decode encoded |> accepted
+
+        Expect.equal
+            decoded
+            (HostFailureCodecs.ofReason reason)
+            "All fixed host policies round trip"
+
         let node = JsonNode.Parse(encoded) |> nonNull
-        node["status"] <- JsonValue.Create(499)
+        (node["hostFailure"] |> nonNull)["phase"] <- JsonValue.Create("UNRECOGNIZED")
 
         Expect.isError
-            (HostFailures.decode (bytes (node.ToJsonString())))
-            "Host status belongs to its reason"
+            (HostFailureCodecs.decode (bytes (node.ToJsonString())))
+            "Host phases form a closed vocabulary"
 
     let ordinary =
         """{"act":"CLOSE","expectedRevision":1,"correction":{"registration":[],"decision":[],"payment":[]}}"""
@@ -84,71 +103,67 @@ let private malformed () =
 
 let private frames () =
     let raw = """{"endpoint":"case.list","input":{ "limit" : 1 }}"""
-    let frame = Frames.admit (bytes raw) |> accepted
+    let frame = ClaimCore.Contract.Frames.admit (bytes raw) |> accepted
 
     Expect.equal
-        (Frames.inputBytes frame)
-        (bytes "{ \"limit\" : 1 }")
-        "Original admitted input bytes are preserved"
+        (ClaimCore.Contract.Frames.inputBytes frame)
+        (bytes """{"limit":1}""")
+        "The admitted body is compacted once before freezing."
 
-    let metadata =
+    let reply: ClaimCore.Contract.FrameReply =
         {
+            Endpoint = Some "session.logout"
             OperationId = None
-            AttemptKnowledge = AttemptKnowledge.ReadSucceeded
-            ResolutionEvidence = ResolutionEvidence.NoEvidence
+            Delivery = DeliveryState.Delivered
+            Result = FrameResult.Reply(Api.logout.Output.Write(ReadReply.Succeeded()))
         }
 
-    let reply =
-        WireReply.SessionLogout
-            {
-                Outcome = SessionLogoutOutcome.Succeeded()
-            }
+    let roundTrip value =
+        Expect.equal
+            (ClaimCore.Contract.Frames.decode (ClaimCore.Contract.Frames.encode value))
+            (Ok value)
+            "CLI result frames round trip."
 
-    let result = Frames.fromReply metadata reply
-    Expect.equal (Frames.decode (Frames.encode result)) (Ok result) "Typed CLI result round trips"
+    roundTrip reply
 
     for reason in HostFailures.all do
-        let failure: HostFailureReply =
-            {
-                Reason = reason
-                Message = HostFailures.render reason
+        roundTrip
+            { reply with
+                Result = FrameResult.HostFailure(HostFailureCodecs.ofReason reason)
             }
 
-        let value = FrameReply.ServiceFailure(metadata, Endpoint.CaseList, failure)
+    let local =
+        { reply with
+            Delivery = DeliveryState.NotSent
+            Result = FrameResult.LocalFailure CliFailure.Cancelled
+        }
 
-        Expect.equal
-            (Frames.decode (Frames.encode value))
-            (Ok value)
-            "Typed service failure round trips"
-
-    let local = FrameReply.LocalFailure(metadata, None, LocalFailure.Cancelled)
-    Expect.equal (Frames.decode (Frames.encode local)) (Ok local) "Local frame round trips"
-    Expect.equal (Frames.exitCode local) 130 "Cancellation exit code"
-
-    let protocol =
-        FrameReply.ProtocolFailure(metadata, None, ProtocolFailure.InvalidFrame)
-
-    Expect.equal (Frames.decode (Frames.encode protocol)) (Ok protocol) "Protocol frame round trips"
+    roundTrip local
+    Expect.equal (ClaimCore.Contract.Frames.exitCode local) 130 "Cancellation exit code"
 
 let private openApi () =
-    let first = OpenApi.emit ()
-    Expect.equal (OpenApi.emit ()) first "OpenAPI bytes are deterministic"
+    let first = (ClaimCore.Contract.OpenApi.document |> WireWriter.bytes)
+
+    Expect.equal
+        ((ClaimCore.Contract.OpenApi.document |> WireWriter.bytes))
+        first
+        "OpenAPI bytes are deterministic"
 
     use document = JsonDocument.Parse(first.AsMemory())
     let root = document.RootElement
     Expect.equal (root.GetProperty("openapi").GetString()) "3.1.0" "Explicit dialect"
     let paths = root.GetProperty "paths"
-    Expect.equal (paths.EnumerateObject() |> Seq.length) 12 "All endpoints emitted"
+    Expect.equal (paths.EnumerateObject() |> Seq.length) 11 "All registry endpoints emitted"
 
-    for endpoint in Endpoint.all do
+    for endpoint in Api.all do
         let operation =
             paths
-                .GetProperty(Endpoint.path endpoint)
-                .GetProperty((Endpoint.method endpoint).ToLowerInvariant())
+                .GetProperty(Api.path endpoint)
+                .GetProperty(((Api.method endpoint).Method).ToLowerInvariant())
 
         Expect.equal
             (operation.GetProperty("operationId").GetString())
-            (Endpoint.id endpoint)
+            (Api.id endpoint)
             "Stable endpoint identity"
 
         Expect.isTrue
@@ -161,7 +176,7 @@ let private openApi () =
 
     let schemas = root.GetProperty("components").GetProperty "schemas"
 
-    for name, property, count in [ "Receipt", "scope", 2; "CaseActOffer", "act", 12 ] do
+    for name, property, count in [ "ReceiptScope", "kind", 2; "CaseActOffer", "act", 12 ] do
         let union = schemas.GetProperty name
         let discriminator = union.GetProperty "discriminator"
 
@@ -190,6 +205,6 @@ let tests =
         [
             testCase "independent examples cover every endpoint and outcome" examples
             testCase "fixed policies and conditional advice reject inconsistent shapes" malformed
-            testCase "CLI frames preserve input bytes and round trip typed replies" frames
+            testCase "CLI frames freeze prepared input bytes and round trip typed replies" frames
             testCase "OpenAPI is complete deterministic and presentation free" openApi
         ]

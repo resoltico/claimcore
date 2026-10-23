@@ -1,5 +1,5 @@
 {
-  "source": "contracts/endpoint-corpus.json at df3263f5e8799c3f8d20f821ac618dfbfdc95902",
+  "source": "Hand-authored synthetic boundary examples revised for scoped operations; never emitted by product codecs.",
   "cases": [
     {
       "id": "reference-True-0",
@@ -79,11 +79,12 @@
       }
     },
     {
-      "id": "case.preview-request-0",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-0",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -102,11 +103,12 @@
       }
     },
     {
-      "id": "case.preview-request-1",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-1",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -125,11 +127,12 @@
       }
     },
     {
-      "id": "case.preview-request-2",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-2",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -150,11 +153,12 @@
       }
     },
     {
-      "id": "case.preview-request-3",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-3",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -169,11 +173,12 @@
       }
     },
     {
-      "id": "case.preview-request-4",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-4",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -183,11 +188,12 @@
       }
     },
     {
-      "id": "case.preview-request-5",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-5",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -200,11 +206,12 @@
       }
     },
     {
-      "id": "case.preview-request-6",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-6",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -214,11 +221,12 @@
       }
     },
     {
-      "id": "case.preview-request-7",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-7",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -228,11 +236,12 @@
       }
     },
     {
-      "id": "case.preview-request-8",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-8",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -242,11 +251,12 @@
       }
     },
     {
-      "id": "case.preview-request-9",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-9",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -257,11 +267,12 @@
       }
     },
     {
-      "id": "case.preview-request-10",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-10",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -272,11 +283,12 @@
       }
     },
     {
-      "id": "case.preview-request-11",
-      "endpoint": "case.preview",
+      "id": "operation.preview.case-request-11",
+      "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -286,11 +298,12 @@
       }
     },
     {
-      "id": "case.execute-request-0",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-0",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -309,11 +322,12 @@
       }
     },
     {
-      "id": "case.execute-request-1",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-1",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -332,11 +346,12 @@
       }
     },
     {
-      "id": "case.execute-request-2",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-2",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -357,11 +372,12 @@
       }
     },
     {
-      "id": "case.execute-request-3",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-3",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -376,11 +392,12 @@
       }
     },
     {
-      "id": "case.execute-request-4",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-4",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -390,11 +407,12 @@
       }
     },
     {
-      "id": "case.execute-request-5",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-5",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -407,11 +425,12 @@
       }
     },
     {
-      "id": "case.execute-request-6",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-6",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -421,11 +440,12 @@
       }
     },
     {
-      "id": "case.execute-request-7",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-7",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -435,11 +455,12 @@
       }
     },
     {
-      "id": "case.execute-request-8",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-8",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -449,11 +470,12 @@
       }
     },
     {
-      "id": "case.execute-request-9",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-9",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -464,11 +486,12 @@
       }
     },
     {
-      "id": "case.execute-request-10",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-10",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -479,11 +502,12 @@
       }
     },
     {
-      "id": "case.execute-request-11",
-      "endpoint": "case.execute",
+      "id": "operation.execute.case-request-11",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -502,11 +526,12 @@
       }
     },
     {
-      "id": "authority.execute-request-0",
-      "endpoint": "authority.execute",
+      "id": "operation.execute.authority-request-0",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -519,11 +544,12 @@
       }
     },
     {
-      "id": "authority.execute-request-1",
-      "endpoint": "authority.execute",
+      "id": "operation.execute.authority-request-1",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -541,11 +567,12 @@
       }
     },
     {
-      "id": "authority.execute-request-2",
-      "endpoint": "authority.execute",
+      "id": "operation.execute.authority-request-2",
+      "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
+        "scope": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -575,6 +602,66 @@
       "value": {
         "actorId": "10000000-0000-4000-8000-000000000001",
         "limit": 1
+      }
+    },
+    {
+      "id": "operation.preview.authority-request-0",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "REGISTER_ACTOR"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.authority-request-1",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "SET_GRANT",
+          "role": "OWNER",
+          "scope": {
+            "kind": "INSTALLATION"
+          },
+          "active": false
+        }
+      }
+    },
+    {
+      "id": "operation.preview.authority-request-2",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "SET_ENABLED",
+          "enabled": false
+        }
       }
     }
   ]
