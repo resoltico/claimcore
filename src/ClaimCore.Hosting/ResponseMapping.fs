@@ -2,85 +2,15 @@ namespace ClaimCore.Hosting
 
 open ClaimCore.Contract
 
-open System.Globalization
 open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Hosting.Presentation
 
 module internal ResponseMapping =
-    let private date (value: System.DateOnly) =
-        value.ToString("O", CultureInfo.InvariantCulture)
-
     let private disposition =
         function
         | Disposition.Active -> "ACTIVE"
         | Disposition.Voided -> "VOIDED"
-
-    let private mode =
-        function
-        | CorrectionGroupAction.Keep -> "KEEP"
-        | CorrectionGroupAction.Replace -> "REPLACE"
-        | CorrectionGroupAction.Clear -> "CLEAR"
-
-    let private actOffer =
-        function
-        | CaseActOffer.Act(act, revision) ->
-            ClaimCore.Contract.Protocol.CaseActOffer.Act(CaseActKinds.token act, revision)
-        | CaseActOffer.CorrectCase(revision, choices) ->
-            ClaimCore.Contract.Protocol.CaseActOffer.Correct(
-                revision,
-                {
-                    Registration = List.map mode choices.Registration
-                    Decision = List.map mode choices.Decision
-                    Payment = List.map mode choices.Payment
-                }
-            )
-
-    let private historyDetail =
-        function
-        | HistoryDetail.Summary -> "SUMMARY"
-        | HistoryDetail.Full -> "FULL"
-
-    let caseRecord (value: CaseReadModel) : ClaimCore.Contract.Protocol.CaseReadModel =
-        {
-            CaseReference = value.Snapshot.Reference
-            Revision = value.Snapshot.Revision
-            State = value.Snapshot.View
-            Advice =
-                {
-                    Acts = List.map actOffer value.Advice.Acts
-                    History = List.map historyDetail value.Advice.History
-                }
-        }
-
-    let private offer =
-        function
-        | InstallationOffer.Open -> ClaimCore.Contract.Protocol.InstallationOffer.Open 0L
-        | InstallationOffer.AuthorityAct act ->
-            ClaimCore.Contract.Protocol.InstallationOffer.AuthorityAct(AuthorityKinds.token act)
-
-    let private view =
-        function
-        | View.Cases -> "CASES"
-        | View.Authority -> "AUTHORITY"
-        | View.Operations -> "OPERATIONS"
-
-    let context (value: ActorContext) : ClaimCore.Contract.Protocol.ActorContext =
-        {
-            ProductVersion = value.Runtime.ProductVersion
-            BusinessDate = date value.Runtime.EffectiveBusinessDate
-            TimeZone = value.Runtime.TimeZoneId
-            Capabilities = List.map Capabilities.token value.Capabilities
-            Views = List.map view value.Views
-            Offers = List.map offer value.Offers
-        }
-
-    let private runtime (value: RuntimeContext) : ClaimCore.Contract.Protocol.RuntimeContext =
-        {
-            ProductVersion = value.ProductVersion
-            BusinessDate = date value.EffectiveBusinessDate
-            TimeZone = value.TimeZoneId
-        }
 
     let private position (value: LedgerPosition) : ClaimCore.Contract.Protocol.Position =
         {
@@ -152,7 +82,7 @@ module internal ResponseMapping =
         {
             Items = List.map summary value.Items
             NextCursor = value.NextCursor
-            Offers = List.map offer value.Offers
+            Offers = value.Offers
         }
 
     let private change (value: ChangeSummary) : ClaimCore.Contract.Protocol.ChangeSummary =
@@ -215,22 +145,6 @@ module internal ResponseMapping =
             Actor = actor value.Actor
             Items = List.map grant value.Items
             NextCursor = value.NextCursor
-        }
-
-    let review (value: AdvisoryReview) : ClaimCore.Contract.Protocol.Review =
-        {
-            Before = value.Before
-            After = value.Proposed
-            Changes =
-                value.Changes
-                |> List.map (fun change ->
-                    {
-                        ClaimCore.Contract.Protocol.FieldChange.Field =
-                            BusinessField.token change.FieldName
-                        Before = change.Before
-                        After = change.After
-                    })
-            Context = runtime value.Context
         }
 
     let private diagnostics =

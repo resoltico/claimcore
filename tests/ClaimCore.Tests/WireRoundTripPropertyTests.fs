@@ -310,14 +310,14 @@ let private listBounds (context: string) =
         match context with
         | "CaseAdvice.Acts" -> 12
         | "CaseAdvice.History"
-        | "CorrectionAdvice.Registration" -> 2
+        | "CorrectionChoices.Registration" -> 2
         | "ActorContext.Capabilities" -> 10
         | "ActorContext.Views"
-        | "CorrectionAdvice.Decision"
-        | "CorrectionAdvice.Payment" -> 3
+        | "CorrectionChoices.Decision"
+        | "CorrectionChoices.Payment" -> 3
         | "ActorContext.Offers"
         | "CasesPage.Offers" -> 4
-        | "Review.Changes" -> 13
+        | "AdvisoryReview.Changes" -> 13
         | _ -> 50
 
     let minimum =
@@ -361,6 +361,9 @@ let rec private fresh response source context (kind: Type) (value: obj | null) =
         guid |> Gen.map box
     elif kind = typeof<int64> then
         integer response context |> Gen.map box
+    elif kind = typeof<DateOnly> then
+        Gen.int32 (Range.constant DateOnly.MinValue.DayNumber DateOnly.MaxValue.DayNumber)
+        |> Gen.map (DateOnly.FromDayNumber >> box)
     elif kind = typeof<DateTimeOffset> then
         instant |> Gen.map box
     elif kind = typeof<bool> then
@@ -445,7 +448,16 @@ let private replyProperty endpoint =
 let private closedUnionCoverage (source: Seeds) =
     for KeyValue(kind, entries) in source.Values do
         if FSharpType.IsUnion kind && not (isOption kind) && not (isList kind) then
-            let expected = FSharpType.GetUnionCases kind |> Array.map _.Tag |> Set.ofArray
+            let expected =
+                FSharpType.GetUnionCases kind
+                // Provisioning is record-only; correction has its own offer case, not an ordinary act payload.
+                |> Array.filter (fun case ->
+                    (kind <> typeof<AuthorityKind>
+                     || case.Name <> nameof AuthorityKind.ProvisionOwner)
+                    && (kind <> typeof<BusinessActKind>
+                        || case.Name <> nameof BusinessActKind.CorrectCase))
+                |> Array.map _.Tag
+                |> Set.ofArray
 
             let actual =
                 entries

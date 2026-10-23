@@ -4,54 +4,6 @@ open ClaimCore.Contract
 
 open System
 
-type CorrectionAdvice =
-    {
-        Registration: string list
-        Decision: string list
-        Payment: string list
-    }
-
-[<RequireQualifiedAccess>]
-type CaseActOffer =
-    | Act of act: string * expectedRevision: int64
-    | Correct of expectedRevision: int64 * correction: CorrectionAdvice
-
-type CaseAdvice =
-    {
-        Acts: CaseActOffer list
-        History: string list
-    }
-
-type CaseReadModel =
-    {
-        CaseReference: string
-        Revision: int64
-        State: ClaimCore.Contract.CaseView
-        Advice: CaseAdvice
-    }
-
-[<RequireQualifiedAccess>]
-type InstallationOffer =
-    | Open of int64
-    | AuthorityAct of string
-
-type RuntimeContext =
-    {
-        ProductVersion: string
-        BusinessDate: string
-        TimeZone: string
-    }
-
-type ActorContext =
-    {
-        ProductVersion: string
-        BusinessDate: string
-        TimeZone: string
-        Capabilities: string list
-        Views: string list
-        Offers: InstallationOffer list
-    }
-
 type Position = { Sequence: int64; EntryHash: string }
 
 [<RequireQualifiedAccess>]
@@ -90,21 +42,6 @@ type ChangeSummary =
         Act: string
         RecordedAt: DateTimeOffset
         RecordedBy: Guid
-    }
-
-type FieldChange =
-    {
-        Field: string
-        Before: string option
-        After: string option
-    }
-
-type Review =
-    {
-        Before: CaseSnapshot option
-        After: CaseSnapshot
-        Changes: FieldChange list
-        Context: RuntimeContext
     }
 
 type ActorSummary =
@@ -150,7 +87,7 @@ type Session =
 
 type OutcomeUnknown = { OperationId: Guid }
 
-type Reviewed = { Review: Review }
+type Reviewed = { Review: AdvisoryReview }
 
 type EmptyParameters = unit
 

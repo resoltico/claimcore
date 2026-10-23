@@ -28,6 +28,7 @@
     <Compile Include="Delivery.fs" />
     <Compile Include="Model/CaseInputs.fs" />
     <Compile Include="Model/CaseFields.fs" />
+    <Compile Include="Model/Advice.fs" />
     <Compile Include="Model/AuthorityModel.fs" />
     <Compile Include="Requests.fs" />
     <Compile Include="Model/Operations.fs" />

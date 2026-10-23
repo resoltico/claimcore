@@ -238,8 +238,8 @@ module Correlation =
         | CasePreviewOutcome.Reviewed data ->
             ReplyIdentity.Reviewed(
                 value.OperationId,
-                data.Review.After.Reference,
-                data.Review.After.Revision
+                data.Review.Proposed.Reference,
+                data.Review.Proposed.Revision
             )
         | CasePreviewOutcome.AlreadyAccepted data ->
             ReplyIdentity.Receipt(Some value.OperationId, caseIdentity data)

@@ -8,55 +8,6 @@ open System.Threading.Tasks
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
-type RuntimeContext =
-    {
-        ProductVersion: string
-        EffectiveBusinessDate: DateOnly
-        TimeZoneId: string
-    }
-
-[<RequireQualifiedAccess>]
-type View =
-    | Cases
-    | Authority
-    | Operations
-
-[<RequireQualifiedAccess>]
-type InstallationOffer =
-    | Open
-    | AuthorityAct of AuthorityKind
-
-[<RequireQualifiedAccess>]
-type HistoryDetail =
-    | Summary
-    | Full
-
-type CorrectionChoices =
-    {
-        Registration: CorrectionGroupAction list
-        Decision: CorrectionGroupAction list
-        Payment: CorrectionGroupAction list
-    }
-
-[<RequireQualifiedAccess>]
-type CaseActOffer =
-    | Act of act: CaseActKind * expectedRevision: int64
-    | CorrectCase of expectedRevision: int64 * choices: CorrectionChoices
-
-type CaseAdvice =
-    {
-        Acts: CaseActOffer list
-        History: HistoryDetail list
-    }
-
-type ActorContext =
-    {
-        Runtime: RuntimeContext
-        Capabilities: Capability list
-        Views: View list
-        Offers: InstallationOffer list
-    }
-
 /// Admission vocabulary shared by persistence and the composition root.
 [<RequireQualifiedAccess>]
 type RuntimeOpenFault =
@@ -103,12 +54,6 @@ type OperationReceipt =
         Scope: ReceiptScope
         RecordedAt: DateTimeOffset
         RecordedBy: Guid
-    }
-
-type CaseReadModel =
-    {
-        Snapshot: CaseSnapshot
-        Advice: CaseAdvice
     }
 
 [<RequireQualifiedAccess>]
@@ -216,21 +161,6 @@ type QueryOutcome<'value> =
     | Rejected of Rejection
     | Failed of CoreFault
     | Cancelled
-
-type FieldDiff =
-    {
-        FieldName: BusinessField
-        Before: string option
-        After: string option
-    }
-
-type AdvisoryReview =
-    {
-        Before: CaseSnapshot option
-        Proposed: CaseSnapshot
-        Changes: FieldDiff list
-        Context: RuntimeContext
-    }
 
 [<RequireQualifiedAccess>]
 type PreviewOutcome =

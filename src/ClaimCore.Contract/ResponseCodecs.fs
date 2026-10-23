@@ -1,6 +1,8 @@
 namespace ClaimCore.Contract.Protocol
 
 open ClaimCore.Contract
+open System
+open System.Globalization
 
 module ResponseCodecs =
     open Codec
@@ -84,46 +86,48 @@ module ResponseCodecs =
         |> build
         |> named "CaseSnapshot"
 
+    let private correctionAction =
+        enumeration
+            [
+                CorrectionGroupAction.Keep, "KEEP"
+                CorrectionGroupAction.Replace, "REPLACE"
+                CorrectionGroupAction.Clear, "CLEAR"
+            ]
+
+    let private historyDetail =
+        enumeration [ HistoryDetail.Summary, "SUMMARY"; HistoryDetail.Full, "FULL" ]
+
+    let private authorityKind =
+        enumeration
+            [
+                AuthorityKind.RegisterActor, "REGISTER_ACTOR"
+                AuthorityKind.SetGrant, "SET_GRANT"
+                AuthorityKind.SetEnabled, "SET_ENABLED"
+            ]
+
+    let private dateValue =
+        date
+        |> map
+            (fun value -> DateOnly.ParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture))
+            (fun value -> value.ToString("O", CultureInfo.InvariantCulture))
+
     let correctionAdvice =
-        (record (fun v0 v1 v2 ->
+        (record (fun registration decision payment ->
             {
-                CorrectionAdvice.Registration = v0
-                Decision = v1
-                Payment = v2
+                Registration = registration
+                Decision = decision
+                Payment = payment
             })
-        : Fields<CorrectionAdvice, _>)
+        : Fields<CorrectionChoices, _>)
         |> field
             "registration"
             _.Registration
             (list
                 2
-                (tokens
-                    [
-                        (CorrectionActions.token CorrectionGroupAction.Keep)
-                        (CorrectionActions.token CorrectionGroupAction.Replace)
-                    ]))
-        |> field
-            "decision"
-            _.Decision
-            (list
-                3
-                (tokens
-                    [
-                        (CorrectionActions.token CorrectionGroupAction.Keep)
-                        (CorrectionActions.token CorrectionGroupAction.Replace)
-                        (CorrectionActions.token CorrectionGroupAction.Clear)
-                    ]))
-        |> field
-            "payment"
-            _.Payment
-            (list
-                3
-                (tokens
-                    [
-                        (CorrectionActions.token CorrectionGroupAction.Keep)
-                        (CorrectionActions.token CorrectionGroupAction.Replace)
-                        (CorrectionActions.token CorrectionGroupAction.Clear)
-                    ]))
+                (enumeration
+                    [ CorrectionGroupAction.Keep, "KEEP"; CorrectionGroupAction.Replace, "REPLACE" ]))
+        |> field "decision" _.Decision (list 3 correctionAction)
+        |> field "payment" _.Payment (list 3 correctionAction)
         |> build
         |> named "CorrectionAdvice"
 
@@ -132,20 +136,11 @@ module ResponseCodecs =
         |> field
             "act"
             fst
-            (tokens
-                [
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
-                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
-                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
-                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
-                ])
+            (enumeration (
+                CaseActKinds.all
+                |> List.filter ((<>) (CaseActKind.Business BusinessActKind.CorrectCase))
+                |> List.map (fun act -> act, CaseActKinds.token act)
+            ))
         |> field "expectedRevision" snd revision
 
     let private correctionOfferFields =
@@ -165,9 +160,9 @@ module ResponseCodecs =
                     | _ -> None)
                     (ordinaryOfferFields |> build |> named "OrdinaryCaseActOffer")
                 branch
-                    CaseActOffer.Correct
+                    CaseActOffer.CorrectCase
                     (function
-                    | CaseActOffer.Correct(r, c) -> Some(r, c)
+                    | CaseActOffer.CorrectCase(r, c) -> Some(r, c)
                     | _ -> None)
                     (correctionOfferFields |> build |> named "CorrectionCaseActOffer")
             ]
@@ -176,23 +171,26 @@ module ResponseCodecs =
     let caseAdvice =
         (record (fun v0 v1 -> { CaseAdvice.Acts = v0; History = v1 }): Fields<CaseAdvice, _>)
         |> field "acts" _.Acts (list 12 caseActOffer)
-        |> field "history" _.History (list 2 (tokens [ "SUMMARY"; "FULL" ]))
+        |> field "history" _.History (list 2 historyDetail)
         |> build
         |> named "CaseAdvice"
 
     let caseView =
-        (record (fun v0 v1 v2 v3 ->
+        (record (fun reference revision view advice ->
             {
-                CaseReadModel.CaseReference = v0
-                Revision = v1
-                State = v2
-                Advice = v3
+                Snapshot =
+                    {
+                        Reference = reference
+                        Revision = revision
+                        View = view
+                    }
+                Advice = advice
             })
         : Fields<CaseReadModel, _>)
-        |> field "caseReference" _.CaseReference reference
-        |> field "revision" _.Revision (sequence)
-        |> field "state" _.State (caseState)
-        |> field "advice" _.Advice (caseAdvice)
+        |> field "caseReference" _.Snapshot.Reference reference
+        |> field "revision" _.Snapshot.Revision sequence
+        |> field "state" _.Snapshot.View caseState
+        |> field "advice" _.Advice caseAdvice
         |> build
         |> named "CaseView"
 
@@ -202,60 +200,71 @@ module ResponseCodecs =
             "kind"
             [
                 variant
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
-                    InstallationOffer.Open
+                    "OPEN"
+                    (fun () -> InstallationOffer.Open)
                     (function
-                    | InstallationOffer.Open value -> Some value
+                    | InstallationOffer.Open -> Some()
                     | _ -> None)
-                    (record id |> field "expectedRevision" id (integer 0L 0L))
+                    (record (fun _ -> ()) |> field "expectedRevision" (fun () -> 0L) (integer 0L 0L))
                 variant
                     "AUTHORITY_ACT"
                     InstallationOffer.AuthorityAct
                     (function
-                    | InstallationOffer.AuthorityAct value -> Some value
+                    | InstallationOffer.AuthorityAct act -> Some act
                     | _ -> None)
-                    (record id
-                     |> field
-                         "act"
-                         id
-                         (tokens
-                             [
-                                 (AuthorityKinds.token AuthorityKind.RegisterActor)
-                                 (AuthorityKinds.token AuthorityKind.SetGrant)
-                                 (AuthorityKinds.token AuthorityKind.SetEnabled)
-                             ]))
+                    (record id |> field "act" id authorityKind)
             ]
 
     let runtimeContext =
-        (record (fun v0 v1 v2 ->
+        (record (fun version date zone ->
             {
-                RuntimeContext.ProductVersion = v0
-                BusinessDate = v1
-                TimeZone = v2
+                ProductVersion = version
+                EffectiveBusinessDate = date
+                TimeZoneId = zone
             })
         : Fields<RuntimeContext, _>)
-        |> field "productVersion" _.ProductVersion (nonempty)
-        |> field "businessDate" _.BusinessDate date
-        |> field "timeZone" _.TimeZone (nonempty)
+        |> field "productVersion" _.ProductVersion nonempty
+        |> field "businessDate" _.EffectiveBusinessDate dateValue
+        |> field "timeZone" _.TimeZoneId nonempty
         |> build
         |> named "RuntimeContext"
 
     let actorContext =
-        (record (fun v0 v1 v2 v3 v4 v5 ->
+        (record (fun version date zone capabilities views offers ->
             {
-                ActorContext.ProductVersion = v0
-                BusinessDate = v1
-                TimeZone = v2
-                Capabilities = v3
-                Views = v4
-                Offers = v5
+                Runtime =
+                    {
+                        ProductVersion = version
+                        EffectiveBusinessDate = date
+                        TimeZoneId = zone
+                    }
+                Capabilities = capabilities
+                Views = views
+                Offers = offers
             })
         : Fields<ActorContext, _>)
-        |> field "productVersion" _.ProductVersion (nonempty)
-        |> field "businessDate" _.BusinessDate date
-        |> field "timeZone" _.TimeZone (nonempty)
-        |> field "capabilities" _.Capabilities (list 16 capability)
-        |> field "views" _.Views (list 3 (tokens [ "CASES"; "AUTHORITY"; "OPERATIONS" ]))
+        |> field "productVersion" _.Runtime.ProductVersion nonempty
+        |> field "businessDate" _.Runtime.EffectiveBusinessDate dateValue
+        |> field "timeZone" _.Runtime.TimeZoneId nonempty
+        |> field
+            "capabilities"
+            _.Capabilities
+            (list
+                16
+                (enumeration (
+                    Capabilities.all |> List.map (fun value -> value, Capabilities.token value)
+                )))
+        |> field
+            "views"
+            _.Views
+            (list
+                3
+                (enumeration
+                    [
+                        View.Cases, "CASES"
+                        View.Authority, "AUTHORITY"
+                        View.Operations, "OPERATIONS"
+                    ]))
         |> field "offers" _.Offers (list 4 installationOffer)
         |> build
         |> named "ActorContext"
@@ -400,32 +409,32 @@ module ResponseCodecs =
         |> named "ChangeSummary"
 
     let fieldChange =
-        (record (fun v0 v1 v2 ->
+        (record (fun field before after ->
             {
-                FieldChange.Field = v0
-                Before = v1
-                After = v2
+                FieldName = field
+                Before = before
+                After = after
             })
-        : Fields<FieldChange, _>)
-        |> field "field" _.Field businessField
+        : Fields<FieldDiff, _>)
+        |> field "field" _.FieldName (enumeration BusinessField.all)
         |> field "before" _.Before (nullable nonempty)
         |> field "after" _.After (nullable nonempty)
         |> build
         |> named "FieldChange"
 
     let review =
-        (record (fun v0 v1 v2 v3 ->
+        (record (fun before proposed changes context ->
             {
-                Review.Before = v0
-                After = v1
-                Changes = v2
-                Context = v3
+                Before = before
+                Proposed = proposed
+                Changes = changes
+                Context = context
             })
-        : Fields<Review, _>)
+        : Fields<AdvisoryReview, _>)
         |> field "before" _.Before (nullable caseSnapshot)
-        |> field "after" _.After (caseSnapshot)
-        |> field "changes" _.Changes (list 13 fieldChange)
-        |> field "context" _.Context (runtimeContext)
+        |> field "after" _.Proposed caseSnapshot
+        |> field "changes" _.Changes (list FieldTable.rows.Length fieldChange)
+        |> field "context" _.Context runtimeContext
         |> build
         |> named "Review"
 

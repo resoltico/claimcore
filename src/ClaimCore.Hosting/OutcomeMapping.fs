@@ -17,7 +17,7 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.ContextOutcome.Rejected
                 ClaimCore.Contract.Protocol.ContextOutcome.Failed
                 ClaimCore.Contract.Protocol.ContextOutcome.Cancelled
-                ResponseMapping.context
+                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.Context { Outcome = outcome }
@@ -29,7 +29,7 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.CaseGetOutcome.Rejected
                 ClaimCore.Contract.Protocol.CaseGetOutcome.Failed
                 ClaimCore.Contract.Protocol.CaseGetOutcome.Cancelled
-                ResponseMapping.caseRecord
+                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.CaseGet { Outcome = outcome }
@@ -98,10 +98,7 @@ module internal OutcomeMapping =
         let outcome =
             match value with
             | PreviewOutcome.Reviewed review ->
-                ClaimCore.Contract.Protocol.CasePreviewOutcome.Reviewed
-                    {
-                        Review = ResponseMapping.review review
-                    }
+                ClaimCore.Contract.Protocol.CasePreviewOutcome.Reviewed { Review = review }
             | PreviewOutcome.AlreadyAccepted receipt ->
                 ClaimCore.Contract.Protocol.CasePreviewOutcome.AlreadyAccepted(
                     ResponseMapping.caseReceipt receipt
