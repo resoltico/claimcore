@@ -94,7 +94,7 @@ module EvolutionQualification =
                         fields
                         @ [
                             {
-                                FieldName = InputField.Reason
+                                FieldName = InputTarget.Reason
                                 Prefill = PrefillSource.Blank
                             }
                         ]

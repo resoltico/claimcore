@@ -115,7 +115,7 @@ module internal ResponseMapping =
         | RecommendedAction.StopAndInvestigate -> "STOP_AND_INVESTIGATE"
         | RecommendedAction.NoneRequired -> "NONE_REQUIRED"
 
-    let rejection (value: Rejection) : ClaimCore.Contract.Protocol.Rejection =
+    let rejection (value: Refusal) : ClaimCore.Contract.Protocol.Rejection =
         {
             Diagnostic = diagnostic (RejectionDiagnostics.describe value)
             Message = RejectionPresentation.render value

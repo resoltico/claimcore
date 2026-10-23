@@ -86,7 +86,7 @@ let private restorationTests =
                         ((Case.decide today (request Revision.Maximum CaseAct.Close) (Some current)
                           |> Result.map Case.snapshot)
                             =
-                            Error CaseRefusal.RevisionExhausted)
+                            Error Refusal.RevisionExhausted)
                         "Terminal state refuses without arithmetic"
 
                     Expect.isError

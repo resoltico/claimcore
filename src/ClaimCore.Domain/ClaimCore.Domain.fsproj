@@ -4,7 +4,6 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="UnicodeText.fs" />
     <Compile Include="TextAdmission.fs" />
-    <Compile Include="InputProblems.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="Vocabulary.fs" />
     <Compile Include="Descriptors.fs" />

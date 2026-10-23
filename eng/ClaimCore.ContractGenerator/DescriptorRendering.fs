@@ -171,7 +171,7 @@ module ContractDescriptors =
         writer.WriteString("meaning", (MessageText.literal "field.reason.meaning"))
         writer.WritePropertyName("scalar")
         writer.WriteStartObject()
-        scalar writer (FieldDefinitions.scalar InputField.Reason)
+        scalar writer (FieldDefinitions.scalar InputTarget.Reason)
         writer.WriteEndObject()
         writer.WriteEndObject()
         writer.WriteEndArray()

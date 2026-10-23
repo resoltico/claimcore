@@ -76,7 +76,7 @@ let private serviceScopeCorruption () =
 
             Expect.equal
                 hidden
-                (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+                (QueryOutcome.Rejected Refusal.ResourceUnavailable)
                 "Loaded human-only corruption refuses the scoped view"
 
             let! visible =

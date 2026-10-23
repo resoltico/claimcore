@@ -209,7 +209,7 @@ let tests =
                         Expect.equal
                             after
                             (ClaimCore.Application.QueryOutcome.Failed
-                                ClaimCore.Application.CoreFault.StoreUnavailable)
+                                ClaimCore.Contract.CoreFault.StoreUnavailable)
                             "Admission closed"
                     }))
             for name, change, expected in

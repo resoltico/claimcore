@@ -50,7 +50,7 @@ let private existingCaseAuthority (_: MemoryLedgerStore.Store) fixture =
 
         Expect.equal
             current
-            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+            (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
             "A used ID on readable CASE-B is a content conflict for a CASE-A request"
 
         let! read =
@@ -85,7 +85,7 @@ let private existingCaseAuthority (_: MemoryLedgerStore.Store) fixture =
         | CaseReviewDecision.Refuse reason ->
             Expect.equal
                 reason
-                Rejection.ResourceUnavailable
+                Refusal.ResourceUnavailable
                 "Loading only CASE-A grants changes the existing-operation privacy decision"
         | _ -> failtest "Expected the existing-operation scope to require CASE-B authority"
     }

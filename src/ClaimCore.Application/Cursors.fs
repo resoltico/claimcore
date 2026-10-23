@@ -33,7 +33,7 @@ module internal Cursors =
             || token.Length % 4 = 1
             || not (Seq.forall alphabet token)
         then
-            Error Rejection.InvalidCursor
+            Error Refusal.InvalidCursor
         else
             try
                 let padded =
@@ -49,16 +49,16 @@ module internal Cursors =
                 let value = StrictJson.ofElement document.RootElement
 
                 if base64 bytes <> token || CanonicalWriter.bytes value <> bytes then
-                    Error Rejection.InvalidCursor
+                    Error Refusal.InvalidCursor
                 else
                     match read value with
                     | Some position -> Ok position
-                    | None -> Error Rejection.InvalidCursor
+                    | None -> Error Refusal.InvalidCursor
             with
             | :? ArgumentException
             | :? FormatException
             | :? InvalidOperationException
-            | :? JsonException -> Error Rejection.InvalidCursor
+            | :? JsonException -> Error Refusal.InvalidCursor
 
     let private reference value =
         CaseReference.validate value |> Result.isOk && CaseReference.key value = value

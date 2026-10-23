@@ -1,5 +1,6 @@
 namespace ClaimCore.Hosting
 
+open ClaimCore.Contract
 open ClaimCore.Application
 
 module internal ActorFacade =

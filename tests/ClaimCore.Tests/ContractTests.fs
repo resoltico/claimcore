@@ -152,7 +152,7 @@ let private executeOutcomes () =
             [
                 ExecuteOutcome.Accepted receiptValue, 0
                 ExecuteOutcome.AlreadyAccepted receiptValue, 0
-                ExecuteOutcome.Rejected ClaimCore.Application.Rejection.ActNotPermitted, 2
+                ExecuteOutcome.Rejected ClaimCore.Contract.Refusal.ActNotPermitted, 2
                 ExecuteOutcome.Failed CoreFault.StoreUnavailable, 3
                 ExecuteOutcome.Cancelled, 130
                 ExecuteOutcome.OutcomeUnknown id, 4
@@ -224,7 +224,7 @@ let private previewCodecs () =
         [
             PreviewOutcome.Reviewed review
             PreviewOutcome.AlreadyAccepted receipt
-            PreviewOutcome.Rejected ClaimCore.Application.Rejection.ActNotPermitted
+            PreviewOutcome.Rejected ClaimCore.Contract.Refusal.ActNotPermitted
             PreviewOutcome.Failed CoreFault.StoreIntegrityError
             PreviewOutcome.Cancelled
         ] do
@@ -241,11 +241,11 @@ let private diagnostics () =
 
     for value in
         [
-            ClaimCore.Application.Rejection.LedgerExhausted
-            ClaimCore.Application.Rejection.InvalidCursor
-            ClaimCore.Application.Rejection.LastOwner
-            ClaimCore.Application.Rejection.ActNotPermitted
-            ClaimCore.Application.Rejection.ResourceUnavailable
+            ClaimCore.Contract.Refusal.LedgerExhausted
+            ClaimCore.Contract.Refusal.InvalidCursor
+            ClaimCore.Contract.Refusal.LastOwner
+            ClaimCore.Contract.Refusal.ActNotPermitted
+            ClaimCore.Contract.Refusal.ResourceUnavailable
         ] do
         let result = OutcomeMapping.caseGet (QueryOutcome.Rejected value) |> admitted
 
@@ -255,31 +255,22 @@ let private diagnostics () =
 
 let private actionExpectations =
     [
-        ClaimCore.Application.Rejection.Case(
-            CaseRefusal.InvalidInput(
-                InputTarget.Reason,
-                InputViolation.Text TextViolation.NonBlankRequired
-            )
-        ),
+        (Refusal.InvalidInput(InputTarget.Reason, Violation.TextRequired)),
         RecommendedAction.CorrectInput,
         "CORRECT_INPUT",
         Some "reason",
         None
-        ClaimCore.Application.Rejection.PageLimitOutOfRange 50,
+        Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50),
         RecommendedAction.CorrectInput,
         "CORRECT_INPUT",
         Some "limit",
         None
-        ClaimCore.Application.Rejection.InvalidCursor,
+        ClaimCore.Contract.Refusal.InvalidCursor,
         RecommendedAction.ReadCurrent,
         "READ_CURRENT",
         Some "cursor",
         None
-        ClaimCore.Application.Rejection.Case(CaseRefusal.RevisionConflict 7L),
-        RecommendedAction.ReadCurrent,
-        "READ_CURRENT",
-        None,
-        Some 7L
+        (Refusal.RevisionConflict 7L), RecommendedAction.ReadCurrent, "READ_CURRENT", None, Some 7L
     ]
 
 let private actionEnums () =

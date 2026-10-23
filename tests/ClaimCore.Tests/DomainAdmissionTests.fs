@@ -7,7 +7,7 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private chronology field =
-    RecordViolation.InvalidScalar(field, InputViolation.Date DateViolation.ChronologicalOrder)
+    RecordViolation.InvalidScalar(field, Violation.ChronologicalOrder)
 
 let private snapshots =
     testCase "[CC-DOM-001] restoration refuses invalid paid and chronological states" (fun () ->
@@ -22,11 +22,11 @@ let private snapshots =
                 { (viewFields original) with
                     PaymentDecisionDate = Some "2026-08-02"
                 },
-                chronology InputTarget.PaymentDecisionDate
+                chronology (InputTarget.Field BusinessField.PaymentDecisionDate)
                 { (viewFields original) with
                     PaymentDate = Some "2026-08-14"
                 },
-                chronology InputTarget.PaymentDate
+                chronology (InputTarget.Field BusinessField.PaymentDate)
             ]
 
         for fields, refusal in variants do
@@ -51,9 +51,9 @@ let private payload =
             Expect.equal
                 rejected
                 (Error(
-                    CaseRefusal.InvalidInput(
-                        InputTarget.PaymentDecisionDate,
-                        InputViolation.Date DateViolation.CalendarDateRequired
+                    Refusal.InvalidInput(
+                        (InputTarget.Field BusinessField.PaymentDecisionDate),
+                        Violation.CalendarDateRequired
                     )
                 ))
                 "Same admission ordering for parsed commands")

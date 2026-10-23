@@ -291,7 +291,7 @@ module internal ReadOperations =
         source
         principal
         targetId
-        (select: GrantReadView -> Result<GrantPosition option, Rejection>)
+        (select: GrantReadView -> Result<GrantPosition option, Refusal>)
         limit
         token
         =

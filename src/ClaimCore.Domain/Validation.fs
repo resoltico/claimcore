@@ -25,13 +25,7 @@ module internal Validation =
     type Decision = { Date: DateOnly; Payable: Amount }
 
     let invalid field violation =
-        Error(CaseRefusal.InvalidInput(field, violation))
-
-    let invalidAct field violation =
-        invalid field (InputViolation.Act violation)
-
-    let invalidCorrection field violation =
-        invalid field (InputViolation.Correction violation)
+        Error(Refusal.InvalidInput(field, violation))
 
     let private matches (grammar: string) (value: string) =
         Regex.IsMatch(
@@ -40,64 +34,35 @@ module internal Validation =
             RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
         )
 
-    let private scalarFields =
-        Map.ofList
-            [
-                InputTarget.IncidentDate, InputField.Business BusinessField.IncidentDate
-                InputTarget.IncidentNotificationDate,
-                InputField.Business BusinessField.IncidentNotificationDate
-                InputTarget.IncidentCountry, InputField.Business BusinessField.IncidentCountry
-                InputTarget.ClaimantName, InputField.Business BusinessField.ClaimantName
-                InputTarget.InsurerName, InputField.Business BusinessField.InsurerName
-                InputTarget.ClaimedAmount, InputField.Business BusinessField.ClaimedAmount
-                InputTarget.ClaimedCurrency, InputField.Business BusinessField.ClaimedCurrency
-                InputTarget.CaseReference, InputField.Business BusinessField.CaseReference
-                InputTarget.PaymentDecisionDate,
-                InputField.Business BusinessField.PaymentDecisionDate
-                InputTarget.PayableAmount, InputField.Business BusinessField.PayableAmount
-                InputTarget.PayableCurrency, InputField.Business BusinessField.PayableCurrency
-                InputTarget.PaymentDate, InputField.Business BusinessField.PaymentDate
-                InputTarget.Reason, InputField.Reason
-            ]
-
-    let private scalarField field =
-        scalarFields
-        |> Map.tryFind field
-        |> Option.defaultWith (fun () ->
-            invalidArg "field" "The diagnostic target has no scalar definition.")
-
     let private textGrammar field =
         match field with
-        | InputTarget.CaseReference
-        | InputTarget.IncidentCountry ->
-            FieldDefinitions.scalar (scalarField field)
-            |> ScalarRules.textConstraints
-            |> _.Format.Grammar
+        | (InputTarget.Field BusinessField.CaseReference)
+        | (InputTarget.Field BusinessField.IncidentCountry) ->
+            FieldDefinitions.scalar field |> ScalarRules.textConstraints |> _.Format.Grammar
         | _ -> None
 
     /// Format checks apply to requests and retained records alike; policy never runs here.
     let text field (value: string) =
-        let failure violation =
-            invalid field (InputViolation.Text violation)
+        let failure violation = invalid field (violation)
 
         if String.IsNullOrEmpty value then
-            failure TextViolation.NonBlankRequired
+            failure Violation.TextRequired
         elif not (UnicodeText.isPersisted value) then
-            failure TextViolation.MalformedUnicode
+            failure Violation.MalformedUnicode
         elif
-            (field = InputTarget.ClaimantName
-             || field = InputTarget.InsurerName
+            (field = (InputTarget.Field BusinessField.ClaimantName)
+             || field = (InputTarget.Field BusinessField.InsurerName)
              || field = InputTarget.Reason)
             && Encoding.UTF8.GetByteCount value > TextFormat.MaximumFreeTextBytes
         then
             // More than 1,024 UTF-8 bytes needs at least 257 scalars, beyond current input admission.
-            failure (TextViolation.TooLong TextAdmission.MaximumCharacters)
+            failure (Violation.TooLong TextAdmission.MaximumCharacters)
         elif textGrammar field |> Option.exists (fun pattern -> not (matches pattern value)) then
             failure (
-                if field = InputTarget.CaseReference then
-                    TextViolation.ReferenceFormat
+                if field = (InputTarget.Field BusinessField.CaseReference) then
+                    Violation.ReferenceFormat
                 else
-                    TextViolation.CountryFormat
+                    Violation.CountryFormat
             )
         else
             Ok value
@@ -120,28 +85,26 @@ module internal Validation =
 
     /// Called only after format validation, when a value is newly asserted.
     let admission field (value: string) =
-        let constraints =
-            FieldDefinitions.scalar (scalarField field) |> ScalarRules.textConstraints
+        let constraints = FieldDefinitions.scalar field |> ScalarRules.textConstraints
 
-        let failure violation =
-            invalid field (InputViolation.Text violation)
+        let failure violation = invalid field (violation)
 
         match constraints.Policy with
         | None -> Ok()
         | Some policy ->
             if policy.RequiresNonBlank && String.IsNullOrWhiteSpace value then
-                failure TextViolation.NonBlankRequired
+                failure Violation.TextRequired
             elif policy.RejectsSurroundingWhitespace && value <> value.Trim() then
-                failure TextViolation.SurroundingWhitespace
+                failure Violation.SurroundingWhitespace
             elif (value.EnumerateRunes() |> Seq.length) > policy.MaximumCharacters then
-                failure (TextViolation.TooLong policy.MaximumCharacters)
+                failure (Violation.TooLong policy.MaximumCharacters)
             elif policy.RejectsControlCharacters && (value |> Seq.exists Char.IsControl) then
-                failure TextViolation.ControlCharacters
+                failure Violation.ControlCharacters
             elif
                 policy.RejectsForbiddenInvisibleCharacters
                 && (value.EnumerateRunes() |> Seq.exists (fun rune -> formatting rune.Value))
             then
-                failure TextViolation.FormattingCharacter
+                failure Violation.FormattingCharacter
             else
                 Ok()
 
@@ -150,12 +113,21 @@ module internal Validation =
             if before = Some after then Ok() else admission field after
 
         result {
-            do! changed InputTarget.ClaimantName (previous |> Option.map _.Claimant) facts.Claimant
-            do! changed InputTarget.InsurerName (previous |> Option.map _.Insurer) facts.Insurer
+            do!
+                changed
+                    (InputTarget.Field BusinessField.ClaimantName)
+                    (previous |> Option.map _.Claimant)
+                    facts.Claimant
+
+            do!
+                changed
+                    (InputTarget.Field BusinessField.InsurerName)
+                    (previous |> Option.map _.Insurer)
+                    facts.Insurer
         }
 
     let date field (value: string) =
-        match FieldDefinitions.scalar (scalarField field) with
+        match FieldDefinitions.scalar field with
         | ScalarRule.CalendarDate constraints ->
             match
                 DateOnly.TryParseExact(
@@ -171,44 +143,38 @@ module internal Validation =
                 && parsed <= constraints.Maximum
                 ->
                 Ok parsed
-            | _ -> invalid field (InputViolation.Date DateViolation.CalendarDateRequired)
+            | _ -> invalid field (Violation.CalendarDateRequired)
         | _ -> invalidArg "field" "The field is not a declared calendar-date field."
 
     let onOrBefore field (first: DateOnly) (last: DateOnly) =
         if first <= last then
             Ok()
         else
-            invalid field (InputViolation.Date DateViolation.ChronologicalOrder)
+            invalid field (Violation.ChronologicalOrder)
 
     let notFuture field today value =
         if value <= today then
             Ok()
         else
-            invalid field (InputViolation.Date DateViolation.FutureDate)
+            invalid field (Violation.FutureDate)
 
     let amount amountField currencyField rawAmount rawCurrency =
         result {
             let! valueText = text amountField rawAmount
             let! currency = text currencyField rawCurrency
 
-            match
-                FieldDefinitions.scalar (scalarField amountField),
-                FieldDefinitions.scalar (scalarField currencyField)
-            with
+            match FieldDefinitions.scalar amountField, FieldDefinitions.scalar currencyField with
             | ScalarRule.Amount amountRule, ScalarRule.Currency currencyRule ->
                 if not (matches amountRule.Grammar valueText) then
                     return!
                         invalid
                             amountField
-                            (InputViolation.Amount(
-                                AmountViolation.DecimalFormat(
-                                    amountRule.MaximumIntegerDigits,
-                                    amountRule.MaximumFractionalDigits
-                                )
-                            ))
+                            ((Violation.DecimalFormat(
+                                amountRule.MaximumIntegerDigits,
+                                amountRule.MaximumFractionalDigits
+                            )))
                 elif not (matches currencyRule.Grammar currency) then
-                    return!
-                        invalid currencyField (InputViolation.Amount AmountViolation.CurrencyFormat)
+                    return! invalid currencyField (Violation.CurrencyFormat)
                 else
                     return
                         {
@@ -229,23 +195,32 @@ module internal Validation =
 
     let registration (input: Registration) =
         result {
-            let! incident = date InputTarget.IncidentDate input.IncidentDate
+            let! incident =
+                date (InputTarget.Field BusinessField.IncidentDate) input.IncidentDate
 
             let! notification =
-                date InputTarget.IncidentNotificationDate input.IncidentNotificationDate
+                date
+                    (InputTarget.Field BusinessField.IncidentNotificationDate)
+                    input.IncidentNotificationDate
 
-            do! onOrBefore InputTarget.IncidentNotificationDate incident notification
+            do!
+                onOrBefore
+                    (InputTarget.Field BusinessField.IncidentNotificationDate)
+                    incident
+                    notification
 
-            let! country = text InputTarget.IncidentCountry input.IncidentCountry
+            let! country =
+                text (InputTarget.Field BusinessField.IncidentCountry) input.IncidentCountry
 
-            let! claimant = text InputTarget.ClaimantName input.ClaimantName
+            let! claimant =
+                text (InputTarget.Field BusinessField.ClaimantName) input.ClaimantName
 
-            let! insurer = text InputTarget.InsurerName input.InsurerName
+            let! insurer = text (InputTarget.Field BusinessField.InsurerName) input.InsurerName
 
             let! claimed =
                 amount
-                    InputTarget.ClaimedAmount
-                    InputTarget.ClaimedCurrency
+                    (InputTarget.Field BusinessField.ClaimedAmount)
+                    (InputTarget.Field BusinessField.ClaimedCurrency)
                     input.ClaimedAmount
                     input.ClaimedCurrency
 
@@ -262,12 +237,13 @@ module internal Validation =
 
     let decision (input: ClaimCore.Contract.Decision) =
         result {
-            let! decisionDate = date InputTarget.PaymentDecisionDate input.PaymentDecisionDate
+            let! decisionDate =
+                date (InputTarget.Field BusinessField.PaymentDecisionDate) input.PaymentDecisionDate
 
             let! payable =
                 amount
-                    InputTarget.PayableAmount
-                    InputTarget.PayableCurrency
+                    (InputTarget.Field BusinessField.PayableAmount)
+                    (InputTarget.Field BusinessField.PayableCurrency)
                     input.PayableAmount
                     input.PayableCurrency
 

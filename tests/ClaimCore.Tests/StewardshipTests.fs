@@ -24,8 +24,8 @@ let private current revision disposition =
 let private transitions =
     [
         Disposition.Active, CaseAct.Void "Recorded in error", Ok(Some Disposition.Voided)
-        Disposition.Voided, CaseAct.Void "Recorded in error", Error CaseRefusal.AlreadyVoided
-        Disposition.Active, CaseAct.Reinstate "Reference confirmed", Error CaseRefusal.NotVoided
+        Disposition.Voided, CaseAct.Void "Recorded in error", Error Refusal.AlreadyVoided
+        Disposition.Active, CaseAct.Reinstate "Reference confirmed", Error Refusal.NotVoided
         Disposition.Voided, CaseAct.Reinstate "Reference confirmed", Ok(Some Disposition.Active)
         Disposition.Active, CaseAct.Erase, Ok None
         Disposition.Voided, CaseAct.Erase, Ok None
@@ -118,7 +118,7 @@ let private staleRevision () =
             (Some(current 7L Disposition.Voided))
 
     Expect.isTrue
-        ((outcome |> Result.map Case.snapshot) = Error(CaseRefusal.RevisionConflict 7L))
+        ((outcome |> Result.map Case.snapshot) = Error(Refusal.RevisionConflict 7L))
         "Revision check precedes admission and disposition"
 
 let private exhausted () =
@@ -129,7 +129,7 @@ let private exhausted () =
             (Some(current Revision.Maximum Disposition.Active))
 
     Expect.isTrue
-        ((outcome |> Result.map Case.snapshot) = Error CaseRefusal.RevisionExhausted)
+        ((outcome |> Result.map Case.snapshot) = Error Refusal.RevisionExhausted)
         "No overflow at terminal revision"
 
 let private vocabulary () =

@@ -111,7 +111,7 @@ let advance (before: CaseSnapshot) stale act =
         | CaseView.Live(fields, Disposition.Active), command -> business before fields stale command
         | CaseView.Live(_, Disposition.Voided), _ -> None
 
-let matches expected (actual: Result<CaseSnapshot, CaseRefusal>) =
+let matches expected (actual: Result<CaseSnapshot, Refusal>) =
     match expected, actual with
     | Some view, Ok observed -> view = observed
     | None, Error _ -> true

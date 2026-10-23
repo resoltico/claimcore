@@ -13,7 +13,7 @@ open ClaimCore.Domain
 module internal CommandInputRendering =
     let private field (writer: Utf8JsonWriter) (input: FieldInputDefinition) =
         writer.WriteStartObject()
-        writer.WriteString("fieldName", InputField.token input.FieldName)
+        writer.WriteString("fieldName", InputTargets.token input.FieldName)
 
         match input.Prefill with
         | PrefillSource.Blank -> writer.WriteString("prefill", "BLANK")

@@ -151,7 +151,7 @@ let private zeroPaid =
 
             Expect.equal
                 (paid () |> apply command)
-                (Error CaseRefusal.ZeroDecisionCannotBePaid)
+                (Error Refusal.ZeroDecisionCannotBePaid)
                 "No zero payment assertion"
 
             let cleared =

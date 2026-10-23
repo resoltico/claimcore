@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.RejectedDrafts
 
+open ClaimCore.Contract
+
 open System.IO
 open System.Text.Json.Nodes
 open Expecto

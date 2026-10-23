@@ -8,11 +8,13 @@
     <Compile Include="Vocabulary/CaseTokens.fs" />
     <Compile Include="Vocabulary/InputTargets.fs" />
     <Compile Include="Vocabulary/RejectionDiagnosticIds.fs" />
+    <Compile Include="Refusals/Refusals.fs" />
     <Compile Include="Vocabulary/Capabilities.fs" />
     <Compile Include="Vocabulary/Roles.fs" />
     <Compile Include="Vocabulary/AuthorityKinds.fs" />
     <Compile Include="Vocabulary/PrincipalKinds.fs" />
     <Compile Include="Vocabulary/FaultDiagnosticIds.fs" />
+    <Compile Include="Refusals/Faults.fs" />
     <Compile Include="Localization/MessageText.fs" />
     <Compile Include="Localization/LocalizationPolicy.fs" />
     <Compile Include="Vocabulary/DeliveryVocabulary.fs" />

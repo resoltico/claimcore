@@ -103,7 +103,7 @@ let private summaryPage readable (outcome: QueryOutcome<HistoryResultPage>) =
             match entry with
             | HistoryEntry.SummaryEntry _ -> ()
             | _ -> failtest "Summary contains no snapshot"
-    | QueryOutcome.Rejected Rejection.ResourceUnavailable, false -> ()
+    | QueryOutcome.Rejected Refusal.ResourceUnavailable, false -> ()
     | _ -> failtest "Unexpected summary disclosure"
 
 let private historyRequest reference detail : HistoryRequest =
@@ -135,7 +135,7 @@ let private roleDisclosure role readable full =
             else
                 Expect.equal
                     older
-                    (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+                    (QueryOutcome.Rejected Refusal.ResourceUnavailable)
                     "No history right"
 
                 Expect.equal latest older "No current snapshot through observation"
@@ -159,7 +159,7 @@ let private roleDisclosure role readable full =
             else
                 Expect.equal
                     detailed
-                    (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+                    (QueryOutcome.Rejected Refusal.ResourceUnavailable)
                     "No full history"
         })
 
@@ -318,7 +318,7 @@ let private commitSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Later reads use revoked authority"
     }
 

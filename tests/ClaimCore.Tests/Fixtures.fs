@@ -55,7 +55,7 @@ let paid () =
 
 let isInvalid result =
     match result with
-    | Error(CaseRefusal.InvalidInput _) -> true
+    | Error(Refusal.InvalidInput _) -> true
     | _ -> false
 
 let actRequest revision act =

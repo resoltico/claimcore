@@ -13,7 +13,7 @@ open ClaimCore.Hosting
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.Tests.ApplicationFixtures
 
-let private unavailable = ExecuteOutcome.Rejected Rejection.ResourceUnavailable
+let private unavailable = ExecuteOutcome.Rejected Refusal.ResourceUnavailable
 
 let private revokeCaseWork actor =
     task {
@@ -44,7 +44,7 @@ let private replayAndSpelling (store: MemoryLedgerStore.Store) (fixture: Fixture
 
         Expect.equal
             conflict
-            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+            (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
             "Authored amount spelling is identity"
 
         let recased =
@@ -56,7 +56,7 @@ let private replayAndSpelling (store: MemoryLedgerStore.Store) (fixture: Fixture
 
         Expect.equal
             caseConflict
-            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+            (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
             "Resource folding does not rewrite canonical content"
 
         Expect.equal store.Entries.Length 4 "Replay and refusal append nothing"
@@ -109,7 +109,7 @@ let private rawWireReplay (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             conflict
-            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+            (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
             "Authored amount text is content despite equal decimal value"
 
         Expect.equal store.Entries.Length (before + 1) "Only original acceptance appended"
@@ -128,7 +128,7 @@ let private malformed (store: MemoryLedgerStore.Store) (fixture: Fixture) =
             )
 
         match invalid with
-        | ExecuteOutcome.Rejected(Rejection.Case _) -> ()
+        | ExecuteOutcome.Rejected(_) -> ()
         | _ -> failtest "Malformed request admitted"
 
         let bad = actRequest 11 "UNIT-001" 1L ((CaseAct.Void Unchecked.defaultof<string>))
@@ -138,12 +138,7 @@ let private malformed (store: MemoryLedgerStore.Store) (fixture: Fixture) =
         Expect.equal
             result
             (ExecuteOutcome.Rejected(
-                Rejection.Case(
-                    CaseRefusal.InvalidInput(
-                        InputTarget.Reason,
-                        InputViolation.Text TextViolation.NonBlankRequired
-                    )
-                )
+                (Refusal.InvalidInput(InputTarget.Reason, Violation.TextRequired))
             ))
             "Reason format refuses before encoding"
 
@@ -221,7 +216,7 @@ let private previewAdvice (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             result
-            (ExecuteOutcome.Rejected(Rejection.Case CaseRefusal.AlreadyExists))
+            (ExecuteOutcome.Rejected(Refusal.CaseAlreadyExists))
             "Execution rechecks current record"
     }
 
@@ -234,12 +229,10 @@ let private businessDate (store: MemoryLedgerStore.Store) (fixture: Fixture) =
         Expect.equal
             result
             (ExecuteOutcome.Rejected(
-                Rejection.Case(
-                    CaseRefusal.InvalidInput(
-                        InputTarget.IncidentNotificationDate,
-                        InputViolation.Date DateViolation.FutureDate
-                    )
-                )
+                (Refusal.InvalidInput(
+                    (InputTarget.Field BusinessField.IncidentNotificationDate),
+                    Violation.FutureDate
+                ))
             ))
             "Captured database instant supplies the business date"
 
@@ -259,7 +252,7 @@ let private revokedRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             current
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Facades cache no authority"
     }
 
@@ -317,7 +310,7 @@ let private lifecycle (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             blocked
-            (ExecuteOutcome.Rejected(Rejection.Case CaseRefusal.CaseVoided))
+            (ExecuteOutcome.Rejected(Refusal.CaseVoided))
             "Domain blocks business work"
 
         let! restored =
@@ -382,7 +375,7 @@ let private scopedCreation (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Visibility is rechecked per page"
     }
 
@@ -415,7 +408,7 @@ let private corruptIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                     (Some invalid)
             with
             | IdentityDecision.Fail CoreFault.OperationContentConflict ->
-                LedgerDecision.Refuse Rejection.ResourceUnavailable
+                LedgerDecision.Refuse Refusal.ResourceUnavailable
             | _ -> failtest "Corrupted payload disclosed an identity or receipt"
 
         let! result =
@@ -429,7 +422,7 @@ let private corruptIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             result
-            (Ok(LedgerWriteResult.Refused Rejection.ResourceUnavailable))
+            (Ok(LedgerWriteResult.Refused Refusal.ResourceUnavailable))
             "Existing commitment detects changed payload"
     }
 
@@ -570,7 +563,7 @@ let private headExhaustion (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             fresh
-            (ExecuteOutcome.Rejected Rejection.LedgerExhausted)
+            (ExecuteOutcome.Rejected Refusal.LedgerExhausted)
             "No global sequence arithmetic at M"
 
         let! replay = actor.Execute(original, CancellationToken.None)
@@ -592,7 +585,7 @@ let private headExhaustion (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             authority
-            (ExecuteOutcome.Rejected Rejection.LedgerExhausted)
+            (ExecuteOutcome.Rejected Refusal.LedgerExhausted)
             "Authority append shares the bound"
 
         Expect.equal store.Entries.Length before "No accepted state changed"

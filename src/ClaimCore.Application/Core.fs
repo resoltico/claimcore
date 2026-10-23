@@ -34,7 +34,7 @@ module internal Core =
                 return ExecuteOutcome.Cancelled
             else
                 match Case.validateRequest request with
-                | Error error -> return ExecuteOutcome.Rejected(Rejection.Case error)
+                | Error error -> return ExecuteOutcome.Rejected(error)
                 | Ok() ->
                     let decide = CaseDecisions.execute installationId calendar principal request
 
@@ -144,7 +144,7 @@ module internal Core =
                 return PreviewOutcome.Cancelled
             else
                 match Case.validateRequest request with
-                | Error error -> return PreviewOutcome.Rejected(Rejection.Case error)
+                | Error error -> return PreviewOutcome.Rejected(error)
                 | Ok() ->
                     let! result =
                         store.ReadCase(

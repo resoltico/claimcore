@@ -13,17 +13,6 @@ module CorrectionGroup =
         | CorrectionGroup.Decision -> "decision"
         | CorrectionGroup.Payment -> "payment"
 
-[<RequireQualifiedAccess>]
-type InputField =
-    | Business of BusinessField
-    | Reason
-
-module InputField =
-    let token =
-        function
-        | InputField.Business field -> BusinessField.token field
-        | InputField.Reason -> "reason"
-
 module TextFormat =
     [<Literal>]
     let MaximumFreeTextBytes = 1024

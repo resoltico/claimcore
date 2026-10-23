@@ -260,7 +260,7 @@ let tests =
 
                         Expect.equal
                             otherResult
-                            (ExecuteOutcome.Rejected Rejection.ActorAlreadyRegistered)
+                            (ExecuteOutcome.Rejected Refusal.ActorAlreadyRegistered)
                             "No second bootstrap"
 
                         let! changed =
@@ -272,7 +272,7 @@ let tests =
 
                         Expect.equal
                             changed
-                            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+                            (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
                             "Different principal is a conflict"
                     }))
             testCaseAsync

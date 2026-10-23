@@ -13,7 +13,7 @@ let private applyAt date command claim =
 let private future field result =
     Expect.equal
         (result |> Result.map (fun _ -> ()))
-        (Error(CaseRefusal.InvalidInput(field, InputViolation.Date DateViolation.FutureDate)))
+        (Error(Refusal.InvalidInput(field, Violation.FutureDate)))
         "A newly asserted date is bounded by business time"
 
 let private amendmentRetainsDates =
@@ -45,7 +45,7 @@ let private newIncidentIsBounded =
 
         opened ()
         |> applyAt (DateOnly(2026, 7, 31)) (CaseAct.AmendRegistration changed)
-        |> future InputTarget.IncidentDate)
+        |> future (InputTarget.Field BusinessField.IncidentDate))
 
 let private newNotificationIsBounded =
     testCase "[CC-DOM-002] newly replaced notification dates are checked independently" (fun () ->
@@ -56,7 +56,7 @@ let private newNotificationIsBounded =
 
         opened ()
         |> applyAt (DateOnly(2026, 8, 3)) (CaseAct.AmendRegistration changed)
-        |> future InputTarget.IncidentNotificationDate)
+        |> future (InputTarget.Field BusinessField.IncidentNotificationDate))
 
 let private decisionRetainsDate =
     testCase
@@ -85,13 +85,13 @@ let private newDecisionDateIsBounded =
 
         decided ()
         |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide changed)
-        |> future InputTarget.PaymentDecisionDate)
+        |> future (InputTarget.Field BusinessField.PaymentDecisionDate))
 
 let private initialDecisionIsBounded =
     testCase "[CC-DOM-002] initial decisions cannot reuse a future historical date" (fun () ->
         opened ()
         |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide decision)
-        |> future InputTarget.PaymentDecisionDate)
+        |> future (InputTarget.Field BusinessField.PaymentDecisionDate))
 
 let private withdrawnDateIsAbsent =
     testCase
@@ -101,7 +101,7 @@ let private withdrawnDateIsAbsent =
             |> apply CaseAct.WithdrawDecision
             |> accepted
             |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide decision)
-            |> future InputTarget.PaymentDecisionDate)
+            |> future (InputTarget.Field BusinessField.PaymentDecisionDate))
 
 let private clearedPaymentDateIsAbsent =
     testCase "[CC-DOM-002] clearing payment removes its date reaffirmation authority" (fun () ->
@@ -109,7 +109,7 @@ let private clearedPaymentDateIsAbsent =
         |> apply CaseAct.ClearPayment
         |> accepted
         |> applyAt (DateOnly(2026, 8, 16)) (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
-        |> future InputTarget.PaymentDate)
+        |> future (InputTarget.Field BusinessField.PaymentDate))
 
 let private closedCorrectionRetainsDates =
     testCase
@@ -158,7 +158,7 @@ let private correctionIncidentIsBounded =
 
             paid ()
             |> applyAt (DateOnly(2026, 7, 31)) command
-            |> future InputTarget.IncidentDate)
+            |> future (InputTarget.Field BusinessField.IncidentDate))
 
 let private spellingDoesNotRevise =
     testCase
@@ -174,7 +174,7 @@ let private spellingDoesNotRevise =
 
             let result = paid () |> applyAt (DateOnly(2026, 7, 31)) command
 
-            Expect.equal result (Error CaseRefusal.CorrectionNoChanges) "No spelling-only revision")
+            Expect.equal result (Error Refusal.CorrectionNoChanges) "No spelling-only revision")
 
 let private ordinary =
     testList

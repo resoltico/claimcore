@@ -13,7 +13,7 @@ module RequestRecord =
     let private validate request =
         match Case.validateRequest request with
         | Ok() -> Ok request
-        | Error(CaseRefusal.InvalidInput(target, _)) ->
+        | Error(Refusal.InvalidInput(target, _)) ->
             Error
                 {
                     Field = "$." + InputTargets.token target

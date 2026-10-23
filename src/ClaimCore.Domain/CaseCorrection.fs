@@ -25,10 +25,10 @@ module internal CaseCorrections =
         | PaymentGroup.Keep -> Ok ValidatedPaymentCorrection.Keep
         | PaymentGroup.Clear -> Ok ValidatedPaymentCorrection.Clear
         | PaymentGroup.Replace value ->
-            Validation.date InputTarget.PaymentDate value.PaymentDate
+            Validation.date (InputTarget.Field BusinessField.PaymentDate) value.PaymentDate
             |> Result.map ValidatedPaymentCorrection.Replace
 
-    let parse (correction: Correction) : Result<ValidatedCaseCorrection, CaseRefusal> =
+    let parse (correction: Correction) : Result<ValidatedCaseCorrection, Refusal> =
         result {
             let! registration = registrationInput correction.Registration
             let! decision = decisionInput correction.Decision
@@ -47,7 +47,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | ValidatedDecisionCorrection.Keep, _ -> Ok current
-        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
+        | _, None -> Error Refusal.CorrectionRequiresExistingValue
         | ValidatedDecisionCorrection.Replace replacement, Some _ -> Ok(Some replacement)
         | ValidatedDecisionCorrection.Clear, Some _ -> Ok None
 
@@ -56,7 +56,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | ValidatedPaymentCorrection.Keep, _ -> Ok current
-        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
+        | _, None -> Error Refusal.CorrectionRequiresExistingValue
         | ValidatedPaymentCorrection.Replace replacement, Some _ -> Ok(Some replacement)
         | ValidatedPaymentCorrection.Clear, Some _ -> Ok None
 
@@ -89,15 +89,11 @@ module internal CaseCorrections =
         | PaymentProgress.Paid _, ValidatedDecisionCorrection.Clear, payment when
             payment <> ValidatedPaymentCorrection.Clear
             ->
-            Validation.invalidCorrection
-                InputTarget.Payment
-                CorrectionViolation.PaymentClearRequired
+            Validation.invalid InputTarget.PaymentGroup Violation.PaymentClearRequired
         | PaymentProgress.Paid _,
           ValidatedDecisionCorrection.Replace _,
           ValidatedPaymentCorrection.Keep ->
-            Validation.invalidCorrection
-                InputTarget.Payment
-                CorrectionViolation.PaymentAcknowledgementRequired
+            Validation.invalid InputTarget.PaymentGroup Violation.PaymentAcknowledgementRequired
         | _ -> Ok()
 
     let apply facts progress (correction: ValidatedCaseCorrection) =
@@ -113,7 +109,7 @@ module internal CaseCorrections =
             let! nextProgress = PaymentProgress.fromGroups nextDecision nextPayment
 
             if nextFacts = facts && nextProgress = progress then
-                return! Error CaseRefusal.CorrectionNoChanges
+                return! Error Refusal.CorrectionNoChanges
             else
                 return nextFacts, nextProgress
         }

@@ -36,7 +36,7 @@ module RequestBindings =
 
     let private fields definitions prefix schema inputs =
         let actual = leaves definitions prefix schema
-        let names = inputs |> List.map (fun input -> InputField.token input.FieldName)
+        let names = inputs |> List.map (fun input -> InputTargets.token input.FieldName)
 
         if List.sort names <> (actual |> List.map fst |> List.sort) then
             invalidOp "Semantic inputs and codec request members differ."

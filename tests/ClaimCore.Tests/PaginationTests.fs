@@ -141,7 +141,7 @@ let private elapsedTimeAndRevocation (store: MemoryLedgerStore.Store) (fixture: 
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "A position confers no rights after revocation"
     }
 
@@ -195,7 +195,7 @@ let private differentHistoryResource (actor: IActorClaimsCore) (query: HistoryRe
                 CancellationToken.None
             )
 
-        Expect.equal resource (QueryOutcome.Rejected Rejection.InvalidCursor) "Resource is bound"
+        Expect.equal resource (QueryOutcome.Rejected Refusal.InvalidCursor) "Resource is bound"
     }
 
 let private historyBinding (_: MemoryLedgerStore.Store) (fixture: Fixture) =
@@ -302,7 +302,7 @@ let private authorityLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             wrongEndpoint
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
+            (QueryOutcome.Rejected Refusal.InvalidCursor)
             "Authority continuation is endpoint-bound even when its position is valid ASCII"
     }
 
@@ -325,7 +325,7 @@ let private malformedAndRestart (_: MemoryLedgerStore.Store) (fixture: Fixture) 
 
             Expect.equal
                 outcome
-                (QueryOutcome.Rejected Rejection.InvalidCursor)
+                (QueryOutcome.Rejected Refusal.InvalidCursor)
                 "No malformed position is trusted"
 
         let restarted = Core.create installation fixture.Store calendar owner
@@ -516,7 +516,7 @@ let private disabledGrantTarget
                 CancellationToken.None
             )
 
-        Expect.equal crossed (QueryOutcome.Rejected Rejection.InvalidCursor) "Cursor binds target"
+        Expect.equal crossed (QueryOutcome.Rejected Refusal.InvalidCursor) "Cursor binds target"
 
         let! disabled =
             admin.ExecuteAuthority(
@@ -634,7 +634,7 @@ let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture
 
             Expect.equal
                 refused
-                (QueryOutcome.Rejected Rejection.InvalidCursor)
+                (QueryOutcome.Rejected Refusal.InvalidCursor)
                 "A plain envelope does not admit an invalid grant position"
 
         let! invalidLimit =
@@ -649,7 +649,9 @@ let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture
 
         Expect.equal
             invalidLimit
-            (QueryOutcome.Rejected(Rejection.PageLimitOutOfRange 50))
+            (QueryOutcome.Rejected(
+                Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50)
+            ))
             "Public grant page is bounded"
     }
 

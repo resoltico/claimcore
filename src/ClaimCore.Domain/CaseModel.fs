@@ -13,33 +13,10 @@ module Revision =
     [<Literal>]
     let Maximum = SafeInteger.Maximum
 
-[<RequireQualifiedAccess>]
-type CaseRefusal =
-    | InvalidInput of field: InputTarget * violation: InputViolation
-    | NotFound
-    | AlreadyExists
-    | RevisionConflict of actualRevision: int64
-    | RevisionExhausted
-    | CaseErased
-    | CaseVoided
-    | AlreadyVoided
-    | NotVoided
-    | ClosedCase
-    | AmendmentRequiresUndecided
-    | CorrectionNoChanges
-    | CorrectionRequiresExistingValue
-    | DecisionRequired
-    | PaymentAlreadyRecorded
-    | PaymentNotRecorded
-    | DecisionAlreadyPaid
-    | AlreadyClosed
-    | AlreadyOpened
-    | ZeroDecisionCannotBePaid
-
 /// A retained snapshot that cannot represent accepted state; never an input diagnostic.
 [<RequireQualifiedAccess>]
 type RecordViolation =
-    | InvalidScalar of InputTarget * InputViolation
+    | InvalidScalar of InputTarget * Violation
     | IncompleteDecision
     | InvalidProgress
     | NonCanonicalFields

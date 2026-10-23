@@ -108,13 +108,13 @@ let private identityAndVersionTests =
                 let result = Case.decide today (request 0L CaseAct.Close) (Some(opened ()))
 
                 Expect.isTrue
-                    ((result |> Result.map Case.snapshot) = Error(CaseRefusal.RevisionConflict 1L))
+                    ((result |> Result.map Case.snapshot) = Error(Refusal.RevisionConflict 1L))
                     "No lost update")
             testCase "missing case rejected" (fun () ->
                 let result =
                     Case.decide today (request 1L CaseAct.Close) None |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error CaseRefusal.NotFound) "Not found")
+                Expect.isTrue (result = Error Refusal.ResourceUnavailable) "Not found")
         ]
 
 let private paymentGuardTests =
@@ -127,16 +127,14 @@ let private paymentGuardTests =
                     |> apply (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
                     |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error CaseRefusal.DecisionRequired) "Decision required")
+                Expect.isTrue (result = Error Refusal.DecisionRequired) "Decision required")
             testCase "second full payment rejected" (fun () ->
                 let result =
                     paid ()
                     |> apply (CaseAct.RecordPayment { PaymentDate = "2026-08-21" })
                     |> Result.map Case.snapshot
 
-                Expect.isTrue
-                    (result = Error CaseRefusal.PaymentAlreadyRecorded)
-                    "No instalment model")
+                Expect.isTrue (result = Error Refusal.PaymentAlreadyRecorded) "No instalment model")
             testCase "zero decision allowed but no fictitious zero transfer" (fun () ->
                 let claim =
                     opened ()
@@ -147,7 +145,7 @@ let private paymentGuardTests =
                     apply (CaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim
                     |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error CaseRefusal.ZeroDecisionCannotBePaid) "No transfer"
+                Expect.isTrue (result = Error Refusal.ZeroDecisionCannotBePaid) "No transfer"
 
                 Expect.isFalse
                     (availableActs claim |> List.contains "RECORD_PAYMENT")
@@ -181,7 +179,7 @@ let private decisionEditingTests =
                 let result = paid () |> apply (CaseAct.Decide decision) |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error CaseRefusal.DecisionAlreadyPaid)
+                    (result = Error Refusal.DecisionAlreadyPaid)
                     "Explicit correction first")
             testCase "unpaid decision can be replaced" (fun () ->
                 let fields =
@@ -199,7 +197,7 @@ let private decisionEditingTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (amendment = Error CaseRefusal.AmendmentRequiresUndecided)
+                    (amendment = Error Refusal.AmendmentRequiresUndecided)
                     "No stale decision"
 
                 let fields =
@@ -234,7 +232,7 @@ let private correctionTests =
             testCase "clear payment without a recorded date is rejected" (fun () ->
                 let result = decided () |> apply CaseAct.ClearPayment |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error CaseRefusal.PaymentNotRecorded) "No payment")
+                Expect.isTrue (result = Error Refusal.PaymentNotRecorded) "No payment")
             testCase "closed cases must reopen before edits" (fun () ->
                 let claim = decided () |> apply CaseAct.Close |> accepted
 
@@ -242,7 +240,7 @@ let private correctionTests =
                     apply (CaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim
                     |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error CaseRefusal.ClosedCase) "Explicit reopen")
+                Expect.isTrue (result = Error Refusal.CaseClosed) "Explicit reopen")
         ]
 
 [<Tests>]

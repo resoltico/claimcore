@@ -68,7 +68,7 @@ let private revocation (database: PostgresFixture.Database) =
 
         Expect.equal
             next
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Current grants are rechecked at the real database boundary"
     }
 

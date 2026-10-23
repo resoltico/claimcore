@@ -35,14 +35,14 @@ let private lastOwner (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             disabled
-            (ExecuteOutcome.Rejected Rejection.LastOwner)
+            (ExecuteOutcome.Rejected Refusal.LastOwner)
             "Last owner disable refuses"
 
         let! removed = grant actor (id 3) owner Role.Owner GrantTarget.Installation false
 
         Expect.equal
             removed
-            (ExecuteOutcome.Rejected Rejection.LastOwner)
+            (ExecuteOutcome.Rejected Refusal.LastOwner)
             "Last installation grant removal refuses"
 
         let other = human "other-owner"
@@ -55,7 +55,7 @@ let private lastOwner (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             context
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Disabled owner has no cached authority"
     }
 
@@ -88,7 +88,7 @@ let private exactReplay (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             conflict
-            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+            (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
             "Different content conflicts"
 
         let! observed = actor.Observe(id 3, CancellationToken.None)
@@ -153,7 +153,7 @@ let private serviceBootstrap (store: MemoryLedgerStore.Store) (fixture: Fixture)
 
         Expect.equal
             result
-            (Ok(LedgerWriteResult.Refused Rejection.HumanPrincipalRequired))
+            (Ok(LedgerWriteResult.Refused Refusal.HumanPrincipalRequired))
             "Bootstrap is human-only"
 
         Expect.isEmpty store.Entries "Refusal records nothing"
@@ -178,7 +178,7 @@ let private humanGrantTargets (store: MemoryLedgerStore.Store) (fixture: Fixture
 
                     Expect.equal
                         outcome
-                        (ExecuteOutcome.Rejected Rejection.HumanPrincipalRequired)
+                        (ExecuteOutcome.Rejected Refusal.HumanPrincipalRequired)
                         "Locked grant-target rule"
 
         Expect.equal store.Entries.Length before "Invalid grants append nothing"
@@ -263,14 +263,14 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Authority remains default deny"
 
         let! missing = (core fixture (human "absent")).Context CancellationToken.None
 
         Expect.equal
             missing
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Unregistered principal has no context"
 
         let! review =
@@ -327,7 +327,7 @@ let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Case rights do not grant installation authority review"
 
         let auditor = human "case-auditor"
@@ -344,14 +344,14 @@ let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             list
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Case auditor cannot enumerate installation"
 
         let! denied = scoped.Observe(id 1, CancellationToken.None)
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Authority observation requires installation ReadAuthority"
     }
 

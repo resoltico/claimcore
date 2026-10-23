@@ -106,11 +106,11 @@ let private refused () =
                 else
                     Cursors.decodeCases encoded
 
-            Expect.equal decoded (Error Rejection.InvalidCursor) name)
+            Expect.equal decoded (Error Refusal.InvalidCursor) name)
 
 let private boundaries () =
     for value in [ ""; "!"; "A"; String('A', 513) ] do
-        Expect.equal (Cursors.decodeCases value) (Error Rejection.InvalidCursor) "Token bounds"
+        Expect.equal (Cursors.decodeCases value) (Error Refusal.InvalidCursor) "Token bounds"
 
     for json in
         [
@@ -120,7 +120,7 @@ let private boundaries () =
         ] do
         Expect.equal
             (Cursors.decodeCases (token json))
-            (Error Rejection.InvalidCursor)
+            (Error Refusal.InvalidCursor)
             "Strict canonical JSON"
 
     for role, caseId in
@@ -134,7 +134,7 @@ let private boundaries () =
 
         Expect.equal
             (Cursors.decodeGrants actor (token raw))
-            (Error Rejection.InvalidCursor)
+            (Error Refusal.InvalidCursor)
             "Admitted role and UUID only"
 
 let private maximum () =
@@ -149,14 +149,14 @@ let private maximum () =
 
     Expect.equal
         (Cursors.decodeHistory "OTHER" encoded)
-        (Error Rejection.InvalidCursor)
+        (Error Refusal.InvalidCursor)
         "Resource binding"
 
     let grant = Cursors.encodeGrants actor { Role = Role.Owner; CaseId = None }
 
     Expect.equal
         (Cursors.decodeGrants (Guid.NewGuid()) grant)
-        (Error Rejection.InvalidCursor)
+        (Error Refusal.InvalidCursor)
         "Actor binding"
 
 [<Tests>]

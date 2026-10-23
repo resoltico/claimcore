@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.BaselineRefusalTests
 
+open ClaimCore.Contract
+
 open System
 open System.IO
 open System.Security.Cryptography

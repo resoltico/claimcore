@@ -361,7 +361,7 @@ module internal LedgerEntries =
 type internal IdentityDecision =
     | Fresh
     | Replay of ValidatedEntry
-    | Refuse of Rejection
+    | Refuse of Refusal
     | Fail of CoreFault
 
 module internal OperationIdentity =
@@ -369,7 +369,7 @@ module internal OperationIdentity =
         match existing with
         | None -> IdentityDecision.Fresh
         | Some entry when not (LedgerEntries.canObserve principal actor entry.Scope) ->
-            IdentityDecision.Refuse Rejection.ResourceUnavailable
+            IdentityDecision.Refuse Refusal.ResourceUnavailable
         | Some entry when entry.OperationId <> operationId ->
             IdentityDecision.Fail CoreFault.StoreIntegrityError
         | Some entry ->
@@ -377,6 +377,6 @@ module internal OperationIdentity =
             | Error fault -> IdentityDecision.Fail fault
             | Ok validated ->
                 match LedgerEntries.identityBytes validated with
-                | None -> IdentityDecision.Refuse Rejection.ResourceUnavailable
+                | None -> IdentityDecision.Refuse Refusal.ResourceUnavailable
                 | Some accepted when accepted = bytes -> IdentityDecision.Replay validated
-                | Some _ -> IdentityDecision.Refuse Rejection.IdempotencyConflict
+                | Some _ -> IdentityDecision.Refuse Refusal.IdempotencyConflict

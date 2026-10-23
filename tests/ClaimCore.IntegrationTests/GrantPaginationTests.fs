@@ -198,7 +198,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Current caller authority precedes token acceptance"
     }
 
@@ -213,20 +213,17 @@ let private cursorIsolation (admin: IActorClaimsCore) (query: GrantsRequest) cur
                 token
             )
 
-        Expect.equal crossTarget (QueryOutcome.Rejected Rejection.InvalidCursor) "Target is bound"
+        Expect.equal crossTarget (QueryOutcome.Rejected Refusal.InvalidCursor) "Target is bound"
 
         let! crossEndpoint = admin.ListActors({ AfterCursor = cursor; Limit = 50 }, token)
 
-        Expect.equal
-            crossEndpoint
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
-            "Endpoint is bound"
+        Expect.equal crossEndpoint (QueryOutcome.Rejected Refusal.InvalidCursor) "Endpoint is bound"
 
         let! missing = admin.ListGrants({ query with ActorId = id 999 }, token)
 
         Expect.equal
             missing
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (QueryOutcome.Rejected Refusal.ResourceUnavailable)
             "Absent target refuses generically"
 
     }

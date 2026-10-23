@@ -92,15 +92,8 @@ module AuthorityRequests =
 
     let internal validate (request: AuthorityRequest) =
         if request.OperationId = System.Guid.Empty then
-            Error(
-                Rejection.Case(
-                    CaseRefusal.InvalidInput(
-                        InputTarget.OperationId,
-                        InputViolation.Act ActViolation.EmptyOperationId
-                    )
-                )
-            )
+            Error((Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)))
         else
             targetCase request
-            |> Option.map (CaseReference.validate >> Result.mapError Rejection.Case)
+            |> Option.map (CaseReference.validate >> Result.mapError (fun value -> value))
             |> Option.defaultValue (Ok())

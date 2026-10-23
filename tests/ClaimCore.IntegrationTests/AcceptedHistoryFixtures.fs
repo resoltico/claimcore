@@ -152,12 +152,10 @@ let private grandfathering (database: PostgresFixture.Database) =
         Expect.equal
             changed
             (ExecuteOutcome.Rejected(
-                Rejection.Case(
-                    CaseRefusal.InvalidInput(
-                        InputTarget.ClaimantName,
-                        InputViolation.Text(TextViolation.TooLong 200)
-                    )
-                )
+                (Refusal.InvalidInput(
+                    (InputTarget.Field BusinessField.ClaimantName),
+                    (Violation.TooLong 200)
+                ))
             ))
             "Changed assertion follows current policy"
 
@@ -295,7 +293,7 @@ let private revokedFullHistory
 
             Expect.equal
                 refused
-                (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+                (QueryOutcome.Rejected Refusal.ResourceUnavailable)
                 "FULL requires current rights before accepting or comparing a cursor"
 
         do! assertRemainingHistoryAccess actor query original

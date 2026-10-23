@@ -166,32 +166,32 @@ let private allKeep =
 
 let private allKeepStates =
     [
-        "absent", None, 0L, CaseRefusal.NotFound
-        "erased", Some(retained 1L CaseView.Erased), 1L, CaseRefusal.CaseErased
+        "absent", None, 0L, Refusal.ResourceUnavailable
+        "erased", Some(retained 1L CaseView.Erased), 1L, Refusal.CaseErased
         "stale",
         Some(retained 1L (live CaseStatus.Opened true false)),
         0L,
-        CaseRefusal.RevisionConflict 1L
+        Refusal.RevisionConflict 1L
         "voided",
         Some(retained 1L (CaseView.Live(fields CaseStatus.Opened true false, Disposition.Voided))),
         1L,
-        CaseRefusal.CaseVoided
+        Refusal.CaseVoided
         "terminal",
         Some(retained Revision.Maximum (live CaseStatus.Opened true false)),
         Revision.Maximum,
-        CaseRefusal.RevisionExhausted
+        Refusal.RevisionExhausted
         "ineligible",
         Some(retained 1L (live CaseStatus.Opened false false)),
         1L,
-        CaseRefusal.CorrectionRequiresExistingValue
+        Refusal.CorrectionRequiresExistingValue
         "eligible",
         Some(retained 1L (live CaseStatus.Opened true false)),
         1L,
-        CaseRefusal.CorrectionNoChanges
+        Refusal.CorrectionNoChanges
         "closed",
         Some(retained 1L (live CaseStatus.Closed false false)),
         1L,
-        CaseRefusal.CorrectionNoChanges
+        Refusal.CorrectionNoChanges
     ]
 
 let private allKeepPrecedence =

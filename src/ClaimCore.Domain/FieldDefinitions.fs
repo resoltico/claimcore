@@ -113,8 +113,9 @@ module FieldDefinitions =
 
     let scalar =
         function
-        | InputField.Reason -> ScalarRule.Text(text TextAdmission.MaximumCharacters)
-        | InputField.Business field -> (forField field).Scalar
+        | InputTarget.Reason -> ScalarRule.Text(text TextAdmission.MaximumCharacters)
+        | InputTarget.Field field -> (forField field).Scalar
+        | _ -> invalidArg "field" "The target has no business scalar definition."
 
     /// Exact values follow the authoritative field-table order.
     let values (fields: CaseFields) =

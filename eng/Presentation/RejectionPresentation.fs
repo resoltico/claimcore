@@ -43,7 +43,7 @@ module internal RejectionPresentation =
             integer value
         | _ -> invalidOp "Diagnostic template and typed parameters disagree."
 
-    let render (rejection: Rejection) =
+    let render (rejection: Refusal) =
         let diagnostic = RejectionDiagnostics.describe rejection
 
         template (RejectionDiagnostics.identifier diagnostic)

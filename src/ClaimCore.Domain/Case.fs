@@ -65,7 +65,7 @@ module private BusinessState =
     let private retained value =
         value
         |> Result.mapError (function
-            | CaseRefusal.InvalidInput(field, violation) ->
+            | Refusal.InvalidInput(field, violation) ->
                 RecordViolation.InvalidScalar(field, violation)
             | _ -> RecordViolation.InvalidProgress)
 
@@ -88,7 +88,9 @@ module private BusinessState =
                     match fields.PaymentDate with
                     | None -> Ok None
                     | Some value ->
-                        Validation.date InputTarget.PaymentDate value |> retained |> Result.map Some
+                        Validation.date (InputTarget.Field BusinessField.PaymentDate) value
+                        |> retained
+                        |> Result.map Some
 
                 return! PaymentProgress.fromGroups (Some decision) paid |> retained
             }
@@ -115,11 +117,15 @@ module private BusinessState =
 
     let openCase (today: DateOnly) (facts: Validation.Facts) =
         result {
-            do! Validation.notFuture InputTarget.IncidentDate today facts.IncidentDate
+            do!
+                Validation.notFuture
+                    (InputTarget.Field BusinessField.IncidentDate)
+                    today
+                    facts.IncidentDate
 
             do!
                 Validation.notFuture
-                    InputTarget.IncidentNotificationDate
+                    (InputTarget.Field BusinessField.IncidentNotificationDate)
                     today
                     facts.NotificationDate
 
@@ -136,18 +142,18 @@ module private BusinessState =
     let private recordPayment date progress =
         match progress with
         | PaymentProgress.Decided decision -> Ok(PaymentProgress.Paid(decision, date))
-        | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
-        | PaymentProgress.Paid _ -> Error CaseRefusal.PaymentAlreadyRecorded
+        | PaymentProgress.Undecided -> Error Refusal.DecisionRequired
+        | PaymentProgress.Paid _ -> Error Refusal.PaymentAlreadyRecorded
 
     let private clearPayment progress =
         match progress with
         | PaymentProgress.Paid(decision, _) -> Ok(PaymentProgress.Decided decision)
         | PaymentProgress.Undecided
-        | PaymentProgress.Decided _ -> Error CaseRefusal.PaymentNotRecorded
+        | PaymentProgress.Decided _ -> Error Refusal.PaymentNotRecorded
 
     let private change command (claim: Claim) =
         match command with
-        | ValidatedCommand.Open _ -> Error CaseRefusal.AlreadyExists
+        | ValidatedCommand.Open _ -> Error Refusal.CaseAlreadyExists
         | ValidatedCommand.Reopen ->
             Ok
                 { claim with
@@ -244,8 +250,8 @@ module Case =
 
     let private steward act claim disposition =
         match act, disposition with
-        | CaseAct.Void _, Disposition.Voided -> Error CaseRefusal.AlreadyVoided
-        | CaseAct.Reinstate _, Disposition.Active -> Error CaseRefusal.NotVoided
+        | CaseAct.Void _, Disposition.Voided -> Error Refusal.AlreadyVoided
+        | CaseAct.Reinstate _, Disposition.Active -> Error Refusal.NotVoided
         | CaseAct.Void reason, Disposition.Active ->
             Validation.admission InputTarget.Reason reason
             |> Result.map (fun () -> CaseState.Live(claim, Disposition.Voided))
@@ -260,7 +266,7 @@ module Case =
         | CaseAct.Void _
         | CaseAct.Reinstate _
         | CaseAct.Erase -> steward act claim disposition
-        | _ when disposition = Disposition.Voided -> Error CaseRefusal.CaseVoided
+        | _ when disposition = Disposition.Voided -> Error Refusal.CaseVoided
         | command ->
             result {
                 let! parsed = RequestValidation.business command
@@ -273,8 +279,7 @@ module Case =
 
     let private create today (request: CaseRequest) =
         match request.Act with
-        | (CaseAct.Open _) when request.ExpectedRevision <> 0L ->
-            Error(CaseRefusal.RevisionConflict 0L)
+        | (CaseAct.Open _) when request.ExpectedRevision <> 0L -> Error(Refusal.RevisionConflict 0L)
         | (CaseAct.Open values) ->
             result {
                 let! facts = Validation.registration values
@@ -287,18 +292,18 @@ module Case =
                         State = CaseState.Live(claim, Disposition.Active)
                     }
             }
-        | _ -> Error CaseRefusal.NotFound
+        | _ -> Error Refusal.ResourceUnavailable
 
     let private existing today (request: CaseRequest) (record: CaseRecord) =
         if CaseReference.key record.Reference <> CaseReference.key request.CaseReference then
             invalidArg "record" "The authoritative case does not match the request target."
         else
             match record.State, request.Act with
-            | CaseState.Erased, _ -> Error CaseRefusal.CaseErased
-            | _, (CaseAct.Open _) -> Error CaseRefusal.AlreadyExists
+            | CaseState.Erased, _ -> Error Refusal.CaseErased
+            | _, (CaseAct.Open _) -> Error Refusal.CaseAlreadyExists
             | _ when record.Revision <> request.ExpectedRevision ->
-                Error(CaseRefusal.RevisionConflict record.Revision)
-            | _ when record.Revision = Revision.Maximum -> Error CaseRefusal.RevisionExhausted
+                Error(Refusal.RevisionConflict record.Revision)
+            | _ when record.Revision = Revision.Maximum -> Error Refusal.RevisionExhausted
             | CaseState.Live(claim, disposition), act ->
                 transition today act claim disposition
                 |> Result.map (fun state ->

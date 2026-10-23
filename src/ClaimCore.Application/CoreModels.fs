@@ -36,7 +36,7 @@ type AuthorityRequest =
 [<RequireQualifiedAccess>]
 type QueryOutcome<'value> =
     | Succeeded of 'value
-    | Rejected of Rejection
+    | Rejected of Refusal
     | Failed of CoreFault
     | Cancelled
 
@@ -44,7 +44,7 @@ type QueryOutcome<'value> =
 type PreviewOutcome =
     | Reviewed of review: AdvisoryReview
     | AlreadyAccepted of OperationReceipt
-    | Rejected of Rejection
+    | Rejected of Refusal
     | Failed of CoreFault
     | Cancelled
 
@@ -52,7 +52,7 @@ type PreviewOutcome =
 type ExecuteOutcome =
     | Accepted of OperationReceipt
     | AlreadyAccepted of OperationReceipt
-    | Rejected of Rejection
+    | Rejected of Refusal
     | Failed of CoreFault
     | Cancelled
     | OutcomeUnknown of operationId: Guid

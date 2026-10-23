@@ -86,14 +86,14 @@ type internal EntryDraft =
 type internal LedgerDecision<'projection> =
     | Append of EntryDraft * 'projection * OperationReceipt
     | Replay of OperationReceipt
-    | Refuse of Rejection
+    | Refuse of Refusal
     | Fail of CoreFault
 
 [<RequireQualifiedAccess>]
 type internal LedgerWriteResult =
     | Appended of OperationReceipt
     | Replayed of OperationReceipt
-    | Refused of Rejection
+    | Refused of Refusal
     | Failed of CoreFault
 
 type internal AuthorityLockedView =
@@ -217,33 +217,33 @@ type internal ILedgerStore =
     abstract ListCases:
         principal: PrincipalKey *
         readRoles: Role list *
-        select: (ActorReadView -> Result<CasePageSelection, Rejection>) *
+        select: (ActorReadView -> Result<CasePageSelection, Refusal>) *
         limit: int *
         cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredCasePage, Rejection>, StoreFailure>>
+            Task<Result<Result<StoredCasePage, Refusal>, StoreFailure>>
 
     abstract ReadHistory:
         principal: PrincipalKey *
         caseReference: string *
-        select: (HistoryReadView -> Result<int64, Rejection>) *
+        select: (HistoryReadView -> Result<int64, Refusal>) *
         limit: int *
         cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredHistoryPage, Rejection>, StoreFailure>>
+            Task<Result<Result<StoredHistoryPage, Refusal>, StoreFailure>>
 
     abstract ListActors:
         principal: PrincipalKey *
-        select: (ActorReadView -> Result<Guid option, Rejection>) *
+        select: (ActorReadView -> Result<Guid option, Refusal>) *
         limit: int *
         cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredActorPage, Rejection>, StoreFailure>>
+            Task<Result<Result<StoredActorPage, Refusal>, StoreFailure>>
 
     abstract ListGrants:
         principal: PrincipalKey *
         targetActorId: Guid *
-        select: (GrantReadView -> Result<GrantPosition option, Rejection>) *
+        select: (GrantReadView -> Result<GrantPosition option, Refusal>) *
         limit: int *
         cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredGrantPage, Rejection>, StoreFailure>>
+            Task<Result<Result<StoredGrantPage, Refusal>, StoreFailure>>
 
     abstract ReadOperation:
         principal: PrincipalKey * operationId: Guid * cancellationToken: CancellationToken ->

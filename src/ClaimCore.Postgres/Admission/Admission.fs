@@ -1,5 +1,7 @@
 namespace ClaimCore.Postgres
 
+open ClaimCore.Contract
+
 open System
 open System.Net
 open Npgsql

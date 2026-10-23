@@ -106,7 +106,7 @@ let private closedCorrectionTests =
                     before
                     |> apply (correct RegistrationGroup.Keep DecisionGroup.Keep PaymentGroup.Keep)
 
-                Expect.equal result (Error CaseRefusal.CorrectionNoChanges) "No-op is refused"
+                Expect.equal result (Error Refusal.CorrectionNoChanges) "No-op is refused"
                 Expect.equal (Case.snapshot before).Revision 3L "Existing case is unchanged")
             testCase
                 "equivalent scalar spelling cannot create a correction-only revision"
@@ -124,7 +124,7 @@ let private closedCorrectionTests =
 
                     Expect.equal
                         result
-                        (Error CaseRefusal.CorrectionNoChanges)
+                        (Error Refusal.CorrectionNoChanges)
                         "Same accepted facts are no-op")
         ]
 
@@ -141,7 +141,7 @@ let private validationTests =
 
                 Expect.equal
                     (opened () |> apply command)
-                    (Error CaseRefusal.CorrectionRequiresExistingValue)
+                    (Error Refusal.CorrectionRequiresExistingValue)
                     "Correction works on existing decided, paid, or closed facts")
             testCase "newly asserted correction dates cannot be future dates" (fun () ->
                 let command =

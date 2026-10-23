@@ -1,45 +1,34 @@
 namespace ClaimCore.Contract
 
-/// Closed diagnostic locations. No submitted field name, path, or value can be echoed as a target.
 [<RequireQualifiedAccess>]
 type InputTarget =
-    | IncidentDate
-    | IncidentNotificationDate
-    | IncidentCountry
-    | ClaimantName
-    | InsurerName
-    | ClaimedAmount
-    | ClaimedCurrency
-    | CaseReference
-    | PaymentDecisionDate
-    | PayableAmount
-    | PayableCurrency
-    | PaymentDate
+    | Field of BusinessField
     | OperationId
     | ExpectedRevision
-    | Payment
+    | PaymentGroup
     | Reason
+    | PrincipalIssuer
+    | PrincipalSubject
+    | Limit
+    | Cursor
 
 module InputTargets =
     let all =
-        [
-            InputTarget.IncidentDate, "incidentDate"
-            InputTarget.IncidentNotificationDate, "incidentNotificationDate"
-            InputTarget.IncidentCountry, "incidentCountry"
-            InputTarget.ClaimantName, "claimantName"
-            InputTarget.InsurerName, "insurerName"
-            InputTarget.ClaimedAmount, "claimedAmount"
-            InputTarget.ClaimedCurrency, "claimedCurrency"
-            InputTarget.CaseReference, "caseReference"
-            InputTarget.PaymentDecisionDate, "paymentDecisionDate"
-            InputTarget.PayableAmount, "payableAmount"
-            InputTarget.PayableCurrency, "payableCurrency"
-            InputTarget.PaymentDate, "paymentDate"
+        (FieldTable.rows
+         |> List.filter (fun row -> row.Group <> FieldGroup.Status)
+         |> List.map (fun row -> InputTarget.Field row.Field, row.Key))
+        @ [
             InputTarget.OperationId, "operationId"
             InputTarget.ExpectedRevision, "expectedRevision"
-            InputTarget.Payment, "payment"
+            InputTarget.PaymentGroup, "payment"
             InputTarget.Reason, "reason"
+            InputTarget.PrincipalIssuer, "principal.issuer"
+            InputTarget.PrincipalSubject, "principal.subject"
+            InputTarget.Limit, "limit"
+            InputTarget.Cursor, "cursor"
         ]
 
-    let token target =
-        all |> List.find (fst >> (=) target) |> snd
+    let token =
+        function
+        | InputTarget.Field field -> BusinessField.token field
+        | target -> all |> List.find (fst >> (=) target) |> snd

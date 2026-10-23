@@ -25,13 +25,13 @@ module internal Queries =
     let private rejected reason = QueryOutcome.Rejected reason
 
     let private unavailable<'value> : QueryOutcome<'value> =
-        rejected Rejection.ResourceUnavailable
+        rejected Refusal.ResourceUnavailable
 
     let private maximum = ServiceLimits.MaximumPageSize
     let private validLimit limit = limit >= 1 && limit <= maximum
 
     let private invalidLimit () =
-        rejected (Rejection.PageLimitOutOfRange maximum)
+        rejected (Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange maximum))
 
     let private collect results =
         results
@@ -46,7 +46,7 @@ module internal Queries =
         if ActorAuthorization.validActor principal actor then
             Ok actor
         else
-            Error Rejection.ResourceUnavailable
+            Error Refusal.ResourceUnavailable
 
     let caseRecord installationId principal actor record =
         Advice.caseRecord installationId principal actor record
@@ -60,7 +60,7 @@ module internal Queries =
         : Task<QueryOutcome<CaseReadModel>> =
         task {
             match CaseReference.validate reference with
-            | Error error -> return rejected (Rejection.Case error)
+            | Error error -> return rejected (error)
             | Ok() ->
                 let! read = store.ReadCase(principal, None, reference, ct)
 
@@ -123,7 +123,7 @@ module internal Queries =
         currentActor principal view.Actor
         |> Result.bind (fun actor ->
             match ActorAuthorization.visibility principal actor with
-            | None -> Error Rejection.ResourceUnavailable
+            | None -> Error Refusal.ResourceUnavailable
             | Some visibility ->
                 cursor Cursors.decodeCases request.AfterCursor
                 |> Result.map (fun after ->
@@ -206,7 +206,7 @@ module internal Queries =
                 Capability.ReadHistory
 
         if not (CaseDecisions.authorize principal view.Actor capability view.Case) then
-            Error Rejection.ResourceUnavailable
+            Error Refusal.ResourceUnavailable
         else
             currentActor principal view.Actor
             |> Result.bind (fun _ ->
@@ -255,7 +255,7 @@ module internal Queries =
         : Task<QueryOutcome<HistoryResultPage>> =
         task {
             match CaseReference.validate request.CaseReference with
-            | Error error -> return rejected (Rejection.Case error)
+            | Error error -> return rejected (error)
             | Ok() when not (validLimit request.Limit) -> return invalidLimit ()
             | Ok() ->
                 let! read =
@@ -288,12 +288,10 @@ module internal Queries =
             if operationId = Guid.Empty then
                 return
                     rejected (
-                        Rejection.Case(
-                            CaseRefusal.InvalidInput(
-                                InputTarget.OperationId,
-                                InputViolation.Act ActViolation.EmptyOperationId
-                            )
-                        )
+                        (Refusal.InvalidInput(
+                            InputTarget.OperationId,
+                            Violation.OperationIdRequired
+                        ))
                     )
             else
                 let! read = store.ReadOperation(principal, operationId, ct)
@@ -326,7 +324,7 @@ module internal Queries =
                     ResourceScope.Installation
             )
         then
-            Error Rejection.ResourceUnavailable
+            Error Refusal.ResourceUnavailable
         else
             currentActor principal view.Actor
             |> Result.bind (fun _ -> cursor Cursors.decodeActors request.AfterCursor)
@@ -385,12 +383,12 @@ module internal Queries =
                     ResourceScope.Installation
             )
         then
-            Error Rejection.ResourceUnavailable
+            Error Refusal.ResourceUnavailable
         else
             match currentActor principal view.Actor, view.Target with
             | Ok _, Some target when target.ActorId = request.ActorId ->
                 cursor (Cursors.decodeGrants request.ActorId) request.AfterCursor
-            | _ -> Error Rejection.ResourceUnavailable
+            | _ -> Error Refusal.ResourceUnavailable
 
     let private grantPage principal (request: GrantsRequest) (page: StoredGrantPage) =
         currentActor principal page.Actor

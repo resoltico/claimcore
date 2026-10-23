@@ -219,7 +219,7 @@ let private replayAndRefusal fixture =
 
         Expect.equal
             stale
-            (ExecuteOutcome.Rejected(Rejection.Case(CaseRefusal.RevisionConflict 1L)))
+            (ExecuteOutcome.Rejected((Refusal.RevisionConflict 1L)))
             "No stale acceptance"
 
         let! view =
@@ -363,7 +363,7 @@ let private erasureReadback fixture (actor: IActorClaimsCore) =
 
         Expect.equal
             replay
-            (ExecuteOutcome.Rejected Rejection.ResourceUnavailable)
+            (ExecuteOutcome.Rejected Refusal.ResourceUnavailable)
             "Erased requests cannot replay"
 
         let! reopen =
@@ -374,7 +374,7 @@ let private erasureReadback fixture (actor: IActorClaimsCore) =
 
         Expect.equal
             reopen
-            (ExecuteOutcome.Rejected(Rejection.Case CaseRefusal.CaseErased))
+            (ExecuteOutcome.Rejected(Refusal.CaseErased))
             "Folded reference remains reserved"
     }
 
@@ -658,7 +658,7 @@ let private refusedAdvice fixture (actor: IActorClaimsCore) pending =
 
         Expect.equal
             refused
-            (ExecuteOutcome.Rejected Rejection.ActNotPermitted)
+            (ExecuteOutcome.Rejected Refusal.ActNotPermitted)
             "Revocation is decided again under lock"
 
         let! current = actor.Get(pending.CaseReference, CancellationToken.None)
@@ -815,7 +815,7 @@ let private scopedAuthority fixture =
 
         Expect.equal
             conflict
-            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+            (ExecuteOutcome.Rejected Refusal.IdempotencyConflict)
             "Both scopes preserve content exclusion"
     }
 

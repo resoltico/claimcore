@@ -9,7 +9,7 @@ open ClaimCore.RecordFormat
 type internal CaseReviewDecision =
     | Proposed of before: ClaimCore.Domain.CaseRecord option * after: ClaimCore.Domain.CaseRecord
     | Replay of OperationReceipt
-    | Refuse of Rejection
+    | Refuse of Refusal
     | Fail of CoreFault
 
 module internal CaseDecisions =
@@ -32,10 +32,10 @@ module internal CaseDecisions =
             if ActorAuthorization.canAct principal actor ResourceScope.Installation request.Act then
                 Ok()
             else
-                Error Rejection.ResourceUnavailable
+                Error Refusal.ResourceUnavailable
         else
             match record with
-            | None -> Error Rejection.ResourceUnavailable
+            | None -> Error Refusal.ResourceUnavailable
             | Some value when
                 ActorAuthorization.canAct
                     principal
@@ -51,8 +51,8 @@ module internal CaseDecisions =
                     Capability.ReadCase
                     (ResourceScope.Case value.CaseId)
                 ->
-                Error Rejection.ActNotPermitted
-            | _ -> Error Rejection.ResourceUnavailable
+                Error Refusal.ActNotPermitted
+            | _ -> Error Refusal.ResourceUnavailable
 
     let private admission installationId principal request bytes (view: CaseReadView) =
         match permission principal view.Actor request view.Case with
@@ -76,7 +76,7 @@ module internal CaseDecisions =
         | Error fault -> CaseReviewDecision.Fail fault
         | Ok before ->
             match Case.decide (calendar.DateAt view.ObservedAt) request before with
-            | Error refusal -> CaseReviewDecision.Refuse(Rejection.Case refusal)
+            | Error refusal -> CaseReviewDecision.Refuse(refusal)
             | Ok after -> CaseReviewDecision.Proposed(before, after)
 
     let review installationId calendar principal request (view: CaseReadView) =
@@ -165,7 +165,7 @@ module internal CaseDecisions =
             |> Result.map LedgerDecision.Replay
             |> Result.defaultWith LedgerDecision.Fail
         | IdentityDecision.Fresh when view.Head.Sequence = Revision.Maximum ->
-            LedgerDecision.Refuse Rejection.LedgerExhausted
+            LedgerDecision.Refuse Refusal.LedgerExhausted
         | IdentityDecision.Fresh ->
             match propose installationId calendar request read with
             | CaseReviewDecision.Proposed(_, after) ->
