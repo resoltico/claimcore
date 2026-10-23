@@ -379,7 +379,5 @@ let tests =
                         result
                         (Some ClaimCore.Application.RuntimeOpenFault.UnsupportedServer)
                         "One admission vocabulary")
-            testCaseAsync
-                "plain cursor positions survive runtime lifetimes"
-                (run runtimeCursors)
+            testCaseAsync "plain cursor positions survive runtime lifetimes" (run runtimeCursors)
         ]
