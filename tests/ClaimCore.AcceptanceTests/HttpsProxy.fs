@@ -78,7 +78,7 @@ let private relay
 
             do!
                 context.Response.Body.WriteAsync(
-                    HostFailures.encode HostFailureReason.BeforeDispatchFailed
+                    HostFailureCodecs.encode HostFailureReason.BeforeDispatchFailed
                 )
         else
             use request = request backend context

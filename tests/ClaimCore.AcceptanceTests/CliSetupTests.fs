@@ -3,6 +3,7 @@ module ClaimCore.AcceptanceTests.CliSetupTests
 open ClaimCore.Contract
 
 open System.Text
+open System.Text.Json
 open System
 open System.IO
 open Expecto
@@ -11,15 +12,14 @@ open ClaimCore.TestSupport
 open ClaimCore.Contract.Protocol
 
 let private failureEvidence () =
-    let meta =
-        {
-            OperationId = None
-            AttemptKnowledge = AttemptKnowledge.NotSent
-            ResolutionEvidence = ResolutionEvidence.NoEvidence
-        }
-
     let encoded =
-        Frames.encode (FrameReply.LocalFailure(meta, None, LocalFailure.Internal))
+        Frames.encode
+            {
+                Endpoint = None
+                OperationId = None
+                Delivery = DeliveryState.NotSent
+                Result = FrameResult.LocalFailure CliFailure.Internal
+            }
 
     let output =
         Array.concat [ encoded; [| 10uy |]; Encoding.UTF8.GetBytes("private-marker\n"); encoded ]
@@ -166,14 +166,36 @@ let evidenceTests =
                 unexpectedResult
         ]
 
+let private acceptedFrame () =
+    let root = RepositoryRoot.find ()
+
+    use examples =
+        JsonDocument.Parse(
+            File.ReadAllBytes(Path.Combine(root, "tests/fixtures/wire-response-examples.json"))
+        )
+
+    let example =
+        examples.RootElement.GetProperty("cases").EnumerateArray()
+        |> Seq.find (fun entry ->
+            entry.GetProperty("name").GetString() = "operation.execute.authority-response-0")
+
+    let reply = example.GetProperty("value")
+
+    JsonSerializer.Serialize
+        {|
+            endpoint = "operation.execute"
+            operationId = reply.GetProperty("operationId")
+            delivery = "DELIVERED"
+            result = reply
+        |}
+    + "\n"
+
 [<Tests>]
 let tests =
     testCase
         "published authority setup refuses incomplete or unconfirmed session replies"
         (fun () ->
-            let accepted =
-                """{"kind":"result","endpoint":"authority.execute","operationId":"10000000-0000-4000-8000-000000000001","attemptKnowledge":"ACCEPTED","resolutionEvidence":"CONTENT_ACCEPTED","outcome":{"tag":"ACCEPTED","data":{"operationId":"10000000-0000-4000-8000-000000000001"}}}"""
-                + "\n"
+            let accepted = acceptedFrame ()
 
             let refused = "{\"outcome\":{\"tag\":\"REJECTED\",\"data\":{}}}\n"
 
@@ -199,12 +221,11 @@ let tests =
                     result
                         0
                         (accepted.Replace(
-                            "\"attemptKnowledge\":\"ACCEPTED\"",
-                            "\"attemptKnowledge\":\"UNCONFIRMED\""
+                            "\"delivery\":\"DELIVERED\"",
+                            "\"delivery\":\"UNCERTAIN\""
                          )
                          + accepted)
                         ""
-                    result 0 (accepted.Replace("CONTENT_ACCEPTED", "NONE") + accepted) ""
                 ] do
                 Expect.throws
                     (fun () -> requireAcceptedReplies 2 incomplete)

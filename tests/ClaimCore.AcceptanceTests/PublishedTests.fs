@@ -7,29 +7,105 @@ open System.Text.Json
 open Expecto
 open CliCalls
 
+let private verbArguments verb (bytes: byte array) =
+    use source = JsonDocument.Parse(ReadOnlyMemory<byte> bytes)
+    let input = source.RootElement.GetProperty "input"
+    let act = input.GetProperty "act"
+
+    let flag (value: JsonProperty) =
+        let name =
+            System.Text.RegularExpressions.Regex
+                .Replace(value.Name, "([a-z0-9])([A-Z])", "$1-$2")
+                .ToLowerInvariant()
+
+        [ "--" + name; value.Value.GetString() |> nonNull ]
+
+    let values (element: JsonElement) =
+        element.EnumerateObject() |> Seq.collect flag |> Seq.toList
+
+    let details =
+        if verb = "correct" then
+            act.GetProperty("groups").EnumerateObject()
+            |> Seq.collect (fun group ->
+                let mode = group.Value.GetProperty("mode").GetString() |> nonNull
+
+                let replacement =
+                    if mode = "REPLACE" then
+                        values (group.Value.GetProperty "values")
+                    else
+                        []
+
+                [ "--" + group.Name; mode.ToLowerInvariant() ] @ replacement)
+            |> Seq.toList
+        else
+            let mutable element = Unchecked.defaultof<JsonElement>
+
+            if act.TryGetProperty("values", &element) then
+                values element
+            else
+                []
+
+    let revision =
+        if verb = "open" then
+            []
+        else
+            [ "--expected-revision"; input.GetProperty("expectedRevision").GetRawText() ]
+
+    [
+        "case"
+        verb
+        input.GetProperty("caseReference").GetString() |> nonNull
+        "--operation-id"
+        input.GetProperty("operationId").GetString() |> nonNull
+    ]
+    @ revision
+    @ details
+
+let private assertDryRun (fixture: PublishedFixture.Fixture) arguments expected =
+    let result =
+        ProcessRunner.dotnet
+            8_000
+            fixture.Cli
+            (arguments @ [ "--dry-run" ])
+            (Collections.Generic.Dictionary<string, string>())
+            None
+
+    Expect.equal result.ExitCode 0 "Published dry run requires no configuration or authentication"
+    Expect.equal result.StandardError.Length 0 "No dry-run diagnostics"
+    use actual = JsonDocument.Parse(ReadOnlyMemory<byte> result.StandardOutput)
+    use authored = JsonDocument.Parse(ReadOnlyMemory<byte> expected)
+
+    Expect.isTrue
+        (JsonElement.DeepEquals(actual.RootElement, authored.RootElement))
+        "Verb prepares the independently authored call frame"
+
 let private walkthrough (fixture: PublishedFixture.Fixture) =
     let files =
         [
-            "01-open.json"
-            "02-decide.json"
-            "03-record-payment.json"
-            "04-close.json"
-            "05-reopen.json"
-            "06-correct-payment-record.json"
+            "01-open.json", "open"
+            "02-decide.json", "decide"
+            "03-record-payment.json", "record-payment"
+            "04-close.json", "close"
+            "05-reopen.json", "reopen"
+            "06-correct-payment-record.json", "correct"
         ]
 
     let mutable position = Unchecked.defaultof<JsonElement>
 
-    for index, file in List.indexed files do
+    for index, (file, act) in List.indexed files do
         let bytes = File.ReadAllBytes(Path.Combine(fixture.Root, "examples", file))
-        let receipt = run fixture fixture.Environment bytes 0 |> require "ACCEPTED"
+        let arguments = verbArguments act bytes
+        assertDryRun fixture arguments bytes
+        let receipt = verb fixture fixture.Environment arguments 0 |> require "ACCEPTED"
 
         Expect.equal
-            (receipt.GetProperty("revision").GetInt64())
+            (receipt.GetProperty("scope").GetProperty("revision").GetInt64())
             (int64 (index + 1))
             "Example revision"
 
-        let replay = run fixture fixture.Environment bytes 0 |> require "ALREADY_ACCEPTED"
+        let replay =
+            verb fixture fixture.Environment arguments 0 |> require "ALREADY_ACCEPTED"
+
         Expect.equal (replay.GetRawText()) (receipt.GetRawText()) "Exact replay receipt"
         position <- receipt.GetProperty("position")
 
@@ -75,8 +151,12 @@ let private erasedHistory fixture =
             "Requested receipt detail remains explicit"
 
         let receipt = entry.GetProperty("receipt")
-        let snapshot = receipt.GetProperty("snapshot")
-        Expect.equal (snapshot.GetProperty("tag").GetString()) "ERASED" "Business payload is erased"
+        let snapshot = receipt.GetProperty("scope").GetProperty("snapshot")
+
+        Expect.equal
+            (snapshot.GetProperty("disclosure").GetString())
+            "ERASED"
+            "Business payload is erased"
 
         Expect.equal
             (snapshot.EnumerateObject() |> Seq.length)
@@ -87,17 +167,7 @@ let private erasedHistory fixture =
 
         Expect.equal
             names
-            [
-                "act"
-                "caseReference"
-                "operationId"
-                "position"
-                "recordedAt"
-                "recordedBy"
-                "revision"
-                "scope"
-                "snapshot"
-            ]
+            [ "operationId"; "position"; "recordedAt"; "recordedBy"; "scope" ]
             "Receipt retains identity and ledger metadata"
 
 let private erasedView (tombstone: JsonElement) =
@@ -206,8 +276,8 @@ let private inputBoundaries fixture =
     let reply = run fixture fixture.Environment malformed 2
 
     Expect.equal
-        (reply.GetProperty("kind").GetString())
-        "protocolFailure"
+        (reply.GetProperty("result").GetProperty("localFailure").GetProperty("code").GetString())
+        "INVALID_FRAME"
         "Strict frame rejects extra property"
 
     let reader = human fixture "synthetic-reader" "case.list" {| limit = 50 |} 0
@@ -239,8 +309,12 @@ let private inputBoundaries fixture =
     requireWrongStateDelivery environment
 
     Expect.equal
-        (wrongState.GetProperty("kind").GetString())
-        "localFailure"
+        (wrongState
+            .GetProperty("result")
+            .GetProperty("localFailure")
+            .GetProperty("code")
+            .GetString())
+        "CLI_AUTHENTICATION_FAILED"
         "Forged PKCE state refuses"
 
 let private supplementary fixture =
@@ -249,6 +323,7 @@ let private supplementary fixture =
 
     let input =
         {|
+            scope = "CASE"
             operationId = id ()
             caseReference = reference
             expectedRevision = 0L
@@ -268,8 +343,8 @@ let private supplementary fixture =
                 |}
         |}
 
-    automation fixture "case.preview" input 0 |> require "REVIEWED" |> ignore
-    let receipt = automation fixture "case.execute" input 0 |> require "ACCEPTED"
+    automation fixture "operation.preview" input 0 |> require "REVIEWED" |> ignore
+    let receipt = automation fixture "operation.execute" input 0 |> require "ACCEPTED"
 
     let observed =
         automation fixture "operation.observe" {| operationId = input.operationId |} 0
@@ -277,12 +352,14 @@ let private supplementary fixture =
 
     Expect.equal (observed.GetRawText()) (receipt.GetRawText()) "Supplementary exact observation"
 
-    let replay = automation fixture "case.execute" input 0 |> require "ALREADY_ACCEPTED"
+    let replay =
+        automation fixture "operation.execute" input 0 |> require "ALREADY_ACCEPTED"
 
     Expect.equal
         (replay
+            .GetProperty("scope")
             .GetProperty("snapshot")
-            .GetProperty("state")
+            .GetProperty("view")
             .GetProperty("fields")
             .GetProperty("claimantName")
             .GetString())

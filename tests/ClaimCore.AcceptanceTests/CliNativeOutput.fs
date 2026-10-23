@@ -22,39 +22,19 @@ let private run
     let directory = Path.Combine(fixture.Directory, "native-output-" + id ())
     Directory.CreateDirectory directory |> ignore
 
-    let start =
-        ProcessStartInfo(
-            "python3",
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        )
-
-    for argument in
-        [
-            Path.Combine(fixture.Root, "tests/fixtures/output/native_output.py")
-            "run"
+    let result =
+        ClaimCore.TestSupport.OutputControls.run
+            directory
             fixture.Cli
             command
             destination
-            directory
-        ] do
-        start.ArgumentList.Add argument
-
-    ClaimCore.TestSupport.CliProcessEnvironment.clearInherited start
-
-    for pair: KeyValuePair<string, string> in environment do
-        start.Environment[pair.Key] <- pair.Value
-
-    let result = ClaimCore.TestSupport.BoundedProcess.run start (Some source) 8192 60000
-    Expect.equal result.ExitCode 0 "Native descriptor driver completes"
-    use status = JsonDocument.Parse result.StandardOutput
+            environment
+            source
 
     {
-        ExitCode = status.RootElement.GetProperty("exitCode").GetInt32()
-        StandardOutput = File.ReadAllBytes(Path.Combine(directory, "stdout"))
-        StandardError = File.ReadAllBytes(Path.Combine(directory, "stderr"))
+        ExitCode = result.ExitCode
+        StandardOutput = result.StandardOutput
+        StandardError = result.StandardError
     }
 
 let private authored (fixture: PublishedFixture.Fixture) =
@@ -101,28 +81,23 @@ let private accepted fixture reference =
         1
         "Exactly one accepted operation"
 
-let private fallback operation (result: ProcessRunner.Result) =
+let private fallback (operation: string) (result: ProcessRunner.Result) =
     Expect.equal result.ExitCode 4 "Undeliverable mutation confirmation remains uncertain"
-    use document = JsonDocument.Parse result.StandardError
+    let lines = Encoding.UTF8.GetString(result.StandardError).TrimEnd('\n').Split('\n')
+    Expect.equal lines.Length 2 "Fallback reply followed by exact retry frame"
 
     let frame =
-        Frames.decode result.StandardError
-        |> Result.defaultWith (fun _ -> failtest "Fallback must use the existing Wire codec")
+        Frames.decode (Encoding.UTF8.GetBytes lines[0])
+        |> Result.defaultWith (fun _ -> failtest "Fallback uses the shared typed frame codec")
 
-    Expect.equal
-        (Frames.metadata frame).AttemptKnowledge
-        ClaimCore.Contract.AttemptKnowledge.Unconfirmed
-        "No false confirmation"
+    Expect.equal frame.Delivery DeliveryState.Uncertain "No false confirmation"
+    Expect.equal frame.OperationId (Some(Guid.Parse operation)) "Original caller identity retained"
 
-    Expect.equal
-        (document.RootElement.GetProperty("operationId").GetString())
-        operation
-        "Original caller identity retained"
+    let retry =
+        Frames.admit (Encoding.UTF8.GetBytes lines[1])
+        |> Result.defaultWith (fun _ -> failtest "Last stderr line is a retryable request")
 
-    Expect.equal
-        (document.RootElement.GetProperty("resolutionEvidence").GetString())
-        "NONE"
-        "No fabricated acceptance evidence"
+    Expect.equal (Frames.operationId retry) frame.OperationId "Exact retry identity retained"
 
 let private mutations fixture =
     let destinations =
@@ -180,8 +155,8 @@ let private noMutation fixture =
             use document = JsonDocument.Parse result.StandardError
 
             Expect.equal
-                (document.RootElement.GetProperty("attemptKnowledge").GetString())
-                "READ_FAILED"
+                (document.RootElement.GetProperty("endpoint").GetString())
+                "context"
                 "Read failure stays a read"
 
     let missing = Dictionary<string, string>()

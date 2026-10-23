@@ -76,3 +76,314 @@ let tests =
             testCase "exact help aliases and all localized topics" aliases
             testCase "strict human versus machine option combinations" options
         ]
+
+let private grammarDescriptors () =
+    ClaimCore.Cli.ContractDiscovery.descriptors ()
+    |> StrictJson.read Limits.MaximumResponseBytes
+    |> Result.defaultWith (fun _ -> failtest "Embedded descriptors are valid")
+
+let private prepared arguments =
+    Grammar.prepare
+        (fun () -> "10000000-0000-4000-8000-000000000001")
+        (grammarDescriptors ())
+        arguments
+    |> Result.defaultWith (fun _ -> failtest "Derived verb prepares a request")
+
+let private verbCoverage () =
+    let descriptors =
+        JsonNode.Parse(ClaimCore.Cli.ContractDiscovery.descriptors ()) |> nonNull
+
+    let commands = descriptors["commands"] |> nonNull |> _.AsArray()
+
+    let verbs =
+        commands
+        |> Seq.map (fun item ->
+            (nonNull item)["kind"] |> nonNull |> _.GetValue<string>() |> Grammar.caseVerb)
+        |> Seq.toList
+
+    Expect.equal
+        (List.distinct verbs).Length
+        CaseActKinds.all.Length
+        "Exactly one derived verb for each case act"
+
+    for command in commands do
+        let command = nonNull command
+        let kind = command["kind"] |> nonNull |> _.GetValue<string>()
+        let inputs = command["inputs"] |> nonNull
+
+        let flags =
+            if (inputs["kind"] |> nonNull).GetValue<string>() = "CORRECTION_GROUPS" then
+                inputs["groups"]
+                |> nonNull
+                |> _.AsArray()
+                |> Seq.collect (fun group ->
+                    [ "--" + ((nonNull group)["name"] |> nonNull).GetValue<string>(); "keep" ])
+                |> Seq.toList
+            else
+                inputs["fields"]
+                |> nonNull
+                |> _.AsArray()
+                |> Seq.collect (fun field ->
+                    let name = ((nonNull field)["fieldName"] |> nonNull).GetValue<string>()
+                    [ "--" + Grammar.kebab name; "synthetic" ])
+                |> Seq.toList
+
+        let revision = if kind = "OPEN" then [] else [ "--expected-revision"; "1" ]
+
+        let request =
+            prepared ([ "case"; Grammar.caseVerb kind; "SYNTHETIC" ] @ revision @ flags)
+
+        Expect.isOk (Frames.admit request.Bytes) "Every descriptor-derived case verb is admitted"
+
+
+let private authorityVerbCoverage () =
+    for kind in AuthorityKinds.all |> List.filter ((<>) AuthorityKind.ProvisionOwner) do
+        for verb in Grammar.authorityVerbs (AuthorityKinds.token kind) do
+            let role =
+                if List.contains verb [ "grant"; "revoke" ] then
+                    [ "--role"; "CASE_READER" ]
+                else
+                    []
+
+            let request =
+                prepared (
+                    [
+                        "authority"
+                        verb
+                        "--kind"
+                        "HUMAN"
+                        "--issuer"
+                        "synthetic"
+                        "--subject"
+                        "synthetic"
+                    ]
+                    @ role
+                )
+
+            Expect.isOk (Frames.admit request.Bytes) "Every authority act alias is admitted"
+
+let private verbPreparation () =
+    let args = [ "case"; "close"; "SYNTHETIC"; "--expected-revision"; "1" ]
+    let actual = prepared (args @ [ "--dry-run" ])
+    Expect.isTrue actual.DryRun "Dry run is an offline preparation"
+    Expect.isTrue actual.Text "Human commands default to text"
+
+    let frame =
+        Frames.admit actual.Bytes |> Result.defaultWith (fun _ -> failtest "Frame")
+
+    Expect.equal (Frames.encodeInvocation frame) actual.Bytes "Dry run is exactly the call frame"
+
+    let preview =
+        prepared (args @ [ "--preview"; "--format"; "json"; "--language"; "lv" ])
+
+    Expect.isFalse preview.Text "Explicit JSON format"
+    Expect.equal preview.Language "lv" "Explicit language"
+
+    Expect.equal
+        (Frames.admit preview.Bytes |> Result.map (Frames.endpoint >> Api.id))
+        (Ok "operation.preview")
+        "Preview uses shared preview endpoint"
+
+    for rejected in
+        [
+            [ "case"; "close"; "SYNTHETIC" ]
+            args @ [ "--expected-revision"; "2" ]
+            args @ [ "--unknown"; "x" ]
+            args @ [ "extra" ]
+            args @ [ "--format"; "binary" ]
+        ] do
+        Expect.isError
+            (Grammar.prepare
+                (fun () -> Guid.NewGuid().ToString("D"))
+                (grammarDescriptors ())
+                rejected)
+            "Malformed verbs refuse atomically"
+
+[<Tests>]
+let grammarTests =
+    testList
+        "derived CLI verbs"
+        [
+            testCase "every case and authority act has a derived verb" verbCoverage
+            testCase "every authority alias has a core act" authorityVerbCoverage
+            testCase "preparation is exact and malformed flags fail" verbPreparation
+        ]
+
+let private readVerbs () =
+    for arguments, endpoint in
+        [
+            [ "case"; "get"; "SYNTHETIC" ], "case.get"
+            [ "case"; "list"; "--limit"; "5"; "--cursor"; "synthetic" ], "case.list"
+            [ "case"; "history"; "SYNTHETIC"; "--full" ], "case.history"
+            [ "operation"; "observe"; "10000000-0000-4000-8000-000000000001" ], "operation.observe"
+            [ "authority"; "list" ], "authority.list"
+            [ "authority"; "grants"; "10000000-0000-4000-8000-000000000001" ], "authority.grants"
+            [ "context" ], "context"
+        ] do
+        let invocation = prepared arguments
+
+        Expect.equal
+            (Frames.admit invocation.Bytes |> Result.map (Frames.endpoint >> Api.id))
+            (Ok endpoint)
+            "A read verb selects its registry endpoint"
+
+let private localizedReplyRendering () =
+    let path =
+        System.IO.Path.Combine(
+            ClaimCore.TestSupport.RepositoryRoot.find (),
+            "tests/fixtures/wire-response-examples.json"
+        )
+
+    use examples = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllBytes path)
+
+    for example in examples.RootElement.GetProperty("cases").EnumerateArray() do
+        if example.GetProperty("valid").GetBoolean() then
+            let reply =
+                StrictJson.read
+                    Limits.MaximumResponseBytes
+                    (Encoding.UTF8.GetBytes(example.GetProperty("value").GetRawText()))
+                |> Result.defaultWith (fun _ -> failtest "Frozen JSON")
+
+            let frame =
+                {
+                    Endpoint = Some(example.GetProperty("endpoint").GetString() |> nonNull)
+                    OperationId = None
+                    Delivery = DeliveryState.Delivered
+                    Result = FrameResult.Reply reply
+                }
+
+            for language in LocalizationPolicy.languages do
+                let rendered =
+                    ClaimCore.Cli.TextReply.bytes language (Frames.encode frame)
+                    |> Encoding.UTF8.GetString
+
+                Expect.isTrue
+                    (rendered.EndsWith("\n", StringComparison.Ordinal))
+                    "Human output ends with LF"
+
+                Expect.isGreaterThan rendered.Length 1 "Every admitted reply has human output"
+
+[<Tests>]
+let renderingTests =
+    testList
+        "CLI verb rendering"
+        [
+            testCase "every case-work read has a registry-selected verb" readVerbs
+            testCase "frozen admitted replies render in every language" localizedReplyRendering
+        ]
+
+let private authorityPreviewInvocation verb =
+    let role =
+        if List.contains verb [ "grant"; "revoke" ] then
+            [ "--role"; "CASE_READER" ]
+        else
+            []
+
+    let prepared =
+        prepared (
+            [
+                "authority"
+                verb
+                "--kind"
+                "HUMAN"
+                "--issuer"
+                "synthetic"
+                "--subject"
+                "synthetic-subject"
+                "--preview"
+            ]
+            @ role
+        )
+
+    Frames.admit prepared.Bytes |> Result.defaultWith (fun _ -> failtest "Prepared")
+
+
+let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAfter =
+    let grants present : AuthorityGrant list =
+        if present then
+            [
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+            ]
+        else
+            []
+
+    let response =
+        {
+            PreviewReply.OperationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
+            Outcome =
+                PreviewResult.Reviewed(
+                    OperationReview.Authority
+                        {
+                            Target = None
+                            Before =
+                                {
+                                    Enabled = enabledBefore
+                                    Grants = grants grantBefore
+                                }
+                            After =
+                                {
+                                    Enabled = enabledAfter
+                                    Grants = grants grantAfter
+                                }
+                        }
+                )
+        }
+
+    let frame =
+        {
+            Endpoint = Some "operation.preview"
+            OperationId = Some response.OperationId
+            Delivery = DeliveryState.Delivered
+            Result = FrameResult.Reply(Api.operationPreview.Output.Write response)
+        }
+
+    frame
+
+let private authorityPreviewText verb enabledBefore enabledAfter grantBefore grantAfter =
+    let invocation = authorityPreviewInvocation verb
+    let frame = authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAfter
+
+    for language in LocalizationPolicy.languages do
+        let rendered =
+            ClaimCore.Cli.TextReply.bytesFor language (Some invocation) (Frames.encode frame)
+            |> Encoding.UTF8.GetString
+
+        Expect.stringContains
+            rendered
+            (verb + " HUMAN synthetic synthetic-subject")
+            "Authority preview identifies the exact act and principal"
+
+        if enabledBefore <> enabledAfter then
+            let expected =
+                (if enabledBefore then "true" else "false")
+                + " → "
+                + (if enabledAfter then "true" else "false")
+
+            Expect.stringContains rendered expected "The enabled transition is displayed"
+
+        if grantBefore <> grantAfter then
+            let expected =
+                if grantBefore then
+                    "CASE_READER  INSTALLATION  — → —"
+                else
+                    "— → CASE_READER  INSTALLATION  —"
+
+            Expect.stringContains
+                rendered
+                expected
+                "The role and installation scope are displayed in the correct direction"
+
+[<Tests>]
+let authorityTextTests =
+    testList
+        "CLI authority preview text"
+        [
+            testCase "register" (fun () -> authorityPreviewText "register" false true false false)
+            testCase "enable" (fun () -> authorityPreviewText "enable" false true false false)
+            testCase "disable" (fun () -> authorityPreviewText "disable" true false false false)
+            testCase "grant" (fun () -> authorityPreviewText "grant" true true false true)
+            testCase "revoke" (fun () -> authorityPreviewText "revoke" true true true false)
+        ]

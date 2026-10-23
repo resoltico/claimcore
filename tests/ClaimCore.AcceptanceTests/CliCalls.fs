@@ -15,29 +15,36 @@ let private deliveryFields exitCode (reply: JsonElement) =
     // Caller consumers require the breaking frame metadata even when values are null.
     reply.GetProperty("endpoint") |> ignore
     reply.GetProperty("operationId") |> ignore
-    let knowledge = reply.GetProperty("attemptKnowledge").GetString()
-    let evidence = reply.GetProperty("resolutionEvidence").GetString()
+    let delivery = reply.GetProperty("delivery").GetString()
+    Expect.contains [ "NOT_SENT"; "DELIVERED"; "UNCERTAIN" ] delivery "Closed delivery state"
 
-    Expect.contains
-        [ "NONE"; "CONTENT_ACCEPTED"; "CONTENT_EXCLUDED" ]
-        evidence
-        "Closed content evidence"
+    if exitCode = 4 then
+        Expect.equal delivery "UNCERTAIN" "Uncertainty stops automation"
 
-    match knowledge with
-    | "UNCONFIRMED" -> Expect.equal exitCode 4 "Unconfirmed attempts stop automation"
-    | "ACCEPTED" ->
-        Expect.equal exitCode 0 "Accepted content succeeds"
-        Expect.equal evidence "CONTENT_ACCEPTED" "Acceptance has exact-content evidence"
-    | "READ_SUCCEEDED" -> Expect.equal exitCode 0 "A successful read has no mutation uncertainty"
-    | "NOT_SENT"
-    | "NOT_ACCEPTED"
-    | "READ_FAILED" ->
-        Expect.contains [ 2; 3; 70; 130 ] exitCode "Definite attempt failure has a matching exit"
-    | _ -> failtest "Missing or unsupported per-attempt delivery knowledge"
+    if exitCode = 0 then
+        Expect.equal delivery "DELIVERED" "Success was delivered"
 
 let parse code (result: ProcessRunner.Result) =
     Expect.equal result.ExitCode code "Published CLI exit"
-    Expect.equal result.StandardError.Length 0 "No private diagnostics"
+
+    if code = 4 then
+        let lines =
+            UTF8Encoding(false, true).GetString(result.StandardError).TrimEnd('\n').Split('\n')
+
+        let retry = Encoding.UTF8.GetBytes lines[lines.Length - 1]
+
+        Expect.isOk
+            (ClaimCore.Contract.Frames.admit retry)
+            "The last stderr line is an exact retry frame"
+    else
+        Expect.equal result.StandardError.Length 0 "No private diagnostics"
+
+    let admitted =
+        ClaimCore.Contract.Frames.decode result.StandardOutput
+        |> Result.defaultWith (fun _ ->
+            failtest "Published CLI output is an admitted closed reply frame")
+
+    Expect.equal (ClaimCore.Contract.Frames.exitCode admitted) code "Frame and process exits agree"
     use document = JsonDocument.Parse(ReadOnlyMemory result.StandardOutput)
     let reply = document.RootElement.Clone()
     deliveryFields code reply
@@ -61,6 +68,13 @@ let private invoke
 
 let run (fixture: PublishedFixture.Fixture) environment source code =
     invoke fixture environment [ "call" ] source code |> parse code
+
+let retry fixture environment source code =
+    invoke fixture environment [ "call"; "--retry" ] source code |> parse code
+
+let verb fixture environment arguments code =
+    invoke fixture environment (arguments @ [ "--format"; "json" ]) Array.empty code
+    |> parse code
 
 let automation fixture endpoint input code =
     run fixture fixture.Environment (frame endpoint input) code
@@ -109,10 +123,10 @@ let human fixture username endpoint input code =
     run fixture (interactiveEnvironment fixture username "valid") (frame endpoint input) code
 
 let tag (reply: JsonElement) =
-    reply.GetProperty("outcome").GetProperty("tag").GetString()
+    reply.GetProperty("result").GetProperty("outcome").GetProperty("tag").GetString()
 
 let data (reply: JsonElement) =
-    reply.GetProperty("outcome").GetProperty("data")
+    reply.GetProperty("result").GetProperty("outcome").GetProperty("data")
 
 let require expected reply =
     Expect.equal (tag reply) expected "Published outcome"
@@ -131,8 +145,9 @@ let installation = {| kind = "INSTALLATION" |}
 
 let private grantFrame target role =
     frame
-        "authority.execute"
+        "operation.execute"
         {|
+            scope = "AUTHORITY"
             operationId = id ()
             target = target
             act =
@@ -147,8 +162,9 @@ let private grantFrame target role =
 let setGrant fixture target role active =
     let source =
         frame
-            "authority.execute"
+            "operation.execute"
             {|
+                scope = "AUTHORITY"
                 operationId = id ()
                 target = target
                 act =
@@ -178,8 +194,9 @@ let private setupFrames fixture =
             let target = principal fixture kind subject
 
             frame
-                "authority.execute"
+                "operation.execute"
                 {|
+                    scope = "AUTHORITY"
                     operationId = id ()
                     target = target
                     act = {| kind = "REGISTER_ACTOR" |}
@@ -198,29 +215,22 @@ let internal requireAcceptedReplies expected (result: ProcessRunner.Result) =
     Expect.equal (lines.Length - 1) expected "One reply for every authority frame"
 
     for line in lines[.. lines.Length - 2] do
+        let admitted =
+            ClaimCore.Contract.Frames.decode (Encoding.UTF8.GetBytes line)
+            |> Result.defaultWith (fun _ ->
+                failtest "Setup output is an admitted closed reply frame")
+
+        Expect.equal (ClaimCore.Contract.Frames.exitCode admitted) 0 "Setup frame exit"
         use document = JsonDocument.Parse(line)
         let reply = document.RootElement
         let receipt = reply |> require "ACCEPTED"
 
         Expect.equal
-            (reply.GetProperty("kind").GetString())
-            "result"
-            "Setup returns a protocol result"
-
-        Expect.equal
             (reply.GetProperty("endpoint").GetString())
-            "authority.execute"
-            "Authority setup endpoint"
+            "operation.execute"
+            "Setup endpoint"
 
-        Expect.equal
-            (reply.GetProperty("attemptKnowledge").GetString())
-            "ACCEPTED"
-            "Explicit setup acceptance"
-
-        Expect.equal
-            (reply.GetProperty("resolutionEvidence").GetString())
-            "CONTENT_ACCEPTED"
-            "Exact setup content is confirmed"
+        Expect.equal (reply.GetProperty("delivery").GetString()) "DELIVERED" "Setup delivered"
 
         Expect.equal
             (reply.GetProperty("operationId").GetString())

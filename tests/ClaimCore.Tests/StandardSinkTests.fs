@@ -3,88 +3,145 @@ module ClaimCore.Tests.StandardSinkTests
 open System
 open System.Diagnostics
 open System.IO
-open System.Text.Json
 open System.Security
+open System.Text
 open Expecto
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
-let private invoke directory command arguments =
+let private buildProbe root directory =
+    File.Copy(Path.Combine(root, "global.json"), Path.Combine(directory, "global.json"))
+
+    let reference name (path: string) =
+        "<Reference Include=\""
+        + name
+        + "\"><HintPath>"
+        + SecurityElement.Escape(path)
+        + "</HintPath></Reference>"
+
+    let project =
+        "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference></PropertyGroup><ItemGroup>"
+        + reference "ClaimCore.Cli" typeof<RemoteConfiguration>.Assembly.Location
+        + reference "FSharp.Core" typeof<unit>.Assembly.Location
+        + "<Compile Include=\"OutputProbe.fsx\" /></ItemGroup></Project>"
+
+    File.WriteAllText(Path.Combine(directory, "Probe.fsproj"), project)
+
+    File.Copy(
+        Path.Combine(root, "tests/ClaimCore.AcceptanceTests/OutputProbe.fsx"),
+        Path.Combine(directory, "OutputProbe.fsx")
+    )
+
     let start =
         ProcessStartInfo(
-            command,
-            UseShellExecute = false,
+            "dotnet",
+            WorkingDirectory = directory,
             RedirectStandardOutput = true,
             RedirectStandardError = true
         )
 
-    start.WorkingDirectory <- directory
-    arguments |> List.iter start.ArgumentList.Add
-    BoundedProcess.run start None 8192 120000
+    [ "build"; "Probe.fsproj"; "--configuration"; "Release"; "--output"; "bin" ]
+    |> List.iter start.ArgumentList.Add
+
+    let built = BoundedProcess.run start None 8192 120000
+    Expect.equal built.ExitCode 0 "Managed F# output probe compiles"
+    Path.Combine(directory, "bin/Probe.dll")
+
+let private bytes root binary methodName mode seed =
+    let directory =
+        Directory.CreateDirectory(Path.Combine(root, Guid.NewGuid().ToString("N"))).FullName
+
+    match mode with
+    | "pipe"
+    | "broken" ->
+        let result = OutputControls.run directory binary methodName mode (dict []) [||]
+        result, result.StandardOutput
+    | "pty" ->
+        let result = OutputControls.terminal directory binary methodName
+        result, result.StandardOutput
+    | _ -> OutputControls.file directory binary methodName mode seed
+
+let private expectedBytes methodName mode seed payload =
+    let prefix =
+        if List.contains mode [ "append"; "positioned"; "shared-append" ] then
+            seed
+        else
+            [||]
+
+    let copies =
+        if methodName = "twice" || methodName = "lifetime" then
+            2
+        else
+            1
+
+    let marker =
+        if methodName = "both" then
+            "STREAM_SECOND_WRITER\n"
+        else
+            "STREAM_WRITE_RETURNED\n"
+
+    let suffix =
+        if mode.StartsWith("shared", StringComparison.Ordinal) then
+            Encoding.UTF8.GetBytes marker
+        else
+            [||]
+
+    Array.concat [ yield prefix; yield! List.replicate copies payload; yield suffix ]
+
+let private matrix directory binary seed =
+    let payload = Encoding.UTF8.GetBytes("Rīga مطالبة 😀\n")
+
+    let modes =
+        [
+            "pipe"
+            "broken"
+            "pty"
+            "truncate"
+            "append"
+            "positioned"
+            "shared"
+            "shared-append"
+        ]
+
+    for methodName in [ "selected"; "twice"; "lifetime"; "both" ] do
+        for mode in modes do
+            let result, actual = bytes directory binary methodName mode seed
+
+            if mode = "broken" then
+                Expect.equal result.ExitCode 70 "Selected sink surfaces real EPIPE"
+            else
+                Expect.equal result.ExitCode 0 (methodName + "/" + mode + " completes")
+
+                Expect.equal
+                    actual
+                    (expectedBytes methodName mode seed payload)
+                    (methodName
+                     + "/"
+                     + mode
+                     + " exact Unicode, position, append and shared-offset bytes")
 
 let private controls () =
     let root = RepositoryRoot.find ()
     let directory = Directory.CreateTempSubdirectory("claimcore-standard-sinks-")
 
     try
-        File.Copy(
-            Path.Combine(root, "global.json"),
-            Path.Combine(directory.FullName, "global.json")
-        )
+        let binary = buildProbe root directory.FullName
+        let seed = Encoding.UTF8.GetBytes("SYNTHETIC-PREFIX\n")
+        matrix directory.FullName binary seed
+        let failure = OutputControls.regularFailure directory.FullName binary
 
-        let reference name (path: string) =
-            "<Reference Include=\""
-            + name
-            + "\"><HintPath>"
-            + SecurityElement.Escape(path)
-            + "</HintPath></Reference>"
+        Expect.contains
+            [ 70; 71 ]
+            failure.ExitCode
+            "Real regular-file write failure remains observable"
 
-        let project =
-            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType></PropertyGroup><ItemGroup>"
-            + reference "ClaimCore.Cli" typeof<RemoteConfiguration>.Assembly.Location
-            + reference "FSharp.Core" typeof<unit>.Assembly.Location
-            + "</ItemGroup></Project>"
+        let control, _ = bytes directory.FullName binary "console" "broken" seed
+        Expect.equal control.ExitCode 0 "Rejecting control detects Console swallowing EPIPE"
 
-        File.WriteAllText(Path.Combine(directory.FullName, "Probe.csproj"), project)
-
-        File.Copy(
-            Path.Combine(root, "tests/fixtures/output/Program.cs"),
-            Path.Combine(directory.FullName, "Program.cs")
-        )
-
-        let built =
-            invoke
-                directory.FullName
-                "dotnet"
-                [ "build"; "Probe.csproj"; "--configuration"; "Release"; "--output"; "bin" ]
-
-        Expect.equal built.ExitCode 0 "Managed output probe compiles"
-
-        let result =
-            invoke
-                root
-                "python3"
-                [
-                    Path.Combine(root, "tests/fixtures/output/native_output.py")
-                    "controls"
-                    Path.Combine(directory.FullName, "bin/Probe.dll")
-                ]
-
-        Expect.equal
-            result.ExitCode
-            0
-            "Native pipe/PTY/file/append/shared-offset/ownership controls"
-
-        use report = JsonDocument.Parse result.StandardOutput
-
-        Expect.equal
-            (report.RootElement.GetProperty("passed").GetInt32())
-            (if OperatingSystem.IsLinux() then 34 else 33)
-            "Every native control completed"
-
-        Expect.isTrue
-            (report.RootElement.GetProperty("consoleRejectingControl").GetBoolean())
-            "The control detects Console swallowing EPIPE"
+        if OperatingSystem.IsLinux() then
+            let full = Path.Combine(directory.FullName, "full")
+            let result = OutputControls.run full binary "selected" "full" (dict []) [||]
+            Expect.equal result.ExitCode 70 "Linux ENOSPC remains observable"
     finally
         directory.Delete true
 

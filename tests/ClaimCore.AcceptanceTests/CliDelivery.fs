@@ -1,7 +1,5 @@
 module internal ClaimCore.AcceptanceTests.CliDelivery
 
-open ClaimCore.Contract
-
 open System
 open System.Collections.Generic
 open System.IO
@@ -9,7 +7,7 @@ open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Contract.Protocol
+open ClaimCore.Contract
 open CliCalls
 
 let private arm (fixture: PublishedFixture.Fixture) status =
@@ -17,7 +15,7 @@ let private arm (fixture: PublishedFixture.Fixture) status =
         JsonSerializer.Serialize
             {|
                 id = id ()
-                path = "/api/case.execute"
+                path = "/api/operation.execute"
                 status = status
             |}
 
@@ -37,36 +35,28 @@ let private authored (fixture: PublishedFixture.Fixture) =
     values["claimedAmount"] <- JsonValue.Create "1.0000"
     Encoding.UTF8.GetBytes(source.ToJsonString()), operationId, reference
 
-let private field (name: string) (reply: JsonElement) =
-    reply.GetProperty(name).GetString() |> nonNull
+let private field name (reply: JsonElement) =
+    reply.GetProperty(name: string).GetString() |> nonNull
 
-/// This is the automation caller's state. Each CLI process only reports its own attempt.
-let private knowledge token =
-    Codec.decode 128 Frames.knowledge (JsonSerializer.SerializeToUtf8Bytes(token: string))
-    |> Result.defaultWith (fun _ -> failtest "Unknown attempt token")
+let private uncertain reply =
+    Expect.equal (field "delivery" reply) "UNCERTAIN" "Prior commit remains unresolved"
 
-let private accumulated token =
-    if token = "CONTENT_EXCLUDED" then
-        AccumulatedKnowledge.ContentExcluded
-    else
-        AccumulatedKnowledge.Known(knowledge token)
+let private lostFrame (fixture: PublishedFixture.Fixture) source =
+    let result =
+        ProcessRunner.dotnet 90_000 fixture.Cli [ "call" ] fixture.Environment (Some source)
 
-let private retain prior expected attempt evidence reply =
-    Expect.equal (field "attemptKnowledge" reply) attempt "Published per-attempt knowledge"
-    Expect.equal (field "resolutionEvidence" reply) evidence "Published content evidence"
+    let reply = parse 4 result
+    uncertain reply
+    let lines = Encoding.UTF8.GetString(result.StandardError).TrimEnd('\n').Split('\n')
+    let retry = Encoding.UTF8.GetBytes lines[lines.Length - 1]
 
-    let resolution =
-        Codec.decode 128 Frames.evidence (JsonSerializer.SerializeToUtf8Bytes(evidence: string))
-        |> Result.defaultWith (fun _ -> failtest "Unknown evidence token")
+    let prepared =
+        Frames.admit source
+        |> Result.defaultWith (fun _ -> failtest "Synthetic source is admitted")
+        |> Frames.encodeInvocation
 
-    let next = Delivery.accumulate (accumulated prior) (knowledge attempt) resolution
-
-    Expect.equal
-        next
-        (accumulated expected)
-        "Caller accumulation preserves unresolved earlier delivery"
-
-    expected
+    Expect.equal retry prepared "Last stderr line retains the exact prepared request frame"
+    reply, retry
 
 let private oneAcceptance fixture reference =
     let page =
@@ -81,19 +71,13 @@ let private oneAcceptance fixture reference =
             0
         |> require "SUCCEEDED"
 
-    Expect.equal
-        (page.GetProperty("entries").GetArrayLength())
-        1
-        "Exact retries and refusals append no second ledger entry"
+    Expect.equal (page.GetProperty("entries").GetArrayLength()) 1 "Retries append no second entry"
 
     let current =
         automation fixture "case.get" {| caseReference = reference |} 0
         |> require "SUCCEEDED"
 
-    Expect.equal
-        (current.GetProperty("revision").GetInt64())
-        1L
-        "Projection remains at the single accepted revision"
+    Expect.equal (current.GetProperty("revision").GetInt64()) 1L "One accepted revision"
 
     let amount =
         current.GetProperty("state").GetProperty("fields").GetProperty("claimedAmount").GetString()
@@ -102,49 +86,46 @@ let private oneAcceptance fixture reference =
 
 let private interruptedRetries fixture source operationId =
     arm fixture RedirectControl.lostResponse
-    let lost = run fixture fixture.Environment source 4
-
-    Expect.equal
-        (field "operationId" lost)
-        operationId
-        "Unconfirmed frame retains the original operation ID"
-
-    let pending = retain "NOT_SENT" "UNCONFIRMED" "UNCONFIRMED" "NONE" lost
+    let lost, retryFrame = lostFrame fixture source
+    Expect.equal (field "operationId" lost) operationId "Original operation ID survives loss"
     let invalid = Dictionary<string, string>(fixture.Environment)
     invalid.Remove("CLAIMCORE_SERVICE_URL") |> ignore
-    let local = run fixture invalid source 3
-    let pending = retain pending "UNCONFIRMED" "NOT_SENT" "NONE" local
+    retry fixture invalid retryFrame 4 |> uncertain
     arm fixture RedirectControl.beforeDispatchFailure
-    let host = run fixture fixture.Environment source 3
-    let pending = retain pending "UNCONFIRMED" "NOT_ACCEPTED" "NONE" host
+    let host = retry fixture fixture.Environment retryFrame 4
+    uncertain host
 
     Expect.equal
-        (host.GetProperty("failure").GetProperty("executionPhase").GetString())
+        (host.GetProperty("result").GetProperty("hostFailure").GetProperty("phase").GetString())
         "NOT_STARTED"
-        "Host phase is serialized"
+        "Later predispatched refusal cannot disprove the earlier commit"
 
-    let denied =
-        run fixture (interactiveEnvironment fixture "synthetic-reader" "valid") source 2
+    retry fixture (interactiveEnvironment fixture "synthetic-reader" "valid") retryFrame 4
+    |> uncertain
 
-    retain pending "UNCONFIRMED" "NOT_ACCEPTED" "NONE" denied
+    retryFrame
 
-let private exactResolution fixture (source: byte array) operationId pending =
+let private exactResolution fixture source operationId =
     let observed =
         automation fixture "operation.observe" {| operationId = operationId |} 0
 
-    let pending = retain pending "UNCONFIRMED" "READ_SUCCEEDED" "NONE" observed
-    use document = JsonDocument.Parse(ReadOnlyMemory source)
-
-    let preview =
-        automation fixture "case.preview" (document.RootElement.GetProperty "input") 0
-
-    require "ALREADY_ACCEPTED" preview |> ignore
-    retain pending "ACCEPTED" "ACCEPTED" "CONTENT_ACCEPTED" preview |> ignore
-    let replay = run fixture fixture.Environment source 0
+    require "SUCCEEDED" observed |> ignore
+    // Observation establishes identity, never equality with pending content.
+    let replay = retry fixture fixture.Environment source 0
     require "ALREADY_ACCEPTED" replay |> ignore
-    retain pending "ACCEPTED" "ACCEPTED" "CONTENT_ACCEPTED" replay |> ignore
 
-let private differentContent fixture source operationId =
+    Expect.equal
+        (field "delivery" replay)
+        "DELIVERED"
+        "Exact correlated replay resolves uncertainty"
+
+    use document = JsonDocument.Parse(ReadOnlyMemory(source: byte array))
+
+    automation fixture "operation.preview" (document.RootElement.GetProperty "input") 0
+    |> require "ALREADY_ACCEPTED"
+    |> ignore
+
+let private differentContent fixture source =
     let changed = JsonNode.Parse(source: byte array) |> nonNull
 
     let values =
@@ -153,53 +134,37 @@ let private differentContent fixture source operationId =
     values["claimedAmount"] <- JsonValue.Create "2.0000"
     let different = Encoding.UTF8.GetBytes(changed.ToJsonString())
     arm fixture RedirectControl.lostResponse
-    let lost = run fixture fixture.Environment different 4
-    let pending = retain "NOT_SENT" "UNCONFIRMED" "UNCONFIRMED" "NONE" lost
-
-    let observed =
-        automation fixture "operation.observe" {| operationId = operationId |} 0
-
-    let pending = retain pending "UNCONFIRMED" "READ_SUCCEEDED" "NONE" observed
-    let excluded = run fixture fixture.Environment different 2
-    let refusal = require "REJECTED" excluded
+    let _, pending = lostFrame fixture different
+    let conflict = retry fixture fixture.Environment pending 4
+    uncertain conflict
 
     Expect.equal
-        (refusal.GetProperty("code").GetString())
+        ((require "REJECTED" conflict).GetProperty("code").GetString())
         "OPERATION_CONTENT_CONFLICT"
-        "Immutable ID excludes this different content"
-
-    retain pending "CONTENT_EXCLUDED" "NOT_ACCEPTED" "CONTENT_EXCLUDED" excluded
-    |> ignore
+        "Even a conflict cannot disprove acceptance of an earlier uncertain request"
 
 let private coreUnknown (fixture: PublishedFixture.Fixture) =
     let source, operationId, reference = authored fixture
     let intercepted = fixture.ArmCommitReplyLoss()
     automation fixture "context" {| |} 0 |> require "SUCCEEDED" |> ignore
-    Expect.isFalse intercepted.IsCompleted "An armed mutation fault never drops read commits"
-    let unknown = run fixture fixture.Environment source 4
-    let outcome = require "OUTCOME_UNKNOWN" unknown
+    Expect.isFalse intercepted.IsCompleted "Armed mutation fault never drops read commits"
+    let unknown, retryFrame = lostFrame fixture source
+    require "OUTCOME_UNKNOWN" unknown |> ignore
+    Expect.equal (field "operationId" unknown) operationId "Core uncertainty retains identity"
+    Expect.isTrue (intercepted.Wait(TimeSpan.FromSeconds 5.)) "Actual COMMIT confirmation withheld"
 
-    Expect.equal
-        (field "operationId" outcome)
-        operationId
-        "Core uncertainty retains the submitted identity"
+    retry fixture fixture.Environment retryFrame 0
+    |> require "ALREADY_ACCEPTED"
+    |> ignore
 
-    Expect.isTrue
-        (intercepted.Wait(TimeSpan.FromSeconds 5.))
-        "Actual PostgreSQL COMMIT completion was withheld"
-
-    let pending = retain "NOT_SENT" "UNCONFIRMED" "UNCONFIRMED" "NONE" unknown
-    let replay = run fixture fixture.Environment source 0
-    require "ALREADY_ACCEPTED" replay |> ignore
-    retain pending "ACCEPTED" "ACCEPTED" "CONTENT_ACCEPTED" replay |> ignore
     oneAcceptance fixture reference
 
 let qualify fixture =
     let source, operationId, reference = authored fixture
     let retained = Array.copy source
     let pending = interruptedRetries fixture source operationId
-    exactResolution fixture source operationId pending
-    differentContent fixture source operationId
+    exactResolution fixture pending operationId
+    differentContent fixture source
     oneAcceptance fixture reference
-    Expect.equal source retained "Caller never rewrites its original authored bytes"
+    Expect.equal source retained "Caller never rewrites its authored bytes"
     coreUnknown fixture

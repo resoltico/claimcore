@@ -31,18 +31,19 @@ let private amend (input: JsonNode) =
 
 let private staleReview fixture input reference =
     let pending = amend input
-    automation fixture "case.preview" pending 0 |> require "REVIEWED" |> ignore
+    automation fixture "operation.preview" pending 0 |> require "REVIEWED" |> ignore
 
     let close =
         {|
+            scope = "CASE"
             operationId = id ()
             caseReference = reference
             expectedRevision = 1L
             act = {| kind = "CLOSE" |}
         |}
 
-    automation fixture "case.execute" close 0 |> require "ACCEPTED" |> ignore
-    let refused = automation fixture "case.execute" pending 2 |> require "REJECTED"
+    automation fixture "operation.execute" close 0 |> require "ACCEPTED" |> ignore
+    let refused = automation fixture "operation.execute" pending 2 |> require "REJECTED"
 
     Expect.equal
         (refused.GetProperty("code").GetString())
@@ -58,13 +59,13 @@ let private withheld expected reply =
     let receipt = require expected reply
 
     Expect.equal
-        (receipt.GetProperty("snapshot").GetProperty("tag").GetString())
+        (receipt.GetProperty("scope").GetProperty("snapshot").GetProperty("disclosure").GetString())
         "WITHHELD"
         "Superseded business snapshot requires current full-history permission"
 
     Expect.equal
-        (receipt.GetProperty("snapshot").EnumerateObject() |> Seq.length)
-        1
+        (receipt.GetProperty("scope").GetProperty("snapshot").GetProperty("view").ValueKind)
+        JsonValueKind.Null
         "Withheld never synthesizes or leaks business values"
 
 let private summaryHistory fixture reference =
@@ -123,7 +124,7 @@ let qualify fixture =
     Expect.equal history [ "SUMMARY" ] "Revoked full history disappears from scoped advice"
 
     run fixture fixture.Environment source 0 |> withheld "ALREADY_ACCEPTED"
-    automation fixture "case.preview" input 0 |> withheld "ALREADY_ACCEPTED"
+    automation fixture "operation.preview" input 0 |> withheld "ALREADY_ACCEPTED"
     let operationId = accepted.GetProperty("operationId").GetString() |> nonNull
 
     automation fixture "operation.observe" {| operationId = operationId |} 0

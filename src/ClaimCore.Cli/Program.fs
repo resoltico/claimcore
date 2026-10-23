@@ -51,8 +51,7 @@ let private discovery output errors =
         Discovery.schema selection |> writeDiscovery output errors "en"
     | _ -> unsupported errors "en" CliUsageIssue.Invocation
 
-let private remote output errors session retry =
-    use input = Console.OpenStandardInput()
+let private remote input output errors session retry =
     use processor = new RemoteFrameProcessor(input, output, errors, retry)
     let stop () = Environment.Exit(processor.Interrupt())
 
@@ -85,11 +84,43 @@ let private remote output errors session retry =
         Console.CancelKeyPress.RemoveHandler interrupt
         registrations |> List.iter _.Dispose()
 
+let private verb output errors arguments =
+    let descriptors =
+        ContractDiscovery.descriptors ()
+        |> StrictJson.read Limits.MaximumResponseBytes
+        |> Result.defaultWith (fun _ -> invalidOp "Invalid embedded descriptors.")
+
+    match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) descriptors arguments with
+    | Error() ->
+        let language = CliInvocations.usageLanguage arguments
+        writeText errors (ContractDiscovery.helpTopic language "verbs" + "\n")
+        unsupported errors language CliUsageIssue.Invocation
+    | Ok prepared when prepared.DryRun ->
+        writeBytes output prepared.Bytes
+        0
+    | Ok prepared ->
+        use input = new System.IO.MemoryStream(prepared.Bytes, false)
+
+        if prepared.Text then
+            let invocation =
+                Frames.admit prepared.Bytes
+                |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
+
+            use rendered = new TextReplySink(output, prepared.Language, invocation)
+            remote input rendered errors false false
+        else
+            remote input output errors false false
+
 let private dispatch output errors argv =
     try
         match CliInvocations.admit (Array.toList argv) with
-        | Ok(CliInvocation.Call retry) -> remote output errors false retry
-        | Ok CliInvocation.Session -> remote output errors true false
+        | Ok(CliInvocation.Call retry) ->
+            use input = Console.OpenStandardInput()
+            remote input output errors false retry
+        | Ok CliInvocation.Session ->
+            use input = Console.OpenStandardInput()
+            remote input output errors true false
+        | Ok(CliInvocation.Verb arguments) -> verb output errors arguments
         | Ok invocation -> discovery output errors invocation
         | Error issue -> unsupported errors (CliInvocations.usageLanguage (Array.toList argv)) issue
     with _ ->

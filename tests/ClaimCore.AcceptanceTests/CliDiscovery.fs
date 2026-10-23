@@ -35,7 +35,7 @@ let private configurationRefusals (fixture: PublishedFixture.Fixture) =
         use document = JsonDocument.Parse result.StandardOutput
 
         let parameters =
-            document.RootElement.GetProperty("diagnostic").GetProperty("parameters")
+            document.RootElement.GetProperty("result").GetProperty("localFailure")
 
         Expect.equal
             (parameters.GetProperty("setting").GetString())
@@ -61,7 +61,7 @@ let private configurationGuidance (fixture: PublishedFixture.Fixture) =
     use frame = JsonDocument.Parse result.StandardOutput
 
     Expect.equal
-        (frame.RootElement.GetProperty("attemptKnowledge").GetString())
+        (frame.RootElement.GetProperty("delivery").GetString())
         "NOT_SENT"
         "This attempt was not sent"
 
@@ -69,19 +69,10 @@ let private configurationGuidance (fixture: PublishedFixture.Fixture) =
         (Encoding.UTF8.GetString(result.StandardOutput).Contains "SECRET-CANARY")
         "No configuration value echo"
 
-    let id =
-        frame.RootElement.GetProperty("diagnostic").GetProperty("id").GetString()
-        |> nonNull
+    let id = InputDiagnostics.configurationId
 
     let invoke args =
         ProcessRunner.dotnet 8000 fixture.Cli args (Dictionary<string, string>()) None
-
-    let discovery = invoke [ "describe"; "diagnostics" ]
-    use messages = JsonDocument.Parse discovery.StandardOutput
-
-    Expect.isTrue
-        (messages.RootElement.TryGetProperty("diagnostic." + id) |> fst)
-        "Returned ID exists in JSON discovery"
 
     for language in LocalizationPolicy.languages do
         let alias = invoke [ "help"; id; "--language"; language ]
@@ -92,13 +83,6 @@ let private configurationGuidance (fixture: PublishedFixture.Fixture) =
             (alias.StandardOutput = topic.StandardOutput)
             "Both entry points render identical core content"
 
-        let text =
-            invoke [ "describe"; "diagnostics"; "--format"; "text"; "--language"; language ]
-
-        Expect.isTrue
-            (Encoding.UTF8.GetString(text.StandardOutput).Contains
-                "ClaimCore.Cli help configuration")
-            "Text discovery resolves the same topic"
 
 let private missingConfiguration
     (invoke: string list -> byte array option -> ProcessRunner.Result)
@@ -110,7 +94,7 @@ let private missingConfiguration
     use document = JsonDocument.Parse configured.StandardOutput
 
     let parameters =
-        document.RootElement.GetProperty("diagnostic").GetProperty("parameters")
+        document.RootElement.GetProperty("result").GetProperty("localFailure")
 
     Expect.equal
         (parameters.GetProperty("setting").GetString())

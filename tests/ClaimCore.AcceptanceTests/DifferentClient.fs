@@ -3,14 +3,11 @@ module internal ClaimCore.AcceptanceTests.DifferentClient
 open System
 open System.Collections.Generic
 open System.IO
-open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open System.Xml.Linq
 open Expecto
 open ClaimCore.Contract
-open ClaimCore.Contract.Protocol
-open ClaimCore.ContractGeneration
 
 let private copySourceFile (root: string) directory relative =
     let target = Path.Combine(directory, relative)
@@ -38,6 +35,14 @@ let rec private copyProject root directory (visited: HashSet<string>) relative =
 
         for item in includes "Compile" project do
             copySourceFile root directory (repositoryRelative item)
+
+        for item in includes "EmbeddedResource" project do
+            let sourcePattern = Path.GetFullPath(Path.Combine(folder, item))
+            let parent = Path.GetDirectoryName sourcePattern |> nonNull
+            let pattern = Path.GetFileName sourcePattern |> nonNull
+
+            for resource in Directory.GetFiles(parent, pattern) do
+                copySourceFile root directory (repositoryRelative resource)
 
         let lockfile =
             Path.Combine(Path.GetDirectoryName relative |> nonNull, "packages.lock.json")
@@ -78,68 +83,20 @@ let private copySource root parent =
     copyNotices root directory
     directory
 
-let private differentInputs (artifacts: Artifact list) =
-    let manifest =
-        artifacts
-        |> List.find (fun artifact -> artifact.Name = "contract-manifest.json")
+let private changeStructuralVocabulary directory =
+    let path =
+        Path.Combine(directory, "src/ClaimCore.Contract/Vocabulary/CaseTokens.fs")
 
-    use document = JsonDocument.Parse(ReadOnlyMemory<byte> manifest.Bytes)
-
-    let names =
-        document.RootElement.GetProperty("inputs").EnumerateArray()
-        |> Seq.map (fun row -> row.GetProperty("name").GetString() |> nonNull)
-        |> Set.ofSeq
-
-    artifacts
-    |> List.filter (fun artifact -> Set.contains artifact.Name names)
-    |> List.map (fun artifact ->
-        if artifact.Name <> "locale.en.ui.json" then
-            artifact
-        else
-            let locale = JsonNode.Parse artifact.Bytes |> nonNull
-            let original = (locale["ui.loading"] |> nonNull).GetValue<string>()
-            locale["ui.loading"] <- JsonValue.Create(original + " fixture")
-
-            { artifact with
-                Bytes = Encoding.UTF8.GetBytes(locale.ToJsonString() + "\n")
-            })
-
-let private differentArtifacts () =
-    let original = ContractArtifacts.all ()
-    let inputs = differentInputs original
-    let manifest = ContractIdentity.manifest inputs
-    let identity = ContractIdentity.digest manifest
-    Expect.notEqual identity ConsumerContract.identity "Locale-only changes alter consumer identity"
+    let original = File.ReadAllText path
 
     let changed =
-        inputs |> List.map (fun artifact -> artifact.Name, artifact.Bytes) |> Map.ofList
+        original.Replace("\"OPENED\"", "\"SYNTHETIC_OPENED\"", StringComparison.Ordinal)
 
-    let wire = original |> List.find (fun artifact -> artifact.Name = "openapi.json")
+    Expect.notEqual changed original "The mismatch fixture changes an actual wire enum"
+    File.WriteAllText(path, changed)
 
-    Expect.equal
-        changed["openapi.json"]
-        wire.Bytes
-        "The different client retains identical wire shape"
-
-    original
-    |> List.map (fun artifact ->
-        let bytes =
-            match artifact.Name with
-            | "contract-manifest.json" -> manifest
-            | "contract-identity.txt" -> Encoding.UTF8.GetBytes(identity + "\n")
-            | "contract-identity.fs" ->
-                Encoding.UTF8.GetBytes(
-                    Encoding.UTF8
-                        .GetString(artifact.Bytes)
-                        .Replace(ConsumerContract.identity, identity)
-                )
-            | "client.ts" -> TypeScript.source identity
-            | name -> Map.tryFind name changed |> Option.defaultValue artifact.Bytes
-
-        { artifact with Bytes = bytes })
-
-let private publish (fixture: PublishedFixture.Fixture) directory =
-    let output = Path.Combine(fixture.Directory, "different-client")
+let private publish (fixture: PublishedFixture.Fixture) directory name =
+    let output = Path.Combine(fixture.Directory, name)
 
     let args =
         [
@@ -158,27 +115,55 @@ let private publish (fixture: PublishedFixture.Fixture) directory =
             (PublishedProcesses.start "dotnet" args (Dictionary<string, string>()))
             None
 
-    FixtureFiles.write fixture.Directory "different-client-build.stdout.log" built.StandardOutput
+    FixtureFiles.write fixture.Directory (name + "-build.stdout.log") built.StandardOutput
     |> ignore
 
-    FixtureFiles.write fixture.Directory "different-client-build.stderr.log" built.StandardError
+    FixtureFiles.write fixture.Directory (name + "-build.stderr.log") built.StandardError
     |> ignore
 
-    Expect.equal
-        built.ExitCode
-        0
-        "Compile a client with a different consumer identity; see owned build logs"
+    Expect.equal built.ExitCode 0 "Compile the isolated client source control; see owned build logs"
 
     ThirdPartyNotices.qualify fixture.Root output "ClaimCore.Cli" |> ignore
     output
 
+let private changeLocaleText directory =
+    let path = Path.Combine(directory, "src/ClaimCore.Contract/Localization/en.ui.json")
+    let locale = JsonNode.Parse(File.ReadAllBytes path) |> nonNull
+    let original = (locale["ui.loading"] |> nonNull).GetValue<string>()
+    locale["ui.loading"] <- JsonValue.Create(original + " synthetic locale control")
+    File.WriteAllText(path, locale.ToJsonString() + "\n")
+
+let private localeClient (fixture: PublishedFixture.Fixture) directory =
+    changeLocaleText directory
+    let output = publish fixture directory "locale-client"
+    let before = fixture.Administration [ "head" ]
+    Expect.equal before.ExitCode 0 "Read head before the locale-only client control"
+
+    ProcessRunner.dotnet
+        60_000
+        (Path.Combine(output, "ClaimCore.Cli.dll"))
+        [ "call" ]
+        fixture.Environment
+        (Some(CliCalls.frame "context" (JsonObject())))
+    |> CliCalls.parse 0
+    |> CliCalls.require "SUCCEEDED"
+    |> ignore
+
+    let after = fixture.Administration [ "head" ]
+    Expect.equal after.ExitCode 0 "Read head after locale-only client control"
+
+    Expect.equal
+        after.StandardOutput
+        before.StandardOutput
+        "Locale-only client reads append nothing"
+
 let qualify (fixture: PublishedFixture.Fixture) =
     let directory = copySource fixture.Root fixture.Directory
 
-    differentArtifacts ()
-    |> ArtifactPublication.publish (Path.Combine(directory, "contracts"))
+    localeClient fixture directory
+    changeStructuralVocabulary directory
 
-    let output = publish fixture directory
+    let output = publish fixture directory "different-client"
     let before = fixture.Administration [ "head" ]
     Expect.equal before.ExitCode 0 "Read accepted head before the mismatched mutation"
 
@@ -196,23 +181,14 @@ let qualify (fixture: PublishedFixture.Fixture) =
             (Path.Combine(output, "ClaimCore.Cli.dll"))
             [ "call" ]
             fixture.Environment
-            (Some(CliCalls.frame "case.execute" input))
+            (Some(CliCalls.frame "operation.execute" input))
         |> CliCalls.parse 3
 
-    Expect.equal
-        (result.GetProperty("kind").GetString())
-        "serviceFailure"
-        "Different client is refused"
-
-    let failure = result.GetProperty "failure"
+    let failure = result.GetProperty("result").GetProperty("hostFailure")
+    Expect.equal (failure.GetProperty("code").GetString()) "CONTRACT_MISMATCH" "Handshake refusal"
 
     Expect.equal
-        (failure.GetProperty("code").GetString())
-        "CONTRACT_MISMATCH"
-        "Bundle handshake refusal"
-
-    Expect.equal
-        (failure.GetProperty("executionPhase").GetString())
+        (failure.GetProperty("phase").GetString())
         "NOT_STARTED"
         "Mismatch precedes dispatch"
 

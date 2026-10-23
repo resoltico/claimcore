@@ -21,13 +21,13 @@ let private description fixture language arguments =
     Encoding.UTF8.GetString result.StandardOutput
 
 let private endpointDescription fixture language =
-    let endpoint = description fixture language [ "endpoints"; "case.execute" ]
+    let endpoint = description fixture language [ "endpoints"; "operation.execute" ]
 
     for item in
         [
             "mutates: true"
-            "ClaimCore.Cli schema case.execute request"
-            "ClaimCore.Cli schema case.execute response"
+            "ClaimCore.Cli schema operation.execute request"
+            "ClaimCore.Cli schema operation.execute response"
         ] do
         Expect.stringContains
             endpoint
@@ -92,16 +92,14 @@ let private diagnosticRoute fixture =
     Expect.equal result.StandardError.Length 0 "Exactly one machine frame, no prose"
     use frame = JsonDocument.Parse result.StandardOutput
     let root = frame.RootElement
-    Expect.equal (root.GetProperty("code").GetString()) "INVALID_FRAME" "Observed protocol category"
-    Expect.equal (root.GetProperty("attemptKnowledge").GetString()) "NOT_SENT" "No dispatch"
-    let id = root.GetProperty("diagnostic").GetProperty("id").GetString() |> nonNull
-    let discovery = invoke fixture [ "describe"; "diagnostics" ] None
-    Expect.equal discovery.ExitCode 0 "Offline diagnostic discovery"
-    use messages = JsonDocument.Parse discovery.StandardOutput
 
-    Expect.isTrue
-        (messages.RootElement.TryGetProperty("diagnostic." + id) |> fst)
-        "The actual returned ID resolves"
+    Expect.equal
+        (root.GetProperty("result").GetProperty("localFailure").GetProperty("code").GetString())
+        "INVALID_FRAME"
+        "Observed protocol category"
+
+    Expect.equal (root.GetProperty("delivery").GetString()) "NOT_SENT" "No dispatch"
+    let id = InputDiagnostics.protocolId
 
     for language in LocalizationPolicy.languages do
         let help = invoke fixture [ "help"; id; "--language"; language ] None
@@ -119,17 +117,6 @@ let private diagnosticRoute fixture =
             ] do
             Expect.stringContains guidance route "Repairable framing and schema guidance"
 
-        let descriptions = description fixture language [ "diagnostics" ]
-
-        Expect.stringContains
-            descriptions
-            ("diagnostic." + id)
-            "Localized discovery retains exact ID"
-
-        Expect.stringContains
-            descriptions
-            (guidance.TrimEnd())
-            "Discovery and help share generated core guidance"
 
 let qualify fixture =
     selectedInputs fixture

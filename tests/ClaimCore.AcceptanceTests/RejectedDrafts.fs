@@ -30,12 +30,12 @@ let private businessRefusals fixture =
         ] do
         let input = input fixture field value
 
-        for endpoint in [ "case.preview"; "case.execute" ] do
+        for endpoint in [ "operation.preview"; "operation.execute" ] do
             let reply = automation fixture endpoint input 2
 
             Expect.equal
-                (reply.GetProperty("kind").GetString())
-                "result"
+                (reply.GetProperty("delivery").GetString())
+                "DELIVERED"
                 "Malformed business input reaches the typed refusal"
 
             let rejection = require "REJECTED" reply
@@ -54,12 +54,12 @@ let private businessRefusals fixture =
         [ " ", "INPUT_TEXT_REQUIRED"; String.replicate 201 "x", "INPUT_TEXT_TOO_LONG" ] do
         let input = input fixture "claimantName" value
 
-        for endpoint in [ "case.preview"; "case.execute" ] do
+        for endpoint in [ "operation.preview"; "operation.execute" ] do
             let reply = automation fixture endpoint input 2
 
             Expect.equal
-                (reply.GetProperty("kind").GetString())
-                "result"
+                (reply.GetProperty("delivery").GetString())
+                "DELIVERED"
                 "Domain owns current admission"
 
             let rejection = require "REJECTED" reply
@@ -80,8 +80,9 @@ let private principalRefusals fixture =
         let reply =
             automation
                 fixture
-                "authority.execute"
+                "operation.execute"
                 {|
+                    scope = "AUTHORITY"
                     operationId = id ()
                     target =
                         {|
