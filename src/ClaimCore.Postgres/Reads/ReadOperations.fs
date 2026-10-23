@@ -237,7 +237,7 @@ module internal ReadOperations =
                             [| DatabaseSession.parameter after; box (limit + 1) |]
                             token
 
-                    let items = rows |> List.truncate limit |> List.map Projections.actorSummary
+                    let items = rows |> List.truncate limit |> List.map Projections.actorRow
 
                     let next =
                         if rows.Length > limit then
@@ -267,7 +267,7 @@ module internal ReadOperations =
                     [| box targetId |]
                     token
 
-            return headers |> List.tryExactlyOne |> Option.map Projections.actorSummary
+            return headers |> List.tryExactlyOne |> Option.map Projections.actorRow
         }
 
     let private grantRows connection targetId (after: GrantPosition option) limit token =

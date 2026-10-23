@@ -157,7 +157,7 @@ type internal StoredActorPage =
     {
         ObservedAt: DateTimeOffset
         Actor: AuthorityView
-        Items: ActorSummary list
+        Items: Actor list
         NextAfterActorId: Guid option
     }
 
@@ -167,14 +167,14 @@ type internal GrantReadView =
     {
         ObservedAt: DateTimeOffset
         Actor: AuthorityView
-        Target: ActorSummary option
+        Target: Actor option
     }
 
 type internal StoredGrantPage =
     {
         ObservedAt: DateTimeOffset
         Actor: AuthorityView
-        Target: ActorSummary
+        Target: Actor
         Items: AuthorityGrant list
         NextAfterGrant: GrantPosition option
     }

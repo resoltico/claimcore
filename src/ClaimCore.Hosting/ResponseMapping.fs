@@ -92,32 +92,6 @@ module internal ResponseMapping =
             NextCursor = value.NextCursor
         }
 
-    let private actor (value: ActorSummary) : ClaimCore.Contract.Protocol.ActorSummary =
-        {
-            ActorId = value.ActorId
-            Principal = PrincipalKey.describe value.Principal
-            Enabled = value.Enabled
-        }
-
-    let private grant (value: AuthorityGrant) : ClaimCore.Contract.Protocol.AuthorityGrant =
-        {
-            Role = RoleTokens.token value.Role
-            Scope = value.Scope
-        }
-
-    let actorsPage (value: ActorReviewPage) : ClaimCore.Contract.Protocol.ActorsPage =
-        {
-            Items = List.map actor value.Items
-            NextCursor = value.NextCursor
-        }
-
-    let grantsPage (value: AuthorityGrantPage) : ClaimCore.Contract.Protocol.GrantsPage =
-        {
-            Actor = actor value.Actor
-            Items = List.map grant value.Items
-            NextCursor = value.NextCursor
-        }
-
     let private diagnostics =
         [
             RejectionDiagnosticId.TextRequired,

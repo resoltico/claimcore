@@ -7,7 +7,7 @@ open ClaimCore.Application.VerificationChecks
 
 /// Projections are comparison targets only after the ledger has been folded.
 module internal ProjectionVerification =
-    let actor (actors: Map<Guid, ActorAuthority>) (row: ActorSummary) =
+    let actor (actors: Map<Guid, ActorAuthority>) (row: Actor) =
         capture None VerificationFinding.AuthorityProjection (fun () ->
             let id = row.ActorId
             let principal = row.Principal

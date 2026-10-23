@@ -32,6 +32,7 @@
     <Compile Include="Model/Queries.fs" />
     <Compile Include="Model/CasePages.fs" />
     <Compile Include="Model/AuthorityModel.fs" />
+    <Compile Include="Model/AuthorityPages.fs" />
     <Compile Include="Requests.fs" />
     <Compile Include="Model/Operations.fs" />
     <Compile Include="RequestCodecs.fs" />

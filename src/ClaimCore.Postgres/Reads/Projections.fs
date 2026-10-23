@@ -223,7 +223,7 @@ module internal Projections =
         | Some(StoredScope.Case(id, _, _, _)) -> [ id ]
         | _ -> []
 
-    let actorSummary row : ActorSummary =
+    let actorRow row : Actor =
         {
             ActorId = required 0 row
             Principal =

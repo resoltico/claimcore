@@ -44,28 +44,6 @@ type ChangeSummary =
         RecordedBy: Guid
     }
 
-type ActorSummary =
-    {
-        ActorId: Guid
-        Principal: Principal
-        Enabled: bool
-    }
-
-type AuthorityGrant = { Role: string; Scope: GrantTarget }
-
-type GrantsPage =
-    {
-        Actor: ActorSummary
-        Items: AuthorityGrant list
-        NextCursor: string option
-    }
-
-type ActorsPage =
-    {
-        Items: ActorSummary list
-        NextCursor: string option
-    }
-
 [<RequireQualifiedAccess>]
 type HistoryEntries =
     | Empty
@@ -260,7 +238,7 @@ type OperationObserveReply = { Outcome: OperationObserveOutcome }
 
 [<RequireQualifiedAccess>]
 type AuthorityListOutcome =
-    | Succeeded of ActorsPage
+    | Succeeded of ActorReviewPage
     | Rejected of Rejection
     | Failed of Fault
     | Cancelled of unit
@@ -269,7 +247,7 @@ type AuthorityListReply = { Outcome: AuthorityListOutcome }
 
 [<RequireQualifiedAccess>]
 type AuthorityGrantsOutcome =
-    | Succeeded of GrantsPage
+    | Succeeded of AuthorityGrantPage
     | Rejected of Rejection
     | Failed of Fault
     | Cancelled of unit

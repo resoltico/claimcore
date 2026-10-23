@@ -74,7 +74,7 @@ module internal VerificationRows =
                 fold
                     connection
                     "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors ORDER BY actor_id"
-                    Projections.actorSummary
+                    Projections.actorRow
                     ProjectionVerification.actor
                     Map.empty
                     VerificationFinding.AuthorityProjection

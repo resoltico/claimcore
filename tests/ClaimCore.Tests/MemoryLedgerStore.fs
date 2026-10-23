@@ -152,7 +152,7 @@ let private reviewGrant state (value: ActorGrant) : AuthorityGrant =
 
     { Role = value.Role; Scope = scope }
 
-let private reviewActor (actor: ActorAuthority) : ActorSummary =
+let private storedActor (actor: ActorAuthority) : Actor =
     {
         ActorId = actor.ActorId
         Principal = actor.Principal
@@ -614,7 +614,7 @@ type internal Store(instant: DateTimeOffset) =
                             {
                                 ObservedAt = view.ObservedAt
                                 Actor = view.Actor
-                                Items = visible |> List.map reviewActor
+                                Items = visible |> List.map storedActor
                                 NextAfterActorId = next
                             }
                     ))
@@ -628,7 +628,7 @@ type internal Store(instant: DateTimeOffset) =
                     {
                         ObservedAt = observedAt
                         Actor = authority principal []
-                        Target = target |> Option.map reviewActor
+                        Target = target |> Option.map storedActor
                     }
 
                 match select view with
@@ -653,7 +653,7 @@ type internal Store(instant: DateTimeOffset) =
                             {
                                 ObservedAt = observedAt
                                 Actor = view.Actor
-                                Target = reviewActor target
+                                Target = storedActor target
                                 Items = visible |> List.map (reviewGrant state)
                                 NextAfterGrant =
                                     if rows.Length > limit then

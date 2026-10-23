@@ -188,7 +188,7 @@ type Facade() =
                         Actor =
                             {
                                 ActorId = request.ActorId
-                                Principal = principal
+                                Principal = PrincipalKey.describe principal
                                 Enabled = false
                             }
                         Items = []

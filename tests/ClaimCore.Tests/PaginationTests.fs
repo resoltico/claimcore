@@ -551,7 +551,7 @@ let private grantBinding (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let targetId =
             (succeeded actors).Items
-            |> List.find (fun a -> a.Principal = target)
+            |> List.find (fun a -> a.Principal = PrincipalKey.describe target)
             |> _.ActorId
 
         let query =

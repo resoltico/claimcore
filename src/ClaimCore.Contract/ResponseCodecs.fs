@@ -454,7 +454,10 @@ module ResponseCodecs =
 
     let authorityGrant =
         (record (fun v0 v1 -> { AuthorityGrant.Role = v0; Scope = v1 }): Fields<AuthorityGrant, _>)
-        |> field "role" _.Role (tokens (RoleTokens.all |> List.map RoleTokens.token))
+        |> field
+            "role"
+            _.Role
+            (enumeration (RoleTokens.all |> List.map (fun role -> role, RoleTokens.token role)))
         |> field "scope" _.Scope (scope)
         |> build
         |> named "AuthorityGrant"
@@ -462,11 +465,11 @@ module ResponseCodecs =
     let grantsPage =
         (record (fun v0 v1 v2 ->
             {
-                GrantsPage.Actor = v0
+                AuthorityGrantPage.Actor = v0
                 Items = v1
                 NextCursor = v2
             })
-        : Fields<GrantsPage, _>)
+        : Fields<AuthorityGrantPage, _>)
         |> field "actor" _.Actor (actorSummary)
         |> field "items" _.Items (list 50 authorityGrant)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
@@ -476,10 +479,10 @@ module ResponseCodecs =
     let actorsPage =
         (record (fun v0 v1 ->
             {
-                ActorsPage.Items = v0
+                ActorReviewPage.Items = v0
                 NextCursor = v1
             })
-        : Fields<ActorsPage, _>)
+        : Fields<ActorReviewPage, _>)
         |> field "items" _.Items (list 50 actorSummary)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

@@ -282,7 +282,7 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
             Expect.equal
                 found.Principal
-                target
+                (PrincipalKey.describe target)
                 "RecordedBy attribution includes principal and actor ID"
 
             Expect.isTrue found.Enabled "Current enabled state"

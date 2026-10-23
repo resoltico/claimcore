@@ -90,7 +90,9 @@ let private prepare (database: PostgresFixture.Database) =
         let! actors = admin.ListActors({ AfterCursor = None; Limit = 50 }, token)
 
         let actorId =
-            (page actors).Items |> List.find (fun a -> a.Principal = target) |> _.ActorId
+            (page actors).Items
+            |> List.find (fun a -> a.Principal = PrincipalKey.describe target)
+            |> _.ActorId
 
         let! disabled =
             admin.ExecuteAuthority(

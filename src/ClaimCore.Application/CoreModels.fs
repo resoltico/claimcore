@@ -77,28 +77,6 @@ type HistoryResultPage =
         NextCursor: string option
     }
 
-type AuthorityGrant = { Role: Role; Scope: GrantTarget }
-
-type ActorSummary =
-    {
-        ActorId: Guid
-        Principal: PrincipalKey
-        Enabled: bool
-    }
-
-type ActorReviewPage =
-    {
-        Items: ActorSummary list
-        NextCursor: string option
-    }
-
-type AuthorityGrantPage =
-    {
-        Actor: ActorSummary
-        Items: AuthorityGrant list
-        NextCursor: string option
-    }
-
 [<RequireQualifiedAccess>]
 type AuthorityAct =
     | RegisterActor

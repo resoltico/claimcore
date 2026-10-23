@@ -1,5 +1,7 @@
 namespace ClaimCore.Hosting
 
+open ClaimCore.Contract
+
 open ClaimCore.Application
 
 module internal OutcomeMapping =
@@ -77,7 +79,7 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.AuthorityListOutcome.Rejected
                 ClaimCore.Contract.Protocol.AuthorityListOutcome.Failed
                 ClaimCore.Contract.Protocol.AuthorityListOutcome.Cancelled
-                ResponseMapping.actorsPage
+                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.AuthorityList { Outcome = outcome }
@@ -89,7 +91,7 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Rejected
                 ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Failed
                 ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Cancelled
-                ResponseMapping.grantsPage
+                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.AuthorityGrants { Outcome = outcome }
