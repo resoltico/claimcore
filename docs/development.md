@@ -220,26 +220,14 @@ declared message-identity retargeting in en/lv/ar. This fixture adds no producti
 or operation. Independent correlation oracle coverage includes poisoned individual/all bindings,
 scope removal and incompatible comparisons.
 
-## Retained qualification summaries
+## Verification records
 
-`eng/verification_evidence.py` captures tracked regular-file input hashes and revision/dirty state
-before each native suite, with run/job/platform, pinned tool/database inputs, completion scope and
-numeric counts. The controlled native invocation is unfiltered and has no retries. Missing reports
-remain incomplete; a failed command keeps its original exit and its failed summary. Raw TRX stays
-ignored locally. Source hashes identify inputs and do not establish review or approval. Unknown or unadmitted
-untracked input provenance remains explicit; source stability is checked again at suite completion.
-
-Growth qualification atomically finishes one numeric workload file at a time in a unique run
-folder. Its run record stays incomplete until every workload and cleanup succeeds, and marks
-caught failures explicitly. Interruption preserves earlier completed files; the publication reader
-reconciles a completed workload written just before a progress-record interruption.
-
-CI retains only schema-checked summaries and their exact generated upload manifest for fourteen
-days, including failure. The publication step constructs a separate directory after validation;
-it does not copy raw result trees. Unknown fields, arbitrary strings and nonfinite measurements
-refuse. Raw logs/TRX, screenshots, traces, private fixtures and captured process output are excluded.
-Canary and interruption controls run through the final publication inventory in the discovered
-native suite. Local private failure evidence remains available under ignored paths.
+CI job logs and check status record verification. Local native TRX reports and measurement files
+remain under ignored `artifacts/verification/` paths; retain failed runs when diagnosing a change.
+These records establish command outcomes, not owner approval. Every test project is assigned to
+exactly one native stage in `eng/verify.sh`; missing or duplicate assignments fail before restore.
+MTP rejects zero tests, and the shared discovery checks reject focused, pending, excluded and
+undiscovered tests. Focused, skipped, filtered or retried runs never satisfy the complete gate.
 
 Session latency qualification exercises the real durable ticket store with 1, 8 and 24 concurrent
 synthetic sessions on a local temporary directory, recording storage/platform and per-batch

@@ -97,11 +97,6 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh unit
-      - name: Retain allowlisted qualification evidence
-        if: always()
-        uses: ./.github/actions/qualification-evidence # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-        with:
-          artifact-name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
 
   integration:
     name: PostgreSQL ${{ matrix.major }} store tests
@@ -121,11 +116,6 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh postgres
-      - name: Retain allowlisted qualification evidence
-        if: always()
-        uses: ./.github/actions/qualification-evidence # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-        with:
-          artifact-name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
 
   web:
     name: Web host and identity tests
@@ -139,11 +129,6 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh web
-      - name: Retain allowlisted qualification evidence
-        if: always()
-        uses: ./.github/actions/qualification-evidence # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-        with:
-          artifact-name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
 
   frontend:
     name: Frontend checks (SDK-free Node container)
@@ -202,11 +187,6 @@ jobs:
           CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ matrix.engine }}
           CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: ${{ matrix.scope }}
         run: bash eng/verify.sh browsers acceptance
-      - name: Retain allowlisted qualification evidence
-        if: always()
-        uses: ./.github/actions/qualification-evidence # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-        with:
-          artifact-name: qualification-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_attempt }}
       - name: Report browser execution
         env:
           BROWSER_ENGINE: ${{ matrix.engine }}
