@@ -179,6 +179,28 @@ let private embeddedCatalogs () =
         "Lexical input is not the frozen body."
 
 let private diagnosticDiscovery () =
+    use document =
+        System.Text.Json.JsonDocument.Parse(ContractDiscovery.presentation ())
+
+    let actual = document.RootElement.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq
+
+    let expected =
+        [
+            yield!
+                Refusals.definitions
+                |> List.map (fun definition -> "diagnostic." + definition.Id)
+            yield! CoreFaults.all |> List.map (fun (_, code) -> "fault." + code)
+            yield!
+                Protocol.HostFailures.all
+                |> List.map (fun reason -> "host." + Protocol.HostFailures.code reason)
+        ]
+        |> Set.ofList
+
+    Expect.equal
+        actual
+        expected
+        "Discovery contains the entire current public diagnostic vocabulary."
+
     for language in LocalizationPolicy.languages do
         let bytes =
             Discovery.describeText language Protocol.CliDescription.Diagnostics

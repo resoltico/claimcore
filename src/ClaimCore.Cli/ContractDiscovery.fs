@@ -55,13 +55,19 @@ module ContractDiscovery =
             ]
             |> Set.ofList
 
-        MessageCatalogs.templates "en"
-        |> Map.filter (fun key _ -> Set.contains key keys)
-        |> Map.map (fun _ template ->
-            Template.parts template
-            |> List.map (function
-                | TemplatePart.Literal text -> Map.ofList [ "literal", text ]
-                | TemplatePart.Hole name -> Map.ofList [ "hole", name ]))
+        let templates = MessageCatalogs.templates "en"
+
+        keys
+        |> Seq.map (fun key ->
+            let parts =
+                Map.find key templates
+                |> Template.parts
+                |> List.map (function
+                    | TemplatePart.Literal text -> Map.ofList [ "literal", text ]
+                    | TemplatePart.Hole name -> Map.ofList [ "hole", name ])
+
+            key, parts)
+        |> Map.ofSeq
         |> JsonSerializer.SerializeToUtf8Bytes
 
     let private schemaDocument schema (definitions: Map<string, Schema>) =
