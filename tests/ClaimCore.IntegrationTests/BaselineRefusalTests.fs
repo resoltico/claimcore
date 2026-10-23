@@ -30,7 +30,7 @@ let private dump (database: Testcontainers.PostgreSql.PostgreSqlContainer) =
 let private install (source: NpgsqlDataSource) =
     task {
         let bytes =
-            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "0001_baseline.v0.10.0.sql"))
+            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "0001_baseline.v0.11.0.sql"))
 
         use! connection = source.OpenConnectionAsync()
         use! transaction = connection.BeginTransactionAsync()
@@ -100,5 +100,5 @@ let private previousInstallation () =
 [<Tests>]
 let tests =
     testCaseAsync
-        "[CC-DB-001] installation using the published 0.10.0 baseline is refused untouched"
+        "[CC-DB-001] installation using the published 0.11.0 baseline is refused untouched"
         (previousInstallation ())
