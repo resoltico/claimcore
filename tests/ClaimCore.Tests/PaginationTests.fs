@@ -1,6 +1,6 @@
 module ClaimCore.Tests.PaginationTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading

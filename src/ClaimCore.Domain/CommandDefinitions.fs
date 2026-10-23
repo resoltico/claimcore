@@ -1,6 +1,6 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 /// Semantic operation descriptions, not widgets or client-owned transition rules.
 type CommandDefinition =

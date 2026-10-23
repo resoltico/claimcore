@@ -8,7 +8,8 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open System.Xml.Linq
 open Expecto
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 open ClaimCore.ContractGeneration
 
 let private copySourceFile (root: string) directory relative =

@@ -1,6 +1,6 @@
 module ClaimCore.Tests.ContractTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Text
@@ -13,7 +13,7 @@ open Hedgehog.FSharp
 open ClaimCore.Application
 open ClaimCore.Hosting
 open ClaimCore.Hosting.Presentation
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
@@ -75,12 +75,12 @@ let private wireRegistration (value: RegistrationInput) : Registration =
         ClaimedCurrency = value.ClaimedCurrency
     }
 
-let private wireRequest values : ClaimCore.Wire.CaseRequest =
+let private wireRequest values : ClaimCore.Contract.Protocol.CaseRequest =
     {
         OperationId = id
         CaseReference = "UNIT-001"
         ExpectedRevision = 0L
-        Act = ClaimCore.Wire.CaseAct.Open(wireRegistration values)
+        Act = ClaimCore.Contract.Protocol.CaseAct.Open(wireRegistration values)
     }
 
 let private contextCodec () =
@@ -408,7 +408,7 @@ let private retainedText () =
         let input =
             { wireRequest values with
                 ExpectedRevision = 1L
-                Act = ClaimCore.Wire.CaseAct.AmendRegistration(wireRegistration values)
+                Act = ClaimCore.Contract.Protocol.CaseAct.AmendRegistration(wireRegistration values)
             }
 
         Admission.admit Endpoint.CaseExecute (Admission.encode (WireRequest.CaseExecute input))

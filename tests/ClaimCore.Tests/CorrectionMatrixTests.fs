@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CorrectionMatrixTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open Expecto
 open ClaimCore.Domain

@@ -1,6 +1,6 @@
 module ClaimCore.Tests.VerificationFoldTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto

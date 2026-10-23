@@ -1,6 +1,6 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open ClaimCore.Domain
@@ -131,16 +131,13 @@ module AuthorityRecord =
     let private scopeValue =
         function
         | RecordedGrantScope.Installation ->
-            CanonicalValue.Object [ "kind", CanonicalValue.String "INSTALLATION" ]
+            JsonValue.Object [ "kind", JsonValue.String "INSTALLATION" ]
         | RecordedGrantScope.CaseReference reference ->
             match CaseReference.validate reference with
             | Error _ -> invalidArg (nameof reference) "Invalid case reference."
             | Ok() ->
-                CanonicalValue.Object
-                    [
-                        "kind", CanonicalValue.String "CASE"
-                        "caseReference", CanonicalValue.String reference
-                    ]
+                JsonValue.Object
+                    [ "kind", JsonValue.String "CASE"; "caseReference", JsonValue.String reference ]
 
     let private actValue act =
         let members =
@@ -149,15 +146,14 @@ module AuthorityRecord =
             | RecordedAuthorityAct.RegisterActor -> []
             | RecordedAuthorityAct.SetGrant(role, scope, active) ->
                 [
-                    "role", CanonicalValue.String(Json.persistedString "$.act.role" role)
+                    "role", JsonValue.String(Json.persistedString "$.act.role" role)
                     "scope", scopeValue scope
-                    "active", CanonicalValue.Boolean active
+                    "active", JsonValue.Boolean active
                 ]
-            | RecordedAuthorityAct.SetEnabled enabled ->
-                [ "enabled", CanonicalValue.Boolean enabled ]
+            | RecordedAuthorityAct.SetEnabled enabled -> [ "enabled", JsonValue.Boolean enabled ]
 
         let kind = RecordedAuthorityActs.kind act |> RecordedAuthorityActs.token
-        CanonicalValue.Object(("kind", CanonicalValue.String kind) :: members)
+        JsonValue.Object(("kind", JsonValue.String kind) :: members)
 
     let private value (request: AuthorityRequestRecord) =
         if request.OperationId = Guid.Empty then
@@ -170,29 +166,23 @@ module AuthorityRecord =
             invalidArg (nameof request) "Unknown principal kind."
 
         let target =
-            CanonicalValue.Object
+            JsonValue.Object
                 [
                     "kind",
-                    CanonicalValue.String(Json.persistedString "$.target.kind" request.Target.Kind)
+                    JsonValue.String(Json.persistedString "$.target.kind" request.Target.Kind)
                     "issuer",
-                    CanonicalValue.String(
-                        Json.persistedString "$.target.issuer" request.Target.Issuer
-                    )
+                    JsonValue.String(Json.persistedString "$.target.issuer" request.Target.Issuer)
                     "subject",
-                    CanonicalValue.String(
-                        Json.persistedString "$.target.subject" request.Target.Subject
-                    )
+                    JsonValue.String(Json.persistedString "$.target.subject" request.Target.Subject)
                 ]
 
         let members =
             [
-                "operationId", CanonicalValue.String(request.OperationId.ToString("D"))
+                "operationId", JsonValue.String(request.OperationId.ToString("D"))
                 "target", target
                 "act", actValue request.Act
             ]
 
-        CanonicalValue.Object(
-            ("format", CanonicalValue.Integer(int64 RecordVersions.Authority)) :: members
-        )
+        JsonValue.Object(("format", JsonValue.Integer(int64 RecordVersions.Authority)) :: members)
 
-    let encode request = value request |> CanonicalJson.encode
+    let encode request = value request |> CanonicalWriter.bytes

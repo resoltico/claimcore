@@ -1,7 +1,8 @@
 module ClaimCore.Tests.CorrelationSpecificationTests
 
 open Expecto
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 open ClaimCore.ContractGeneration
 
 [<Tests>]

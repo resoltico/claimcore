@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="BuildIdentity.fsi" />
+    <Compile Include="BuildIdentity.fs" />
+    <Compile Include="Vocabulary/Fields.fs" />
+    <Compile Include="Vocabulary/CaseVocabulary.fs" />
+    <Compile Include="Vocabulary/CaseTokens.fs" />
+    <Compile Include="Vocabulary/InputTargets.fs" />
+    <Compile Include="Vocabulary/RejectionDiagnosticIds.fs" />
+    <Compile Include="Vocabulary/Capabilities.fs" />
+    <Compile Include="Vocabulary/Roles.fs" />
+    <Compile Include="Vocabulary/AuthorityKinds.fs" />
+    <Compile Include="Vocabulary/PrincipalKinds.fs" />
+    <Compile Include="Vocabulary/FaultDiagnosticIds.fs" />
+    <Compile Include="Localization/MessageText.fs" />
+    <Compile Include="Localization/LocalizationPolicy.fs" />
+    <Compile Include="Vocabulary/DeliveryVocabulary.fs" />
+    <Compile Include="Vocabulary/InputDiagnostics.fs" />
+    <Compile Include="Vocabulary/ProtocolFailures.fs" />
+    <Compile Include="Vocabulary/CliHelp.fs" />
+    <Compile Include="../../contracts/contract-identity.fs" />
+    <Compile Include="Json/JsonValue.fs" />
+    <Compile Include="Json/StrictJson.fs" />
+    <Compile Include="Json/Writers.fs" />
+    <Compile Include="Json/Codec.fs" />
+    <Compile Include="Endpoint.fs" />
+    <Compile Include="Delivery.fs" />
+    <Compile Include="Requests.fs" />
+    <Compile Include="RequestCodecs.fs" />
+    <Compile Include="Admission.fs" />
+    <Compile Include="Responses.fs" />
+    <Compile Include="ResponseScalars.fs" />
+    <Compile Include="ResponseCodecs.fs" />
+    <Compile Include="Replies.fs" />
+    <Compile Include="CorrelationBindings.fs" />
+    <Compile Include="CorrelationEvaluation.fs" />
+    <Compile Include="Correlation.fs" />
+    <Compile Include="HostFailures.fs" />
+    <Compile Include="HttpsOrigins.fs" />
+    <Compile Include="Frames.fs" />
+    <Compile Include="CliInvocation.fs" />
+    <Compile Include="OpenApi.fs" />
+    <Compile Include="ConsumerContract.fs" />
+  </ItemGroup>
+</Project>

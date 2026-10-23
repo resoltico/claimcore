@@ -3,7 +3,8 @@ module internal ClaimCore.AcceptanceTests.CliInvocationEvidence
 open System.IO
 open System.Text
 open ClaimCore.TestSupport
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 let private stages =
     set

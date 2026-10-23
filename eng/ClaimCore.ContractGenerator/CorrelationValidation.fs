@@ -1,6 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 open System.Reflection
 open System.Text.Json
 

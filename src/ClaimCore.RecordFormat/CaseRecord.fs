@@ -1,32 +1,32 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open ClaimCore.Domain
 
 module CaseRecord =
     let private optionalText =
         function
-        | Some text -> CanonicalValue.String text
-        | None -> CanonicalValue.Null
+        | Some text -> JsonValue.String text
+        | None -> JsonValue.Null
 
     /// Exactly the thirteen business fields; technical state remains outside the object.
     let fieldsValue (fields: CaseFields) =
-        CanonicalValue.Object
+        JsonValue.Object
             [
-                "incidentDate", CanonicalValue.String fields.IncidentDate
-                "incidentNotificationDate", CanonicalValue.String fields.IncidentNotificationDate
-                "incidentCountry", CanonicalValue.String fields.IncidentCountry
-                "claimantName", CanonicalValue.String fields.ClaimantName
-                "insurerName", CanonicalValue.String fields.InsurerName
-                "claimedAmount", CanonicalValue.String fields.ClaimedAmount
-                "claimedCurrency", CanonicalValue.String fields.ClaimedCurrency
-                "caseReference", CanonicalValue.String fields.CaseReference
+                "incidentDate", JsonValue.String fields.IncidentDate
+                "incidentNotificationDate", JsonValue.String fields.IncidentNotificationDate
+                "incidentCountry", JsonValue.String fields.IncidentCountry
+                "claimantName", JsonValue.String fields.ClaimantName
+                "insurerName", JsonValue.String fields.InsurerName
+                "claimedAmount", JsonValue.String fields.ClaimedAmount
+                "claimedCurrency", JsonValue.String fields.ClaimedCurrency
+                "caseReference", JsonValue.String fields.CaseReference
                 "paymentDecisionDate", optionalText fields.PaymentDecisionDate
                 "payableAmount", optionalText fields.PayableAmount
                 "payableCurrency", optionalText fields.PayableCurrency
                 "paymentDate", optionalText fields.PaymentDate
-                "status", CanonicalValue.String(CaseStatuses.token fields.Status)
+                "status", JsonValue.String(CaseStatuses.token fields.Status)
             ]
 
     let encodeSnapshot (snapshot: CaseSnapshot) =
@@ -36,12 +36,12 @@ module CaseRecord =
             match snapshot.View with
             | CaseView.Erased -> Array.empty
             | CaseView.Live(fields, disposition) ->
-                CanonicalValue.Object
+                JsonValue.Object
                     [
-                        "format", CanonicalValue.Integer(int64 RecordVersions.Snapshot)
-                        "revision", CanonicalValue.Integer snapshot.Revision
+                        "format", JsonValue.Integer(int64 RecordVersions.Snapshot)
+                        "revision", JsonValue.Integer snapshot.Revision
                         "disposition",
-                        CanonicalValue.String(
+                        JsonValue.String(
                             if disposition = Disposition.Active then
                                 "ACTIVE"
                             else
@@ -49,7 +49,7 @@ module CaseRecord =
                         )
                         "fields", fieldsValue fields
                     ]
-                |> CanonicalJson.encode
+                |> CanonicalWriter.bytes
 
     let private readFields root : CaseFields =
         let path = "$.fields"

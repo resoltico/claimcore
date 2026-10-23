@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.HistoricalHttpTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Text
 open System.Text.Json

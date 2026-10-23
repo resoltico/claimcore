@@ -1,6 +1,6 @@
 module ClaimCore.Tests.ApplicationTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -83,11 +83,12 @@ let private respelledOpening =
     }"""
 
 let private decodeWire (text: string) =
-    ClaimCore.Wire.Admission.admit
-        ClaimCore.Wire.Endpoint.CaseExecute
+    ClaimCore.Contract.Protocol.Admission.admit
+        ClaimCore.Contract.Protocol.Endpoint.CaseExecute
         (Text.Encoding.UTF8.GetBytes text)
     |> Result.map (function
-        | ClaimCore.Wire.WireRequest.CaseExecute value -> RequestMapping.caseRequest value
+        | ClaimCore.Contract.Protocol.WireRequest.CaseExecute value ->
+            RequestMapping.caseRequest value
         | _ -> failtest "Expected a case execution request")
     |> Result.defaultWith (fun _ -> failtest "Synthetic raw request must decode")
 

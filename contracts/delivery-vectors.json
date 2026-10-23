@@ -1,5 +1,5 @@
 {
-  "purpose": "ClaimCore.Wire delivery results over frozen independent oracle scenarios",
+  "purpose": "ClaimCore.Contract.Protocol delivery results over frozen independent oracle scenarios",
   "knowledge": [
     {
       "endpoint": "session",

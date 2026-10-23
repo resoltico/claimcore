@@ -4,8 +4,8 @@ open System
 open System.Text
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Catalog
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 open ClaimCore.Application
 
 let private aliases () =

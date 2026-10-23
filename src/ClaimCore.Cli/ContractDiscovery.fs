@@ -5,7 +5,8 @@ open System.Reflection
 open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 /// Offline discovery consumes the same tracked resources published for HTTPS clients.
 module ContractDiscovery =
@@ -32,7 +33,7 @@ module ContractDiscovery =
 
     let localized language identity fallback =
         let diagnostic =
-            ClaimCore.Catalog.CliHelp.diagnosticTopics
+            ClaimCore.Contract.CliHelp.diagnosticTopics
             |> List.tryFind (fun id -> identity = "diagnostic." + id)
 
         if diagnostic.IsSome then
@@ -76,7 +77,7 @@ module ContractDiscovery =
             JsonNode.Parse(document.RootElement.GetProperty("messages").GetRawText())
             |> nonNull
 
-        for id in ClaimCore.Catalog.CliHelp.diagnosticTopics do
+        for id in ClaimCore.Contract.CliHelp.diagnosticTopics do
             let part = JsonObject()
             part["literal"] <- JsonValue.Create(helpTopic "en" ("diagnostic." + id))
             let parts = JsonArray()

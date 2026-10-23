@@ -1,6 +1,6 @@
 module ClaimCore.Tests.StewardshipTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto

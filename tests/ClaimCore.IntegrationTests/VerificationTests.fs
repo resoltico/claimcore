@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.VerificationTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto

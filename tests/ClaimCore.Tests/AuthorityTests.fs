@@ -1,6 +1,6 @@
 module ClaimCore.Tests.AuthorityTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading

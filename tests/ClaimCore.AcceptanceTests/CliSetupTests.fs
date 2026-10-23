@@ -1,6 +1,6 @@
 module ClaimCore.AcceptanceTests.CliSetupTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Text
 open System
@@ -8,7 +8,7 @@ open System.IO
 open Expecto
 open ClaimCore.AcceptanceTests.CliCalls
 open ClaimCore.TestSupport
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 let private failureEvidence () =
     let meta =

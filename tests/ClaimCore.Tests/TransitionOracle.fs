@@ -1,6 +1,6 @@
 module ClaimCore.Tests.TransitionOracle
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open ClaimCore.Domain
 

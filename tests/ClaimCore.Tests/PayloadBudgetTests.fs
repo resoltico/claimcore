@@ -1,6 +1,6 @@
 module ClaimCore.Tests.PayloadBudgetTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto
@@ -66,7 +66,7 @@ let private encodedHistory count disclosure =
                 NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
             }
     )
-    |> ClaimCore.Wire.Replies.encode
+    |> ClaimCore.Contract.Protocol.Replies.encode
 
 let private fullHistoryBudget () =
     let accepted = snapshot TextFormat.MaximumFreeTextBytes
@@ -85,10 +85,14 @@ let private fullHistoryBudget () =
 
     Expect.isLessThan
         bound
-        ClaimCore.Wire.Limits.MaximumResponseBytes
+        ClaimCore.Contract.Protocol.Limits.MaximumResponseBytes
         "All fifty entries fit the response limit"
 
-    Expect.equal ClaimCore.Wire.Limits.MaximumResponseBytes 4194304 "Public response limit"
+    Expect.equal
+        ClaimCore.Contract.Protocol.Limits.MaximumResponseBytes
+        4194304
+        "Public response limit"
+
     Expect.equal FormatLimits.MaximumPayloadBytes 32768 "Permanent framed payload bound"
 
     Expect.throws
@@ -128,7 +132,7 @@ let private boundedAuthority () =
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                 }
         )
-        |> ClaimCore.Wire.Replies.encode
+        |> ClaimCore.Contract.Protocol.Replies.encode
 
     let grants count =
         OutcomeMapping.authorityGrants (
@@ -139,16 +143,16 @@ let private boundedAuthority () =
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                 }
         )
-        |> ClaimCore.Wire.Replies.encode
+        |> ClaimCore.Contract.Protocol.Replies.encode
 
     Expect.isLessThan
         (actors 50).Length
-        ClaimCore.Wire.Limits.MaximumResponseBytes
+        ClaimCore.Contract.Protocol.Limits.MaximumResponseBytes
         "Maximal admitted actor headers fit"
 
     Expect.isLessThan
         (grants 50).Length
-        ClaimCore.Wire.Limits.MaximumResponseBytes
+        ClaimCore.Contract.Protocol.Limits.MaximumResponseBytes
         "Maximal scoped grants and target header fit"
 
     Expect.throws (fun () -> actors 51 |> ignore) "Actor overproduction refuses, never truncates"

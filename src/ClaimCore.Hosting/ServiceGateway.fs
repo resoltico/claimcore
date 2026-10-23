@@ -3,7 +3,8 @@ namespace ClaimCore.Hosting
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 /// Verified identity facts supplied by the HTTP authentication boundary.
 [<StructuralEquality; NoComparison>]
@@ -27,7 +28,7 @@ module ServiceGateway =
         | _ -> Ok request
 
     let private history
-        (request: ClaimCore.Wire.HistoryRequest)
+        (request: ClaimCore.Contract.Protocol.HistoryRequest)
         : ClaimCore.Application.HistoryRequest =
         {
             CaseReference = request.CaseReference

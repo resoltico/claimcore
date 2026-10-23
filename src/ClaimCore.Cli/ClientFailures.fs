@@ -1,8 +1,8 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 type ClientFailure =
     | Configuration
@@ -31,7 +31,7 @@ module CliReply =
             ExitCode = Frames.exitCode frame
         }
 
-    let private initial: ClaimCore.Wire.FrameDelivery =
+    let private initial: ClaimCore.Contract.Protocol.FrameDelivery =
         {
             OperationId = None
             AttemptKnowledge = AttemptKnowledge.NotSent
@@ -66,7 +66,7 @@ module CliReply =
         | WireRequest.OperationObserve value -> Some value.OperationId
         | _ -> None
 
-    let private metadata invocation attempt evidence : ClaimCore.Wire.FrameDelivery =
+    let private metadata invocation attempt evidence : ClaimCore.Contract.Protocol.FrameDelivery =
         let endpoint = Frames.request invocation |> WireRequest.endpoint
 
         {

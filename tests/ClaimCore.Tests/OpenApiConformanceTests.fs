@@ -8,7 +8,8 @@ open System.Text.Json.Nodes
 open Expecto
 open Microsoft.OpenApi
 open global.Json.Schema
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 
 let private emitted () =

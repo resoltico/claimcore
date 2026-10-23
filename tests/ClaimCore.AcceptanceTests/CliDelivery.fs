@@ -1,6 +1,6 @@
 module internal ClaimCore.AcceptanceTests.CliDelivery
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Collections.Generic
@@ -9,7 +9,7 @@ open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 open CliCalls
 
 let private arm (fixture: PublishedFixture.Fixture) status =

@@ -1,9 +1,9 @@
 namespace ClaimCore.ContractGeneration
 
 open System.Text.Json
-open ClaimCore.Catalog
+open ClaimCore.Contract
 open ClaimCore.Domain
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 /// Bind semantic inputs to codec members; unsupported shapes and incomplete inputs refuse generation.
 module RequestBindings =

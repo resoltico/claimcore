@@ -1,10 +1,10 @@
 namespace ClaimCore.ContractGeneration
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Text
 open System.Text.Json
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 /// The browser receives types and immutable core policy data for generic interpreters.
 module TypeScript =
@@ -77,8 +77,8 @@ module TypeScript =
             maximumResponseBytes = Limits.MaximumResponseBytes
             maximumRequestBytes = Limits.MaximumRequestBytes
             maximumInvocationBytes = Limits.MaximumInvocationBytes
-            maximumDepth = Strict.MaximumDepth
-            maximumSafeInteger = Strict.MaximumSafeInteger
+            maximumDepth = StrictJson.MaximumDepth
+            maximumSafeInteger = ClaimCore.Contract.JsonValue.MaximumInteger
         |}
         |> JsonSerializer.Serialize
 
@@ -125,27 +125,27 @@ module TypeScript =
     let private presentationConstants () =
         [
             "export const presentationLanguageOptions = "
-            + JsonSerializer.Serialize(ClaimCore.Catalog.LocalizationPolicy.languageOptions)
+            + JsonSerializer.Serialize(ClaimCore.Contract.LocalizationPolicy.languageOptions)
             + " as const;"
             "export const presentationDisplayOptions = "
-            + JsonSerializer.Serialize(ClaimCore.Catalog.LocalizationPolicy.displayOptions)
+            + JsonSerializer.Serialize(ClaimCore.Contract.LocalizationPolicy.displayOptions)
             + " as const;"
             "export const presentationPseudolanguage = "
-            + quote ClaimCore.Catalog.LocalizationPolicy.pseudolanguage
+            + quote ClaimCore.Contract.LocalizationPolicy.pseudolanguage
             + ";"
             "export const presentationLanguages = "
             + JsonSerializer.Serialize(
-                ClaimCore.Catalog.LocalizationPolicy.languages
-                @ [ ClaimCore.Catalog.LocalizationPolicy.pseudolanguage ]
+                ClaimCore.Contract.LocalizationPolicy.languages
+                @ [ ClaimCore.Contract.LocalizationPolicy.pseudolanguage ]
             )
             + " as const;"
             "export const presentationDisplayLocales = "
-            + JsonSerializer.Serialize(ClaimCore.Catalog.LocalizationPolicy.displayLocales)
+            + JsonSerializer.Serialize(ClaimCore.Contract.LocalizationPolicy.displayLocales)
             + " as const;"
             "export const presentationDefaults = { language: "
-            + quote ClaimCore.Catalog.LocalizationPolicy.defaultLanguage
+            + quote ClaimCore.Contract.LocalizationPolicy.defaultLanguage
             + ", displayLocale: "
-            + quote ClaimCore.Catalog.LocalizationPolicy.defaultDisplayLocale
+            + quote ClaimCore.Contract.LocalizationPolicy.defaultDisplayLocale
             + " } as const;"
         ]
 
@@ -157,7 +157,7 @@ module TypeScript =
                 "export type " + identifier name + " = " + value schema + ";")
 
         [
-            "/* Generated from ClaimCore.Wire codecs. Do not edit. */"
+            "/* Generated from ClaimCore.Contract.Protocol codecs. Do not edit. */"
             yield! definitions
             metadataTypes ()
             endpointMap "RequestByEndpoint" Admission.schema

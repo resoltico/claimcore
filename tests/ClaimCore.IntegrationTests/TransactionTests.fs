@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.TransactionTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading

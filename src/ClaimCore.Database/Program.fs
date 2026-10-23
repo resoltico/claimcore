@@ -1,5 +1,7 @@
 module ClaimCore.Database.Program
 
+open ClaimCore.Contract
+
 open System
 open ClaimCore.Application
 open ClaimCore.Postgres

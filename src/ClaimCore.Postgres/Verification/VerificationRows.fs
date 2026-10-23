@@ -1,6 +1,6 @@
 namespace ClaimCore.Postgres
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open ClaimCore.Application
 open ClaimCore.Application.VerificationChecks

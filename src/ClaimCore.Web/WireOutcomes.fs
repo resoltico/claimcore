@@ -1,6 +1,7 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http

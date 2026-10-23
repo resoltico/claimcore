@@ -1,13 +1,13 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Text.Json
 open ClaimCore.Domain
 
 /// Case-request parsing and canonical encoding.
 module RequestRecord =
-    let private registrationGroup (value: JsonElement) =
+    let private registrationGroup (value: JsonValue) =
         let path = "$.act.groups.registration"
 
         match Json.text path "mode" value with
@@ -22,7 +22,7 @@ module RequestRecord =
             )
         | _ -> Json.reject (path + ".mode") "Use KEEP or REPLACE."
 
-    let private decisionGroup (value: JsonElement) =
+    let private decisionGroup (value: JsonValue) =
         let path = "$.act.groups.decision"
 
         match Json.text path "mode" value with
@@ -44,7 +44,7 @@ module RequestRecord =
         Json.properties path [ "paymentDate" ] element
         Json.text path "paymentDate" element
 
-    let private paymentGroup (value: JsonElement) =
+    let private paymentGroup (value: JsonValue) =
         let path = "$.act.groups.payment"
 
         match Json.text path "mode" value with
@@ -155,34 +155,31 @@ module RequestRecord =
     let decode maxBytes bytes =
         Json.bounded maxBytes bytes (Json.dispatch [ int64 RecordVersions.CaseRequest, read ])
 
-    let private mode name = "mode", CanonicalValue.String name
+    let private mode name = "mode", JsonValue.String name
 
     let private group name value =
-        CanonicalValue.Object [ mode name; "values", value ]
+        JsonValue.Object [ mode name; "values", value ]
 
     let private correctionValue (correction: CaseCorrection) =
         let registration =
             match correction.Registration with
-            | RegistrationCorrection.Keep -> CanonicalValue.Object [ mode "KEEP" ]
+            | RegistrationCorrection.Keep -> JsonValue.Object [ mode "KEEP" ]
             | RegistrationCorrection.Replace value -> group "REPLACE" (Json.registrationValue value)
 
         let decision =
             match correction.Decision with
-            | DecisionCorrection.Keep -> CanonicalValue.Object [ mode "KEEP" ]
-            | DecisionCorrection.Clear -> CanonicalValue.Object [ mode "CLEAR" ]
+            | DecisionCorrection.Keep -> JsonValue.Object [ mode "KEEP" ]
+            | DecisionCorrection.Clear -> JsonValue.Object [ mode "CLEAR" ]
             | DecisionCorrection.Replace value -> group "REPLACE" (Json.decisionValue value)
 
         let payment =
             match correction.Payment with
-            | PaymentCorrection.Keep -> CanonicalValue.Object [ mode "KEEP" ]
-            | PaymentCorrection.Clear -> CanonicalValue.Object [ mode "CLEAR" ]
+            | PaymentCorrection.Keep -> JsonValue.Object [ mode "KEEP" ]
+            | PaymentCorrection.Clear -> JsonValue.Object [ mode "CLEAR" ]
             | PaymentCorrection.Replace date ->
-                group
-                    "REPLACE"
-                    (CanonicalValue.Object [ "paymentDate", CanonicalValue.String date ])
+                group "REPLACE" (JsonValue.Object [ "paymentDate", JsonValue.String date ])
 
-        CanonicalValue.Object
-            [ "registration", registration; "decision", decision; "payment", payment ]
+        JsonValue.Object [ "registration", registration; "decision", decision; "payment", payment ]
 
     let private actValue act =
         let payload =
@@ -193,17 +190,15 @@ module RequestRecord =
             | CaseAct.Business(BusinessCommand.Decide value) ->
                 [ "values", Json.decisionValue value ]
             | CaseAct.Business(BusinessCommand.RecordPayment date) ->
-                [
-                    "values", CanonicalValue.Object [ "paymentDate", CanonicalValue.String date ]
-                ]
+                [ "values", JsonValue.Object [ "paymentDate", JsonValue.String date ] ]
             | CaseAct.Business(BusinessCommand.CorrectCase value) ->
                 [ "groups", correctionValue value ]
             | CaseAct.Stewardship(StewardshipAct.Void reason)
             | CaseAct.Stewardship(StewardshipAct.Reinstate reason) ->
-                [ "reason", CanonicalValue.String reason ]
+                [ "reason", JsonValue.String reason ]
             | _ -> []
 
-        CanonicalValue.Object(("kind", CanonicalValue.String(CaseActs.name act)) :: payload)
+        JsonValue.Object(("kind", JsonValue.String(CaseActs.name act)) :: payload)
 
     let private value (request: CaseRequest) =
         match Case.validateRequest request with
@@ -211,14 +206,14 @@ module RequestRecord =
         | Ok() ->
             let fields =
                 [
-                    "operationId", CanonicalValue.String(request.OperationId.ToString("D"))
-                    "caseReference", CanonicalValue.String request.CaseReference
-                    "expectedRevision", CanonicalValue.Integer request.ExpectedRevision
+                    "operationId", JsonValue.String(request.OperationId.ToString("D"))
+                    "caseReference", JsonValue.String request.CaseReference
+                    "expectedRevision", JsonValue.Integer request.ExpectedRevision
                     "act", actValue request.Act
                 ]
 
-            CanonicalValue.Object(
-                ("format", CanonicalValue.Integer(int64 RecordVersions.CaseRequest)) :: fields
+            JsonValue.Object(
+                ("format", JsonValue.Integer(int64 RecordVersions.CaseRequest)) :: fields
             )
 
-    let encode request = value request |> CanonicalJson.encode
+    let encode request = value request |> CanonicalWriter.bytes

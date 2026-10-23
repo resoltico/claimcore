@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.HostTransportTests
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 open System
 open System.Net.Http
@@ -71,7 +72,7 @@ let private catalogueRoutes () =
             Expect.equal status 200 "Bootstrap GET"
 
             Expect.isOk
-                (Replies.decode ClaimCore.Wire.Endpoint.Session bootstrap)
+                (Replies.decode ClaimCore.Contract.Protocol.Endpoint.Session bootstrap)
                 "Bootstrap schema"
 
             for endpoint in
@@ -92,7 +93,7 @@ let private catalogueRoutes () =
             Expect.equal status 200 "Logout"
 
             Expect.isOk
-                (Replies.decode ClaimCore.Wire.Endpoint.SessionLogout response)
+                (Replies.decode ClaimCore.Contract.Protocol.Endpoint.SessionLogout response)
                 "Logout schema"
 
             let! status, _ = host.Call("context", body "context", token)
@@ -196,7 +197,11 @@ let private outcomes () =
 
                 let! status, response = host.Call("case.execute", body "case.execute", token)
                 Expect.equal status 200 "Outcomes stay typed"
-                Expect.isOk (Replies.decode ClaimCore.Wire.Endpoint.CaseExecute response) "Schema"
+
+                Expect.isOk
+                    (Replies.decode ClaimCore.Contract.Protocol.Endpoint.CaseExecute response)
+                    "Schema"
+
                 use payload = parse response
 
                 Expect.equal
@@ -228,7 +233,7 @@ let private authorityCancellation () =
             Expect.equal status 200 "Authority dispatch"
 
             Expect.isOk
-                (Replies.decode ClaimCore.Wire.Endpoint.AuthorityExecute response)
+                (Replies.decode ClaimCore.Contract.Protocol.Endpoint.AuthorityExecute response)
                 "Authority response"
         })
 
@@ -335,7 +340,8 @@ let private principalAdmission () =
                 let input = target kind issuer subject
 
                 let admitted =
-                    ClaimCore.Wire.Admission.admit Endpoint.AuthorityExecute input |> Result.isOk
+                    ClaimCore.Contract.Protocol.Admission.admit Endpoint.AuthorityExecute input
+                    |> Result.isOk
 
                 Expect.equal admitted true "Generic wire syntax does not claim identity admission"
 

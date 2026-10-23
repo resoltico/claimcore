@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CaseCorrectionTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open Expecto
 open ClaimCore.Domain

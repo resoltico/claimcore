@@ -1,5 +1,7 @@
 namespace ClaimCore.RecordFormat
 
+open ClaimCore.Contract
+
 open System
 open System.Text
 open System.Text.Json
@@ -27,40 +29,20 @@ module internal Json =
 
     let persistedString path value = decodedText path (fun () -> value)
 
-    let properties path expected (element: JsonElement) =
-        if element.ValueKind <> JsonValueKind.Object then
-            reject path "Expected an object."
+    let properties path expected element =
+        match element with
+        | JsonValue.Object members when Set.ofList (List.map fst members) = Set.ofList expected ->
+            ()
+        | _ -> reject path "Expected exactly the record members."
 
-        let actual =
-            element.EnumerateObject()
-            |> Seq.map (fun property -> decodedText path (fun () -> property.Name))
-            |> Seq.toList
+    let required path name element =
+        JsonValue.tryMember name element
+        |> Option.defaultWith (fun () -> reject path "A required property is missing.")
 
-        if (Set.ofList actual).Count <> actual.Length then
-            reject path "Duplicate object properties are not accepted."
-
-        if actual |> List.exists (fun name -> not (List.contains name expected)) then
-            reject path "The object contains an unknown property."
-
-        if expected |> List.exists (fun name -> not (List.contains name actual)) then
-            reject path "A required property is missing."
-
-    let required path (name: string) (element: JsonElement) =
-        if element.ValueKind <> JsonValueKind.Object then
-            reject path "Expected an object."
-
-        match element.TryGetProperty(name) with
-        | true, property -> property
-        | _ -> reject path "A required property is missing."
-
-    let stringValue path (element: JsonElement) =
-        if element.ValueKind <> JsonValueKind.String then
-            reject path "Expected a string, not a number, null, or another JSON type."
-
-        decodedText path (fun () ->
-            element.GetString()
-            |> Option.ofObj
-            |> Option.defaultWith (fun () -> reject path "Null is not accepted."))
+    let stringValue path =
+        function
+        | JsonValue.String value -> persistedString path value
+        | _ -> reject path "Expected a persisted string."
 
     let text path name element =
         required path name element |> stringValue (path + "." + name)
@@ -70,39 +52,22 @@ module internal Json =
 
         match Guid.TryParseExact(value, "D") with
         | true, parsed when parsed <> Guid.Empty && parsed.ToString("D") = value -> parsed
-        | _ ->
-            reject
-                (path + "." + name)
-                "Use one non-empty UUID in canonical lowercase hyphenated form."
+        | _ -> reject (path + "." + name) "Use a canonical non-empty UUID."
 
     let boolean path name element =
-        let value = required path name element
-
-        match value.ValueKind with
-        | JsonValueKind.True -> true
-        | JsonValueKind.False -> false
-        | _ -> reject (path + "." + name) "Expected a JSON boolean."
+        match required path name element with
+        | JsonValue.Boolean value -> value
+        | _ -> reject (path + "." + name) "Expected a boolean."
 
     let integer path name element =
-        let property = required path name element
-
-        if property.ValueKind <> JsonValueKind.Number then
-            reject (path + "." + name) "Expected an integer JSON number."
-
-        match property.TryGetInt64() with
-        | true, value when
-            value >= -CanonicalJson.MaximumInteger && value <= CanonicalJson.MaximumInteger
-            ->
-            value
-        | _ -> reject (path + "." + name) "Expected a safe integer without fraction or exponent."
+        match required path name element with
+        | JsonValue.Integer value -> value
+        | _ -> reject (path + "." + name) "Expected a safe integer."
 
     let optionalString path name element =
-        let property = required path name element
-
-        if property.ValueKind = JsonValueKind.Null then
-            None
-        else
-            Some(stringValue (path + "." + name) property)
+        match required path name element with
+        | JsonValue.Null -> None
+        | value -> Some(stringValue (path + "." + name) value)
 
     let registration path element : RegistrationInput =
         properties
@@ -137,39 +102,18 @@ module internal Json =
             PayableCurrency = text path "payableCurrency" element
         }
 
-    let parse (bytes: byte array) read =
-        try
-            UTF8Encoding(false, true).GetCharCount(bytes) |> ignore
-
-            use document =
-                JsonDocument.Parse(ReadOnlyMemory<byte>(bytes), JsonDocumentOptions(MaxDepth = 32))
-
-            Ok(read document.RootElement)
-        with
-        | DecodeError(field, message) -> Error { Field = field; Message = message }
-        | :? DecoderFallbackException ->
-            Error
-                {
-                    Field = "$"
-                    Message = "The request must be valid UTF-8."
-                }
-        | :? JsonException ->
-            Error
-                {
-                    Field = "$"
-                    Message =
-                        "Malformed JSON. Comments, trailing data, and invalid UTF-8 are not accepted."
-                }
-
-    let bounded maxBytes (bytes: byte array) read =
-        if obj.ReferenceEquals(bytes, null) || bytes.Length > maxBytes then
-            Error
-                {
-                    Field = "$"
-                    Message = "Missing record or record exceeds its byte limit."
-                }
-        else
-            parse bytes read
+    let bounded maxBytes bytes read =
+        StrictJson.read maxBytes bytes
+        |> Result.mapError (fun problem ->
+            {
+                Field = problem.Path
+                Message = problem.Reason
+            })
+        |> Result.bind (fun value ->
+            try
+                Ok(read value)
+            with DecodeError(field, message) ->
+                Error { Field = field; Message = message })
 
     let dispatch decoders root =
         let format = integer "$" "format" root
@@ -179,22 +123,21 @@ module internal Json =
         | None -> reject "$.format" "Unsupported record format."
 
     let registrationValue (registration: RegistrationInput) =
-        CanonicalValue.Object
+        JsonValue.Object
             [
-                "incidentDate", CanonicalValue.String registration.IncidentDate
-                "incidentNotificationDate",
-                CanonicalValue.String registration.IncidentNotificationDate
-                "incidentCountry", CanonicalValue.String registration.IncidentCountry
-                "claimantName", CanonicalValue.String registration.ClaimantName
-                "insurerName", CanonicalValue.String registration.InsurerName
-                "claimedAmount", CanonicalValue.String registration.ClaimedAmount
-                "claimedCurrency", CanonicalValue.String registration.ClaimedCurrency
+                "incidentDate", JsonValue.String registration.IncidentDate
+                "incidentNotificationDate", JsonValue.String registration.IncidentNotificationDate
+                "incidentCountry", JsonValue.String registration.IncidentCountry
+                "claimantName", JsonValue.String registration.ClaimantName
+                "insurerName", JsonValue.String registration.InsurerName
+                "claimedAmount", JsonValue.String registration.ClaimedAmount
+                "claimedCurrency", JsonValue.String registration.ClaimedCurrency
             ]
 
     let decisionValue (decision: DecisionInput) =
-        CanonicalValue.Object
+        JsonValue.Object
             [
-                "paymentDecisionDate", CanonicalValue.String decision.PaymentDecisionDate
-                "payableAmount", CanonicalValue.String decision.PayableAmount
-                "payableCurrency", CanonicalValue.String decision.PayableCurrency
+                "paymentDecisionDate", JsonValue.String decision.PaymentDecisionDate
+                "payableAmount", JsonValue.String decision.PayableAmount
+                "payableCurrency", JsonValue.String decision.PayableCurrency
             ]

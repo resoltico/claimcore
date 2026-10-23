@@ -1,6 +1,6 @@
 module ClaimCore.Tests.OperationAuthorityScopeTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Threading
 open System.Threading.Tasks

@@ -14,12 +14,12 @@ let wireId endpoint response =
     "CC-PROP-WIRE-"
     + direction
     + "-"
-    + (ClaimCore.Wire.Endpoint.id endpoint).Replace('.', '-').ToUpperInvariant()
+    + (ClaimCore.Contract.Protocol.Endpoint.id endpoint).Replace('.', '-').ToUpperInvariant()
     + "-001"
 
 let private wirePropertyIds =
     [
-        for endpoint in ClaimCore.Wire.Endpoint.all do
+        for endpoint in ClaimCore.Contract.Protocol.Endpoint.all do
             yield wireId endpoint false
             yield wireId endpoint true
     ]

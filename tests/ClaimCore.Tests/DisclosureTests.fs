@@ -1,6 +1,6 @@
 module ClaimCore.Tests.DisclosureTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Threading
 open Expecto

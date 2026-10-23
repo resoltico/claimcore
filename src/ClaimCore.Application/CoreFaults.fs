@@ -1,6 +1,6 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 [<RequireQualifiedAccess>]
 type CoreFault =

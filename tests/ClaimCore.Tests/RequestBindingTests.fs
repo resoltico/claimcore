@@ -3,9 +3,9 @@ module ClaimCore.Tests.RequestBindingTests
 open System
 open System.Text.Json
 open Expecto
-open ClaimCore.Catalog
+open ClaimCore.Contract
 open ClaimCore.Domain
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 open ClaimCore.ContractGeneration
 
 let private opening =

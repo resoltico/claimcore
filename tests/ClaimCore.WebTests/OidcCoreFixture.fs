@@ -1,6 +1,6 @@
 module internal ClaimCore.WebTests.OidcCoreFixture
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading

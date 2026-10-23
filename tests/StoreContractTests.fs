@@ -1,6 +1,6 @@
 module ClaimCore.TestSupport.StoreContractTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading

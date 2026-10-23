@@ -48,7 +48,7 @@ separate owner administration process; it references Application for shared iden
 
 RecordFormat writes RFC 8785 canonical request, snapshot and authority JSON with ordinal UTF-16
 member ordering and invariant numeric spelling. Business amounts remain exact decimal strings.
-The [canonical writer](../src/ClaimCore.RecordFormat/CanonicalJson.fs) can encode escaped NUL;
+The [canonical writer](../src/ClaimCore.Contract/Json/Writers.fs) can encode escaped NUL;
 business-record admission and decoding separately reject it under the [Domain format](domain.md#scalars).
 Canonical content gives replay one stable identity across equivalent JSON member order, whitespace
 and escape spelling while retaining authored string values without Unicode normalization.
@@ -180,7 +180,7 @@ provider and I/O failures remain availability failures. A lost commit confirmati
 
 ### CC-CAT-001 — Consumer vocabulary and presentation ownership
 
-[Catalog](../src/ClaimCore.Catalog/ClaimCore.Catalog.fsproj) owns stable shared tokens and safe message
+[Catalog](../src/ClaimCore.Contract/ClaimCore.Contract.fsproj) owns stable shared tokens and safe message
 identities. Domain retains admission and transitions; Application retains authorization policy.
 Descriptors reference Catalog message identities. English templates and en/lv/ar source assets live
 under Catalog/Localization; the generator publishes them for CLI/Web. Pure core modules open no

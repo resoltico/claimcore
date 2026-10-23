@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><DefineConstants>$(DefineConstants);CONTRACT_GENERATION</DefineConstants></PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="../Presentation/RejectionPresentation.fs" Link="RejectionPresentation.fs" />
     <Compile Include="../Presentation/CoreFaultPresentation.fs" Link="CoreFaultPresentation.fs" />
     <Compile Include="CommandInputRendering.fs" />
@@ -20,10 +20,9 @@
     <Compile Include="EvolutionQualification.fs" />
     <Compile Include="Artifacts.fs" />
     <Compile Include="Program.fs" />
-    <EmbeddedResource Include="../../src/ClaimCore.Catalog/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../src/ClaimCore.Contract/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
     <EmbeddedResource Include="../../tests/fixtures/delivery-vectors.json" LogicalName="ClaimCore.Oracles.delivery-vectors.json" />
     <EmbeddedResource Include="../../tests/fixtures/correlation-vectors.json" LogicalName="ClaimCore.Oracles.correlation-vectors.json" />
-    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
   </ItemGroup>

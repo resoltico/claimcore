@@ -1,8 +1,8 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery
@@ -42,7 +42,7 @@ module internal ApiRoutes =
                 context
 
     let private input
-        (endpoint: ClaimCore.Wire.Endpoint)
+        (endpoint: ClaimCore.Contract.Protocol.Endpoint)
         (configuration: WebConfiguration)
         (context: HttpContext)
         =
@@ -51,7 +51,7 @@ module internal ApiRoutes =
             | Error problem -> return Error(RouteSupport.inputFailure context problem)
             | Ok bytes ->
                 match
-                    ClaimCore.Wire.Admission.admit endpoint bytes
+                    ClaimCore.Contract.Protocol.Admission.admit endpoint bytes
                     |> Result.mapError (fun _ -> HostFailure.InputInvalid)
                     |> Result.bind ServiceGateway.admitTechnical
                 with

@@ -1,6 +1,6 @@
 module ClaimCore.Tests.DomainDescriptorTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto

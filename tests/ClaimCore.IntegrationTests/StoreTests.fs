@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.StoreTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Threading
 open Expecto

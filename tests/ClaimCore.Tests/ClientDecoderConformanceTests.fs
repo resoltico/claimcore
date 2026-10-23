@@ -5,7 +5,8 @@ open System.IO
 open System.Text
 open System.Text.Json
 open Expecto
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 let private fixture name =
     let root = ClaimCore.TestSupport.RepositoryRoot.find ()

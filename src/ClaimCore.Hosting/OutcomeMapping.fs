@@ -13,106 +13,108 @@ module internal OutcomeMapping =
     let context value =
         let outcome =
             query
-                ClaimCore.Wire.ContextOutcome.Succeeded
-                ClaimCore.Wire.ContextOutcome.Rejected
-                ClaimCore.Wire.ContextOutcome.Failed
-                ClaimCore.Wire.ContextOutcome.Cancelled
+                ClaimCore.Contract.Protocol.ContextOutcome.Succeeded
+                ClaimCore.Contract.Protocol.ContextOutcome.Rejected
+                ClaimCore.Contract.Protocol.ContextOutcome.Failed
+                ClaimCore.Contract.Protocol.ContextOutcome.Cancelled
                 ResponseMapping.context
                 value
 
-        ClaimCore.Wire.WireReply.Context { Outcome = outcome }
+        ClaimCore.Contract.Protocol.WireReply.Context { Outcome = outcome }
 
     let caseGet value =
         let outcome =
             query
-                ClaimCore.Wire.CaseGetOutcome.Succeeded
-                ClaimCore.Wire.CaseGetOutcome.Rejected
-                ClaimCore.Wire.CaseGetOutcome.Failed
-                ClaimCore.Wire.CaseGetOutcome.Cancelled
+                ClaimCore.Contract.Protocol.CaseGetOutcome.Succeeded
+                ClaimCore.Contract.Protocol.CaseGetOutcome.Rejected
+                ClaimCore.Contract.Protocol.CaseGetOutcome.Failed
+                ClaimCore.Contract.Protocol.CaseGetOutcome.Cancelled
                 ResponseMapping.caseRecord
                 value
 
-        ClaimCore.Wire.WireReply.CaseGet { Outcome = outcome }
+        ClaimCore.Contract.Protocol.WireReply.CaseGet { Outcome = outcome }
 
     let caseList value =
         let outcome =
             query
-                ClaimCore.Wire.CaseListOutcome.Succeeded
-                ClaimCore.Wire.CaseListOutcome.Rejected
-                ClaimCore.Wire.CaseListOutcome.Failed
-                ClaimCore.Wire.CaseListOutcome.Cancelled
+                ClaimCore.Contract.Protocol.CaseListOutcome.Succeeded
+                ClaimCore.Contract.Protocol.CaseListOutcome.Rejected
+                ClaimCore.Contract.Protocol.CaseListOutcome.Failed
+                ClaimCore.Contract.Protocol.CaseListOutcome.Cancelled
                 ResponseMapping.casesPage
                 value
 
-        ClaimCore.Wire.WireReply.CaseList { Outcome = outcome }
+        ClaimCore.Contract.Protocol.WireReply.CaseList { Outcome = outcome }
 
     let caseHistory value =
         let outcome =
             query
-                ClaimCore.Wire.CaseHistoryOutcome.Succeeded
-                ClaimCore.Wire.CaseHistoryOutcome.Rejected
-                ClaimCore.Wire.CaseHistoryOutcome.Failed
-                ClaimCore.Wire.CaseHistoryOutcome.Cancelled
+                ClaimCore.Contract.Protocol.CaseHistoryOutcome.Succeeded
+                ClaimCore.Contract.Protocol.CaseHistoryOutcome.Rejected
+                ClaimCore.Contract.Protocol.CaseHistoryOutcome.Failed
+                ClaimCore.Contract.Protocol.CaseHistoryOutcome.Cancelled
                 ResponseMapping.historyPage
                 value
 
-        ClaimCore.Wire.WireReply.CaseHistory { Outcome = outcome }
+        ClaimCore.Contract.Protocol.WireReply.CaseHistory { Outcome = outcome }
 
     let operationObserve value =
         let outcome =
             query
-                ClaimCore.Wire.OperationObserveOutcome.Succeeded
-                ClaimCore.Wire.OperationObserveOutcome.Rejected
-                ClaimCore.Wire.OperationObserveOutcome.Failed
-                ClaimCore.Wire.OperationObserveOutcome.Cancelled
+                ClaimCore.Contract.Protocol.OperationObserveOutcome.Succeeded
+                ClaimCore.Contract.Protocol.OperationObserveOutcome.Rejected
+                ClaimCore.Contract.Protocol.OperationObserveOutcome.Failed
+                ClaimCore.Contract.Protocol.OperationObserveOutcome.Cancelled
                 ResponseMapping.receipt
                 value
 
-        ClaimCore.Wire.WireReply.OperationObserve { Outcome = outcome }
+        ClaimCore.Contract.Protocol.WireReply.OperationObserve { Outcome = outcome }
 
     let authorityList value =
         let outcome =
             query
-                ClaimCore.Wire.AuthorityListOutcome.Succeeded
-                ClaimCore.Wire.AuthorityListOutcome.Rejected
-                ClaimCore.Wire.AuthorityListOutcome.Failed
-                ClaimCore.Wire.AuthorityListOutcome.Cancelled
+                ClaimCore.Contract.Protocol.AuthorityListOutcome.Succeeded
+                ClaimCore.Contract.Protocol.AuthorityListOutcome.Rejected
+                ClaimCore.Contract.Protocol.AuthorityListOutcome.Failed
+                ClaimCore.Contract.Protocol.AuthorityListOutcome.Cancelled
                 ResponseMapping.actorsPage
                 value
 
-        ClaimCore.Wire.WireReply.AuthorityList { Outcome = outcome }
+        ClaimCore.Contract.Protocol.WireReply.AuthorityList { Outcome = outcome }
 
     let authorityGrants value =
         let outcome =
             query
-                ClaimCore.Wire.AuthorityGrantsOutcome.Succeeded
-                ClaimCore.Wire.AuthorityGrantsOutcome.Rejected
-                ClaimCore.Wire.AuthorityGrantsOutcome.Failed
-                ClaimCore.Wire.AuthorityGrantsOutcome.Cancelled
+                ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Succeeded
+                ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Rejected
+                ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Failed
+                ClaimCore.Contract.Protocol.AuthorityGrantsOutcome.Cancelled
                 ResponseMapping.grantsPage
                 value
 
-        ClaimCore.Wire.WireReply.AuthorityGrants { Outcome = outcome }
+        ClaimCore.Contract.Protocol.WireReply.AuthorityGrants { Outcome = outcome }
 
     let preview operationId value =
         let outcome =
             match value with
             | PreviewOutcome.Reviewed review ->
-                ClaimCore.Wire.CasePreviewOutcome.Reviewed
+                ClaimCore.Contract.Protocol.CasePreviewOutcome.Reviewed
                     {
                         Review = ResponseMapping.review review
                     }
             | PreviewOutcome.AlreadyAccepted receipt ->
-                ClaimCore.Wire.CasePreviewOutcome.AlreadyAccepted(
+                ClaimCore.Contract.Protocol.CasePreviewOutcome.AlreadyAccepted(
                     ResponseMapping.caseReceipt receipt
                 )
             | PreviewOutcome.Rejected reason ->
-                ClaimCore.Wire.CasePreviewOutcome.Rejected(ResponseMapping.rejection reason)
+                ClaimCore.Contract.Protocol.CasePreviewOutcome.Rejected(
+                    ResponseMapping.rejection reason
+                )
             | PreviewOutcome.Failed fault ->
-                ClaimCore.Wire.CasePreviewOutcome.Failed(ResponseMapping.fault fault)
-            | PreviewOutcome.Cancelled -> ClaimCore.Wire.CasePreviewOutcome.Cancelled()
+                ClaimCore.Contract.Protocol.CasePreviewOutcome.Failed(ResponseMapping.fault fault)
+            | PreviewOutcome.Cancelled -> ClaimCore.Contract.Protocol.CasePreviewOutcome.Cancelled()
 
-        ClaimCore.Wire.WireReply.CasePreview
+        ClaimCore.Contract.Protocol.WireReply.CasePreview
             {
                 OperationId = operationId
                 Outcome = outcome
@@ -122,20 +124,24 @@ module internal OutcomeMapping =
         let outcome =
             match value with
             | ExecuteOutcome.Accepted receipt ->
-                ClaimCore.Wire.CaseExecuteOutcome.Accepted(ResponseMapping.caseReceipt receipt)
+                ClaimCore.Contract.Protocol.CaseExecuteOutcome.Accepted(
+                    ResponseMapping.caseReceipt receipt
+                )
             | ExecuteOutcome.AlreadyAccepted receipt ->
-                ClaimCore.Wire.CaseExecuteOutcome.AlreadyAccepted(
+                ClaimCore.Contract.Protocol.CaseExecuteOutcome.AlreadyAccepted(
                     ResponseMapping.caseReceipt receipt
                 )
             | ExecuteOutcome.OutcomeUnknown id ->
-                ClaimCore.Wire.CaseExecuteOutcome.OutcomeUnknown { OperationId = id }
+                ClaimCore.Contract.Protocol.CaseExecuteOutcome.OutcomeUnknown { OperationId = id }
             | ExecuteOutcome.Rejected reason ->
-                ClaimCore.Wire.CaseExecuteOutcome.Rejected(ResponseMapping.rejection reason)
+                ClaimCore.Contract.Protocol.CaseExecuteOutcome.Rejected(
+                    ResponseMapping.rejection reason
+                )
             | ExecuteOutcome.Failed fault ->
-                ClaimCore.Wire.CaseExecuteOutcome.Failed(ResponseMapping.fault fault)
-            | ExecuteOutcome.Cancelled -> ClaimCore.Wire.CaseExecuteOutcome.Cancelled()
+                ClaimCore.Contract.Protocol.CaseExecuteOutcome.Failed(ResponseMapping.fault fault)
+            | ExecuteOutcome.Cancelled -> ClaimCore.Contract.Protocol.CaseExecuteOutcome.Cancelled()
 
-        ClaimCore.Wire.WireReply.CaseExecute
+        ClaimCore.Contract.Protocol.WireReply.CaseExecute
             {
                 OperationId = operationId
                 Outcome = outcome
@@ -145,22 +151,28 @@ module internal OutcomeMapping =
         let outcome =
             match value with
             | ExecuteOutcome.Accepted receipt ->
-                ClaimCore.Wire.AuthorityExecuteOutcome.Accepted(
+                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Accepted(
                     ResponseMapping.authorityReceipt receipt
                 )
             | ExecuteOutcome.AlreadyAccepted receipt ->
-                ClaimCore.Wire.AuthorityExecuteOutcome.AlreadyAccepted(
+                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.AlreadyAccepted(
                     ResponseMapping.authorityReceipt receipt
                 )
             | ExecuteOutcome.OutcomeUnknown id ->
-                ClaimCore.Wire.AuthorityExecuteOutcome.OutcomeUnknown { OperationId = id }
+                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.OutcomeUnknown
+                    { OperationId = id }
             | ExecuteOutcome.Rejected reason ->
-                ClaimCore.Wire.AuthorityExecuteOutcome.Rejected(ResponseMapping.rejection reason)
+                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Rejected(
+                    ResponseMapping.rejection reason
+                )
             | ExecuteOutcome.Failed fault ->
-                ClaimCore.Wire.AuthorityExecuteOutcome.Failed(ResponseMapping.fault fault)
-            | ExecuteOutcome.Cancelled -> ClaimCore.Wire.AuthorityExecuteOutcome.Cancelled()
+                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Failed(
+                    ResponseMapping.fault fault
+                )
+            | ExecuteOutcome.Cancelled ->
+                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Cancelled()
 
-        ClaimCore.Wire.WireReply.AuthorityExecute
+        ClaimCore.Contract.Protocol.WireReply.AuthorityExecute
             {
                 OperationId = operationId
                 Outcome = outcome

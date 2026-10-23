@@ -1,10 +1,10 @@
 namespace ClaimCore.ContractGeneration
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Text.Json
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 /// Exhaustive finite policy projection. Independent scenario oracles remain separate.
 module DeliveryTables =

@@ -8,7 +8,8 @@ open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 open CliCalls
 
 let private run
@@ -110,7 +111,7 @@ let private fallback operation (result: ProcessRunner.Result) =
 
     Expect.equal
         (Frames.metadata frame).AttemptKnowledge
-        ClaimCore.Catalog.AttemptKnowledge.Unconfirmed
+        ClaimCore.Contract.AttemptKnowledge.Unconfirmed
         "No false confirmation"
 
     Expect.equal

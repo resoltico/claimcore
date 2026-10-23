@@ -5,7 +5,7 @@
     <WebClientDirectory>$(MSBuildProjectDirectory)/../../web</WebClientDirectory>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
+    <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Content Remove="wwwroot/**/*" />
     <None Remove="wwwroot/**/*" />
   </ItemGroup>
@@ -40,7 +40,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
-    <ProjectReference Include="../ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <ProjectReference Include="../ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
   </ItemGroup>
   <ItemGroup>

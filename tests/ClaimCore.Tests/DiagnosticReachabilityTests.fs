@@ -1,6 +1,6 @@
 module ClaimCore.Tests.DiagnosticReachabilityTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -44,10 +44,12 @@ let private diagnostic reason =
         RejectionDiagnostics.describe reason |> RejectionDiagnostics.identifier
 
     let reply = OutcomeMapping.caseGet (QueryOutcome.Rejected reason)
-    let encoded = ClaimCore.Wire.Replies.encode reply
+    let encoded = ClaimCore.Contract.Protocol.Replies.encode reply
 
     Expect.equal
-        (ClaimCore.Wire.Replies.decode ClaimCore.Wire.Endpoint.CaseGet encoded)
+        (ClaimCore.Contract.Protocol.Replies.decode
+            ClaimCore.Contract.Protocol.Endpoint.CaseGet
+            encoded)
         (Ok reply)
         "Every request-produced refusal crosses the typed Wire boundary"
 

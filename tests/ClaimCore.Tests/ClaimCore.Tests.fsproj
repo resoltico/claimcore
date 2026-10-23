@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="../../src/ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
@@ -78,7 +78,6 @@
     <Compile Include="VerificationStageTests.fs" />
     <Compile Include="DocumentationChecks.fs" />
     <Compile Include="DocumentationTests.fs" />
-    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />

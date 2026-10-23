@@ -5,9 +5,9 @@ open System.IO
 open System.Text
 open System.Text.Json
 open Expecto
-open ClaimCore.Catalog
+open ClaimCore.Contract
 open ClaimCore.Cli
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 let private rendered language selection =
     Discovery.describeText language selection

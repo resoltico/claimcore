@@ -1,6 +1,6 @@
 module ClaimCore.Tests.AuthorizationPolicyTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto

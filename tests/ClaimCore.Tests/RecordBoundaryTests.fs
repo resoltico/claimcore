@@ -1,6 +1,6 @@
 module ClaimCore.Tests.RecordBoundaryTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Globalization
@@ -132,13 +132,17 @@ let private envelope () =
         |> fun value -> value.Replace("\"format\":2,", "") |> Encoding.UTF8.GetBytes
 
     Expect.isError
-        (ClaimCore.Wire.Admission.admit ClaimCore.Wire.Endpoint.AuthorityExecute wire)
+        (ClaimCore.Contract.Protocol.Admission.admit
+            ClaimCore.Contract.Protocol.Endpoint.AuthorityExecute
+            wire)
         "Provisioning is never case-work authority API input"
 
     let case = request 0L (BusinessCommand.Open registration) |> RequestRecord.encode
 
     Expect.isError
-        (ClaimCore.Wire.Admission.admit ClaimCore.Wire.Endpoint.CaseExecute case)
+        (ClaimCore.Contract.Protocol.Admission.admit
+            ClaimCore.Contract.Protocol.Endpoint.CaseExecute
+            case)
         "Durable format is not a wire member"
 
     let authored =

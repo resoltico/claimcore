@@ -163,12 +163,14 @@ let private graphTests =
                 "ClaimCore.Application projectGraph")
         testCase "Wire rejects dependencies beyond inert Catalog vocabulary" (fun () ->
             for name in contract.Value.Projects.Keys do
-                if name <> "ClaimCore.Wire" && name <> "ClaimCore.Catalog" then
-                    let changed = actualGraph () |> Map.add "ClaimCore.Wire" (Set.singleton name)
+                if name <> "ClaimCore.Contract.Protocol" && name <> "ClaimCore.Contract" then
+                    let changed =
+                        actualGraph ()
+                        |> Map.add "ClaimCore.Contract.Protocol" (Set.singleton name)
 
                     reject
                         (fun () -> ProjectGraph.check contract.Value changed)
-                        "ClaimCore.Wire projectGraph")
+                        "ClaimCore.Contract.Protocol projectGraph")
         testCase "an undeclared edge identifies its project" (fun () ->
             let changed =
                 actualGraph ()

@@ -1,7 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
 open System.Text.Json
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 module DefaultPresentation =
     let render () =

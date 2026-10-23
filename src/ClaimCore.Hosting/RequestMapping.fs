@@ -1,14 +1,14 @@
 namespace ClaimCore.Hosting
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open ClaimCore.Application
 open ClaimCore.Domain
 
 module internal RequestMapping =
-    type private WireAuthorityAct = ClaimCore.Wire.AuthorityAct
+    type private WireAuthorityAct = ClaimCore.Contract.Protocol.AuthorityAct
 
-    let registration (value: ClaimCore.Wire.Registration) : RegistrationInput =
+    let registration (value: ClaimCore.Contract.Protocol.Registration) : RegistrationInput =
         {
             IncidentDate = value.IncidentDate
             IncidentNotificationDate = value.IncidentNotificationDate
@@ -19,58 +19,60 @@ module internal RequestMapping =
             ClaimedCurrency = value.ClaimedCurrency
         }
 
-    let decision (value: ClaimCore.Wire.Decision) : DecisionInput =
+    let decision (value: ClaimCore.Contract.Protocol.Decision) : DecisionInput =
         {
             PaymentDecisionDate = value.PaymentDecisionDate
             PayableAmount = value.PayableAmount
             PayableCurrency = value.PayableCurrency
         }
 
-    let private correction (value: ClaimCore.Wire.Correction) : CaseCorrection =
+    let private correction (value: ClaimCore.Contract.Protocol.Correction) : CaseCorrection =
         {
             Registration =
                 match value.Registration with
-                | ClaimCore.Wire.RegistrationGroup.Keep -> RegistrationCorrection.Keep
-                | ClaimCore.Wire.RegistrationGroup.Replace fields ->
+                | ClaimCore.Contract.Protocol.RegistrationGroup.Keep -> RegistrationCorrection.Keep
+                | ClaimCore.Contract.Protocol.RegistrationGroup.Replace fields ->
                     RegistrationCorrection.Replace(registration fields)
             Decision =
                 match value.Decision with
-                | ClaimCore.Wire.DecisionGroup.Keep -> DecisionCorrection.Keep
-                | ClaimCore.Wire.DecisionGroup.Replace fields ->
+                | ClaimCore.Contract.Protocol.DecisionGroup.Keep -> DecisionCorrection.Keep
+                | ClaimCore.Contract.Protocol.DecisionGroup.Replace fields ->
                     DecisionCorrection.Replace(decision fields)
-                | ClaimCore.Wire.DecisionGroup.Clear -> DecisionCorrection.Clear
+                | ClaimCore.Contract.Protocol.DecisionGroup.Clear -> DecisionCorrection.Clear
             Payment =
                 match value.Payment with
-                | ClaimCore.Wire.PaymentGroup.Keep -> PaymentCorrection.Keep
-                | ClaimCore.Wire.PaymentGroup.Replace fields ->
+                | ClaimCore.Contract.Protocol.PaymentGroup.Keep -> PaymentCorrection.Keep
+                | ClaimCore.Contract.Protocol.PaymentGroup.Replace fields ->
                     PaymentCorrection.Replace fields.PaymentDate
-                | ClaimCore.Wire.PaymentGroup.Clear -> PaymentCorrection.Clear
+                | ClaimCore.Contract.Protocol.PaymentGroup.Clear -> PaymentCorrection.Clear
         }
 
     let private business =
         function
-        | ClaimCore.Wire.CaseAct.Open value -> BusinessCommand.Open(registration value)
-        | ClaimCore.Wire.CaseAct.AmendRegistration value ->
+        | ClaimCore.Contract.Protocol.CaseAct.Open value -> BusinessCommand.Open(registration value)
+        | ClaimCore.Contract.Protocol.CaseAct.AmendRegistration value ->
             BusinessCommand.AmendRegistration(registration value)
-        | ClaimCore.Wire.CaseAct.CorrectCase value -> BusinessCommand.CorrectCase(correction value)
-        | ClaimCore.Wire.CaseAct.Decide value -> BusinessCommand.Decide(decision value)
-        | ClaimCore.Wire.CaseAct.WithdrawDecision -> BusinessCommand.WithdrawDecision
-        | ClaimCore.Wire.CaseAct.RecordPayment value ->
+        | ClaimCore.Contract.Protocol.CaseAct.CorrectCase value ->
+            BusinessCommand.CorrectCase(correction value)
+        | ClaimCore.Contract.Protocol.CaseAct.Decide value -> BusinessCommand.Decide(decision value)
+        | ClaimCore.Contract.Protocol.CaseAct.WithdrawDecision -> BusinessCommand.WithdrawDecision
+        | ClaimCore.Contract.Protocol.CaseAct.RecordPayment value ->
             BusinessCommand.RecordPayment value.PaymentDate
-        | ClaimCore.Wire.CaseAct.ClearPayment -> BusinessCommand.ClearPayment
-        | ClaimCore.Wire.CaseAct.Close -> BusinessCommand.Close
-        | ClaimCore.Wire.CaseAct.Reopen -> BusinessCommand.Reopen
+        | ClaimCore.Contract.Protocol.CaseAct.ClearPayment -> BusinessCommand.ClearPayment
+        | ClaimCore.Contract.Protocol.CaseAct.Close -> BusinessCommand.Close
+        | ClaimCore.Contract.Protocol.CaseAct.Reopen -> BusinessCommand.Reopen
         | _ -> invalidArg "act" "Expected a business operation."
 
     let private act =
         function
-        | ClaimCore.Wire.CaseAct.Void reason -> CaseAct.Stewardship(StewardshipAct.Void reason)
-        | ClaimCore.Wire.CaseAct.Reinstate reason ->
+        | ClaimCore.Contract.Protocol.CaseAct.Void reason ->
+            CaseAct.Stewardship(StewardshipAct.Void reason)
+        | ClaimCore.Contract.Protocol.CaseAct.Reinstate reason ->
             CaseAct.Stewardship(StewardshipAct.Reinstate reason)
-        | ClaimCore.Wire.CaseAct.Erase -> CaseAct.Stewardship StewardshipAct.Erase
+        | ClaimCore.Contract.Protocol.CaseAct.Erase -> CaseAct.Stewardship StewardshipAct.Erase
         | value -> CaseAct.Business(business value)
 
-    let caseRequest (value: ClaimCore.Wire.CaseRequest) : CaseRequest =
+    let caseRequest (value: ClaimCore.Contract.Protocol.CaseRequest) : CaseRequest =
         {
             OperationId = value.OperationId
             CaseReference = value.CaseReference
@@ -80,8 +82,8 @@ module internal RequestMapping =
 
     let private scope =
         function
-        | ClaimCore.Wire.Scope.Installation -> GrantTarget.Installation
-        | ClaimCore.Wire.Scope.Case reference -> GrantTarget.CaseReference reference
+        | ClaimCore.Contract.Protocol.Scope.Installation -> GrantTarget.Installation
+        | ClaimCore.Contract.Protocol.Scope.Case reference -> GrantTarget.CaseReference reference
 
     let private authorityAct =
         function
@@ -93,7 +95,7 @@ module internal RequestMapping =
             | None -> Error "AUTHORITY_ROLE_INVALID"
 
     let authorityRequest
-        (value: ClaimCore.Wire.AuthorityRequest)
+        (value: ClaimCore.Contract.Protocol.AuthorityRequest)
         : Result<AuthorityRequest, HostFailure> =
         let principal =
             PrincipalKey.admit value.Target.Kind value.Target.Issuer value.Target.Subject

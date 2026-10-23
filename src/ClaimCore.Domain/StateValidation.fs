@@ -1,6 +1,6 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open ClaimCore.Domain.ResultFlow
 

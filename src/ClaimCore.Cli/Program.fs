@@ -1,7 +1,7 @@
 module ClaimCore.Cli.Program
 
-open ClaimCore.Wire
-open ClaimCore.Catalog
+open ClaimCore.Contract.Protocol
+open ClaimCore.Contract
 
 open System
 open System.Text

@@ -1,5 +1,5 @@
 {
-  "purpose": "ClaimCore.Wire correlation results over frozen independent oracle scenarios",
+  "purpose": "ClaimCore.Contract.Protocol correlation results over frozen independent oracle scenarios",
   "cases": [
     {
       "name": "case ACCEPTED matches with case-folded reference",

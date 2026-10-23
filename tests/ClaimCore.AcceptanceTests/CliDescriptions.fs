@@ -4,7 +4,7 @@ open System.Collections.Generic
 open System.Text
 open System.Text.Json
 open Expecto
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 let private invoke (fixture: PublishedFixture.Fixture) arguments source =
     ProcessRunner.dotnet 8_000 fixture.Cli arguments (Dictionary<string, string>()) source

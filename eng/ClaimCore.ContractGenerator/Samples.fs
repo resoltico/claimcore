@@ -1,7 +1,8 @@
 namespace ClaimCore.ContractGeneration
 
 open System.Text.Json.Nodes
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 /// Samples exercise each declared alternative without multiplying unrelated field alternatives.
 module SchemaSamples =

@@ -3,7 +3,8 @@ namespace ClaimCore.ContractGeneration
 open System.IO
 open System.Reflection
 open System.Text
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 module ContractArtifacts =
     let private oracle name =
@@ -94,10 +95,10 @@ module ContractArtifacts =
 
     let private helpDocument () =
         [
-            for language in ClaimCore.Catalog.LocalizationPolicy.languages do
-                for topic in ClaimCore.Catalog.CliHelp.topics do
+            for language in ClaimCore.Contract.LocalizationPolicy.languages do
+                for topic in ClaimCore.Contract.CliHelp.topics do
                     language + "." + topic,
-                    ClaimCore.Catalog.CliHelp.text
+                    ClaimCore.Contract.CliHelp.text
                         language
                         topic
                         Limits.MaximumInvocationBytes
@@ -105,22 +106,22 @@ module ContractArtifacts =
                         Limits.MaximumResponseBytes
         ]
         @ [
-            for language in ClaimCore.Catalog.LocalizationPolicy.languages do
+            for language in ClaimCore.Contract.LocalizationPolicy.languages do
                 for issue in
                     [
-                        ClaimCore.Catalog.CliUsageIssue.Invocation
-                        ClaimCore.Catalog.CliUsageIssue.Topic
-                        ClaimCore.Catalog.CliUsageIssue.Options
-                        ClaimCore.Catalog.CliUsageIssue.Selector
+                        ClaimCore.Contract.CliUsageIssue.Invocation
+                        ClaimCore.Contract.CliUsageIssue.Topic
+                        ClaimCore.Contract.CliUsageIssue.Options
+                        ClaimCore.Contract.CliUsageIssue.Selector
                     ] do
                     language + ".usage." + string issue,
-                    ClaimCore.Catalog.CliHelp.usage language issue
+                    ClaimCore.Contract.CliHelp.usage language issue
         ]
         @ [
-            for language in ClaimCore.Catalog.LocalizationPolicy.languages do
-                for id in ClaimCore.Catalog.CliHelp.diagnosticTopics do
+            for language in ClaimCore.Contract.LocalizationPolicy.languages do
+                for id in ClaimCore.Contract.CliHelp.diagnosticTopics do
                     language + ".diagnostic." + id,
-                    ClaimCore.Catalog.CliHelp.diagnosticDiscovery
+                    ClaimCore.Contract.CliHelp.diagnosticDiscovery
                         language
                         id
                         Limits.MaximumInvocationBytes
@@ -133,13 +134,13 @@ module ContractArtifacts =
     let private presentation () =
         let policy =
             {|
-                languageOptions = ClaimCore.Catalog.LocalizationPolicy.languageOptions
-                displayOptions = ClaimCore.Catalog.LocalizationPolicy.displayOptions
-                languages = ClaimCore.Catalog.LocalizationPolicy.languages
-                pseudolanguage = ClaimCore.Catalog.LocalizationPolicy.pseudolanguage
-                displayLocales = ClaimCore.Catalog.LocalizationPolicy.displayLocales
-                defaultLanguage = ClaimCore.Catalog.LocalizationPolicy.defaultLanguage
-                defaultDisplayLocale = ClaimCore.Catalog.LocalizationPolicy.defaultDisplayLocale
+                languageOptions = ClaimCore.Contract.LocalizationPolicy.languageOptions
+                displayOptions = ClaimCore.Contract.LocalizationPolicy.displayOptions
+                languages = ClaimCore.Contract.LocalizationPolicy.languages
+                pseudolanguage = ClaimCore.Contract.LocalizationPolicy.pseudolanguage
+                displayLocales = ClaimCore.Contract.LocalizationPolicy.displayLocales
+                defaultLanguage = ClaimCore.Contract.LocalizationPolicy.defaultLanguage
+                defaultDisplayLocale = ClaimCore.Contract.LocalizationPolicy.defaultDisplayLocale
             |}
 
         [
@@ -157,10 +158,10 @@ module ContractArtifacts =
                 Name = "cli-messages.json"
                 Role = ArtifactRole.RuntimePrecursor
                 Bytes =
-                    ClaimCore.Catalog.MessageText.all
+                    ClaimCore.Contract.MessageText.all
                     |> Map.filter (fun key _ ->
                         key.StartsWith("cli.", System.StringComparison.Ordinal))
-                    |> Map.map (fun key _ -> ClaimCore.Catalog.MessageText.literal key)
+                    |> Map.map (fun key _ -> ClaimCore.Contract.MessageText.literal key)
                     |> System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
             }
         ]
@@ -194,7 +195,7 @@ module ContractArtifacts =
                 Role = ArtifactRole.IdentityDerived
                 Bytes =
                     Encoding.UTF8.GetBytes(
-                        "namespace ClaimCore.Wire\n\nmodule internal ConsumerContractIdentity =\n    let Value = \""
+                        "namespace ClaimCore.Contract.Protocol\n\nmodule internal ConsumerContractIdentity =\n    let Value = \""
                         + identity
                         + "\"\n"
                     )

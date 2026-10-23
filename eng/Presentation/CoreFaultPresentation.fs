@@ -4,7 +4,7 @@ namespace ClaimCore.ContractGeneration.Presentation
 namespace ClaimCore.Hosting.Presentation
 #endif
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open ClaimCore.Application
 

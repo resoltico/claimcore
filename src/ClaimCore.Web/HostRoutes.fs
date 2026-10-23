@@ -1,8 +1,8 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 open System
 open System.IO
@@ -73,7 +73,11 @@ module HostRoutes =
                         match! HttpBody.readRequest 1024 context with
                         | Error problem -> return RouteSupport.inputFailure context problem
                         | Ok bytes ->
-                            match ClaimCore.Wire.Admission.admit Endpoint.SessionLogout bytes with
+                            match
+                                ClaimCore.Contract.Protocol.Admission.admit
+                                    Endpoint.SessionLogout
+                                    bytes
+                            with
                             | Error _ ->
                                 return RouteSupport.hostFailure context HostFailure.InputInvalid
                             | Ok _ ->

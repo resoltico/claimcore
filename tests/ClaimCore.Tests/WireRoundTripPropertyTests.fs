@@ -1,6 +1,6 @@
 module ClaimCore.Tests.WireRoundTripPropertyTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Collections
@@ -13,7 +13,7 @@ open Microsoft.FSharp.Reflection
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.Tests.PropertyHarness
 
@@ -290,9 +290,9 @@ let private integer response context =
         elif field = "MaximumPageSize" || field = "MaximumIntegerDigits" then
             1L, int64 Int32.MaxValue
         elif not response || field = "ExpectedRevision" || field = "expectedRevision" then
-            0L, Strict.MaximumSafeInteger
+            0L, JsonValue.MaximumInteger
         else
-            1L, Strict.MaximumSafeInteger
+            1L, JsonValue.MaximumInteger
 
     Gen.frequency
         [

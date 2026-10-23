@@ -1,13 +1,13 @@
 module ClaimCore.Tests.ClientInteractionTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 open CliTransportFixture
 open ClaimCore.Cli
 
@@ -86,8 +86,8 @@ let private policyTruthTable () =
 
 let private accumulatedEvidence () =
     let conflict =
-        ClaimCore.Catalog.RejectionDiagnosticIds.token
-            ClaimCore.Catalog.RejectionDiagnosticId.IdempotencyConflict
+        ClaimCore.Contract.RejectionDiagnosticIds.token
+            ClaimCore.Contract.RejectionDiagnosticId.IdempotencyConflict
 
     Expect.equal
         (Delivery.evidence
@@ -140,7 +140,7 @@ let private integerLexemes () =
             "-1", false
         ] do
         Expect.equal
-            (Codec.decode 100 (Codec.integer 0L Strict.MaximumSafeInteger) (bytes spelling)
+            (Codec.decode 100 (Codec.integer 0L JsonValue.MaximumInteger) (bytes spelling)
              |> Result.isOk)
             accepted
             "Integer lexical profile."

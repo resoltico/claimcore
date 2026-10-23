@@ -4,7 +4,8 @@ open System
 open System.IO
 open System.Text.Json
 open System.Text.Json.Nodes
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 module ContractDocuments =
     let private json (node: JsonNode) =
@@ -14,8 +15,7 @@ module ContractDocuments =
     let descriptors () =
         let root = JsonNode.Parse(ContractDescriptors.render ()) |> nonNull
 
-        root["productVersion"] <-
-            JsonValue.Create(ClaimCore.Application.BuildIdentity.current.Version)
+        root["productVersion"] <- JsonValue.Create(ClaimCore.Contract.BuildIdentity.current.Version)
 
         root["messages"] <- JsonNode.Parse(DefaultPresentation.render ())
         root["requestBindings"] <- JsonNode.Parse(RequestBindings.render ())

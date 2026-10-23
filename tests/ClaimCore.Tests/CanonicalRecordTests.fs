@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CanonicalRecordTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.IO

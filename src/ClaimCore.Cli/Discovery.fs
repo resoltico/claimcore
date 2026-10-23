@@ -1,6 +1,8 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+
+open ClaimCore.Contract.Protocol
 
 open System.Text
 open System.Text.Json

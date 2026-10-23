@@ -1,12 +1,12 @@
 namespace ClaimCore.ContractGeneration
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 /// Frozen scenarios supply inputs; published expected results come from the typed policy.
 module PolicyVectors =
@@ -75,7 +75,7 @@ module PolicyVectors =
 
         root["purpose"] <-
             JsonValue.Create
-                "ClaimCore.Wire delivery results over frozen independent oracle scenarios"
+                "ClaimCore.Contract.Protocol delivery results over frozen independent oracle scenarios"
 
         transform
             "knowledge"
@@ -180,7 +180,7 @@ module PolicyVectors =
 
         root["purpose"] <-
             JsonValue.Create
-                "ClaimCore.Wire correlation results over frozen independent oracle scenarios"
+                "ClaimCore.Contract.Protocol correlation results over frozen independent oracle scenarios"
 
         transform
             "cases"

@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
+    <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="BuildIdentity.fsi" />
-    <Compile Include="BuildIdentity.fs" />
     <Compile Include="Rejections.fs" />
     <Compile Include="RejectionDiagnostics.fs" />
     <Compile Include="CoreFaults.fs" />

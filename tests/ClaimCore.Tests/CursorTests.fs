@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CursorTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.IO

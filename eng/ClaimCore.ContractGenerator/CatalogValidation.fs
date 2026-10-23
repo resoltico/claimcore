@@ -2,7 +2,7 @@ namespace ClaimCore.ContractGeneration
 
 open System.Reflection
 open System.Text.Json
-open ClaimCore.Catalog
+open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Application
 

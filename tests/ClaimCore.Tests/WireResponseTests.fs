@@ -1,6 +1,6 @@
 module ClaimCore.Tests.WireResponseTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.IO
@@ -8,7 +8,7 @@ open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 
 let private bytes (raw: string) = Encoding.UTF8.GetBytes raw

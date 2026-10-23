@@ -1,6 +1,6 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 [<RequireQualifiedAccess>]
 type internal PaymentProgress =

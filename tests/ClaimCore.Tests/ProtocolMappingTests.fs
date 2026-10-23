@@ -8,7 +8,8 @@ open System.Threading
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Hosting
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.Tests.ApplicationFixtures

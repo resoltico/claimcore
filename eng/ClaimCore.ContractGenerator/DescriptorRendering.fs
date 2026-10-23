@@ -1,8 +1,8 @@
 namespace ClaimCore.ContractGeneration
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 open ClaimCore.ContractGeneration.Presentation
 
 open System

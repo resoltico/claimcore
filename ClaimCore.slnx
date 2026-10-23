@@ -1,6 +1,5 @@
 <Solution>
-  <Project Path="src/ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
-  <Project Path="src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
+  <Project Path="src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
   <Project Path="src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
   <Project Path="src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
   <Project Path="tests/ClaimCore.Tests/ClaimCore.Tests.fsproj" />

@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
-    <Compile Include="BuildIdentity.fs" />
+    <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ClientFailures.fs" />
     <Compile Include="PrivateInputs.fs" />
@@ -25,7 +24,6 @@
     <Compile Include="StandardSinks.fs" />
     <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="Program.fs" />
-    <ProjectReference Include="../ClaimCore.Wire/ClaimCore.Wire.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../../contracts/locale.*.json" LogicalName="ClaimCore.%(Filename)%(Extension)" />

@@ -1,6 +1,6 @@
 namespace ClaimCore.Hosting
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Globalization
 open ClaimCore.Application
@@ -16,7 +16,7 @@ module internal ResponseMapping =
         | Disposition.Active -> "ACTIVE"
         | Disposition.Voided -> "VOIDED"
 
-    let private fields (value: CaseFields) : ClaimCore.Wire.CaseFields =
+    let private fields (value: CaseFields) : ClaimCore.Contract.Protocol.CaseFields =
         {
             IncidentDate = value.IncidentDate
             IncidentNotificationDate = value.IncidentNotificationDate
@@ -33,7 +33,7 @@ module internal ResponseMapping =
             Status = CaseStatuses.token value.Status
         }
 
-    let private live fieldsValue disp : ClaimCore.Wire.LiveState =
+    let private live fieldsValue disp : ClaimCore.Contract.Protocol.LiveState =
         {
             Disposition = disposition disp
             Fields = fields fieldsValue
@@ -41,10 +41,11 @@ module internal ResponseMapping =
 
     let state =
         function
-        | CaseView.Erased -> ClaimCore.Wire.CaseState.Erased
-        | CaseView.Live(fields, disp) -> ClaimCore.Wire.CaseState.Live(live fields disp)
+        | CaseView.Erased -> ClaimCore.Contract.Protocol.CaseState.Erased
+        | CaseView.Live(fields, disp) ->
+            ClaimCore.Contract.Protocol.CaseState.Live(live fields disp)
 
-    let snapshot (value: CaseSnapshot) : ClaimCore.Wire.CaseSnapshot =
+    let snapshot (value: CaseSnapshot) : ClaimCore.Contract.Protocol.CaseSnapshot =
         {
             CaseReference = value.Reference
             Revision = value.Revision
@@ -60,9 +61,9 @@ module internal ResponseMapping =
     let private actOffer =
         function
         | CaseActOffer.Act(act, revision) ->
-            ClaimCore.Wire.CaseActOffer.Act(CaseActKinds.token act, revision)
+            ClaimCore.Contract.Protocol.CaseActOffer.Act(CaseActKinds.token act, revision)
         | CaseActOffer.CorrectCase(revision, choices) ->
-            ClaimCore.Wire.CaseActOffer.Correct(
+            ClaimCore.Contract.Protocol.CaseActOffer.Correct(
                 revision,
                 {
                     Registration = List.map mode choices.Registration
@@ -76,7 +77,7 @@ module internal ResponseMapping =
         | HistoryDetail.Summary -> "SUMMARY"
         | HistoryDetail.Full -> "FULL"
 
-    let caseRecord (value: CaseReadModel) : ClaimCore.Wire.CaseView =
+    let caseRecord (value: CaseReadModel) : ClaimCore.Contract.Protocol.CaseView =
         {
             CaseReference = value.Snapshot.Reference
             Revision = value.Snapshot.Revision
@@ -90,9 +91,9 @@ module internal ResponseMapping =
 
     let private offer =
         function
-        | InstallationOffer.Open -> ClaimCore.Wire.InstallationOffer.Open 0L
+        | InstallationOffer.Open -> ClaimCore.Contract.Protocol.InstallationOffer.Open 0L
         | InstallationOffer.AuthorityAct act ->
-            ClaimCore.Wire.InstallationOffer.AuthorityAct(AuthorityKinds.token act)
+            ClaimCore.Contract.Protocol.InstallationOffer.AuthorityAct(AuthorityKinds.token act)
 
     let private view =
         function
@@ -100,7 +101,7 @@ module internal ResponseMapping =
         | View.Authority -> "AUTHORITY"
         | View.Operations -> "OPERATIONS"
 
-    let context (value: ActorContext) : ClaimCore.Wire.ActorContext =
+    let context (value: ActorContext) : ClaimCore.Contract.Protocol.ActorContext =
         {
             ProductVersion = value.Runtime.ProductVersion
             BusinessDate = date value.Runtime.EffectiveBusinessDate
@@ -110,14 +111,14 @@ module internal ResponseMapping =
             Offers = List.map offer value.Offers
         }
 
-    let private runtime (value: RuntimeContext) : ClaimCore.Wire.RuntimeContext =
+    let private runtime (value: RuntimeContext) : ClaimCore.Contract.Protocol.RuntimeContext =
         {
             ProductVersion = value.ProductVersion
             BusinessDate = date value.EffectiveBusinessDate
             TimeZone = value.TimeZoneId
         }
 
-    let private position (value: LedgerPosition) : ClaimCore.Wire.Position =
+    let private position (value: LedgerPosition) : ClaimCore.Contract.Protocol.Position =
         {
             Sequence = value.Sequence
             EntryHash = value.EntryHash
@@ -125,14 +126,14 @@ module internal ResponseMapping =
 
     let private disclosure =
         function
-        | SnapshotDisclosure.Withheld -> ClaimCore.Wire.Disclosure.Withheld
-        | SnapshotDisclosure.Erased -> ClaimCore.Wire.Disclosure.Erased
+        | SnapshotDisclosure.Withheld -> ClaimCore.Contract.Protocol.Disclosure.Withheld
+        | SnapshotDisclosure.Erased -> ClaimCore.Contract.Protocol.Disclosure.Erased
         | SnapshotDisclosure.Disclosed(CaseView.Live(fields, disp)) ->
-            ClaimCore.Wire.Disclosure.Disclosed(live fields disp)
+            ClaimCore.Contract.Protocol.Disclosure.Disclosed(live fields disp)
         | SnapshotDisclosure.Disclosed CaseView.Erased ->
             invalidArg "snapshot" "Erasure has its own disclosure."
 
-    let caseReceipt (value: OperationReceipt) : ClaimCore.Wire.CaseReceipt =
+    let caseReceipt (value: OperationReceipt) : ClaimCore.Contract.Protocol.CaseReceipt =
         match value.Scope with
         | ReceiptScope.Case target ->
             {
@@ -147,7 +148,7 @@ module internal ResponseMapping =
             }
         | _ -> invalidArg "receipt" "Expected a case receipt."
 
-    let authorityReceipt (value: OperationReceipt) : ClaimCore.Wire.AuthorityReceipt =
+    let authorityReceipt (value: OperationReceipt) : ClaimCore.Contract.Protocol.AuthorityReceipt =
         match value.Scope with
         | ReceiptScope.Authority target ->
             {
@@ -162,13 +163,14 @@ module internal ResponseMapping =
 
     let receipt (value: OperationReceipt) =
         match value.Scope with
-        | ReceiptScope.Case _ -> ClaimCore.Wire.Receipt.Case(caseReceipt value)
-        | ReceiptScope.Authority _ -> ClaimCore.Wire.Receipt.Authority(authorityReceipt value)
+        | ReceiptScope.Case _ -> ClaimCore.Contract.Protocol.Receipt.Case(caseReceipt value)
+        | ReceiptScope.Authority _ ->
+            ClaimCore.Contract.Protocol.Receipt.Authority(authorityReceipt value)
 
     let private summary =
         function
         | CaseSummary.Live(reference, revision, status, disp) ->
-            ClaimCore.Wire.CaseSummary.Live
+            ClaimCore.Contract.Protocol.CaseSummary.Live
                 {
                     CaseReference = reference
                     Revision = revision
@@ -176,20 +178,20 @@ module internal ResponseMapping =
                     Disposition = disposition disp
                 }
         | CaseSummary.Erased(reference, revision) ->
-            ClaimCore.Wire.CaseSummary.Erased
+            ClaimCore.Contract.Protocol.CaseSummary.Erased
                 {
                     CaseReference = reference
                     Revision = revision
                 }
 
-    let casesPage (value: CaseSummaryPage) : ClaimCore.Wire.CasesPage =
+    let casesPage (value: CaseSummaryPage) : ClaimCore.Contract.Protocol.CasesPage =
         {
             Items = List.map summary value.Items
             NextCursor = value.NextCursor
             Offers = List.map offer value.Offers
         }
 
-    let private change (value: ChangeSummary) : ClaimCore.Wire.ChangeSummary =
+    let private change (value: ChangeSummary) : ClaimCore.Contract.Protocol.ChangeSummary =
         {
             OperationId = value.OperationId
             Position = position value.Position
@@ -209,21 +211,23 @@ module internal ResponseMapping =
         | HistoryEntry.FullEntry value -> caseReceipt value
         | _ -> invalidArg "entries" "History details must be homogeneous."
 
-    let historyPage (value: HistoryResultPage) : ClaimCore.Wire.HistoryPage =
+    let historyPage (value: HistoryResultPage) : ClaimCore.Contract.Protocol.HistoryPage =
         let entries =
             match value.Entries with
-            | [] -> ClaimCore.Wire.HistoryEntries.Empty
+            | [] -> ClaimCore.Contract.Protocol.HistoryEntries.Empty
             | HistoryEntry.SummaryEntry _ :: _ ->
-                ClaimCore.Wire.HistoryEntries.Summary(List.map summaryEntry value.Entries)
+                ClaimCore.Contract.Protocol.HistoryEntries.Summary(
+                    List.map summaryEntry value.Entries
+                )
             | HistoryEntry.FullEntry _ :: _ ->
-                ClaimCore.Wire.HistoryEntries.Full(List.map fullEntry value.Entries)
+                ClaimCore.Contract.Protocol.HistoryEntries.Full(List.map fullEntry value.Entries)
 
         {
             Entries = entries
             NextCursor = value.NextCursor
         }
 
-    let private principal value : ClaimCore.Wire.Principal =
+    let private principal value : ClaimCore.Contract.Protocol.Principal =
         let parts = PrincipalKey.description value
 
         {
@@ -232,36 +236,37 @@ module internal ResponseMapping =
             Subject = parts.Subject
         }
 
-    let private actor (value: ActorSummary) : ClaimCore.Wire.ActorSummary =
+    let private actor (value: ActorSummary) : ClaimCore.Contract.Protocol.ActorSummary =
         {
             ActorId = value.ActorId
             Principal = principal value.Principal
             Enabled = value.Enabled
         }
 
-    let private grant (value: AuthorityGrant) : ClaimCore.Wire.AuthorityGrant =
+    let private grant (value: AuthorityGrant) : ClaimCore.Contract.Protocol.AuthorityGrant =
         {
             Role = RoleTokens.token value.Role
             Scope =
                 match value.Scope with
-                | GrantTarget.Installation -> ClaimCore.Wire.Scope.Installation
-                | GrantTarget.CaseReference reference -> ClaimCore.Wire.Scope.Case reference
+                | GrantTarget.Installation -> ClaimCore.Contract.Protocol.Scope.Installation
+                | GrantTarget.CaseReference reference ->
+                    ClaimCore.Contract.Protocol.Scope.Case reference
         }
 
-    let actorsPage (value: ActorReviewPage) : ClaimCore.Wire.ActorsPage =
+    let actorsPage (value: ActorReviewPage) : ClaimCore.Contract.Protocol.ActorsPage =
         {
             Items = List.map actor value.Items
             NextCursor = value.NextCursor
         }
 
-    let grantsPage (value: AuthorityGrantPage) : ClaimCore.Wire.GrantsPage =
+    let grantsPage (value: AuthorityGrantPage) : ClaimCore.Contract.Protocol.GrantsPage =
         {
             Actor = actor value.Actor
             Items = List.map grant value.Items
             NextCursor = value.NextCursor
         }
 
-    let review (value: AdvisoryReview) : ClaimCore.Wire.Review =
+    let review (value: AdvisoryReview) : ClaimCore.Contract.Protocol.Review =
         {
             Before = Option.map snapshot value.Before
             After = snapshot value.Proposed
@@ -269,7 +274,8 @@ module internal ResponseMapping =
                 value.Changes
                 |> List.map (fun change ->
                     {
-                        ClaimCore.Wire.FieldChange.Field = BusinessField.token change.FieldName
+                        ClaimCore.Contract.Protocol.FieldChange.Field =
+                            BusinessField.token change.FieldName
                         Before = change.Before
                         After = change.After
                     })
@@ -278,79 +284,100 @@ module internal ResponseMapping =
 
     let private diagnostics =
         [
-            RejectionDiagnosticId.TextRequired, ClaimCore.Wire.Diagnostic.TextRequired()
-            RejectionDiagnosticId.MalformedUnicode, ClaimCore.Wire.Diagnostic.MalformedUnicode()
+            RejectionDiagnosticId.TextRequired,
+            ClaimCore.Contract.Protocol.Diagnostic.TextRequired()
+            RejectionDiagnosticId.MalformedUnicode,
+            ClaimCore.Contract.Protocol.Diagnostic.MalformedUnicode()
             RejectionDiagnosticId.SurroundingWhitespace,
-            ClaimCore.Wire.Diagnostic.SurroundingWhitespace()
-            RejectionDiagnosticId.ControlCharacters, ClaimCore.Wire.Diagnostic.ControlCharacters()
+            ClaimCore.Contract.Protocol.Diagnostic.SurroundingWhitespace()
+            RejectionDiagnosticId.ControlCharacters,
+            ClaimCore.Contract.Protocol.Diagnostic.ControlCharacters()
             RejectionDiagnosticId.CalendarDateRequired,
-            ClaimCore.Wire.Diagnostic.CalendarDateRequired()
-            RejectionDiagnosticId.ChronologicalOrder, ClaimCore.Wire.Diagnostic.ChronologicalOrder()
-            RejectionDiagnosticId.FutureDate, ClaimCore.Wire.Diagnostic.FutureDate()
-            RejectionDiagnosticId.CurrencyFormat, ClaimCore.Wire.Diagnostic.CurrencyFormat()
-            RejectionDiagnosticId.EmptyOperationId, ClaimCore.Wire.Diagnostic.EmptyOperationId()
+            ClaimCore.Contract.Protocol.Diagnostic.CalendarDateRequired()
+            RejectionDiagnosticId.ChronologicalOrder,
+            ClaimCore.Contract.Protocol.Diagnostic.ChronologicalOrder()
+            RejectionDiagnosticId.FutureDate, ClaimCore.Contract.Protocol.Diagnostic.FutureDate()
+            RejectionDiagnosticId.CurrencyFormat,
+            ClaimCore.Contract.Protocol.Diagnostic.CurrencyFormat()
+            RejectionDiagnosticId.EmptyOperationId,
+            ClaimCore.Contract.Protocol.Diagnostic.EmptyOperationId()
             RejectionDiagnosticId.ExpectedRevisionOutOfRange,
-            ClaimCore.Wire.Diagnostic.ExpectedRevisionOutOfRange()
-            RejectionDiagnosticId.RevisionExhausted, ClaimCore.Wire.Diagnostic.RevisionExhausted()
+            ClaimCore.Contract.Protocol.Diagnostic.ExpectedRevisionOutOfRange()
+            RejectionDiagnosticId.RevisionExhausted,
+            ClaimCore.Contract.Protocol.Diagnostic.RevisionExhausted()
             RejectionDiagnosticId.PaymentClearRequired,
-            ClaimCore.Wire.Diagnostic.PaymentClearRequired()
+            ClaimCore.Contract.Protocol.Diagnostic.PaymentClearRequired()
             RejectionDiagnosticId.PaymentAcknowledgementRequired,
-            ClaimCore.Wire.Diagnostic.PaymentAcknowledgementRequired()
-            RejectionDiagnosticId.CaseAlreadyExists, ClaimCore.Wire.Diagnostic.CaseAlreadyExists()
-            RejectionDiagnosticId.RevisionConflict, ClaimCore.Wire.Diagnostic.RevisionConflict()
-            RejectionDiagnosticId.CaseClosed, ClaimCore.Wire.Diagnostic.CaseClosed()
-            RejectionDiagnosticId.AlreadyClosed, ClaimCore.Wire.Diagnostic.AlreadyClosed()
-            RejectionDiagnosticId.AlreadyOpened, ClaimCore.Wire.Diagnostic.AlreadyOpened()
+            ClaimCore.Contract.Protocol.Diagnostic.PaymentAcknowledgementRequired()
+            RejectionDiagnosticId.CaseAlreadyExists,
+            ClaimCore.Contract.Protocol.Diagnostic.CaseAlreadyExists()
+            RejectionDiagnosticId.RevisionConflict,
+            ClaimCore.Contract.Protocol.Diagnostic.RevisionConflict()
+            RejectionDiagnosticId.CaseClosed, ClaimCore.Contract.Protocol.Diagnostic.CaseClosed()
+            RejectionDiagnosticId.AlreadyClosed,
+            ClaimCore.Contract.Protocol.Diagnostic.AlreadyClosed()
+            RejectionDiagnosticId.AlreadyOpened,
+            ClaimCore.Contract.Protocol.Diagnostic.AlreadyOpened()
             RejectionDiagnosticId.AmendmentRequiresUndecided,
-            ClaimCore.Wire.Diagnostic.AmendmentRequiresUndecided()
+            ClaimCore.Contract.Protocol.Diagnostic.AmendmentRequiresUndecided()
             RejectionDiagnosticId.CorrectionNoChanges,
-            ClaimCore.Wire.Diagnostic.CorrectionNoChanges()
+            ClaimCore.Contract.Protocol.Diagnostic.CorrectionNoChanges()
             RejectionDiagnosticId.CorrectionRequiresExistingValue,
-            ClaimCore.Wire.Diagnostic.CorrectionRequiresExistingValue()
-            RejectionDiagnosticId.DecisionRequired, ClaimCore.Wire.Diagnostic.DecisionRequired()
+            ClaimCore.Contract.Protocol.Diagnostic.CorrectionRequiresExistingValue()
+            RejectionDiagnosticId.DecisionRequired,
+            ClaimCore.Contract.Protocol.Diagnostic.DecisionRequired()
             RejectionDiagnosticId.PaymentAlreadyRecorded,
-            ClaimCore.Wire.Diagnostic.PaymentAlreadyRecorded()
-            RejectionDiagnosticId.PaymentNotRecorded, ClaimCore.Wire.Diagnostic.PaymentNotRecorded()
+            ClaimCore.Contract.Protocol.Diagnostic.PaymentAlreadyRecorded()
+            RejectionDiagnosticId.PaymentNotRecorded,
+            ClaimCore.Contract.Protocol.Diagnostic.PaymentNotRecorded()
             RejectionDiagnosticId.DecisionAlreadyPaid,
-            ClaimCore.Wire.Diagnostic.DecisionAlreadyPaid()
+            ClaimCore.Contract.Protocol.Diagnostic.DecisionAlreadyPaid()
             RejectionDiagnosticId.ZeroDecisionCannotBePaid,
-            ClaimCore.Wire.Diagnostic.ZeroDecisionCannotBePaid()
-            RejectionDiagnosticId.InvalidCursor, ClaimCore.Wire.Diagnostic.InvalidCursor()
+            ClaimCore.Contract.Protocol.Diagnostic.ZeroDecisionCannotBePaid()
+            RejectionDiagnosticId.InvalidCursor,
+            ClaimCore.Contract.Protocol.Diagnostic.InvalidCursor()
             RejectionDiagnosticId.IdempotencyConflict,
-            ClaimCore.Wire.Diagnostic.IdempotencyConflict()
+            ClaimCore.Contract.Protocol.Diagnostic.IdempotencyConflict()
             RejectionDiagnosticId.ResourceUnavailable,
-            ClaimCore.Wire.Diagnostic.ResourceUnavailable()
-            RejectionDiagnosticId.CaseVoided, ClaimCore.Wire.Diagnostic.CaseVoided()
-            RejectionDiagnosticId.CaseErased, ClaimCore.Wire.Diagnostic.CaseErased()
-            RejectionDiagnosticId.AlreadyVoided, ClaimCore.Wire.Diagnostic.AlreadyVoided()
-            RejectionDiagnosticId.NotVoided, ClaimCore.Wire.Diagnostic.NotVoided()
-            RejectionDiagnosticId.LastOwner, ClaimCore.Wire.Diagnostic.LastOwner()
+            ClaimCore.Contract.Protocol.Diagnostic.ResourceUnavailable()
+            RejectionDiagnosticId.CaseVoided, ClaimCore.Contract.Protocol.Diagnostic.CaseVoided()
+            RejectionDiagnosticId.CaseErased, ClaimCore.Contract.Protocol.Diagnostic.CaseErased()
+            RejectionDiagnosticId.AlreadyVoided,
+            ClaimCore.Contract.Protocol.Diagnostic.AlreadyVoided()
+            RejectionDiagnosticId.NotVoided, ClaimCore.Contract.Protocol.Diagnostic.NotVoided()
+            RejectionDiagnosticId.LastOwner, ClaimCore.Contract.Protocol.Diagnostic.LastOwner()
             RejectionDiagnosticId.ActorAlreadyRegistered,
-            ClaimCore.Wire.Diagnostic.ActorAlreadyRegistered()
-            RejectionDiagnosticId.ActorUnknown, ClaimCore.Wire.Diagnostic.ActorUnknown()
+            ClaimCore.Contract.Protocol.Diagnostic.ActorAlreadyRegistered()
+            RejectionDiagnosticId.ActorUnknown,
+            ClaimCore.Contract.Protocol.Diagnostic.ActorUnknown()
             RejectionDiagnosticId.HumanPrincipalRequired,
-            ClaimCore.Wire.Diagnostic.HumanPrincipalRequired()
+            ClaimCore.Contract.Protocol.Diagnostic.HumanPrincipalRequired()
             RejectionDiagnosticId.FormattingCharacter,
-            ClaimCore.Wire.Diagnostic.FormattingCharacter()
-            RejectionDiagnosticId.ReferenceFormat, ClaimCore.Wire.Diagnostic.ReferenceFormat()
-            RejectionDiagnosticId.CountryFormat, ClaimCore.Wire.Diagnostic.CountryFormat()
-            RejectionDiagnosticId.ActNotPermitted, ClaimCore.Wire.Diagnostic.ActNotPermitted()
-            RejectionDiagnosticId.LedgerExhausted, ClaimCore.Wire.Diagnostic.LedgerExhausted()
+            ClaimCore.Contract.Protocol.Diagnostic.FormattingCharacter()
+            RejectionDiagnosticId.ReferenceFormat,
+            ClaimCore.Contract.Protocol.Diagnostic.ReferenceFormat()
+            RejectionDiagnosticId.CountryFormat,
+            ClaimCore.Contract.Protocol.Diagnostic.CountryFormat()
+            RejectionDiagnosticId.ActNotPermitted,
+            ClaimCore.Contract.Protocol.Diagnostic.ActNotPermitted()
+            RejectionDiagnosticId.LedgerExhausted,
+            ClaimCore.Contract.Protocol.Diagnostic.LedgerExhausted()
         ]
         |> Map.ofList
 
     let private diagnostic (value: RejectionDiagnostic) =
         match RejectionDiagnostics.parameters value with
         | DiagnosticParameters.MaximumCharacters maximum ->
-            ClaimCore.Wire.Diagnostic.TextTooLong { MaximumCharacters = int64 maximum }
+            ClaimCore.Contract.Protocol.Diagnostic.TextTooLong { MaximumCharacters = int64 maximum }
         | DiagnosticParameters.DecimalDigits(integer, fraction) ->
-            ClaimCore.Wire.Diagnostic.DecimalFormat
+            ClaimCore.Contract.Protocol.Diagnostic.DecimalFormat
                 {
                     MaximumIntegerDigits = int64 integer
                     MaximumFractionalDigits = int64 fraction
                 }
         | DiagnosticParameters.MaximumPageSize maximum ->
-            ClaimCore.Wire.Diagnostic.PageLimitOutOfRange { MaximumPageSize = int64 maximum }
+            ClaimCore.Contract.Protocol.Diagnostic.PageLimitOutOfRange
+                { MaximumPageSize = int64 maximum }
         | DiagnosticParameters.None -> Map.find (RejectionDiagnostics.identifier value) diagnostics
 
     let private action =
@@ -363,7 +390,7 @@ module internal ResponseMapping =
         | RecommendedAction.StopAndInvestigate -> "STOP_AND_INVESTIGATE"
         | RecommendedAction.NoneRequired -> "NONE_REQUIRED"
 
-    let rejection (value: Rejection) : ClaimCore.Wire.Rejection =
+    let rejection (value: Rejection) : ClaimCore.Contract.Protocol.Rejection =
         {
             Diagnostic = diagnostic (RejectionDiagnostics.describe value)
             Message = RejectionPresentation.render value
@@ -372,15 +399,16 @@ module internal ResponseMapping =
             RecommendedAction = action value.Action
         }
 
-    let fault value : ClaimCore.Wire.Fault =
+    let fault value : ClaimCore.Contract.Protocol.Fault =
         let reason =
             match value with
-            | CoreFault.InternalError -> ClaimCore.Wire.FaultReason.InternalError
-            | CoreFault.StoreUnavailable -> ClaimCore.Wire.FaultReason.StoreUnavailable
-            | CoreFault.StoreIntegrityError -> ClaimCore.Wire.FaultReason.StoreIntegrityError
-            | CoreFault.SchemaMismatch -> ClaimCore.Wire.FaultReason.SchemaMismatch
+            | CoreFault.InternalError -> ClaimCore.Contract.Protocol.FaultReason.InternalError
+            | CoreFault.StoreUnavailable -> ClaimCore.Contract.Protocol.FaultReason.StoreUnavailable
+            | CoreFault.StoreIntegrityError ->
+                ClaimCore.Contract.Protocol.FaultReason.StoreIntegrityError
+            | CoreFault.SchemaMismatch -> ClaimCore.Contract.Protocol.FaultReason.SchemaMismatch
             | CoreFault.OperationContentConflict ->
-                ClaimCore.Wire.FaultReason.OperationContentConflict
+                ClaimCore.Contract.Protocol.FaultReason.OperationContentConflict
 
         {
             Reason = reason

@@ -5,10 +5,10 @@ open System.IO
 open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
-open ClaimCore.Catalog
+open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Application
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 /// Fixture-only core/codec evolution; never an offered production operation.
 module EvolutionQualification =
