@@ -68,7 +68,17 @@ let tests =
                     let fixture = fixture store
                     let! core = caseWorker fixture |> Async.AwaitTask
                     let gate = AdmissionGate(ignore)
-                    let actor = ActorFacade.bind gate core
+
+                    let mutable factoryCalls = 0
+
+                    let call action =
+                        ActorAccess.run
+                            gate
+                            (fun _ ->
+                                factoryCalls <- factoryCalls + 1
+                                core)
+                            fixture.Owner
+                            action
 
                     let entered =
                         TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -83,32 +93,38 @@ let tests =
                                 failtest "Release missing"
 
                     let running =
-                        Task.Run<ExecuteReply>(
-                            Func<Task<ExecuteReply>>(fun () ->
-                                actor.Execute(
-                                    OperationInput.Case(
-                                        request
-                                            10
-                                            "synthetic-lifetime"
-                                            0L
-                                            (ClaimCore.Contract.CaseAct.Open registration)
-                                    ),
-                                    CancellationToken.None
-                                ))
+                        Task.Run<ExecuteReply option>(
+                            Func<Task<ExecuteReply option>>(fun () ->
+                                call (fun actor ->
+                                    actor.Execute(
+                                        OperationInput.Case(
+                                            request
+                                                10
+                                                "synthetic-lifetime"
+                                                0L
+                                                (ClaimCore.Contract.CaseAct.Open registration)
+                                        ),
+                                        CancellationToken.None
+                                    )))
                         )
 
                     do! entered.Task |> Async.AwaitTask
                     let stopping = gate.Shutdown(TimeSpan.FromSeconds 2.)
-                    let! refused = actor.Context CancellationToken.None |> Async.AwaitTask
 
-                    Expect.equal
-                        refused
-                        (ReadReply.Failed CoreFault.StoreUnavailable)
-                        "New calls refuse"
+                    let! refused =
+                        call (fun actor -> actor.Context CancellationToken.None) |> Async.AwaitTask
+
+                    Expect.isNone refused "New calls never acquire an actor"
+                    Expect.equal factoryCalls 1 "Closed admission never invokes the actor factory"
 
                     finish.Set()
                     let! outcome = running |> Async.AwaitTask
-                    accepted outcome |> ignore
+
+                    accepted (
+                        outcome |> Option.defaultWith (fun () -> failtest "Admitted result lost")
+                    )
+                    |> ignore
+
                     let! shutdown = stopping |> Async.AwaitTask
                     Expect.equal shutdown ShutdownOutcome.Drained "Admitted work drained"
                 })

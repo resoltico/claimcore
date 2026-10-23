@@ -29,6 +29,12 @@ let private connectionString (database: PostgresFixture.Database) =
     settings.Password <- "synthetic-only"
     settings.ConnectionString
 
+let private call (runtime: ClaimCore.Web.Composition.IRuntime) principal action =
+    task {
+        let! result = runtime.WithActor(principal, action)
+        return result |> Option.defaultWith (fun () -> failtest "Expected admitted operation")
+    }
+
 let private runtimeCursors (database: PostgresFixture.Database) =
     task {
         let! owner = caseWorker database.Fixture
@@ -50,7 +56,8 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         use first = first |> Result.defaultWith (fun _ -> failtest "Runtime refused")
 
         let! page =
-            (first.Actor database.Fixture.Owner).List({ AfterCursor = None; Limit = 1 }, token)
+            call first database.Fixture.Owner (fun actor ->
+                actor.List({ AfterCursor = None; Limit = 1 }, token))
 
         let cursor =
             match page with
@@ -60,7 +67,8 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         Expect.isSome cursor "A page is available"
 
         let! same =
-            (first.Actor database.Fixture.Owner).List({ AfterCursor = cursor; Limit = 2 }, token)
+            call first database.Fixture.Owner (fun actor ->
+                actor.List({ AfterCursor = cursor; Limit = 2 }, token))
 
         match same with
         | ReadReply.Succeeded page ->
@@ -74,7 +82,8 @@ let private runtimeCursors (database: PostgresFixture.Database) =
             second |> Result.defaultWith (fun _ -> failtest "Second runtime refused")
 
         let! continued =
-            (second.Actor database.Fixture.Owner).List({ AfterCursor = cursor; Limit = 2 }, token)
+            call second database.Fixture.Owner (fun actor ->
+                actor.List({ AfterCursor = cursor; Limit = 2 }, token))
 
         match continued with
         | ReadReply.Succeeded page ->
@@ -191,29 +200,31 @@ let tests =
                             opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
 
                         Expect.equal runtime.BusinessTimeZone "Etc/UTC" "Stored calendar"
-                        let actor = runtime.Actor database.Fixture.Owner
 
                         let! result =
-                            actor.Execute(
-                                OperationInput.Case(
-                                    request
-                                        30
-                                        "synthetic-hosting"
-                                        0L
-                                        (ClaimCore.Contract.CaseAct.Open registration)
-                                ),
-                                token
-                            )
+                            call runtime database.Fixture.Owner (fun actor ->
+                                actor.Execute(
+                                    OperationInput.Case(
+                                        request
+                                            30
+                                            "synthetic-hosting"
+                                            0L
+                                            (ClaimCore.Contract.CaseAct.Open registration)
+                                    ),
+                                    token
+                                ))
 
                         accepted result |> ignore
                         let! closed = runtime.Shutdown(TimeSpan.FromSeconds 1.)
                         Expect.equal closed ShutdownOutcome.Drained "Shutdown"
-                        let! after = actor.Context token
 
-                        Expect.equal
-                            after
-                            (ReadReply.Failed ClaimCore.Contract.CoreFault.StoreUnavailable)
-                            "Admission closed"
+                        let! after =
+                            runtime.WithActor(
+                                database.Fixture.Owner,
+                                fun actor -> actor.Context token
+                            )
+
+                        Expect.isNone after "Admission closed"
                     }))
             for name, change, expected in
                 [
@@ -310,8 +321,8 @@ let tests =
                         let! _ = Transactions.head holder token
 
                         let running =
-                            (runtime.Actor database.Fixture.Owner)
-                                .Execute(
+                            call runtime database.Fixture.Owner (fun actor ->
+                                actor.Execute(
                                     OperationInput.Case(
                                         request
                                             40
@@ -320,7 +331,7 @@ let tests =
                                             (ClaimCore.Contract.CaseAct.Open registration)
                                     ),
                                     token
-                                )
+                                ))
 
                         let deadline = DateTimeOffset.UtcNow.AddSeconds 3.
                         let mutable waiting = false
@@ -369,6 +380,6 @@ let tests =
                         (Some ClaimCore.Application.RuntimeOpenFault.UnsupportedServer)
                         "One admission vocabulary")
             testCaseAsync
-                "plain cursor positions survive actor facade and runtime lifetimes"
+                "plain cursor positions survive runtime lifetimes"
                 (run runtimeCursors)
         ]

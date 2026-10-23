@@ -63,7 +63,7 @@ module internal ApiRoutes =
                     | Ok prepared -> return Ok(value, prepared)
         }
 
-    let handle endpoint configuration forActor (context: HttpContext) =
+    let handle endpoint configuration withActor (context: HttpContext) =
         task {
             HttpHeaders.noStore context
 
@@ -90,11 +90,17 @@ module internal ApiRoutes =
                             else
                                 context.RequestAborted
 
-                        let! outcome =
-                            prepared
-                                (forActor (AuthenticatedSubjects.key principal))
-                                cancellation
-                                (fun () -> RouteSupport.markCompleted context)
+                        let! result =
+                            withActor (AuthenticatedSubjects.key principal) (fun core ->
+                                prepared.Invoke core cancellation (fun () ->
+                                    RouteSupport.markCompleted context))
+
+                        let outcome =
+                            match result with
+                            | Some reply -> reply
+                            | None ->
+                                RouteSupport.markCompleted context
+                                prepared.Unavailable()
 
                         return RouteSupport.reply outcome context
         }

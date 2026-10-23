@@ -131,7 +131,7 @@ module HostRoutes =
                         context
         }
 
-    let map assets configuration forActor (application: WebApplication) =
+    let map assets configuration withActor (application: WebApplication) =
         Dispatch.check ()
         let files = StaticFileOptions()
 
@@ -146,7 +146,7 @@ module HostRoutes =
                 match (Api.id endpoint) with
                 | "session" -> session configuration
                 | "session.logout" -> logout configuration
-                | _ -> ApiRoutes.handle endpoint configuration forActor
+                | _ -> ApiRoutes.handle endpoint configuration withActor
 
             let exact (context: HttpContext) =
                 if Option.ofObj context.Request.Path.Value <> Some(Api.path endpoint) then

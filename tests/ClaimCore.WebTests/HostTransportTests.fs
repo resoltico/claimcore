@@ -359,6 +359,37 @@ let private completionFailure () =
                 "A returned core result is completed before response encoding"
         })
 
+let private closedAdmission () =
+    loggedIn true (fun host token ->
+        task {
+            host.Facade.AdmissionOpen <- false
+
+            for endpoint in [ "context"; "operation.preview"; "operation.execute" ] do
+                let! status, response = host.Call(endpoint, body endpoint, token)
+                Expect.equal status 200 "Closed runtime returns a typed failure"
+                use document = JsonDocument.Parse response
+                let outcome = document.RootElement.GetProperty("outcome")
+
+                Expect.equal
+                    (outcome.GetProperty("tag").GetString())
+                    "FAILED"
+                    "Definite refusal to start"
+
+                Expect.equal
+                    (outcome.GetProperty("data").GetProperty("code").GetString())
+                    "CORE_STORE_UNAVAILABLE"
+                    "Preserved public fault"
+
+                if endpoint <> "context" then
+                    Expect.equal
+                        (document.RootElement.GetProperty("operationId").GetGuid())
+                        operationId
+                        "Unavailable reply retains the original ID"
+
+            Expect.isNone host.Facade.Principal "Denied work never invokes the actor factory"
+            Expect.isEmpty host.Facade.Calls "No core call after admission closes"
+        })
+
 let private bindingInventory () =
     let ids =
         Api.all
@@ -448,6 +479,9 @@ let tests =
             testCase "all eleven endpoints use the registry and typed facade" catalogueRoutes
             testCase "authority preview reaches the shared core without recording" authorityPreview
             testCase "core completion precedes response encoding failure" completionFailure
+            testCase
+                "closed admission preserves typed read preview and execute failures"
+                closedAdmission
             testCase
                 "dispatch bindings reject missing duplicate and extra handlers"
                 bindingInventory

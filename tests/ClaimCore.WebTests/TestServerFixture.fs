@@ -163,12 +163,21 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
         HostRoutes.map
             assets
             (configuration certificate)
-            (fun principal ->
-                facade.Principal <- Some principal
+            (fun principal action ->
+                task {
+                    if not facade.AdmissionOpen then
+                        return None
+                    else
+                        facade.Principal <- Some principal
 
-                match forActor with
-                | Some factory -> factory principal
-                | None -> facade.ActorCore)
+                        let actor =
+                            match forActor with
+                            | Some factory -> factory principal
+                            | None -> facade.ActorCore
+
+                        let! result = action actor
+                        return Some result
+                })
             application
 
         application.StartAsync().GetAwaiter().GetResult()

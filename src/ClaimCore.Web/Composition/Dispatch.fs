@@ -5,22 +5,45 @@ open System.Threading.Tasks
 open ClaimCore.Application
 open ClaimCore.Contract
 
+[<NoEquality; NoComparison>]
 type internal PreparedCall =
-    IActorClaimsCore -> CancellationToken -> (unit -> unit) -> Task<JsonValue>
+    {
+        Invoke: IActorClaimsCore -> CancellationToken -> (unit -> unit) -> Task<JsonValue>
+        Unavailable: unit -> JsonValue
+    }
 
 /// Typed closures erase handler types after codec admission, without casts or a second request DU.
 module internal Dispatch =
-    let private bind (endpoint: Endpoint<'Input, 'Output>) invoke =
+    let private bind (endpoint: Endpoint<'Input, 'Output>) unavailable invoke =
         endpoint.Id,
         fun value ->
             endpoint.Input.Read "$" value
             |> Result.map (fun input ->
-                fun core cancellation completed ->
-                    task {
-                        let! reply = invoke core input cancellation
-                        completed ()
-                        return endpoint.Output.Write reply
-                    })
+                {
+                    Unavailable = fun () -> endpoint.Output.Write(unavailable input)
+                    Invoke =
+                        fun core cancellation completed ->
+                            task {
+                                let! reply = invoke core input cancellation
+                                completed ()
+                                return endpoint.Output.Write reply
+                            }
+                })
+
+    let private bindRead endpoint invoke =
+        bind endpoint (fun _ -> ReadReply.Failed CoreFault.StoreUnavailable) invoke
+
+    let private previewUnavailable input : PreviewReply =
+        {
+            OperationId = OperationInput.operationId input
+            Outcome = PreviewResult.Failed CoreFault.StoreUnavailable
+        }
+
+    let private executeUnavailable input : ExecuteReply =
+        {
+            OperationId = OperationInput.operationId input
+            Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
+        }
 
     let validate ids =
         let expected =
@@ -38,15 +61,17 @@ module internal Dispatch =
     let private bindings =
         let values: (string * (JsonValue -> Result<PreparedCall, Problem>)) list =
             [
-                bind Api.context (fun core () ct -> core.Context ct)
-                bind Api.caseGet (fun core input ct -> core.Get(input, ct))
-                bind Api.caseList (fun core input ct -> core.List(input, ct))
-                bind Api.caseHistory (fun core input ct -> core.History(input, ct))
-                bind Api.operationPreview (fun core input ct -> core.Preview(input, ct))
-                bind Api.operationExecute (fun core input ct -> core.Execute(input, ct))
-                bind Api.operationObserve (fun core input ct -> core.Observe(input, ct))
-                bind Api.authorityList (fun core input ct -> core.ListActors(input, ct))
-                bind Api.authorityGrants (fun core input ct -> core.ListGrants(input, ct))
+                bindRead Api.context (fun core () ct -> core.Context ct)
+                bindRead Api.caseGet (fun core input ct -> core.Get(input, ct))
+                bindRead Api.caseList (fun core input ct -> core.List(input, ct))
+                bindRead Api.caseHistory (fun core input ct -> core.History(input, ct))
+                bind Api.operationPreview previewUnavailable (fun core input ct ->
+                    core.Preview(input, ct))
+                bind Api.operationExecute executeUnavailable (fun core input ct ->
+                    core.Execute(input, ct))
+                bindRead Api.operationObserve (fun core input ct -> core.Observe(input, ct))
+                bindRead Api.authorityList (fun core input ct -> core.ListActors(input, ct))
+                bindRead Api.authorityGrants (fun core input ct -> core.ListGrants(input, ct))
             ]
 
         validate (List.map fst values)

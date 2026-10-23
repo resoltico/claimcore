@@ -10,7 +10,7 @@ open ClaimCore.Application
 /// The HTTPS composition supplies actor-bound Application operations.
 type IServiceRuntime =
     inherit IDisposable
-    abstract Actor: PrincipalKey -> IActorClaimsCore
+    abstract WithActor: PrincipalKey * (IActorClaimsCore -> Task<'Value>) -> Task<'Value option>
     abstract Ready: CancellationToken -> Task<bool>
     abstract Shutdown: TimeSpan -> Task<unit>
 
@@ -23,7 +23,9 @@ module ServiceRuntime =
                 return
                     Ok
                         { new IServiceRuntime with
-                            member _.Actor principal = runtime.Actor principal
+                            member _.WithActor(principal, action) =
+                                runtime.WithActor(principal, action)
+
                             member _.Ready token = runtime.Ready token
 
                             member _.Shutdown bound =
@@ -33,7 +35,7 @@ module ServiceRuntime =
                         }
         }
 
-/// Project release metadata is exposed without exporting Application types to the host.
+/// Project release metadata.
 module ServiceIdentity =
     let product = BuildIdentity.current.Product
     let version = BuildIdentity.current.Version
