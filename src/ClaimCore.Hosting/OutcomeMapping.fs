@@ -55,7 +55,7 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.CaseHistoryOutcome.Rejected
                 ClaimCore.Contract.Protocol.CaseHistoryOutcome.Failed
                 ClaimCore.Contract.Protocol.CaseHistoryOutcome.Cancelled
-                ResponseMapping.historyPage
+                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.CaseHistory { Outcome = outcome }

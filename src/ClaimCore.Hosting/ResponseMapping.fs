@@ -7,32 +7,6 @@ open ClaimCore.Domain
 open ClaimCore.Hosting.Presentation
 
 module internal ResponseMapping =
-    let private summaryEntry =
-        function
-        | HistoryEntry.SummaryEntry value -> value
-        | _ -> invalidArg "entries" "History details must be homogeneous."
-
-    let private fullEntry =
-        function
-        | HistoryEntry.FullEntry value -> value
-        | _ -> invalidArg "entries" "History details must be homogeneous."
-
-    let historyPage (value: HistoryResultPage) : ClaimCore.Contract.Protocol.HistoryPage =
-        let entries =
-            match value.Entries with
-            | [] -> ClaimCore.Contract.Protocol.HistoryEntries.Empty
-            | HistoryEntry.SummaryEntry _ :: _ ->
-                ClaimCore.Contract.Protocol.HistoryEntries.Summary(
-                    List.map summaryEntry value.Entries
-                )
-            | HistoryEntry.FullEntry _ :: _ ->
-                ClaimCore.Contract.Protocol.HistoryEntries.Full(List.map fullEntry value.Entries)
-
-        {
-            Entries = entries
-            NextCursor = value.NextCursor
-        }
-
     let private diagnostics =
         [
             RejectionDiagnosticId.TextRequired,

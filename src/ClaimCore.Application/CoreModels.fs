@@ -21,17 +21,6 @@ type RuntimeOpenFault =
     | Cancelled
 
 [<RequireQualifiedAccess>]
-type HistoryEntry =
-    | SummaryEntry of ChangeSummary
-    | FullEntry of OperationReceipt
-
-type HistoryResultPage =
-    {
-        Entries: HistoryEntry list
-        NextCursor: string option
-    }
-
-[<RequireQualifiedAccess>]
 type AuthorityAct =
     | RegisterActor
     | SetGrant of role: Role * scope: GrantTarget * active: bool

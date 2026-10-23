@@ -393,9 +393,13 @@ and private freshList response source context kind =
 
     gen {
         let! size = count minimum maximum
+        let! seed = choose source context item
 
         let entry =
-            choose source context item |> Gen.bind (fresh response source context item)
+            if item = typeof<HistoryEntry> then
+                freshUnion response source context item seed
+            else
+                choose source context item |> Gen.bind (fresh response source context item)
 
         let! entries = Gen.list (Range.singleton size) entry
         return listValue kind entries

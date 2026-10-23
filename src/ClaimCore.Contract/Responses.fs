@@ -4,18 +4,6 @@ open ClaimCore.Contract
 
 open System
 
-[<RequireQualifiedAccess>]
-type HistoryEntries =
-    | Empty
-    | Summary of ChangeSummary list
-    | Full of OperationReceipt list
-
-type HistoryPage =
-    {
-        Entries: HistoryEntries
-        NextCursor: string option
-    }
-
 type Session =
     {
         Authenticated: bool
@@ -146,7 +134,7 @@ type CaseListReply = { Outcome: CaseListOutcome }
 
 [<RequireQualifiedAccess>]
 type CaseHistoryOutcome =
-    | Succeeded of HistoryPage
+    | Succeeded of HistoryResultPage
     | Rejected of Rejection
     | Failed of Fault
     | Cancelled of unit

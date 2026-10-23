@@ -476,41 +476,65 @@ module ResponseCodecs =
         |> fixedField "tag" "SUMMARY"
         |> field "change" id changeSummary
         |> build
+        |> map HistoryEntry.SummaryEntry (function
+            | HistoryEntry.SummaryEntry value -> value
+            | _ -> invalidArg "entry" "Expected summary history.")
 
     let private fullEntry =
-        record id |> fixedField "tag" "FULL" |> field "receipt" id caseReceipt |> build
+        record id
+        |> fixedField "tag" "FULL"
+        |> field "receipt" id caseReceipt
+        |> build
+        |> map HistoryEntry.FullEntry (function
+            | HistoryEntry.FullEntry value -> value
+            | _ -> invalidArg "entry" "Expected full history.")
 
     let historyEntries =
+        let nonempty predicate entries =
+            not (List.isEmpty entries) && List.forall predicate entries
+
         choice
             "HistoryEntries"
             [
                 branch
-                    (fun () -> HistoryEntries.Empty)
+                    (fun value -> value)
                     (function
-                    | HistoryEntries.Empty -> Some()
+                    | [] -> Some []
                     | _ -> None)
-                    (boundedList 0 0 summaryEntry |> map (fun _ -> ()) (fun () -> []))
+                    (boundedList 0 0 summaryEntry)
                 branch
-                    HistoryEntries.Summary
-                    (function
-                    | HistoryEntries.Summary values -> Some values
-                    | _ -> None)
+                    (fun value -> value)
+                    (fun entries ->
+                        if
+                            nonempty
+                                (function
+                                | HistoryEntry.SummaryEntry _ -> true
+                                | _ -> false)
+                                entries
+                        then
+                            Some entries
+                        else
+                            None)
                     (boundedList 1 Limits.MaximumPageSize summaryEntry)
                 branch
-                    HistoryEntries.Full
-                    (function
-                    | HistoryEntries.Full values -> Some values
-                    | _ -> None)
+                    (fun value -> value)
+                    (fun entries ->
+                        if
+                            nonempty
+                                (function
+                                | HistoryEntry.FullEntry _ -> true
+                                | _ -> false)
+                                entries
+                        then
+                            Some entries
+                        else
+                            None)
                     (boundedList 1 Limits.MaximumPageSize fullEntry)
             ]
 
     let historyPage =
-        (record (fun v0 v1 ->
-            {
-                HistoryPage.Entries = v0
-                NextCursor = v1
-            })
-        : Fields<HistoryPage, _>)
+        (record (fun entries next -> { Entries = entries; NextCursor = next })
+        : Fields<HistoryResultPage, _>)
         |> field "entries" _.Entries historyEntries
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
