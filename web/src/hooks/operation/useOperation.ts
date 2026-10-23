@@ -47,6 +47,7 @@ const fresh = (options: Options, kind = options.kind): OperationState => {
     notice: null,
     fieldError: null,
     confirmed: false,
+    pendingDiscard: null,
   };
 };
 const useStateControl = (options: Options) => {
@@ -146,8 +147,11 @@ const prepare = (model: Model) => {
     );
   } catch (error) {
     model.dispatch({
-      type: "INVALID_INPUT",
-      path: error instanceof ProtocolInputError ? error.path.join(".") : null,
+      type: "REFUSE",
+      notice: { kind: "local", reason: "invalidInput" },
+      target: error instanceof ProtocolInputError ? error.path.join(".") : null,
+      uncertain: false,
+      disclosure: false,
     });
     return null;
   }
@@ -290,6 +294,9 @@ const editing = (model: Model, options: Options) => {
   };
 };
 const disclosureActions = (model: Model) => ({
+  requestDiscard: (kind: string | null) => {
+    if (!model.control.current.busy) {model.dispatch({ type: "DISCARD", kind });}
+  },
   restoreDisclosure: () => {
     if (model.latest.current.disclosureRefused) {
       model.dispatch({ type: "INVALIDATE", uncertain: false, refused: false });

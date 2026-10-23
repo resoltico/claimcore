@@ -17,6 +17,7 @@ export const initial = (): OperationState => ({
   notice: null,
   fieldError: null,
   confirmed: false,
+  pendingDiscard: null,
 });
 export const begin = (state = initial()) =>
   operationReducer(state, { type: "PREVIEW", prepared: preparedFor() });

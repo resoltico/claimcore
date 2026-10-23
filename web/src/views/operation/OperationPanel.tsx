@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import { CopyValue } from "../../components/CopyValue";
@@ -153,7 +153,8 @@ const PanelContent = (props: DialogProps) => {
   );
 };
 export const OperationPanel = (props: Props) => {
-  const [pending, setPending] = useState<string | null>(null);
+  const pending = props.model.pendingDiscard;
+  const setPending = props.model.requestDiscard;
   return (
     <>
       <PanelContent {...props} pending={pending} setPending={setPending} />

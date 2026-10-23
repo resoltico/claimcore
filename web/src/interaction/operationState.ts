@@ -17,11 +17,12 @@ export type OperationState = {
   notice: Notice | null;
   fieldError: string | null;
   confirmed: boolean;
+  pendingDiscard: string | null;
 };
 export type OperationAction =
   | { type: "RESET"; state: OperationState }
   | { type: "EDIT"; path: string; value: string | boolean; id: string }
-  | { type: "INVALID_INPUT"; path: string | null }
+  | { type: "DISCARD"; kind: string | null }
   | { type: "PREVIEW"; prepared: PreparedRequest<"operation.execute"> }
   | { type: "REVIEW"; review: OperationReview; token: string }
   | { type: "RECORD"; receipt: OperationReceipt; token: string }
@@ -105,6 +106,7 @@ const recorded = (
 ): OperationState => ({
   ...state,
   phase: "ACCEPTED",
+  pendingDiscard: null,
   receipt: action.receipt,
   priorUncertain: false,
   disclosureToken: action.token,
@@ -163,12 +165,8 @@ export const operationReducer = (
       return action.state;
     case "EDIT":
       return edited(state, action);
-    case "INVALID_INPUT":
-      return {
-        ...state,
-        notice: { kind: "local", reason: "invalidInput" },
-        fieldError: action.path,
-      };
+    case "DISCARD":
+      return { ...state, pendingDiscard: action.kind };
     case "PREVIEW":
       return previewed(state, action);
     case "REVIEW":
