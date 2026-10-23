@@ -184,6 +184,7 @@ jobs:
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
       - name: Published service and clients
         env:
+          NPM_CONFIG_CACHE: ${{ runner.temp }}/claimcore-npm-cache
           CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ matrix.engine }}
           CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: ${{ matrix.scope }}
         run: bash eng/verify.sh browsers acceptance

@@ -49,10 +49,6 @@ runs:
         node-version-file: .node-version
         package-manager-cache: false
     - if: inputs.node == 'true'
-      name: Use the shared download-only npm cache
-      shell: bash
-      run: echo "NPM_CONFIG_CACHE=${RUNNER_TEMP}/claimcore-npm-cache" >> "$GITHUB_ENV"
-    - if: inputs.node == 'true'
       name: Cache npm downloads # zizmor: ignore[cache-poisoning] -- npm verifies lockfile integrity; no build outputs cached.
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
