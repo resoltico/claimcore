@@ -64,7 +64,10 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   page,
 }) => {
   await startPseudo(page);
-  await page.getByRole("dialog").locator(".dialog-actions button").last().click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "⟦Rëëcöörd chààngëës⟧", exact: true })
+    .click();
   await expect(page.locator("section.receipt")).toBeVisible();
   await page.setViewportSize({ width: 320, height: 720 });
   await noHorizontalOverflow(page, "narrow");
