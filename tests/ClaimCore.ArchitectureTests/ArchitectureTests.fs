@@ -167,8 +167,7 @@ let private graphTests =
             for name in contract.Value.Projects.Keys do
                 if name <> "ClaimCore.Contract" then
                     let changed =
-                        actualGraph ()
-                        |> Map.add "ClaimCore.Contract" (Set.singleton name)
+                        actualGraph () |> Map.add "ClaimCore.Contract" (Set.singleton name)
 
                     reject
                         (fun () -> ProjectGraph.check contract.Value changed)
