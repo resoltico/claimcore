@@ -142,6 +142,11 @@ let private cliArguments () =
                     arguments
                     (Set.singleton "body")
                     "The shared help layout receives one rendered body."
+            | "cli.help.verbs" ->
+                Expect.equal
+                    arguments
+                    (Set.singleton "grammar")
+                    "Verb help receives exactly the grammar derived from its producers."
             | _ ->
                 Expect.isTrue
                     (Set.isSubset arguments limits)

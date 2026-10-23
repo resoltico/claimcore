@@ -43,20 +43,16 @@ let private pipe directory name =
 
     path
 
-let private brokenOutput =
-    "( : < \"$1\"; printf x > \"$2\" ) & exec 1>\"$1\"; while [ ! -f \"$2\" ]; do :; done; "
+let private brokenOutput = "exec 3<>\"$1\"; exec 1>\"$1\"; exec 3>&-; "
 
-let private brokenErrors =
-    "( : < \"$3\"; printf x > \"$4\" ) & exec 2>\"$3\"; while [ ! -f \"$4\" ]; do :; done; "
+let private brokenErrors = "exec 3<>\"$2\"; exec 2>\"$2\"; exec 3>&-; "
 
-/// The FIFO reader closes before its completion marker; exec inherits a writer with no readers.
+/// Bootstrap read/write admission avoids a blocking FIFO open; close its last reader before exec.
 let run directory binary command destination environment source =
     Directory.CreateDirectory(directory) |> ignore
     let output = pipe directory "stdout.pipe"
     let errors = pipe directory "stderr.pipe"
-
-    let arguments =
-        [ output; output + ".closed"; errors; errors + ".closed"; binary; command ]
+    let arguments = [ output; errors; binary; command ]
 
     let redirects =
         match destination with
@@ -67,7 +63,7 @@ let run directory binary command destination environment source =
         | "pipe" -> ""
         | _ -> invalidArg (nameof destination) "Unknown output-control destination."
 
-    shell directory (redirects + "exec dotnet \"$5\" \"$6\"") arguments environment (Some source)
+    shell directory (redirects + "exec dotnet \"$3\" \"$4\"") arguments environment (Some source)
 
 let private quote (value: string) = "'" + value.Replace("'", "'\\''") + "'"
 

@@ -88,6 +88,14 @@ let private expectedBytes methodName mode seed payload =
 
     Array.concat [ yield prefix; yield! List.replicate copies payload; yield suffix ]
 
+let private retainUnexpected directory methodName mode (result: BoundedProcessResult) =
+    let prefix = Path.Combine(directory, methodName + "-" + mode)
+
+    for name, bytes in [ "stdout", result.StandardOutput; "stderr", result.StandardError ] do
+        let path = prefix + "." + name
+        File.WriteAllBytes(path, bytes)
+        File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+
 let private matrix directory binary seed =
     let payload = Encoding.UTF8.GetBytes("Rīga مطالبة 😀\n")
 
@@ -107,14 +115,23 @@ let private matrix directory binary seed =
         for mode in modes do
             let result, actual = bytes directory binary methodName mode seed
 
+            let expected = if mode = "broken" then 70 else 0
+
+            if result.ExitCode <> expected then
+                retainUnexpected directory methodName mode result
+
             if mode = "broken" then
-                Expect.equal result.ExitCode 70 "Selected sink surfaces real EPIPE"
+                Expect.equal result.ExitCode 70 (methodName + "/broken surfaces real EPIPE")
             else
                 Expect.equal result.ExitCode 0 (methodName + "/" + mode + " completes")
 
-                Expect.equal
-                    actual
-                    (expectedBytes methodName mode seed payload)
+                let expected = expectedBytes methodName mode seed payload
+
+                if actual <> expected then
+                    retainUnexpected directory methodName mode result
+
+                Expect.isTrue
+                    (actual = expected)
                     (methodName
                      + "/"
                      + mode
@@ -142,8 +159,15 @@ let private controls () =
             let full = Path.Combine(directory.FullName, "full")
             let result = OutputControls.run full binary "selected" "full" (dict []) [||]
             Expect.equal result.ExitCode 70 "Linux ENOSPC remains observable"
-    finally
-        directory.Delete true
+    with _ ->
+        let retained =
+            Path.Combine(root, "artifacts/verification", "output-" + directory.Name)
+
+        Directory.CreateDirectory(Path.GetDirectoryName retained |> nonNull) |> ignore
+        Directory.Move(directory.FullName, retained)
+        reraise ()
+
+    directory.Delete true
 
 [<Tests>]
 let tests =
