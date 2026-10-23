@@ -64,7 +64,7 @@ module DiagnosticCodecs =
 
     let private revision present =
         if present then
-            ResponseScalars.sequence |> map Some Option.get
+            ResponseScalars.revision |> map Some Option.get
         else
             nullValue |> map (fun () -> None) (fun _ -> ())
 

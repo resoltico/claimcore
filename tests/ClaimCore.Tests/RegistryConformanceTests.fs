@@ -161,12 +161,43 @@ let private reachable () =
         (Map.containsKey "CaseRequest" ClaimCore.Contract.OpenApi.definitions)
         "Unscoped request definitions are not published."
 
+let private diagnosticRevisions () =
+    let document = document ()
+
+    let selected =
+        SchemaJson.value "#/components/schemas/" DiagnosticCodecs.diagnostic.Schema
+        |> WireWriter.bytes
+        |> Encoding.UTF8.GetString
+        |> JsonNode.Parse
+        |> nonNull
+
+    let schema = validator document selected
+
+    let value =
+        """{"code":"CASE_REVISION_CONFLICT","action":"READ_CURRENT","target":null,"actualRevision":0,"limits":{}}"""
+
+    for revision, expected in [ "0", true; "1", true; "-1", false ] do
+        let changed =
+            value.Replace("\"actualRevision\":0", "\"actualRevision\":" + revision)
+            |> Encoding.UTF8.GetBytes
+
+        Expect.equal
+            (Codec.decode 10000 DiagnosticCodecs.diagnostic changed |> Result.isOk)
+            expected
+            "Diagnostic revisions can identify absent or accepted state"
+
+        Expect.equal
+            (evaluates schema changed)
+            expected
+            "Independent schema agrees about diagnostic revisions"
+
 [<Tests>]
 let tests =
     testList
         "registry independent conformance"
         [
             testCase "HTTP status constrains host bodies" statuses
+            testCase "absent and accepted state revisions remain distinct" diagnosticRevisions
             testCase "host code and phase are constrained together" phases
             testCase "only required fixed response descriptions are emitted" responseLabels
             testCase "schema publication follows reference reachability" reachable

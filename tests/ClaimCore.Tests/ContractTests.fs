@@ -272,16 +272,42 @@ let private actionEnums () =
             expected
             "Input correction and current-state recovery are distinct"
 
-let private positiveActualRevision () =
+let private diagnosticRevisions () =
+    let reason = Refusal.RevisionConflict 0L
+    let codec = DiagnosticCodecs.diagnostic
+
+    Expect.equal
+        (Codec.encode codec reason |> Codec.decode 10000 codec)
+        (Ok reason)
+        "An absent record can report actual revision zero"
+
     Expect.throws
-        (fun () ->
-            OutcomeMapping.caseGet (ReadReply.Rejected(Refusal.RevisionConflict 0L))
-            |> Replies.encode
-            |> ignore)
-        "The captured baseline refuses zero actualRevision on the wire."
+        (fun () -> Codec.encode codec (Refusal.RevisionConflict -1L) |> ignore)
+        "Negative actual revisions remain invalid"
+
+    let snapshot =
+        { Case.snapshot (opened ()) with
+            Revision = 0L
+        }
+
+    Expect.throws
+        (fun () -> Codec.encode ResponseCodecs.caseSnapshot snapshot |> ignore)
+        "An accepted snapshot revision stays positive"
+
+    let invalidReceipt =
+        match receipt.Scope with
+        | ReceiptScope.Case target ->
+            { receipt with
+                Scope = ReceiptScope.Case { target with Revision = 0L }
+            }
+        | _ -> failtest "Case receipt fixture"
+
+    Expect.throws
+        (fun () -> Codec.encode ReceiptCodecs.receipt invalidReceipt |> ignore)
+        "An accepted receipt revision stays positive"
 
 let private actionTokens () =
-    positiveActualRevision ()
+    diagnosticRevisions ()
 
     for refusal, _, expected, field, revision in actionExpectations do
         let result = OutcomeMapping.caseGet (ReadReply.Rejected refusal) |> admitted

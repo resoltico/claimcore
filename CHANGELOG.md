@@ -4,6 +4,10 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Fixed
+
+- Opening an absent case with a positive expected revision returns the revision-conflict rejection, including actual revision zero, instead of an HTTP 500 response-encoding failure. Preview and execution record no operation for this rejection.
+
 ## [0.11.0] - 2026-10-21
 
 ### Security

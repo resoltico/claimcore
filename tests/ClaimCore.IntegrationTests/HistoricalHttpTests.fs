@@ -125,8 +125,93 @@ let private retainedHistory (database: PostgresFixture.Database) =
         return ()
     }
 
+let private zeroRevisionReply endpoint status response =
+    Expect.equal status 200 "An absent-case revision conflict is a typed rejection"
+
+    Expect.isOk
+        (StrictJson.read 100000 response |> Result.bind (Api.admitOutput endpoint))
+        "The published reply codec admits revision zero"
+
+    use document = JsonDocument.Parse(response: byte array)
+
+    Expect.equal
+        (document.RootElement.GetProperty("operationId").GetGuid())
+        (id 31)
+        "Original operation identity"
+
+    let outcome = document.RootElement.GetProperty("outcome")
+    Expect.equal (outcome.GetProperty("tag").GetString()) "REJECTED" "No response encoding failure"
+    let diagnostic = outcome.GetProperty("data")
+
+    Expect.equal
+        (diagnostic.GetProperty("target").ValueKind)
+        JsonValueKind.Null
+        "Original target guidance is unchanged"
+
+    Expect.equal
+        (diagnostic.GetProperty("code").GetString())
+        "CASE_REVISION_CONFLICT"
+        "Domain refusal preserved"
+
+    Expect.equal
+        (diagnostic.GetProperty("action").GetString())
+        "READ_CURRENT"
+        "Original corrective action"
+
+    Expect.equal
+        (diagnostic.GetProperty("actualRevision").GetInt64())
+        0L
+        "Absence has revision zero"
+
+let private absentRevision (database: PostgresFixture.Database) =
+    task {
+        let! forActor = caller database
+        use host = new ClaimCore.WebTests.TestServerFixture.Host(true, forActor = forActor)
+        let! _ = host.Login()
+        let! csrf = host.Token()
+        let! before = verified database
+        let pending = request 31 "ABSENT-REVISION" 1L (CaseAct.Open registration)
+        let responses = ResizeArray<_>()
+
+        for name in [ Api.operationPreview.Id; Api.operationExecute.Id ] do
+            let! status, response = host.Call(name, httpRequest pending, csrf)
+
+            responses.Add(
+                Api.tryFind name |> Option.defaultWith (fun () -> failtest "Endpoint"),
+                status,
+                response
+            )
+
+        let! after = verified database
+        Expect.equal after before "Neither rejected operation records a ledger entry"
+
+        let! view =
+            database.Fixture.Store.ReadCase(
+                database.Fixture.Owner,
+                Some pending.OperationId,
+                pending.CaseReference,
+                token
+            )
+
+        match view with
+        | Ok view ->
+            Expect.isNone view.Case "No case projection was created"
+            Expect.isNone view.ExistingOperation "A rejected operation ID remains unused"
+        | Error _ -> failtest "Expected authoritative refusal evidence"
+
+        for endpoint, status, response in responses do
+            zeroRevisionReply endpoint status response
+    }
+
 [<Tests>]
 let tests =
-    testCaseAsync
-        "HTTP reads and reaffirms retained historical text but refuses changed new policy violations through real PostgreSQL"
-        (run retainedHistory)
+    testList
+        "PostgreSQL HTTP boundaries"
+        [
+            testCaseAsync
+                "reads retained text and refuses changed policy violations"
+                (run retainedHistory)
+            testCaseAsync
+                "absent case revision conflicts remain typed in preview and execution"
+                (run absentRevision)
+        ]
