@@ -21,7 +21,7 @@ let private eligible (fields: CaseFields) command =
     | BusinessCommand.RecordPayment _ -> decided && not paid && fields.PayableAmount <> Some "0"
     | BusinessCommand.ClearPayment -> paid
 
-let private registration (value: RegistrationInput) (fields: CaseFields) =
+let private registration (value: Registration) (fields: CaseFields) =
     { fields with
         IncidentDate = value.IncidentDate
         IncidentNotificationDate = value.IncidentNotificationDate
@@ -37,8 +37,8 @@ let private changed fields command =
     | BusinessCommand.AmendRegistration value -> registration value fields
     | BusinessCommand.CorrectCase value ->
         match value.Registration with
-        | RegistrationCorrection.Replace value -> registration value fields
-        | RegistrationCorrection.Keep -> fields
+        | RegistrationGroup.Replace value -> registration value fields
+        | RegistrationGroup.Keep -> fields
     | BusinessCommand.Decide value ->
         { fields with
             PaymentDecisionDate = Some value.PaymentDecisionDate

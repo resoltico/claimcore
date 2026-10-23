@@ -131,13 +131,13 @@ module ActorAuthorization =
         | CaseAct.Business(BusinessCommand.CorrectCase correction) ->
             [
                 match correction.Registration with
-                | RegistrationCorrection.Keep -> ()
+                | RegistrationGroup.Keep -> ()
                 | _ -> yield correctionCapability CorrectionGroup.Registration
                 match correction.Decision with
-                | DecisionCorrection.Keep -> ()
+                | DecisionGroup.Keep -> ()
                 | _ -> yield correctionCapability CorrectionGroup.Decision
                 match correction.Payment with
-                | PaymentCorrection.Keep -> ()
+                | PaymentGroup.Keep -> ()
                 | _ -> yield correctionCapability CorrectionGroup.Payment
             ]
         | act -> [ ordinaryActs[CaseActs.kind act] ]

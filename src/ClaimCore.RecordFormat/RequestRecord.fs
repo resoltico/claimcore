@@ -13,11 +13,11 @@ module RequestRecord =
         match Json.text path "mode" value with
         | "KEEP" ->
             Json.properties path [ "mode" ] value
-            RegistrationCorrection.Keep
+            RegistrationGroup.Keep
         | "REPLACE" ->
             Json.properties path [ "mode"; "values" ] value
 
-            RegistrationCorrection.Replace(
+            RegistrationGroup.Replace(
                 Json.registration (path + ".values") (Json.required path "values" value)
             )
         | _ -> Json.reject (path + ".mode") "Use KEEP or REPLACE."
@@ -28,16 +28,16 @@ module RequestRecord =
         match Json.text path "mode" value with
         | "KEEP" ->
             Json.properties path [ "mode" ] value
-            DecisionCorrection.Keep
+            DecisionGroup.Keep
         | "REPLACE" ->
             Json.properties path [ "mode"; "values" ] value
 
-            DecisionCorrection.Replace(
+            DecisionGroup.Replace(
                 Json.decision (path + ".values") (Json.required path "values" value)
             )
         | "CLEAR" ->
             Json.properties path [ "mode" ] value
-            DecisionCorrection.Clear
+            DecisionGroup.Clear
         | _ -> Json.reject (path + ".mode") "Use KEEP, REPLACE or CLEAR."
 
     let private paymentValues path element =
@@ -50,16 +50,18 @@ module RequestRecord =
         match Json.text path "mode" value with
         | "KEEP" ->
             Json.properties path [ "mode" ] value
-            PaymentCorrection.Keep
+            PaymentGroup.Keep
         | "REPLACE" ->
             Json.properties path [ "mode"; "values" ] value
 
-            PaymentCorrection.Replace(
-                paymentValues (path + ".values") (Json.required path "values" value)
-            )
+            PaymentGroup.Replace
+                {
+                    PaymentDate =
+                        paymentValues (path + ".values") (Json.required path "values" value)
+                }
         | "CLEAR" ->
             Json.properties path [ "mode" ] value
-            PaymentCorrection.Clear
+            PaymentGroup.Clear
         | _ -> Json.reject (path + ".mode") "Use KEEP, REPLACE or CLEAR."
 
     let private correction element =
@@ -160,24 +162,26 @@ module RequestRecord =
     let private group name value =
         JsonValue.Object [ mode name; "values", value ]
 
-    let private correctionValue (correction: CaseCorrection) =
+    let private correctionValue (correction: Correction) =
         let registration =
             match correction.Registration with
-            | RegistrationCorrection.Keep -> JsonValue.Object [ mode "KEEP" ]
-            | RegistrationCorrection.Replace value -> group "REPLACE" (Json.registrationValue value)
+            | RegistrationGroup.Keep -> JsonValue.Object [ mode "KEEP" ]
+            | RegistrationGroup.Replace value -> group "REPLACE" (Json.registrationValue value)
 
         let decision =
             match correction.Decision with
-            | DecisionCorrection.Keep -> JsonValue.Object [ mode "KEEP" ]
-            | DecisionCorrection.Clear -> JsonValue.Object [ mode "CLEAR" ]
-            | DecisionCorrection.Replace value -> group "REPLACE" (Json.decisionValue value)
+            | DecisionGroup.Keep -> JsonValue.Object [ mode "KEEP" ]
+            | DecisionGroup.Clear -> JsonValue.Object [ mode "CLEAR" ]
+            | DecisionGroup.Replace value -> group "REPLACE" (Json.decisionValue value)
 
         let payment =
             match correction.Payment with
-            | PaymentCorrection.Keep -> JsonValue.Object [ mode "KEEP" ]
-            | PaymentCorrection.Clear -> JsonValue.Object [ mode "CLEAR" ]
-            | PaymentCorrection.Replace date ->
-                group "REPLACE" (JsonValue.Object [ "paymentDate", JsonValue.String date ])
+            | PaymentGroup.Keep -> JsonValue.Object [ mode "KEEP" ]
+            | PaymentGroup.Clear -> JsonValue.Object [ mode "CLEAR" ]
+            | PaymentGroup.Replace date ->
+                group
+                    "REPLACE"
+                    (JsonValue.Object [ "paymentDate", JsonValue.String date.PaymentDate ])
 
         JsonValue.Object [ "registration", registration; "decision", decision; "payment", payment ]
 

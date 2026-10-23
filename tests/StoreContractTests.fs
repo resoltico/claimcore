@@ -46,7 +46,7 @@ let internal authorityRequest operationId target act : AuthorityRequest =
         Act = act
     }
 
-let internal registration: RegistrationInput =
+let internal registration: Registration =
     {
         IncidentDate = "2026-08-01"
         IncidentNotificationDate = "2026-08-03"
@@ -705,15 +705,15 @@ let private revokedAdvice fixture =
         let! target, actor = scopedHandler fixture admin reference
         do! checkScopedAdvice actor reference
 
-        let correction: CaseCorrection =
+        let correction: Correction =
             {
                 Registration =
-                    RegistrationCorrection.Replace
+                    RegistrationGroup.Replace
                         { registration with
                             ClaimedAmount = "1001.0000"
                         }
-                Decision = DecisionCorrection.Keep
-                Payment = PaymentCorrection.Keep
+                Decision = DecisionGroup.Keep
+                Payment = PaymentGroup.Keep
             }
 
         let pending = request 35 reference 2L (BusinessCommand.CorrectCase correction)

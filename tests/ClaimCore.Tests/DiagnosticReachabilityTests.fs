@@ -15,18 +15,18 @@ open ClaimCore.Tests.ApplicationFixtures
 
 let private ct = CancellationToken.None
 
-let private decision: DecisionInput =
+let private decision: Decision =
     {
         PaymentDecisionDate = "2026-08-15"
         PayableAmount = "750.00"
         PayableCurrency = "EUR"
     }
 
-let private keep: CaseCorrection =
+let private keep: Correction =
     {
-        Registration = RegistrationCorrection.Keep
-        Decision = DecisionCorrection.Keep
-        Payment = PaymentCorrection.Keep
+        Registration = RegistrationGroup.Keep
+        Decision = DecisionGroup.Keep
+        Payment = PaymentGroup.Keep
     }
 
 let private business = CaseAct.Business
@@ -211,12 +211,12 @@ let private stateScenarios () =
         [ decided ],
         correction
             { keep with
-                Registration = RegistrationCorrection.Replace registration
+                Registration = RegistrationGroup.Replace registration
             }
         [],
         correction
             { keep with
-                Decision = DecisionCorrection.Clear
+                Decision = DecisionGroup.Clear
             }
         [], payment
         [], business BusinessCommand.ClearPayment
@@ -230,12 +230,12 @@ let private stateScenarios () =
         [ decided; payment ],
         correction
             { keep with
-                Decision = DecisionCorrection.Clear
+                Decision = DecisionGroup.Clear
             }
         [ decided; payment ],
         correction
             { keep with
-                Decision = DecisionCorrection.Replace decision
+                Decision = DecisionGroup.Replace decision
             }
     ]
 

@@ -21,12 +21,12 @@ let private businessCommands =
         BusinessCommand.CorrectCase
             {
                 Registration =
-                    RegistrationCorrection.Replace
+                    RegistrationGroup.Replace
                         { registration with
                             ClaimantName = "Corrected Synthetic Name"
                         }
-                Decision = DecisionCorrection.Keep
-                Payment = PaymentCorrection.Keep
+                Decision = DecisionGroup.Keep
+                Payment = PaymentGroup.Keep
             }
         BusinessCommand.Decide decision
         BusinessCommand.Decide { decision with PayableAmount = "0" }

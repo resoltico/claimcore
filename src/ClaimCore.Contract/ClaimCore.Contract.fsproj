@@ -26,6 +26,7 @@
     <Compile Include="Json/Codec.fs" />
     <Compile Include="Endpoint.fs" />
     <Compile Include="Delivery.fs" />
+    <Compile Include="Model/CaseInputs.fs" />
     <Compile Include="Requests.fs" />
     <Compile Include="RequestCodecs.fs" />
     <Compile Include="Admission.fs" />

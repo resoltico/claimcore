@@ -77,12 +77,12 @@ let private acts =
             BusinessCommand.CorrectCase
                 {
                     Registration =
-                        RegistrationCorrection.Replace
+                        RegistrationGroup.Replace
                             { registration with
                                 ClaimantName = "Changed Party"
                             }
-                    Decision = DecisionCorrection.Keep
-                    Payment = PaymentCorrection.Keep
+                    Decision = DecisionGroup.Keep
+                    Payment = PaymentGroup.Keep
                 }
         )
         (CaseActKind.Business BusinessActKind.Decide),
@@ -170,9 +170,9 @@ let private allKeep =
     CaseAct.Business(
         BusinessCommand.CorrectCase
             {
-                Registration = RegistrationCorrection.Keep
-                Decision = DecisionCorrection.Keep
-                Payment = PaymentCorrection.Keep
+                Registration = RegistrationGroup.Keep
+                Decision = DecisionGroup.Keep
+                Payment = PaymentGroup.Keep
             }
     )
 

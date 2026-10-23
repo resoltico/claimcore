@@ -7,6 +7,7 @@ open System.Text.Json
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
+open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.PropertyHarness
@@ -27,7 +28,7 @@ let private registrationGenerator =
 
         return
             {
-                IncidentDate = "2026-08-01"
+                Registration.IncidentDate = "2026-08-01"
                 IncidentNotificationDate = "2026-08-03"
                 IncidentCountry = country
                 ClaimantName = claimant
@@ -44,24 +45,20 @@ let private commandsGenerator =
 
         let decision =
             {
-                PaymentDecisionDate = "2026-08-15"
+                Decision.PaymentDecisionDate = "2026-08-15"
                 PayableAmount = payable.ToString(CultureInfo.InvariantCulture)
                 PayableCurrency = "USD"
             }
 
         let corrections =
-            [ RegistrationCorrection.Keep; RegistrationCorrection.Replace registration ]
+            [ RegistrationGroup.Keep; RegistrationGroup.Replace registration ]
             |> List.collect (fun registration ->
-                [
-                    DecisionCorrection.Keep
-                    DecisionCorrection.Replace decision
-                    DecisionCorrection.Clear
-                ]
+                [ DecisionGroup.Keep; DecisionGroup.Replace decision; DecisionGroup.Clear ]
                 |> List.collect (fun decision ->
                     [
-                        PaymentCorrection.Keep
-                        PaymentCorrection.Replace "2026-08-20"
-                        PaymentCorrection.Clear
+                        PaymentGroup.Keep
+                        PaymentGroup.Replace { PaymentDate = "2026-08-20" }
+                        PaymentGroup.Clear
                     ]
                     |> List.map (fun payment ->
                         BusinessCommand.CorrectCase
@@ -114,20 +111,20 @@ let private correctionModesMatch (request: CaseRequest) (encoded: byte array) =
     | CaseAct.Business(BusinessCommand.CorrectCase correction) ->
         let registration =
             match correction.Registration with
-            | RegistrationCorrection.Keep -> "KEEP"
-            | RegistrationCorrection.Replace _ -> "REPLACE"
+            | RegistrationGroup.Keep -> "KEEP"
+            | RegistrationGroup.Replace _ -> "REPLACE"
 
         let decision =
             match correction.Decision with
-            | DecisionCorrection.Keep -> "KEEP"
-            | DecisionCorrection.Replace _ -> "REPLACE"
-            | DecisionCorrection.Clear -> "CLEAR"
+            | DecisionGroup.Keep -> "KEEP"
+            | DecisionGroup.Replace _ -> "REPLACE"
+            | DecisionGroup.Clear -> "CLEAR"
 
         let payment =
             match correction.Payment with
-            | PaymentCorrection.Keep -> "KEEP"
-            | PaymentCorrection.Replace _ -> "REPLACE"
-            | PaymentCorrection.Clear -> "CLEAR"
+            | PaymentGroup.Keep -> "KEEP"
+            | PaymentGroup.Replace _ -> "REPLACE"
+            | PaymentGroup.Clear -> "CLEAR"
 
         use document = JsonDocument.Parse(ReadOnlyMemory<byte>(encoded))
         let command = document.RootElement.GetProperty("act").GetProperty("groups")

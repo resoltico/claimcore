@@ -2,7 +2,6 @@ namespace ClaimCore.Contract.Protocol
 
 open ClaimCore.Contract
 
-open ClaimCore.Contract
 
 module RequestCodecs =
     open Codec

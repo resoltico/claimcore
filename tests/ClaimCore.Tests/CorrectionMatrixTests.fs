@@ -17,8 +17,8 @@ let private states () =
 
 let private registrationChoices =
     [
-        RegistrationCorrection.Keep, false
-        RegistrationCorrection.Replace
+        RegistrationGroup.Keep, false
+        RegistrationGroup.Replace
             { registration with
                 ClaimantName = "Synthetic matrix party"
             },
@@ -27,21 +27,21 @@ let private registrationChoices =
 
 let private decisionChoices =
     [
-        DecisionCorrection.Keep, "KEEP"
-        DecisionCorrection.Replace
+        DecisionGroup.Keep, "KEEP"
+        DecisionGroup.Replace
             { decision with
                 PayableAmount = "650.0000"
                 PayableCurrency = "USD"
             },
         "REPLACE"
-        DecisionCorrection.Clear, "CLEAR"
+        DecisionGroup.Clear, "CLEAR"
     ]
 
 let private paymentChoices =
     [
-        PaymentCorrection.Keep, "KEEP"
-        PaymentCorrection.Replace "2026-08-21", "REPLACE"
-        PaymentCorrection.Clear, "CLEAR"
+        PaymentGroup.Keep, "KEEP"
+        PaymentGroup.Replace { PaymentDate = "2026-08-21" }, "REPLACE"
+        PaymentGroup.Clear, "CLEAR"
     ]
 
 let private permitted (fields: CaseFields) registrationChanged decisionMode paymentMode =
@@ -144,9 +144,9 @@ let private zeroPaid =
             let command =
                 BusinessCommand.CorrectCase
                     {
-                        Registration = RegistrationCorrection.Keep
-                        Decision = DecisionCorrection.Replace { decision with PayableAmount = "0" }
-                        Payment = PaymentCorrection.Replace "2026-08-20"
+                        Registration = RegistrationGroup.Keep
+                        Decision = DecisionGroup.Replace { decision with PayableAmount = "0" }
+                        Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
                     }
 
             Expect.equal
@@ -159,7 +159,7 @@ let private zeroPaid =
                 | BusinessCommand.CorrectCase value ->
                     BusinessCommand.CorrectCase
                         { value with
-                            Payment = PaymentCorrection.Clear
+                            Payment = PaymentGroup.Clear
                         }
                 | _ -> failtest "Synthetic correction shape"
 

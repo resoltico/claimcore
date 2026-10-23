@@ -64,7 +64,7 @@ let private admitted (value: WireReply) =
     use document = JsonDocument.Parse(encoded.AsMemory())
     document.RootElement.Clone()
 
-let private wireRegistration (value: RegistrationInput) : Registration =
+let private wireRegistration (value: Registration) : Registration =
     {
         IncidentDate = value.IncidentDate
         IncidentNotificationDate = value.IncidentNotificationDate

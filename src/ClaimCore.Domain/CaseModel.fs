@@ -23,62 +23,13 @@ type CaseFields =
         Status: CaseStatus
     }
 
-/// Registration is only the initial subset of CaseFields; case reference is the request target.
-/// IncidentNotificationDate is THIS handler's notification date, regardless of who notified them.
-/// InsurerName is an allegation, not an adjudication of ultimate liability.
-type RegistrationInput =
-    {
-        IncidentDate: string
-        IncidentNotificationDate: string
-        IncidentCountry: string
-        ClaimantName: string
-        InsurerName: string
-        ClaimedAmount: string
-        ClaimedCurrency: string
-    }
-
-type DecisionInput =
-    {
-        PaymentDecisionDate: string
-        PayableAmount: string
-        PayableCurrency: string
-    }
-
-/// A correction reads the retained group from authoritative case state instead of trusting a
-/// duplicated client value. Replacement preserves authored scalar text for operation identity.
-[<RequireQualifiedAccess>]
-type RegistrationCorrection =
-    | Keep
-    | Replace of RegistrationInput
-
-[<RequireQualifiedAccess>]
-type DecisionCorrection =
-    | Keep
-    | Replace of DecisionInput
-    | Clear
-
-[<RequireQualifiedAccess>]
-type PaymentCorrection =
-    | Keep
-    | Replace of paymentDate: string
-    | Clear
-
-/// One atomic factual correction. It has no case-reference or status field and therefore cannot
-/// expand the thirteen-field business record.
-type CaseCorrection =
-    {
-        Registration: RegistrationCorrection
-        Decision: DecisionCorrection
-        Payment: PaymentCorrection
-    }
-
 /// Commands only maintain the requested fields. No correction-note or other business field is added.
 [<RequireQualifiedAccess>]
 type BusinessCommand =
-    | Open of registration: RegistrationInput
-    | AmendRegistration of registration: RegistrationInput
-    | CorrectCase of correction: CaseCorrection
-    | Decide of decision: DecisionInput
+    | Open of registration: Registration
+    | AmendRegistration of registration: Registration
+    | CorrectCase of correction: Correction
+    | Decide of decision: Decision
     | WithdrawDecision
     | RecordPayment of paymentDate: string
     | ClearPayment

@@ -8,27 +8,27 @@ open ClaimCore.Domain.ResultFlow
 module internal CaseCorrections =
     let private registrationInput =
         function
-        | RegistrationCorrection.Keep -> Ok ValidatedRegistrationCorrection.Keep
-        | RegistrationCorrection.Replace value ->
+        | RegistrationGroup.Keep -> Ok ValidatedRegistrationCorrection.Keep
+        | RegistrationGroup.Replace value ->
             Validation.registration value
             |> Result.map ValidatedRegistrationCorrection.Replace
 
     let private decisionInput =
         function
-        | DecisionCorrection.Keep -> Ok ValidatedDecisionCorrection.Keep
-        | DecisionCorrection.Clear -> Ok ValidatedDecisionCorrection.Clear
-        | DecisionCorrection.Replace value ->
+        | DecisionGroup.Keep -> Ok ValidatedDecisionCorrection.Keep
+        | DecisionGroup.Clear -> Ok ValidatedDecisionCorrection.Clear
+        | DecisionGroup.Replace value ->
             Validation.decision value |> Result.map ValidatedDecisionCorrection.Replace
 
     let private paymentInput =
         function
-        | PaymentCorrection.Keep -> Ok ValidatedPaymentCorrection.Keep
-        | PaymentCorrection.Clear -> Ok ValidatedPaymentCorrection.Clear
-        | PaymentCorrection.Replace value ->
-            Validation.date InputTarget.PaymentDate value
+        | PaymentGroup.Keep -> Ok ValidatedPaymentCorrection.Keep
+        | PaymentGroup.Clear -> Ok ValidatedPaymentCorrection.Clear
+        | PaymentGroup.Replace value ->
+            Validation.date InputTarget.PaymentDate value.PaymentDate
             |> Result.map ValidatedPaymentCorrection.Replace
 
-    let parse (correction: CaseCorrection) =
+    let parse (correction: Correction) : Result<ValidatedCaseCorrection, CaseRefusal> =
         result {
             let! registration = registrationInput correction.Registration
             let! decision = decisionInput correction.Decision

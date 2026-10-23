@@ -227,27 +227,23 @@ let private correctionMasks =
         true, true, true, [ Capability.Register; Capability.Decide; Capability.RecordPayment ]
     ]
 
-let private replacementCorrection
-    registrationChanged
-    decisionChanged
-    paymentChanged
-    : CaseCorrection =
+let private replacementCorrection registrationChanged decisionChanged paymentChanged : Correction =
     {
         Registration =
             (if registrationChanged then
-                 RegistrationCorrection.Replace registration
+                 RegistrationGroup.Replace registration
              else
-                 RegistrationCorrection.Keep)
+                 RegistrationGroup.Keep)
         Decision =
             (if decisionChanged then
-                 DecisionCorrection.Replace decision
+                 DecisionGroup.Replace decision
              else
-                 DecisionCorrection.Keep)
+                 DecisionGroup.Keep)
         Payment =
             (if paymentChanged then
-                 PaymentCorrection.Replace "2026-08-20"
+                 PaymentGroup.Replace { PaymentDate = "2026-08-20" }
              else
-                 PaymentCorrection.Keep)
+                 PaymentGroup.Keep)
     }
 
 let private corrections () =
@@ -264,15 +260,15 @@ let private corrections () =
 
         let clearedDecision =
             if decisionChanged then
-                DecisionCorrection.Clear
+                DecisionGroup.Clear
             else
-                DecisionCorrection.Keep
+                DecisionGroup.Keep
 
         let clearedPayment =
             if paymentChanged then
-                PaymentCorrection.Clear
+                PaymentGroup.Clear
             else
-                PaymentCorrection.Keep
+                PaymentGroup.Keep
 
         let cleared =
             { correction with
@@ -302,9 +298,9 @@ let private reaffirmations () =
         CaseAct.Business(
             BusinessCommand.CorrectCase
                 {
-                    Registration = RegistrationCorrection.Keep
-                    Decision = DecisionCorrection.Keep
-                    Payment = PaymentCorrection.Replace "2026-08-20"
+                    Registration = RegistrationGroup.Keep
+                    Decision = DecisionGroup.Keep
+                    Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
                 }
         )
 
@@ -320,9 +316,9 @@ let private reaffirmations () =
         CaseAct.Business(
             BusinessCommand.CorrectCase
                 {
-                    Registration = RegistrationCorrection.Keep
-                    Decision = DecisionCorrection.Keep
-                    Payment = PaymentCorrection.Keep
+                    Registration = RegistrationGroup.Keep
+                    Decision = DecisionGroup.Keep
+                    Payment = PaymentGroup.Keep
                 }
         )
 

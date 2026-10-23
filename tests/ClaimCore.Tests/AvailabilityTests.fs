@@ -16,12 +16,12 @@ let private candidates =
         BusinessCommand.CorrectCase
             {
                 Registration =
-                    RegistrationCorrection.Replace
+                    RegistrationGroup.Replace
                         { registration with
                             ClaimantName = "Corrected Synthetic Claimant"
                         }
-                Decision = DecisionCorrection.Keep
-                Payment = PaymentCorrection.Keep
+                Decision = DecisionGroup.Keep
+                Payment = PaymentGroup.Keep
             }
         BusinessCommand.Decide decision
         BusinessCommand.WithdrawDecision

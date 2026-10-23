@@ -550,7 +550,7 @@ let private malformedOptionalDate (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
 
-        let decision: DecisionInput =
+        let decision: Decision =
             {
                 PaymentDecisionDate = "2026-08-15"
                 PayableAmount = "1"

@@ -121,12 +121,12 @@ let private closedCorrectionRetainsDates =
                 BusinessCommand.CorrectCase
                     {
                         Registration =
-                            RegistrationCorrection.Replace
+                            RegistrationGroup.Replace
                                 { registration with
                                     ClaimantName = "Synthetic corrected party"
                                 }
-                        Decision = DecisionCorrection.Replace decision
-                        Payment = PaymentCorrection.Replace "2026-08-20"
+                        Decision = DecisionGroup.Replace decision
+                        Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
                     }
 
             let after =
@@ -148,12 +148,12 @@ let private correctionIncidentIsBounded =
                 BusinessCommand.CorrectCase
                     {
                         Registration =
-                            RegistrationCorrection.Replace
+                            RegistrationGroup.Replace
                                 { registration with
                                     IncidentDate = "2026-08-02"
                                 }
-                        Decision = DecisionCorrection.Keep
-                        Payment = PaymentCorrection.Keep
+                        Decision = DecisionGroup.Keep
+                        Payment = PaymentGroup.Keep
                     }
 
             paid ()
@@ -167,9 +167,9 @@ let private spellingDoesNotRevise =
             let command =
                 BusinessCommand.CorrectCase
                     {
-                        Registration = RegistrationCorrection.Keep
-                        Decision = DecisionCorrection.Replace decision
-                        Payment = PaymentCorrection.Replace "2026-08-20"
+                        Registration = RegistrationGroup.Keep
+                        Decision = DecisionGroup.Replace decision
+                        Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
                     }
 
             let result = paid () |> applyAt (DateOnly(2026, 7, 31)) command

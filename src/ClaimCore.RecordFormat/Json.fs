@@ -69,7 +69,7 @@ module internal Json =
         | JsonValue.Null -> None
         | value -> Some(stringValue (path + "." + name) value)
 
-    let registration path element : RegistrationInput =
+    let registration path element : Registration =
         properties
             path
             [
@@ -93,7 +93,7 @@ module internal Json =
             ClaimedCurrency = text path "claimedCurrency" element
         }
 
-    let decision path element : DecisionInput =
+    let decision path element : Decision =
         properties path [ "paymentDecisionDate"; "payableAmount"; "payableCurrency" ] element
 
         {
@@ -122,7 +122,7 @@ module internal Json =
         | Some(_, read) -> read root
         | None -> reject "$.format" "Unsupported record format."
 
-    let registrationValue (registration: RegistrationInput) =
+    let registrationValue (registration: Registration) =
         JsonValue.Object
             [
                 "incidentDate", JsonValue.String registration.IncidentDate
@@ -134,7 +134,7 @@ module internal Json =
                 "claimedCurrency", JsonValue.String registration.ClaimedCurrency
             ]
 
-    let decisionValue (decision: DecisionInput) =
+    let decisionValue (decision: Decision) =
         JsonValue.Object
             [
                 "paymentDecisionDate", JsonValue.String decision.PaymentDecisionDate

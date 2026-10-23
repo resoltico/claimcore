@@ -8,53 +8,13 @@ open ClaimCore.Domain
 module internal RequestMapping =
     type private WireAuthorityAct = ClaimCore.Contract.Protocol.AuthorityAct
 
-    let registration (value: ClaimCore.Contract.Protocol.Registration) : RegistrationInput =
-        {
-            IncidentDate = value.IncidentDate
-            IncidentNotificationDate = value.IncidentNotificationDate
-            IncidentCountry = value.IncidentCountry
-            ClaimantName = value.ClaimantName
-            InsurerName = value.InsurerName
-            ClaimedAmount = value.ClaimedAmount
-            ClaimedCurrency = value.ClaimedCurrency
-        }
-
-    let decision (value: ClaimCore.Contract.Protocol.Decision) : DecisionInput =
-        {
-            PaymentDecisionDate = value.PaymentDecisionDate
-            PayableAmount = value.PayableAmount
-            PayableCurrency = value.PayableCurrency
-        }
-
-    let private correction (value: ClaimCore.Contract.Protocol.Correction) : CaseCorrection =
-        {
-            Registration =
-                match value.Registration with
-                | ClaimCore.Contract.Protocol.RegistrationGroup.Keep -> RegistrationCorrection.Keep
-                | ClaimCore.Contract.Protocol.RegistrationGroup.Replace fields ->
-                    RegistrationCorrection.Replace(registration fields)
-            Decision =
-                match value.Decision with
-                | ClaimCore.Contract.Protocol.DecisionGroup.Keep -> DecisionCorrection.Keep
-                | ClaimCore.Contract.Protocol.DecisionGroup.Replace fields ->
-                    DecisionCorrection.Replace(decision fields)
-                | ClaimCore.Contract.Protocol.DecisionGroup.Clear -> DecisionCorrection.Clear
-            Payment =
-                match value.Payment with
-                | ClaimCore.Contract.Protocol.PaymentGroup.Keep -> PaymentCorrection.Keep
-                | ClaimCore.Contract.Protocol.PaymentGroup.Replace fields ->
-                    PaymentCorrection.Replace fields.PaymentDate
-                | ClaimCore.Contract.Protocol.PaymentGroup.Clear -> PaymentCorrection.Clear
-        }
-
     let private business =
         function
-        | ClaimCore.Contract.Protocol.CaseAct.Open value -> BusinessCommand.Open(registration value)
+        | ClaimCore.Contract.Protocol.CaseAct.Open value -> BusinessCommand.Open value
         | ClaimCore.Contract.Protocol.CaseAct.AmendRegistration value ->
-            BusinessCommand.AmendRegistration(registration value)
-        | ClaimCore.Contract.Protocol.CaseAct.CorrectCase value ->
-            BusinessCommand.CorrectCase(correction value)
-        | ClaimCore.Contract.Protocol.CaseAct.Decide value -> BusinessCommand.Decide(decision value)
+            BusinessCommand.AmendRegistration value
+        | ClaimCore.Contract.Protocol.CaseAct.CorrectCase value -> BusinessCommand.CorrectCase value
+        | ClaimCore.Contract.Protocol.CaseAct.Decide value -> BusinessCommand.Decide value
         | ClaimCore.Contract.Protocol.CaseAct.WithdrawDecision -> BusinessCommand.WithdrawDecision
         | ClaimCore.Contract.Protocol.CaseAct.RecordPayment value ->
             BusinessCommand.RecordPayment value.PaymentDate

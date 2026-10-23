@@ -227,7 +227,7 @@ module internal Validation =
                         "The amount and currency fields have incompatible scalar rules."
         }
 
-    let registration (input: RegistrationInput) =
+    let registration (input: Registration) =
         result {
             let! incident = date InputTarget.IncidentDate input.IncidentDate
 
@@ -260,7 +260,7 @@ module internal Validation =
                 }
         }
 
-    let decision (input: DecisionInput) =
+    let decision (input: ClaimCore.Contract.Decision) =
         result {
             let! decisionDate = date InputTarget.PaymentDecisionDate input.PaymentDecisionDate
 
