@@ -1,45 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { waitForLoginPermit } from "./admission-window";
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { expectAccessible, expectHostFailure, login, progress } from "./session-helpers";
 
 test.use({ storageState: { cookies: [], origins: [] } });
-const awaitWindowRecovery = async (page: Page) => {
-  await progress("rate-window-wait");
-  await waitForLoginPermit(
-    async (remainingMilliseconds) => {
-      const response = await page.request.get("/auth/login", {
-        maxRedirects: 0,
-        timeout: remainingMilliseconds,
-      });
-      try {
-        if (response.status() === 429) {
-          expectHostFailure(
-            {
-              status: 429,
-              cacheControl: response.headers()["cache-control"] ?? null,
-              payload: await response.json(),
-            },
-            429,
-            "RATE_LIMITED",
-          );
-        }
-        return response.status();
-      } finally {
-        await response.dispose();
-      }
-    },
-    (milliseconds) => page.waitForTimeout(milliseconds),
-  );
-};
 
-test("bounds repeated published login admission and recovers after its window", async ({
-  page,
-}) => {
-  test.setTimeout(80_000);
-  await page.goto("/", { waitUntil: "commit" });
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  await progress("rate-probing");
+const exhaustLoginWindow = async (page: Page) => {
   let bounded = false;
   // The shared host may already have consumed permits. A burst crosses at most one
   // window boundary; eleven requests exceed both possible five-permit allocations.
@@ -71,10 +37,33 @@ test("bounds repeated published login admission and recovers after its window", 
     }
   }
   expect(bounded).toBe(true);
-  await awaitWindowRecovery(page);
-  await progress("rate-window-ended");
-  await page.reload({ waitUntil: "commit" });
+};
+
+test("bounds repeated published login admission and recovers after its window", async ({
+  page,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  await page.goto("/", { waitUntil: "commit" });
+  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await progress("rate-probing");
+  await exhaustLoginWindow(page);
+  await progress("rate-window-recovery-start");
+  const challenges: number[] = [];
+  page.on("response", (response) => {
+    if (
+      new URL(response.url()).pathname === "/auth/login" &&
+      response.request().isNavigationRequest()
+    ) {
+      challenges.push(response.status());
+    }
+  });
   await login(page);
+  expect(challenges.at(-1)).toBe(302);
+  expect(challenges.filter((status) => status === 302)).toHaveLength(1);
+  test.info().annotations.push({
+    type: "browser-rate-refusals",
+    description: String(challenges.filter((status) => status === 429).length),
+  });
   await progress("rate-login-ready");
   await expect(page.getByRole("heading", { name: "Cases" })).toBeVisible();
   await expectAccessible(page);

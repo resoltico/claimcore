@@ -1,3 +1,4 @@
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
@@ -53,6 +54,7 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
   page,
   browser,
 }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
   const fixture = await prepareRoleFixture(page);
   let restore: () => Promise<void> = () => Promise.resolve();
   const context = await browser.newContext({
@@ -98,6 +100,7 @@ test("unregistered human authenticates without gaining a wider grant [CC-AUTH-00
   page,
   browser,
 }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
   const fixture = await prepareRoleFixture(page);
   const context = await browser.newContext({
     baseURL: new URL(page.url()).origin,

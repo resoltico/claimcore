@@ -1,3 +1,4 @@
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
@@ -99,6 +100,7 @@ const expectAnonymousSession = async (page: Page) => {
 };
 
 test("uses OIDC sign-in and the accessible actor-bound case workspace", async ({ page }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
   await page.goto("/", { waitUntil: "commit" });
   await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();

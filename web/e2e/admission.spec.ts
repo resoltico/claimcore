@@ -1,3 +1,4 @@
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { isResponse } from "../src/protocol/client";
 import { consumerContractIdentity } from "@contracts/client";
 import { expect, test, type Page } from "@playwright/test";
@@ -80,6 +81,7 @@ const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Pro
 test("rejects absent routes and malformed published Web service admission before mutation", async ({
   page,
 }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
   await page.goto("/", { waitUntil: "commit" });
   expectHostFailure(await browserRequest(page, "/api/not-present"), 404, "ENDPOINT_MISSING");
   expectHostFailure(

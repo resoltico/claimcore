@@ -1,3 +1,4 @@
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openCase } from "./case-workflow";
@@ -44,8 +45,8 @@ test("updates visible detail and expanded history immediately with independent f
 test("preserves language and independent display preferences through real logout and OIDC relogin", async ({
   page,
 }) => {
-  await page.goto("/", { waitUntil: "commit" });
-  await login(page);
+  test.setTimeout(freshLoginWorkflowTimeout);
+  await openAuthenticated(page);
   await selectFormat(page, "lv-LV");
   await selectLanguage(page, "ar");
   await expect(

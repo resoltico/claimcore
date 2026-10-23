@@ -48,7 +48,8 @@ failed engine. `CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE=chromium|firefox|webkit` sel
 and never prove full qualification. Browser workers stay serial inside a fixture because actor grants/redirect
 state are shared; isolated engine runners provide CI parallelism. Retries are zero. The installer retains
 Chromium's headless shell for CLI PKCE, including Firefox/WebKit jobs, and omits unused full Chromium.
-Recovery checks poll within the existing rate-limit deadline.
+Fresh-login tests budget one admission window plus normal OIDC work. Their shared helper follows the actual
+browser challenge and recovers only from a validated login-admission refusal.
 
 CI runs independent lint/unit/frontend/PostgreSQL/Web jobs and requires every scheduled job in `Gate`.
 PR/merge queue browser scope is Chromium smoke; main/tag and explicit full dispatch use three isolated
