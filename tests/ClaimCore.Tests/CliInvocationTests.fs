@@ -209,23 +209,76 @@ let grammarTests =
             testCase "preparation is exact and malformed flags fail" verbPreparation
         ]
 
-let private readVerbs () =
-    for arguments, endpoint in
-        [
-            [ "case"; "get"; "SYNTHETIC" ], "case.get"
-            [ "case"; "list"; "--limit"; "5"; "--cursor"; "synthetic" ], "case.list"
-            [ "case"; "history"; "SYNTHETIC"; "--full" ], "case.history"
-            [ "operation"; "observe"; "10000000-0000-4000-8000-000000000001" ], "operation.observe"
-            [ "authority"; "list" ], "authority.list"
-            [ "authority"; "grants"; "10000000-0000-4000-8000-000000000001" ], "authority.grants"
-            [ "context" ], "context"
-        ] do
-        let invocation = prepared arguments
+let private readVerbExamples =
+    [
+        [ "case"; "get"; "SYNTHETIC" ], "case.get"
+        [ "case"; "list"; "--limit"; "5"; "--cursor"; "synthetic" ], "case.list"
+        [ "case"; "history"; "SYNTHETIC"; "--full" ], "case.history"
+        [ "operation"; "observe"; "10000000-0000-4000-8000-000000000001" ], "operation.observe"
+        [ "authority"; "list" ], "authority.list"
+        [ "authority"; "grants"; "10000000-0000-4000-8000-000000000001" ], "authority.grants"
+        [ "context" ], "context"
+    ]
 
-        Expect.equal
-            (Frames.admit invocation.Bytes |> Result.map (Frames.endpoint >> Api.id))
-            (Ok endpoint)
-            "A read verb selects its registry endpoint"
+let private assertReadVerbCoverage registry mapped =
+    // Session routes are browser transport; preview is selected by a mutation verb option.
+    let excluded = Set.ofList [ "session"; "session.logout"; "operation.preview" ]
+
+    let eligible =
+        registry
+        |> List.filter (fun endpoint ->
+            not (Api.mutates endpoint) && not (Set.contains (Api.id endpoint) excluded))
+        |> List.map Api.id
+        |> Set.ofList
+
+    Expect.equal
+        (List.distinct mapped).Length
+        mapped.Length
+        "Each eligible read has exactly one verb mapping"
+
+    Expect.equal (Set.ofList mapped) eligible "Verb mappings exactly cover eligible registry reads"
+
+let private readVerbs () =
+    let mapped =
+        readVerbExamples
+        |> List.map (fun (arguments, endpoint) ->
+            let invocation = prepared arguments
+
+            let admitted =
+                Frames.admit invocation.Bytes
+                |> Result.defaultWith (fun _ -> failtest "Prepared read frame")
+
+            let actual = Frames.endpoint admitted |> Api.id
+            Expect.equal actual endpoint "A read verb selects its registry endpoint"
+            actual)
+
+    assertReadVerbCoverage Api.all mapped
+
+let private readCoverageControls () =
+    let mapped = readVerbExamples |> List.map snd
+    assertReadVerbCoverage Api.all mapped
+
+    let additional =
+        { Api.context with
+            Id = "synthetic.read"
+        }
+
+    let boxed =
+        { new AnyEndpoint with
+            member _.Accept visitor = visitor.Visit additional
+        }
+
+    Expect.throws
+        (fun () -> assertReadVerbCoverage (boxed :: Api.all) mapped)
+        "An added eligible registry endpoint requires a verb"
+
+    Expect.throws
+        (fun () -> assertReadVerbCoverage Api.all (List.tail mapped))
+        "Removing a required mapping fails the same coverage assertion"
+
+    Expect.throws
+        (fun () -> assertReadVerbCoverage Api.all (List.head mapped :: mapped))
+        "Duplicating a mapping fails uniqueness even when sets agree"
 
 let private localizedReplyRendering () =
     let path =
@@ -269,6 +322,9 @@ let renderingTests =
         "CLI verb rendering"
         [
             testCase "every case-work read has a registry-selected verb" readVerbs
+            testCase
+                "read coverage rejects added endpoints and missing or repeated mappings"
+                readCoverageControls
             testCase "frozen admitted replies render in every language" localizedReplyRendering
         ]
 
