@@ -40,9 +40,9 @@ let private request endpoint value =
 let private receipt envelope (data: JsonElement) =
     let scope =
         if text "scope" data = "CASE" then
-            ReceiptScope.Case
+            ReceiptScopeKind.Case
         else
-            ReceiptScope.Authority
+            ReceiptScopeKind.Authority
 
     let reference =
         match data.TryGetProperty "caseReference" with

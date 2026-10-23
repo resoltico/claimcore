@@ -60,7 +60,7 @@ let rec private collect (seeds: Seeds) context (kind: Type) (value: obj | null) 
     elif FSharpType.IsRecord kind then
         Array.zip (FSharpType.GetRecordFields kind) (FSharpValue.GetRecordFields(nonNull value))
         |> Array.iter (fun (field, item) ->
-            collect seeds (recordContext kind field) field.PropertyType item)
+            collect seeds (context + "." + recordContext kind field) field.PropertyType item)
     elif FSharpType.IsUnion kind then
         let case, fields = FSharpValue.GetUnionFields(value, kind)
 
@@ -70,7 +70,7 @@ let rec private collect (seeds: Seeds) context (kind: Type) (value: obj | null) 
                 if isOption kind then
                     context
                 else
-                    unionContext kind case field
+                    context + "." + unionContext kind case field
 
             collect seeds key field.PropertyType item)
 
@@ -272,7 +272,7 @@ let private generatedString response (source: Seeds) context =
 
     if
         Set.contains field tokens
-        || context.StartsWith("InstallationOffer.AuthorityAct", StringComparison.Ordinal)
+        || context.Contains("InstallationOffer.AuthorityAct", StringComparison.Ordinal)
     then
         Gen.item (source.Tokens[context] |> Seq.distinct |> Seq.toArray)
     elif field = "Cursor" || field = "AfterCursor" then
@@ -286,7 +286,7 @@ let private integer response context =
     let field = name context
 
     let low, high =
-        if context.StartsWith("InstallationOffer.Open", StringComparison.Ordinal) then
+        if context.Contains("InstallationOffer.Open", StringComparison.Ordinal) then
             0L, 0L
         elif field = "Limit" then
             1L, 50L
@@ -306,7 +306,12 @@ let private integer response context =
             3, Gen.int64 (Range.constant low high)
         ]
 
-let private listBounds (context: string) =
+let private listBounds (path: string) =
+    let segments = path.Split('.')
+
+    let context =
+        segments |> Array.skip (max 0 (segments.Length - 2)) |> String.concat "."
+
     let maximum =
         match context with
         | "CaseAdvice.Acts" -> 12
@@ -322,7 +327,7 @@ let private listBounds (context: string) =
         | _ -> 50
 
     let minimum =
-        if context.StartsWith("HistoryEntries.", StringComparison.Ordinal) then
+        if path.Contains("HistoryEntries.", StringComparison.Ordinal) then
             1
         else
             0
@@ -376,7 +381,7 @@ let rec private fresh response source context (kind: Type) (value: obj | null) =
     elif isList kind then
         freshList response source context kind
     elif FSharpType.IsRecord kind then
-        freshRecord response source kind value
+        freshRecord response source context kind value
     elif FSharpType.IsUnion kind then
         choose source context kind |> Gen.bind (freshUnion response source context kind)
     else
@@ -396,10 +401,10 @@ and private freshList response source context kind =
         return listValue kind entries
     }
 
-and private freshRecord response source kind value =
+and private freshRecord response source context kind value =
     Array.zip (FSharpType.GetRecordFields kind) (FSharpValue.GetRecordFields(nonNull value))
     |> Array.map (fun (field, item) ->
-        fresh response source (recordContext kind field) field.PropertyType item)
+        fresh response source (context + "." + recordContext kind field) field.PropertyType item)
     |> Array.toList
     |> sequence
     |> Gen.map (fun values -> FSharpValue.MakeRecord(kind, List.toArray values))
@@ -413,7 +418,7 @@ and private freshUnion response source context kind value =
             if isOption kind then
                 context
             else
-                unionContext kind case field
+                context + "." + unionContext kind case field
 
         fresh response source key field.PropertyType item)
     |> Array.toList
@@ -451,16 +456,7 @@ let private replyProperty endpoint =
 let private closedUnionCoverage (source: Seeds) =
     for KeyValue(kind, entries) in source.Values do
         if FSharpType.IsUnion kind && not (isOption kind) && not (isList kind) then
-            let expected =
-                FSharpType.GetUnionCases kind
-                // Provisioning is record-only; correction has its own offer case, not an ordinary act payload.
-                |> Array.filter (fun case ->
-                    (kind <> typeof<AuthorityKind>
-                     || case.Name <> nameof AuthorityKind.ProvisionOwner)
-                    && (kind <> typeof<BusinessActKind>
-                        || case.Name <> nameof BusinessActKind.CorrectCase))
-                |> Array.map _.Tag
-                |> Set.ofArray
+            let expected = FSharpType.GetUnionCases kind |> Array.map _.Tag |> Set.ofArray
 
             let actual =
                 entries

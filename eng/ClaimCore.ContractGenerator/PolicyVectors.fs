@@ -140,8 +140,8 @@ module PolicyVectors =
                 OperationId = guid "operationId" data
                 Scope =
                     match text "scope" data with
-                    | "CASE" -> ReceiptScope.Case
-                    | "AUTHORITY" -> ReceiptScope.Authority
+                    | "CASE" -> ReceiptScopeKind.Case
+                    | "AUTHORITY" -> ReceiptScopeKind.Authority
                     | _ -> invalidOp "An embedded receipt has an unknown scope."
                 Act = text "act" data
                 CaseReference = optional "caseReference" data

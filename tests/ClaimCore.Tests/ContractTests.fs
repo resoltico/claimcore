@@ -22,21 +22,21 @@ let private bytes (value: string) = Encoding.UTF8.GetBytes value
 let private id = Guid.Parse "20000000-0000-4000-8000-000000000001"
 let private digest = String.replicate 64 "a"
 
-let private position: ClaimCore.Application.LedgerPosition =
+let private position: ClaimCore.Contract.LedgerPosition =
     { Sequence = 1L; EntryHash = digest }
 
-let private receipt: ClaimCore.Application.OperationReceipt =
+let private receipt: ClaimCore.Contract.OperationReceipt =
     {
         OperationId = id
         Position = position
         Scope =
-            ClaimCore.Application.ReceiptScope.Case
+            ClaimCore.Contract.ReceiptScope.Case
                 {
                     Reference = "UNIT-001"
                     Revision = 1L
                     Act = (CaseActKind.Business BusinessActKind.Open)
                     Snapshot =
-                        ClaimCore.Application.SnapshotDisclosure.Disclosed
+                        ClaimCore.Contract.SnapshotDisclosure.Disclosed
                             (Case.snapshot (opened ())).View
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
@@ -46,7 +46,7 @@ let private receipt: ClaimCore.Application.OperationReceipt =
 let private authority =
     { receipt with
         Scope =
-            ClaimCore.Application.ReceiptScope.Authority
+            ClaimCore.Contract.ReceiptScope.Authority
                 {
                     TargetActorId = id
                     Act = AuthorityKind.RegisterActor
@@ -184,7 +184,7 @@ let private disclosures () =
         let value =
             { receipt with
                 Scope =
-                    ClaimCore.Application.ReceiptScope.Case
+                    ClaimCore.Contract.ReceiptScope.Case
                         {
                             Reference = "UNIT-001"
                             Revision = 1L

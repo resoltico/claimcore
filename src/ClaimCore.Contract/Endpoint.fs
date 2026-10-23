@@ -18,7 +18,7 @@ type Endpoint =
     | AuthorityExecute
 
 [<RequireQualifiedAccess>]
-type ReceiptScope =
+type ReceiptScopeKind =
     | Case
     | Authority
 
@@ -72,8 +72,8 @@ module Endpoint =
     let receiptScope =
         function
         | Endpoint.CasePreview
-        | Endpoint.CaseExecute -> Some ReceiptScope.Case
-        | Endpoint.AuthorityExecute -> Some ReceiptScope.Authority
+        | Endpoint.CaseExecute -> Some ReceiptScopeKind.Case
+        | Endpoint.AuthorityExecute -> Some ReceiptScopeKind.Authority
         | _ -> None
 
 module Limits =

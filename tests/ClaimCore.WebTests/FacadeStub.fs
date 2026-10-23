@@ -10,7 +10,7 @@ open ClaimCore.Domain
 
 let operationId = Guid.Parse "40000000-0000-4000-8000-000000000001"
 
-let position =
+let position: LedgerPosition =
     {
         Sequence = 1L
         EntryHash = String.replicate 64 "a"

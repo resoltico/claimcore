@@ -270,13 +270,13 @@ module ResponseCodecs =
         |> named "ActorContext"
 
     let position =
-        (record (fun v0 v1 ->
+        (record (fun sequence hash ->
             {
-                Position.Sequence = v0
-                EntryHash = v1
+                Sequence = sequence
+                EntryHash = hash
             })
-        : Fields<Position, _>)
-        |> field "sequence" _.Sequence (sequence)
+        : Fields<LedgerPosition, _>)
+        |> field "sequence" _.Sequence sequence
         |> field "entryHash" _.EntryHash digest
         |> build
         |> named "Position"
@@ -288,123 +288,106 @@ module ResponseCodecs =
             [
                 variant
                     "DISCLOSED"
-                    Disclosure.Disclosed
+                    SnapshotDisclosure.Disclosed
                     (function
-                    | Disclosure.Disclosed value -> Some value
+                    | SnapshotDisclosure.Disclosed value -> Some value
                     | _ -> None)
                     (record id |> field "state" id liveState)
-                unitVariant "WITHHELD" Disclosure.Withheld
-                unitVariant "ERASED" Disclosure.Erased
+                unitVariant "WITHHELD" SnapshotDisclosure.Withheld
+                unitVariant "ERASED" SnapshotDisclosure.Erased
             ]
 
-    let caseReceiptFields =
-        (record (fun v0 v1 v2 v3 v4 v5 v6 v7 ->
+    let private caseTarget (receipt: OperationReceipt) =
+        match receipt.Scope with
+        | ClaimCore.Contract.ReceiptScope.Case target -> target
+        | _ -> invalidArg (nameof receipt) "Expected a case receipt."
+
+    let private authorityTarget (receipt: OperationReceipt) =
+        match receipt.Scope with
+        | ClaimCore.Contract.ReceiptScope.Authority target -> target
+        | _ -> invalidArg (nameof receipt) "Expected an authority receipt."
+
+    let private header ctor : Fields<OperationReceipt, _> =
+        record ctor
+        |> field "operationId" (fun (value: OperationReceipt) -> value.OperationId) uuid
+        |> field "position" _.Position position
+        |> field "recordedAt" _.RecordedAt instant
+        |> field "recordedBy" _.RecordedBy uuid
+
+    let caseReceipt =
+        header (fun id position at by reference revision act snapshot ->
             {
-                CaseReceipt.OperationId = v0
-                Position = v1
-                RecordedAt = v2
-                RecordedBy = v3
-                CaseReference = v4
-                Revision = v5
-                Act = v6
-                Snapshot = v7
+                OperationId = id
+                Position = position
+                RecordedAt = at
+                RecordedBy = by
+                Scope =
+                    ClaimCore.Contract.ReceiptScope.Case
+                        {
+                            Reference = reference
+                            Revision = revision
+                            Act = act
+                            Snapshot = snapshot
+                        }
             })
-        : Fields<CaseReceipt, _>)
-        |> field "operationId" _.OperationId (uuid)
-        |> field "position" _.Position (position)
-        |> field "recordedAt" _.RecordedAt (instant)
-        |> field "recordedBy" _.RecordedBy (uuid)
-        |> fixedField "scope" "CASE"
-        |> field "caseReference" _.CaseReference reference
-        |> field "revision" _.Revision (sequence)
+        |> fixedField "scope" OperationScopes.Case
+        |> field "caseReference" (caseTarget >> _.Reference) reference
+        |> field "revision" (caseTarget >> _.Revision) sequence
         |> field
             "act"
-            _.Act
-            (tokens
-                [
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
-                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
-                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
-                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
-                ])
-        |> field "snapshot" _.Snapshot (disclosure)
+            (caseTarget >> _.Act)
+            (enumeration (CaseActKinds.all |> List.map (fun act -> act, CaseActKinds.token act)))
+        |> field "snapshot" (caseTarget >> _.Snapshot) disclosure
+        |> build
+        |> named "CaseReceipt"
 
-
-    let caseReceipt = caseReceiptFields |> build |> named "CaseReceipt"
-
-    let authorityReceiptFields =
-        (record (fun v0 v1 v2 v3 v4 v5 ->
+    let authorityReceipt =
+        header (fun id position at by target act ->
             {
-                AuthorityReceipt.OperationId = v0
-                Position = v1
-                RecordedAt = v2
-                RecordedBy = v3
-                TargetActorId = v4
-                Act = v5
+                OperationId = id
+                Position = position
+                RecordedAt = at
+                RecordedBy = by
+                Scope =
+                    ClaimCore.Contract.ReceiptScope.Authority { TargetActorId = target; Act = act }
             })
-        : Fields<AuthorityReceipt, _>)
-        |> field "operationId" _.OperationId (uuid)
-        |> field "position" _.Position (position)
-        |> field "recordedAt" _.RecordedAt (instant)
-        |> field "recordedBy" _.RecordedBy (uuid)
-        |> fixedField "scope" "AUTHORITY"
-        |> field "targetActorId" _.TargetActorId (uuid)
+        |> fixedField "scope" OperationScopes.Authority
+        |> field "targetActorId" (authorityTarget >> _.TargetActorId) uuid
         |> field
             "act"
-            _.Act
-            (tokens
+            (authorityTarget >> _.Act)
+            (enumeration (
                 [
-                    (AuthorityKinds.token AuthorityKind.ProvisionOwner)
-                    (AuthorityKinds.token AuthorityKind.RegisterActor)
-                    (AuthorityKinds.token AuthorityKind.SetGrant)
-                    (AuthorityKinds.token AuthorityKind.SetEnabled)
-                ])
-
-
-    let authorityReceipt = authorityReceiptFields |> build |> named "AuthorityReceipt"
+                    AuthorityKind.ProvisionOwner
+                    AuthorityKind.RegisterActor
+                    AuthorityKind.SetGrant
+                    AuthorityKind.SetEnabled
+                ]
+                |> List.map (fun act -> act, AuthorityKinds.token act)
+            ))
+        |> build
+        |> named "AuthorityReceipt"
 
     let changeSummary =
-        (record (fun v0 v1 v2 v3 v4 v5 ->
+        (record (fun id position revision act at by ->
             {
-                ChangeSummary.OperationId = v0
-                Position = v1
-                Revision = v2
-                Act = v3
-                RecordedAt = v4
-                RecordedBy = v5
+                OperationId = id
+                Position = position
+                Revision = revision
+                Act = act
+                RecordedAt = at
+                RecordedBy = by
             })
         : Fields<ChangeSummary, _>)
-        |> field "operationId" _.OperationId (uuid)
-        |> field "position" _.Position (position)
-        |> field "revision" _.Revision (sequence)
+        |> field "operationId" _.OperationId uuid
+        |> field "position" _.Position position
+        |> field "revision" _.Revision sequence
         |> field
             "act"
             _.Act
-            (tokens
-                [
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
-                    (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
-                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
-                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
-                    (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
-                ])
-        |> field "recordedAt" _.RecordedAt (instant)
-        |> field "recordedBy" _.RecordedBy (uuid)
+            (enumeration (CaseActKinds.all |> List.map (fun act -> act, CaseActKinds.token act)))
+        |> field "recordedAt" _.RecordedAt instant
+        |> field "recordedBy" _.RecordedBy uuid
         |> build
         |> named "ChangeSummary"
 
@@ -1064,16 +1047,18 @@ module ResponseCodecs =
             "Receipt"
             [
                 branch
-                    Receipt.Case
-                    (function
-                    | Receipt.Case value -> Some value
-                    | _ -> None)
+                    (fun (value: OperationReceipt) -> value)
+                    (fun (value: OperationReceipt) ->
+                        match value.Scope with
+                        | ClaimCore.Contract.ReceiptScope.Case _ -> Some value
+                        | _ -> None)
                     caseReceipt
                 branch
-                    Receipt.Authority
-                    (function
-                    | Receipt.Authority value -> Some value
-                    | _ -> None)
+                    (fun (value: OperationReceipt) -> value)
+                    (fun (value: OperationReceipt) ->
+                        match value.Scope with
+                        | ClaimCore.Contract.ReceiptScope.Authority _ -> Some value
+                        | _ -> None)
                     authorityReceipt
             ]
         |> discriminated "scope"

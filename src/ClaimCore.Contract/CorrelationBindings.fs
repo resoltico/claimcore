@@ -39,7 +39,7 @@ module CorrelationBindings =
         [
             yield exact [ "operationId" ] (data [ "operationId" ])
             yield exact [ "act"; "kind" ] (data [ "act" ])
-            if Endpoint.receiptScope endpoint = Some ReceiptScope.Case then
+            if Endpoint.receiptScope endpoint = Some ReceiptScopeKind.Case then
                 yield
                     {
                         RequestPath = [ "caseReference" ]
@@ -119,8 +119,8 @@ module CorrelationBindings =
                         if outcome = "ACCEPTED" || outcome = "ALREADY_ACCEPTED" then
                             Endpoint.receiptScope endpoint
                             |> Option.map (function
-                                | ReceiptScope.Case -> "CASE"
-                                | ReceiptScope.Authority -> "AUTHORITY")
+                                | ReceiptScopeKind.Case -> "CASE"
+                                | ReceiptScopeKind.Authority -> "AUTHORITY")
                         else
                             None
 

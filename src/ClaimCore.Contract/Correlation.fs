@@ -16,7 +16,7 @@ type RequestIdentity =
 type ReceiptIdentity =
     {
         OperationId: Guid
-        Scope: ReceiptScope
+        Scope: ReceiptScopeKind
         Act: string
         CaseReference: string option
         Revision: int64 option
@@ -72,8 +72,8 @@ module Correlation =
                                 act = receipt.Act
                                 scope =
                                     (match receipt.Scope with
-                                     | ReceiptScope.Case -> "CASE"
-                                     | ReceiptScope.Authority -> "AUTHORITY")
+                                     | ReceiptScopeKind.Case -> "CASE"
+                                     | ReceiptScopeKind.Authority -> "AUTHORITY")
                                 caseReference = receipt.CaseReference
                                 revision = receipt.Revision
                             |}
@@ -215,23 +215,29 @@ module Correlation =
         | WireRequest.OperationObserve value -> RequestIdentity.Operation value.OperationId
         | _ -> RequestIdentity.Read
 
-    let private caseIdentity (value: CaseReceipt) =
-        {
-            OperationId = value.OperationId
-            Scope = ReceiptScope.Case
-            Act = value.Act
-            CaseReference = Some value.CaseReference
-            Revision = Some value.Revision
-        }
+    let private caseIdentity (value: OperationReceipt) =
+        match value.Scope with
+        | ClaimCore.Contract.ReceiptScope.Case target ->
+            {
+                OperationId = value.OperationId
+                Scope = ReceiptScopeKind.Case
+                Act = CaseActKinds.token target.Act
+                CaseReference = Some target.Reference
+                Revision = Some target.Revision
+            }
+        | _ -> invalidArg (nameof value) "Expected a case receipt."
 
-    let private authorityIdentity (value: AuthorityReceipt) =
-        {
-            OperationId = value.OperationId
-            Scope = ReceiptScope.Authority
-            Act = value.Act
-            CaseReference = None
-            Revision = None
-        }
+    let private authorityIdentity (value: OperationReceipt) =
+        match value.Scope with
+        | ClaimCore.Contract.ReceiptScope.Authority target ->
+            {
+                OperationId = value.OperationId
+                Scope = ReceiptScopeKind.Authority
+                Act = AuthorityKinds.token target.Act
+                CaseReference = None
+                Revision = None
+            }
+        | _ -> invalidArg (nameof value) "Expected an authority receipt."
 
     let private preview (value: CasePreviewReply) =
         match value.Outcome with
@@ -274,10 +280,7 @@ module Correlation =
             | _ -> ReplyIdentity.Other None
         | WireReply.OperationObserve value ->
             match value.Outcome with
-            | OperationObserveOutcome.Succeeded(Receipt.Case data) ->
-                ReplyIdentity.Observed data.OperationId
-            | OperationObserveOutcome.Succeeded(Receipt.Authority data) ->
-                ReplyIdentity.Observed data.OperationId
+            | OperationObserveOutcome.Succeeded data -> ReplyIdentity.Observed data.OperationId
             | _ -> ReplyIdentity.Other None
         | _ -> ReplyIdentity.Other None
 

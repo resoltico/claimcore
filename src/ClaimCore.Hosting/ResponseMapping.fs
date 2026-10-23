@@ -7,73 +7,14 @@ open ClaimCore.Domain
 open ClaimCore.Hosting.Presentation
 
 module internal ResponseMapping =
-    let private position (value: LedgerPosition) : ClaimCore.Contract.Protocol.Position =
-        {
-            Sequence = value.Sequence
-            EntryHash = value.EntryHash
-        }
-
-    let private disclosure =
-        function
-        | SnapshotDisclosure.Withheld -> ClaimCore.Contract.Protocol.Disclosure.Withheld
-        | SnapshotDisclosure.Erased -> ClaimCore.Contract.Protocol.Disclosure.Erased
-        | SnapshotDisclosure.Disclosed(CaseView.Live(fields, disp)) ->
-            ClaimCore.Contract.Protocol.Disclosure.Disclosed(CaseView.Live(fields, disp))
-        | SnapshotDisclosure.Disclosed CaseView.Erased ->
-            invalidArg "snapshot" "Erasure has its own disclosure."
-
-    let caseReceipt (value: OperationReceipt) : ClaimCore.Contract.Protocol.CaseReceipt =
-        match value.Scope with
-        | ReceiptScope.Case target ->
-            {
-                OperationId = value.OperationId
-                Position = position value.Position
-                RecordedAt = value.RecordedAt
-                RecordedBy = value.RecordedBy
-                CaseReference = target.Reference
-                Revision = target.Revision
-                Act = CaseActKinds.token target.Act
-                Snapshot = disclosure target.Snapshot
-            }
-        | _ -> invalidArg "receipt" "Expected a case receipt."
-
-    let authorityReceipt (value: OperationReceipt) : ClaimCore.Contract.Protocol.AuthorityReceipt =
-        match value.Scope with
-        | ReceiptScope.Authority target ->
-            {
-                OperationId = value.OperationId
-                Position = position value.Position
-                RecordedAt = value.RecordedAt
-                RecordedBy = value.RecordedBy
-                TargetActorId = target.TargetActorId
-                Act = AuthorityKinds.token target.Act
-            }
-        | _ -> invalidArg "receipt" "Expected an authority receipt."
-
-    let receipt (value: OperationReceipt) =
-        match value.Scope with
-        | ReceiptScope.Case _ -> ClaimCore.Contract.Protocol.Receipt.Case(caseReceipt value)
-        | ReceiptScope.Authority _ ->
-            ClaimCore.Contract.Protocol.Receipt.Authority(authorityReceipt value)
-
-    let private change (value: ChangeSummary) : ClaimCore.Contract.Protocol.ChangeSummary =
-        {
-            OperationId = value.OperationId
-            Position = position value.Position
-            Revision = value.Revision
-            Act = CaseActKinds.token value.Act
-            RecordedAt = value.RecordedAt
-            RecordedBy = value.RecordedBy
-        }
-
     let private summaryEntry =
         function
-        | HistoryEntry.SummaryEntry value -> change value
+        | HistoryEntry.SummaryEntry value -> value
         | _ -> invalidArg "entries" "History details must be homogeneous."
 
     let private fullEntry =
         function
-        | HistoryEntry.FullEntry value -> caseReceipt value
+        | HistoryEntry.FullEntry value -> value
         | _ -> invalidArg "entries" "History details must be homogeneous."
 
     let historyPage (value: HistoryResultPage) : ClaimCore.Contract.Protocol.HistoryPage =

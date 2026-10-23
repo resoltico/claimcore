@@ -56,8 +56,8 @@ module TypeScript =
                 receiptScope =
                     Endpoint.receiptScope endpoint
                     |> Option.map (function
-                        | ReceiptScope.Case -> "CASE"
-                        | ReceiptScope.Authority -> "AUTHORITY")
+                        | ReceiptScopeKind.Case -> "CASE"
+                        | ReceiptScopeKind.Authority -> "AUTHORITY")
             |})
         |> JsonSerializer.Serialize
 

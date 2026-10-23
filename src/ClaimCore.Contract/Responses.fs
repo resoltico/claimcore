@@ -4,51 +4,11 @@ open ClaimCore.Contract
 
 open System
 
-type Position = { Sequence: int64; EntryHash: string }
-
-[<RequireQualifiedAccess>]
-type Disclosure =
-    | Disclosed of ClaimCore.Contract.CaseView
-    | Withheld
-    | Erased
-
-type CaseReceipt =
-    {
-        OperationId: Guid
-        Position: Position
-        RecordedAt: DateTimeOffset
-        RecordedBy: Guid
-        CaseReference: string
-        Revision: int64
-        Act: string
-        Snapshot: Disclosure
-    }
-
-type AuthorityReceipt =
-    {
-        OperationId: Guid
-        Position: Position
-        RecordedAt: DateTimeOffset
-        RecordedBy: Guid
-        TargetActorId: Guid
-        Act: string
-    }
-
-type ChangeSummary =
-    {
-        OperationId: Guid
-        Position: Position
-        Revision: int64
-        Act: string
-        RecordedAt: DateTimeOffset
-        RecordedBy: Guid
-    }
-
 [<RequireQualifiedAccess>]
 type HistoryEntries =
     | Empty
     | Summary of ChangeSummary list
-    | Full of CaseReceipt list
+    | Full of OperationReceipt list
 
 type HistoryPage =
     {
@@ -148,11 +108,6 @@ type Fault =
     { Reason: FaultReason; Message: string }
 
 [<RequireQualifiedAccess>]
-type Receipt =
-    | Case of CaseReceipt
-    | Authority of AuthorityReceipt
-
-[<RequireQualifiedAccess>]
 type SessionOutcome = Succeeded of Session
 
 type SessionReply = { Outcome: SessionOutcome }
@@ -201,7 +156,7 @@ type CaseHistoryReply = { Outcome: CaseHistoryOutcome }
 [<RequireQualifiedAccess>]
 type CasePreviewOutcome =
     | Reviewed of Reviewed
-    | AlreadyAccepted of CaseReceipt
+    | AlreadyAccepted of OperationReceipt
     | Rejected of Rejection
     | Failed of Fault
     | Cancelled of unit
@@ -214,8 +169,8 @@ type CasePreviewReply =
 
 [<RequireQualifiedAccess>]
 type CaseExecuteOutcome =
-    | Accepted of CaseReceipt
-    | AlreadyAccepted of CaseReceipt
+    | Accepted of OperationReceipt
+    | AlreadyAccepted of OperationReceipt
     | OutcomeUnknown of OutcomeUnknown
     | Rejected of Rejection
     | Failed of Fault
@@ -229,7 +184,7 @@ type CaseExecuteReply =
 
 [<RequireQualifiedAccess>]
 type OperationObserveOutcome =
-    | Succeeded of Receipt
+    | Succeeded of OperationReceipt
     | Rejected of Rejection
     | Failed of Fault
     | Cancelled of unit
@@ -256,8 +211,8 @@ type AuthorityGrantsReply = { Outcome: AuthorityGrantsOutcome }
 
 [<RequireQualifiedAccess>]
 type AuthorityExecuteOutcome =
-    | Accepted of AuthorityReceipt
-    | AlreadyAccepted of AuthorityReceipt
+    | Accepted of OperationReceipt
+    | AlreadyAccepted of OperationReceipt
     | OutcomeUnknown of OutcomeUnknown
     | Rejected of Rejection
     | Failed of Fault

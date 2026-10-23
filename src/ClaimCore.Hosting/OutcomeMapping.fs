@@ -67,7 +67,7 @@ module internal OutcomeMapping =
                 ClaimCore.Contract.Protocol.OperationObserveOutcome.Rejected
                 ClaimCore.Contract.Protocol.OperationObserveOutcome.Failed
                 ClaimCore.Contract.Protocol.OperationObserveOutcome.Cancelled
-                ResponseMapping.receipt
+                (fun value -> value)
                 value
 
         ClaimCore.Contract.Protocol.WireReply.OperationObserve { Outcome = outcome }
@@ -102,9 +102,7 @@ module internal OutcomeMapping =
             | PreviewOutcome.Reviewed review ->
                 ClaimCore.Contract.Protocol.CasePreviewOutcome.Reviewed { Review = review }
             | PreviewOutcome.AlreadyAccepted receipt ->
-                ClaimCore.Contract.Protocol.CasePreviewOutcome.AlreadyAccepted(
-                    ResponseMapping.caseReceipt receipt
-                )
+                ClaimCore.Contract.Protocol.CasePreviewOutcome.AlreadyAccepted(receipt)
             | PreviewOutcome.Rejected reason ->
                 ClaimCore.Contract.Protocol.CasePreviewOutcome.Rejected(
                     ResponseMapping.rejection reason
@@ -123,13 +121,9 @@ module internal OutcomeMapping =
         let outcome =
             match value with
             | ExecuteOutcome.Accepted receipt ->
-                ClaimCore.Contract.Protocol.CaseExecuteOutcome.Accepted(
-                    ResponseMapping.caseReceipt receipt
-                )
+                ClaimCore.Contract.Protocol.CaseExecuteOutcome.Accepted(receipt)
             | ExecuteOutcome.AlreadyAccepted receipt ->
-                ClaimCore.Contract.Protocol.CaseExecuteOutcome.AlreadyAccepted(
-                    ResponseMapping.caseReceipt receipt
-                )
+                ClaimCore.Contract.Protocol.CaseExecuteOutcome.AlreadyAccepted(receipt)
             | ExecuteOutcome.OutcomeUnknown id ->
                 ClaimCore.Contract.Protocol.CaseExecuteOutcome.OutcomeUnknown { OperationId = id }
             | ExecuteOutcome.Rejected reason ->
@@ -150,13 +144,9 @@ module internal OutcomeMapping =
         let outcome =
             match value with
             | ExecuteOutcome.Accepted receipt ->
-                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Accepted(
-                    ResponseMapping.authorityReceipt receipt
-                )
+                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.Accepted(receipt)
             | ExecuteOutcome.AlreadyAccepted receipt ->
-                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.AlreadyAccepted(
-                    ResponseMapping.authorityReceipt receipt
-                )
+                ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.AlreadyAccepted(receipt)
             | ExecuteOutcome.OutcomeUnknown id ->
                 ClaimCore.Contract.Protocol.AuthorityExecuteOutcome.OutcomeUnknown
                     { OperationId = id }
