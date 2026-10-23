@@ -24,16 +24,5 @@ export const pseudolocalize = (ast) =>
     if (node.type === TYPE.literal) {
       return { ...node, value: expand(node.value) };
     }
-    if (node.type === TYPE.plural || node.type === TYPE.select) {
-      return {
-        ...node,
-        options: Object.fromEntries(
-          Object.entries(node.options).map(([k, v]) => [
-            k,
-            { ...v, value: pseudolocalize(v.value) },
-          ]),
-        ),
-      };
-    }
     return structuredClone(node);
   });

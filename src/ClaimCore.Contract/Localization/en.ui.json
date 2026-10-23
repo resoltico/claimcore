@@ -93,7 +93,6 @@
   "ui.terminal": "Terminal",
   "ui.reload": "Reload",
   "ui.revocationSummary": "REVOKED · {operationId} · {timestamp}",
-  "ui.attemptCount": "{count, plural, one {# attempt shown.} other {# attempts shown.}}",
   "ui.moreAttempts": "Load more attempts",
   "ui.provenance": "Prepared with {version} · {contract}",
   "ui.revokedOperation": "Operation {operationId} was revoked at {timestamp}.",

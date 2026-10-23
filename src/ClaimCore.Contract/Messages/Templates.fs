@@ -64,7 +64,7 @@ module Template =
                     if closing < 0 then
                         Error "Unclosed message argument."
                     else
-                        let name = text.Substring(position + 1, closing - position - 1)
+                        let name = text.Substring(position + 1, closing - position - 1).Trim()
 
                         if not (argumentName name) then
                             Error "Unsupported message argument."
@@ -85,7 +85,9 @@ module Template =
                && not (character >= '\u202a' && character <= '\u202e')
                && not (character >= '\u2066' && character <= '\u2069')
                && character <> '\u200e'
-               && character <> '\u200f')
+               && character <> '\u200f'
+               && character <> '<'
+               && character <> '>')
 
     let parse text =
         if String.IsNullOrWhiteSpace text || text.Length > 8000 || not (safe text) then

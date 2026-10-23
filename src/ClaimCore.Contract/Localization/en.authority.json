@@ -1,0 +1,19 @@
+{
+  "authority.REGISTER_ACTOR.label": "Register actor",
+  "authority.REGISTER_ACTOR.meaning": "Register a principal without granting case or administration capabilities.",
+  "authority.SET_ENABLED.label": "Set actor enabled",
+  "authority.SET_ENABLED.meaning": "Enable or disable an actor. The final enabled human owner remains protected.",
+  "authority.SET_GRANT.label": "Set actor grant",
+  "authority.SET_GRANT.meaning": "Grant or revoke a role at installation or case scope.",
+  "authority.field.act.label": "Operation",
+  "authority.field.active.label": "Grant active",
+  "authority.field.enabled.label": "Actor enabled",
+  "authority.field.expectedRevision.label": "Expected revision",
+  "authority.field.issuer.label": "Identity issuer",
+  "authority.field.kind.label": "Type",
+  "authority.field.operationId.label": "Operation ID",
+  "authority.field.role.label": "Role",
+  "authority.field.scope.label": "Grant scope",
+  "authority.field.subject.label": "Subject or client ID",
+  "authority.field.target.label": "Actor principal"
+}

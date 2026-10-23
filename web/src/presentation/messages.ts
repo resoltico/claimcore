@@ -16,7 +16,7 @@ const catalogs = generatedCatalogs as unknown as Record<
 const shapeTable: Readonly<Record<string, Readonly<Record<string, string>>>> = shapes;
 const cache = new Map<string, IntlMessageFormat>();
 const message = (key: string, preferences: Preferences): IntlMessageFormat => {
-  const cacheKey = `${preferences.language}|${preferences.displayLocale}|${key}`;
+  const cacheKey = `${preferences.language}|${key}`;
   const cached = cache.get(cacheKey);
   if (cached !== undefined) {
     return cached;
@@ -33,13 +33,7 @@ const message = (key: string, preferences: Preferences): IntlMessageFormat => {
     preferences.language === presentationPseudolanguage
       ? presentationDefaults.language
       : preferences.language;
-  const formatter = new IntlMessageFormat(ast, grammar, undefined, {
-    formatters: {
-      getNumberFormat: () => new Intl.NumberFormat(preferences.displayLocale),
-      getDateTimeFormat: Intl.DateTimeFormat,
-      getPluralRules: (_locales, options) => new Intl.PluralRules(grammar, options),
-    },
-  });
+  const formatter = new IntlMessageFormat(ast, grammar);
   cache.set(cacheKey, formatter);
   return formatter;
 };

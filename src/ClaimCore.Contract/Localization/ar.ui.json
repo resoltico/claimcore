@@ -94,7 +94,6 @@
   "ui.terminal": "النهائية",
   "ui.reload": "إعادة التحميل",
   "ui.revocationSummary": "مسحوبة · {operationId} · {timestamp}",
-  "ui.attemptCount": "{count, plural, zero {أدلة المحاولات: لا شيء معروض.} one {أدلة المحاولات: محاولة واحدة معروضة.} two {أدلة المحاولات: محاولتان معروضتان.} few {أدلة المحاولات: # محاولات معروضة.} many {أدلة المحاولات: # محاولة معروضة.} other {أدلة المحاولات: # محاولة معروضة.}}",
   "ui.moreAttempts": "تحميل المزيد من المحاولات",
   "ui.provenance": "أُعدّ باستخدام {version} · {contract}",
   "ui.revokedOperation": "سُحبت صلاحية العملية {operationId} في {timestamp}.",

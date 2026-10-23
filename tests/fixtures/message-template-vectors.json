@@ -1,6 +1,7 @@
 {
   "accepted": [
     { "source": "Accepted.", "arguments": {}, "expected": "Accepted." },
+    { "source": "Whitespace { name }.", "arguments": { "name": "Ada" }, "expected": "Whitespace Ada." },
     { "source": "Hello {name}.", "arguments": { "name": "Ada" }, "expected": "Hello Ada." },
     { "source": "{name}, then {name}.", "arguments": { "name": "Ada" }, "expected": "Ada, then Ada." },
     { "source": "Don't change {operationId}.", "arguments": { "operationId": "synthetic-id" }, "expected": "Don't change synthetic-id." },
@@ -15,6 +16,6 @@
   "rejected": [
     "", "   ", "{", "}", "{name", "{0}", "{a_b}", "{constructor}", "{toString}",
     "{count, number}", "{when, date}", "{count, plural, other {items}}",
-    "{kind, select, other {item}}", "{outer{inner}}", "unsafe\u001b[31m", "unsafe\u202e", "unsafe\u0000"
+    "{kind, select, other {item}}", "{outer{inner}}", "unsafe\u001b[31m", "unsafe\u202e", "unsafe\u0000", "<tag>", "unsafe\r"
   ]
 }

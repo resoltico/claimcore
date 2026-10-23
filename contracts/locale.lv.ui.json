@@ -94,7 +94,6 @@
   "ui.terminal": "Noslēgtās",
   "ui.reload": "Pārlādēt",
   "ui.revocationSummary": "ATSAUKTA · {operationId} · {timestamp}",
-  "ui.attemptCount": "{count, plural, zero {Mēģinājumu pierādījumi: parādīti #.} one {Mēģinājumu pierādījumi: parādīts #.} other {Mēģinājumu pierādījumi: parādīti #.}}",
   "ui.moreAttempts": "Ielādēt vēl mēģinājumus",
   "ui.provenance": "Sagatavots ar {version} · {contract}",
   "ui.revokedOperation": "Operācija {operationId} atsaukta: {timestamp}.",

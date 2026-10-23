@@ -13,25 +13,33 @@ import {
 } from "./localization-policy.mjs";
 
 const root = resolve(import.meta.dirname, "..");
-const input = resolve(root, "../contracts");
+const input = resolve(root, "../src/ClaimCore.Contract/Localization");
 const output = resolve(root, "src/presentation/generated");
 const generate = process.argv.slice(2).includes("--write");
 /** @type {{languages: string[]}} */
 const { languages } = JSON.parse(
-  await readFile(resolve(input, "localization-policy.json"), "utf8"),
+  await readFile(resolve(root, "../contracts/localization-policy.json"), "utf8"),
 );
 /** @type {Record<string, Record<string, import("./localization-policy.mjs").Message>>} */
 const catalogs = {};
-const domains = ["ui", "notice", "token", "field", "command", "group", "authority", "diagnostic"];
-/** @param {string} language */
-const authoredDomains = (language) => (language === "en" ? ["ui", "notice", "token"] : domains);
+const domains = [
+  "ui",
+  "notice",
+  "token",
+  "field",
+  "command",
+  "group",
+  "authority",
+  "diagnostic",
+  "fault",
+  "host",
+  "cli",
+];
 const expectedInputs = languages
-  .flatMap((language) =>
-    authoredDomains(language).map((domain) => `locale.${language}.${domain}.json`),
-  )
+  .flatMap((language) => domains.map((domain) => `${language}.${domain}.json`))
   .sort();
 if (
-  JSON.stringify((await readdir(input)).filter((f) => f.startsWith("locale.")).sort()) !==
+  JSON.stringify((await readdir(input)).filter((f) => f.endsWith(".json")).sort()) !==
   JSON.stringify(expectedInputs)
 ) {
   throw new Error("Unexpected or missing localization catalog domain.");
@@ -39,11 +47,11 @@ if (
 for (const lang of languages) {
   const catalog = {};
   const files = (await readdir(input))
-    .filter((f) => f.startsWith(`locale.${lang}.`) && f.endsWith(".json"))
+    .filter((f) => f.startsWith(`${lang}.`) && f.endsWith(".json"))
     .sort();
   for (const file of files) {
     const entries = readCatalog(await readFile(resolve(input, file), "utf8"));
-    addDomain(catalog, entries, file.slice("locale.".length + lang.length + 1, -5));
+    addDomain(catalog, entries, file.slice(lang.length + 1, -5));
   }
   catalogs[lang] = catalog;
 }

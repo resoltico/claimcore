@@ -41,22 +41,13 @@ export const addDomain = (catalog, entries, domain) => {
   }
 };
 const forbidden = /[<>\u202a-\u202e\u2066-\u2069\u200e\u200f]/u;
-/** @param {import("@formatjs/icu-messageformat-parser").PluralElement} node @param {string} language */
-const pluralSelector = (node, language) => {
-  const categories = new Intl.PluralRules(language, { type: node.pluralType }).resolvedOptions()
-    .pluralCategories;
-  if (categories.some((name) => !Object.hasOwn(node.options, name))) {
-    throw new Error("Incomplete plural categories.");
-  }
-  return [
-    node.value,
-    node.pluralType,
-    node.offset,
-    Object.keys(node.options)
-      .filter((k) => k.startsWith("="))
-      .sort(),
-  ];
-};
+/** @param {string} text */
+const unsafeText = (text) =>
+  forbidden.test(text) ||
+  Array.from(text).some((character) => {
+    const code = character.charCodeAt(0);
+    return (code < 32 && code !== 9 && code !== 10) || (code >= 127 && code <= 159);
+  });
 /** @param {string} name */
 const assertArgumentName = (name) => {
   if (
@@ -66,44 +57,24 @@ const assertArgumentName = (name) => {
     throw new Error("Unsafe interpolation argument name.");
   }
 };
-/** @param {import("@formatjs/icu-messageformat-parser").MessageFormatElement} node @returns {node is import("@formatjs/icu-messageformat-parser").ArgumentElement | import("@formatjs/icu-messageformat-parser").PluralElement | import("@formatjs/icu-messageformat-parser").SelectElement} */
-const coordinatedArgument = (node) =>
-  node.type === TYPE.argument || node.type === TYPE.plural || node.type === TYPE.select;
-
-/** @param {import("@formatjs/icu-messageformat-parser").MessageFormatElement[]} nodes @param {string} language @param {Record<string, string>} args @param {unknown[]} selectors */
-const inspectNodes = (nodes, language, args, selectors) => {
+/** @param {import("@formatjs/icu-messageformat-parser").MessageFormatElement[]} nodes @param {Record<string, string>} args */
+const inspectNodes = (nodes, args) => {
   for (const node of nodes) {
-    if ([TYPE.number, TYPE.date, TYPE.time, TYPE.tag].includes(node.type)) {
-      throw new Error("Catalog cannot format raw numbers/dates or markup.");
-    }
-    if (node.type === TYPE.literal && forbidden.test(node.value)) {
-      throw new Error("Unsafe catalog literal.");
-    }
-    if (!coordinatedArgument(node)) {
-      continue;
-    }
-    assertArgumentName(node.value);
-    const role = node.type === TYPE.plural ? "number" : "string";
-    if (args[node.value] && args[node.value] !== role) {
-      throw new Error("Inconsistent argument role.");
-    }
-    args[node.value] = role;
-    if (node.type === TYPE.argument) {
-      continue;
-    }
-    selectors.push(
-      node.type === TYPE.plural
-        ? pluralSelector(node, language)
-        : [node.value, Object.keys(node.options).sort()],
-    );
-    for (const option of Object.values(node.options)) {
-      inspectNodes(option.value, language, args, selectors);
+    if (node.type === TYPE.literal) {
+      if (unsafeText(node.value)) {
+        throw new Error("Unsafe catalog literal.");
+      }
+    } else if (node.type === TYPE.argument) {
+      assertArgumentName(node.value);
+      args[node.value] = "string";
+    } else {
+      throw new Error("Catalog supports literal text and simple named arguments only.");
     }
   }
 };
 /** @param {string} message */
 const parseCatalogText = (message) => {
-  if (message.trim() === "" || message.length > 8000) {
+  if (message.trim() === "" || message.length > 8000 || unsafeText(message)) {
     throw new Error("Invalid catalog text.");
   }
   return parse(message, { requiresOtherClause: true });
@@ -134,18 +105,15 @@ const literalParts = (parts) => {
   }
   return ast;
 };
-/** @param {Message | undefined} message @param {string} language */
-export const messageShape = (message, language) => {
+/** @param {Message | undefined} message @param {string} _language */
+export const messageShape = (message, _language) => {
   const ast = typeof message === "string" ? parseCatalogText(message) : literalParts(message);
   /** @type {Record<string, string>} */
   const args = {};
-  /** @type {unknown[]} */
-  const selectors = [];
-  inspectNodes(ast, language, args, selectors);
+  inspectNodes(ast, args);
   return {
     ast,
     args: Object.fromEntries(Object.entries(args).sort()),
-    selectors: [...new Set(selectors.map((value) => JSON.stringify(value)))].sort(),
   };
 };
 /** @param {Record<string, Message>} source @param {Record<string, Message>} translated @param {string} language */
@@ -158,10 +126,7 @@ export const validateCatalog = (source, translated, language) => {
   for (const key of Object.keys(source)) {
     const a = messageShape(source[key], "en");
     const b = messageShape(translated[key], language);
-    if (
-      JSON.stringify(a.args) !== JSON.stringify(b.args) ||
-      JSON.stringify(a.selectors) !== JSON.stringify(b.selectors)
-    ) {
+    if (JSON.stringify(a.args) !== JSON.stringify(b.args)) {
       throw new Error(`Catalog argument contract differs: ${key}`);
     }
   }

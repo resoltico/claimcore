@@ -30,45 +30,21 @@ it("renders every catalog key in every language and preserves typed interpolatio
   expect(translate({ ...defaults, language: "lv" }, "ui.cases")).toBe("Lietas");
 });
 
-it("keeps ICU plural grammar independent from the number-display locale", () => {
-  const p = { language: "ar" as const, displayLocale: "en-GB" as const };
-  for (const count of [0, 1, 2, 3, 11, 100]) {
-    expect(translate(p, "ui.attemptCount", { count })).not.toBe("");
-  }
-  expect(translate(p, "ui.attemptCount", { count: 11 })).toContain("11");
-  expect(translate({ ...p, displayLocale: "ar-EG" }, "ui.attemptCount", { count: 11 })).toContain(
-    "١١",
-  );
-  expect(translate({ ...defaults, language: "en-XA" }, "ui.attemptCount", { count: 2 })).toContain(
-    "2",
-  );
+it("preserves pseudolocalization of literal templates and their arguments", () => {
   expect(translate({ ...defaults, language: "en-XA" }, "field.caseReference.label")).toMatch(
     /^⟦.+⟧$/u,
   );
-});
-
-it("crosses English and Arabic grammar with independent displayed digits", () => {
   expect(
-    translate({ language: "en", displayLocale: "ar-EG" }, "ui.attemptCount", { count: 1 }),
-  ).toBe("١ attempt shown.");
-  expect(
-    translate({ language: "en", displayLocale: "ar-EG" }, "ui.attemptCount", { count: 3 }),
-  ).toBe("٣ attempts shown.");
-  expect(
-    translate({ language: "ar", displayLocale: "en-GB" }, "ui.attemptCount", { count: 3 }),
-  ).toBe("أدلة المحاولات: 3 محاولات معروضة.");
-  expect(
-    translate({ language: "ar", displayLocale: "en-GB" }, "ui.attemptCount", { count: 2 }),
-  ).toBe("أدلة المحاولات: محاولتان معروضتان.");
+    translate({ ...defaults, language: "en-XA" }, "notice.accepted", {
+      operationId: "synthetic-id",
+    }),
+  ).toContain("synthetic-id");
 });
 
 it("refuses unknown or malformed message arguments without echoing the supplied material", () => {
   const fallback = translate(defaults, "notice.unknownDiagnostic");
   for (const args of [{}, { operationId: 1 }, { operationId: "secret", extra: "secret" }]) {
     expect(renderKey(defaults, "ui.operationAccepted", args)).toBe(fallback);
-  }
-  for (const count of [-1, 1.2, Infinity, NaN, Number.MAX_SAFE_INTEGER + 1]) {
-    expect(renderKey(defaults, "ui.attemptCount", { count })).toBe(fallback);
   }
   for (const key of ["unexpected-secret-key", "constructor", "toString", "__proto__"]) {
     expect(renderKey(defaults, key)).toBe(fallback);

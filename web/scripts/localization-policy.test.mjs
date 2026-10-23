@@ -125,32 +125,19 @@ test("ICU admission rejects markup, raw value formatting and directional overrid
   }
 });
 
-test("plural grammar is locale-complete while exact selectors and offsets remain semantic", () => {
-  const en = { "ui.count": "{n, plural, =2 {pair} one {one} other {#}}" };
-  const ar = {
-    "ui.count":
-      "{n, plural, =2 {زوج} zero {صفر} one {واحد} two {اثنان} few {#} many {#} other {#}}",
-  };
-  validateCatalog(en, ar, "ar");
-  assert.throws(() => validateCatalog(en, en, "ar"));
-  assert.throws(() =>
-    validateCatalog(
-      en,
-      { "ui.count": "{n, plural, offset:1 =2 {pair} one {one} other {#}}" },
-      "en",
-    ),
-  );
-  assert.throws(() =>
-    validateCatalog(en, { "ui.count": "{n, plural, =3 {trio} one {one} other {#}}" }, "en"),
-  );
-  assert.throws(() => messageShape("{n} {n, plural, one {one} other {many}}", "en"));
+test("unsupported ICU formatting and selection cannot enter the shared template subset", () => {
+  for (const source of [
+    "{n, plural, one {one} other {many}}",
+    "{kind, select, OPEN {Open} other {Other}}",
+    "{n, number}",
+    "{when, date}",
+  ]) {
+    assert.throws(() => messageShape(source, "en"));
+  }
 });
 
 test("pseudolocalization transforms only literal nodes and preserves exact interpolated identities", () => {
-  const { ast } = messageShape(
-    "Operation {id}: {n, plural, one {one result} other {# results}}",
-    "en",
-  );
+  const { ast } = messageShape("Operation {id}: result {n}", "en");
   const before = structuredClone(ast);
   const changed = pseudolocalize(ast);
   assert.deepEqual(ast, before);

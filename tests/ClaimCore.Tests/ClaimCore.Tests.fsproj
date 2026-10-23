@@ -55,6 +55,7 @@
     <Compile Include="DisclosureTests.fs" />
     <Compile Include="PaginationTests.fs" />
     <Compile Include="MessageTemplateTests.fs" />
+    <Compile Include="LocalizationCatalogTests.fs" />
     <Compile Include="EndpointRegistryTests.fs" />
     <Compile Include="RegistryConformanceTests.fs" />
     <Compile Include="ReceiptCorrelationTests.fs" />

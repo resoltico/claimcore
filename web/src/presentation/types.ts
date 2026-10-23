@@ -6,7 +6,13 @@ import type { FieldArgs } from "./generated/args.field";
 import type { CommandArgs } from "./generated/args.command";
 import type { GroupArgs } from "./generated/args.group";
 import type { DiagnosticArgs } from "./generated/args.diagnostic";
-export type MessageArgs = AuthorityArgs &
+import type { FaultArgs } from "./generated/args.fault";
+import type { HostArgs } from "./generated/args.host";
+import type { CliArgs } from "./generated/args.cli";
+export type MessageArgs = FaultArgs &
+  HostArgs &
+  CliArgs &
+  AuthorityArgs &
   UiArgs &
   NoticeArgs &
   TokenArgs &
