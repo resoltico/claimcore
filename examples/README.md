@@ -22,6 +22,17 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- cal
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < examples/06-correct-payment-record.json
 ```
 
+The human verbs use the same typed inputs. For example, after step three, this prints the
+same request frame as `04-close.json` without authentication or a network call:
+
+```sh
+dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- case close DEMO-0001 --expected-revision 3 --id 10000000-0000-4000-8000-000000000004 --dry-run
+```
+
+Use `help verbs` for the registry-derived grammar; omit `--dry-run` to execute, or send the
+printed frame unchanged to `call`. Verbs default to localized text; `--format json` returns a
+structured reply. The numbered JSON files remain independent, exact request examples.
+
 Each returns exit 0 and `ACCEPTED`. `DEMO-0001` ends at revision 6, open, with its
 payment date cleared. Payment facts are recorded assertions; no money is transferred.
 While its payload is retained and current authority permits replay, an exact retry returns
@@ -42,18 +53,19 @@ case is erased from the live database; ledger metadata remains. This does not de
 Fixed example identities deliberately support exact replay in one fresh installation.
 Do not change their request bytes to retry an uncertain operation.
 
-Every output frame includes `attemptKnowledge`, `resolutionEvidence`, `endpoint` and
-`operationId` (nullable when no request was admitted). Read `attemptKnowledge` together with
-the process exit: `ACCEPTED` confirms exact submitted content; `UNCONFIRMED` requires preserving
-the original frame and retrying it unchanged. The frame describes one CLI attempt. An automation
-caller must retain earlier `UNCONFIRMED` knowledge across new processes: a later `NOT_SENT`,
-`NOT_ACCEPTED`, read result or ordinary refusal cannot resolve that earlier attempt. Only correlated
-`CONTENT_ACCEPTED` evidence from exact execute/preview replay confirms content; correlated
-`CONTENT_EXCLUDED` proves that different content under the immutable ID was refused.
-`operation.observe` reports retained acceptance metadata and cannot prove the pending content
-matches it. Host failures retain their HTTP `status` and `executionPhase`; `NOT_STARTED` describes
-that attempt alone. See the [delivery contract](../docs/api.md).
+A structured reply has exactly `endpoint`, `operationId`, `delivery` and `result`.
+The first two are nullable when no request was admitted. Delivery is `NOT_SENT`,
+`UNCONFIRMED` or `ACCEPTED`; the result contains the typed outcome, host failure or local failure.
+Host failures carry `code` and `phase`; HTTP status comes from the response.
 
-Published acceptance executes these same files through the published CLI with fresh
+An uncertain mutation exits 4 and writes the exact request frame as the last stderr line.
+Retain that frame privately and pass it unchanged to `call --retry`. A later `NOT_STARTED`,
+ordinary refusal, failure or observation cannot disprove an earlier commit. Only a correlated
+acceptance or exact replay resolves uncertainty about this request. Discarding it does not cancel
+the operation. `operation.observe` reports retained acceptance metadata and cannot prove that
+pending content matches it. See the [delivery contract](../docs/api.md).
+
+Published acceptance derives all nine human mutation invocations from these independent frames,
+checks exact dry-run equality, and executes them through the published CLI with fresh
 Testcontainers PostgreSQL and Keycloak. It verifies receipts, replay, the final case,
 erased history and `ClaimCore.Database verify --expect` against an accepted position.

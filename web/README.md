@@ -6,7 +6,7 @@ same-origin HTTPS client with a contract identity header and cookie antiforgery 
 
 `src/api/transport.ts` owns browser networking; `src/api/service.ts` is its validated service facade.
 A single `src/protocol/schema.ts` interpreter admits bounded strict JSON replies against generated
-OpenAPI component schemas. Requests use codec-checked core input bindings and generic schema assembly.
+OpenAPI component schemas. Requests use one schema-driven form engine with core field order, prefill and advice.
 `src/interaction` and operation hooks preserve authored values, review identity and the exact
 serialized request. Preview is advisory. Confirmation executes that request; an unknown
 outcome or lost execution reply keeps one exact retry action while the page lives. A contract
@@ -28,11 +28,11 @@ build and notices using Node only. See [Development](../docs/development.md) for
 The complete generated consumer bundle is tracked in `contracts/`. The F# generator owns their bytes;
 .NET freshness tests check exact inventory and content. No web command invokes .NET. Generated
 `client.ts` types, OpenAPI component schemas and the strict-byte profile govern requests and
-responses; typed delivery and correlation policies are tested against generated vectors. Views
+responses. Direct correlation and frozen-request uncertainty rules have independent examples and real-service checks. Views
 come from `context.views`; OPEN and case actions come from typed advice rather than endpoint names.
 
-English metadata and diagnostics come from tracked F# outputs. Authored Latvian and Arabic
-catalogues cover matching keys/parameters/tokens; both are machine-drafted and need native review.
+English, Latvian and Arabic metadata and diagnostics come from the same authored source JSON
+catalogs, with matching keys and template arguments. Latvian and Arabic text is machine-drafted and needs native review.
 Every direct consumer generates ignored localizations first. Pseudolocalization runs at runtime;
 there is no tracked pseudolocale or compiled catalogue. Display language and formatting never
 rewrite authored business values or country codes.
@@ -50,5 +50,6 @@ state are shared. CI isolates engines across jobs; complete qualification runs a
 on Chromium, Firefox and WebKit. See [Development](../docs/development.md) for local sequencing
 and the explicitly partial PR smoke selection.
 
-Authored localization lives in `src/ClaimCore.Catalog/Localization` at the repository root.
-The browser consumes generated contracts, checked input bindings and core delivery/correlation policy.
+Authored localization lives in `src/ClaimCore.Contract/Localization` at the repository root.
+The browser imports those catalogs directly; ignored local outputs contain derived typing metadata.
+`useOperation` and its reducer retain the same prepared request and prior uncertainty for both scopes.
