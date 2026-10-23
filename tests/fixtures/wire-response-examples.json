@@ -953,6 +953,1865 @@
           }
         }
       }
+    },
+    {
+      "name": "context-all-advice",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "productVersion": "x",
+            "businessDate": "2026-01-01",
+            "timeZone": "x",
+            "offers": [
+              {
+                "kind": "OPEN",
+                "expectedRevision": 0
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "REGISTER_ACTOR"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "SET_ENABLED"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "SET_GRANT"
+              }
+            ],
+            "capabilities": [
+              "READ_CASE",
+              "READ_HISTORY",
+              "READ_HISTORY_FULL",
+              "REGISTER",
+              "DECIDE",
+              "RECORD_PAYMENT",
+              "CLOSE",
+              "STEWARD",
+              "MANAGE_AUTHORITY",
+              "READ_AUTHORITY"
+            ],
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "case-voided-all-advice",
+      "endpoint": "case.get",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "tag": "ERASED"
+            },
+            "advice": {
+              "acts": [
+                {
+                  "act": "OPEN",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "CORRECT_CASE",
+                  "expectedRevision": 1,
+                  "correction": {
+                    "registration": [
+                      "KEEP",
+                      "REPLACE"
+                    ],
+                    "decision": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ],
+                    "payment": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ]
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "CLOSE",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "REOPEN",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "VOID",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "REINSTATE",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "ERASE",
+                  "expectedRevision": 1
+                }
+              ],
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "case-erased",
+      "endpoint": "case.get",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "tag": "ERASED"
+            },
+            "advice": {
+              "acts": [
+                {
+                  "act": "OPEN",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "CORRECT_CASE",
+                  "expectedRevision": 1,
+                  "correction": {
+                    "registration": [
+                      "KEEP",
+                      "REPLACE"
+                    ],
+                    "decision": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ],
+                    "payment": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ]
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "CLOSE",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "REOPEN",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "VOID",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "REINSTATE",
+                  "expectedRevision": 1
+                },
+                {
+                  "act": "ERASE",
+                  "expectedRevision": 1
+                }
+              ],
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "case-page-alternatives",
+      "endpoint": "case.list",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "state": "LIVE",
+                "caseReference": "CASE-001",
+                "revision": 1,
+                "status": "OPENED",
+                "disposition": "ACTIVE"
+              },
+              {
+                "state": "LIVE",
+                "caseReference": "CASE-002",
+                "revision": 2,
+                "status": "CLOSED",
+                "disposition": "VOIDED"
+              },
+              {
+                "state": "ERASED",
+                "caseReference": "CASE-003",
+                "revision": 3
+              }
+            ],
+            "nextCursor": "x",
+            "offers": [
+              {
+                "kind": "OPEN",
+                "expectedRevision": 0
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "REGISTER_ACTOR"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "SET_ENABLED"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "SET_GRANT"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "grants-all-roles-scopes",
+      "endpoint": "authority.grants",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "actor": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "principal": {
+                "kind": "HUMAN",
+                "issuer": "x",
+                "subject": "x"
+              },
+              "enabled": false
+            },
+            "items": [
+              {
+                "role": "OWNER",
+                "scope": {
+                  "kind": "INSTALLATION"
+                }
+              },
+              {
+                "role": "CASE_READER",
+                "scope": {
+                  "kind": "INSTALLATION"
+                }
+              },
+              {
+                "role": "CASE_REGISTRAR",
+                "scope": {
+                  "kind": "INSTALLATION"
+                }
+              },
+              {
+                "role": "CASE_HANDLER",
+                "scope": {
+                  "kind": "INSTALLATION"
+                }
+              },
+              {
+                "role": "PAYMENT_RECORDER",
+                "scope": {
+                  "kind": "INSTALLATION"
+                }
+              },
+              {
+                "role": "DATA_STEWARD",
+                "scope": {
+                  "kind": "INSTALLATION"
+                }
+              },
+              {
+                "role": "AUDITOR",
+                "scope": {
+                  "kind": "INSTALLATION"
+                }
+              },
+              {
+                "role": "CASE_READER",
+                "scope": {
+                  "kind": "CASE",
+                  "caseReference": "CASE-001"
+                }
+              }
+            ],
+            "nextCursor": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "actors-principal-kinds",
+      "endpoint": "authority.list",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "principal": {
+                  "kind": "HUMAN",
+                  "issuer": "x",
+                  "subject": "x"
+                },
+                "enabled": false
+              },
+              {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "principal": {
+                  "kind": "SERVICE",
+                  "issuer": "x",
+                  "subject": "x"
+                },
+                "enabled": false
+              }
+            ],
+            "nextCursor": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "review-all-fields",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REVIEWED",
+          "data": {
+            "review": {
+              "before": {
+                "caseReference": "x",
+                "revision": 1,
+                "state": {
+                  "tag": "LIVE",
+                  "disposition": "ACTIVE",
+                  "fields": {
+                    "incidentDate": "2026-01-01",
+                    "incidentNotificationDate": "2026-01-01",
+                    "incidentCountry": "LV",
+                    "claimantName": "x",
+                    "insurerName": "x",
+                    "claimedAmount": "0",
+                    "claimedCurrency": "EUR",
+                    "caseReference": "x",
+                    "paymentDecisionDate": "2026-01-01",
+                    "payableAmount": "0",
+                    "payableCurrency": "EUR",
+                    "paymentDate": "2026-01-01",
+                    "status": "OPENED"
+                  }
+                }
+              },
+              "after": {
+                "caseReference": "x",
+                "revision": 1,
+                "state": {
+                  "tag": "LIVE",
+                  "disposition": "ACTIVE",
+                  "fields": {
+                    "incidentDate": "2026-01-01",
+                    "incidentNotificationDate": "2026-01-01",
+                    "incidentCountry": "LV",
+                    "claimantName": "x",
+                    "insurerName": "x",
+                    "claimedAmount": "0",
+                    "claimedCurrency": "EUR",
+                    "caseReference": "x",
+                    "paymentDecisionDate": "2026-01-01",
+                    "payableAmount": "0",
+                    "payableCurrency": "EUR",
+                    "paymentDate": "2026-01-01",
+                    "status": "OPENED"
+                  }
+                }
+              },
+              "changes": [
+                {
+                  "field": "incidentDate",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "incidentNotificationDate",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "incidentCountry",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "claimantName",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "insurerName",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "claimedAmount",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "claimedCurrency",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "caseReference",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "paymentDecisionDate",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "payableAmount",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "payableCurrency",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "paymentDate",
+                  "before": "before",
+                  "after": "after"
+                },
+                {
+                  "field": "status",
+                  "before": "before",
+                  "after": "after"
+                }
+              ],
+              "context": {
+                "productVersion": "x",
+                "businessDate": "2026-01-01",
+                "timeZone": "x"
+              },
+              "scope": "CASE"
+            }
+          }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "receipt-DISCLOSED",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "scope": {
+              "kind": "CASE",
+              "caseReference": "x",
+              "revision": 1,
+              "act": "OPEN",
+              "snapshot": {
+                "disclosure": "DISCLOSED",
+                "view": {
+                  "tag": "LIVE",
+                  "disposition": "ACTIVE",
+                  "fields": {
+                    "incidentDate": "2026-01-01",
+                    "incidentNotificationDate": "2026-01-01",
+                    "incidentCountry": "LV",
+                    "claimantName": "x",
+                    "insurerName": "x",
+                    "claimedAmount": "0",
+                    "claimedCurrency": "EUR",
+                    "caseReference": "x",
+                    "paymentDecisionDate": "2026-01-01",
+                    "payableAmount": "0",
+                    "payableCurrency": "EUR",
+                    "paymentDate": "2026-01-01",
+                    "status": "OPENED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "history-full-DISCLOSED",
+      "endpoint": "case.history",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "entries": [
+              {
+                "tag": "FULL",
+                "receipt": {
+                  "operationId": "10000000-0000-4000-8000-000000000001",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  },
+                  "recordedAt": "2026-01-01T00:00:00.000000Z",
+                  "recordedBy": "10000000-0000-4000-8000-000000000001",
+                  "scope": {
+                    "kind": "CASE",
+                    "caseReference": "x",
+                    "revision": 1,
+                    "act": "OPEN",
+                    "snapshot": {
+                      "disclosure": "DISCLOSED",
+                      "view": {
+                        "tag": "LIVE",
+                        "disposition": "ACTIVE",
+                        "fields": {
+                          "incidentDate": "2026-01-01",
+                          "incidentNotificationDate": "2026-01-01",
+                          "incidentCountry": "LV",
+                          "claimantName": "x",
+                          "insurerName": "x",
+                          "claimedAmount": "0",
+                          "claimedCurrency": "EUR",
+                          "caseReference": "x",
+                          "paymentDecisionDate": "2026-01-01",
+                          "payableAmount": "0",
+                          "payableCurrency": "EUR",
+                          "paymentDate": "2026-01-01",
+                          "status": "OPENED"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "receipt-WITHHELD",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "scope": {
+              "kind": "CASE",
+              "caseReference": "x",
+              "revision": 1,
+              "act": "OPEN",
+              "snapshot": {
+                "disclosure": "WITHHELD"
+              }
+            }
+          }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "history-full-WITHHELD",
+      "endpoint": "case.history",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "entries": [
+              {
+                "tag": "FULL",
+                "receipt": {
+                  "operationId": "10000000-0000-4000-8000-000000000001",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  },
+                  "recordedAt": "2026-01-01T00:00:00.000000Z",
+                  "recordedBy": "10000000-0000-4000-8000-000000000001",
+                  "scope": {
+                    "kind": "CASE",
+                    "caseReference": "x",
+                    "revision": 1,
+                    "act": "OPEN",
+                    "snapshot": {
+                      "disclosure": "WITHHELD"
+                    }
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "receipt-ERASED",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "scope": {
+              "kind": "CASE",
+              "caseReference": "x",
+              "revision": 1,
+              "act": "OPEN",
+              "snapshot": {
+                "disclosure": "ERASED"
+              }
+            }
+          }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "history-full-ERASED",
+      "endpoint": "case.history",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "entries": [
+              {
+                "tag": "FULL",
+                "receipt": {
+                  "operationId": "10000000-0000-4000-8000-000000000001",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  },
+                  "recordedAt": "2026-01-01T00:00:00.000000Z",
+                  "recordedBy": "10000000-0000-4000-8000-000000000001",
+                  "scope": {
+                    "kind": "CASE",
+                    "caseReference": "x",
+                    "revision": 1,
+                    "act": "OPEN",
+                    "snapshot": {
+                      "disclosure": "ERASED"
+                    }
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "CORE_INTERNAL_ERROR",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "code": "CORE_INTERNAL_ERROR",
+            "action": "STOP_AND_INVESTIGATE"
+          }
+        }
+      }
+    },
+    {
+      "name": "CORE_STORE_UNAVAILABLE",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "CORE_STORE_INTEGRITY_ERROR",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "code": "CORE_STORE_INTEGRITY_ERROR",
+            "action": "STOP_AND_INVESTIGATE"
+          }
+        }
+      }
+    },
+    {
+      "name": "CORE_SCHEMA_MISMATCH",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "code": "CORE_SCHEMA_MISMATCH",
+            "action": "STOP_AND_INVESTIGATE"
+          }
+        }
+      }
+    },
+    {
+      "name": "CORE_OPERATION_CONTENT_CONFLICT",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "code": "CORE_OPERATION_CONTENT_CONFLICT",
+            "action": "STOP_AND_INVESTIGATE"
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-0",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "ACCESS_RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-1",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "ACTOR_ALREADY_REGISTERED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-2",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "ACTOR_UNKNOWN",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-3",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "ACT_NOT_PERMITTED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-4",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "ALREADY_VOIDED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-5",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_ALREADY_CLOSED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-6",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_ALREADY_EXISTS",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-7",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_ALREADY_OPENED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-8",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_AMENDMENT_REQUIRES_UNDECIDED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-9",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_CLOSED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-10",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_DECISION_ALREADY_PAID",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-11",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_DECISION_REQUIRED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-12",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_ERASED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-13",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_PAYMENT_ALREADY_RECORDED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-14",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_PAYMENT_NOT_RECORDED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-15",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_REVISION_CONFLICT",
+            "action": "READ_CURRENT",
+            "target": null,
+            "actualRevision": 0,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-16",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_VOIDED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-17",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CASE_ZERO_DECISION_CANNOT_BE_PAID",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-18",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "COMMAND_EXPECTED_REVISION_RANGE",
+            "action": "CORRECT_INPUT",
+            "target": "expectedRevision",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-19",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "COMMAND_OPERATION_ID_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "operationId",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-20",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CORRECTION_EXISTING_VALUE_REQUIRED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-21",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CORRECTION_NO_CHANGES",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-22",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "payment",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-23",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "CORRECTION_PAYMENT_CLEAR_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "payment",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-24",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "HUMAN_PRINCIPAL_REQUIRED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-25",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_CALENDAR_DATE_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-26",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_CALENDAR_DATE_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "incidentNotificationDate",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-27",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_CALENDAR_DATE_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "paymentDate",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-28",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_CALENDAR_DATE_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "paymentDecisionDate",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-29",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_CASE_REFERENCE_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "caseReference",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-30",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_CONTROL_CHARACTERS",
+            "action": "CORRECT_INPUT",
+            "target": "claimantName",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-31",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_COUNTRY_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "incidentCountry",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-32",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_CURRENCY_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "claimedCurrency",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-33",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_CURRENCY_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "payableCurrency",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-34",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_DATE_ORDER",
+            "action": "CORRECT_INPUT",
+            "target": "incidentNotificationDate",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-35",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_DECIMAL_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "claimedAmount",
+            "actualRevision": null,
+            "limits": {
+              "maximumIntegerDigits": 18,
+              "maximumFractionalDigits": 4
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-36",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_DECIMAL_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "payableAmount",
+            "actualRevision": null,
+            "limits": {
+              "maximumIntegerDigits": 18,
+              "maximumFractionalDigits": 4
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-37",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_FUTURE_DATE",
+            "action": "CORRECT_INPUT",
+            "target": "incidentDate",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-38",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_MALFORMED_UNICODE",
+            "action": "CORRECT_INPUT",
+            "target": "claimantName",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-39",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_SURROUNDING_WHITESPACE",
+            "action": "CORRECT_INPUT",
+            "target": "claimantName",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-40",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "claimantName",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-41",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "insurerName",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-42",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "reason",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-43",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_TEXT_TOO_LONG",
+            "action": "CORRECT_INPUT",
+            "target": "claimantName",
+            "actualRevision": null,
+            "limits": {
+              "maximumCharacters": 4000
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-44",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "LAST_OWNER",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-45",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "LEDGER_SEQUENCE_EXHAUSTED",
+            "action": "STOP_AND_INVESTIGATE",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-46",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "NOT_VOIDED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-47",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "OPERATION_CONTENT_CONFLICT",
+            "action": "STOP_AND_INVESTIGATE",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-48",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "QUERY_CURSOR_INVALID",
+            "action": "READ_CURRENT",
+            "target": "cursor",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-49",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "QUERY_PAGE_LIMIT_RANGE",
+            "action": "CORRECT_INPUT",
+            "target": "limit",
+            "actualRevision": null,
+            "limits": {
+              "maximumPageSize": 50
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-50",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "REVISION_EXHAUSTED",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "refusal-51",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "TEXT_FORMATTING_CHARACTER",
+            "action": "CORRECT_INPUT",
+            "target": "claimantName",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "principal-principal.issuer",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_PRINCIPAL_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "principal.issuer",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "principal-principal.subject",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_PRINCIPAL_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "principal.subject",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "session-rejected",
+      "endpoint": "session",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "ACCESS_RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "session-failed",
+      "endpoint": "session",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "session.logout-rejected",
+      "endpoint": "session.logout",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "ACCESS_RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED",
+            "target": null,
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "session.logout-failed",
+      "endpoint": "session.logout",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "receipt-correction",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "scope": {
+              "kind": "CASE",
+              "caseReference": "x",
+              "revision": 1,
+              "act": "CORRECT_CASE",
+              "snapshot": {
+                "disclosure": "WITHHELD"
+              }
+            }
+          }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "input-cursor-text-boundary",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "cursor",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
     }
   ]
 }

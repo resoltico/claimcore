@@ -15,7 +15,6 @@
     <Compile Include="Composition/BusinessCalendar.fs" />
     <Compile Include="Composition/AdmissionGate.fs" />
     <Compile Include="Composition/OutcomeMapping.fs" />
-    <Compile Include="Composition/ServiceGateway.fs" />
     <Compile Include="Composition/Dispatch.fs" />
     <Compile Include="Composition/Runtime.fs" />
     <Compile Include="Composition/ServiceRuntime.fs" />

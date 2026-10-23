@@ -663,6 +663,162 @@
           "enabled": false
         }
       }
+    },
+    {
+      "id": "operation.preview-correction-REPLACE",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT_CASE",
+          "groups": {
+            "registration": {
+              "mode": "REPLACE",
+              "values": {
+                "incidentDate": "2026-01-01",
+                "incidentNotificationDate": "2026-01-01",
+                "incidentCountry": "LV",
+                "claimantName": "x",
+                "insurerName": "x",
+                "claimedAmount": "0",
+                "claimedCurrency": "EUR"
+              }
+            },
+            "decision": {
+              "mode": "REPLACE",
+              "values": {
+                "paymentDecisionDate": "2026-01-01",
+                "payableAmount": "0",
+                "payableCurrency": "EUR"
+              }
+            },
+            "payment": {
+              "mode": "REPLACE",
+              "values": {
+                "paymentDate": "2026-01-01"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.preview-correction-CLEAR",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT_CASE",
+          "groups": {
+            "registration": {
+              "mode": "REPLACE",
+              "values": {
+                "incidentDate": "2026-01-01",
+                "incidentNotificationDate": "2026-01-01",
+                "incidentCountry": "LV",
+                "claimantName": "x",
+                "insurerName": "x",
+                "claimedAmount": "0",
+                "claimedCurrency": "EUR"
+              }
+            },
+            "decision": {
+              "mode": "CLEAR"
+            },
+            "payment": {
+              "mode": "CLEAR"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.execute-correction-REPLACE",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT_CASE",
+          "groups": {
+            "registration": {
+              "mode": "REPLACE",
+              "values": {
+                "incidentDate": "2026-01-01",
+                "incidentNotificationDate": "2026-01-01",
+                "incidentCountry": "LV",
+                "claimantName": "x",
+                "insurerName": "x",
+                "claimedAmount": "0",
+                "claimedCurrency": "EUR"
+              }
+            },
+            "decision": {
+              "mode": "REPLACE",
+              "values": {
+                "paymentDecisionDate": "2026-01-01",
+                "payableAmount": "0",
+                "payableCurrency": "EUR"
+              }
+            },
+            "payment": {
+              "mode": "REPLACE",
+              "values": {
+                "paymentDate": "2026-01-01"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.execute-correction-CLEAR",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "caseReference": "x",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT_CASE",
+          "groups": {
+            "registration": {
+              "mode": "REPLACE",
+              "values": {
+                "incidentDate": "2026-01-01",
+                "incidentNotificationDate": "2026-01-01",
+                "incidentCountry": "LV",
+                "claimantName": "x",
+                "insurerName": "x",
+                "claimedAmount": "0",
+                "claimedCurrency": "EUR"
+              }
+            },
+            "decision": {
+              "mode": "CLEAR"
+            },
+            "payment": {
+              "mode": "CLEAR"
+            }
+          }
+        }
+      }
     }
   ]
 }
