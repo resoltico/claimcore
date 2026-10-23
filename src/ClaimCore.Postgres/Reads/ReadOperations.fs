@@ -37,31 +37,32 @@ module internal ReadOperations =
             task {
                 let! time = instant connection token
 
-                let! existing =
-                    match operationId with
-                    | Some id -> StoredEntries.operation connection installationId id token
-                    | None -> Task.FromResult None
-
-                let ids =
-                    CaseReferenceId.encode installationId reference
-                    :: Projections.operationCases existing
-
-                let! actor = Projections.actor connection principal ids token
-
-                let! record =
-                    Projections.caseById
+                return!
+                    DecisionViews.case
                         connection
-                        (CaseReferenceId.encode installationId reference)
+                        installationId
+                        principal
+                        operationId
+                        reference
+                        time
                         token
+            })
 
-                return
-                    ({
-                        ObservedAt = time
-                        Actor = actor
-                        ExistingOperation = existing
-                        Case = record
-                    }
-                    : CaseReadView)
+    let authority source installationId principal operationId target reference token =
+        Transactions.read source token (fun connection ->
+            task {
+                let! time = instant connection token
+
+                return!
+                    DecisionViews.authority
+                        connection
+                        installationId
+                        principal
+                        operationId
+                        target
+                        reference
+                        time
+                        token
             })
 
     let operation source installationId principal id token =

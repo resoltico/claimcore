@@ -313,6 +313,35 @@ type internal Store(instant: DateTimeOffset) =
             && List.contains ownerGrant actor.Grants)
         |> Seq.length
 
+    let caseRead principal id reference : CaseReadView =
+        let existing = id |> Option.bind operation
+
+        {
+            ObservedAt = observedAt
+            Actor =
+                authority
+                    principal
+                    ((case reference |> Option.map _.CaseId |> Option.toList)
+                     @ operationCases existing)
+            ExistingOperation = existing
+            Case = case reference
+        }
+
+    let authorityRead principal id target reference : AuthorityReadView =
+        let existing = operation id
+        let record = reference |> Option.bind case
+        let ids = record |> Option.map _.CaseId |> Option.toList
+
+        {
+            ObservedAt = observedAt
+            Actor = authority principal (ids @ operationCases existing)
+            ExistingOperation = existing
+            Target = authority target ids
+            TargetCase = record
+            EnabledHumanOwners = owners ()
+            ActorCount = state.Actors.Count
+        }
+
     let locked (ct: CancellationToken) work =
         task {
             try
@@ -393,15 +422,8 @@ type internal Store(instant: DateTimeOffset) =
                     let view: CaseLockedView =
                         {
                             Head = head ()
-                            ObservedAt = observedAt
                             PayloadNonce = nonce ()
-                            Actor =
-                                authority
-                                    principal
-                                    ((case reference |> Option.map _.CaseId |> Option.toList)
-                                     @ operationCases (operation id))
-                            ExistingOperation = operation id
-                            Case = case reference
+                            Read = caseRead principal (Some id) reference
                         }
 
                     write (decide view) applyCase failure)
@@ -418,44 +440,17 @@ type internal Store(instant: DateTimeOffset) =
                     let view: AuthorityLockedView =
                         {
                             Head = head ()
-                            ObservedAt = observedAt
                             PayloadNonce = nonce ()
-                            Actor =
-                                authority
-                                    principal
-                                    ((reference
-                                      |> Option.bind case
-                                      |> Option.map _.CaseId
-                                      |> Option.toList)
-                                     @ operationCases (operation id))
-                            ExistingOperation = operation id
-                            Target =
-                                authority
-                                    target
-                                    (reference
-                                     |> Option.bind case
-                                     |> Option.map _.CaseId
-                                     |> Option.toList)
-                            TargetCase = reference |> Option.bind case
-                            EnabledHumanOwners = owners ()
-                            ActorCount = state.Actors.Count
+                            Read = authorityRead principal id target reference
                         }
 
                     write (decide view) applyAuthority failure)
 
+        member _.ReadAuthorityTarget(principal, id, target, reference, ct) =
+            locked ct (fun () -> Ok(authorityRead principal id target reference))
+
         member _.ReadCase(principal, id, reference, ct) =
-            locked ct (fun () ->
-                Ok
-                    {
-                        ObservedAt = observedAt
-                        Actor =
-                            authority
-                                principal
-                                ((case reference |> Option.map _.CaseId |> Option.toList)
-                                 @ operationCases (id |> Option.bind operation))
-                        ExistingOperation = id |> Option.bind operation
-                        Case = case reference
-                    })
+            locked ct (fun () -> Ok(caseRead principal id reference))
 
         member _.ReadActor(principal, ct) =
             locked ct (fun () ->

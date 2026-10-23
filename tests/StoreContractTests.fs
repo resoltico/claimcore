@@ -169,7 +169,7 @@ let private genesis fixture =
             calls <- calls + 1
             Expect.equal view.Head.Sequence 0L "Genesis head"
             Expect.isTrue (view.Head.EntryHash = Array.zeroCreate 32) "Zero previous hash"
-            Expect.isNone view.Actor.Actor "No actor before provisioning"
+            Expect.isNone view.Read.Actor.Actor "No actor before provisioning"
             AuthorityDecisions.provision fixture.InstallationId (id 1) fixture.Owner view
 
         let! result =
@@ -260,12 +260,12 @@ let private lockedView fixture =
                 "Previous accepted link"
 
             Expect.equal
-                (view.Case |> Option.map (fun record -> record.Snapshot.Revision))
+                (view.Read.Case |> Option.map (fun record -> record.Snapshot.Revision))
                 (Some 1L)
                 "Current case"
 
             Expect.equal
-                (view.ExistingOperation |> Option.map _.OperationId)
+                (view.Read.ExistingOperation |> Option.map _.OperationId)
                 (Some original.OperationId)
                 "Existing identity in the same view"
 

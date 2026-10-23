@@ -90,6 +90,9 @@ type internal PausedPageStore
         member _.WriteAuthority(principal, operationId, target, reference, decide, ct) =
             inner.WriteAuthority(principal, operationId, target, reference, decide, ct)
 
+        member _.ReadAuthorityTarget(principal, operationId, target, reference, ct) =
+            inner.ReadAuthorityTarget(principal, operationId, target, reference, ct)
+
         member _.ReadCase(principal, operationId, reference, ct) =
             inner.ReadCase(principal, operationId, reference, ct)
 

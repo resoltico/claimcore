@@ -58,12 +58,12 @@ let internal seed (database: PostgresFixture.Database) claimant =
     |> ignore
 
     let decide (view: CaseLockedView) =
-        Expect.isNone view.Case "Fixture reference is fresh"
-        Expect.isNone view.ExistingOperation "Fixture operation is fresh"
+        Expect.isNone view.Read.Case "Fixture reference is fresh"
+        Expect.isNone view.Read.ExistingOperation "Fixture operation is fresh"
         let id = CaseReferenceId.encode fixture.InstallationId snapshot.Reference
 
         let actor =
-            view.Actor.Actor
+            view.Read.Actor.Actor
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
         let scope =
@@ -71,14 +71,14 @@ let internal seed (database: PostgresFixture.Database) claimant =
                 id,
                 1L,
                 (CaseActKind.Business BusinessActKind.Open),
-                fixture.Calendar.DateAt view.ObservedAt
+                fixture.Calendar.DateAt view.Read.ObservedAt
             )
 
         let entry =
             LedgerEntries.create
                 fixture.InstallationId
                 view.Head
-                view.ObservedAt
+                view.Read.ObservedAt
                 view.PayloadNonce
                 actor.ActorId
                 request.OperationId
@@ -90,7 +90,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
         let receipt =
             LedgerEntries.validate fixture.InstallationId (LedgerEntries.stored entry)
-            |> Result.bind (LedgerEntries.receipt fixture.Owner view.Actor (Some current))
+            |> Result.bind (LedgerEntries.receipt fixture.Owner view.Read.Actor (Some current))
             |> Result.defaultWith (fun _ ->
                 failtest "Historical fixture receipt is structurally valid")
 

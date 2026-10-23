@@ -65,6 +65,10 @@ type AfterCaseWriteStore(inner: ILedgerStore, afterWrite: unit -> Task<unit>) =
         member _.WriteAuthority(principal, operationId, target, reference, decide, ct) =
             inner.WriteAuthority(principal, operationId, target, reference, decide, ct)
 
+        member _.ReadAuthorityTarget(principal, operationId, target, reference, ct) =
+            reads <- reads + 1
+            inner.ReadAuthorityTarget(principal, operationId, target, reference, ct)
+
         member _.ReadCase(principal, operationId, reference, ct) =
             reads <- reads + 1
             inner.ReadCase(principal, operationId, reference, ct)

@@ -387,7 +387,7 @@ let private corruptIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         accepted opened |> ignore
 
         let decide (view: CaseLockedView) =
-            let stored = Option.get view.ExistingOperation
+            let stored = Option.get view.Read.ExistingOperation
 
             let payload =
                 stored.Payload
@@ -402,7 +402,7 @@ let private corruptIdentity (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                 OperationIdentity.decide
                     installation
                     owner
-                    view.Actor
+                    view.Read.Actor
                     original.OperationId
                     (RequestRecord.encode original)
                     (Some invalid)
@@ -470,7 +470,7 @@ let private failedProjection (store: MemoryLedgerStore.Store) (fixture: Fixture)
                 LedgerEntries.create
                     installation
                     view.Head
-                    view.ObservedAt
+                    view.Read.ObservedAt
                     view.PayloadNonce
                     (id 1)
                     (id 99)

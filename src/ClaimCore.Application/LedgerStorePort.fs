@@ -55,11 +55,8 @@ type internal CaseReadView =
 type internal CaseLockedView =
     {
         Head: LedgerHead
-        ObservedAt: DateTimeOffset
         PayloadNonce: byte array
-        Actor: AuthorityView
-        ExistingOperation: StoredEntry option
-        Case: StoredCase option
+        Read: CaseReadView
     }
 
 [<RequireQualifiedAccess>]
@@ -96,17 +93,22 @@ type internal LedgerWriteResult =
     | Refused of Refusal
     | Failed of CoreFault
 
-type internal AuthorityLockedView =
+type internal AuthorityReadView =
     {
-        Head: LedgerHead
         ObservedAt: DateTimeOffset
-        PayloadNonce: byte array
         Actor: AuthorityView
         ExistingOperation: StoredEntry option
         Target: AuthorityView
         TargetCase: StoredCase option
         EnabledHumanOwners: int
         ActorCount: int
+    }
+
+type internal AuthorityLockedView =
+    {
+        Head: LedgerHead
+        PayloadNonce: byte array
+        Read: AuthorityReadView
     }
 
 [<RequireQualifiedAccess>]
@@ -206,6 +208,14 @@ type internal ILedgerStore =
         decide: (AuthorityLockedView -> LedgerDecision<AuthorityProjection>) *
         cancellationToken: CancellationToken ->
             Task<Result<LedgerWriteResult, StoreFailure>>
+
+    abstract ReadAuthorityTarget:
+        principal: PrincipalKey *
+        operationId: Guid *
+        target: PrincipalKey *
+        targetCaseReference: string option *
+        cancellationToken: CancellationToken ->
+            Task<Result<AuthorityReadView, StoreFailure>>
 
     abstract ReadCase:
         principal: PrincipalKey *

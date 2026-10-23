@@ -19,13 +19,7 @@ module internal AuthorityDecisions =
             && PrincipalKey.isHuman actor.Principal
             && List.contains Role.Owner view.Installation)
 
-    let private grantProjection
-        role
-        scope
-        active
-        (actor: AuthorityView)
-        (view: AuthorityLockedView)
-        =
+    let private grantProjection role scope active (actor: AuthorityView) (view: AuthorityReadView) =
         let caseId =
             match scope, view.TargetCase with
             | GrantTarget.Installation, _ -> Ok None
@@ -58,7 +52,7 @@ module internal AuthorityDecisions =
                     AuthorityProjection.RemoveGrant(actor.Actor.Value.ActorId, role, id)
                 ))
 
-    let private projection operationId target action (view: AuthorityLockedView) =
+    let private projection operationId target action (view: AuthorityReadView) =
         match action, view.Target.Actor with
         | AuthorityAction.ProvisionOwner, _ when not (PrincipalKey.isHuman target) ->
             Error Refusal.HumanPrincipalRequired
@@ -78,7 +72,7 @@ module internal AuthorityDecisions =
         | AuthorityAction.User(AdmittedAuthorityAct.SetGrant(role, scope, active)), Some _ ->
             grantProjection role scope active view.Target view
 
-    let private targets installationId target action (view: AuthorityLockedView) =
+    let private targets installationId target action (view: AuthorityReadView) =
         if
             view.Target.Actor
             |> Option.exists (fun actor -> actor.ActorId = Guid.Empty || actor.Principal <> target)
@@ -101,13 +95,13 @@ module internal AuthorityDecisions =
             | _ -> Ok()
 
     let private provisionIdentity installationId operationId bytes (view: AuthorityLockedView) =
-        if view.ActorCount = 0 then
-            if view.Head.Sequence = 0L && view.ExistingOperation.IsNone then
+        if view.Read.ActorCount = 0 then
+            if view.Head.Sequence = 0L && view.Read.ExistingOperation.IsNone then
                 IdentityDecision.Fresh
             else
                 IdentityDecision.Fail CoreFault.StoreIntegrityError
         else
-            match view.ExistingOperation with
+            match view.Read.ExistingOperation with
             | None -> IdentityDecision.Refuse Refusal.ActorAlreadyRegistered
             | Some entry when entry.OperationId <> operationId ->
                 IdentityDecision.Fail CoreFault.StoreIntegrityError
@@ -133,7 +127,7 @@ module internal AuthorityDecisions =
             match action with
             | AuthorityAction.ProvisionOwner -> targetId
             | _ ->
-                view.Actor.Actor
+                view.Read.Actor.Actor
                 |> Option.map _.ActorId
                 |> Option.defaultWith (fun () ->
                     invalidArg (nameof view) "Authorized actor is missing.")
@@ -148,7 +142,7 @@ module internal AuthorityDecisions =
             LedgerEntries.create
                 installationId
                 view.Head
-                view.ObservedAt
+                view.Read.ObservedAt
                 view.PayloadNonce
                 actorId
                 operationId
@@ -157,7 +151,7 @@ module internal AuthorityDecisions =
                 Array.empty
 
         LedgerEntries.validate installationId (LedgerEntries.stored entry)
-        |> Result.bind (LedgerEntries.receipt principal view.Actor None)
+        |> Result.bind (LedgerEntries.receipt principal view.Read.Actor None)
         |> Result.map (fun receipt -> LedgerDecision.Append(entry, projection, receipt))
         |> Result.defaultWith LedgerDecision.Fail
 
@@ -170,10 +164,10 @@ module internal AuthorityDecisions =
         bytes
         (view: AuthorityLockedView)
         =
-        match targets installationId target action view with
+        match targets installationId target action view.Read with
         | Error fault -> LedgerDecision.Fail fault
         | Ok() ->
-            match projection operationId target action view with
+            match projection operationId target action view.Read with
             | Error reason -> LedgerDecision.Refuse reason
             | Ok(targetId, projection) ->
                 append installationId principal operationId action bytes view targetId projection
@@ -192,7 +186,7 @@ module internal AuthorityDecisions =
             && not (
                 ActorAuthorization.can
                     principal
-                    view.Actor
+                    view.Read.Actor
                     Capability.ManageAuthority
                     ResourceScope.Installation
             )
@@ -207,14 +201,14 @@ module internal AuthorityDecisions =
                     OperationIdentity.decide
                         installationId
                         principal
-                        view.Actor
+                        view.Read.Actor
                         operationId
                         bytes
-                        view.ExistingOperation
+                        view.Read.ExistingOperation
 
             match identity with
             | IdentityDecision.Replay entry ->
-                LedgerEntries.receipt principal view.Actor None entry
+                LedgerEntries.receipt principal view.Read.Actor None entry
                 |> Result.map LedgerDecision.Replay
                 |> Result.defaultWith LedgerDecision.Fail
             | IdentityDecision.Refuse reason -> LedgerDecision.Refuse reason

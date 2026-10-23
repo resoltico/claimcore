@@ -10,6 +10,7 @@
     <Compile Include="Ledger/StoredEntries.fs" />
     <Compile Include="Ledger/Persistence.fs" />
     <Compile Include="Ledger/Transactions.fs" />
+    <Compile Include="Reads/DecisionViews.fs" />
     <Compile Include="Ledger/WriteOperations.fs" />
     <Compile Include="Reads/ReadOperations.fs" />
     <Compile Include="Ledger/LedgerStore.fs" />
