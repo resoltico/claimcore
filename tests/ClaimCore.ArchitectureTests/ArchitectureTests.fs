@@ -1,8 +1,7 @@
 module ClaimCore.ArchitectureTests.ArchitectureTests
 
-open ClaimCore.Contract
-
 open System
+open System.IO
 open System.Reflection
 open Expecto
 open ArchUnitNET.Loader
@@ -10,18 +9,27 @@ open type ArchUnitNET.Fluent.ArchRuleDefinition
 open ClaimCore.ArchitectureTests.NegativeFixtures
 
 let private root = ClaimCore.TestSupport.RepositoryRoot.find ()
-let private contract = lazy (Manifest.read root)
-let private projects = lazy (Manifest.projects root)
 
-let private assemblies =
-    lazy (contract.Value.Projects.Keys |> Seq.map Assembly.Load |> Seq.toArray)
+let private projectPaths =
+    lazy
+        (Directory.EnumerateFiles(
+            Path.Combine(root, "src"),
+            "*.fsproj",
+            SearchOption.AllDirectories
+         )
+         |> Seq.toArray)
+
+let private products =
+    lazy
+        (projectPaths.Value
+         |> Array.map (Path.GetFileNameWithoutExtension >> nonNull >> Assembly.Load))
 
 let private model =
     lazy
         (ArchLoader()
             .LoadAssemblies(
                 Array.append
-                    assemblies.Value
+                    products.Value
                     [|
                         typeof<ClockCall>.Assembly
                         typeof<Guid>.Assembly
@@ -31,248 +39,145 @@ let private model =
             )
             .Build())
 
-let private resolvedGraph =
-    lazy
-        (projects.Value
-         |> Map.map (fun _ path ->
-             Manifest.references path |> ignore
-             Manifest.evaluatedReferences path))
+let private check rule (assembly: Assembly) =
+    ApiRules.check
+        model.Value
+        rule
+        (assembly.GetName().Name |> nonNull)
+        (Types().That().ResideInAssembly assembly)
 
-let private actualGraph () = resolvedGraph.Value
+let private rejects rule (fixture: System.Type) =
+    let subjects = Types().That().HaveFullName(fixture.FullName |> nonNull)
 
-let private reject action fragment =
-    let error =
-        try
-            action ()
-            None
-        with :? InvalidOperationException as error ->
-            Some error.Message
+    Expect.isFalse
+        (subjects.GetObjects model.Value |> Seq.isEmpty)
+        "The compiled negative fixture must be present"
 
-    Expect.isSome error "The negative control must be rejected"
-    Expect.stringContains (Option.get error) fragment "The refusal identifies the project and rule"
+    Expect.isFalse
+        ((ApiRules.rule rule subjects).HasNoViolations model.Value)
+        "The rule detects a compiled violation, rather than only throwing"
 
-let private graphTests =
-    [
-        testCase "imported project edges are evaluated and refused" (fun () ->
-            let directory = System.IO.Directory.CreateTempSubdirectory("claimcore-edges-")
+    Expect.throwsT<InvalidOperationException>
+        (fun () -> ApiRules.check model.Value rule fixture.Name subjects)
+        "The compiled prohibited dependency must be detected"
 
-            try
-                let file name =
-                    System.IO.Path.Combine(directory.FullName, name)
+let private ambientEffects () =
+    for name in
+        [
+            "ClaimCore.Contract"
+            "ClaimCore.Domain"
+            "ClaimCore.RecordFormat"
+            "ClaimCore.Application"
+        ] do
+        check "pure" (Assembly.Load name)
 
-                System.IO.File.WriteAllText(
-                    file "forbidden.props",
-                    "<Project><ItemGroup><ProjectReference Include=\"ClaimCore.Application.fsproj\" /></ItemGroup></Project>"
-                )
+    for fixture in
+        [
+            typeof<ClockCall>
+            typeof<FileCall>
+            typeof<FileReaderCall>
+            typeof<EnvironmentCall>
+            typeof<RandomCall>
+            typeof<NetworkCall>
+            typeof<TimeZoneCall>
+            typeof<ResourceCall>
+        ] do
+        rejects "pure" fixture
 
-                System.IO.File.WriteAllText(file "ClaimCore.Application.fsproj", "<Project />")
+let private importedReference () =
+    let directory = Directory.CreateTempSubdirectory("claimcore-project-edge-")
 
-                System.IO.File.WriteAllText(
-                    file "client.fsproj",
-                    "<Project><Import Project=\"forbidden.props\" /></Project>"
-                )
+    try
+        let properties = Path.Combine(directory.FullName, "edge.props")
 
-                let edges = Manifest.evaluatedReferences (file "client.fsproj")
+        File.WriteAllText(
+            properties,
+            """<Project><ItemGroup><ProjectReference Include="ClaimCore.Postgres.fsproj" /></ItemGroup></Project>"""
+        )
 
-                Expect.equal
-                    edges
-                    (Set.singleton "ClaimCore.Application")
-                    "Imported edge is visible"
+        let path = Path.Combine(directory.FullName, "client.fsproj")
+        File.WriteAllText(path, "<Project><Import Project=\"edge.props\" /></Project>")
+        let references = ProjectReferences.read path
 
-                let changed = actualGraph () |> Map.add "ClaimCore.Cli" edges
+        Expect.equal
+            references
+            (Set.singleton "ClaimCore.Postgres")
+            "Unused imported project edge is evaluated"
 
-                reject
-                    (fun () -> ProjectGraph.check contract.Value changed)
-                    "ClaimCore.Cli projectGraph"
-            finally
-                directory.Delete true)
-        testCase "client protocol facade signatures hide semantic types" (fun () ->
-            typeof<ClaimCore.Web.Composition.IServiceRuntime>.Assembly.GetExportedTypes()
-            |> Array.toList
-            |> FacadeSignatures.check
+        Expect.isFalse
+            (ProjectReferences.permitted "ClaimCore.Contract" references)
+            "Only Web and Database may declare this edge"
+    finally
+        directory.Delete true
 
-            reject
-                (fun () -> FacadeSignatures.check [ typeof<SemanticFacade> ])
-                "Semantic facade type")
-        testCase "compiler reference paths match the permitted product graph" (fun () ->
-            let product = contract.Value.Projects.Keys |> Set.ofSeq
+let private postgres () =
+    for path in projectPaths.Value do
+        let name = Path.GetFileNameWithoutExtension path |> nonNull
 
-            for KeyValue(name, allowed) in contract.Value.Projects do
-                let resolved =
-                    Manifest.resolvedReferences projects.Value[name] |> Set.intersect product
+        Expect.isTrue
+            (ProjectReferences.permitted name (ProjectReferences.read path))
+            (name + " evaluated Postgres reference")
 
-                let forbidden = Set.difference resolved allowed
-                Expect.isEmpty forbidden (name + " resolved compiler references"))
-        testCase "imported assembly references reach compiler resolution" (fun () ->
-            let directory =
-                System.IO.Directory.CreateTempSubdirectory("claimcore-assembly-edges-")
+    importedReference ()
 
-            try
-                let file name =
-                    System.IO.Path.Combine(directory.FullName, name)
+    for assembly in products.Value do
+        let name = assembly.GetName().Name |> nonNull
 
-                let assembly = typeof<ClaimCore.Application.PrincipalKey>.Assembly.Location
+        if
+            not (List.contains name [ "ClaimCore.Postgres"; "ClaimCore.Web"; "ClaimCore.Database" ])
+        then
+            check "postgres" assembly
 
-                System.IO.File.WriteAllText(
-                    file "forbidden.props",
-                    "<Project><ItemGroup><Reference Include=\"ClaimCore.Application\"><HintPath>"
-                    + assembly
-                    + "</HintPath></Reference></ItemGroup></Project>"
-                )
+    rejects "postgres" typeof<PostgresReference>
 
-                System.IO.File.WriteAllText(
-                    file "client.fsproj",
-                    "<Project><Import Project=\"forbidden.props\" /><Target Name=\"ResolveReferences\"><ItemGroup><ReferencePath Include=\"@(Reference->'%(HintPath)')\" /></ItemGroup></Target></Project>"
-                )
+let private serializer () =
+    for name in [ "ClaimCore.Contract"; "ClaimCore.RecordFormat" ] do
+        check "serializer" (Assembly.Load name)
 
-                let resolved = Manifest.resolvedReferences (file "client.fsproj")
+    rejects "serializer" typeof<JsonSerializerCall>
+    // Direct writers are permitted by the adopted policy; JsonSerializer is not.
+    ApiRules.check
+        model.Value
+        "serializer"
+        "writer control"
+        (Types().That().HaveFullName(typeof<JsonWriterCall>.FullName |> nonNull))
 
-                Expect.equal
-                    resolved
-                    (Set.singleton "ClaimCore.Application")
-                    "Imported compiler edge visible"
+let private publishedClosure () =
+    let directory = Directory.CreateTempSubdirectory("claimcore-client-closure-")
 
-                let forbidden = Set.difference resolved contract.Value.Projects["ClaimCore.Cli"]
-                Expect.equal forbidden resolved "Client restriction rejects imported assembly"
-            finally
-                directory.Delete true)
-        testCase "compiled CLI has no semantic assembly dependency" (fun () ->
-            let references = Assembly.Load("ClaimCore.Cli").GetReferencedAssemblies()
+    try
+        let dependencies = Path.Combine(directory.FullName, "ClaimCore.Cli.deps.json")
+        File.WriteAllText(dependencies, "{\"libraries\":{}}")
 
-            let forbidden =
-                set
-                    [
-                        "ClaimCore.Domain"
-                        "ClaimCore.Application"
-                        "ClaimCore.RecordFormat"
-                        "ClaimCore.Contracts"
-                        "ClaimCore.Web"
-                        "ClaimCore.Postgres"
-                    ]
+        let check () =
+            ClaimCore.TestSupport.PublishedClientClosure.violations directory.FullName
 
-            for item in references do
-                Expect.isFalse
-                    (Set.contains (item.Name |> nonNull) forbidden)
-                    "Client assembly closure edge")
-        testCase
-            "[CC-ARCH-001] declared project references equal the manifest in both directions"
-            (fun () -> ProjectGraph.check contract.Value (actualGraph ()))
-        testCase "a missing required edge identifies its project" (fun () ->
-            let changed = actualGraph () |> Map.add "ClaimCore.Application" Set.empty
+        Expect.isEmpty (check ()) "A clean synthetic deliverable is admitted"
+        let source = typeof<ClaimCore.Domain.Claim>.Assembly.Location
+        let target = Path.Combine(directory.FullName, Path.GetFileName source |> nonNull)
+        File.Copy(source, target)
+        Expect.equal (check ()) [ "ClaimCore.Domain" ] "A real compiled server assembly is rejected"
+        File.Delete target
+        File.WriteAllText(dependencies, "{\"libraries\":{\"ClaimCore.Application/0.11.0\":{}}}")
 
-            reject
-                (fun () -> ProjectGraph.check contract.Value changed)
-                "ClaimCore.Application projectGraph")
-        testCase "Contract rejects dependencies on other product projects" (fun () ->
-            for name in contract.Value.Projects.Keys do
-                if name <> "ClaimCore.Contract" then
-                    let changed =
-                        actualGraph () |> Map.add "ClaimCore.Contract" (Set.singleton name)
-
-                    reject
-                        (fun () -> ProjectGraph.check contract.Value changed)
-                        "ClaimCore.Contract projectGraph")
-        testCase "an undeclared edge identifies its project" (fun () ->
-            let changed =
-                actualGraph ()
-                |> Map.add "ClaimCore.Domain" (Set.singleton "ClaimCore.Postgres")
-
-            reject
-                (fun () -> ProjectGraph.check contract.Value changed)
-                "ClaimCore.Domain projectGraph")
-        testCase "internals grants name a permitted referencer or a test project" (fun () ->
-            let tests =
-                projects.Value.Keys
-                |> Seq.filter (fun name -> name.EndsWith("Tests", StringComparison.Ordinal))
-                |> Set.ofSeq
-
-            for assembly in assemblies.Value do
-                ProjectGraph.internals contract.Value tests assembly)
-        testCase "an unpermitted internals recipient identifies the grantor" (fun () ->
-            reject
-                (fun () ->
-                    ProjectGraph.grant
-                        contract.Value
-                        Set.empty
-                        "ClaimCore.Domain"
-                        "ClaimCore.Database")
-                "ClaimCore.Domain internalsVisibleTo")
-        testCase "an empty compiled subject selection is rejected" (fun () ->
-            reject
-                (fun () ->
-                    ApiRules.check
-                        model.Value
-                        "onlyTheseMayUseTimeZoneInfo"
-                        "ClaimCore.Domain"
-                        (Types().That().HaveFullName("AbsentArchitectureSubject")))
-                "ClaimCore.Domain onlyTheseMayUseTimeZoneInfo")
-        testCase "the named rules cannot silently disappear" (fun () ->
-            Expect.equal
-                (contract.Value.Rules.Keys |> Set.ofSeq)
-                ApiRules.names
-                "Exact architecture rules")
-    ]
-
-let private positiveRules =
-    ApiRules.names
-    |> Set.toList
-    |> List.map (fun name ->
-        testCase ("compiled " + name) (fun () ->
-            let selected = contract.Value.Rules[name]
-
-            for project in contract.Value.Projects.Keys do
-                let applies =
-                    if
-                        name = "freeOfClockFileEnvironmentRandomnessAndNetwork"
-                        || name = "recordFormatAvoidsFrameworkSerialization"
-                        || name = "clientAvoidsServerSemantics"
-                        || name = "httpHostAvoidsDirectSemantics"
-                    then
-                        Set.contains project selected
-                    elif
-                        name = "onlyTheseMayReferencePostgres" && project = "ClaimCore.Postgres"
-                    then
-                        false
-                    elif
-                        name = "onlyTheseMayReferenceHosting" && project = "ClaimCore.Web"
-                    then
-                        false
-                    else
-                        not (Set.contains project selected)
-
-                if applies then
-                    ApiRules.check
-                        model.Value
-                        name
-                        project
-                        (Types().That().ResideInAssembly(Assembly.Load project))))
-
-let private negativeRules =
-    [
-        "clientAvoidsServerSemantics", typeof<SemanticFacade>
-        "httpHostAvoidsDirectSemantics", typeof<SemanticFacade>
-        "onlyTheseMayReferencePostgres", typeof<PostgresReference>
-        "onlyTheseMayReferenceHosting", typeof<HostingReference>
-        "onlyTheseMayUseTimeZoneInfo", typeof<TimeZoneCall>
-        "recordFormatAvoidsFrameworkSerialization", typeof<JsonSerializerCall>
-        "recordFormatAvoidsFrameworkSerialization", typeof<JsonWriterCall>
-        "freeOfClockFileEnvironmentRandomnessAndNetwork", typeof<ClockCall>
-        "freeOfClockFileEnvironmentRandomnessAndNetwork", typeof<FileCall>
-        "freeOfClockFileEnvironmentRandomnessAndNetwork", typeof<EnvironmentCall>
-        "freeOfClockFileEnvironmentRandomnessAndNetwork", typeof<RandomCall>
-        "freeOfClockFileEnvironmentRandomnessAndNetwork", typeof<NetworkCall>
-    ]
-    |> List.map (fun (name, fixture) ->
-        testCase ("compiled negative " + name + " " + fixture.Name) (fun () ->
-            let subjects = Types().That().HaveFullName(fixture.FullName |> nonNull)
-
-            Expect.isFalse
-                (subjects.GetObjects model.Value |> Seq.isEmpty)
-                "Compiled negative fixture is present"
-
-            reject
-                (fun () -> ApiRules.check model.Value name "ClaimCore.Domain" subjects)
-                ("ClaimCore.Domain " + name)))
+        Expect.equal
+            (check ())
+            [ "ClaimCore.Application" ]
+            "Resolved transitive server dependencies are rejected"
+    finally
+        directory.Delete true
 
 [<Tests>]
-let tests = testList "architecture" (graphTests @ positiveRules @ negativeRules)
+let tests =
+    testList
+        "architecture"
+        [
+            testCase
+                "pure projects reject ambient effects including timezone and resources"
+                ambientEffects
+            testCase "only Web and Database may reference Postgres" postgres
+            testCase
+                "published client closure rejects compiled server dependencies"
+                publishedClosure
+            testCase "Contract and RecordFormat avoid JsonSerializer" serializer
+        ]

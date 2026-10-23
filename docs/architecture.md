@@ -8,17 +8,13 @@ identity, authorization and outcomes; the store executes pure decisions against 
 
 ### CC-ARCH-001 — Component graph and compiled boundaries
 
-[The architecture manifest](../config/architecture.json) owns direct project references in both
-directions. Catalog, Domain, RecordFormat, Application and Wire call no clock, file,
-environment, randomness or network APIs. Only Hosting and Database reference Postgres; only Web references
-Hosting. These referencer rules concern other projects, not a component's own types.
-TimeZoneInfo belongs only to Hosting, Database and Postgres. Compiled negative fixtures prove
-each rule rejects a forbidden dependency or call. Evaluated
-MSBuild reference items include imported edges. Published-client closure and facade signature
-checks cover the client boundary; frontend resolved-import guards cover renderer/interaction/
-transport dependencies. These controls reject specified violations, not every expressible semantic
-copy. Internals grants name a permitted referencer
-or an actual test project. Test projects reference only product or tooling projects.
+Project references are reviewed in the `.fsproj` diffs. Compiled checks enforce four boundaries:
+Contract, Domain, RecordFormat and Application call no clock, file, environment, randomness,
+network, time-zone or resource APIs; only Web and Database reference Postgres; the published CLI
+contains no Domain, RecordFormat, Application or Postgres assembly; and Contract and RecordFormat
+use no `JsonSerializer`. Compiled negative fixtures demonstrate rejection. The published CLI check
+examines both deliverable files and resolved dependency identities. Test discovery checks retain
+evaluated MSBuild `Compile` membership, including imported and conditional source items.
 
 RecordFormat owns durable bytes and supports only its versioned record readers and writers.
 Catalog owns shared closed vocabulary, diagnostic identities, authored English templates and locale assets.

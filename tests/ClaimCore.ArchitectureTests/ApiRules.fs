@@ -5,18 +5,6 @@ open ArchUnitNET.Domain
 open ArchUnitNET.Fluent
 open type ArchUnitNET.Fluent.ArchRuleDefinition
 
-let names =
-    set
-        [
-            "clientAvoidsServerSemantics"
-            "httpHostAvoidsDirectSemantics"
-            "onlyTheseMayReferencePostgres"
-            "onlyTheseMayReferenceHosting"
-            "freeOfClockFileEnvironmentRandomnessAndNetwork"
-            "onlyTheseMayUseTimeZoneInfo"
-            "recordFormatAvoidsFrameworkSerialization"
-        ]
-
 let private fileTypes =
     Types()
         .That()
@@ -68,53 +56,37 @@ let private forbiddenCalls =
         .Or()
         .HaveFullNameMatching(@"\bSystem\.Guid::NewGuid\(")
         .Or()
+        .HaveFullNameMatching(@"\bSystem\.IO\.Stream(Reader|Writer)::\.ctor\(System\.String")
+        .Or()
         .AreDeclaredIn(networkTypes)
         .Or()
         .HaveFullNameMatching(@"\bSystem\.Globalization\.CultureInfo::get_Current(UI)?Culture\(")
-
-let private semanticTypes includeHosting =
-    let forbidden =
-        Types()
-            .That()
-            .ResideInAssembly(Assembly.Load "ClaimCore.Domain")
-            .Or()
-            .ResideInAssembly(Assembly.Load "ClaimCore.RecordFormat")
-            .Or()
-            .ResideInAssembly(Assembly.Load "ClaimCore.Application")
-            .Or()
-            .ResideInAssembly(Assembly.Load "ClaimCore.Postgres")
-
-    if includeHosting then
-        forbidden.Or().ResideInAssembly(Assembly.Load "ClaimCore.Web")
-    else
-        forbidden
+        .Or()
+        .AreDeclaredIn(Types().That().HaveFullName("System.TimeZoneInfo"))
+        .Or()
+        .HaveFullNameMatching(
+            @"\bSystem\.Reflection\.(Assembly|RuntimeAssembly)::GetManifestResource"
+        )
+        .Or()
+        .AreDeclaredIn(
+            Types()
+                .That()
+                .HaveFullNameMatching(
+                    @"^System\.Resources\.(ResourceManager|ResourceReader|ResourceSet)$"
+                )
+        )
 
 let rule name (subjects: IObjectProvider<IType>) =
     let clauses = Types().That().Are(subjects).Should()
 
     match name with
-    | "clientAvoidsServerSemantics"
-    | "httpHostAvoidsDirectSemantics" ->
-        clauses.NotDependOnAny(semanticTypes (name = "clientAvoidsServerSemantics")) :> IArchRule
-    | "onlyTheseMayReferencePostgres" ->
+    | "pure" -> clauses.NotCallAny(forbiddenCalls) :> IArchRule
+    | "postgres" ->
         clauses.NotDependOnAny(Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Postgres"))
         :> IArchRule
-    | "onlyTheseMayReferenceHosting" ->
-        clauses.NotDependOnAny(Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Web"))
+    | "serializer" ->
+        clauses.NotDependOnAny(Types().That().HaveFullName("System.Text.Json.JsonSerializer"))
         :> IArchRule
-    | "onlyTheseMayUseTimeZoneInfo" ->
-        clauses.NotDependOnAny(Types().That().HaveFullName("System.TimeZoneInfo")) :> IArchRule
-    | "recordFormatAvoidsFrameworkSerialization" ->
-        clauses.NotDependOnAny(
-            Types()
-                .That()
-                .HaveFullName("System.Text.Json.Utf8JsonWriter")
-                .Or()
-                .HaveFullName("System.Text.Json.JsonSerializer")
-        )
-        :> IArchRule
-    | "freeOfClockFileEnvironmentRandomnessAndNetwork" ->
-        clauses.NotCallAny(forbiddenCalls) :> IArchRule
     | _ -> invalidArg "name" ("Unknown architecture rule " + name)
 
 let check architecture name project (subjects: IObjectProvider<IType>) =

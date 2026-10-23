@@ -17,13 +17,8 @@ let private unique (value: JsonElement) =
     require (names.Length = (Set.ofList names).Count)
 
 let private owned root =
-    use document =
-        JsonDocument.Parse(
-            File.ReadAllBytes(Path.Combine(root, "config/architecture.json")).AsMemory()
-        )
-
-    document.RootElement.GetProperty("product").EnumerateObject()
-    |> Seq.map _.Name
+    Directory.EnumerateFiles(Path.Combine(root, "src"), "*.fsproj", SearchOption.AllDirectories)
+    |> Seq.map (Path.GetFileNameWithoutExtension >> nonNull)
     |> Set.ofSeq
 
 let private resource (entry: JsonProperty) =

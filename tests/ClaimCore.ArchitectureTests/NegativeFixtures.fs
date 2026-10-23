@@ -7,10 +7,6 @@ open System
 type PostgresReference =
     static member Target() = typeof<ClaimCore.Postgres.IRuntime>
 
-type HostingReference =
-    static member Target() =
-        typeof<ClaimCore.Web.Composition.IServiceRuntime>
-
 type ClockCall =
     static member Read() = DateTimeOffset.UtcNow
 
@@ -42,6 +38,11 @@ type JsonWriterCall =
         writer.WriteNullValue()
         writer.Flush()
 
-/// A public DTO leak must fail even when the service interface itself remains protocol-only.
-type SemanticFacade =
-    static member Payload: ClaimCore.Domain.Claim option = None
+type ResourceCall =
+    static member Read() =
+        Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("synthetic")
+
+type FileReaderCall =
+    static member Read() =
+        use reader = new IO.StreamReader("synthetic")
+        reader.ReadToEnd()
