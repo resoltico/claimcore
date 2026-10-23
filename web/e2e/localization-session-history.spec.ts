@@ -46,7 +46,9 @@ test("preserves language and independent display preferences through real logout
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
-  await openAuthenticated(page);
+  // This workflow owns the server-side ticket that logout revokes.
+  await page.goto("/", { waitUntil: "commit" });
+  await login(page);
   await selectFormat(page, "lv-LV");
   await selectLanguage(page, "ar");
   await expect(
