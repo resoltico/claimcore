@@ -41,6 +41,17 @@ let private field name (reply: JsonElement) =
 let private uncertain reply =
     Expect.equal (field "delivery" reply) "UNCERTAIN" "Prior commit remains unresolved"
 
+let private exactBytes (fixture: PublishedFixture.Fixture) name expected actual =
+    if actual <> expected then
+        FixtureFiles.write fixture.Directory (name + ".expected.json") expected
+        |> ignore
+
+        FixtureFiles.write fixture.Directory (name + ".actual.json") actual |> ignore
+
+    Expect.isTrue
+        (actual = expected)
+        "Prepared request bytes remain exactly equal; mismatch evidence stays private"
+
 let private lostFrame (fixture: PublishedFixture.Fixture) source =
     let result =
         ProcessRunner.dotnet 90_000 fixture.Cli [ "call" ] fixture.Environment (Some source)
@@ -55,7 +66,7 @@ let private lostFrame (fixture: PublishedFixture.Fixture) source =
         |> Result.defaultWith (fun _ -> failtest "Synthetic source is admitted")
         |> Frames.encodeInvocation
 
-    Expect.equal retry prepared "Last stderr line retains the exact prepared request frame"
+    exactBytes fixture "stderr-retry-frame" prepared retry
     reply, retry
 
 let private oneAcceptance fixture reference =
@@ -146,7 +157,15 @@ let private differentContent fixture source =
 let private coreUnknown (fixture: PublishedFixture.Fixture) =
     let source, operationId, reference = authored fixture
     let intercepted = fixture.ArmCommitReplyLoss()
-    automation fixture "context" {| |} 0 |> require "SUCCEEDED" |> ignore
+
+    verb
+        fixture
+        (interactiveEnvironment fixture "synthetic-owner" "valid")
+        [ "authority"; "list" ]
+        0
+    |> require "SUCCEEDED"
+    |> ignore
+
     Expect.isFalse intercepted.IsCompleted "Armed mutation fault never drops read commits"
     let unknown, retryFrame = lostFrame fixture source
     require "OUTCOME_UNKNOWN" unknown |> ignore
@@ -166,5 +185,5 @@ let qualify fixture =
     exactResolution fixture pending operationId
     differentContent fixture source
     oneAcceptance fixture reference
-    Expect.equal source retained "Caller never rewrites its authored bytes"
+    exactBytes fixture "authored-request" retained source
     coreUnknown fixture

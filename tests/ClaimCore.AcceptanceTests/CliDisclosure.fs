@@ -57,16 +57,17 @@ let private staleReview fixture input reference =
 
 let private withheld expected reply =
     let receipt = require expected reply
+    let snapshot = receipt.GetProperty("scope").GetProperty("snapshot")
 
     Expect.equal
-        (receipt.GetProperty("scope").GetProperty("snapshot").GetProperty("disclosure").GetString())
+        (snapshot.GetProperty("disclosure").GetString())
         "WITHHELD"
         "Superseded business snapshot requires current full-history permission"
 
     Expect.equal
-        (receipt.GetProperty("scope").GetProperty("snapshot").GetProperty("view").ValueKind)
-        JsonValueKind.Null
-        "Withheld never synthesizes or leaks business values"
+        (snapshot.EnumerateObject() |> Seq.map _.Name |> Seq.toList)
+        [ "disclosure" ]
+        "Withheld contains only its discriminator and no business payload"
 
 let private summaryHistory fixture reference =
     let history =
