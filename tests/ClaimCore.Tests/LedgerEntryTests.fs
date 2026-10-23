@@ -24,7 +24,7 @@ let private scope (vector: JsonElement) =
         LedgerScope.Authority
             {
                 TargetActorId = Guid.Parse(text vector "subjectId")
-                Act = RecordedAuthorityKind.SetGrant
+                Act = AuthorityKind.SetGrant
             }
     else
         LedgerScope.Case
@@ -168,7 +168,7 @@ let private allMetadataFields () =
                         LedgerScope.Authority
                             {
                                 TargetActorId = otherId
-                                Act = RecordedAuthorityKind.SetGrant
+                                Act = AuthorityKind.SetGrant
                             }
                 }
             ]
@@ -258,10 +258,10 @@ let tests =
 
                     for kind, expected in
                         [
-                            RecordedAuthorityKind.ProvisionOwner, 32uy
-                            RecordedAuthorityKind.RegisterActor, 33uy
-                            RecordedAuthorityKind.SetGrant, 34uy
-                            RecordedAuthorityKind.SetEnabled, 35uy
+                            AuthorityKind.ProvisionOwner, 32uy
+                            AuthorityKind.RegisterActor, 33uy
+                            AuthorityKind.SetGrant, 34uy
+                            AuthorityKind.SetEnabled, 35uy
                         ] do
                         let scope =
                             {
@@ -298,7 +298,7 @@ let tests =
                                 LedgerScope.Authority
                                     {
                                         TargetActorId = Guid.Empty
-                                        Act = RecordedAuthorityKind.SetGrant
+                                        Act = AuthorityKind.SetGrant
                                     }
                         }
 
@@ -470,7 +470,7 @@ let tests =
                                         LedgerScope.Authority
                                             {
                                                 TargetActorId = entry.ActorId
-                                                Act = RecordedAuthorityKind.SetGrant
+                                                Act = AuthorityKind.SetGrant
                                             }
                                 }
 

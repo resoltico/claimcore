@@ -227,7 +227,7 @@ let private authority (database: PostgresFixture.Database) =
                 sequence
                 (authorityScope (fun scope ->
                     { scope with
-                        Act = RecordedAuthorityKind.SetEnabled
+                        Act = AuthorityKind.SetEnabled
                     })
                  >> updateAuthority altered)
 

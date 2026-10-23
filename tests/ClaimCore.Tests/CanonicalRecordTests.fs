@@ -98,10 +98,13 @@ let private authority () =
 
         Expect.equal
             request.Act
-            (RecordedAuthorityAct.SetGrant(
-                "CASE_HANDLER",
-                GrantTarget.CaseReference "Demo-0001",
-                true
+            (RecordedAuthorityAct.Operation(
+                ClaimCore.Contract.Protocol.AuthorityAct.SetGrant
+                    {
+                        Role = "CASE_HANDLER"
+                        Scope = GrantTarget.CaseReference "Demo-0001"
+                        Active = true
+                    }
             ))
             "Independent grant meaning"
 

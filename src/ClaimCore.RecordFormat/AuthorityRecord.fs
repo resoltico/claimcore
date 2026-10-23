@@ -1,23 +1,15 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Contract
-
 open System
+open ClaimCore.Contract
 open ClaimCore.Domain
 
-[<RequireQualifiedAccess>]
-type RecordedAuthorityKind =
-    | ProvisionOwner
-    | RegisterActor
-    | SetGrant
-    | SetEnabled
+type private SharedAuthorityAct = ClaimCore.Contract.Protocol.AuthorityAct
 
 [<RequireQualifiedAccess>]
 type RecordedAuthorityAct =
-    | RegisterActor
     | ProvisionOwner
-    | SetGrant of role: string * scope: GrantTarget * active: bool
-    | SetEnabled of enabled: bool
+    | Operation of ClaimCore.Contract.Protocol.AuthorityAct
 
 type AuthorityRequestRecord =
     {
@@ -29,146 +21,99 @@ type AuthorityRequestRecord =
 module RecordedAuthorityActs =
     let kind =
         function
-        | RecordedAuthorityAct.ProvisionOwner -> RecordedAuthorityKind.ProvisionOwner
-        | RecordedAuthorityAct.RegisterActor -> RecordedAuthorityKind.RegisterActor
-        | RecordedAuthorityAct.SetGrant _ -> RecordedAuthorityKind.SetGrant
-        | RecordedAuthorityAct.SetEnabled _ -> RecordedAuthorityKind.SetEnabled
+        | RecordedAuthorityAct.ProvisionOwner -> AuthorityKind.ProvisionOwner
+        | RecordedAuthorityAct.Operation SharedAuthorityAct.RegisterActor ->
+            AuthorityKind.RegisterActor
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetGrant _) -> AuthorityKind.SetGrant
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetEnabled _) ->
+            AuthorityKind.SetEnabled
 
-    let private tokens =
+    let all =
         [
-            RecordedAuthorityKind.ProvisionOwner,
-            (AuthorityKinds.token AuthorityKind.ProvisionOwner)
-            RecordedAuthorityKind.RegisterActor, (AuthorityKinds.token AuthorityKind.RegisterActor)
-            RecordedAuthorityKind.SetGrant, (AuthorityKinds.token AuthorityKind.SetGrant)
-            RecordedAuthorityKind.SetEnabled, (AuthorityKinds.token AuthorityKind.SetEnabled)
+            AuthorityKind.ProvisionOwner
+            AuthorityKind.RegisterActor
+            AuthorityKind.SetGrant
+            AuthorityKind.SetEnabled
         ]
 
-    let all = tokens |> List.map fst
-
-    let token kind =
-        tokens |> List.find (fst >> (=) kind) |> snd
+    let token = AuthorityKinds.token
 
     let tryKind value =
-        tokens |> List.tryFind (snd >> (=) value) |> Option.map fst
+        all |> List.tryFind (token >> (=) value)
 
 module AuthorityRecord =
-    let private scope root =
-        let path = "$.act.scope"
+    let private owner =
+        Codec.record ()
+        |> ClaimCore.Contract.Protocol.ResponseScalars.fixedField
+            "kind"
+            (AuthorityKinds.token AuthorityKind.ProvisionOwner)
+        |> Codec.build
+        |> Codec.named "ProvisionOwnerRecordAct"
 
-        match Json.text path "kind" root with
-        | "INSTALLATION" ->
-            Json.properties path [ "kind" ] root
-            GrantTarget.Installation
-        | "CASE" ->
-            Json.properties path [ "kind"; "caseReference" ] root
-            let reference = Json.text path "caseReference" root
-
-            match CaseReference.validate reference with
-            | Ok() -> GrantTarget.CaseReference reference
-            | Error _ -> Json.reject (path + ".caseReference") "Invalid case reference."
-        | _ -> Json.reject (path + ".kind") "Unknown grant scope."
-
-    let private act root =
-        let path = "$.act"
-
-        match Json.text path "kind" root with
-        | value when value = (AuthorityKinds.token AuthorityKind.ProvisionOwner) ->
-            Json.properties path [ "kind" ] root
-            RecordedAuthorityAct.ProvisionOwner
-        | value when value = (AuthorityKinds.token AuthorityKind.RegisterActor) ->
-            Json.properties path [ "kind" ] root
-            RecordedAuthorityAct.RegisterActor
-        | value when value = (AuthorityKinds.token AuthorityKind.SetGrant) ->
-            Json.properties path [ "kind"; "role"; "scope"; "active" ] root
-
-            RecordedAuthorityAct.SetGrant(
-                Json.text path "role" root,
-                Json.required path "scope" root |> scope,
-                Json.boolean path "active" root
-            )
-        | value when value = (AuthorityKinds.token AuthorityKind.SetEnabled) ->
-            Json.properties path [ "kind"; "enabled" ] root
-            RecordedAuthorityAct.SetEnabled(Json.boolean path "enabled" root)
-        | _ -> Json.reject (path + ".kind") "Unknown authority act."
-
-    let private read root =
-        let members = [ "operationId"; "target"; "act" ]
-        Json.properties "$" ("format" :: members) root
-        let target = Json.required "$" "target" root
-        Json.properties "$.target" [ "kind"; "issuer"; "subject" ] target
-        let kind = Json.text "$.target" "kind" target
-
-        if kind <> PrincipalKinds.Human && kind <> PrincipalKinds.Service then
-            Json.reject "$.target.kind" "Unknown principal kind."
-
-        {
-            OperationId = Json.guid "$" "operationId" root
-            Target =
-                {
-                    Kind = kind
-                    Issuer = Json.text "$.target" "issuer" target
-                    Subject = Json.text "$.target" "subject" target
-                }
-            Act = Json.required "$" "act" root |> act
-        }
-
-    let decode maxBytes bytes =
-        Json.bounded maxBytes bytes (Json.dispatch [ 2L, read ])
-
-    let private scopeValue =
-        function
-        | GrantTarget.Installation -> JsonValue.Object [ "kind", JsonValue.String "INSTALLATION" ]
-        | GrantTarget.CaseReference reference ->
-            match CaseReference.validate reference with
-            | Error _ -> invalidArg (nameof reference) "Invalid case reference."
-            | Ok() ->
-                JsonValue.Object
-                    [ "kind", JsonValue.String "CASE"; "caseReference", JsonValue.String reference ]
-
-    let private actValue act =
-        let members =
-            match act with
-            | RecordedAuthorityAct.ProvisionOwner
-            | RecordedAuthorityAct.RegisterActor -> []
-            | RecordedAuthorityAct.SetGrant(role, scope, active) ->
-                [
-                    "role", JsonValue.String(Json.persistedString "$.act.role" role)
-                    "scope", scopeValue scope
-                    "active", JsonValue.Boolean active
-                ]
-            | RecordedAuthorityAct.SetEnabled enabled -> [ "enabled", JsonValue.Boolean enabled ]
-
-        let kind = RecordedAuthorityActs.kind act |> RecordedAuthorityActs.token
-        JsonValue.Object(("kind", JsonValue.String kind) :: members)
-
-    let private value (request: AuthorityRequestRecord) =
-        if request.OperationId = Guid.Empty then
-            invalidArg (nameof request) "Use a nonempty operation ID."
-
-        if
-            request.Target.Kind <> PrincipalKinds.Human
-            && request.Target.Kind <> PrincipalKinds.Service
-        then
-            invalidArg (nameof request) "Unknown principal kind."
-
-        let target =
-            JsonValue.Object
-                [
-                    "kind",
-                    JsonValue.String(Json.persistedString "$.target.kind" request.Target.Kind)
-                    "issuer",
-                    JsonValue.String(Json.persistedString "$.target.issuer" request.Target.Issuer)
-                    "subject",
-                    JsonValue.String(Json.persistedString "$.target.subject" request.Target.Subject)
-                ]
-
-        let members =
+    let private act =
+        Codec.choice
+            "RecordedAuthorityAct"
             [
-                "operationId", JsonValue.String(request.OperationId.ToString("D"))
-                "target", target
-                "act", actValue request.Act
+                Codec.branch
+                    RecordedAuthorityAct.Operation
+                    (function
+                    | RecordedAuthorityAct.Operation value -> Some value
+                    | _ -> None)
+                    (ClaimCore.Contract.Protocol.RequestCodecs.authorityActWith Codec.text)
+                Codec.branch
+                    (fun () -> RecordedAuthorityAct.ProvisionOwner)
+                    (function
+                    | RecordedAuthorityAct.ProvisionOwner -> Some()
+                    | _ -> None)
+                    owner
             ]
 
-        JsonValue.Object(("format", JsonValue.Integer(int64 RecordVersions.Authority)) :: members)
+    let private codec =
+        Codec.record (fun operationId target act ->
+            {
+                OperationId = operationId
+                Target = target
+                Act = act
+            })
+        |> Codec.field "operationId" _.OperationId Codec.uuid
+        |> Codec.field "target" _.Target ClaimCore.Contract.Protocol.RequestCodecs.principal
+        |> Codec.field "act" _.Act act
+        |> Codec.build
+        |> Codec.withFormat (int64 RecordVersions.Authority)
+        |> Codec.named "AuthorityRequestRecord"
 
-    let encode request = value request |> CanonicalWriter.bytes
+    let private validScope =
+        function
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetGrant {
+                                                                         Scope = GrantTarget.CaseReference reference
+                                                                     }) ->
+            CaseReference.validate reference |> Result.isOk
+        | _ -> true
+
+    let private validate request =
+        if
+            request.OperationId = Guid.Empty
+            || not (List.contains request.Target.Kind PrincipalKinds.all)
+            || not (validScope request.Act)
+        then
+            Error
+                {
+                    Field = "$"
+                    Message = "Invalid authority record format."
+                }
+        else
+            Ok request
+
+    let decode maximumBytes bytes =
+        Codec.decode maximumBytes codec bytes
+        |> Result.mapError (fun problem ->
+            {
+                Field = problem.Path
+                Message = problem.Reason
+            })
+        |> Result.bind validate
+
+    let encode request =
+        match validate request with
+        | Error _ -> invalidArg (nameof request) "Invalid authority record format."
+        | Ok value -> codec.Write value |> CanonicalWriter.bytes

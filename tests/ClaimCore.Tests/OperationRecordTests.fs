@@ -65,9 +65,20 @@ let private authorityProperty =
         let! action =
             Gen.item
                 [
-                    RecordedAuthorityAct.RegisterActor
-                    RecordedAuthorityAct.SetGrant(role, scope, active)
-                    RecordedAuthorityAct.SetEnabled active
+                    RecordedAuthorityAct.Operation(
+                        ClaimCore.Contract.Protocol.AuthorityAct.RegisterActor
+                    )
+                    RecordedAuthorityAct.Operation(
+                        ClaimCore.Contract.Protocol.AuthorityAct.SetGrant
+                            {
+                                Role = role
+                                Scope = scope
+                                Active = active
+                            }
+                    )
+                    RecordedAuthorityAct.Operation(
+                        ClaimCore.Contract.Protocol.AuthorityAct.SetEnabled active
+                    )
                 ]
 
         let request = authority action
@@ -88,7 +99,14 @@ let private decoderProperty =
             Fixtures.opened () |> Case.snapshot |> CaseRecord.encodeSnapshot
             steward (CaseAct.Void "Reason") |> RequestRecord.encode
             authority (
-                RecordedAuthorityAct.SetGrant("CASE_HANDLER", GrantTarget.Installation, true)
+                RecordedAuthorityAct.Operation(
+                    ClaimCore.Contract.Protocol.AuthorityAct.SetGrant
+                        {
+                            Role = "CASE_HANDLER"
+                            Scope = GrantTarget.Installation
+                            Active = true
+                        }
+                )
             )
             |> AuthorityRecord.encode
             LedgerEntry.encodePayload
@@ -138,7 +156,16 @@ let private strictRecords () =
         Expect.isError (RequestRecord.decode 65536 bytes) "Invalid record is refused"
 
     let grant =
-        authority (RecordedAuthorityAct.SetGrant("CASE_HANDLER", GrantTarget.Installation, true))
+        authority (
+            RecordedAuthorityAct.Operation(
+                ClaimCore.Contract.Protocol.AuthorityAct.SetGrant
+                    {
+                        Role = "CASE_HANDLER"
+                        Scope = GrantTarget.Installation
+                        Active = true
+                    }
+            )
+        )
 
     let encoded = AuthorityRecord.encode grant |> Encoding.UTF8.GetString
 
@@ -174,7 +201,11 @@ let tests =
                     "{\"act\":{\"kind\":\"REGISTER_ACTOR\"},\"format\":2,\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"target\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}}"
 
                 Expect.equal
-                    (authority RecordedAuthorityAct.RegisterActor
+                    (authority (
+                        RecordedAuthorityAct.Operation(
+                            ClaimCore.Contract.Protocol.AuthorityAct.RegisterActor
+                        )
+                     )
                      |> AuthorityRecord.encode
                      |> Encoding.UTF8.GetString)
                     expected

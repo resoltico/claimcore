@@ -238,21 +238,7 @@ module RequestCodecs =
                     (record id |> field "caseReference" id text)
             ]
 
-    let grantChange =
-        (record (fun v0 v1 v2 ->
-            {
-                GrantChange.Role = v0
-                Scope = v1
-                Active = v2
-            })
-        : Fields<GrantChange, _>)
-        |> field "role" _.Role (tokens (RoleTokens.all |> List.map RoleTokens.token))
-        |> field "scope" _.Scope (scope)
-        |> field "active" _.Active (boolean)
-        |> build
-        |> named "GrantChange"
-
-    let authorityAct =
+    let authorityActWith role =
         tagged
             "AuthorityAct"
             "kind"
@@ -273,7 +259,7 @@ module RequestCodecs =
                             Active = active
                         })
                      : Fields<GrantChange, _>)
-                     |> field "role" _.Role (tokens (RoleTokens.all |> List.map RoleTokens.token))
+                     |> field "role" _.Role role
                      |> field "scope" _.Scope scope
                      |> field "active" _.Active boolean)
                 variant
@@ -284,6 +270,9 @@ module RequestCodecs =
                     | _ -> None)
                     (record id |> field "enabled" id boolean)
             ]
+
+    let authorityAct =
+        authorityActWith (tokens (RoleTokens.all |> List.map RoleTokens.token))
 
     let authorityRequest =
         (record (fun v0 v1 v2 ->

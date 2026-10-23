@@ -29,7 +29,7 @@ type internal StoredCase =
 [<RequireQualifiedAccess>]
 type internal StoredScope =
     | Case of caseId: Guid * revision: int64 * act: CaseActKind * businessDate: DateOnly
-    | Authority of targetActorId: Guid * act: RecordedAuthorityKind
+    | Authority of targetActorId: Guid * act: AuthorityKind
 
 type internal StoredEntry =
     {

@@ -7,13 +7,24 @@ open ClaimCore.RecordFormat
 
 /// Shared conversion between the primitive record codec and admitted application identities.
 module AuthorityRequests =
+    type private WireAuthorityAct = ClaimCore.Contract.Protocol.AuthorityAct
+
     let toRecord (request: AuthorityRequest) : AuthorityRequestRecord =
         let act =
             match request.Act with
-            | AuthorityAct.RegisterActor -> RecordedAuthorityAct.RegisterActor
-            | AuthorityAct.SetEnabled value -> RecordedAuthorityAct.SetEnabled value
+            | AuthorityAct.RegisterActor ->
+                RecordedAuthorityAct.Operation(WireAuthorityAct.RegisterActor)
+            | AuthorityAct.SetEnabled value ->
+                RecordedAuthorityAct.Operation(WireAuthorityAct.SetEnabled value)
             | AuthorityAct.SetGrant(role, target, active) ->
-                RecordedAuthorityAct.SetGrant(RoleTokens.token role, target, active)
+                RecordedAuthorityAct.Operation(
+                    WireAuthorityAct.SetGrant
+                        {
+                            Role = RoleTokens.token role
+                            Scope = target
+                            Active = active
+                        }
+                )
 
         {
             OperationId = request.OperationId
@@ -23,9 +34,15 @@ module AuthorityRequests =
 
     let private admittedAct =
         function
-        | RecordedAuthorityAct.RegisterActor -> Ok AuthorityAct.RegisterActor
-        | RecordedAuthorityAct.SetEnabled value -> Ok(AuthorityAct.SetEnabled value)
-        | RecordedAuthorityAct.SetGrant(role, scope, active) ->
+        | RecordedAuthorityAct.Operation(WireAuthorityAct.RegisterActor) ->
+            Ok AuthorityAct.RegisterActor
+        | RecordedAuthorityAct.Operation(WireAuthorityAct.SetEnabled value) ->
+            Ok(AuthorityAct.SetEnabled value)
+        | RecordedAuthorityAct.Operation(WireAuthorityAct.SetGrant {
+                                                                       Role = role
+                                                                       Scope = scope
+                                                                       Active = active
+                                                                   }) ->
             match RoleTokens.tryParse role with
             | Some role -> Ok(AuthorityAct.SetGrant(role, scope, active))
             | None -> Error "AUTHORITY_ROLE_INVALID"

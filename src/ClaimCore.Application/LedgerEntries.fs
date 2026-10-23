@@ -198,9 +198,9 @@ module internal LedgerEntries =
             ->
             let identity =
                 match act with
-                | RecordedAuthorityKind.ProvisionOwner ->
+                | AuthorityKind.ProvisionOwner ->
                     target = entry.OperationId && entry.ActorId = target && entry.Sequence = 1L
-                | RecordedAuthorityKind.RegisterActor ->
+                | AuthorityKind.RegisterActor ->
                     target = entry.OperationId && entry.ActorId <> target
                 | _ -> true
 
