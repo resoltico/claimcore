@@ -5,19 +5,22 @@ open ClaimCore.Contract.Protocol
 open ClaimCore.Domain
 
 module CaseRecord =
-    let private live (snapshot: ClaimCore.Domain.CaseSnapshot) =
+    let private live (snapshot: ClaimCore.Contract.CaseSnapshot) =
         match snapshot.View with
         | CaseView.Live(fields, disposition) -> fields, disposition
         | CaseView.Erased -> invalidArg (nameof snapshot) "A payload requires live case fields."
 
-    let private codec: Codec<ClaimCore.Domain.CaseSnapshot> =
+    let private codec: Codec<ClaimCore.Contract.CaseSnapshot> =
         Codec.record (fun revision disposition (fields: CaseFields) ->
             {
                 Reference = fields.CaseReference
                 Revision = revision
                 View = CaseView.Live(fields, disposition)
             })
-        |> Codec.field "revision" _.Revision RequestCodecs.sequence
+        |> Codec.field
+            "revision"
+            (fun (snapshot: CaseSnapshot) -> snapshot.Revision)
+            RequestCodecs.sequence
         |> Codec.field
             "disposition"
             (live >> snd)

@@ -99,7 +99,7 @@ let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandle
              Actor = ({ Actor = Some _ } as authority)
              Case = Some {
                              Snapshot = {
-                                            View = ClaimCore.Domain.CaseView.Live(fields, _)
+                                            View = ClaimCore.Contract.CaseView.Live(fields, _)
                                         }
                          }
          } ->

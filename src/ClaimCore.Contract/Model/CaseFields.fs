@@ -18,3 +18,15 @@ type CaseFields =
         PaymentDate: string option
         Status: CaseStatus
     }
+
+[<RequireQualifiedAccess>]
+type CaseView =
+    | Live of fields: CaseFields * disposition: Disposition
+    | Erased
+
+type CaseSnapshot =
+    {
+        Reference: string
+        Revision: int64
+        View: CaseView
+    }

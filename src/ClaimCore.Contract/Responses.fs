@@ -4,24 +4,6 @@ open ClaimCore.Contract
 
 open System
 
-type LiveState =
-    {
-        Disposition: string
-        Fields: CaseFields
-    }
-
-[<RequireQualifiedAccess>]
-type CaseState =
-    | Live of LiveState
-    | Erased
-
-type CaseSnapshot =
-    {
-        CaseReference: string
-        Revision: int64
-        State: CaseState
-    }
-
 type CorrectionAdvice =
     {
         Registration: string list
@@ -40,11 +22,11 @@ type CaseAdvice =
         History: string list
     }
 
-type CaseView =
+type CaseReadModel =
     {
         CaseReference: string
         Revision: int64
-        State: CaseState
+        State: ClaimCore.Contract.CaseView
         Advice: CaseAdvice
     }
 
@@ -74,7 +56,7 @@ type Position = { Sequence: int64; EntryHash: string }
 
 [<RequireQualifiedAccess>]
 type Disclosure =
-    | Disclosed of LiveState
+    | Disclosed of ClaimCore.Contract.CaseView
     | Withheld
     | Erased
 
@@ -302,7 +284,7 @@ type ContextReply = { Outcome: ContextOutcome }
 
 [<RequireQualifiedAccess>]
 type CaseGetOutcome =
-    | Succeeded of CaseView
+    | Succeeded of CaseReadModel
     | Rejected of Rejection
     | Failed of Fault
     | Cancelled of unit

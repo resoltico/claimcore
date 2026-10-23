@@ -23,6 +23,7 @@ open ClaimCore.Tests.PropertyHarness
 type private Seeds =
     {
         Values: Dictionary<Type, ResizeArray<obj | null>>
+        ContextValues: Dictionary<string * Type, ResizeArray<obj | null>>
         Tokens: Dictionary<string, ResizeArray<string>>
         Requests: Map<Endpoint, WireRequest list>
         Replies: Map<Endpoint, WireReply list>
@@ -47,6 +48,7 @@ let private unionContext (kind: Type) (case: UnionCaseInfo) (field: Reflection.P
 
 let rec private collect (seeds: Seeds) context (kind: Type) (value: obj | null) =
     add seeds.Values kind value
+    add seeds.ContextValues (context, kind) value
 
     if kind = typeof<string> then
         add seeds.Tokens context (unbox<string> value)
@@ -114,6 +116,7 @@ let private load () =
     let seeds =
         {
             Values = values
+            ContextValues = Dictionary()
             Tokens = tokens
             Requests = requests
             Replies = replies
@@ -245,6 +248,7 @@ let private responseStrings =
     Map.ofList
         [
             "CaseReference", reference
+            "Reference", reference
             "IncidentCountry", uppercase 2
             "ClaimedCurrency", uppercase 3
             "PayableCurrency", uppercase 3
@@ -342,8 +346,13 @@ let private listValue (kind: Type) entries =
         entries
         (FSharpValue.MakeUnion(empty, [||]))
 
-let private choose (source: Seeds) kind =
-    source.Values[kind] |> Seq.toArray |> Gen.item
+let private choose (source: Seeds) context kind =
+    let values =
+        match source.ContextValues.TryGetValue((context, kind)) with
+        | true, values -> values
+        | false, _ -> source.Values[kind]
+
+    values |> Seq.toArray |> Gen.item
 
 let rec private fresh response source context (kind: Type) (value: obj | null) =
     if kind = typeof<string> then
@@ -363,7 +372,7 @@ let rec private fresh response source context (kind: Type) (value: obj | null) =
     elif FSharpType.IsRecord kind then
         freshRecord response source kind value
     elif FSharpType.IsUnion kind then
-        choose source kind |> Gen.bind (freshUnion response source context kind)
+        choose source context kind |> Gen.bind (freshUnion response source context kind)
     else
         invalidOp ("Unsupported typed Wire property node: " + kind.FullName)
 
@@ -373,7 +382,10 @@ and private freshList response source context kind =
 
     gen {
         let! size = count minimum maximum
-        let entry = choose source item |> Gen.bind (fresh response source context item)
+
+        let entry =
+            choose source context item |> Gen.bind (fresh response source context item)
+
         let! entries = Gen.list (Range.singleton size) entry
         return listValue kind entries
     }

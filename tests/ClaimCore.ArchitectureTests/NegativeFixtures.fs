@@ -1,5 +1,7 @@
 namespace ClaimCore.ArchitectureTests.NegativeFixtures
 
+open ClaimCore.Contract
+
 open System
 
 type PostgresReference =
@@ -42,4 +44,4 @@ type JsonWriterCall =
 
 /// A public DTO leak must fail even when the service interface itself remains protocol-only.
 type SemanticFacade =
-    static member Payload: ClaimCore.Domain.CaseView option = None
+    static member Payload: ClaimCore.Domain.Claim option = None

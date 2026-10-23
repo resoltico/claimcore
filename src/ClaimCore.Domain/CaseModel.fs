@@ -4,22 +4,10 @@ open ClaimCore.Contract
 
 open System
 
-[<RequireQualifiedAccess>]
-type CaseView =
-    | Live of fields: CaseFields * disposition: Disposition
-    | Erased
-
-type CaseSnapshot =
-    {
-        Reference: string
-        Revision: int64
-        View: CaseView
-    }
-
 /// Exact integer range shared by Domain revisions and interoperable JSON records.
 module SafeInteger =
     [<Literal>]
-    let Maximum = 9007199254740991L
+    let Maximum = JsonValue.MaximumInteger
 
 module Revision =
     [<Literal>]

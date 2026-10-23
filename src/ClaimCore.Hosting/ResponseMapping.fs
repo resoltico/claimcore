@@ -16,25 +16,6 @@ module internal ResponseMapping =
         | Disposition.Active -> "ACTIVE"
         | Disposition.Voided -> "VOIDED"
 
-    let private live fieldsValue disp : ClaimCore.Contract.Protocol.LiveState =
-        {
-            Disposition = disposition disp
-            Fields = fieldsValue
-        }
-
-    let state =
-        function
-        | CaseView.Erased -> ClaimCore.Contract.Protocol.CaseState.Erased
-        | CaseView.Live(fields, disp) ->
-            ClaimCore.Contract.Protocol.CaseState.Live(live fields disp)
-
-    let snapshot (value: CaseSnapshot) : ClaimCore.Contract.Protocol.CaseSnapshot =
-        {
-            CaseReference = value.Reference
-            Revision = value.Revision
-            State = state value.View
-        }
-
     let private mode =
         function
         | CorrectionGroupAction.Keep -> "KEEP"
@@ -60,11 +41,11 @@ module internal ResponseMapping =
         | HistoryDetail.Summary -> "SUMMARY"
         | HistoryDetail.Full -> "FULL"
 
-    let caseRecord (value: CaseReadModel) : ClaimCore.Contract.Protocol.CaseView =
+    let caseRecord (value: CaseReadModel) : ClaimCore.Contract.Protocol.CaseReadModel =
         {
             CaseReference = value.Snapshot.Reference
             Revision = value.Snapshot.Revision
-            State = state value.Snapshot.View
+            State = value.Snapshot.View
             Advice =
                 {
                     Acts = List.map actOffer value.Advice.Acts
@@ -112,7 +93,7 @@ module internal ResponseMapping =
         | SnapshotDisclosure.Withheld -> ClaimCore.Contract.Protocol.Disclosure.Withheld
         | SnapshotDisclosure.Erased -> ClaimCore.Contract.Protocol.Disclosure.Erased
         | SnapshotDisclosure.Disclosed(CaseView.Live(fields, disp)) ->
-            ClaimCore.Contract.Protocol.Disclosure.Disclosed(live fields disp)
+            ClaimCore.Contract.Protocol.Disclosure.Disclosed(CaseView.Live(fields, disp))
         | SnapshotDisclosure.Disclosed CaseView.Erased ->
             invalidArg "snapshot" "Erasure has its own disclosure."
 
@@ -238,8 +219,8 @@ module internal ResponseMapping =
 
     let review (value: AdvisoryReview) : ClaimCore.Contract.Protocol.Review =
         {
-            Before = Option.map snapshot value.Before
-            After = snapshot value.Proposed
+            Before = value.Before
+            After = value.Proposed
             Changes =
                 value.Changes
                 |> List.map (fun change ->

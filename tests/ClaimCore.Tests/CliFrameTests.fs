@@ -300,7 +300,7 @@ let private exampleFrames () =
 
     let final = current |> Option.get |> ClaimCore.Domain.Case.snapshot
     Expect.equal final.Reference "DEMO-0001" "Original reference retained"
-    Expect.equal final.View ClaimCore.Domain.CaseView.Erased "Examples end with explicit erasure"
+    Expect.equal final.View ClaimCore.Contract.CaseView.Erased "Examples end with explicit erasure"
 
 [<Tests>]
 let tests =

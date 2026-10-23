@@ -108,7 +108,7 @@ let private queryCodecs () =
         [
             snapshot
             { snapshot with
-                View = ClaimCore.Domain.CaseView.Erased
+                View = ClaimCore.Contract.CaseView.Erased
             }
         ] do
         OutcomeMapping.caseGet (
@@ -382,7 +382,7 @@ let private retainedText () =
 
         let snapshot =
             { original with
-                View = ClaimCore.Domain.CaseView.Live(fields, Disposition.Active)
+                View = ClaimCore.Contract.CaseView.Live(fields, Disposition.Active)
             }
 
         let prior = Case.ofAccepted snapshot |> accepted

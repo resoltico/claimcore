@@ -49,44 +49,38 @@ module ResponseCodecs =
         |> named "CaseFields"
 
     let private liveStateFields =
-        (record (fun disposition fields ->
-            {
-                LiveState.Disposition = disposition
-                Fields = fields
-            })
-        : Fields<LiveState, _>)
-        |> field "disposition" _.Disposition (tokens [ "ACTIVE"; "VOIDED" ])
-        |> field "fields" _.Fields caseFields
+        Codec.record (fun disposition fields -> fields, disposition)
+        |> field
+            "disposition"
+            snd
+            (enumeration [ Disposition.Active, "ACTIVE"; Disposition.Voided, "VOIDED" ])
+        |> field "fields" fst caseFields
 
-    let private liveState =
-        tagged "LiveState" "tag" [ variant "LIVE" id Some liveStateFields ]
+    let private liveVariant =
+        variant
+            "LIVE"
+            CaseView.Live
+            (function
+            | CaseView.Live(fields, disposition) -> Some(fields, disposition)
+            | _ -> None)
+            liveStateFields
+
+    let private liveState = tagged "LiveState" "tag" [ liveVariant ]
 
     let caseState =
-        tagged
-            "CaseState"
-            "tag"
-            [
-                variant
-                    "LIVE"
-                    CaseState.Live
-                    (function
-                    | CaseState.Live value -> Some value
-                    | _ -> None)
-                    liveStateFields
-                unitVariant "ERASED" CaseState.Erased
-            ]
+        tagged "CaseState" "tag" [ liveVariant; unitVariant "ERASED" CaseView.Erased ]
 
     let caseSnapshot =
-        (record (fun v0 v1 v2 ->
+        (record (fun reference revision view ->
             {
-                CaseSnapshot.CaseReference = v0
-                Revision = v1
-                State = v2
+                Reference = reference
+                Revision = revision
+                View = view
             })
         : Fields<CaseSnapshot, _>)
-        |> field "caseReference" _.CaseReference reference
-        |> field "revision" _.Revision (sequence)
-        |> field "state" _.State (caseState)
+        |> field "caseReference" _.Reference reference
+        |> field "revision" _.Revision sequence
+        |> field "state" _.View caseState
         |> build
         |> named "CaseSnapshot"
 
@@ -189,12 +183,12 @@ module ResponseCodecs =
     let caseView =
         (record (fun v0 v1 v2 v3 ->
             {
-                CaseView.CaseReference = v0
+                CaseReadModel.CaseReference = v0
                 Revision = v1
                 State = v2
                 Advice = v3
             })
-        : Fields<CaseView, _>)
+        : Fields<CaseReadModel, _>)
         |> field "caseReference" _.CaseReference reference
         |> field "revision" _.Revision (sequence)
         |> field "state" _.State (caseState)
