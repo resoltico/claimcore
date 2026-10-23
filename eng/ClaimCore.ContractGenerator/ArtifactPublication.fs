@@ -76,3 +76,33 @@ module ArtifactPublication =
         finally
             if Directory.Exists staging then
                 Directory.Delete(staging, true)
+
+    let private matches output (expected: Map<string, byte array>) =
+        if not (Directory.Exists output) then
+            false
+        else
+            let entries = Directory.GetFileSystemEntries output
+            let actual = entries |> Array.map (Path.GetFileName >> nonNull) |> Set.ofArray
+
+            actual = (expected.Keys |> Set.ofSeq)
+            && entries |> Array.forall File.Exists
+            && expected
+               |> Map.forall (fun name bytes ->
+                   File.ReadAllBytes(Path.Combine(output, name)) = bytes)
+
+    /// Regenerate in isolation; checking never modifies the delivered directory.
+    let check output artifacts =
+        let temporary = Directory.CreateTempSubdirectory("claimcore-contract-check-")
+
+        try
+            let regenerated = Path.Combine(temporary.FullName, "contracts")
+            publish regenerated artifacts
+
+            let produced =
+                Directory.GetFiles regenerated
+                |> Array.map (fun path -> Path.GetFileName path |> nonNull, File.ReadAllBytes path)
+                |> Map.ofArray
+
+            matches (Path.GetFullPath output) produced
+        finally
+            temporary.Delete true

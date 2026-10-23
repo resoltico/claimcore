@@ -17,41 +17,50 @@ let private expected () =
     |> List.map (fun artifact -> artifact.Name, artifact.Bytes)
     |> Map.ofList
 
-let private differences expected actual =
-    Set.union (expected |> Map.keys |> Set.ofSeq) (actual |> Map.keys |> Set.ofSeq)
-    |> Set.filter (fun name -> Map.tryFind name expected <> Map.tryFind name actual)
-
 let private freshness () =
     let directory =
         Path.Combine(ClaimCore.TestSupport.RepositoryRoot.find (), "contracts")
 
-    let entries = Directory.GetFileSystemEntries directory
-    Expect.isTrue (entries |> Array.forall File.Exists) "Only regular artifacts are delivered"
+    let artifacts = ContractArtifacts.all ()
+    Expect.isNonEmpty artifacts "The complete produced inventory is delivered"
 
-    let actual =
-        entries
-        |> Array.map (fun path -> Path.GetFileName path |> nonNull, File.ReadAllBytes path)
-        |> Map.ofArray
-
-    Expect.isEmpty
-        (differences (expected ()) actual)
+    Expect.isTrue
+        (ArtifactPublication.check directory artifacts)
         "Regenerate: dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts"
 
-    Expect.isNonEmpty actual "The complete produced inventory is delivered"
-
 let private controls () =
-    let original = expected ()
-    let name = original |> Map.keys |> Seq.head
+    let temporary = Directory.CreateTempSubdirectory("claimcore-contract-control-")
 
-    for changed in
-        [
-            Map.remove name original
-            Map.add "stale.json" (bytes "stale") original
-            Map.add name (bytes "changed") original
-        ] do
-        Expect.isNonEmpty
-            (differences original changed)
-            "Missing extra and changed bytes are detected"
+    try
+        let output = Path.Combine(temporary.FullName, "contracts")
+
+        let artifact =
+            {
+                Name = "sample.json"
+                Bytes = bytes "{}"
+                Role = ArtifactRole.QualificationOrTooling
+            }
+
+        ArtifactPublication.publish output [ artifact ]
+        Expect.isTrue (ArtifactPublication.check output [ artifact ]) "Fresh artifacts pass"
+        let path = Path.Combine(output, artifact.Name)
+        File.WriteAllBytes(path, bytes "{}\n")
+        Expect.isFalse (ArtifactPublication.check output [ artifact ]) "A changed byte fails"
+
+        Expect.equal
+            (File.ReadAllBytes path)
+            (bytes "{}\n")
+            "Check does not repair the changed file"
+
+        File.Delete path
+        Expect.isFalse (ArtifactPublication.check output [ artifact ]) "A missing artifact fails"
+        File.WriteAllBytes(path, artifact.Bytes)
+        let extra = Path.Combine(output, "unexpected.json")
+        File.WriteAllText(extra, "{}")
+        Expect.isFalse (ArtifactPublication.check output [ artifact ]) "An extra artifact fails"
+        Expect.isTrue (File.Exists extra) "Check preserves unexpected content"
+    finally
+        temporary.Delete true
 
 let private fingerprint () =
     let emitted = expected ()
