@@ -78,9 +78,27 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
     </>
   );
 };
+const useReviewReturnFocus = (model: OperationModel) => {
+  const preview = useRef<HTMLButtonElement>(null);
+  const previousPhase = useRef(model.phase);
+  useEffect(() => {
+    if (
+      previousPhase.current === "REVIEWING" &&
+      model.phase === "EDITING" &&
+      model.notice === null &&
+      preview.current?.isConnected === true &&
+      !preview.current.disabled
+    ) {
+      preview.current.focus();
+    }
+    previousPhase.current = model.phase;
+  }, [model.phase, model.notice]);
+  return preview;
+};
 export const OperationForm = (props: OperationFormProps) => {
   const { model, current, offered, onClose } = props;
   const p = usePresentation();
+  const preview = useReviewReturnFocus(model);
   const form = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (model.notice === null) {
@@ -105,7 +123,11 @@ export const OperationForm = (props: OperationFormProps) => {
       <CommandPicker {...props} />
       <OperationInputs {...props} />
       <div className="actions">
-        <button type="submit" disabled={model.busy || model.phase === "REVIEWING" || !allowed}>
+        <button
+          ref={preview}
+          type="submit"
+          disabled={model.busy || model.phase === "REVIEWING" || !allowed}
+        >
           {p.text(model.phase === "PREVIEWING" ? "ui.previewing" : "ui.previewOperation")}
         </button>
         {onClose === undefined ? null : (

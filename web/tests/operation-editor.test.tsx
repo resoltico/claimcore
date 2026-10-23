@@ -1,10 +1,30 @@
 import { beforeEach, it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "./presentation-test-support";
-import { editor, previewReply } from "./presentation-state.fixtures";
+import {
+  editor,
+  previewReply,
+  deferredResponse,
+  languageControl,
+} from "./presentation-state.fixtures";
 import { wireResponse } from "./contract-corpus.fixtures";
 import { response, operationId } from "./service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+it("returns focus to preview after presentation controls were used during pending review", async () => {
+  const pending = deferredResponse();
+  vi.mocked(fetch).mockReturnValueOnce(pending.promise);
+  render(editor());
+  const user = userEvent.setup();
+  const preview = screen.getByRole("button", { name: "Review changes" });
+  await user.click(preview);
+  expect(preview).toBeDisabled();
+  await user.click(languageControl());
+  pending.resolve(previewReply());
+  await user.click(await screen.findByRole("button", { name: "Return to editing" }));
+  await waitFor(() => {
+    expect(document.activeElement).toBe(preview);
+  });
+});
 const reviewAndConfirm = async () => {
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
