@@ -2,7 +2,7 @@ import { beforeEach, it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "./presentation-test-support";
 import { editor, previewReply } from "./presentation-state.fixtures";
-import { generatedResponse } from "./contract-corpus.fixtures";
+import { wireResponse } from "./contract-corpus.fixtures";
 import { response, operationId } from "./service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 const reviewAndConfirm = async () => {
@@ -15,13 +15,13 @@ const reviewAndConfirm = async () => {
 it("reviews before execution and sends the exact reviewed request", async () => {
   vi.mocked(fetch)
     .mockImplementationOnce(() => Promise.resolve(previewReply()))
-    .mockResolvedValueOnce(generatedResponse("case.execute"));
+    .mockResolvedValueOnce(wireResponse("operation.execute"));
   const committed = vi.fn();
   render(editor({ onCommitted: committed }));
   const user = await reviewAndConfirm();
   expect(await screen.findByRole("heading", { name: "Recorded change" })).toBeVisible();
-  expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe("/api/case.preview");
-  expect(vi.mocked(fetch).mock.calls[1]?.[0]).toBe("/api/case.execute");
+  expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe("/api/operation.preview");
+  expect(vi.mocked(fetch).mock.calls[1]?.[0]).toBe("/api/operation.execute");
   expect(vi.mocked(fetch).mock.calls[0]?.[1]?.body).toBe(vi.mocked(fetch).mock.calls[1]?.[1]?.body);
   await user.click(screen.getByRole("button", { name: "Return to case" }));
   expect(committed).toHaveBeenCalledOnce();
@@ -34,13 +34,15 @@ it.each(["lost", "unknown", "malformed"] as const)(
       vi.mocked(fetch).mockRejectedValueOnce(new Error("Synthetic loss"));
     } else if (mode === "unknown") {
       vi.mocked(fetch).mockResolvedValueOnce(
-        response("case.execute", "OUTCOME_UNKNOWN", { operationId }),
+        response("operation.execute", "OUTCOME_UNKNOWN", { operationId }),
       );
     }
     if (mode === "malformed") {
-      vi.mocked(fetch).mockResolvedValueOnce(response("case.execute", "ACCEPTED", { operationId }));
+      vi.mocked(fetch).mockResolvedValueOnce(
+        response("operation.execute", "ACCEPTED", { operationId }),
+      );
     }
-    vi.mocked(fetch).mockResolvedValueOnce(generatedResponse("case.execute"));
+    vi.mocked(fetch).mockResolvedValueOnce(wireResponse("operation.execute"));
     const locked = vi.fn();
     render(editor({ onMutationLockChange: locked }));
     const user = await reviewAndConfirm();
@@ -63,7 +65,7 @@ it("readonly preview failure stays editable and cannot submit", async () => {
 });
 it("an invalid input rejection focuses and labels the exact authoring field", async () => {
   vi.mocked(fetch).mockResolvedValueOnce(
-    response("case.preview", "REJECTED", {
+    response("operation.preview", "REJECTED", {
       code: "INPUT_TEXT_REQUIRED",
       action: "CORRECT_INPUT",
       target: "caseReference",

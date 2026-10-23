@@ -72,14 +72,12 @@ export const decodeResponse = <K extends EndpointId>(
   }
   return value;
 };
-export const isHostFailure = (value: unknown, status: number): value is HostFailure => {
+export const isHostFailure = (
+  value: unknown,
+  status: number,
+): value is { readonly hostFailure: HostFailure } => {
   const schema = hostSchemas[String(status)];
-  return (
-    schema !== undefined &&
-    validateSchema(schema, value) &&
-    isObject(value) &&
-    value["status"] === status
-  );
+  return schema !== undefined && validateSchema(schema, value);
 };
 export const buildRequest = <K extends EndpointId>(
   endpoint: K,

@@ -15,13 +15,14 @@ import {
 } from "./localization-support";
 
 const forgedCorrection = async (page: Page, reference: string) => {
-  const reply = await browserRequest(page, "/api/case.execute", {
+  const reply = await browserRequest(page, "/api/operation.execute", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
+      scope: "CASE",
       operationId: randomUUID(),
       caseReference: reference,
       expectedRevision: 2,
@@ -36,7 +37,7 @@ const forgedCorrection = async (page: Page, reference: string) => {
     }),
   });
   expect(reply.status).toBe(200);
-  if (!isResponse("case.execute", reply.payload)) {
+  if (!isResponse("operation.execute", reply.payload)) {
     throw new Error("Expected typed correction refusal.");
   }
   const { outcome } = reply.payload;
@@ -46,14 +47,16 @@ const forgedCorrection = async (page: Page, reference: string) => {
   }
 };
 const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
-  await page.locator('input[name="claimedAmount"]').fill("0.10");
-  const pending = page.waitForResponse((response) => response.url().endsWith("/api/case.preview"));
+  await page.locator('input[data-field-name="claimedAmount"]').fill("0.10");
+  const pending = page.waitForResponse((response) =>
+    response.url().endsWith("/api/operation.preview"),
+  );
   await page
     .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
     .click();
   const value: unknown = await (await pending).json();
-  expect(isResponse("case.preview", value)).toBe(true);
-  if (!isResponse("case.preview", value)) {
+  expect(isResponse("operation.preview", value)).toBe(true);
+  if (!isResponse("operation.preview", value)) {
     throw new Error("Expected typed review.");
   }
   expect(value.outcome.tag).toBe("REVIEWED");
@@ -74,7 +77,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       ["incidentDate", "٢٠٢٦-٠٩-٠١", "INPUT_CALENDAR_DATE_REQUIRED"],
       ["claimedCurrency", "ĀBC", "INPUT_CURRENCY_FORMAT"],
     ] as const) {
-      await page.locator(`input[name="${name}"]`).fill(value);
+      await page.locator(`input[data-field-name="${name}"]`).fill(value);
       const before = requests.length;
       await expectBusinessFormatRefusal(page, name, diagnostic, () =>
         page
@@ -84,14 +87,17 @@ for (const language of ["en", "lv", "ar"] as const) {
       await expect(page.getByRole("alert")).toContainText(
         businessFormatRefusalText[diagnostic][language],
       );
-      await expect(page.locator(`input[name="${name}"]`)).toBeFocused();
-      await expect(page.locator(`input[name="${name}"]`)).toHaveAttribute("aria-invalid", "true");
-      expect(requests.slice(before)).toEqual(["POST /api/case.preview"]);
-      await expect(page.locator(`input[name="${name}"]`)).toHaveValue(value);
+      await expect(page.locator(`input[data-field-name="${name}"]`)).toBeFocused();
+      await expect(page.locator(`input[data-field-name="${name}"]`)).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
+      expect(requests.slice(before)).toEqual(["POST /api/operation.preview"]);
+      await expect(page.locator(`input[data-field-name="${name}"]`)).toHaveValue(value);
       await expect(page.locator("section.receipt")).toHaveCount(0);
-      await page.locator('input[name="claimedAmount"]').fill("1200.50");
-      await page.locator('input[name="incidentDate"]').fill("2026-09-01");
-      await page.locator('input[name="claimedCurrency"]').fill("EUR");
+      await page.locator('input[data-field-name="claimedAmount"]').fill("1200.50");
+      await page.locator('input[data-field-name="incidentDate"]').fill("2026-09-01");
+      await page.locator('input[data-field-name="claimedCurrency"]').fill("EUR");
     }
     await reviewDecimal(page, language);
   });
@@ -103,7 +109,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await openCase(page, reference);
     await startCommand(page, "Close the case");
     // Close through the existing native workflow, then try to correct an absent decision.
-    const first = await pauseJsonReply(page, "case.preview");
+    const first = await pauseJsonReply(page, "operation.preview");
     await page.getByRole("button", { name: "Review changes" }).click();
     await first.ready;
     first.release();
@@ -112,7 +118,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await page.getByRole("button", { name: "Return to case" }).click();
     await startCommand(page, "Correct case facts");
     await selectLanguage(page, language);
-    const mode = page.locator("#correction-decision-mode");
+    const mode = page.locator('[name="act.groups.decision.mode"]');
     await expect(mode).toHaveValue("KEEP");
     await expect(mode.locator("option")).toHaveCount(1);
     await forgedCorrection(page, reference);

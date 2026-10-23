@@ -1,7 +1,7 @@
 import { transportResponse } from "./transport-response.fixtures";
 import { consumerContractIdentity } from "@contracts/client";
 export { productMetadata as definition } from "../src/protocol/productMetadata";
-export { caseFields as fields, operationId, review } from "./service-foundation.fixtures";
+export { caseFields as fields, operationId } from "./service-foundation.fixtures";
 export const runtime = {
   productVersion: "0.8.0",
   businessDate: "2026-09-09",

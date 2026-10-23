@@ -9,7 +9,7 @@ export const fillRegistrationInputs = (overrides: Readonly<Record<string, string
   const authored = new Map(Object.entries({ ...caseFields, ...overrides }));
   const names = ["caseReference", ...definition.inputs.fields.map((input) => input.fieldName)];
   for (const name of names) {
-    const input = document.querySelector<HTMLInputElement>(`input[name="${name}"]`);
+    const input = document.querySelector<HTMLInputElement>(`input[data-field-name="${name}"]`);
     if (input !== null) {
       fireEvent.change(input, { target: { value: authored.get(name) ?? "" } });
     }

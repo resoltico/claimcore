@@ -34,41 +34,4 @@ module AuthoredMessages =
 
     let private catalog language = Map.find language catalogs.Value
 
-    let render language key arguments =
-        Messages.render (catalog language) key arguments
-
     let templates language = catalog language |> Messages.templates
-
-    let literal key = render "en" key Map.empty
-
-    let private bounds =
-        Map.ofList
-            [
-                "maximumInvocationBytes", string Limits.MaximumInvocationBytes
-                "maximumRequestBytes", string Limits.MaximumRequestBytes
-                "maximumResponseBytes", string Limits.MaximumResponseBytes
-                "maximumSecretBytes", string CliConfigurationLimits.MaximumSecretBytes
-                "maximumTrustRootBytes", string CliConfigurationLimits.MaximumTrustRootBytes
-            ]
-
-    let private helpBody language key =
-        let required =
-            catalog language |> Messages.templates |> Map.find key |> Template.arguments
-
-        let supplied =
-            required |> Seq.map (fun name -> name, Map.find name bounds) |> Map.ofSeq
-
-        render language key supplied
-
-    let help language (topic: string) =
-        if topic.StartsWith("usage.", StringComparison.Ordinal) then
-            render language ("cli." + topic) Map.empty
-        else
-            let topic =
-                if topic.StartsWith("diagnostic.", StringComparison.Ordinal) then
-                    topic.Substring "diagnostic.".Length
-                else
-                    topic
-
-            let body = helpBody language ("cli.help." + topic)
-            render language "cli.help.layout" (Map.ofList [ "body", body ])

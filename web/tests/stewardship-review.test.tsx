@@ -10,7 +10,7 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
     "fetch",
     vi.fn().mockImplementation(() =>
       Promise.resolve(
-        response("case.preview", "REVIEWED", {
+        response("operation.preview", "REVIEWED", {
           review: {
             before: {
               caseReference: fields.caseReference,

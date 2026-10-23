@@ -1,11 +1,12 @@
+import { authorityPreview } from "./authority-operation.fixtures";
 import { installationOffers } from "./installation-advice.fixtures";
 import { act, fireEvent, waitFor } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import { AuthorityPanel } from "../src/views/AuthorityPanel";
 import { AuthorityGrants } from "../src/views/AuthorityGrants";
 import { service, type ApiResult, type ServiceResponse } from "../src/api/service";
-import { generatedWebValue } from "./contract-corpus.fixtures";
+import { wireReply } from "./contract-corpus.fixtures";
 import { response } from "./service-ui.fixtures";
 const first = "10000000-0000-4000-8000-000000000001";
 const second = "10000000-0000-4000-8000-000000000002";
@@ -26,7 +27,6 @@ const grants = (
   kind: "outcome",
   status: 200,
   value: {
-    endpoint: "authority.grants",
     outcome: {
       tag: "SUCCEEDED",
       data: {
@@ -45,7 +45,7 @@ const pending = <T,>() => {
   return { promise, finish };
 };
 const reads = (offered = true) => {
-  const context = generatedWebValue("context");
+  const context = wireReply("context");
   if (context.outcome.tag !== "SUCCEEDED") {
     throw new Error("Context fixture absent.");
   }
@@ -68,7 +68,6 @@ const reads = (offered = true) => {
     kind: "outcome",
     status: 200,
     value: {
-      endpoint: "authority.list",
       outcome: {
         tag: "SUCCEEDED",
         data: {
@@ -79,6 +78,9 @@ const reads = (offered = true) => {
     },
   });
 };
+beforeEach(() => {
+  authorityPreview();
+});
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -165,7 +167,7 @@ const prepare = async () => {
     target: { value: "authored-subject" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(await screen.findByRole("checkbox"));
 };
 const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =>
   kind === "access"
@@ -173,7 +175,6 @@ const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =
         kind: "outcome",
         status: 200,
         value: {
-          endpoint: "authority.grants",
           outcome: {
             tag: "REJECTED",
             data: {
@@ -189,27 +190,20 @@ const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =
     : {
         kind: "hostFailure",
         status: 401,
-        failure: {
-          kind: "HOST_FAILURE",
-          code: "SESSION_REJECTED",
-          status: 401,
-          diagnostic: { id: "HOST_SESSIONREJECTED", parameters: {} },
-          message: "Synthetic",
-          executionPhase: "NOT_STARTED",
-        },
+        failure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" },
       };
 it.each(["session", "access"])(
   "clears all selected disclosures on %s refusal while preserving exact uncertain mutation bytes",
   async (kind) => {
     reads();
     const grant = vi.spyOn(service, "authorityGrants").mockResolvedValue(refused(kind));
-    const execute = vi.spyOn(service, "authorityExecute").mockResolvedValue({
+    const execute = vi.spyOn(service, "execute").mockResolvedValue({
       kind: "deliveryFailure",
       notice: { kind: "local", reason: "unreachable" },
     });
     render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
     await prepare();
-    fireEvent.click(screen.getByRole("button", { name: "Submit operation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
     await screen.findByRole("button", { name: "Retry the same operation" });
     const original = execute.mock.calls[0]?.[0];
     fireEvent.click(screen.getAllByRole("button", { name: "View grants" })[0]!);
@@ -231,9 +225,9 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
   reads();
   const old = pending<Awaited<ReturnType<typeof service.authorityGrants>>>();
   const request = vi.spyOn(service, "authorityGrants").mockReturnValue(old.promise);
-  vi.spyOn(service, "authorityExecute").mockImplementation((prepared) => {
-    const receipt = generatedWebValue("authority.execute");
-    if (receipt.outcome.tag !== "ACCEPTED") {
+  vi.spyOn(service, "execute").mockImplementation((prepared) => {
+    const receipt = wireReply("operation.execute", "AUTHORITY");
+    if (receipt.outcome.tag !== "ACCEPTED" || receipt.outcome.data.scope.kind !== "AUTHORITY") {
       throw new Error("Receipt fixture absent.");
     }
     return Promise.resolve({
@@ -247,7 +241,11 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
           data: {
             ...receipt.outcome.data,
             operationId: prepared.input.operationId,
-            act: prepared.input.act.kind,
+            scope: {
+              ...receipt.outcome.data.scope,
+              act:
+                prepared.input.scope === "AUTHORITY" ? prepared.input.act.kind : "REGISTER_ACTOR",
+            },
           },
         },
       },
@@ -259,7 +257,7 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
     expect(request).toHaveBeenCalledTimes(1);
   });
   await prepare();
-  fireEvent.click(screen.getByRole("button", { name: "Submit operation" }));
+  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
   await waitFor(() => {
     expect(service.authorityList).toHaveBeenCalledTimes(2);
   });
@@ -302,7 +300,6 @@ it("resets only the selected grant page on invalid continuation and reloads it w
       kind: "outcome",
       status: 200,
       value: {
-        endpoint: "authority.grants",
         outcome: {
           tag: "REJECTED",
           data: {
@@ -345,7 +342,6 @@ const actorPage = (
   kind: "outcome",
   status: 200,
   value: {
-    endpoint: "authority.list",
     outcome: {
       tag: "SUCCEEDED",
       data: { items: ids.map((id) => actor(id, "listed")), nextCursor },

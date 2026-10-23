@@ -8,7 +8,6 @@ type ListResponse = ServiceResponse<"case.list">;
 const result = (reference: string): ApiResult<ListResponse> => ({
   kind: "outcome",
   value: {
-    endpoint: "case.list",
     outcome: {
       tag: "SUCCEEDED",
       data: {

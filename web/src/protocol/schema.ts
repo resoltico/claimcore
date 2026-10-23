@@ -7,6 +7,7 @@ export type SchemaNode = {
   readonly const?: unknown;
   readonly enum?: ReadonlyArray<unknown>;
   readonly oneOf?: ReadonlyArray<SchemaNode>;
+  readonly discriminator?: { readonly propertyName: string };
   readonly allOf?: ReadonlyArray<SchemaNode>;
   readonly properties?: Readonly<Record<string, SchemaNode>>;
   readonly required?: ReadonlyArray<string>;

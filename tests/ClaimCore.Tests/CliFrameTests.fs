@@ -257,7 +257,7 @@ let private offlineDiscovery () =
         [
             [ "invocation" ]
             [ "response" ]
-            [ "authority.execute"; "request" ]
+            [ "operation.execute"; "request" ]
             [ "host-failure" ]
         ] do
         Expect.isSome (schema args) "Offline schemas"

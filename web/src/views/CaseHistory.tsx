@@ -26,8 +26,8 @@ const HistoryReceipt = ({
     <details>
       <summary>
         {p.text("ui.historySummary", {
-          command: p.actLabel(receipt.act),
-          revision: p.integer(receipt.revision),
+          command: p.actLabel(receipt.scope.act),
+          revision: p.integer(receipt.scope.revision),
           timestamp: receipt.recordedAt,
         })}
       </summary>
@@ -39,7 +39,7 @@ const HistoryReceipt = ({
         })}
       </p>
       <ReceiptFields
-        receipt={receipt}
+        scope={receipt.scope}
         fields={fields}
         context={p.text("ui.historyContext", { operationId: receipt.operationId })}
       />

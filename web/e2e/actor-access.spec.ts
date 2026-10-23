@@ -12,6 +12,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
   try {
     for (const role of ownerRoles) {
       await applyAuthority(page, {
+        scope: "AUTHORITY",
         operationId: randomUUID(),
         target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
         act: { kind: "SET_GRANT", role, scope: { kind: "INSTALLATION" }, active },
@@ -22,6 +23,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
     if (!active) {
       for (const role of changed.reverse()) {
         await applyAuthority(page, {
+          scope: "AUTHORITY",
           operationId: randomUUID(),
           target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
           act: { kind: "SET_GRANT", role, scope: { kind: "INSTALLATION" }, active: true },
@@ -59,6 +61,7 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
   });
   const enable = (enabled: boolean) =>
     applyAuthority(page, {
+      scope: "AUTHORITY",
       operationId: randomUUID(),
       target: fixture.principal,
       act: { kind: "SET_ENABLED", enabled },

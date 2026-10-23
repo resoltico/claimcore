@@ -2,75 +2,49 @@ namespace ClaimCore.Contract.Protocol
 
 open ClaimCore.Contract
 
-type HostFailureReply =
-    {
-        Reason: HostFailureReason
-        Message: string
-    }
-
+/// Fixed transport policy; presentation belongs to client catalogs.
 module HostFailures =
     let private policies =
         [
             HostFailureReason.ContractMismatch,
+            "CONTRACT_MISMATCH",
             409,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_CONTRACTMISMATCH")
+            Some ExecutionPhase.NotStarted
             HostFailureReason.ConnectionRejected,
+            "CONNECTION_REJECTED",
             403,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_CONNECTIONREJECTED")
-            HostFailureReason.OriginRejected,
-            403,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_ORIGINREJECTED")
+            Some ExecutionPhase.NotStarted
+            HostFailureReason.OriginRejected, "ORIGIN_REJECTED", 403, Some ExecutionPhase.NotStarted
             HostFailureReason.MediaTypeRejected,
+            "MEDIA_TYPE_REJECTED",
             415,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_MEDIATYPEREJECTED")
-            HostFailureReason.BodyTooLarge,
-            413,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_BODYTOOLARGE")
+            Some ExecutionPhase.NotStarted
+            HostFailureReason.BodyTooLarge, "BODY_TOO_LARGE", 413, Some ExecutionPhase.NotStarted
             HostFailureReason.SessionRejected,
+            "SESSION_REJECTED",
             401,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_SESSIONREJECTED")
+            Some ExecutionPhase.NotStarted
             HostFailureReason.SessionForbidden,
+            "SESSION_FORBIDDEN",
             403,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_SESSIONFORBIDDEN")
-            HostFailureReason.MethodRejected,
-            405,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_METHODREJECTED")
+            Some ExecutionPhase.NotStarted
+            HostFailureReason.MethodRejected, "METHOD_REJECTED", 405, Some ExecutionPhase.NotStarted
             HostFailureReason.AntiforgeryRejected,
+            "ANTIFORGERY_REJECTED",
             403,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_ANTIFORGERYREJECTED")
+            Some ExecutionPhase.NotStarted
             HostFailureReason.EndpointMissing,
+            "ENDPOINT_MISSING",
             404,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_ENDPOINTMISSING")
-            HostFailureReason.RateLimited,
-            429,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_RATELIMITED")
-            HostFailureReason.InputInvalid,
-            400,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_INPUTINVALID")
-            HostFailureReason.BeforeDispatchFailed,
-            500,
-            Some ExecutionPhase.NotStarted,
-            (MessageText.literal "diagnostic.HOST_BEFOREDISPATCHFAILED")
+            Some ExecutionPhase.NotStarted
+            HostFailureReason.RateLimited, "RATE_LIMITED", 429, Some ExecutionPhase.NotStarted
+            HostFailureReason.InputInvalid, "INPUT_INVALID", 400, Some ExecutionPhase.NotStarted
+            HostFailureReason.BeforeDispatchFailed, "INTERNAL", 500, Some ExecutionPhase.NotStarted
             HostFailureReason.DispatchUnconfirmed,
+            "INTERNAL",
             500,
-            Some ExecutionPhase.StartedUnconfirmed,
-            (MessageText.literal "diagnostic.HOST_DISPATCHUNCONFIRMED")
-            HostFailureReason.CompletedResponseFailed,
-            500,
-            None,
-            (MessageText.literal "diagnostic.HOST_COMPLETEDRESPONSEFAILED")
+            Some ExecutionPhase.StartedUnconfirmed
+            HostFailureReason.CompletedResponseFailed, "RESPONSE_FAILED", 500, None
         ]
 
     let all = policies |> List.map (fun (reason, _, _, _) -> reason)
@@ -78,79 +52,11 @@ module HostFailures =
     let private policy reason =
         policies |> List.find (fun (value, _, _, _) -> value = reason)
 
-    let code = HostFailureIds.token
+    let code reason =
+        let _, code, _, _ = policy reason in code
 
     let status reason =
-        let _, status, _, _ = policy reason in status
+        let _, _, status, _ = policy reason in status
 
     let phase reason =
-        let _, _, phase, _ = policy reason in phase
-
-    let render reason =
-        let _, _, _, message = policy reason in message
-
-    let diagnosticId = HostFailureIds.diagnostic
-
-    let private diagnostic reason =
-        Codec.record (fun () -> ())
-        |> ResponseScalars.fixedField "id" (diagnosticId reason)
-        |> Codec.field "parameters" (fun () -> ()) (Codec.record () |> Codec.build)
-        |> Codec.build
-
-    let private phaseCodec = Codec.enumeration DeliveryTokens.phases |> Codec.nullable
-
-    let private name reason = string reason
-
-    let private variant reason =
-        let fields =
-            Codec.record (fun _ _ _ message () _ -> { Reason = reason; Message = message })
-            |> Codec.field "kind" (fun _ -> ()) (Codec.constant "HOST_FAILURE")
-            |> Codec.field "code" (fun _ -> ()) (Codec.constant (code reason))
-            |> Codec.field
-                "status"
-                (fun _ -> int64 (status reason))
-                (Codec.integer (int64 (status reason)) (int64 (status reason)))
-            |> Codec.field "message" _.Message ResponseScalars.nonempty
-            |> Codec.field "diagnostic" (fun _ -> ()) (diagnostic reason)
-            |> Codec.field
-                "executionPhase"
-                (fun _ -> phase reason)
-                (phaseCodec
-                 |> Codec.constrained
-                     (match phase reason with
-                      | None -> Schema.Null
-                      | Some ExecutionPhase.NotStarted ->
-                          Schema.Const(DeliveryTokens.phase ExecutionPhase.NotStarted)
-                      | Some ExecutionPhase.StartedUnconfirmed ->
-                          Schema.Const(DeliveryTokens.phase ExecutionPhase.StartedUnconfirmed))
-                     ((=) (phase reason)))
-            |> Codec.build
-            |> Codec.named ("HostFailure." + name reason)
-
-        Codec.branch id (fun value -> if value.Reason = reason then Some value else None) fields
-
-    let codec = all |> List.map variant |> Codec.choice "HostFailure"
-
-    /// A transport status permits only the failure variants whose fixed policy uses that status.
-    let responseSchema statusCode =
-        let alternatives =
-            all
-            |> List.filter (fun reason -> status reason = statusCode)
-            |> List.map (fun reason -> (variant reason).VariantSchema)
-
-        if List.isEmpty alternatives then
-            invalidArg (nameof statusCode) "No host failure uses this HTTP status."
-
-        Schema.OneOf(alternatives, None)
-
-
-    let encode reason =
-        Codec.encode
-            codec
-            {
-                Reason = reason
-                Message = render reason
-            }
-
-    let decode bytes =
-        Codec.decode Limits.MaximumResponseBytes codec bytes
+        let _, _, _, phase = policy reason in phase

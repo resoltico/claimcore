@@ -132,17 +132,13 @@ let private envelope () =
         |> fun value -> value.Replace("\"format\":3,", "") |> Encoding.UTF8.GetBytes
 
     Expect.isError
-        (ClaimCore.Contract.Protocol.Admission.admit
-            ClaimCore.Contract.Protocol.Endpoint.AuthorityExecute
-            wire)
+        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input wire)
         "Provisioning is never case-work authority API input"
 
     let case = request 0L (CaseAct.Open registration) |> RequestRecord.encode
 
     Expect.isError
-        (ClaimCore.Contract.Protocol.Admission.admit
-            ClaimCore.Contract.Protocol.Endpoint.CaseExecute
-            case)
+        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input case)
         "Durable format is not a wire member"
 
     let authored =

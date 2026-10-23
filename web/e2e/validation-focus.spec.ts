@@ -27,12 +27,12 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   );
   await expect(amount).toBeFocused();
   await expect(amount).toHaveAttribute("aria-invalid", "true");
-  expect(requests).toEqual(["POST /api/case.preview"]);
+  expect(requests).toEqual(["POST /api/operation.preview"]);
   await expect(amount).toHaveValue("00.10");
   await amount.fill("0.10");
   const name = page.getByLabel("Claimant name", { exact: true });
   await name.fill("A".repeat(201));
-  const policy = await pauseJsonReply(page, "case.preview");
+  const policy = await pauseJsonReply(page, "operation.preview");
   await page.getByRole("button", { name: "Review changes" }).click();
   const { outcome } = (await policy.ready).reply;
   expect(outcome.tag).toBe("REJECTED");

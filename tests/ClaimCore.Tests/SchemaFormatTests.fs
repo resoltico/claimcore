@@ -56,7 +56,7 @@ let private businessAdmission () =
         let raw = JsonSerializer.SerializeToUtf8Bytes {| caseReference = reference |}
 
         Expect.isOk
-            (Admission.admit Endpoint.CaseGet raw)
+            (Codec.decode Limits.MaximumRequestBytes Api.caseGet.Input raw)
             "Business format reaches typed Application refusal"
 
     for raw in [ "0"; "123456789012345678.1234" ] do

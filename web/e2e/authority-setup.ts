@@ -43,8 +43,8 @@ export const syntheticPrincipals = async (): Promise<Principals> => {
   return source as Principals;
 };
 
-export const applyAuthority = async (page: Page, body: RequestByEndpoint["authority.execute"]) => {
-  const endpoint = endpoints.find((entry) => entry.id === "authority.execute");
+export const applyAuthority = async (page: Page, body: RequestByEndpoint["operation.execute"]) => {
+  const endpoint = endpoints.find((entry) => entry.id === "operation.execute");
   if (endpoint === undefined) {
     throw new Error("Synthetic authority endpoint is missing.");
   }
@@ -58,7 +58,7 @@ export const applyAuthority = async (page: Page, body: RequestByEndpoint["author
       },
       body: bytes,
     });
-    if (reply.status !== 200 || !isResponse("authority.execute", reply.payload)) {
+    if (reply.status !== 200 || !isResponse("operation.execute", reply.payload)) {
       throw new Error("Synthetic authority response is invalid.");
     }
     const { outcome } = reply.payload;

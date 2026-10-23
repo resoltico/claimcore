@@ -1,6 +1,8 @@
 import { expect, it } from "vitest";
 import { createPresenter } from "../src/presentation/presenter";
-import { createDraft } from "../src/interaction/metadata";
+import { initialOperationValues, operationDocument } from "../src/interaction/operationForm";
+import { formValue } from "../src/protocol/forms";
+import { buildRequest } from "../src/protocol/client";
 import { prepareRequest } from "../src/protocol/preparedRequest";
 import { definition, operationId } from "./service-ui.fixtures";
 
@@ -44,10 +46,16 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
       claimedAmount: `${whole}.${fraction}`,
       incidentDate: `${year}-${month}-${day}`,
     };
-    const frozen = prepareRequest(
-      "case.execute",
-      createDraft(operationId, reference, 0, "OPEN", values),
-    ).input;
+    const source = buildRequest(
+      "operation.execute",
+      formValue(operationDocument, operationDocument, "", {
+        ...initialOperationValues("CASE", "OPEN", null, operationId),
+        caseReference: reference,
+        "act.values.claimedAmount": values.claimedAmount,
+        "act.values.incidentDate": values.incidentDate,
+      }),
+    );
+    const frozen = prepareRequest("operation.execute", source).input;
     const bytes = JSON.stringify(frozen);
     for (const choice of [index % 12, (index + 5) % 12]) {
       const language = (["en", "lv", "ar", "en-XA"] as const)[choice % 4]!;
@@ -62,6 +70,6 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
       expect(p.fieldValue(reference, field("caseReference"))).toBe(reference);
     }
     expect(JSON.stringify(frozen)).toBe(bytes);
-    expect(createDraft(operationId, reference, 0, "OPEN", values)).toEqual(frozen);
+    expect(source).toEqual(frozen);
   }
 });

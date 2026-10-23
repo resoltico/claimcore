@@ -1,76 +1,11 @@
-import { act, renderHook } from "@testing-library/react";
+import { act } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { useOperationEditor } from "../src/hooks/operation/useOperationEditor";
-import { service, type ApiResult, type ServiceResponse } from "../src/api/service";
-import { definition, review } from "./service-ui.fixtures";
-import { generatedWebValue } from "./contract-corpus.fixtures";
-
+import { service } from "../src/api/service";
+import { wireReply } from "./contract-corpus.fixtures";
+import { hook, preview, rejected } from "./operation-hook.fixtures";
 afterEach(() => vi.restoreAllMocks());
-const editor = () =>
-  renderHook(() =>
-    useOperationEditor({
-      token: "synthetic-token",
-      definition,
-      current: null,
-      initialCommand: "OPEN",
-      onClose: vi.fn(),
-      onCommitted: vi.fn(),
-      onMutationLockChange: vi.fn(),
-    }),
-  );
-const preview = (): ApiResult<ServiceResponse<"case.preview">> => ({
-  kind: "outcome",
-  status: 200,
-  value: {
-    endpoint: "case.preview",
-    operationId: "10000000-0000-4000-8000-000000000001",
-    outcome: { tag: "REVIEWED", data: { review } },
-  },
-});
-const rejected = (conflict: boolean): ApiResult<ServiceResponse<"case.execute">> => ({
-  kind: "outcome",
-  status: 200,
-  value: {
-    endpoint: "case.execute",
-    operationId: "10000000-0000-4000-8000-000000000001",
-    outcome: {
-      tag: "REJECTED",
-      data: conflict
-        ? {
-            code: "OPERATION_CONTENT_CONFLICT",
-            action: "STOP_AND_INVESTIGATE",
-            target: null,
-            actualRevision: null,
-            limits: {},
-          }
-        : {
-            code: "ACCESS_RESOURCE_UNAVAILABLE",
-            action: "NONE_REQUIRED",
-            target: null,
-            actualRevision: null,
-            limits: {},
-          },
-    },
-  },
-});
-const fill = (view: ReturnType<typeof editor>) => {
-  act(() => {
-    view.result.current.editReference("SYNTHETIC-CASE");
-    for (const [name, value] of Object.entries({
-      incidentDate: "2026-01-01",
-      incidentNotificationDate: "2026-01-02",
-      incidentCountry: "LV",
-      claimantName: "Synthetic claimant",
-      insurerName: "Synthetic insurer",
-      claimedAmount: "1.00",
-      claimedCurrency: "EUR",
-    })) {
-      view.result.current.edit(name, value);
-    }
-  });
-};
 it.each([false, true])(
-  "case execution folds failed retry and exact conflict evidence; conflict=%s",
+  "prior uncertainty survives later refusal including content conflict=%s",
   async (conflict) => {
     vi.spyOn(service, "preview").mockResolvedValue(preview());
     const execute = vi
@@ -80,53 +15,72 @@ it.each([false, true])(
         notice: { kind: "local", reason: "unreachable" },
       })
       .mockResolvedValue(rejected(conflict));
-    const view = editor();
-    fill(view);
+    const view = hook();
     await act(async () => {
       await view.result.current.preview();
     });
     act(() => {
-      view.result.current.setConfirmed(true);
+      view.result.current.confirm(true);
     });
     await act(async () => {
-      await view.result.current.submit();
+      await view.result.current.execute();
     });
-    expect(view.result.current.state.unresolved).toBe(true);
-    const bytes = view.result.current.state.requestBytes;
+    const { prepared } = view.result.current;
     await act(async () => {
-      await view.result.current.submit();
+      await view.result.current.execute();
     });
-    expect(view.result.current.state.unresolved).toBe(!conflict);
-    expect(view.result.current.state.delivery).toBe(
-      conflict ? "DEFINITELY_REJECTED" : "OUTCOME_UNKNOWN",
-    );
-    expect(view.result.current.state.requestBytes).toBe(bytes);
+    expect(view.result.current.priorUncertain).toBe(true);
+    expect(view.result.current.prepared).toBe(prepared);
     expect(execute.mock.calls[1]![0]).toBe(execute.mock.calls[0]![0]);
   },
 );
-it("exact preview replay accepts through the production case reducer", async () => {
-  const value = generatedWebValue("case.execute");
-  if (value.outcome.tag !== "ACCEPTED") {
-    throw new Error("Missing acceptance fixture");
+it("exact preview replay accepts without executing and an observation never resolves a pending attempt", async () => {
+  const accepted = wireReply("operation.execute");
+  if (accepted.outcome.tag !== "ACCEPTED") {
+    throw new Error("Missing acceptance fixture.");
   }
   vi.spyOn(service, "preview").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      endpoint: "case.preview",
-      operationId: value.operationId,
-      outcome: { tag: "ALREADY_ACCEPTED", data: value.outcome.data },
+      operationId: accepted.operationId,
+      outcome: { tag: "ALREADY_ACCEPTED", data: accepted.outcome.data },
     },
   });
-  const view = editor();
-  fill(view);
+  const execute = vi.spyOn(service, "execute");
+  const view = hook();
   await act(async () => {
     await view.result.current.preview();
   });
-  expect(view.result.current.state.delivery).toBe("ACCEPTED");
-  expect(view.result.current.state.unresolved).toBe(false);
+  expect(view.result.current.phase).toBe("ACCEPTED");
+  expect(view.result.current.priorUncertain).toBe(false);
+  expect(execute).not.toHaveBeenCalled();
 });
-it("operation lookup cannot resolve the case editor's pending content", async () => {
+it("preview conflict cannot execute or create uncertainty", async () => {
+  const rejection = rejected(true);
+  if (rejection.kind !== "outcome" || rejection.value.outcome.tag !== "REJECTED") {
+    throw new Error("Missing refusal fixture.");
+  }
+  vi.spyOn(service, "preview").mockResolvedValue({
+    ...rejection,
+    value: { ...rejection.value, outcome: rejection.value.outcome },
+  });
+  const execute = vi.spyOn(service, "execute");
+  const view = hook();
+  await act(async () => {
+    await view.result.current.preview();
+  });
+  act(() => {
+    view.result.current.confirm(true);
+  });
+  await act(async () => {
+    await view.result.current.execute();
+  });
+  expect(view.result.current.phase).toBe("EDITING");
+  expect(view.result.current.priorUncertain).toBe(false);
+  expect(execute).not.toHaveBeenCalled();
+});
+it("operation observation cannot change a pending editor", async () => {
   vi.spyOn(service, "preview").mockResolvedValue(preview());
   vi.spyOn(service, "execute").mockResolvedValue({
     kind: "deliveryFailure",
@@ -135,43 +89,22 @@ it("operation lookup cannot resolve the case editor's pending content", async ()
   vi.spyOn(service, "observe").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: generatedWebValue("operation.observe"),
+    value: wireReply("operation.observe"),
   });
-  const view = editor();
-  fill(view);
+  const view = hook();
   await act(async () => {
     await view.result.current.preview();
   });
   act(() => {
-    view.result.current.setConfirmed(true);
+    view.result.current.confirm(true);
   });
   await act(async () => {
-    await view.result.current.submit();
+    await view.result.current.execute();
   });
-  const prior = view.result.current.state;
+  const { prepared } = view.result.current;
   await act(async () => {
-    await service.observe(prior.operationId, "synthetic-token");
+    await service.observe(prepared!.input.operationId, "token");
   });
-  expect(view.result.current.state).toBe(prior);
-  expect(view.result.current.state.unresolved).toBe(true);
-});
-it("exact preview content conflict refuses the prepared content without dispatching execution", async () => {
-  const rejection = rejected(true);
-  if (rejection.kind !== "outcome" || rejection.value.outcome.tag !== "REJECTED") {
-    throw new Error("Missing content conflict fixture");
-  }
-  const previewCall = vi.spyOn(service, "preview").mockResolvedValue({
-    ...rejection,
-    value: { ...rejection.value, endpoint: "case.preview", outcome: rejection.value.outcome },
-  });
-  const execution = vi.spyOn(service, "execute");
-  const view = editor();
-  fill(view);
-  await act(async () => {
-    await view.result.current.preview();
-  });
-  expect(view.result.current.state.delivery).toBe("DEFINITELY_REJECTED");
-  expect(view.result.current.state.unresolved).toBe(false);
-  expect(view.result.current.state.requestBytes).toBe(previewCall.mock.calls[0]![0].bytes);
-  expect(execution).not.toHaveBeenCalled();
+  expect(view.result.current.priorUncertain).toBe(true);
+  expect(view.result.current.prepared).toBe(prepared);
 });

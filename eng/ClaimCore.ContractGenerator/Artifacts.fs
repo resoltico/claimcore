@@ -1,195 +1,22 @@
 namespace ClaimCore.ContractGeneration
 
-open System.IO
-open System.Reflection
-open System.Text
 open ClaimCore.Contract
-open ClaimCore.Contract.Protocol
 
 module ContractArtifacts =
-    let private oracle name =
-        use stream =
-            Assembly.GetExecutingAssembly().GetManifestResourceStream("ClaimCore.Oracles." + name)
-            |> nonNull
+    let all () =
+        CatalogValidation.validate ()
 
-        use output = new MemoryStream()
-        stream.CopyTo output
-        output.ToArray()
-
-    let private authoritative () =
         [
             {
                 Name = "openapi.json"
-                Role = ArtifactRole.RuntimePrecursor
-                Bytes = OpenApi.emit ()
-            }
-            {
-                Name = "correlation-policy.json"
-                Role = ArtifactRole.RuntimePrecursor
-                Bytes = DeliveryTables.correlation ()
-            }
-            {
-                Name = "delivery-policy.json"
-                Role = ArtifactRole.RuntimePrecursor
-                Bytes = DeliveryTables.render ()
-            }
-            {
-                Name = "request-bindings.json"
-                Role = ArtifactRole.RuntimePrecursor
-                Bytes = RequestBindings.render ()
-            }
-            {
-                Name = "descriptors.json"
-                Role = ArtifactRole.RuntimePrecursor
-                Bytes = ContractDocuments.descriptors ()
-            }
-            {
-                Name = "cli-frame.schema.json"
-                Role = ArtifactRole.RuntimePrecursor
-                Bytes = ContractDocuments.frames ()
-            }
-        ]
-
-    let private qualification () =
-        [
-            {
-                Name = "delivery-vectors.json"
-                Role = ArtifactRole.QualificationOrTooling
-                Bytes = oracle "delivery-vectors.json" |> PolicyVectors.delivery
-            }
-            {
-                Name = "correlation-vectors.json"
-                Role = ArtifactRole.QualificationOrTooling
-                Bytes = oracle "correlation-vectors.json" |> PolicyVectors.correlation
-            }
-            {
-                Name = "corpus.json"
-                Role = ArtifactRole.QualificationOrTooling
-                Bytes = SchemaSamples.corpus ()
-            }
-            {
-                Name = "package.json"
-                Role = ArtifactRole.QualificationOrTooling
-                Bytes = Encoding.UTF8.GetBytes "{\"private\":true,\"type\":\"module\"}\n"
-            }
-        ]
-
-    let private locales () =
-        let assembly = Assembly.GetExecutingAssembly()
-
-        assembly.GetManifestResourceNames()
-        |> Array.filter (fun name ->
-            name.StartsWith("ClaimCore.Localization.", System.StringComparison.Ordinal))
-        |> Array.sort
-        |> Array.map (fun name ->
-            use stream = assembly.GetManifestResourceStream(name) |> nonNull
-            use output = new MemoryStream()
-            stream.CopyTo output
-
-            {
-                Name = "locale." + name.Substring("ClaimCore.Localization.".Length)
-                Role = ArtifactRole.RuntimePrecursor
-                Bytes = output.ToArray()
-            })
-        |> Array.toList
-
-    let private helpDocument () =
-        [
-            for language in ClaimCore.Contract.LocalizationPolicy.languages do
-                for topic in ClaimCore.Contract.CliCommands.topics do
-                    language + "." + topic, AuthoredMessages.help language topic
-        ]
-        @ [
-            for language in ClaimCore.Contract.LocalizationPolicy.languages do
-                for issue in
-                    [
-                        ClaimCore.Contract.CliUsageIssue.Invocation
-                        ClaimCore.Contract.CliUsageIssue.Topic
-                        ClaimCore.Contract.CliUsageIssue.Options
-                        ClaimCore.Contract.CliUsageIssue.Selector
-                    ] do
-                    language + ".usage." + string issue,
-                    AuthoredMessages.help language ("usage." + string issue)
-        ]
-        @ [
-            for language in ClaimCore.Contract.LocalizationPolicy.languages do
-                for id in ClaimCore.Contract.CliCommands.diagnosticTopics do
-                    language + ".diagnostic." + id, AuthoredMessages.help language id
-        ]
-        |> Map.ofList
-        |> System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
-
-    let private presentation () =
-        let policy =
-            {|
-                languageOptions = ClaimCore.Contract.LocalizationPolicy.languageOptions
-                displayOptions = ClaimCore.Contract.LocalizationPolicy.displayOptions
-                languages = ClaimCore.Contract.LocalizationPolicy.languages
-                pseudolanguage = ClaimCore.Contract.LocalizationPolicy.pseudolanguage
-                displayLocales = ClaimCore.Contract.LocalizationPolicy.displayLocales
-                defaultLanguage = ClaimCore.Contract.LocalizationPolicy.defaultLanguage
-                defaultDisplayLocale = ClaimCore.Contract.LocalizationPolicy.defaultDisplayLocale
-            |}
-
-        [
-            {
-                Name = "localization-policy.json"
-                Role = ArtifactRole.RuntimePrecursor
-                Bytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes policy
-            }
-            {
-                Name = "cli-help.json"
-                Role = ArtifactRole.RuntimePrecursor
-                Bytes = helpDocument ()
-            }
-            {
-                Name = "cli-messages.json"
-                Role = ArtifactRole.RuntimePrecursor
-                Bytes =
-                    [ "cli.callbackAccepted"; "cli.callbackRefused"; "cli.beforeDispatchFailure" ]
-                    |> List.map (fun key -> key, AuthoredMessages.literal key)
-                    |> Map.ofList
-                    |> System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
-            }
-        ]
-
-    let all () =
-        CatalogValidation.validate ()
-        CorrelationValidation.validate CorrelationBindings.all
-        let inputs = authoritative () @ qualification () @ locales () @ presentation ()
-        let manifest = ContractIdentity.manifest inputs
-        let identity = ContractIdentity.digest manifest
-
-        inputs
-        @ [
-            {
-                Name = "evolution-fixture.json"
-                Role = ArtifactRole.QualificationOrTooling
-                Bytes = EvolutionQualification.render ()
-            }
-            {
-                Name = "contract-manifest.json"
-                Role = ArtifactRole.IdentityDerived
-                Bytes = manifest
-            }
-            {
-                Name = "contract-identity.txt"
-                Role = ArtifactRole.IdentityDerived
-                Bytes = Encoding.UTF8.GetBytes(identity + "\n")
-            }
-            {
-                Name = "contract-identity.fs"
-                Role = ArtifactRole.IdentityDerived
-                Bytes =
-                    Encoding.UTF8.GetBytes(
-                        "namespace ClaimCore.Contract.Protocol\n\nmodule internal ConsumerContractIdentity =\n    let Value = \""
-                        + identity
-                        + "\"\n"
-                    )
+                Bytes = Array.append (WireWriter.indentedBytes OpenApi.document) [| byte '\n' |]
             }
             {
                 Name = "client.ts"
-                Role = ArtifactRole.IdentityDerived
-                Bytes = TypeScript.source identity
+                Bytes = TypeScript.source ContractIdentity.value
+            }
+            {
+                Name = "descriptors.json"
+                Bytes = ContractDocuments.descriptors ()
             }
         ]

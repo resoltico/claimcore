@@ -1,31 +1,69 @@
-import { act, renderHook } from "@testing-library/react";
-import { expect, it } from "vitest";
-import { useReviewConsent } from "../src/hooks/operation/useReviewConsent";
-import type { Review } from "../src/api/types";
-import { review } from "./service-ui.fixtures";
-it("confirmation belongs to one review and exact serialized request", () => {
-  const { result, rerender } = renderHook<
-    ReturnType<typeof useReviewConsent>,
-    { subject: Review | null; identity: string | null }
-  >(({ subject, identity }) => useReviewConsent(subject, identity), {
-    initialProps: { subject: review, identity: "request" },
-  });
-  expect(result.current.confirmed).toBe(false);
+import { act } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
+import { service } from "../src/api/service";
+import { hook, pending, preview } from "./operation-hook.fixtures";
+import { current } from "./operation-form.fixtures";
+afterEach(() => vi.restoreAllMocks());
+it("consent belongs to a completed review and is cleared by a fresh preview or input edit", async () => {
+  const read = pending<Awaited<ReturnType<typeof service.preview>>>();
+  vi.spyOn(service, "preview").mockResolvedValueOnce(preview()).mockReturnValueOnce(read.promise);
+  const execute = vi.spyOn(service, "execute");
+  const view = hook();
   act(() => {
-    result.current.setConfirmed(true);
+    view.result.current.confirm(true);
   });
-  rerender({ subject: review, identity: "request" });
-  expect(result.current.confirmed).toBe(true);
-  rerender({ subject: { ...review }, identity: "request" });
-  expect(result.current.confirmed).toBe(false);
+  expect(view.result.current.confirmed).toBe(false);
+  await act(async () => {
+    await view.result.current.preview();
+  });
   act(() => {
-    result.current.setConfirmed(true);
+    view.result.current.confirm(true);
   });
-  rerender({ subject: review, identity: "different" });
-  expect(result.current.confirmed).toBe(false);
-  rerender({ subject: null, identity: null });
+  expect(view.result.current.confirmed).toBe(true);
+  let completion: Promise<void>;
   act(() => {
-    result.current.setConfirmed(true);
+    completion = view.result.current.preview();
+    view.result.current.confirm(true);
   });
-  expect(result.current.confirmed).toBe(false);
+  expect(view.result.current.confirmed).toBe(false);
+  expect(view.result.current.review).toBeNull();
+  await act(async () => {
+    await view.result.current.execute();
+  });
+  expect(execute).not.toHaveBeenCalled();
+  await act(async () => {
+    read.finish(preview());
+    await completion!;
+  });
+  expect(view.result.current.confirmed).toBe(false);
+  act(() => {
+    view.result.current.confirm(true);
+    view.result.current.edit("act.reason", "Changed");
+  });
+  expect(view.result.current.confirmed).toBe(false);
+  expect(view.result.current.review).toBeNull();
 });
+it.each(["token", "target"] as const)(
+  "masks stale review synchronously when %s changes and rejects the late result",
+  async (changed) => {
+    const read = pending<Awaited<ReturnType<typeof service.preview>>>();
+    vi.spyOn(service, "preview").mockReturnValue(read.promise);
+    const view = hook();
+    let completion: Promise<void>;
+    act(() => {
+      completion = view.result.current.preview();
+    });
+    view.rerender({
+      token: changed === "token" ? "other-token" : "token",
+      target: changed === "target" ? { ...current, caseReference: "OTHER" } : current,
+    });
+    expect(view.result.current.review).toBeNull();
+    expect(view.result.current.receipt).toBeNull();
+    await act(async () => {
+      read.finish(preview());
+      await completion!;
+    });
+    expect(view.result.current.review).toBeNull();
+    expect(view.result.current.confirmed).toBe(false);
+  },
+);

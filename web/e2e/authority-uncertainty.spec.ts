@@ -13,6 +13,7 @@ import {
 const ownerGrant = async (page: Page, active: boolean) => {
   const source = await syntheticPrincipals();
   await applyAuthority(page, {
+    scope: "AUTHORITY",
     operationId: randomUUID(),
     target: { kind: "HUMAN", issuer: source.issuer, subject: source.stewardSubject },
     act: { kind: "SET_GRANT", role: "OWNER", scope: { kind: "INSTALLATION" }, active },
@@ -23,14 +24,14 @@ const prepareRegistration = async (page: Page, issuer: string, subject: string) 
   await page.locator('[name="target.kind"]').selectOption("SERVICE");
   await page.locator('[name="target.issuer"]').fill(issuer);
   await page.locator('[name="target.subject"]').fill(subject);
-  await page.locator('section[aria-labelledby="authority-title"] form button[type=submit]').click();
-  const prepared = page.locator('section[aria-labelledby="authority-title"] > section').first();
+  await page.getByRole("button", { name: "Review changes", exact: true }).click();
+  const prepared = page.getByRole("dialog");
   await expect(prepared).toContainText(subject);
   await page.getByRole("checkbox").check();
 };
 const uncertainRegistration = async (page: Page) => {
-  const pending = await pauseJsonReply(page, "authority.execute", true);
-  await page.getByRole("button", { name: ui("en", "ui.submitOperation"), exact: true }).click();
+  const pending = await pauseJsonReply(page, "operation.execute", true);
+  await page.getByRole("button", { name: ui("en", "ui.submitExact"), exact: true }).click();
   const captured = await pending.ready;
   expect(captured.reply.outcome.tag).toBe("ACCEPTED");
   pending.release();
@@ -40,7 +41,7 @@ const uncertainRegistration = async (page: Page) => {
   return captured.bytes;
 };
 const refusedRetry = async (page: Page, bytes: Buffer) => {
-  const pending = await pauseJsonReply(page, "authority.execute");
+  const pending = await pauseJsonReply(page, "operation.execute");
   await page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }).click();
   const captured = await pending.ready;
   expect(captured.bytes.equals(bytes)).toBe(true);
@@ -88,7 +89,7 @@ test("authority review and uncertainty survive locale changes while refusal clea
     const bytes = await uncertainRegistration(steward);
     await ownerGrant(page, false);
     await refusedRetry(steward, bytes);
-    await expect(steward.locator('section[aria-labelledby="authority-title"]')).toContainText(
+    await expect(steward.locator('section[aria-labelledby="authority-title"]')).not.toContainText(
       subject,
     );
     await expectAccessible(steward);

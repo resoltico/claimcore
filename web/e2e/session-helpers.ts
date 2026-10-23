@@ -140,6 +140,9 @@ export const sessionToken = async (page: Page): Promise<string> => {
   if (!isResponse("session", reply.payload)) {
     throw new Error("Invalid session response.");
   }
+  if (reply.payload.outcome.tag !== "SUCCEEDED") {
+    throw new Error("Session refused.");
+  }
   const snapshot = reply.payload.outcome.data;
   if (reply.status !== 200 || snapshot.antiforgeryToken === null) {
     throw new Error("Session response did not provide an antiforgery token.");
@@ -155,7 +158,7 @@ export const expectHostFailure = (reply: BrowserReply, status: number, code: str
   if (!valid) {
     throw new Error("Invalid host-failure response.");
   }
-  expect(reply.payload.code).toBe(code);
+  expect(reply.payload.hostFailure.code).toBe(code);
 };
 
 const awaitOidcReturn = async (
@@ -276,6 +279,9 @@ export const logout = async (page: Page): Promise<void> => {
   const reply = await browserRequest(page, "/api/session");
   if (!isResponse("session", reply.payload)) {
     throw new Error("Invalid logout response.");
+  }
+  if (reply.payload.outcome.tag !== "SUCCEEDED") {
+    throw new Error("Session refused.");
   }
   expect(reply.payload.outcome.data.authenticated).toBe(false);
 };

@@ -563,13 +563,9 @@ let private authorityFieldPresentation () =
         let labelId = field.GetProperty("labelId").GetString() |> nonNull
         Expect.equal labelId ("authority.field." + name + ".label") "Stable message identifier"
 
-        let literal =
-            root.GetProperty("messages").GetProperty(labelId).EnumerateArray() |> Seq.head
-
-        Expect.equal
-            (literal.GetProperty("literal").GetString())
-            (field.GetProperty("label").GetString())
-            "English follows owned field metadata"
+        Expect.isFalse
+            (field.TryGetProperty "label" |> fst)
+            "Descriptors carry keys, not authored prose."
 
 let private decoderProperty =
     let seed =

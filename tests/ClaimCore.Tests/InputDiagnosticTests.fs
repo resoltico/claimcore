@@ -26,30 +26,27 @@ let private principal () =
                 "Pure admission preserves cause without input"
 
 let private localDiagnostics () =
-    let metadata =
-        {
-            OperationId = None
-            AttemptKnowledge = AttemptKnowledge.NotSent
-            ResolutionEvidence = ResolutionEvidence.NoEvidence
-        }
-
     for setting, _ in InputDiagnostics.settings do
         for issue, _ in InputDiagnostics.configurationIssues do
-            let frame =
-                FrameReply.LocalFailure(
-                    metadata,
-                    None,
-                    LocalFailure.ConfigurationIssue(setting, issue)
-                )
+            let frame: ClaimCore.Contract.FrameReply =
+                {
+                    Endpoint = None
+                    OperationId = None
+                    Delivery = DeliveryState.NotSent
+                    Result = FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue))
+                }
 
-            let bytes = Frames.encode frame
+            let bytes = ClaimCore.Contract.Frames.encode frame
 
             Expect.equal
-                (Frames.decode bytes)
+                (ClaimCore.Contract.Frames.decode bytes)
                 (Ok frame)
                 "Closed configuration facts survive framing"
 
-            Expect.equal (Frames.exitCode frame) 3 "Definite pre-dispatch failure"
+            Expect.equal
+                (ClaimCore.Contract.Frames.exitCode frame)
+                3
+                "Definite pre-dispatch failure"
 
 [<Tests>]
 let tests =

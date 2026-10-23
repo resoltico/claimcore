@@ -181,7 +181,7 @@ const useDashboardNavigation = () => {
   };
   const committed = (receipt: CaseReceipt): void => {
     setOperation(null);
-    setSelectedReference(receipt.caseReference);
+    setSelectedReference(receipt.scope.caseReference);
     setRefresh((value) => value + 1);
   };
   return {

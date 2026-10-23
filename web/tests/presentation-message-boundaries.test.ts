@@ -1,20 +1,21 @@
 import { expect, it } from "vitest";
 import {
   TYPE,
+  parse,
   type LiteralElement,
   type MessageFormatElement,
 } from "@formatjs/icu-messageformat-parser";
 import { renderKey, renderIsolatedValue } from "../src/presentation/messages";
 import { pseudolocalize } from "../src/presentation/pseudolocalization.mjs";
-import english from "../src/presentation/generated/en.json";
+import english from "../../src/ClaimCore.Contract/Localization/en.field.json";
 
 const literal = (value: string): LiteralElement => ({ type: TYPE.literal, value });
 
-it("derives the published pseudo label exactly from the preserved generated catalog [CC-WEB-001]", () => {
+it("derives the published pseudo label exactly from the authored source catalog [CC-WEB-001]", () => {
   expect(
     renderKey({ language: "en-XA", displayLocale: "en-GB" }, "field.caseReference.label"),
   ).toBe(
-    `⟦${pseudolocalize(english["field.caseReference.label"])
+    `⟦${pseudolocalize(parse(english["field.caseReference.label"]))
       .map((node) => (node.type === TYPE.literal ? node.value : ""))
       .join("")}⟧`,
   );

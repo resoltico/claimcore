@@ -3,18 +3,7 @@ namespace ClaimCore.ContractGeneration
 open System
 open System.IO
 
-[<RequireQualifiedAccess>]
-type ArtifactRole =
-    | RuntimePrecursor
-    | QualificationOrTooling
-    | IdentityDerived
-
-type Artifact =
-    {
-        Name: string
-        Bytes: byte array
-        Role: ArtifactRole
-    }
+type Artifact = { Name: string; Bytes: byte array }
 
 /// The produced set is the inventory. Unexpected content is never deleted.
 module ArtifactPublication =

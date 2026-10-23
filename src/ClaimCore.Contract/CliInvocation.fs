@@ -8,14 +8,14 @@ type CliDescription =
     | Fields of string option
     | Commands of string option
     | Authority of string option
-    | Endpoints of Endpoint option
+    | Endpoints of string option
     | Diagnostics
 
 [<RequireQualifiedAccess>]
 type CliSchema =
     | Named of string
-    | Request of Endpoint
-    | Response of Endpoint
+    | Request of string
+    | Response of string
 
 [<RequireQualifiedAccess>]
 type CliInvocation =
@@ -25,6 +25,7 @@ type CliInvocation =
     | Schema of selection: CliSchema
     | Call of retry: bool
     | Session
+    | Verb of string list
 
 module CliInvocations =
     let private options arguments =
@@ -73,8 +74,8 @@ module CliInvocations =
         | [ "diagnostics" ] -> Ok CliDescription.Diagnostics
         | [ "endpoints" ] -> Ok(CliDescription.Endpoints None)
         | [ "endpoints"; name ] ->
-            match Endpoint.tryParse name with
-            | Some endpoint -> Ok(CliDescription.Endpoints(Some endpoint))
+            match Api.tryFind name with
+            | Some endpoint -> Ok(CliDescription.Endpoints(Some(Api.id endpoint)))
             | None -> Error CliUsageIssue.Selector
         | category :: tail ->
             match List.tryFind (fst >> (=) category) descriptions, tail with
@@ -86,9 +87,9 @@ module CliInvocations =
         function
         | [ name ] -> Ok(CliSchema.Named name)
         | [ name; direction ] ->
-            match Endpoint.tryParse name, direction with
-            | Some endpoint, "request" -> Ok(CliSchema.Request endpoint)
-            | Some endpoint, "response" -> Ok(CliSchema.Response endpoint)
+            match Api.tryFind name, direction with
+            | Some endpoint, "request" -> Ok(CliSchema.Request(Api.id endpoint))
+            | Some endpoint, "response" -> Ok(CliSchema.Response(Api.id endpoint))
             | _ -> Error CliUsageIssue.Selector
         | _ -> Error CliUsageIssue.Selector
 
@@ -130,6 +131,8 @@ module CliInvocations =
             )
             ->
             schemaSelector tail |> Result.map CliInvocation.Schema
+        | family :: _ when List.contains family [ "case"; "authority"; "operation"; "context" ] ->
+            Ok(CliInvocation.Verb arguments)
         | _ -> Error CliUsageIssue.Invocation
 
     let usageLanguage arguments =

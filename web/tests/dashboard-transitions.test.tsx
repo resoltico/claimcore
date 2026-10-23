@@ -17,8 +17,8 @@ const current: CurrentCase = {
   state: { tag: "LIVE", fields, disposition: "ACTIVE" },
 };
 
-import { generatedWebValue } from "./contract-corpus.fixtures";
-const accepted = generatedWebValue("case.execute");
+import { wireReply } from "./contract-corpus.fixtures";
+const accepted = wireReply("operation.execute");
 if (accepted.outcome.tag !== "ACCEPTED") {
   throw new Error("CaseReceipt fixture absent.");
 }
@@ -60,7 +60,7 @@ const queueDetail = () => {
 const queueAcceptedOpen = (): void => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
-    response("case.execute", "ACCEPTED", {
+    response("operation.execute", "ACCEPTED", {
       ...receipt,
       caseReference: fields.caseReference,
       snapshot: { tag: "DISCLOSED", state: { tag: "LIVE", disposition: "ACTIVE", fields } },
@@ -99,7 +99,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   queueDefinitionAndList();
   fetch.mockImplementationOnce(
     previewForRequest(
-      response("case.preview", "REVIEWED", {
+      response("operation.preview", "REVIEWED", {
         review: {
           before: null,
           after: {

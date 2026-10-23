@@ -1,23 +1,19 @@
+import { caseOffers } from "./case-advice.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
 import { render, screen } from "./presentation-test-support";
 import { current, deferredResponse, draftAt, editor } from "./presentation-state.fixtures";
-import { generatedWebValue } from "./contract-corpus.fixtures";
+import { wireReply } from "./contract-corpus.fixtures";
 import { fields, response, runtime, unavailable } from "./service-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 const refusal = (kind: "access" | "session") =>
   kind === "access"
-    ? response("case.execute", "REJECTED", unavailable)
+    ? response("operation.execute", "REJECTED", unavailable)
     : new Response(
         JSON.stringify({
-          kind: "HOST_FAILURE",
-          code: "SESSION_REJECTED",
-          status: 401,
-          diagnostic: { id: "HOST_SESSIONREJECTED", parameters: {} },
-          message: "Synthetic session refusal",
-          executionPhase: "NOT_STARTED",
+          hostFailure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" },
         }),
         { status: 401, headers: { "content-type": "application/json" } },
       );
@@ -25,6 +21,7 @@ const currentCanary = "CURRENT_DISCLOSURE_CANARY";
 const reviewCanary = "REVIEW_DISCLOSURE_CANARY";
 const disclosedCurrent = {
   ...current,
+  advice: { ...current.advice, acts: caseOffers(["AMEND_REGISTRATION"]) },
   state: {
     ...current.state,
     tag: "LIVE" as const,
@@ -33,7 +30,7 @@ const disclosedCurrent = {
   },
 };
 const preview = () =>
-  response("case.preview", "REVIEWED", {
+  response("operation.preview", "REVIEWED", {
     review: {
       before: disclosedCurrent,
       after: {
@@ -49,13 +46,13 @@ const preview = () =>
     },
   });
 const replay = () => {
-  const accepted = generatedWebValue("case.execute");
+  const accepted = wireReply("operation.execute");
   if (accepted.outcome.tag !== "ACCEPTED") {
     throw new Error("Missing acceptance fixture");
   }
-  return response("case.execute", "ALREADY_ACCEPTED", {
+  return response("operation.execute", "ALREADY_ACCEPTED", {
     ...accepted.outcome.data,
-    snapshot: { tag: "WITHHELD" },
+    scope: { ...accepted.outcome.data.scope, snapshot: { disclosure: "WITHHELD" } },
   });
 };
 const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => {
@@ -109,7 +106,7 @@ it.each(["access", "session"] as const)(
     expectPendingOnly(locked);
     expect(screen.getByRole("button", { name: "Retry the same operation" })).toBeDisabled();
     await act(async () => {
-      pending.resolve(response("case.execute", "OUTCOME_UNKNOWN", {}));
+      pending.resolve(response("operation.execute", "OUTCOME_UNKNOWN", {}));
       await pending.promise;
     });
     expect(screen.getByRole("button", { name: "Retry the same operation" })).not.toBeDisabled();

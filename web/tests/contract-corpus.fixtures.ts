@@ -3,10 +3,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { EndpointId } from "@contracts/client";
 import type { ServiceResponse } from "../src/api/types";
-const directory = resolve(import.meta.dirname, "../../contracts");
-export const readUnknown = (file: string): unknown =>
-  JSON.parse(readFileSync(resolve(directory, file), "utf8"));
-export const isObject = (value: unknown): value is Record<string, unknown> =>
+import { isResponse } from "../src/protocol/client";
+const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 export type CorpusCase = {
   id: string;
@@ -15,42 +13,59 @@ export type CorpusCase = {
   valid: boolean;
   value: unknown;
 };
-export const corpusCases = (): CorpusCase[] => {
-  const raw = readUnknown("corpus.json");
-  if (!isObject(raw) || !Array.isArray(raw["cases"])) {
-    throw new Error("Corpus absent.");
-  }
-  return raw["cases"] as CorpusCase[];
-};
-export const generatedWebValue = <K extends EndpointId>(endpoint: K): ServiceResponse<K> => {
-  const sample = corpusCases().find(
-    (c) => c.endpoint === endpoint && c.direction === "response" && c.valid,
-  );
-  if (sample === undefined) {
-    throw new Error("Positive response absent.");
-  }
-  const value = structuredClone(sample.value) as ServiceResponse<K>;
-  if (value.endpoint === "case.history" && value.outcome.tag === "SUCCEEDED") {
-    const accepted = generatedWebValue("case.execute");
-    if (accepted.outcome.tag !== "ACCEPTED") {
-      throw new Error("CaseReceipt fixture absent.");
+export const corpusCases = (): CorpusCase[] =>
+  (["request", "response"] as const).flatMap((direction) => {
+    const raw: unknown = JSON.parse(
+      readFileSync(
+        resolve(import.meta.dirname, `../../tests/fixtures/wire-${direction}-examples.json`),
+        "utf8",
+      ),
+    );
+    if (!isObject(raw) || !Array.isArray(raw["cases"])) {
+      throw new Error("Authored examples absent.");
     }
-    return {
-      ...value,
-      outcome: {
-        ...value.outcome,
-        data: {
-          ...value.outcome.data,
-          entries: [{ tag: "FULL", receipt: accepted.outcome.data }],
-        },
-      },
-    };
+    return raw["cases"].map((row: Record<string, unknown>) => ({
+      id: String(row["id"] ?? row["name"]),
+      endpoint: String(row["endpoint"]) as EndpointId,
+      direction,
+      valid: row["valid"] === true,
+      value: row["value"],
+    }));
+  });
+const hasScope = (value: unknown, endpoint: EndpointId, scope: string): boolean => {
+  if (!isObject(value) || !isObject(value["outcome"]) || !isObject(value["outcome"]["data"])) {
+    return false;
   }
-  return value;
+  const { data } = value["outcome"];
+  if (endpoint === "operation.preview") {
+    return isObject(data["review"]) && data["review"]["scope"] === scope;
+  }
+  return isObject(data["scope"]) && data["scope"]["kind"] === scope;
 };
-export const generatedResponse = (endpoint: EndpointId, status = 200): Response => {
-  const response = generatedWebValue(endpoint);
-  return transportResponse(endpoint, response.outcome.tag, response.outcome.data, status);
+export const wireReply = <K extends EndpointId>(
+  endpoint: K,
+  scope: "CASE" | "AUTHORITY" = "CASE",
+): ServiceResponse<K> => {
+  const sample = corpusCases().find(
+    (row) =>
+      row.endpoint === endpoint &&
+      row.direction === "response" &&
+      row.valid &&
+      (!["operation.execute", "operation.preview"].includes(endpoint) ||
+        hasScope(row.value, endpoint, scope)),
+  );
+  if (sample === undefined || !isResponse(endpoint, sample.value)) {
+    throw new Error("Admitted synthetic reply absent.");
+  }
+  return structuredClone(sample.value);
+};
+export const wireResponse = (
+  endpoint: EndpointId,
+  status = 200,
+  scope: "CASE" | "AUTHORITY" = "CASE",
+): Response => {
+  const reply = wireReply(endpoint, scope);
+  return transportResponse(endpoint, reply.outcome.tag, reply.outcome.data, status);
 };
 export const hostCases = () => [
   {
@@ -58,24 +73,17 @@ export const hostCases = () => [
     valid: true,
     endpoint: null,
     status: 400,
-    value: {
-      kind: "HOST_FAILURE",
-      code: "INPUT_INVALID",
-      status: 400,
-      message: "The input does not satisfy the endpoint contract.",
-      diagnostic: { id: "HOST_INPUTINVALID", parameters: {} },
-      executionPhase: "NOT_STARTED",
-    },
+    value: { hostFailure: { code: "INPUT_INVALID", phase: "NOT_STARTED" } },
   },
 ];
-
 export const historyVariants = () => {
-  const accepted = generatedWebValue("case.execute").outcome;
-  if (accepted.tag !== "ACCEPTED") {
-    throw new Error("Receipt fixture absent.");
+  const { outcome } = wireReply("operation.execute");
+  if (outcome.tag !== "ACCEPTED" || outcome.data.scope.kind !== "CASE") {
+    throw new Error("Case receipt example absent.");
   }
-  const receipt = accepted.data;
-  const { operationId, position, revision, act, recordedAt, recordedBy } = receipt;
+  const receipt = { ...outcome.data, scope: outcome.data.scope };
+  const { operationId, position, recordedAt, recordedBy } = receipt;
+  const { revision, act } = receipt.scope;
   return {
     full: { tag: "FULL" as const, receipt },
     summary: {

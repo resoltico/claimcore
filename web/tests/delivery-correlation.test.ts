@@ -1,120 +1,74 @@
 import { expect, it } from "vitest";
-import {
-  attemptKnowledge,
-  accumulateKnowledge,
-  resolutionEvidence,
-} from "../src/protocol/delivery";
+import { mutationAccepted, mutationUncertain } from "../src/protocol/delivery";
 import { correlateReply } from "../src/protocol/client";
-import { corpusCases, generatedWebValue } from "./contract-corpus.fixtures";
-import type { ApiResult, EndpointOutcome } from "../src/api/types";
-import { endpoints } from "@contracts/client";
-const accepted = generatedWebValue("case.execute");
+import { corpusCases, wireReply } from "./contract-corpus.fixtures";
+import type { EndpointOutcome } from "../src/api/types";
+const accepted = wireReply("operation.execute");
 const receipt = () => {
-  if (accepted.outcome.tag !== "ACCEPTED") {
-    throw new Error("Missing receipt fixture.");
+  if (accepted.outcome.tag !== "ACCEPTED" || accepted.outcome.data.scope.kind !== "CASE") {
+    throw new Error("Missing case receipt fixture.");
   }
-  return accepted.outcome.data;
+  return { ...accepted.outcome.data, scope: accepted.outcome.data.scope };
 };
 const { operationId } = receipt();
 const request = {
+  scope: "CASE",
   operationId,
   caseReference: "Case-Identity",
   expectedRevision: 2,
-  act: { kind: receipt().act },
+  act: { kind: receipt().scope.act },
 };
 const reply = () => ({
-  ...accepted,
   operationId,
-  outcome: { tag: "ACCEPTED", data: { ...receipt(), caseReference: "case-identity", revision: 3 } },
+  outcome: {
+    tag: "ACCEPTED",
+    data: {
+      ...receipt(),
+      scope: { ...receipt().scope, caseReference: "case-identity", revision: 3 },
+    },
+  },
 });
-it("correlates scope, identity, act, ASCII reference identity and accepted revision independently", () => {
-  expect(correlateReply("case.execute", request, reply())).toBe(true);
+it("binds accepted scope, operation ID, act, ASCII case identity and successor revision", () => {
+  expect(correlateReply("operation.execute", request, reply())).toBe(true);
   const source = reply();
   for (const changed of [
-    { operationId: "20000000-0000-4000-8000-000000000002" },
-    { scope: "AUTHORITY" },
+    { kind: "AUTHORITY" },
     { act: "ERASE" },
     { caseReference: "other" },
     { revision: 4 },
   ]) {
     expect(
-      correlateReply("case.execute", request, {
+      correlateReply("operation.execute", request, {
         ...source,
-        outcome: { ...source.outcome, data: { ...source.outcome.data, ...changed } },
+        outcome: {
+          ...source.outcome,
+          data: { ...source.outcome.data, scope: { ...source.outcome.data.scope, ...changed } },
+        },
       }),
     ).toBe(false);
   }
-  expect(
-    correlateReply("case.execute", request, {
+  for (const change of [
+    { ...source, operationId: "20000000-0000-4000-8000-000000000002" },
+    {
       ...source,
-      operationId: "20000000-0000-4000-8000-000000000002",
-    }),
-  ).toBe(false);
+      outcome: {
+        ...source.outcome,
+        data: { ...source.outcome.data, operationId: "20000000-0000-4000-8000-000000000002" },
+      },
+    },
+  ]) {
+    expect(correlateReply("operation.execute", request, change)).toBe(false);
+  }
 });
-it("covers every generated endpoint outcome family against an independent finite truth table", () => {
+it("classifies authored outcome examples without a generated delivery oracle", () => {
   for (const sample of corpusCases().filter(
     (item) => item.direction === "response" && item.valid,
   )) {
     const value = sample.value as EndpointOutcome;
-    const mutation = endpoints.find((item) => item.id === sample.endpoint)!.mutates;
-    const { tag } = value.outcome;
-    let expected = mutation ? "NOT_ACCEPTED" : "READ_FAILED";
-    if (tag === "ACCEPTED" || tag === "ALREADY_ACCEPTED") {
-      expected = "ACCEPTED";
-    }
-    if (tag === "REVIEWED" || tag === "SUCCEEDED") {
-      expected = "READ_SUCCEEDED";
-    }
-    if (tag === "OUTCOME_UNKNOWN") {
-      expected = "UNCONFIRMED";
-    }
-    expect(
-      attemptKnowledge(sample.endpoint, { kind: "outcome", value, status: 200 }),
-      sample.id,
-    ).toBe(expected);
+    const result = { kind: "outcome" as const, value, status: 200 };
+    expect(mutationAccepted(result), sample.id).toBe(
+      ["ACCEPTED", "ALREADY_ACCEPTED"].includes(value.outcome.tag),
+    );
+    expect(mutationUncertain(result), sample.id).toBe(value.outcome.tag === "OUTCOME_UNKNOWN");
   }
-  expect(() =>
-    attemptKnowledge("case.execute", {
-      kind: "outcome",
-      status: 200,
-      value: {
-        endpoint: "case.execute",
-        operationId,
-        outcome: { tag: "SYNTHETIC_UNCOVERED", data: null },
-      },
-    } as unknown as ApiResult<EndpointOutcome>),
-  ).toThrow();
-});
-it("accumulates unresolved attempts until exact content evidence, while observation cannot resolve content", () => {
-  for (const attempt of [
-    "NOT_SENT",
-    "NOT_ACCEPTED",
-    "READ_SUCCEEDED",
-    "READ_FAILED",
-    "UNCONFIRMED",
-  ] as const) {
-    expect(accumulateKnowledge("UNCONFIRMED", attempt, "NONE")).toBe("UNCONFIRMED");
-  }
-  expect(accumulateKnowledge("UNCONFIRMED", "ACCEPTED", "CONTENT_ACCEPTED")).toBe("ACCEPTED");
-  expect(accumulateKnowledge("UNCONFIRMED", "NOT_ACCEPTED", "CONTENT_EXCLUDED")).toBe(
-    "CONTENT_EXCLUDED",
-  );
-  const observed: ApiResult<EndpointOutcome> = {
-    kind: "outcome",
-    status: 200,
-    value: { endpoint: "operation.observe", outcome: { tag: "SUCCEEDED", data: receipt() } },
-  };
-  expect(resolutionEvidence(observed)).toBe("NONE");
-  const wrongValues = {
-    ...request,
-    act: { ...request.act, values: { claimantName: "Different" } },
-  };
-  expect(wrongValues.operationId).toBe(operationId);
-  expect(
-    accumulateKnowledge(
-      "UNCONFIRMED",
-      attemptKnowledge("operation.observe", observed),
-      resolutionEvidence(observed),
-    ),
-  ).toBe("UNCONFIRMED");
 });

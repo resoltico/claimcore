@@ -15,13 +15,11 @@
     <Compile Include="Vocabulary/PrincipalKinds.fs" />
     <Compile Include="Vocabulary/FaultDiagnosticIds.fs" />
     <Compile Include="Refusals/Faults.fs" />
-    <Compile Include="Localization/MessageText.fs" />
     <Compile Include="Localization/LocalizationPolicy.fs" />
     <Compile Include="Vocabulary/DeliveryVocabulary.fs" />
     <Compile Include="Vocabulary/InputDiagnostics.fs" />
     <Compile Include="Vocabulary/ProtocolFailures.fs" />
     <Compile Include="Vocabulary/CliCommands.fs" />
-    <Compile Include="../../contracts/contract-identity.fs" />
     <Compile Include="Json/JsonValue.fs" />
     <Compile Include="Json/StrictJson.fs" />
     <Compile Include="Json/Writers.fs" />
@@ -30,8 +28,6 @@
     <Compile Include="Messages/Templates.fs" />
     <Compile Include="Messages/Messages.fs" />
     <Compile Include="Api/Limits.fs" />
-    <Compile Include="Endpoint.fs" />
-    <Compile Include="Delivery.fs" />
     <Compile Include="Model/CaseInputs.fs" />
     <Compile Include="Model/CaseFields.fs" />
     <Compile Include="Model/Advice.fs" />
@@ -42,11 +38,8 @@
     <Compile Include="Model/AuthorityModel.fs" />
     <Compile Include="Model/AuthorityPages.fs" />
     <Compile Include="Model/Replies.fs" />
-    <Compile Include="Requests.fs" />
     <Compile Include="Model/Operations.fs" />
     <Compile Include="RequestCodecs.fs" />
-    <Compile Include="Admission.fs" />
-    <Compile Include="Responses.fs" />
     <Compile Include="ResponseScalars.fs" />
     <Compile Include="DiagnosticCodecs.fs" />
     <Compile Include="ResponseCodecs.fs" />
@@ -54,19 +47,14 @@
     <Compile Include="Codecs/ReplyCodecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
     <Compile Include="Api/Correlation.fs" />
-    <Compile Include="Replies.fs" />
-    <Compile Include="CorrelationBindings.fs" />
-    <Compile Include="CorrelationEvaluation.fs" />
-    <Compile Include="Correlation.fs" />
     <Compile Include="HostFailures.fs" />
     <Compile Include="Codecs/HostFailureCodecs.fs" />
     <Compile Include="Api/OpenApi.fs" />
     <Compile Include="Api/ContractIdentity.fs" />
     <Compile Include="HttpsOrigins.fs" />
-    <Compile Include="Frames.fs" />
     <Compile Include="Cli/Frames.fs" />
+    <Compile Include="Cli/Schemas.fs" />
+    <Compile Include="Cli/Grammar.fs" />
     <Compile Include="CliInvocation.fs" />
-    <Compile Include="OpenApi.fs" />
-    <Compile Include="ConsumerContract.fs" />
   </ItemGroup>
 </Project>

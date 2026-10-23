@@ -54,14 +54,7 @@ it.each(["access", "session"])(
       kind === "access"
         ? response("case.list", "REJECTED", unavailable)
         : new Response(
-            JSON.stringify({
-              kind: "HOST_FAILURE",
-              code: "SESSION_REJECTED",
-              status: 401,
-              diagnostic: { id: "HOST_SESSIONREJECTED", parameters: {} },
-              message: "Synthetic",
-              executionPhase: "NOT_STARTED",
-            }),
+            JSON.stringify({ hostFailure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" } }),
             { status: 401, headers: { "content-type": "application/json" } },
           );
     vi.stubGlobal(

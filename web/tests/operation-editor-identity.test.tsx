@@ -36,7 +36,7 @@ const editor = (current: CurrentCase | null, initialCommand: "OPEN" | "CLOSE" | 
 );
 
 const preparedResponse = () =>
-  response("case.preview", "REVIEWED", {
+  response("operation.preview", "REVIEWED", {
     review: {
       before: null,
       after: {
@@ -50,7 +50,7 @@ const preparedResponse = () =>
   });
 
 const refusedResponse = () =>
-  response("case.execute", "REJECTED", {
+  response("operation.execute", "REJECTED", {
     code: "OPERATION_CONTENT_CONFLICT",
     action: "STOP_AND_INVESTIGATE",
     target: null,
@@ -74,7 +74,8 @@ const staleRefusal: Diagnostic = {
   limits: {},
 };
 
-const rejectedResponse = (rejection: Diagnostic) => response("case.preview", "REJECTED", rejection);
+const rejectedResponse = (rejection: Diagnostic) =>
+  response("operation.preview", "REJECTED", rejection);
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 

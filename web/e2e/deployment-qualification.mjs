@@ -7,6 +7,7 @@ import process from "node:process";
 import { chromium } from "@playwright/test";
 
 const [root, owned] = process.argv.slice(2);
+const { consumerContractIdentity } = await import(path.join(root, "contracts/client.ts"));
 const configuration = path.join(owned, "configuration $CLAIMCORE_QA_PATH # :, \" \\\' end\\");
 const composeFile = path.join(root, "deployment/compose.yaml");
 const cleanupImage = JSON.parse(
@@ -197,10 +198,7 @@ const login = async (context, origin) => {
   }
 };
 const qualify = async (origin, ca) => {
-  const fingerprint = readFileSync(
-    path.join(root, "contracts/contract-identity.txt"),
-    "utf8",
-  ).trim();
+  const fingerprint = consumerContractIdentity;
   if (!/^[0-9a-f]{64}$/u.test(fingerprint)) {
     throw new Error("Invalid generated consumer-contract identity.");
   }

@@ -5,14 +5,7 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("contract mismatch offers explicit reload and never automatically redispatches", async () => {
   vi.mocked(fetch).mockResolvedValueOnce(
     new Response(
-      JSON.stringify({
-        kind: "HOST_FAILURE",
-        code: "CONTRACT_MISMATCH",
-        status: 409,
-        message: "The client contract differs. Reload or use a matching client.",
-        diagnostic: { id: "HOST_CONTRACTMISMATCH", parameters: {} },
-        executionPhase: "NOT_STARTED",
-      }),
+      JSON.stringify({ hostFailure: { code: "CONTRACT_MISMATCH", phase: "NOT_STARTED" } }),
       { status: 409, headers: { "content-type": "application/json" } },
     ),
   );

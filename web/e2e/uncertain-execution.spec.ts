@@ -10,7 +10,7 @@ const dropFirstReply = async (
   requests: (string | null)[],
   observe: (value: unknown) => void,
 ) => {
-  await page.route("**/api/case.execute", async (route) => {
+  await page.route("**/api/operation.execute", async (route) => {
     requests.push(route.request().postData());
     if (requests.length === 1) {
       const response = await route.fetch({ maxRedirects: 0 });
@@ -24,24 +24,19 @@ const dropFirstReply = async (
 };
 
 const refuseRetryBeforeDispatch = async (page: Page, requests: (string | null)[]) => {
-  await page.unroute("**/api/case.execute");
-  await page.route("**/api/case.execute", async (route) => {
+  await page.unroute("**/api/operation.execute");
+  await page.route("**/api/operation.execute", async (route) => {
     requests.push(route.request().postData());
     await route.fulfill({
       status: 409,
       contentType: "application/json",
       body: JSON.stringify({
-        kind: "HOST_FAILURE",
-        code: "CONTRACT_MISMATCH",
-        status: 409,
-        message: "Synthetic contract refusal",
-        diagnostic: { id: "HOST_CONTRACTMISMATCH", parameters: {} },
-        executionPhase: "NOT_STARTED",
+        hostFailure: { code: "CONTRACT_MISMATCH", phase: "NOT_STARTED" },
       }),
     });
   });
   const refused = page.waitForResponse(
-    (response) => response.url().endsWith("/api/case.execute") && response.status() === 409,
+    (response) => response.url().endsWith("/api/operation.execute") && response.status() === 409,
   );
   await page.getByRole("button", { name: "Retry the same operation", exact: true }).click();
   await (await refused).finished();
@@ -57,11 +52,23 @@ const refuseRetryBeforeDispatch = async (page: Page, requests: (string | null)[]
   ).toBeFocused();
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Back to case", exact: true })).toHaveCount(0);
-  await page.unroute("**/api/case.execute");
-  await page.route("**/api/case.execute", async (route) => {
+  await page.unroute("**/api/operation.execute");
+  await page.route("**/api/operation.execute", async (route) => {
     requests.push(route.request().postData());
     await route.continue();
   });
+};
+
+const expectUnknownOperation = async (page: Page) => {
+  await expect(
+    page.getByRole("heading", {
+      name: "The operation outcome is unknown. Retry the exact same operation.",
+      exact: true,
+    }),
+  ).toBeFocused();
+  await expect(
+    page.getByRole("button", { name: "Retry the same operation", exact: true }),
+  ).toHaveCount(1);
 };
 
 test("retries one lost accepted reply with the exact reviewed operation and bytes [CC-WEB-001]", async ({
@@ -71,7 +78,7 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   await openCase(page, `UNCERTAIN-${randomUUID()}`);
   await startCommand(page, "Close the case");
   const previewed = page.waitForResponse((response) =>
-    response.url().endsWith("/api/case.preview"),
+    response.url().endsWith("/api/operation.preview"),
   );
   const identity = await reviewDraft(page);
   const original = (await previewed).request().postData();
@@ -84,32 +91,26 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   await page.getByText("I confirm these changes.", { exact: true }).click();
   await page.getByRole("button", { name: "Record changes" }).click();
   await expect(page.getByRole("alert")).toContainText("unknown");
-  await expect(
-    page.getByRole("heading", {
-      name: "The operation outcome is unknown. Retry the exact same operation.",
-      exact: true,
-    }),
-  ).toBeFocused();
-  await expect(
-    page.getByRole("button", { name: "Retry the same operation", exact: true }),
-  ).toHaveCount(1);
-  expect(isResponse("case.execute", accepted)).toBe(true);
-  const first = (accepted as ServiceResponse<"case.execute">).outcome;
+  await expectUnknownOperation(page);
+  expect(isResponse("operation.execute", accepted)).toBe(true);
+  const first = (accepted as ServiceResponse<"operation.execute">).outcome;
   expect(first.tag).toBe("ACCEPTED");
   await refuseRetryBeforeDispatch(page, requests);
-  const replayed = page.waitForResponse((response) => response.url().endsWith("/api/case.execute"));
+  const replayed = page.waitForResponse((response) =>
+    response.url().endsWith("/api/operation.execute"),
+  );
   await page.getByRole("button", { name: "Retry the same operation", exact: true }).click();
   const response = await replayed;
   const replay: unknown = await response.json();
-  expect(isResponse("case.execute", replay)).toBe(true);
-  const second = (replay as ServiceResponse<"case.execute">).outcome;
+  expect(isResponse("operation.execute", replay)).toBe(true);
+  const second = (replay as ServiceResponse<"operation.execute">).outcome;
   expect(second.tag).toBe("ALREADY_ACCEPTED");
   if (first.tag !== "ACCEPTED" || second.tag !== "ALREADY_ACCEPTED") {
     throw new Error("Expected accepted replay.");
   }
   expect(second.data).toEqual(first.data);
   expect(second.data.operationId).toBe(identity.operationId);
-  expect(second.data.revision).toBe(2);
+  expect(second.data.scope.kind === "CASE" ? second.data.scope.revision : null).toBe(2);
   expect(requests).toEqual([original, original, original]);
   await expect(page.getByRole("heading", { name: "Recorded change" })).toBeVisible();
 });

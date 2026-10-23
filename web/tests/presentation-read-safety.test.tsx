@@ -39,12 +39,15 @@ const historyReply = (value: string) => {
       tag: "FULL" as const,
       receipt: {
         ...full.receipt,
-        snapshot: {
-          tag: "DISCLOSED",
-          state: {
-            tag: "LIVE",
-            disposition: "ACTIVE",
-            fields: { ...fields, caseReference: value },
+        scope: {
+          ...full.receipt.scope,
+          snapshot: {
+            disclosure: "DISCLOSED",
+            view: {
+              tag: "LIVE",
+              disposition: "ACTIVE",
+              fields: { ...fields, caseReference: value },
+            },
           },
         },
       },

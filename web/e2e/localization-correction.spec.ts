@@ -51,10 +51,12 @@ const preserveChoice = async (page: Page, modes: Modes) => {
       page.getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true }),
     ).toBeVisible();
     for (const [group, mode] of Object.entries(modes)) {
-      await expect(page.locator(`#correction-${group}-mode`)).toHaveValue(mode);
+      await expect(page.locator(`[name="act.groups.${group}.mode"]`)).toHaveValue(mode);
     }
     if (modes.registration === "REPLACE") {
-      await expect(page.locator('input[name="registration.claimedAmount"]')).toHaveValue("1.0000");
+      await expect(
+        page.locator('input[name="act.groups.registration.values.claimedAmount"]'),
+      ).toHaveValue("1.0000");
     }
   }
   expect(requests).toHaveLength(0);
@@ -70,7 +72,7 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
   if (refusal !== "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED") {
     return;
   }
-  const payment = page.locator("#correction-payment-mode");
+  const payment = page.locator('[name="act.groups.payment.mode"]');
   await expect(payment).toBeFocused();
   await expect(payment).toHaveAttribute("aria-invalid", "true");
   const descriptionId = await payment.getAttribute("aria-describedby");
@@ -102,7 +104,7 @@ for (const status of ["CLOSED"] as const) {
         await chooseGroups(page, modes, language);
         await preserveChoice(page, modes);
         await selectLanguage(page, language);
-        const pending = await pauseJsonReply(page, "case.preview");
+        const pending = await pauseJsonReply(page, "operation.preview");
         await page
           .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
           .click();
@@ -113,7 +115,7 @@ for (const status of ["CLOSED"] as const) {
           expect(captured.reply.outcome.tag).toBe("REVIEWED");
           await confirmReview(page);
           const recorded = page.waitForResponse(
-            (response) => new URL(response.url()).pathname === "/api/case.execute",
+            (response) => new URL(response.url()).pathname === "/api/operation.execute",
           );
           await page
             .getByRole("button", { name: ui(language, "ui.submitExact"), exact: true })
@@ -125,7 +127,7 @@ for (const status of ["CLOSED"] as const) {
           expect(acceptedHistory).toHaveLength(before.revision + 1);
           expect(
             acceptedHistory.some(
-              (entry) => entry.tag === "FULL" && entry.receipt.act === "CORRECT_CASE",
+              (entry) => entry.tag === "FULL" && entry.receipt.scope.act === "CORRECT_CASE",
             ),
           ).toBe(true);
         } else {

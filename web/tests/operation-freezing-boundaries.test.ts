@@ -1,73 +1,25 @@
 import { expect, it } from "vitest";
-import { createDraft } from "../src/interaction/metadata";
 import { prepareRequest } from "../src/protocol/preparedRequest";
-import { initialOperation, operationReducer } from "../src/interaction/operationReducer";
-import { firstId, secondId, refused, begin, reviewed } from "./operation-identity.fixtures";
-import { groupedCorrectionValues } from "./service-foundation.fixtures";
-
-it("detaches replacement group values so later authoring cannot change a frozen request", () => {
-  const authored = {
-    ...groupedCorrectionValues,
-    registration: {
-      mode: "REPLACE" as const,
-      values: { claimantName: "Before", claimedAmount: "1.0000" },
-    },
+import { valuesFor, requestFor } from "./operation-form.fixtures";
+it("detaches replacement values and preserves decimal spelling after authoring changes", () => {
+  const values = {
+    ...valuesFor("CORRECT_CASE"),
+    "act.groups.registration.mode": "REPLACE",
+    "act.groups.registration.values.claimantName": "Before",
+    "act.groups.registration.values.claimedAmount": "1.0000",
   };
-  const draft = createDraft(firstId, "CASE-1", 3, "CORRECT_CASE", authored);
-  const frozen = prepareRequest("case.execute", draft).input;
-  if (draft.act.kind !== "CORRECT_CASE" || draft.act.groups.registration.mode !== "REPLACE") {
-    throw new Error("Missing authored correction fixture.");
-  }
-  Object.assign(draft.act.groups.registration.values, {
-    claimantName: "After",
-    claimedAmount: "2",
-  });
-  if (frozen.act.kind !== "CORRECT_CASE" || frozen.act.groups.registration.mode !== "REPLACE") {
+  const request = requestFor(values);
+  const prepared = prepareRequest("operation.execute", request);
+  Object.assign(values, { "act.groups.registration.values.claimantName": "After" });
+  if (
+    request.scope !== "CASE" ||
+    request.act.kind !== "CORRECT_CASE" ||
+    request.act.groups.registration.mode !== "REPLACE"
+  ) {
     throw new Error("Missing correction fixture.");
   }
-  expect(frozen.act.groups.registration.values.claimantName).toBe("Before");
-  expect(frozen.act.groups.registration.values.claimedAmount).toBe("1.0000");
-});
-it("forks exposed correction identities when their group modes change after definite refusal", () => {
-  const initial = initialOperation(firstId, "CORRECT_CASE", groupedCorrectionValues, "CASE-1");
-  const exposed = refused(begin(initial, 1), 1);
-  const changed = operationReducer(exposed, {
-    type: "SET_CORRECTION_MODE",
-    group: "payment",
-    mode: "CLEAR",
-    nextOperationId: secondId,
-  });
-  expect(changed.operationId).toBe(secondId);
-  expect(changed.exposedRequest).toBeNull();
-});
-it("refuses submission transitions when no exact reviewed request exists", () => {
-  const editing = initialOperation(firstId, "CLOSE", {}, "CASE-1");
-  expect(operationReducer(editing, { type: "SUBMITTING", requestId: 9 })).toBe(editing);
-  const reviewing = { ...editing, delivery: "REVIEWING" as const, exposedRequest: null };
-  expect(operationReducer(reviewing, { type: "SUBMITTING", requestId: 9 })).toBe(reviewing);
-});
-it("enters submitting with the exact reviewed request and makes authoring unavailable", () => {
-  const reviewing = reviewed();
-  const submitting = operationReducer(reviewing, { type: "SUBMITTING", requestId: 9 });
-  expect(submitting).toEqual({
-    ...reviewing,
-    mutation: {
-      phase: "SUBMITTING",
-      prepared: reviewing.prepared,
-      requestId: 9,
-      prior: "NOT_SENT",
-    },
-    delivery: "SUBMITTING",
-    message: null,
-    fieldError: null,
-    pending: { kind: "SUBMIT", requestId: 9 },
-  });
-  expect(submitting.exposedRequest).toBe(reviewing.exposedRequest);
-  expect(
-    operationReducer(submitting, {
-      type: "EDIT_REFERENCE",
-      value: "OTHER",
-      nextOperationId: secondId,
-    }),
-  ).toBe(submitting);
+  Object.assign(request.act.groups.registration.values, { claimantName: "Changed" });
+  expect(prepared.bytes).toContain('"claimantName":"Before"');
+  expect(prepared.bytes).toContain('"claimedAmount":"1.0000"');
+  expect(prepared.input).not.toBe(request);
 });

@@ -75,7 +75,7 @@ it("renders every specific diagnostic using only its closed safe parameter contr
         range.enum?.[0] ?? range.minimum ?? 0,
       ]),
     );
-    const diagnostic = { code: id, limits: values } as DiagnosticNotice;
+    const diagnostic = { code: id.slice(id.indexOf(".") + 1), limits: values } as DiagnosticNotice;
     for (const language of languages) {
       const p = { ...defaults, language };
       expect(renderNotice(p, { kind: "diagnostic", diagnostic })).not.toBe(

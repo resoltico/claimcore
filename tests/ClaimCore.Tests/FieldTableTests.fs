@@ -115,13 +115,7 @@ let private locales () =
     let directory =
         Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Contract/Localization")
 
-    for row in FieldTable.rows do
-        for key in [ FieldTable.labelId row.Field; FieldTable.meaningId row.Field ] do
-            Expect.isFalse
-                (String.IsNullOrEmpty(MessageText.literal key))
-                "English field message exists"
-
-    for language in [ "lv"; "ar" ] do
+    for language in LocalizationPolicy.languages do
         use document =
             JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, language + ".field.json")))
 

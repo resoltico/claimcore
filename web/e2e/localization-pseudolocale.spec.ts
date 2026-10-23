@@ -26,9 +26,9 @@ const startPseudo = async (page: Page) => {
     claimedCurrency: "EUR",
   };
   for (const [name, value] of Object.entries(values)) {
-    await page.locator(`input[name="${name}"]`).fill(value);
+    await page.locator(`input[data-field-name="${name}"]`).fill(value);
   }
-  const pending = await pauseJsonReply(page, "case.preview");
+  const pending = await pauseJsonReply(page, "operation.preview");
   await page.locator('.operation-editor button[type="submit"]').click();
   const captured = await pending.ready;
   const identity = reviewFrom(captured.reply, captured.bytes);
@@ -54,7 +54,7 @@ test("authors and prepares in seeded pseudolocale then switches out with draft, 
   await expect(dialog).toContainText(identity.operationId);
 
   for (const [name, value] of Object.entries(values)) {
-    await expect(page.locator(`input[name="${name}"]`)).toHaveValue(value);
+    await expect(page.locator(`input[data-field-name="${name}"]`)).toHaveValue(value);
   }
   expect(requests).toHaveLength(0);
   await expect(page.locator('option[value="en-XA"]')).toHaveCount(0);

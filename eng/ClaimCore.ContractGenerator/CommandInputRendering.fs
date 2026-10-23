@@ -48,9 +48,7 @@ module internal CommandInputRendering =
             |> List.iter (fun group ->
                 writer.WriteStartObject()
                 writer.WriteString("name", CorrectionGroup.token group.Name)
-                writer.WriteString("label", (AuthoredMessages.literal group.LabelId))
                 writer.WriteString("labelId", group.LabelId)
-                writer.WriteString("meaning", (AuthoredMessages.literal group.MeaningId))
                 writer.WriteString("meaningId", group.MeaningId)
                 writer.WritePropertyName("actions")
                 writer.WriteStartArray()

@@ -64,10 +64,11 @@ let private replayAndSpelling (store: MemoryLedgerStore.Store) (fixture: Fixture
     }
 
 let private rawOpening =
-    """{"operationId":"80000000-0000-4000-8000-000000000010","caseReference":"UNIT-001","expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"LV","claimantName":"Synthetic Party","insurerName":"Synthetic Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}"""
+    """{"scope":"CASE","operationId":"80000000-0000-4000-8000-000000000010","caseReference":"UNIT-001","expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"LV","claimantName":"Synthetic Party","insurerName":"Synthetic Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}"""
 
 let private respelledOpening =
     """{
+      "scope": "CASE",
       "act": {
         "values": {
           "claimedCurrency": "EUR", "claimedAmount": "1000.00",
@@ -82,11 +83,12 @@ let private respelledOpening =
     }"""
 
 let private decodeWire (text: string) =
-    ClaimCore.Contract.Protocol.Admission.admit
-        ClaimCore.Contract.Protocol.Endpoint.CaseExecute
+    Codec.decode
+        Limits.MaximumRequestBytes
+        Api.operationExecute.Input
         (Text.Encoding.UTF8.GetBytes text)
     |> Result.map (function
-        | ClaimCore.Contract.Protocol.WireRequest.CaseExecute value -> value
+        | OperationInput.Case value -> value
         | _ -> failtest "Expected a case execution request")
     |> Result.defaultWith (fun _ -> failtest "Synthetic raw request must decode")
 

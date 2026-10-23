@@ -17,7 +17,7 @@ const fill = async (page: Page, values: Readonly<Record<string, string>>): Promi
   }
 };
 
-type SubmitOutcome = ServiceResponse<"case.execute">["outcome"];
+type SubmitOutcome = ServiceResponse<"operation.execute">["outcome"];
 
 const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.tag;
 
@@ -38,7 +38,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   }
   await progress("confirm-checked");
   const responseEvent = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/case.execute",
+    (response) => new URL(response.url()).pathname === "/api/operation.execute",
     { timeout: 10_000 },
   );
   await progress("submit-dispatch");
@@ -48,7 +48,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
     throw new Error("E2E_SUBMIT_HTTP_FAILURE");
   }
   const payload: unknown = await response.json();
-  if (!isResponse("case.execute", payload)) {
+  if (!isResponse("operation.execute", payload)) {
     throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
   }
   const { outcome } = payload;
@@ -87,11 +87,13 @@ export const reviewDraft = async (
 ): Promise<ReviewIdentity> => {
   await fill(page, values);
   await progress("preview-dispatch");
-  const event = page.waitForResponse((response) => response.url().endsWith("/api/case.preview"));
+  const event = page.waitForResponse((response) =>
+    response.url().endsWith("/api/operation.preview"),
+  );
   await page.getByRole("button", { name: "Review changes" }).click();
   const response = await event;
   const payload: unknown = await response.json();
-  if (response.status() !== 200 || !isResponse("case.preview", payload)) {
+  if (response.status() !== 200 || !isResponse("operation.preview", payload)) {
     throw new Error("E2E_PREVIEW_PROTOCOL_FAILURE");
   }
   const { outcome } = payload;

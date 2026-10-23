@@ -3,12 +3,14 @@ import { caseOffers } from "./case-advice.fixtures";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createPresenter } from "../src/presentation/presenter";
+import { defaults } from "../src/presentation/preferences";
 import { App } from "../src/App";
 import type { CurrentCase } from "../src/api/service";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
 import { DescriptorField } from "../src/components/DescriptorField";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { generatedResponse } from "./contract-corpus.fixtures";
+import { wireResponse } from "./contract-corpus.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
 import { context, definition, fields, runtime, response } from "./service-ui.fixtures";
 
@@ -42,8 +44,12 @@ describe("metadata-driven descriptor rendering", () => {
     expect(input).toHaveValue("2026-09-01");
     const descriptionId = input.getAttribute("aria-describedby");
     expect(descriptionId).not.toBeNull();
-    expect(document.getElementById(descriptionId ?? "")).toHaveTextContent(incident.meaning);
-    expect(screen.getAllByText(incident.meaning)).toHaveLength(2);
+    expect(document.getElementById(descriptionId ?? "")).toHaveTextContent(
+      createPresenter(defaults).fieldMeaning(incident.name),
+    );
+    expect(screen.getAllByText(createPresenter(defaults).fieldMeaning(incident.name))).toHaveLength(
+      2,
+    );
     expect(screen.getByText("CASE-1")).toBeVisible();
   });
 });
@@ -53,7 +59,7 @@ const acceptsOperation = async (): Promise<void> => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockImplementationOnce(
     previewForRequest(
-      response("case.preview", "REVIEWED", {
+      response("operation.preview", "REVIEWED", {
         review: {
           before: {
             caseReference: fields.caseReference,
@@ -71,7 +77,7 @@ const acceptsOperation = async (): Promise<void> => {
       }),
     ),
   );
-  fetch.mockResolvedValueOnce(generatedResponse("case.execute"));
+  fetch.mockResolvedValueOnce(wireResponse("operation.execute"));
   const committed = vi.fn();
   render(
     <OperationEditor

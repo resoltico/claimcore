@@ -29,6 +29,7 @@ module CliCommands =
             "configuration"
             "delivery"
             "examples"
+            "verbs"
         ]
         @ diagnosticTopics
 

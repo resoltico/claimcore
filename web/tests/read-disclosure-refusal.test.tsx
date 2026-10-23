@@ -11,7 +11,6 @@ const initial: ApiResult<ListResponse> = {
   kind: "outcome",
   status: 200,
   value: {
-    endpoint: "case.list",
     outcome: {
       tag: "SUCCEEDED",
       data: {
@@ -38,7 +37,6 @@ const unavailable: ApiResult<ListResponse> = {
   kind: "outcome",
   status: 200,
   value: {
-    endpoint: "case.list",
     outcome: {
       tag: "REJECTED",
       data: {
@@ -56,12 +54,8 @@ const sessionRejected: ApiResult<ListResponse> = {
   kind: "hostFailure",
   status: 401,
   failure: {
-    kind: "HOST_FAILURE",
     code: "SESSION_REJECTED",
-    status: 401,
-    message: "Translated text is not the policy",
-    diagnostic: { id: "HOST_SESSIONREJECTED", parameters: {} },
-    executionPhase: "NOT_STARTED",
+    phase: "NOT_STARTED",
   },
 };
 
@@ -119,7 +113,6 @@ it("resets an invalid continuation locally and waits for a deliberate fresh relo
     kind: "outcome",
     status: 200,
     value: {
-      endpoint: "case.list",
       outcome: {
         tag: "REJECTED",
         data: {

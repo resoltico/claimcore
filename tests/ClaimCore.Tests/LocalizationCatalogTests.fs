@@ -161,7 +161,7 @@ let private embeddedCatalogs () =
                     |> String.concat ""
 
                 Expect.equal
-                    (ContractDiscovery.localized language key "unused fallback")
+                    (ContractDiscovery.localized language key)
                     expected
                     "The shipped CLI embeds every authored message, including English."
 
