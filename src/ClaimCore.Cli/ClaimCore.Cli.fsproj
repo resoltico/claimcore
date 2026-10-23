@@ -6,6 +6,7 @@
     <Compile Include="ClientFailures.fs" />
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="FrameReader.fs" />
+    <Compile Include="MessageCatalogs.fs" />
     <Compile Include="ContractDiscovery.fs" />
     <Compile Include="DescriptorText.fs" />
     <Compile Include="Discovery.fs" />
@@ -26,9 +27,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="../../contracts/locale.*.json" LogicalName="ClaimCore.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="../../contracts/cli-help.json" LogicalName="ClaimCore.cli-help.json" />
-    <EmbeddedResource Include="../../contracts/cli-messages.json" LogicalName="ClaimCore.cli-messages.json" />
+    <EmbeddedResource Include="../ClaimCore.Contract/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
     <EmbeddedResource Include="../../contracts/descriptors.json" LogicalName="ClaimCore.descriptors.json" />
     <EmbeddedResource Include="../../contracts/openapi.json" LogicalName="ClaimCore.openapi.json" />
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />

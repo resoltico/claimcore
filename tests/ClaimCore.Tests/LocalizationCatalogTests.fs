@@ -3,6 +3,7 @@ module ClaimCore.Tests.LocalizationCatalogTests
 open System.IO
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Cli
 open ClaimCore.TestSupport
 
 let private directory () =
@@ -146,6 +147,37 @@ let private cliArguments () =
                     (Set.isSubset arguments limits)
                     "Help holes come only from authoritative byte limits."
 
+let private embeddedCatalogs () =
+    for language in LocalizationPolicy.languages do
+        for family in families do
+            for key, source in entries language family do
+                let template = Template.parse source |> Fixtures.accepted
+
+                let expected =
+                    Template.parts template
+                    |> List.map (function
+                        | TemplatePart.Literal text -> text
+                        | TemplatePart.Hole name -> "{" + name + "}")
+                    |> String.concat ""
+
+                Expect.equal
+                    (ContractDiscovery.localized language key "unused fallback")
+                    expected
+                    "The shipped CLI embeds every authored message, including English."
+
+        for topic in CliHelp.topics do
+            let text = ContractDiscovery.helpTopic language topic
+            Expect.isGreaterThan text.Length 100 "Every admitted help topic renders offline."
+            Expect.isFalse (text.Contains "{maximum") "Help interpolates its authoritative bounds."
+
+    let delivery = ContractDiscovery.helpTopic "en" "delivery"
+    Expect.stringContains delivery "prepared request bytes" "Help describes the frozen body."
+    Expect.stringContains delivery "call --retry" "Prior uncertainty has an explicit retry path."
+
+    Expect.isFalse
+        (delivery.Contains "original request bytes")
+        "Lexical input is not the frozen body."
+
 [<Tests>]
 let tests =
     testList
@@ -155,4 +187,5 @@ let tests =
             testCase "all catalog templates retain language parity" interpolation
             testCase "refusal fault and host producers match templates" producers
             testCase "CLI template arguments match their producers" cliArguments
+            testCase "CLI embeds and renders the authored catalogs" embeddedCatalogs
         ]

@@ -20,39 +20,12 @@ module ContractDiscovery =
         output.ToArray()
 
     let message identity =
-        use document =
-            JsonDocument.Parse(System.ReadOnlyMemory<byte>(resource "cli-messages.json"))
+        MessageCatalogs.render "en" identity Map.empty
 
-        document.RootElement.GetProperty(identity: string).GetString() |> nonNull
+    let helpTopic language topic = MessageCatalogs.help language topic
 
-    let helpTopic language topic =
-        use document =
-            JsonDocument.Parse(System.ReadOnlyMemory<byte>(resource "cli-help.json"))
-
-        document.RootElement.GetProperty(language + "." + topic).GetString() |> nonNull
-
-    let localized language identity fallback =
-        let diagnostic =
-            ClaimCore.Contract.CliHelp.diagnosticTopics
-            |> List.tryFind (fun id -> identity = "diagnostic." + id)
-
-        if diagnostic.IsSome then
-            helpTopic language ("diagnostic." + diagnostic.Value)
-        elif language = "en" then
-            fallback
-        else
-            let domain = (identity: string).Split('.')[0]
-
-            use document =
-                JsonDocument.Parse(
-                    System.ReadOnlyMemory<byte>(
-                        resource ("locale." + language + "." + domain + ".json")
-                    )
-                )
-
-            match document.RootElement.TryGetProperty identity with
-            | true, text -> text.GetString() |> nonNull
-            | _ -> fallback
+    let localized language identity _fallback =
+        MessageCatalogs.template language identity
 
     let descriptors () = resource "descriptors.json"
     let private openapi () = resource "openapi.json"
