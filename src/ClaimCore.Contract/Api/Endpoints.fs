@@ -136,3 +136,38 @@ module Api =
             boxed authorityList
             boxed authorityGrants
         ]
+
+    let id (endpoint: AnyEndpoint) =
+        endpoint.Accept
+            { new IEndpointVisitor<string> with
+                member _.Visit value = value.Id
+            }
+
+    let method (endpoint: AnyEndpoint) =
+        endpoint.Accept
+            { new IEndpointVisitor<HttpMethod> with
+                member _.Visit value = value.Method
+            }
+
+    let mutates (endpoint: AnyEndpoint) =
+        endpoint.Accept
+            { new IEndpointVisitor<bool> with
+                member _.Visit value = value.Mutates
+            }
+
+    let tryFind name =
+        all |> List.tryFind (fun endpoint -> id endpoint = name)
+
+    let admitInput (endpoint: AnyEndpoint) value =
+        endpoint.Accept
+            { new IEndpointVisitor<Result<unit, Problem>> with
+                member _.Visit endpoint =
+                    endpoint.Input.Read "$" value |> Result.map ignore
+            }
+
+    let admitOutput (endpoint: AnyEndpoint) value =
+        endpoint.Accept
+            { new IEndpointVisitor<Result<unit, Problem>> with
+                member _.Visit endpoint =
+                    endpoint.Output.Read "$" value |> Result.map ignore
+            }

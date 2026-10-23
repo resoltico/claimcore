@@ -27,6 +27,7 @@
     <Compile Include="Json/Writers.fs" />
     <Compile Include="Json/Codec.fs" />
     <Compile Include="Json/SchemaJson.fs" />
+    <Compile Include="Api/Limits.fs" />
     <Compile Include="Endpoint.fs" />
     <Compile Include="Delivery.fs" />
     <Compile Include="Model/CaseInputs.fs" />
@@ -50,6 +51,7 @@
     <Compile Include="Codecs/ReceiptCodecs.fs" />
     <Compile Include="Codecs/ReplyCodecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
+    <Compile Include="Api/Correlation.fs" />
     <Compile Include="Replies.fs" />
     <Compile Include="CorrelationBindings.fs" />
     <Compile Include="CorrelationEvaluation.fs" />
@@ -60,6 +62,7 @@
     <Compile Include="Api/ContractIdentity.fs" />
     <Compile Include="HttpsOrigins.fs" />
     <Compile Include="Frames.fs" />
+    <Compile Include="Cli/Frames.fs" />
     <Compile Include="CliInvocation.fs" />
     <Compile Include="OpenApi.fs" />
     <Compile Include="ConsumerContract.fs" />

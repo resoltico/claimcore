@@ -85,13 +85,10 @@ let private fullHistoryBudget () =
 
     Expect.isLessThan
         bound
-        ClaimCore.Contract.Protocol.Limits.MaximumResponseBytes
+        ClaimCore.Contract.Limits.MaximumResponseBytes
         "All fifty entries fit the response limit"
 
-    Expect.equal
-        ClaimCore.Contract.Protocol.Limits.MaximumResponseBytes
-        4194304
-        "Public response limit"
+    Expect.equal ClaimCore.Contract.Limits.MaximumResponseBytes 4194304 "Public response limit"
 
     Expect.equal FormatLimits.MaximumPayloadBytes 32768 "Permanent framed payload bound"
 
@@ -147,12 +144,12 @@ let private boundedAuthority () =
 
     Expect.isLessThan
         (actors 50).Length
-        ClaimCore.Contract.Protocol.Limits.MaximumResponseBytes
+        ClaimCore.Contract.Limits.MaximumResponseBytes
         "Maximal admitted actor headers fit"
 
     Expect.isLessThan
         (grants 50).Length
-        ClaimCore.Contract.Protocol.Limits.MaximumResponseBytes
+        ClaimCore.Contract.Limits.MaximumResponseBytes
         "Maximal scoped grants and target header fit"
 
     Expect.throws (fun () -> actors 51 |> ignore) "Actor overproduction refuses, never truncates"

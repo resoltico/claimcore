@@ -55,6 +55,7 @@
     <Compile Include="DisclosureTests.fs" />
     <Compile Include="PaginationTests.fs" />
     <Compile Include="EndpointRegistryTests.fs" />
+    <Compile Include="RegistryFrameTests.fs" />
     <Compile Include="ContractTests.fs" />
     <Compile Include="PayloadBudgetTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
