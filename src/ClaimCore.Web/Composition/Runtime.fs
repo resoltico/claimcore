@@ -1,4 +1,4 @@
-namespace ClaimCore.Hosting
+namespace ClaimCore.Web.Composition
 
 open ClaimCore.Contract
 
@@ -20,7 +20,7 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
 
     interface IRuntime with
         member _.Actor principal =
-            Core.create
+            ClaimCore.Application.Core.create
                 storage.Installation.InstallationId
                 (ClaimCore.Postgres.Runtime.store storage)
                 calendar

@@ -1,4 +1,4 @@
-namespace ClaimCore.Hosting
+namespace ClaimCore.Web.Composition
 
 open System
 open System.Threading.Tasks

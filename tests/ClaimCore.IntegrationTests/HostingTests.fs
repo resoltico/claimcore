@@ -6,7 +6,7 @@ open System
 open System.Threading
 open Expecto
 open Npgsql
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreContractTests
 
@@ -45,7 +45,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
             accepted result |> ignore
 
         let! first =
-            ClaimCore.Hosting.Runtime.openConnection (connectionString database) token
+            ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
         use first = first |> Result.defaultWith (fun _ -> failtest "Runtime refused")
 
@@ -68,7 +68,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         | _ -> failtest "Same-runtime continuation refused"
 
         let! second =
-            ClaimCore.Hosting.Runtime.openConnection (connectionString database) token
+            ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
         use second =
             second |> Result.defaultWith (fun _ -> failtest "Second runtime refused")
@@ -86,7 +86,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 let private readinessCancellation database =
     task {
         let! opened =
-            ClaimCore.Hosting.Runtime.openConnection (connectionString database) token
+            ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
         use runtime = opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
         use! owner = database.OwnerSource.OpenConnectionAsync token
@@ -144,7 +144,7 @@ let tests =
                         let started = Diagnostics.Stopwatch.StartNew()
 
                         let! opened =
-                            ClaimCore.Hosting.Runtime.openConnection
+                            ClaimCore.Web.Composition.Runtime.openConnection
                                 (connectionString database)
                                 token
 
@@ -183,7 +183,7 @@ let tests =
                         let! _ = caseWorker database.Fixture
 
                         let! opened =
-                            ClaimCore.Hosting.Runtime.openConnection
+                            ClaimCore.Web.Composition.Runtime.openConnection
                                 (connectionString database)
                                 token
 
@@ -253,7 +253,7 @@ let tests =
                             let! _ = DatabaseSession.execute connection change [||] token
 
                             let! opened =
-                                ClaimCore.Hosting.Runtime.openConnection
+                                ClaimCore.Web.Composition.Runtime.openConnection
                                     (connectionString database)
                                     token
 
@@ -267,7 +267,7 @@ let tests =
                 "remote unverified transport and pre-cancellation have typed faults"
                 (async {
                     let! opened =
-                        ClaimCore.Hosting.Runtime.openConnection
+                        ClaimCore.Web.Composition.Runtime.openConnection
                             "Host=remote.example;SSL Mode=Require"
                             token
                         |> Async.AwaitTask
@@ -281,7 +281,9 @@ let tests =
                     cancelled.Cancel()
 
                     let! result =
-                        ClaimCore.Hosting.Runtime.openConnection "Host=localhost" cancelled.Token
+                        ClaimCore.Web.Composition.Runtime.openConnection
+                            "Host=localhost"
+                            cancelled.Token
                         |> Async.AwaitTask
 
                     Expect.equal
@@ -296,7 +298,7 @@ let tests =
                         let! _ = caseWorker database.Fixture
 
                         let! opened =
-                            ClaimCore.Hosting.Runtime.openConnection
+                            ClaimCore.Web.Composition.Runtime.openConnection
                                 (connectionString database)
                                 token
 

@@ -1,4 +1,4 @@
-namespace ClaimCore.Hosting
+namespace ClaimCore.Web.Composition
 
 open ClaimCore.Contract
 open ClaimCore.Application

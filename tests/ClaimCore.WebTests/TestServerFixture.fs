@@ -163,7 +163,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
         HostRoutes.map
             assets
             (configuration certificate)
-            (ClaimCore.Hosting.ServiceGateway.bind (fun principal ->
+            (ClaimCore.Web.Composition.ServiceGateway.bind (fun principal ->
                 facade.Principal <- Some principal
 
                 match forActor with

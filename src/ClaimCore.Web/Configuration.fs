@@ -10,7 +10,7 @@ open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
 open System.Globalization
 open ClaimCore.HostSecurity
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 [<NoEquality; NoComparison>]
 type WebAdmissionLimits =

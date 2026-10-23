@@ -85,7 +85,7 @@ let private semanticTypes includeHosting =
             .ResideInAssembly(Assembly.Load "ClaimCore.Postgres")
 
     if includeHosting then
-        forbidden.Or().ResideInAssembly(Assembly.Load "ClaimCore.Hosting")
+        forbidden.Or().ResideInAssembly(Assembly.Load "ClaimCore.Web")
     else
         forbidden
 
@@ -100,7 +100,7 @@ let rule name (subjects: IObjectProvider<IType>) =
         clauses.NotDependOnAny(Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Postgres"))
         :> IArchRule
     | "onlyTheseMayReferenceHosting" ->
-        clauses.NotDependOnAny(Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Hosting"))
+        clauses.NotDependOnAny(Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Web"))
         :> IArchRule
     | "onlyTheseMayUseTimeZoneInfo" ->
         clauses.NotDependOnAny(Types().That().HaveFullName("System.TimeZoneInfo")) :> IArchRule

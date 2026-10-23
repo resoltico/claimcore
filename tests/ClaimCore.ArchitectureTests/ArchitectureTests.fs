@@ -87,7 +87,7 @@ let private graphTests =
             finally
                 directory.Delete true)
         testCase "client protocol facade signatures hide semantic types" (fun () ->
-            typeof<ClaimCore.Hosting.IServiceRuntime>.Assembly.GetExportedTypes()
+            typeof<ClaimCore.Web.Composition.IServiceRuntime>.Assembly.GetExportedTypes()
             |> Array.toList
             |> FacadeSignatures.check
 
@@ -146,7 +146,7 @@ let private graphTests =
                         "ClaimCore.Application"
                         "ClaimCore.RecordFormat"
                         "ClaimCore.Contracts"
-                        "ClaimCore.Hosting"
+                        "ClaimCore.Web"
                         "ClaimCore.Postgres"
                     ]
 
@@ -234,7 +234,7 @@ let private positiveRules =
                     then
                         false
                     elif
-                        name = "onlyTheseMayReferenceHosting" && project = "ClaimCore.Hosting"
+                        name = "onlyTheseMayReferenceHosting" && project = "ClaimCore.Web"
                     then
                         false
                     else

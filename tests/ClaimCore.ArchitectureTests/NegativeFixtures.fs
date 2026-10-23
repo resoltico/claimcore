@@ -9,7 +9,7 @@ type PostgresReference =
 
 type HostingReference =
     static member Target() =
-        typeof<ClaimCore.Hosting.IServiceRuntime>
+        typeof<ClaimCore.Web.Composition.IServiceRuntime>
 
 type ClockCall =
     static member Read() = DateTimeOffset.UtcNow

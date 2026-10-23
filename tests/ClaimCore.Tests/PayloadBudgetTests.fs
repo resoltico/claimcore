@@ -5,7 +5,7 @@ open ClaimCore.Contract
 open System
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 

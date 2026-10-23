@@ -16,7 +16,7 @@ open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
 open Microsoft.AspNetCore.StaticFiles
 open Microsoft.Extensions.DependencyInjection
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 module HostRoutes =
     let internal loginReturnProperties () =

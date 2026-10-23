@@ -9,7 +9,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.RecordFormat
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.Tests.ApplicationFixtures
 

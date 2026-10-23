@@ -8,7 +8,7 @@ open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 module internal ApiRoutes =
     let handshake (context: HttpContext) =

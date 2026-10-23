@@ -130,7 +130,7 @@ type Host(configuration: OidcConfiguration, root: X509Certificate2, forActor, st
             }
 
         stage "host routes"
-        HostRoutes.map assets web (ClaimCore.Hosting.ServiceGateway.bind forActor) application
+        HostRoutes.map assets web (ClaimCore.Web.Composition.ServiceGateway.bind forActor) application
         authenticationRoutes application configuration
         stage "host start"
         application.StartAsync().GetAwaiter().GetResult()

@@ -50,7 +50,7 @@
     <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
+
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Npgsql" />
   </ItemGroup>

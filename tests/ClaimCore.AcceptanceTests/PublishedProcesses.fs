@@ -57,7 +57,7 @@ let publish root directory name =
                 "ClaimCore.RecordFormat"
                 "ClaimCore.Application"
                 "ClaimCore.Contracts"
-                "ClaimCore.Hosting"
+                "ClaimCore.Web.Composition"
                 "ClaimCore.Postgres"
             ]
 

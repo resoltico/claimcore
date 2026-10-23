@@ -9,7 +9,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.Tests.ApplicationFixtures
 

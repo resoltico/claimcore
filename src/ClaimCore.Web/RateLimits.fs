@@ -12,7 +12,7 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
 open Microsoft.Extensions.DependencyInjection
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 /// One process-wide budget, including cookie authentication and OIDC callbacks.
 type internal DynamicIngress() =

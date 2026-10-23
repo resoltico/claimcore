@@ -46,7 +46,7 @@
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
+
     <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
   </ItemGroup>

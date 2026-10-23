@@ -7,7 +7,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 open ClaimCore.TestSupport.StoreContractTests
 
 let private calendar = BusinessCalendar.resolve "Etc/UTC"

@@ -9,7 +9,7 @@ open System.IO
 open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 [<NoEquality; NoComparison>]
 type internal RequestLogEntry =

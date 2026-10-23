@@ -19,7 +19,7 @@ open Microsoft.AspNetCore.Server.Kestrel.Core
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Hosting
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 let private help () =
     printfn "ClaimCore.Web %s — HTTPS human interface" ServiceIdentity.version

@@ -5,7 +5,7 @@ open ClaimCore.Contract.Protocol
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 [<Sealed>]
 type private EncodedJsonResult(bytes: byte array, status: int) =

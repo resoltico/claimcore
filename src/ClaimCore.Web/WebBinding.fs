@@ -6,7 +6,7 @@ open ClaimCore.Contract.Protocol
 open System
 open System.Net
 open System.Net.Sockets
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 /// Public authority and socket binding are distinct, including through Docker port publication.
 [<NoEquality; NoComparison>]

@@ -11,7 +11,7 @@ open Expecto
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Application
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.Domain

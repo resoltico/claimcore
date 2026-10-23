@@ -7,7 +7,7 @@ open ClaimCore.Contract.Protocol
 open System.IO
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 module internal RouteSupport =
     let private dispatchKey = obj ()

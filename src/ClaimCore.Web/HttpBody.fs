@@ -9,7 +9,7 @@ open System.Threading
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 [<RequireQualifiedAccess>]
 type BodyProblem =
