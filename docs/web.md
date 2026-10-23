@@ -1,101 +1,56 @@
 # Browser and HTTPS host
 
-Web authenticates OIDC authorization-code PKCE sessions and bearer clients, then supplies verified
-subject facts to Hosting’s protocol service. Hosting binds the actor core and renders typed outcomes. Domain/Application own decisions.
-The browser calls the generated contract using cookie credentials, antiforgery and its
-contract identity. It has no database credentials or durable operation store.
+Web owns authentication, technical admission and composition; Domain/Application own decisions. The browser is
+a cookie/antiforgery HTTPS client with no database credentials or durable pending store.
 
 <a id="cc-web-001"></a>
 
 ### CC-WEB-001 — HTTPS admission and typed outcomes
 
-Web requires the configured HTTPS origin, admitted OIDC issuer/audience and matching contract.
-Cookie-authenticated POST requests require antiforgery, including reads; bearer delivery is
-separately authenticated. Method, media type, duplicate/extra members, UTF-8, depth 32 and a
-configurable body limit up to 64 KiB are checked before the core factory. Browser and CLI API
-clients do not follow redirects. Failed dispatch cannot invent a Domain
-outcome. Durable execution continues despite an abandoned HTTP caller; loss of confirmation
-is uncertain. Request logs contain only endpoint, outcome, status, durationMs, actorId and
-operationId. Exception diagnostics contain type and method stack, never exception messages.
+Web requires configured HTTPS origin, OIDC issuer/audience and matching contract identity. Cookie POSTs
+require antiforgery; bearer delivery authenticates separately. Method, media type, closed shape, UTF-8, depth
+32 and configurable body limit up to 64 KiB are checked before core creation. Clients refuse redirects.
+Abandoning an HTTP request does not cancel durable execution; lost confirmation remains uncertain. Safe
+request logs contain endpoint, outcome, status, durationMs, actorId and operationId; exceptions log
+type/method stack without messages or claimant data. `CLAIMCORE_WEB_KEY_RING_DIRECTORY` names an existing
+protected absolute directory. Data-protection keys and encrypted server-side tickets survive restarts;
+[Operations](operations.md#access-review-and-sessions) owns deadlines, protection, logout and single-process
+qualification. Bearer tokens require admitted issuer/audience and JWT/at+jwt type. The human CLI requires sub;
+other clients identify SERVICE actors by the admitted nonconflicting azp/client_id. Duplicate, blank or
+conflicting client claims refuse. IdP authentication grants no ClaimCore authority. [Provider flow
+restrictions](operations.md#access-review-and-sessions) remain operator obligations.
 
-`CLAIMCORE_WEB_KEY_RING_DIRECTORY` is required and names an existing absolute directory without
-group or other write permission. ASP.NET data-protection keys use application name `ClaimCore.Web`;
-encrypted server-side tickets live in its private `sessions` subdirectory. Reuse the directory for
-Web restarts. [Operations](operations.md#access-review-and-sessions) owns session deadlines,
-revocation, single-process qualification and protection of this secret outside database backups.
+One schema form engine and `useOperation` lifecycle serve CASE and AUTHORITY through actual preview, consent
+and execute. Paths come from the OperationInput schema, labels/policy/order from structural descriptors, and
+permitted work from current core advice. Preview never grants commit permission. Authority preview applies the
+same authorization and last-owner constraints as execute. The prepared request freezes exact bytes, operation
+ID and expected revision. Editing an exposed request creates a fresh identity and clears consent. An uncertain
+request blocks editing/rebasing; retry uses exact bytes. Later failures do not clear uncertainty. Only
+correlated exact acceptance or replay resolves it. Explicit warned abandonment is distinct from proving failed
+execution. The request remains only while the page lives; reload/close loses it. Nothing automatically
+replays.
 
-The editor freezes one draft identity and serialized request for review/execution. Editing
-an exposed request creates a fresh identity. Unknown delivery retains one pending request for
-retries of the same bytes while the page is alive; a closed/reloaded page retains no pending
-operation. Contract mismatch blocks this attempt. Resolve any prior uncertainty before reloading: a reload
-loses the in-memory request. Reload before authoring a different request; no draft is replayed automatically. Display safety is distinct
-from business acceptance; authored Unicode is preserved and suspicious code points can be shown as warnings.
+Access refusal/session replacement clears disclosed server views independently from pending bytes. Completion
+from an old actor/target cannot reveal data in the new context. Authority refusal invalidates context, offers
+and actor/grant lists together; revalidation failures wait for explicit reload. Pending authority operations
+survive read remounts. Grant requests load only the selected actor, render that page's target header, and
+clear/abort on actor/token/disclosure changes. Cursor errors reset only their local page; only explicit
+access/session refusal implies wider loss. Fresh authoring requires successful offers; advice retry preserves
+prepared requests.
 
-Current views distinguish live, voided and erased records. Erased views expose reference,
-revision, erased state and authorized core advice; their history exposes metadata without
-business snapshots. Command advertisements are
-advice. The service locks and revalidates execution. The browser offers English, Latvian and
-Arabic with independent date/number formats and right-to-left Arabic layout. Latvian and Arabic
-catalogues are machine-drafted and require native-language review. Pseudolocalization supports
-layout checks. Authority form selects and non-checkbox inputs size to their panel while checkboxes
-retain native dimensions. Stewardship and authority management are reachable browser operations, using typed core advice and descriptor-driven forms.
+Strict response decoding validates bounded UTF-8 bytes and full OpenAPI schemas before correlation. Malformed
+or mismatched mutation replies preserve uncertainty. Current/voided/erased views and DISCLOSED/WITHHELD/ERASED
+receipt snapshots stay distinct. Erasure review repeats live-database limits; WAL, backups and copies remain
+outside ERASE. Observation cannot confirm pending content. English/Latvian/Arabic catalogs share source JSON
+and ICU checks; Latvian/Arabic need native review. RTL, display-format preferences, pseudolocalization,
+country hints and suspicious-Unicode warnings never rewrite business strings. Explicit navigation focuses
+destination headings; background reads do not move focus. Read failures offer in-page retry and views
+default-deny before context succeeds. Transport/operation modules remain independent from views/presentation;
+the service facade owns networking and transitive module checks reject bypasses/platform dependencies in pure
+protocol code.
 
-Bearer tokens require an admitted issuer/audience and `JWT` or `at+jwt` type. The CLI client is
-human and requires `sub`. Other verified clients identify services by client ID; matching single
-`azp`/`client_id` values or their single-claim fallback are accepted. Duplicate, blank or conflicting
-client identities are refused. IdP verification does not register or grant a ClaimCore actor.
-
-The [identity-provider flow restrictions](operations.md#access-review-and-sessions) are part of the
-deployment trust contract. Client classification identifies a client; it does not prove which OAuth
-grant produced a token. Restrict IdP clients before granting SERVICE principals ClaimCore access.
-
-The browser consumes tracked generated types/descriptors and OpenAPI component schemas. Case requests are assembled through codec-checked core input bindings; authority forms use the
-same typed codec schemas. A single schema interpreter validates response shapes.
-Its production decoder starts with bounded strict UTF-8 bytes and preserves integer lexical checks. Missing or unusable mutation receipt data remains uncertain
-and preserves the original retry identity/content. WITHHELD snapshots show
-metadata without fields; ERASED is distinct. Country display hints use localized names where known,
-accept syntactically valid unassigned codes, and explain `ZZ` without imposing membership policy.
-
-Case stewardship uses the preview/review/execute flow. The confirmation dialog names the
-prepared act, shows its exact authored reason and authoritative before/after record state, and repeats
-the owned act meaning, including live-database erasure limits. These values remain separate from
-the business fields. Authority actions use local exact-request
-review and authoritative execute; there is no authority preview endpoint. Confirmation is a local
-consent action, with human/service, last-owner and grant rules enforced by Application. ERASE removes
-live database payload history and does not reach WAL, backups or copies. Display preferences and RTL
-never change request bytes. Operation lookup remains independent from pending-content confirmation.
-
-Interaction modules own local state, focus, consent, exact pending bytes and accumulated delivery
-knowledge while the page remains alive. A retry failure cannot clear earlier uncertainty; correlated
-exact acceptance/replay or content-exclusion evidence is needed. `src/api/transport.ts` owns networking behind the service facade;
-interaction/transport do not import views. Access refusal and session replacement clear stale server
-disclosures. Authority refusals invalidate context, offers and actor listings together, then independently
-revalidate current read and management rights. A refusal during revalidation clears both caches and
-waits for explicit reload; exact authored pending requests and uncertainty remain separate.
-Case lists derive OPEN advice from their own returned page. Actor review loads grant pages only
-for the selected actor and renders that page's current target header. Actor/token/disclosure changes
-abort and clear selected reads without remounting pending authority operations. Unselected actors
-cause no grant requests; partial pages expose load-more/end state and explicit fresh reload.
-An invalid cursor clears only its local page/advice, without inferring global privilege loss.
-Authority advice read failures remain visible with an explicit retry. Fresh authoring requires
-a successful nonempty offer set; retrying advice does not discard or replace a prepared request.
-Generated protocol purity follows the resolved transitive import closure, including JavaScript
-modules, and rejects React, locale, clock, randomness and I/O dependencies. Generated TypeScript
-is included in the normal type-aware lint stage.
-
-Readiness owns two process-wide probe permits with no queue. Saturation returns 503 without
-starting database work; `/health/live` remains independent. Each admitted probe links request
-abort, application stopping and a two-second cancellation deadline through the runtime and
-PostgreSQL commands. The permit remains owned until provider work and connection cleanup finish.
-Two seconds is a cancellation deadline, not a hard response-time guarantee. Readiness checks
-installation/schema access, never case outcomes, freshness or owner approval.
-
-Workspace and current-case read failures offer explicit in-page retry under the current session.
-Views remain default-deny until a successful context read. Explicit navigation focuses destination
-headings; background read completion does not move focus. Authority technical guidance appears
-beside authoring with field focus when explicitly returning to edit. Editing preserves authored
-whitespace and values, clears old consent and requires fresh review; accumulated unresolved
-execution blocks editing even after a later `NOT_STARTED` refusal. Unknown delivery remains the
-primary message, with caller-known support identities and exact retry while this page lives.
-Identity alone proves no acceptance and cannot reconstruct request bytes. Successful lists describe
-only visible scope; only a null continuation establishes its end.
+Readiness permits two concurrent probes without queuing; saturation returns 503 without database work while
+liveness remains independent. Each probe links request abort, shutdown and a two-second cancellation deadline
+through runtime/Postgres cleanup. The permit remains held until cleanup ends; two seconds is a cancellation
+deadline, not a hard response-time guarantee. Readiness establishes installation/schema access, never accepted
+case outcomes, freshness or owner approval.

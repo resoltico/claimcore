@@ -18,10 +18,11 @@ suites independently of lint/unit completion and requires every suite in `Gate`.
 publication copies this common superset without consulting the NuGet cache. Acceptance checks
 the actual publish inventory and rejects missing or unreviewed contributions.
 
-ContractGenerator derives OpenAPI and TypeScript client types from Wire codecs and descriptors
-from Domain/Application. It also references the pure Catalog for shared vocabulary and authored presentation. F# tests check exact artifact
-bytes and inventory without invoking Node. Committed independent Python oracles bind durable bytes,
-delivery and correlation; the generated vectors bind the browser to F# policies.
+ContractGenerator derives OpenAPI and TypeScript from Contract codecs/registry and structural
+descriptors from Domain/Application. It emits exactly three tracked files. Identity hashes canonical
+OpenAPI; source locales are imported/embedded directly. F# tests check exact inventory/bytes without
+Node. The independent Python oracle pins durable records; hand-authored wire examples and independent
+OpenAPI/JSON Schema validators check wire admission.
 Frontend checks include consumed-response guards, localization, notices and accessibility tooling.
 Knip checks unused frontend code. CSS checks cover formatting and browser accessibility/layout;
 the gate performs no dedicated CSS semantic linting.

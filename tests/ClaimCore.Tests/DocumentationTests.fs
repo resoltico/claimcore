@@ -17,6 +17,16 @@ let tests =
                     DocumentationChecks.repository (ClaimCore.TestSupport.RepositoryRoot.find ())
 
                 Expect.isEmpty failures (String.concat "\n" failures))
+            testCase "owner documents stay within the adopted line budget" (fun () ->
+                let docs = Path.Combine(ClaimCore.TestSupport.RepositoryRoot.find (), "docs")
+
+                let lines =
+                    Directory.EnumerateFiles(docs, "*.md")
+                    |> Seq.sumBy (File.ReadLines >> Seq.length)
+
+                let admitted count = count <= 900
+                Expect.isTrue (admitted lines) "Owner documents total at most 900 lines"
+                Expect.isFalse (admitted 901) "An over-budget document set is rejected")
             testCase "a missing relative file is rejected" (fun () ->
                 let failures =
                     DocumentationChecks.links

@@ -4,6 +4,10 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking for installations and clients:** deploy the service, CLI and browser together. This baseline refuses installations created through 0.11.0 untouched; retain them with matching software. No conversion, migration from that baseline or compatibility layer is supplied. Case-request format is 6 and authority format is 3; snapshot 4, ledger-entry 2 and case-identity 2 remain unchanged. Case and authority work share `operation.preview`/`operation.execute` with scoped input and receipts; authority gains authoritative advisory preview. Generic reply envelopes remove CANCELLED and server-authored prose; principal semantics produce typed input rejections. CLI frames expose `delivery` and a typed result. Human case/authority/read verbs support localized text, preview and offline dry-run; uncertain mutation exit 4 prints the exact retry frame last on stderr. Preserve ID, expected revision and frozen bytes across retries; later refusals do not resolve earlier uncertainty. Consumer identity is SHA-256 of canonical OpenAPI, so locale-only edits no longer require structural client replacement. Tracked contracts are exactly OpenAPI, TypeScript and descriptors; generated manifests, policy/vector/corpus files, frame schemas and locale copies are removed. Shared Contract types/codecs, source JSON locales and schema-derived forms/verbs replace duplicate models, mappings and client assembly mechanisms. See [API](docs/api.md), [architecture](docs/architecture.md) and [examples](examples/README.md).
+
 ### Fixed
 
 - Opening an absent case with a positive expected revision returns the revision-conflict rejection, including actual revision zero, instead of an HTTP 500 response-encoding failure. Preview and execution record no operation for this rejection.

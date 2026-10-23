@@ -9,69 +9,18 @@ Read [Contributing](CONTRIBUTING.md) before edits; read [domain](docs/domain.md)
 [architecture](docs/architecture.md) before changing behavior, contracts, persistence or trust
 boundaries. [Development](docs/development.md) owns commands and gates.
 
-## Product boundaries
+## Product contracts
 
-- `CaseFields` has the declared business fields. Revisions, operation IDs, instants,
-  attribution, disposition and available commands remain outside it. Business-text acceptance
-  and display safety are distinct; follow the Domain contract.
-- Domain owns every transition and stewardship decision, including voided/erased refusal. Application owns operation
-  identity, authorization policy and outcomes. Execution decides again against locked
-  authoritative state; a preview, a view or an advertised command is advice. Adapters render
-  outcomes and invent no rules.
-- The ledger is the only record of what was accepted. Every accepted case operation and
-  authority change is exactly one ledger entry, appended in the same transaction that updates the
-  `cases`, `actors` and `grants` projections. Never write a projection alone, never read one as
-  proof of acceptance, and never add a second store that must agree with the ledger at commit.
-- A write is one `READ COMMITTED` transaction that first calls `claimcore.lock_ledger_head()`
-  and only then reads authority, the operation ID and the case. Nothing that a decision depends
-  on is read before the lock.
-- The store locks, loads, calls one pure decision function and persists its result. It never
-  decides. Catalog, Domain, RecordFormat, Application and Wire perform no I/O and read no clock,
-  time zone, environment or randomness; the instant and the payload nonce arrive in the locked
-  view.
-- An operation is its caller-chosen ID plus its RFC 8785 canonical request content. While request content
-  remains retained, an authorized exact replay returns its original acceptance metadata with current
-  snapshot disclosure; different content under a used ID is refused; a rejection records nothing.
-  `OUTCOME_UNKNOWN` means a commit confirmation was lost and nothing else. Never infer that a
-  commit failed, mint a replacement ID, or rebase a request.
-- RecordFormat owns every byte-stable encoding and its canonical JSON writer. A format number
-  identifies one byte grammar and its admissible value set; it changes when either changes. Format
-  dispatch selects supported readers. Before 1.0.0, a release may
-  explicitly refuse older installations untouched. From 1.0.0, keep reading every format a release
-  wrote and ship migrations instead of refusing installations. The entry hash covers the salted
-  payload commitment and never the payload, so erasure
-  leaves the chain verifiable; do not add content-derived data to the hash preimage or to any
-  column that erasure does not clear.
-- Format invariants are checked on admission, decode and verification; SQL mirrors only these.
-  Current text/date admission policy judges newly asserted values only, never accepted history.
-- `VOID`, `REINSTATE` and `ERASE` are stewardship acts on a case record, not business commands.
-  Erasure removes the business payload of a case and its whole history from the live database
-  and retains the reference, revision, and ledger metadata. It does not reach WAL or backups,
-  and the documentation must keep saying so.
-- Actor grants are default-deny, scoped to the installation or one case, and owned by ClaimCore,
-  not the identity provider. They are evaluated under the write lock or in the same snapshot as
-  the read. An inaccessible case or operation has the same public refusal as an absent one. The
-  role-to-capability and act-to-capability tables live in one F# module; SQL never encodes them.
-  Current snapshots require case read; superseded snapshots require full history in the same
-  locked/read context, including replay, execution, preview and observation.
-- `ClaimCore.Hosting` is the only case-work composition root. Only Hosting and Database
-  reference `ClaimCore.Postgres`; only Web references Hosting. Web uses Hosting/Wire/HostSecurity/Catalog;
-  CLI uses Wire/HostSecurity/Catalog. `ClaimCore.Catalog` owns inert shared vocabulary and presentation; `ClaimCore.Wire` references only Catalog and owns the one
-  typed codec from which the published OpenAPI contract is derived. The browser and CLI are
-  authenticated HTTPS clients of one generated contract and never database peers.
-  `ClaimCore.Database` is owner administration and serves no case work.
-- The installation stores one immutable canonical IANA business time zone. Business dates derive
-  from the database instant read under the lock and that zone, never from `DateTime.Today`,
-  `TimeZoneInfo.Local` or a host default.
-- The schema is an ordered, forward-only list of migrations in `db/migrations/`. A change ships
-  as a new numbered script with its readers, writers, tests and documentation. Never edit a migration
-  shipped by a release. Before 1.0.0, a release may instead replace the baseline and refuse older
-  installations untouched. A database whose history is not exactly a prefix of that list is refused
-  untouched. Supported PostgreSQL majors and minimum minors live in `db/postgresql-baseline.json`;
-  qualify every listed major against its pinned image.
-- The trust model and the non-goals in [operations](docs/operations.md) are part of the design.
-  Do not add machinery for backup, restore, replication, handoff, copy custody, multi-party
-  approval or a data-readiness mode without an owner decision that changes that document first.
+- [Component ownership](docs/architecture.md#cc-arch-001) defines the compiled boundaries.
+- [Domain](docs/domain.md#cc-dom-001) owns fields, transitions, scalar admission and stewardship.
+- [Authorization](docs/architecture.md#cc-auth-001) owns actor access and snapshot disclosure.
+- [Acceptance](docs/architecture.md#cc-app-001) owns ledger locking and atomic projections.
+- [Replay](docs/architecture.md#cc-app-002) owns operation identity and commit uncertainty.
+- [Durable records](docs/architecture.md#durable-records) owns formats and compatibility.
+- [Presentation](docs/architecture.md#cc-cat-001) owns vocabulary and authored localization.
+- [API and CLI](docs/api.md) owns wire admission, correlation and delivery behavior.
+- [Database](docs/database.md) owns installation admission and administrative operations.
+- [Operations](docs/operations.md) owns trust, erasure limits and explicit non-goals.
 
 ## Safety and evidence
 
@@ -87,11 +36,11 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   `[<Tests>]`; there is no hand-kept registry. Focused, pending, skipped, filtered or retried
   runs cannot satisfy verification. `bash eng/verify.sh` is the complete local gate and CI calls the same stages.
   PR browser smoke is explicitly partial; main/tag and explicit dispatch retain full qualification.
-- Contract artifacts (`openapi.json` and its derived client types, descriptors and vectors) are
-  generated and tracked in `contracts/`; the consumer identity is SHA-256 of the canonical generated input manifest and covers
-  wire shape, descriptors, localization and delivery/correlation policy. Run
+- Exactly three generated artifacts are tracked in `contracts/`: `openapi.json`, `client.ts`
+  and `descriptors.json`. Run
   `dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts` and review
   the generated diff with the F# change. Freshness checks require exact inventory and bytes.
+  Consumer identity is SHA-256 of canonical derived OpenAPI; source locale edits do not change it.
   Within-toolchain outputs stay ignored; web commands never invoke .NET.
 - Suppress a lint, type or format rule only inline, for one named rule, with the reason on the
   same line. Function, lambda and member length and complexity limits apply to production and
