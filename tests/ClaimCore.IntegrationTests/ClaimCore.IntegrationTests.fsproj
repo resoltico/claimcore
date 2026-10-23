@@ -10,6 +10,7 @@
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
     <Compile Include="PostgresFixture.fs" />
+    <Compile Include="FieldTableTests.fs" />
     <Compile Include="FixtureDisposalTests.fs" />
     <Compile Include="PostgresReadinessTests.fs" />
     <Compile Include="StoreTests.fs" />

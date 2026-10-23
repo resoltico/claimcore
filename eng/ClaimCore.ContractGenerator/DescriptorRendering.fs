@@ -47,9 +47,18 @@ module internal ProtocolFieldPresentation =
             | [ name, identity ] -> name, MessageText.literal identity, identity
             | _ -> invalidOp "Protocol field presentation identities disagree.")
 
+type FieldPresentationDefinition =
+    {
+        Name: BusinessField
+        LabelId: string
+        MeaningId: string
+        Scalar: ScalarRule
+        AllowsAbsence: bool
+    }
+
 type PresentationDefinitions =
     {
-        Fields: FieldDefinition list
+        Fields: FieldPresentationDefinition list
         Commands: CommandDefinition list
         AuthorityTarget: AuthorityInputDefinition
         AuthorityCommands: AuthorityOperationDefinition list
@@ -254,7 +263,16 @@ module ContractDescriptors =
 
     let defaults =
         {
-            Fields = FieldDefinitions.all
+            Fields =
+                FieldDefinitions.all
+                |> List.map (fun field ->
+                    {
+                        Name = field.Field
+                        LabelId = FieldTable.labelId field.Field
+                        MeaningId = FieldTable.meaningId field.Field
+                        Scalar = field.Scalar
+                        AllowsAbsence = (FieldTable.forField field.Field).Optional
+                    })
             Commands = CommandDefinitions.all
             AuthorityTarget = AuthorityOperationDefinitions.target
             AuthorityCommands = AuthorityOperationDefinitions.all

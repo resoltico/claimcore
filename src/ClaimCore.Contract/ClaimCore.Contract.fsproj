@@ -2,7 +2,8 @@
   <ItemGroup>
     <Compile Include="BuildIdentity.fsi" />
     <Compile Include="BuildIdentity.fs" />
-    <Compile Include="Vocabulary/Fields.fs" />
+    <Compile Include="Fields/FieldTable.fs" />
+    <Compile Include="Vocabulary/Corrections.fs" />
     <Compile Include="Vocabulary/CaseVocabulary.fs" />
     <Compile Include="Vocabulary/CaseTokens.fs" />
     <Compile Include="Vocabulary/InputTargets.fs" />

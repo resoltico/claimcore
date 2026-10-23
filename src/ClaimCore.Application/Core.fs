@@ -100,15 +100,15 @@ module internal Core =
 
             FieldDefinitions.all
             |> List.choose (fun field ->
-                let before = Map.tryFind field.Name previous |> Option.flatten
-                let after = Map.tryFind field.Name next |> Option.flatten
+                let before = Map.tryFind field.Field previous |> Option.flatten
+                let after = Map.tryFind field.Field next |> Option.flatten
 
                 if before = after then
                     None
                 else
                     Some
                         {
-                            FieldName = field.Name
+                            FieldName = field.Field
                             Before = before
                             After = after
                         })

@@ -249,7 +249,7 @@ CREATE TABLE claimcore.cases (
     revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
     disposition text NOT NULL CHECK (disposition IN ('ACTIVE', 'VOIDED', 'ERASED')),
 
-    -- The thirteen business fields (case_reference above is the eighth). All NULL once erased.
+    -- Business payload columns follow Contract FieldTable; case_reference above survives erasure.
     incident_date date CHECK (incident_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     incident_notification_date date CHECK (incident_notification_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     incident_country text,

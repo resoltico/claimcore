@@ -30,6 +30,7 @@
     <Compile Include="DomainValidationTests.fs" />
     <Compile Include="AvailabilityTests.fs" />
     <Compile Include="DomainDescriptorTests.fs" />
+    <Compile Include="FieldTableTests.fs" />
     <Compile Include="StewardshipTests.fs" />
     <Compile Include="CanonicalJsonTests.fs" />
     <Compile Include="CanonicalRecordTests.fs" />

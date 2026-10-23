@@ -30,8 +30,8 @@ module CatalogValidation =
         let validate = validateIdentity known
 
         for field in FieldDefinitions.all do
-            validate field.LabelId
-            validate field.MeaningId
+            validate (FieldTable.labelId field.Field)
+            validate (FieldTable.meaningId field.Field)
 
         for command in CommandDefinitions.all do
             validate command.LabelId
