@@ -248,6 +248,7 @@ let private responseStrings =
     Map.ofList
         [
             "CaseReference", reference
+            "caseReference", reference
             "Reference", reference
             "IncidentCountry", uppercase 2
             "ClaimedCurrency", uppercase 3
@@ -316,7 +317,7 @@ let private listBounds (context: string) =
         | "CorrectionChoices.Decision"
         | "CorrectionChoices.Payment" -> 3
         | "ActorContext.Offers"
-        | "CasesPage.Offers" -> 4
+        | "CaseSummaryPage.Offers" -> 4
         | "AdvisoryReview.Changes" -> 13
         | _ -> 50
 

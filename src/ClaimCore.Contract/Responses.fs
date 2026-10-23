@@ -174,32 +174,6 @@ type Receipt =
     | Case of CaseReceipt
     | Authority of AuthorityReceipt
 
-type LiveSummary =
-    {
-        CaseReference: string
-        Revision: int64
-        Status: string
-        Disposition: string
-    }
-
-type ErasedSummary =
-    {
-        CaseReference: string
-        Revision: int64
-    }
-
-[<RequireQualifiedAccess>]
-type CaseSummary =
-    | Live of LiveSummary
-    | Erased of ErasedSummary
-
-type CasesPage =
-    {
-        Items: CaseSummary list
-        NextCursor: string option
-        Offers: InstallationOffer list
-    }
-
 [<RequireQualifiedAccess>]
 type SessionOutcome = Succeeded of Session
 
@@ -230,7 +204,7 @@ type CaseGetReply = { Outcome: CaseGetOutcome }
 
 [<RequireQualifiedAccess>]
 type CaseListOutcome =
-    | Succeeded of CasesPage
+    | Succeeded of CaseSummaryPage
     | Rejected of Rejection
     | Failed of Fault
     | Cancelled of unit

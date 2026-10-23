@@ -7,11 +7,6 @@ open ClaimCore.Domain
 open ClaimCore.Hosting.Presentation
 
 module internal ResponseMapping =
-    let private disposition =
-        function
-        | Disposition.Active -> "ACTIVE"
-        | Disposition.Voided -> "VOIDED"
-
     let private position (value: LedgerPosition) : ClaimCore.Contract.Protocol.Position =
         {
             Sequence = value.Sequence
@@ -60,30 +55,6 @@ module internal ResponseMapping =
         | ReceiptScope.Case _ -> ClaimCore.Contract.Protocol.Receipt.Case(caseReceipt value)
         | ReceiptScope.Authority _ ->
             ClaimCore.Contract.Protocol.Receipt.Authority(authorityReceipt value)
-
-    let private summary =
-        function
-        | CaseSummary.Live(reference, revision, status, disp) ->
-            ClaimCore.Contract.Protocol.CaseSummary.Live
-                {
-                    CaseReference = reference
-                    Revision = revision
-                    Status = CaseStatuses.token status
-                    Disposition = disposition disp
-                }
-        | CaseSummary.Erased(reference, revision) ->
-            ClaimCore.Contract.Protocol.CaseSummary.Erased
-                {
-                    CaseReference = reference
-                    Revision = revision
-                }
-
-    let casesPage (value: CaseSummaryPage) : ClaimCore.Contract.Protocol.CasesPage =
-        {
-            Items = List.map summary value.Items
-            NextCursor = value.NextCursor
-            Offers = value.Offers
-        }
 
     let private change (value: ChangeSummary) : ClaimCore.Contract.Protocol.ChangeSummary =
         {

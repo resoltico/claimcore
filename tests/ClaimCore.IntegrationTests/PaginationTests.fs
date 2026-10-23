@@ -14,8 +14,8 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 let private query after limit : PageRequest = { AfterCursor = after; Limit = limit }
 
-let private page =
-    function
+let private page (outcome: QueryOutcome<CaseSummaryPage>) =
+    match outcome with
     | QueryOutcome.Succeeded value -> value
     | _ -> failtest "Expected authorized page"
 

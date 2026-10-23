@@ -1075,6 +1075,22 @@ module ResponseCodecs =
             ]
         |> discriminated "scope"
 
+    let private liveSummaryFields =
+        record (fun reference revision status disposition ->
+            reference, revision, status, disposition)
+        |> field "caseReference" (fun (reference, _, _, _) -> reference) reference
+        |> field "revision" (fun (_, revision, _, _) -> revision) sequence
+        |> field
+            "status"
+            (fun (_, _, status, _) -> status)
+            (enumeration (
+                CaseStatuses.all |> List.map (fun status -> status, CaseStatuses.token status)
+            ))
+        |> field
+            "disposition"
+            (fun (_, _, _, disposition) -> disposition)
+            (enumeration [ Disposition.Active, "ACTIVE"; Disposition.Voided, "VOIDED" ])
+
     let caseSummary =
         tagged
             "CaseSummary"
@@ -1084,47 +1100,29 @@ module ResponseCodecs =
                     "LIVE"
                     CaseSummary.Live
                     (function
-                    | CaseSummary.Live value -> Some value
+                    | CaseSummary.Live(reference, revision, status, disposition) ->
+                        Some(reference, revision, status, disposition)
                     | _ -> None)
-                    ((record (fun reference revision status disposition ->
-                        {
-                            LiveSummary.CaseReference = reference
-                            Revision = revision
-                            Status = status
-                            Disposition = disposition
-                        })
-                     : Fields<LiveSummary, _>)
-                     |> field "caseReference" _.CaseReference reference
-                     |> field "revision" _.Revision sequence
-                     |> field
-                         "status"
-                         _.Status
-                         (tokens (CaseStatuses.all |> List.map CaseStatuses.token))
-                     |> field "disposition" _.Disposition (tokens [ "ACTIVE"; "VOIDED" ]))
+                    liveSummaryFields
                 variant
                     "ERASED"
                     CaseSummary.Erased
                     (function
-                    | CaseSummary.Erased value -> Some value
+                    | CaseSummary.Erased(reference, revision) -> Some(reference, revision)
                     | _ -> None)
-                    ((record (fun reference revision ->
-                        {
-                            ErasedSummary.CaseReference = reference
-                            Revision = revision
-                        })
-                     : Fields<ErasedSummary, _>)
-                     |> field "caseReference" _.CaseReference reference
-                     |> field "revision" _.Revision sequence)
+                    (record (fun reference revision -> reference, revision)
+                     |> field "caseReference" fst reference
+                     |> field "revision" snd sequence)
             ]
 
     let casesPage =
-        (record (fun v0 v1 v2 ->
+        (record (fun items next offers ->
             {
-                CasesPage.Items = v0
-                NextCursor = v1
-                Offers = v2
+                Items = items
+                NextCursor = next
+                Offers = offers
             })
-        : Fields<CasesPage, _>)
+        : Fields<CaseSummaryPage, _>)
         |> field "items" _.Items (list 50 caseSummary)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> field "offers" _.Offers (list 4 installationOffer)

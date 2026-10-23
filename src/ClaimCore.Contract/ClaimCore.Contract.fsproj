@@ -30,6 +30,7 @@
     <Compile Include="Model/CaseFields.fs" />
     <Compile Include="Model/Advice.fs" />
     <Compile Include="Model/Queries.fs" />
+    <Compile Include="Model/CasePages.fs" />
     <Compile Include="Model/AuthorityModel.fs" />
     <Compile Include="Requests.fs" />
     <Compile Include="Model/Operations.fs" />
