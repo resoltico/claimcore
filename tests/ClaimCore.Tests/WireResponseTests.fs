@@ -60,11 +60,17 @@ let private examples () =
         "All registry response codecs are exercised."
 
 let private malformed () =
-    let fault =
-        """{"diagnostic":{"id":"CORE_STORE_UNAVAILABLE","parameters":{}},"message":"x","recommendedAction":"STOP_AND_INVESTIGATE"}"""
+    let fault = """{"code":"CORE_STORE_UNAVAILABLE","action":"STOP_AND_INVESTIGATE"}"""
+
+    Expect.isOk
+        (Codec.decode
+            4096
+            DiagnosticCodecs.fault
+            (bytes (fault.Replace("STOP_AND_INVESTIGATE", "RETRY_SAFE"))))
+        "Changing only the action admits the fault."
 
     Expect.isError
-        (Codec.decode 4096 ResponseCodecs.fault (bytes fault))
+        (Codec.decode 4096 DiagnosticCodecs.fault (bytes fault))
         "Fault action belongs to its reason"
 
     for reason in HostFailures.all do

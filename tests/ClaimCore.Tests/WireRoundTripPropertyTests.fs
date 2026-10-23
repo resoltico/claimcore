@@ -456,8 +456,14 @@ let private codecProperty response (codec: Codec<'T>) samples =
         let! value =
             fresh response source context typeof<'T> (box typed) |> Gen.map unbox<'T>
 
+        let maximum =
+            if response then
+                Limits.MaximumResponseBytes
+            else
+                Limits.MaximumRequestBytes
+
         return
-            match codec.Read "$" (codec.Write value) with
+            match Codec.encode codec value |> Codec.decode maximum codec with
             | Ok decoded -> Unchecked.equals decoded value
             | Error _ -> false
 

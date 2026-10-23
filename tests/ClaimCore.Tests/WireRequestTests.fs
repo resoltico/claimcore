@@ -105,7 +105,16 @@ let private structure () =
             "Technical shape and cursor length are closed"
 
     let raw =
-        "{\"operationId\":\"00000000-0000-0000-0000-000000000000\",\"caseReference\":\"CASE\",\"expectedRevision\":0,\"act\":{\"kind\":\"ERASE\"}}"
+        "{\"scope\":\"CASE\",\"operationId\":\"00000000-0000-0000-0000-000000000000\",\"caseReference\":\"CASE\",\"expectedRevision\":0,\"act\":{\"kind\":\"ERASE\"}}"
+
+    Expect.isOk
+        (admit
+            (endpoint "operation.execute")
+            (raw.Replace(
+                "00000000-0000-0000-0000-000000000000",
+                "10000000-0000-4000-8000-000000000001"
+            )))
+        "Changing only the UUID admits this scoped request."
 
     Expect.isError
         (admit (endpoint "operation.execute") raw)

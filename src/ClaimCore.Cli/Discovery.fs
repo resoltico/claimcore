@@ -52,8 +52,6 @@ module Discovery =
 
     let private describeMessages language (value: JsonElement) =
         value.EnumerateObject()
-        |> Seq.filter (fun item ->
-            item.Name.StartsWith("diagnostic.", System.StringComparison.Ordinal))
         |> Seq.map (fun item ->
             let template =
                 item.Value.EnumerateArray()

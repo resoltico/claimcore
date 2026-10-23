@@ -34,6 +34,8 @@ module internal MessageCatalogs =
 
     let private catalog language = Map.find language catalogs.Value
 
+    let templates language = catalog language |> Messages.templates
+
     let render language key arguments =
         Messages.render (catalog language) key arguments
 

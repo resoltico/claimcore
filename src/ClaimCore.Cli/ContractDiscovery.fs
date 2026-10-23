@@ -44,20 +44,25 @@ module ContractDiscovery =
         JsonSerializer.SerializeToUtf8Bytes {| endpoints = endpoints |}
 
     let presentation () =
-        use document = JsonDocument.Parse(System.ReadOnlyMemory<byte>(descriptors ()))
+        let keys =
+            [
+                yield!
+                    Refusals.definitions
+                    |> List.map (fun definition -> "diagnostic." + definition.Id)
+                yield! CoreFaults.all |> List.map (fun (_, code) -> "fault." + code)
+                yield!
+                    HostFailures.all |> List.map (fun reason -> "host." + HostFailures.code reason)
+            ]
+            |> Set.ofList
 
-        let messages =
-            JsonNode.Parse(document.RootElement.GetProperty("messages").GetRawText())
-            |> nonNull
-
-        for id in ClaimCore.Contract.CliCommands.diagnosticTopics do
-            let part = JsonObject()
-            part["literal"] <- JsonValue.Create(helpTopic "en" ("diagnostic." + id))
-            let parts = JsonArray()
-            parts.Add part
-            messages["diagnostic." + id] <- parts
-
-        messages.ToJsonString() |> Encoding.UTF8.GetBytes
+        MessageCatalogs.templates "en"
+        |> Map.filter (fun key _ -> Set.contains key keys)
+        |> Map.map (fun _ template ->
+            Template.parts template
+            |> List.map (function
+                | TemplatePart.Literal text -> Map.ofList [ "literal", text ]
+                | TemplatePart.Hole name -> Map.ofList [ "hole", name ]))
+        |> JsonSerializer.SerializeToUtf8Bytes
 
     let private schemaDocument schema (definitions: Map<string, Schema>) =
         use output = new MemoryStream()

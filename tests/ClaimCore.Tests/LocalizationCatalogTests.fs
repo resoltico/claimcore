@@ -178,6 +178,29 @@ let private embeddedCatalogs () =
         (delivery.Contains "original request bytes")
         "Lexical input is not the frozen body."
 
+let private diagnosticDiscovery () =
+    for language in LocalizationPolicy.languages do
+        let bytes =
+            Discovery.describeText language Protocol.CliDescription.Diagnostics
+            |> Option.get
+
+        let text = System.Text.Encoding.UTF8.GetString bytes
+
+        for key in
+            [
+                "diagnostic.ACCESS_RESOURCE_UNAVAILABLE"
+                "fault.CORE_STORE_UNAVAILABLE"
+                "host.CONTRACT_MISMATCH"
+            ] do
+            Expect.stringContains
+                text
+                (key + ": ")
+                "Offline discovery renders each public message family."
+
+        Expect.isFalse
+            (text.Contains "diagnostic.CLI_")
+            "Help topic aliases are not public diagnostic identities."
+
 [<Tests>]
 let tests =
     testList
@@ -188,4 +211,7 @@ let tests =
             testCase "refusal fault and host producers match templates" producers
             testCase "CLI template arguments match their producers" cliArguments
             testCase "CLI embeds and renders the authored catalogs" embeddedCatalogs
+            testCase
+                "diagnostic text discovery renders every supported language"
+                diagnosticDiscovery
         ]
