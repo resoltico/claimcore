@@ -122,11 +122,34 @@ let private formats () =
         let authority =
             root.GetProperty "authorityRecord" |> fun item -> text item "canonicalUtf8"
 
-        for format in [ "0"; "1"; "99"; "5.0"; "5e0"; "\"5\"" ] do
+        let retained = root.GetProperty "ledgerPayloads"
+
+        Expect.isError
+            (RequestRecord.decode 65536 (text retained "caseRequest" |> Encoding.UTF8.GetBytes))
+            "Format-5 requests are unsupported"
+
+        Expect.isError
+            (AuthorityRecord.decode
+                65536
+                (text retained "authorityRequest" |> Encoding.UTF8.GetBytes))
+            "Format-2 authority records are unsupported"
+
+        Expect.equal
+            [
+                RecordVersions.CaseRequest
+                RecordVersions.Authority
+                RecordVersions.Snapshot
+                RecordVersions.LedgerEntry
+                RecordVersions.CaseReferenceIdentity
+            ]
+            [ 6; 3; 4; 2; 2 ]
+            "Each retained grammar has its adopted format number"
+
+        for format in [ "0"; "1"; "99"; "5"; "6.0"; "6e0"; "\"6\"" ] do
             Expect.isError
                 (RequestRecord.decode
                     65536
-                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":5", "\"format\":" + format))))
+                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":6", "\"format\":" + format))))
                 "Unknown or noninteger format refuses"
 
         Expect.isError
@@ -138,16 +161,49 @@ let private formats () =
         Expect.isError
             (AuthorityRecord.decode
                 65536
-                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":2", "\"format\":1"))))
+                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":3", "\"format\":1"))))
             "No old authority reinterpretation")
+
+let private operationIdentity () =
+    withVectors (fun root ->
+        for vector in root.GetProperty("caseRequests").EnumerateArray() do
+            let encoded = bytes vector
+            let request = RequestRecord.decode 65536 encoded |> Fixtures.accepted
+            let tree = StrictJson.read 65536 encoded |> Fixtures.accepted
+
+            let withoutFormat =
+                match tree with
+                | JsonValue.Object fields ->
+                    JsonValue.Object(fields |> List.filter (fst >> (<>) "format"))
+                | _ -> failtest "Record object required"
+
+            let operation =
+                ClaimCore.Contract.Protocol.RequestCodecs.operationInput.Write(
+                    OperationInput.Case request
+                )
+
+            Expect.equal
+                (CanonicalWriter.bytes operation)
+                (CanonicalWriter.bytes withoutFormat)
+                "Request record equals canonical operation input plus format"
+
+            Expect.isError
+                (RequestRecord.decode
+                    65536
+                    (Encoding.UTF8.GetBytes(
+                        (Encoding.UTF8.GetString encoded)
+                            .Replace("\"scope\":\"CASE\"", "\"scope\":\"AUTHORITY\"")
+                    )))
+                "The record scope must agree with the case record grammar")
 
 [<Tests>]
 let tests =
     testList
         "canonical durable records"
         [
-            testCase "format-5 requests reproduce independent bytes and meaning" requests
+            testCase "durable requests are canonical operation inputs" operationIdentity
+            testCase "format-6 requests reproduce independent bytes and meaning" requests
             testCase "format-4 snapshots reproduce independent bytes and meaning" snapshot
-            testCase "format-2 authority requests reproduce independent bytes and meaning" authority
+            testCase "format-3 authority requests reproduce independent bytes and meaning" authority
             testCase "unknown formats and noninteger format lexemes refuse" formats
         ]

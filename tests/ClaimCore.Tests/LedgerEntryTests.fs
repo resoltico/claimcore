@@ -72,22 +72,18 @@ let private expectedPayload vector =
         Path.Combine(RepositoryRoot.find (), "tests/fixtures/record-format-vectors.json")
 
     use document = JsonDocument.Parse(File.ReadAllBytes path)
-    let root = document.RootElement
+    let payloads = document.RootElement.GetProperty "ledgerPayloads"
 
-    if text vector "scope" = "CASE" then
-        {
-            Request =
-                text (root.GetProperty("caseRequests")[0]) "canonicalUtf8"
-                |> Encoding.UTF8.GetBytes
-            Snapshot = text (root.GetProperty "snapshot") "canonicalUtf8" |> Encoding.UTF8.GetBytes
-        }
-    else
-        {
-            Request =
-                text (root.GetProperty "authorityRecord") "canonicalUtf8"
-                |> Encoding.UTF8.GetBytes
-            Snapshot = Array.empty
-        }
+    let request, snapshot =
+        if text vector "scope" = "CASE" then
+            text payloads "caseRequest", text payloads "caseSnapshot" |> Encoding.UTF8.GetBytes
+        else
+            text payloads "authorityRequest", Array.empty
+
+    {
+        Request = Encoding.UTF8.GetBytes request
+        Snapshot = snapshot
+    }
 
 let private vectors () =
     withVectors (fun vectors ->

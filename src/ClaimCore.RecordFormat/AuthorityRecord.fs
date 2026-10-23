@@ -79,6 +79,7 @@ module AuthorityRecord =
         |> Codec.field "target" _.Target ClaimCore.Contract.Protocol.RequestCodecs.principal
         |> Codec.field "act" _.Act act
         |> Codec.build
+        |> Codec.withScope OperationScopes.Authority
         |> Codec.withFormat (int64 RecordVersions.Authority)
         |> Codec.named "AuthorityRequestRecord"
 

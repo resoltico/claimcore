@@ -22,7 +22,7 @@ module internal ContractJson =
 
         bytes
 
-/// Presentation names for protocol structure, separate from the thirteen business fields.
+/// Presentation names for protocol structure, separate from the business fields.
 module internal ProtocolFieldPresentation =
     let authorityFields
         (target: AuthorityInputDefinition)

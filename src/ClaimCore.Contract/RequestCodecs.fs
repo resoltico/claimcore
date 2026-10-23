@@ -288,6 +288,33 @@ module RequestCodecs =
         |> build
         |> named "AuthorityRequest"
 
+    let caseOperation =
+        caseRequest |> withScope OperationScopes.Case |> named "OperationInput.Case"
+
+    let authorityOperation =
+        authorityRequest
+        |> withScope OperationScopes.Authority
+        |> named "OperationInput.Authority"
+
+    let operationInput =
+        choice
+            "OperationInput"
+            [
+                branch
+                    OperationInput.Case
+                    (function
+                    | OperationInput.Case value -> Some value
+                    | _ -> None)
+                    caseOperation
+                branch
+                    OperationInput.Authority
+                    (function
+                    | OperationInput.Authority value -> Some value
+                    | _ -> None)
+                    authorityOperation
+            ]
+        |> discriminated "scope"
+
     let pageRequest =
         (record (fun v0 v1 -> { PageRequest.Cursor = v0; Limit = v1 }): Fields<PageRequest, _>)
         |> optionalField "cursor" _.Cursor (boundedText 1 512)

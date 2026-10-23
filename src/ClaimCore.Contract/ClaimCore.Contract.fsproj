@@ -30,6 +30,7 @@
     <Compile Include="Model/CaseFields.fs" />
     <Compile Include="Model/AuthorityModel.fs" />
     <Compile Include="Requests.fs" />
+    <Compile Include="Model/Operations.fs" />
     <Compile Include="RequestCodecs.fs" />
     <Compile Include="Admission.fs" />
     <Compile Include="Responses.fs" />

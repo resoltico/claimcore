@@ -189,7 +189,7 @@ In the trusted Firefox window, return to `https://localhost:7443`.
 Reload Cases to obtain current capability advice. Choose Open a case and use synthetic values:
 reference `START-0001`, incident `2026-09-01`, notification `2026-09-02`, country `LV`, claimant
 `Synthetic claimant`, insurer `Synthetic insurer`, amount `100.00`, currency `EUR`. Review,
-confirm and record the change. Expect an accepted receipt at revision 1 and the thirteen case
+confirm and record the change. Expect an accepted receipt at revision 1 and the case
 fields on return to the case. You now have an explicitly granted human actor and one accepted
 synthetic case; owner status alone never grants case work.
 

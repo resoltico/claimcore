@@ -157,9 +157,9 @@ let private reordered (bytes: byte array) =
 
     writer.WriteStartObject()
 
-    for name in [ "act"; "expectedRevision"; "caseReference"; "operationId"; "format" ] do
-        writer.WritePropertyName(name)
-        document.RootElement.GetProperty(name).WriteTo(writer)
+    for property in document.RootElement.EnumerateObject() |> Seq.rev do
+        writer.WritePropertyName(property.Name)
+        property.Value.WriteTo(writer)
 
     writer.WriteEndObject()
     writer.Flush()

@@ -129,7 +129,7 @@ let private envelope () =
 
     let wire =
         Encoding.UTF8.GetString durable
-        |> fun value -> value.Replace("\"format\":2,", "") |> Encoding.UTF8.GetBytes
+        |> fun value -> value.Replace("\"format\":3,", "") |> Encoding.UTF8.GetBytes
 
     Expect.isError
         (ClaimCore.Contract.Protocol.Admission.admit

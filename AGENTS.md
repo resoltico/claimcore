@@ -11,7 +11,7 @@ boundaries. [Development](docs/development.md) owns commands and gates.
 
 ## Product boundaries
 
-- `CaseFields` has exactly thirteen business fields. Revisions, operation IDs, instants,
+- `CaseFields` has the declared business fields. Revisions, operation IDs, instants,
   attribution, disposition and available commands remain outside it. Business-text acceptance
   and display safety are distinct; follow the Domain contract.
 - Domain owns every transition and stewardship decision, including voided/erased refusal. Application owns operation

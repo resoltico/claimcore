@@ -1,7 +1,7 @@
 # Documentation map
 
 - [Getting started](getting-started.md): fresh local evaluation setup.
-- [Domain](domain.md): thirteen business fields, commands and stewardship.
+- [Domain](domain.md): business fields, commands and stewardship.
 - [Architecture](architecture.md): component ownership, durable encodings, authorization, replay
   and lifetime.
 - [API](api.md): one HTTPS/CLI contract and delivery outcomes.

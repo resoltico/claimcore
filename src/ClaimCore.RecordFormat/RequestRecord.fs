@@ -6,7 +6,7 @@ open ClaimCore.Domain
 
 module RequestRecord =
     let private codec =
-        RequestCodecs.caseRequest
+        RequestCodecs.caseOperation
         |> Codec.withFormat (int64 RecordVersions.CaseRequest)
         |> Codec.named "CaseRequestRecord"
 

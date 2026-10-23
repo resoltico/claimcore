@@ -8,6 +8,7 @@ open System.Threading
 open Expecto
 open Npgsql
 open ClaimCore.Postgres
+open ClaimCore.Application
 
 let private token = CancellationToken.None
 
@@ -36,7 +37,11 @@ let private install (source: NpgsqlDataSource) =
         use! transaction = connection.BeginTransactionAsync()
 
         let! _ =
-            DatabaseSession.execute connection "CREATE ROLE claimcore_runtime LOGIN" [||] token
+            DatabaseSession.execute
+                connection
+                "CREATE ROLE claimcore_runtime LOGIN PASSWORD 'synthetic-only'"
+                [||]
+                token
 
         let previous =
             { Migrations.scripts.Head with
@@ -87,12 +92,26 @@ let private previousInstallation () =
                 refuses (fun () -> Migrations.migrateWith source Migrations.scripts token)
                 |> Async.AwaitTask
 
+            let settings = NpgsqlConnectionStringBuilder(database.GetConnectionString())
+            settings.Username <- "claimcore_runtime"
+            settings.Password <- "synthetic-only"
+
+            let! admission =
+                Runtime.openConnection settings.ConnectionString token |> Async.AwaitTask
+
+            match admission with
+            | Error RuntimeOpenFault.SchemaMismatch -> ()
+            | Error _ -> failtest "The old checksum must cause a schema refusal."
+            | Ok runtime ->
+                runtime.Dispose()
+                failtest "The published baseline was admitted."
+
             let! after = dump database |> Async.AwaitTask
 
             Expect.equal
                 after
                 before
-                "Schema, metadata and contents remain untouched after both refusals"
+                "Schema, metadata and contents remain untouched after administration and runtime refusals"
         finally
             database.DisposeAsync().AsTask().GetAwaiter().GetResult()
     }

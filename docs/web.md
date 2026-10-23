@@ -59,7 +59,7 @@ accept syntactically valid unassigned codes, and explain `ZZ` without imposing m
 Case stewardship uses the preview/review/execute flow. The confirmation dialog names the
 prepared act, shows its exact authored reason and authoritative before/after record state, and repeats
 the owned act meaning, including live-database erasure limits. These values remain separate from
-the thirteen business fields. Authority actions use local exact-request
+the business fields. Authority actions use local exact-request
 review and authoritative execute; there is no authority preview endpoint. Confirmation is a local
 consent action, with human/service, last-owner and grant rules enforced by Application. ERASE removes
 live database payload history and does not reach WAL, backups or copies. Display preferences and RTL

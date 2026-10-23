@@ -11,7 +11,7 @@ entries and current projections.
 
 ## Case work
 
-The [thirteen business fields](docs/domain.md) cover incident and notification details,
+The [business fields](docs/domain.md) cover incident and notification details,
 parties, amounts, reference, decision and payment dates, and status. Technical metadata stays
 outside that record. Register or amend a case; record or withdraw a decision; record or clear
 a payment date; close or reopen; correct facts atomically. Payment progress and open/closed

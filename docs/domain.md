@@ -34,7 +34,7 @@ Default English labels and explanations originate in Catalog/Localization.
 [command descriptors](../src/ClaimCore.Domain/CommandDefinitions.fs) reference those identities
 for CLI discovery and generated browser presentation. The insurer is the handler’s recorded assertion for this claim.
 
-Every rendered case contains all thirteen keys. Unrecorded decision and payment values are `null`,
+Every rendered case contains all business keys. Unrecorded decision and payment values are `null`,
 never zero or an invented date. `OPEN` accepts the seven registration values plus the command's
 top-level case reference; the core creates status `OPENED` rather than accepting it as input.
 

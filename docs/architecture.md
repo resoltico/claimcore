@@ -67,11 +67,11 @@ Before 1.0.0, releases may explicitly replace the baseline and refuse older inst
 must retain every format a release wrote and schema changes require forward migrations.
 [Database admission](database.md#cc-db-001) refuses unsupported installations without conversion.
 
-Case requests use format 5 and snapshots format 4. Free-text names and stewardship reasons
+Case requests use format 6 and snapshots format 4. Free-text names and stewardship reasons
 have a permanent bound of 1,024 UTF-8 bytes, inside a 32,768-byte framed payload bound.
-Authority, ledger-entry and case-identity records use format 2. The independent Python oracle
+Authority records use format 3; ledger-entry and case-identity records use format 2. The independent Python oracle
 under [tests/fixtures/oracle](../tests/fixtures/oracle/generate_vectors.py) owns regression vectors.
-Installations created by software through 0.10.0 are refused untouched;
+Installations created by software through 0.11.0 are refused untouched;
 keep those installations with their matching software.
 
 <a id="cc-run-001"></a>

@@ -611,33 +611,40 @@ module Codec =
         | Schema.Object(properties, optional) -> properties, optional
         | _ -> invalidArg "codec" "A format member requires an object codec."
 
-    /// RecordFormat chooses the format number and owns the named durable codec value.
-    let withFormat format (codec: Codec<'T>) : Codec<'T> =
+    let private withMember name (memberCodec: Codec<unit>) (codec: Codec<'T>) : Codec<'T> =
         let properties, optional = objectShape codec.Definitions codec.Schema
-        let number = integer format format
 
-        if properties |> List.exists (fst >> (=) "format") then
-            invalidArg (nameof codec) "The object already declares a format."
+        if properties |> List.exists (fst >> (=) name) then
+            invalidArg (nameof codec) "The object already declares the member."
 
         {
             Read =
                 fun path value ->
                     match value with
                     | JsonValue.Object members ->
-                        match members |> List.partition (fst >> (=) "format") with
-                        | [ _, JsonValue.Integer actual ], remaining when actual = format ->
-                            codec.Read path (JsonValue.Object remaining)
-                        | _ -> fail (path + ".format") "unsupported record format"
+                        match members |> List.partition (fst >> (=) name) with
+                        | [ _, memberValue ], remaining ->
+                            memberCodec.Read (path + "." + name) memberValue
+                            |> Result.bind (fun () -> codec.Read path (JsonValue.Object remaining))
+                        | _ -> fail (path + "." + name) "missing or duplicate member"
                     | _ -> fail path "expected an object"
             Write =
                 fun value ->
                     match codec.Write value with
                     | JsonValue.Object members ->
-                        JsonValue.Object(members @ [ "format", number.Write format ])
-                    | _ -> invalidOp "A format codec must write an object."
-            Schema = Schema.Object(properties @ [ "format", number.Schema ], optional)
-            Definitions = codec.Definitions
+                        JsonValue.Object(members @ [ name, memberCodec.Write() ])
+                    | _ -> invalidOp "A member requires an object codec."
+            Schema = Schema.Object(properties @ [ name, memberCodec.Schema ], optional)
+            Definitions = merge codec.Definitions memberCodec.Definitions
         }
+
+    /// RecordFormat chooses the format number and owns the named durable codec value.
+    let withFormat format codec =
+        let number = integer format format |> map (fun _ -> ()) (fun () -> format)
+        withMember "format" number codec
+
+    let withScope scope codec =
+        withMember "scope" (constant scope) codec
 
     // ----- bytes --------------------------------------------------------------------------
 
