@@ -67,7 +67,7 @@ module ResponseCodecs =
             | _ -> None)
             liveStateFields
 
-    let private liveState = tagged "LiveState" "tag" [ liveVariant ]
+    let liveState = tagged "LiveState" "tag" [ liveVariant ]
 
     let caseState =
         tagged "CaseState" "tag" [ liveVariant; unitVariant "ERASED" CaseView.Erased ]

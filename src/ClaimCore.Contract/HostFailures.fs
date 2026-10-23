@@ -3,68 +3,71 @@ namespace ClaimCore.Contract.Protocol
 open ClaimCore.Contract
 
 type HostFailureReply =
-    { Reason: HostFailure; Message: string }
+    {
+        Reason: HostFailureReason
+        Message: string
+    }
 
 module HostFailures =
     let private policies =
         [
-            HostFailure.ContractMismatch,
+            HostFailureReason.ContractMismatch,
             409,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_CONTRACTMISMATCH")
-            HostFailure.ConnectionRejected,
+            HostFailureReason.ConnectionRejected,
             403,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_CONNECTIONREJECTED")
-            HostFailure.OriginRejected,
+            HostFailureReason.OriginRejected,
             403,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_ORIGINREJECTED")
-            HostFailure.MediaTypeRejected,
+            HostFailureReason.MediaTypeRejected,
             415,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_MEDIATYPEREJECTED")
-            HostFailure.BodyTooLarge,
+            HostFailureReason.BodyTooLarge,
             413,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_BODYTOOLARGE")
-            HostFailure.SessionRejected,
+            HostFailureReason.SessionRejected,
             401,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_SESSIONREJECTED")
-            HostFailure.SessionForbidden,
+            HostFailureReason.SessionForbidden,
             403,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_SESSIONFORBIDDEN")
-            HostFailure.MethodRejected,
+            HostFailureReason.MethodRejected,
             405,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_METHODREJECTED")
-            HostFailure.AntiforgeryRejected,
+            HostFailureReason.AntiforgeryRejected,
             403,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_ANTIFORGERYREJECTED")
-            HostFailure.EndpointMissing,
+            HostFailureReason.EndpointMissing,
             404,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_ENDPOINTMISSING")
-            HostFailure.RateLimited,
+            HostFailureReason.RateLimited,
             429,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_RATELIMITED")
-            HostFailure.InputInvalid,
+            HostFailureReason.InputInvalid,
             400,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_INPUTINVALID")
-            HostFailure.BeforeDispatchFailed,
+            HostFailureReason.BeforeDispatchFailed,
             500,
             Some ExecutionPhase.NotStarted,
             (MessageText.literal "diagnostic.HOST_BEFOREDISPATCHFAILED")
-            HostFailure.DispatchUnconfirmed,
+            HostFailureReason.DispatchUnconfirmed,
             500,
             Some ExecutionPhase.StartedUnconfirmed,
             (MessageText.literal "diagnostic.HOST_DISPATCHUNCONFIRMED")
-            HostFailure.CompletedResponseFailed,
+            HostFailureReason.CompletedResponseFailed,
             500,
             None,
             (MessageText.literal "diagnostic.HOST_COMPLETEDRESPONSEFAILED")

@@ -8,6 +8,14 @@ type AuthorityKind =
     | SetEnabled
 
 module AuthorityKinds =
+    let all =
+        [
+            AuthorityKind.ProvisionOwner
+            AuthorityKind.RegisterActor
+            AuthorityKind.SetGrant
+            AuthorityKind.SetEnabled
+        ]
+
     let token =
         function
         | AuthorityKind.ProvisionOwner -> "PROVISION_OWNER"

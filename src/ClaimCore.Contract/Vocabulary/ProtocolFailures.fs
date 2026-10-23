@@ -1,7 +1,7 @@
 namespace ClaimCore.Contract
 
 [<RequireQualifiedAccess>]
-type HostFailure =
+type HostFailureReason =
     | ContractMismatch
     | ConnectionRejected
     | OriginRejected
@@ -21,21 +21,25 @@ type HostFailure =
 module HostFailureIds =
     let private definitions =
         [
-            HostFailure.ContractMismatch, "CONTRACT_MISMATCH", "HOST_CONTRACTMISMATCH"
-            HostFailure.ConnectionRejected, "CONNECTION_REJECTED", "HOST_CONNECTIONREJECTED"
-            HostFailure.OriginRejected, "ORIGIN_REJECTED", "HOST_ORIGINREJECTED"
-            HostFailure.MediaTypeRejected, "MEDIA_TYPE_REJECTED", "HOST_MEDIATYPEREJECTED"
-            HostFailure.BodyTooLarge, "BODY_TOO_LARGE", "HOST_BODYTOOLARGE"
-            HostFailure.SessionRejected, "SESSION_REJECTED", "HOST_SESSIONREJECTED"
-            HostFailure.SessionForbidden, "SESSION_FORBIDDEN", "HOST_SESSIONFORBIDDEN"
-            HostFailure.MethodRejected, "METHOD_REJECTED", "HOST_METHODREJECTED"
-            HostFailure.AntiforgeryRejected, "ANTIFORGERY_REJECTED", "HOST_ANTIFORGERYREJECTED"
-            HostFailure.EndpointMissing, "ENDPOINT_MISSING", "HOST_ENDPOINTMISSING"
-            HostFailure.RateLimited, "RATE_LIMITED", "HOST_RATELIMITED"
-            HostFailure.InputInvalid, "INPUT_INVALID", "HOST_INPUTINVALID"
-            HostFailure.BeforeDispatchFailed, "INTERNAL", "HOST_BEFOREDISPATCHFAILED"
-            HostFailure.DispatchUnconfirmed, "INTERNAL", "HOST_DISPATCHUNCONFIRMED"
-            HostFailure.CompletedResponseFailed, "RESPONSE_FAILED", "HOST_COMPLETEDRESPONSEFAILED"
+            HostFailureReason.ContractMismatch, "CONTRACT_MISMATCH", "HOST_CONTRACTMISMATCH"
+            HostFailureReason.ConnectionRejected, "CONNECTION_REJECTED", "HOST_CONNECTIONREJECTED"
+            HostFailureReason.OriginRejected, "ORIGIN_REJECTED", "HOST_ORIGINREJECTED"
+            HostFailureReason.MediaTypeRejected, "MEDIA_TYPE_REJECTED", "HOST_MEDIATYPEREJECTED"
+            HostFailureReason.BodyTooLarge, "BODY_TOO_LARGE", "HOST_BODYTOOLARGE"
+            HostFailureReason.SessionRejected, "SESSION_REJECTED", "HOST_SESSIONREJECTED"
+            HostFailureReason.SessionForbidden, "SESSION_FORBIDDEN", "HOST_SESSIONFORBIDDEN"
+            HostFailureReason.MethodRejected, "METHOD_REJECTED", "HOST_METHODREJECTED"
+            HostFailureReason.AntiforgeryRejected,
+            "ANTIFORGERY_REJECTED",
+            "HOST_ANTIFORGERYREJECTED"
+            HostFailureReason.EndpointMissing, "ENDPOINT_MISSING", "HOST_ENDPOINTMISSING"
+            HostFailureReason.RateLimited, "RATE_LIMITED", "HOST_RATELIMITED"
+            HostFailureReason.InputInvalid, "INPUT_INVALID", "HOST_INPUTINVALID"
+            HostFailureReason.BeforeDispatchFailed, "INTERNAL", "HOST_BEFOREDISPATCHFAILED"
+            HostFailureReason.DispatchUnconfirmed, "INTERNAL", "HOST_DISPATCHUNCONFIRMED"
+            HostFailureReason.CompletedResponseFailed,
+            "RESPONSE_FAILED",
+            "HOST_COMPLETEDRESPONSEFAILED"
         ]
 
     let token failure =

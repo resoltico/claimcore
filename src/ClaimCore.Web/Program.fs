@@ -123,7 +123,7 @@ let private requireTrustedConnection
         if Admission.trustedConnection configuration.Binding context then
             do! next.Invoke(context)
         else
-            do! writeHostFailure context HostFailure.ConnectionRejected
+            do! writeHostFailure context HostFailureReason.ConnectionRejected
     }
     :> Task)
 

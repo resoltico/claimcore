@@ -27,7 +27,7 @@ module HostRoutes =
     let private session configuration (context: HttpContext) =
         task {
             if not (ApiRoutes.handshake context) then
-                return RouteSupport.hostFailure context HostFailure.ContractMismatch
+                return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
             else
                 let! authenticated =
                     task {
@@ -59,7 +59,7 @@ module HostRoutes =
     let private logout configuration context =
         task {
             if not (ApiRoutes.handshake context) then
-                return RouteSupport.hostFailure context HostFailure.ContractMismatch
+                return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
             else
                 match configuration.Oidc, Admission.credentialMode context with
                 | Some oidc, CredentialMode.BrowserCookie ->
@@ -79,7 +79,8 @@ module HostRoutes =
                                     bytes
                             with
                             | Error _ ->
-                                return RouteSupport.hostFailure context HostFailure.InputInvalid
+                                return
+                                    RouteSupport.hostFailure context HostFailureReason.InputInvalid
                             | Ok _ ->
                                 do!
                                     context.SignOutAsync(
@@ -95,7 +96,7 @@ module HostRoutes =
                                                 Outcome = SessionLogoutOutcome.Succeeded()
                                             })
                                         context
-                | _ -> return RouteSupport.hostFailure context HostFailure.SessionRejected
+                | _ -> return RouteSupport.hostFailure context HostFailureReason.SessionRejected
         }
 
     let health
@@ -111,7 +112,7 @@ module HostRoutes =
                 context.Response.StatusCode <- if ready then 200 else 503
             | _, ("/health/live" | "/health/ready") ->
                 do!
-                    (RouteSupport.hostFailure context HostFailure.MethodRejected).ExecuteAsync
+                    (RouteSupport.hostFailure context HostFailureReason.MethodRejected).ExecuteAsync
                         context
             | _ -> do! next.Invoke context
         }
@@ -128,9 +129,9 @@ module HostRoutes =
 
                 let reason =
                     if known then
-                        HostFailure.MethodRejected
+                        HostFailureReason.MethodRejected
                     else
-                        HostFailure.EndpointMissing
+                        HostFailureReason.EndpointMissing
 
                 do! (RouteSupport.hostFailure context reason).ExecuteAsync context
             else
@@ -159,9 +160,13 @@ module HostRoutes =
 
             let exact (context: HttpContext) =
                 if Option.ofObj context.Request.Path.Value <> Some(Endpoint.path endpoint) then
-                    Task.FromResult(RouteSupport.hostFailure context HostFailure.EndpointMissing)
+                    Task.FromResult(
+                        RouteSupport.hostFailure context HostFailureReason.EndpointMissing
+                    )
                 elif context.Request.Method <> (Endpoint.method endpoint) then
-                    Task.FromResult(RouteSupport.hostFailure context HostFailure.MethodRejected)
+                    Task.FromResult(
+                        RouteSupport.hostFailure context HostFailureReason.MethodRejected
+                    )
                 else
                     handler context
 

@@ -21,19 +21,22 @@ module internal RouteSupport =
 
     let admissionFailure context =
         function
-        | AdmissionFailure.UntrustedConnection -> hostFailure context HostFailure.ConnectionRejected
+        | AdmissionFailure.UntrustedConnection ->
+            hostFailure context HostFailureReason.ConnectionRejected
         | AdmissionFailure.OriginRejected
-        | AdmissionFailure.FetchMetadataRejected -> hostFailure context HostFailure.OriginRejected
-        | AdmissionFailure.UnsupportedMediaType -> hostFailure context HostFailure.MediaTypeRejected
-        | AdmissionFailure.BodyTooLarge -> hostFailure context HostFailure.BodyTooLarge
-        | AdmissionFailure.SessionRejected -> hostFailure context HostFailure.SessionRejected
+        | AdmissionFailure.FetchMetadataRejected ->
+            hostFailure context HostFailureReason.OriginRejected
+        | AdmissionFailure.UnsupportedMediaType ->
+            hostFailure context HostFailureReason.MediaTypeRejected
+        | AdmissionFailure.BodyTooLarge -> hostFailure context HostFailureReason.BodyTooLarge
+        | AdmissionFailure.SessionRejected -> hostFailure context HostFailureReason.SessionRejected
         | AdmissionFailure.AntiforgeryRejected ->
-            hostFailure context HostFailure.AntiforgeryRejected
+            hostFailure context HostFailureReason.AntiforgeryRejected
 
     let inputFailure context =
         function
-        | BodyProblem.BodyTooLarge -> hostFailure context HostFailure.BodyTooLarge
-        | _ -> hostFailure context HostFailure.InputInvalid
+        | BodyProblem.BodyTooLarge -> hostFailure context HostFailureReason.BodyTooLarge
+        | _ -> hostFailure context HostFailureReason.InputInvalid
 
     let private tag =
         function
@@ -71,7 +74,7 @@ module internal RouteSupport =
                 do! next.Invoke context
 
                 if context.Response.StatusCode = 405 && not context.Response.HasStarted then
-                    do! (hostFailure context HostFailure.MethodRejected).ExecuteAsync context
+                    do! (hostFailure context HostFailureReason.MethodRejected).ExecuteAsync context
             with error ->
                 RequestLog.reportException sink error
 
@@ -81,9 +84,9 @@ module internal RouteSupport =
                     let reason =
                         match context.Items.TryGetValue dispatchKey with
                         | true, (:? bool as completed) when completed ->
-                            HostFailure.CompletedResponseFailed
-                        | true, _ -> HostFailure.DispatchUnconfirmed
-                        | _ -> HostFailure.BeforeDispatchFailed
+                            HostFailureReason.CompletedResponseFailed
+                        | true, _ -> HostFailureReason.DispatchUnconfirmed
+                        | _ -> HostFailureReason.BeforeDispatchFailed
 
                     try
                         context.Response.Clear()

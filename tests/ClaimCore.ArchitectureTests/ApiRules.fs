@@ -40,7 +40,8 @@ let private randomTypes =
 let private networkTypes =
     Types()
         .That()
-        .HaveFullNameMatching(@"^System\.Net\.Http\.")
+        // HttpMethod carries the method token in the endpoint registry.
+        .HaveFullNameMatching(@"^System\.Net\.Http\.(?!HttpMethod$)")
         .Or()
         .HaveFullNameMatching(@"^System\.Net\.Sockets\.")
         .Or()

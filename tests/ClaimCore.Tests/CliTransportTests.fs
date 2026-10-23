@@ -99,7 +99,8 @@ let private requestBytes () =
                     else
                         Expect.isNull request.Content "Session GET has no body"
 
-                    return response 500 (HostFailures.encode HostFailure.BeforeDispatchFailed)
+                    return
+                        response 500 (HostFailures.encode HostFailureReason.BeforeDispatchFailed)
                 })
 
         Expect.equal (send handler invocation).ExitCode 3 "Definite admission refusal"
@@ -134,7 +135,7 @@ let private invalidReplies () =
                 bytes "{}"
                 bytes "{"
                 bytes "null"
-                HostFailures.encode HostFailure.DispatchUnconfirmed
+                HostFailures.encode HostFailureReason.DispatchUnconfirmed
             ] do
             use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
             let invocation = frame endpoint
@@ -152,7 +153,9 @@ let private invalidReplies () =
 
         use wrongStatus =
             new Handler(fun _ ->
-                Task.FromResult(response 403 (HostFailures.encode HostFailure.SessionRejected)))
+                Task.FromResult(
+                    response 403 (HostFailures.encode HostFailureReason.SessionRejected)
+                ))
 
         Expect.equal
             (send wrongStatus (frame endpoint)).ExitCode
@@ -183,7 +186,7 @@ let private mediaVariants () =
         for status, body, exit in
             [
                 200, successfulBody endpoint invocation, 0
-                500, HostFailures.encode HostFailure.BeforeDispatchFailed, 3
+                500, HostFailures.encode HostFailureReason.BeforeDispatchFailed, 3
             ] do
             use canonical = new Handler(fun _ -> Task.FromResult(response status body))
             let expected = send canonical invocation
@@ -223,7 +226,7 @@ let private mixedMediaRefusals () =
                 [
                     200, bytes "{"
                     200, bytes "{}"
-                    403, HostFailures.encode HostFailure.SessionRejected
+                    403, HostFailures.encode HostFailureReason.SessionRejected
                 ] do
                 use handler =
                     new Handler(fun _ ->
@@ -356,7 +359,8 @@ let private responseBounds () =
 
         use media =
             new Handler(fun _ ->
-                let message = response 500 (HostFailures.encode HostFailure.BeforeDispatchFailed)
+                let message =
+                    response 500 (HostFailures.encode HostFailureReason.BeforeDispatchFailed)
 
                 message.Content.Headers.ContentType <-
                     System.Net.Http.Headers.MediaTypeHeaderValue "text/html"
@@ -370,7 +374,7 @@ let private responseBounds () =
 
 let private dispatchGuards () =
     let forged =
-        HostFailures.encode HostFailure.DispatchUnconfirmed
+        HostFailures.encode HostFailureReason.DispatchUnconfirmed
         |> Encoding.UTF8.GetString
         |> fun text -> text.Replace("STARTED_UNCONFIRMED", "NOT_STARTED") |> bytes
 
@@ -444,7 +448,7 @@ let private malformedBusinessInput () =
 let private nearFrameLimitBody endpoint failure =
     let original =
         if failure then
-            HostFailures.encode HostFailure.BeforeDispatchFailed
+            HostFailures.encode HostFailureReason.BeforeDispatchFailed
         else
             samples "wire-response-examples.json" endpoint
             |> List.find (fun body ->

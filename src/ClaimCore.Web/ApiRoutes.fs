@@ -25,7 +25,7 @@ module internal ApiRoutes =
             with
             | Some endpoint when context.Request.Method <> Endpoint.method endpoint ->
                 do!
-                    (RouteSupport.hostFailure context HostFailure.MethodRejected).ExecuteAsync
+                    (RouteSupport.hostFailure context HostFailureReason.MethodRejected).ExecuteAsync
                         context
             | _ -> do! next.Invoke context
         }
@@ -52,7 +52,7 @@ module internal ApiRoutes =
             | Ok bytes ->
                 match
                     ClaimCore.Contract.Protocol.Admission.admit endpoint bytes
-                    |> Result.mapError (fun _ -> HostFailure.InputInvalid)
+                    |> Result.mapError (fun _ -> HostFailureReason.InputInvalid)
                     |> Result.bind ServiceGateway.admitTechnical
                 with
                 | Error reason -> return Error(RouteSupport.hostFailure context reason)
@@ -66,7 +66,7 @@ module internal ApiRoutes =
             HttpHeaders.noStore context
 
             if not (handshake context) then
-                return RouteSupport.hostFailure context HostFailure.ContractMismatch
+                return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
             else
                 match! admit configuration context with
                 | Error reason -> return RouteSupport.admissionFailure context reason

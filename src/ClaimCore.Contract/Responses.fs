@@ -4,13 +4,6 @@ open ClaimCore.Contract
 
 open System
 
-type Session =
-    {
-        Authenticated: bool
-        ContractIdentity: string
-        AntiforgeryToken: string option
-    }
-
 type OutcomeUnknown = { OperationId: Guid }
 
 type Reviewed = { Review: AdvisoryReview }
