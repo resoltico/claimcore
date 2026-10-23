@@ -39,7 +39,12 @@ module ResponseCodecs =
         |> field "payableAmount" _.PayableAmount (nullable amount)
         |> field "payableCurrency" _.PayableCurrency (nullable currency)
         |> field "paymentDate" _.PaymentDate (nullable date)
-        |> field "status" _.Status (tokens (CaseStatuses.all |> List.map CaseStatuses.token))
+        |> field
+            "status"
+            _.Status
+            (enumeration (
+                CaseStatuses.all |> List.map (fun status -> status, CaseStatuses.token status)
+            ))
         |> build
         |> named "CaseFields"
 

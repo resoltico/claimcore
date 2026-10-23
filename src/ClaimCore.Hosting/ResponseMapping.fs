@@ -16,27 +16,10 @@ module internal ResponseMapping =
         | Disposition.Active -> "ACTIVE"
         | Disposition.Voided -> "VOIDED"
 
-    let private fields (value: CaseFields) : ClaimCore.Contract.Protocol.CaseFields =
-        {
-            IncidentDate = value.IncidentDate
-            IncidentNotificationDate = value.IncidentNotificationDate
-            IncidentCountry = value.IncidentCountry
-            ClaimantName = value.ClaimantName
-            InsurerName = value.InsurerName
-            ClaimedAmount = value.ClaimedAmount
-            ClaimedCurrency = value.ClaimedCurrency
-            CaseReference = value.CaseReference
-            PaymentDecisionDate = value.PaymentDecisionDate
-            PayableAmount = value.PayableAmount
-            PayableCurrency = value.PayableCurrency
-            PaymentDate = value.PaymentDate
-            Status = CaseStatuses.token value.Status
-        }
-
     let private live fieldsValue disp : ClaimCore.Contract.Protocol.LiveState =
         {
             Disposition = disposition disp
-            Fields = fields fieldsValue
+            Fields = fieldsValue
         }
 
     let state =

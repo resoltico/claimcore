@@ -4,23 +4,6 @@ open ClaimCore.Contract
 
 open System
 
-type CaseFields =
-    {
-        IncidentDate: string
-        IncidentNotificationDate: string
-        IncidentCountry: string
-        ClaimantName: string
-        InsurerName: string
-        ClaimedAmount: string
-        ClaimedCurrency: string
-        CaseReference: string
-        PaymentDecisionDate: string option
-        PayableAmount: string option
-        PayableCurrency: string option
-        PaymentDate: string option
-        Status: string
-    }
-
 type LiveState =
     {
         Disposition: string
