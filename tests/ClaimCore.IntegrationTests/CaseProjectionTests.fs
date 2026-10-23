@@ -180,11 +180,102 @@ let private erasedState () =
         ] do
         Expect.equal (check changed row) mismatch "Erased evidence remains required"
 
+let private projectionFields: CaseFields =
+    {
+        CaseReference = "synthetic-layout"
+        IncidentDate = "2026-08-01"
+        IncidentNotificationDate = "2026-08-03"
+        IncidentCountry = "LV"
+        ClaimantName = "Synthetic claimant"
+        InsurerName = "Synthetic insurer"
+        ClaimedAmount = "1234.5678"
+        ClaimedCurrency = "EUR"
+        PaymentDecisionDate = Some "2026-08-04"
+        PayableAmount = Some "987.6543"
+        PayableCurrency = Some "USD"
+        PaymentDate = Some "2026-08-05"
+        Status = CaseStatus.Closed
+    }
+
+
+// Independent SQL row, with distinct values for every interchangeable date/text/amount.
+let private projectionRow id : objnull array =
+    [|
+        box id
+        box "synthetic-layout"
+        box 4L
+        box "VOIDED"
+        box "2026-08-01 AD"
+        box "2026-08-03 AD"
+        box "LV"
+        box "Synthetic claimant"
+        box "Synthetic insurer"
+        box "1234.5678"
+        box "EUR"
+        box "2026-08-04 AD"
+        box "987.6543"
+        box "USD"
+        box "2026-08-05 AD"
+        box "CLOSED"
+    |]
+
+
+let private projectionBindings () =
+    let fields = projectionFields
+
+    let snapshot =
+        {
+            Reference = fields.CaseReference
+            Revision = 4L
+            View = CaseView.Live(fields, Disposition.Voided)
+        }
+
+    let id = CaseReferenceId.encode installation fields.CaseReference
+    let row = projectionRow id
+
+    Expect.equal
+        (Projections.caseRow (Array.map nonNull row))
+        { CaseId = id; Snapshot = snapshot }
+        "Every decoded field has its own value"
+
+    let expected = Array.copy row
+
+    for index in [ 4; 5; 11; 14 ] do
+        expected[index] <-
+            box (
+                DateOnly.ParseExact(
+                    unbox<string> row[index],
+                    "yyyy-MM-dd 'AD'",
+                    Globalization.CultureInfo.InvariantCulture
+                )
+            )
+
+    for index in [ 9; 12 ] do
+        expected[index] <-
+            box (
+                Decimal.Parse(unbox<string> row[index], Globalization.CultureInfo.InvariantCulture)
+            )
+
+    Expect.equal
+        (CaseProjectionLayout.parameters id snapshot)
+        expected
+        "Every bound parameter matches its SQL column"
+
+    let swapped = Array.copy row
+    swapped[7] <- row[8]
+    swapped[8] <- row[7]
+
+    Expect.notEqual
+        (Projections.caseRow (Array.map nonNull swapped)).Snapshot
+        snapshot
+        "Swapped text bindings are observable"
+
 [<Tests>]
 let tests =
     testList
         "case projection collection"
         [
+            testCase "binds and decodes every field in the SQL projection" projectionBindings
             testCase "requires complete unique case membership" collection
             testCase "preserves live identity revision disposition and snapshot checks" liveState
             testCase "preserves erased identity revision and state checks" erasedState
