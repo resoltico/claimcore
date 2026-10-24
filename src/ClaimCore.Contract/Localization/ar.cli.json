@@ -34,5 +34,7 @@
   "cli.text.code": "الرمز",
   "cli.text.uncertain": "نتيجة العملية غير معروفة. احتفظ بإطار إعادة المحاولة الدقيق في آخر سطر من stderr؛ يمكن إعادة الطلب نفسه بأمان.",
   "cli.help.verbs": "أوامر المستخدم. تُمرَّر قيم العمل كما هي. يجب تحديد المراجعة لكل عملية على حالة موجودة. يعرض --preview المعاينة، ويطبع --dry-run الطلب الدقيق دون مصادقة. الإخراج: --format text|json --language en|lv|ar. خيارات العملية: --operation-id UUID --preview --dry-run. القراءة: case get REF; case list; case history REF [--full]; operation observe UUID; authority list; authority grants UUID; context. الصفحات: --cursor C --limit N. المخططات الكاملة في السجل. يعرض describe commands CORRECT_CASE حقول الاستبدال.\n{grammar}\n",
-  "cli.text.grants": "الأدوار"
+  "cli.text.grants": "الأدوار",
+  "cli.target.limit": "حجم الصفحة",
+  "cli.target.cursor": "مؤشر التصفح"
 }

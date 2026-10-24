@@ -110,4 +110,5 @@ admission/transitions; Application owns authorization. Authored en/lv/ar JSON un
 resources. CLI and browser render codes/parameters locally, never server prose. [API](api.md) owns wire shape,
 identity and artifacts. Structural descriptors retain message keys, scalar policy hints, field ordering and
 correction/authority metadata without duplicating transport paths. Forms derive paths from schemas. Language
-and display-format preferences are independent.
+and display-format preferences are independent. Contract also owns the bounded Unicode display-warning
+policy; generated descriptors carry its category and count limits to the browser.

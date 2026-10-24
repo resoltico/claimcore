@@ -268,6 +268,14 @@ module ContractDescriptors =
             inputFields writer
             authority definitions writer
             authorityFields definitions writer
+            writer.WritePropertyName("characterWarnings")
+            writer.WriteStartObject()
+            writer.WriteNumber("maximumCodePoints", TextDisplay.maximumCodePoints)
+            writer.WritePropertyName("categories")
+            writer.WriteStartArray()
+            TextDisplay.categoryTokens |> List.iter writer.WriteStringValue
+            writer.WriteEndArray()
+            writer.WriteEndObject()
             writer.WritePropertyName("statuses")
             writer.WriteStartArray()
             CaseStatuses.all |> List.iter (CaseStatuses.token >> writer.WriteStringValue)

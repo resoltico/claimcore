@@ -121,7 +121,8 @@ opened again and erased operations cannot be replayed as retained requests. Its 
   by the [shared Domain text policy](../src/ClaimCore.Domain/Validation.fs). Names and stewardship
   reasons share this profile: U+200C (ZWNJ), U+200D (ZWJ), U+180E (Mongolian vowel separator),
   permitted selectors and private-use characters remain accepted. Unicode category Format is
-  not a blanket refusal. Display warnings expose suspicious code points without rewriting data.
+  not a blanket refusal. Both human clients use the [shared display policy](../src/ClaimCore.Contract/Messages/TextDisplay.fs)
+  to expose a bounded list of distinct suspicious Unicode scalars without rewriting data.
 - Format and admission are separate. Retained-record decoding, SQL and verification enforce
   permanent scalar syntax and state invariants. Current admission policy judges newly asserted
   values only: unchanged retained names and dates may be reaffirmed. Tightening admission never

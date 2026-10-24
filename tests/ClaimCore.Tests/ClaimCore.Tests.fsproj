@@ -79,6 +79,8 @@
     <Compile Include="ConfigurationHelpTests.fs" />
     <Compile Include="CliDescriptionTests.fs" />
     <Compile Include="CliInvocationTests.fs" />
+    <Compile Include="CliDiagnosticTextTests.fs" />
+    <Compile Include="CliCharacterWarningTests.fs" />
     <Compile Include="InputDiagnosticTests.fs" />
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />

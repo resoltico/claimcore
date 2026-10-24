@@ -34,5 +34,7 @@
   "cli.text.code": "Code",
   "cli.text.uncertain": "Outcome unresolved. Keep the exact retry frame on the last stderr line; retrying the identical request is safe.",
   "cli.help.verbs": "Human commands. Business values are passed exactly. Each existing-case act requires an explicit revision. Use --preview for advice and --dry-run to print the exact frame without authentication. Commands default to text; --format json selects the closed reply frame. Mutation options: --operation-id UUID, --preview, --dry-run. Read commands: case get REF; case list; case history REF [--full]; operation observe UUID; authority list; authority grants UUID; context. Paging: --cursor C --limit N. Output: --language en|lv|ar --format text|json. Complete request schemas follow the registry. Run describe commands CORRECT_CASE to discover replacement fields.\n{grammar}\n",
-  "cli.text.grants": "Grants"
+  "cli.text.grants": "Grants",
+  "cli.target.limit": "Page size",
+  "cli.target.cursor": "Cursor"
 }

@@ -34,5 +34,7 @@
   "cli.text.code": "Kods",
   "cli.text.uncertain": "Operācijas iznākums nav zināms. Saglabājiet precīzo atkārtošanas pieprasījumu stderr pēdējā rindā; identisku pieprasījumu var droši atkārtot.",
   "cli.help.verbs": "Komandas cilvēkiem. Lietišķās vērtības tiek nodotas precīzi. Esošas lietas darbībai norādiet revīziju. --preview rāda priekšskatījumu; --dry-run izdrukā precīzo pieprasījumu bez autentifikācijas. Izvade: --format text|json --language en|lv|ar. Darbības opcijas: --operation-id UUID --preview --dry-run. Lasīšana: case get REF; case list; case history REF [--full]; operation observe UUID; authority list; authority grants UUID; context. Lapošana: --cursor C --limit N. Pilnās shēmas ir reģistrā. Aizstāšanas laukus rāda describe commands CORRECT_CASE.\n{grammar}\n",
-  "cli.text.grants": "Lomas"
+  "cli.text.grants": "Lomas",
+  "cli.target.limit": "Lapas izmērs",
+  "cli.target.cursor": "Lapošanas kursors"
 }

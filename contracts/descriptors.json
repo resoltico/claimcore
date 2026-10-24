@@ -602,6 +602,15 @@
       "labelId": "authority.field.enabled.label"
     }
   ],
+  "characterWarnings": {
+    "maximumCodePoints": 8,
+    "categories": [
+      "Cc",
+      "Cf",
+      "Zl",
+      "Zp"
+    ]
+  },
   "statuses": [
     "OPENED",
     "CLOSED"

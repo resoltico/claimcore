@@ -20,6 +20,29 @@ module internal TextReply =
 
     let private get name value = memberValue name value |> scalar
 
+    let private displayed language value =
+        let text = scalar value
+
+        match value with
+        | JsonValue.String _ ->
+            let warning = TextDisplay.warning text
+
+            if warning.CodePoints.IsEmpty then
+                text
+            else
+                let points =
+                    warning.CodePoints @ (if warning.Truncated then [ "…" ] else [])
+                    |> String.concat ", "
+
+                let annotation =
+                    MessageCatalogs.render
+                        language
+                        "ui.characterWarning"
+                        (Map.ofList [ "characters", points ])
+
+                text + " [" + annotation + "]"
+        | _ -> text
+
     let private items =
         function
         | JsonValue.Array values -> values
@@ -32,7 +55,11 @@ module internal TextReply =
 
     let private fieldLines language value =
         FieldTable.rows
-        |> List.map (fun row -> line language ("field." + row.Key + ".label") (get row.Key value))
+        |> List.map (fun row ->
+            line
+                language
+                ("field." + row.Key + ".label")
+                (memberValue row.Key value |> displayed language))
 
     let private stateFields state = memberValue "fields" state
 
@@ -250,17 +277,44 @@ module internal TextReply =
             else
                 FieldTable.rows
                 |> List.choose (fun row ->
-                    let previous = before |> memberValue "state" |> stateFields |> get row.Key
-                    let next = after |> memberValue "state" |> stateFields |> get row.Key
+                    let previous =
+                        before |> memberValue "state" |> stateFields |> memberValue row.Key
+
+                    let next = after |> memberValue "state" |> stateFields |> memberValue row.Key
 
                     if previous = next then
                         None
                     else
                         Some(
-                            line language ("field." + row.Key + ".label") (previous + " → " + next)
+                            line
+                                language
+                                ("field." + row.Key + ".label")
+                                (displayed language previous + " → " + displayed language next)
                         ))
 
         line language "ui.reviewTitle" (reviewIdentity request review) :: changes
+
+    let private diagnosticTargetIdentity =
+        function
+        | InputTarget.Field field -> "field." + BusinessField.token field + ".label"
+        | InputTarget.OperationId -> "authority.field.operationId.label"
+        | InputTarget.ExpectedRevision -> "authority.field.expectedRevision.label"
+        | InputTarget.PaymentGroup -> "group.payment.label"
+        | InputTarget.Reason -> "field.reason.label"
+        | InputTarget.PrincipalIssuer -> "authority.field.issuer.label"
+        | InputTarget.PrincipalSubject -> "authority.field.subject.label"
+        | InputTarget.Limit -> "cli.target.limit"
+        | InputTarget.Cursor -> "cli.target.cursor"
+
+    let private diagnosticTarget language value =
+        match JsonValue.tryMember "target" value with
+        | Some(JsonValue.String _ as target) ->
+            let admitted =
+                (Codec.enumeration InputTargets.all).Read "$.target" target
+                |> Result.defaultWith (fun _ -> invalidOp "Invalid admitted diagnostic target.")
+
+            Some(label language (diagnosticTargetIdentity admitted))
+        | _ -> None
 
     let private diagnostic language family value =
         let code = get "code" value
@@ -272,6 +326,11 @@ module internal TextReply =
             | _ -> Map.empty
 
         let message = MessageCatalogs.render language (family + code) arguments
+
+        let message =
+            match diagnosticTarget language value with
+            | Some target -> target + ": " + message
+            | None -> message
 
         let action =
             JsonValue.tryMember "action" value
