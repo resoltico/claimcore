@@ -5,7 +5,7 @@
 Use the SDK in [global.json](../global.json), Node/npm in [.node-version](../.node-version) and
 [web/package.json](../web/package.json), Bash, Python 3 for the independent durable oracle, and Docker for
 integration/acceptance/workflow checks. Runtime private-file support is macOS/Linux.
-Unix sink controls use sh, mkfifo, dd, stty, script and Linux prlimit; no Python descriptor harness or native shim.
+Unix sink controls use sh, mkfifo, dd, stty, script and Linux prlimit.
 
 ```sh
 dotnet restore ClaimCore.slnx --locked-mode

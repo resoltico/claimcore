@@ -38,9 +38,9 @@ keeps declaration order with the same string rules. Permanent free-text bounds a
 durable bytes. The ledger hash covers metadata and a salted payload commitment, never the payload itself or an
 unsalted content digest. Erasure removes payload and nonce while preserving chain verification. The ledger is
 the sole acceptance record; projections are derived views written in its transaction. Before 1.0.0 a release
-may replace the baseline and refuse older installations untouched; this baseline refuses installations through
-0.11.0 without conversion. Keep them with matching software. From 1.0.0 retain readers for every released
-format and ship forward migrations.
+may replace the baseline and refuse incompatible installations untouched. Only the shipped schema and formats
+are supported; keep incompatible installations with matching software. No conversion is supplied. From 1.0.0
+retain readers for every released format and ship forward migrations.
 
 <a id="cc-run-001"></a>
 

@@ -66,6 +66,10 @@ safe corrective help; no authored token is echoed. Text is the verb default; `--
 frame. Language defaults to en; `--language en|lv|ar` selects authored human text. No TTY detection or
 prompting changes output.
 
+Human diagnostics identify the affected input with its localized label. Current fields, both preview sides
+and full-history fields annotate suspicious Unicode scalars using the [shared display policy](domain.md#scalars);
+annotations preserve the raw values and never enter JSON replies.
+
 `call` reads one strict JSON `{ "endpoint": ..., "input": ... }` document (up to 128 KiB); `session` reads one
 frame per NDJSON line and reuses process-local authentication. Reply frames have endpoint, operationId,
 delivery (`NOT_SENT|DELIVERED|UNCERTAIN`) and result. Result is a typed service reply, hostFailure wrapper or
