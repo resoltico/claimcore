@@ -162,7 +162,7 @@ let private endpointRoutes () =
 
             Expect.stringContains
                 output
-                ("mutates: " + (if Api.mutates endpoint then "true" else "false"))
+                ("effect: " + EndpointEffects.token (Api.effect endpoint))
                 "Mutation nature is explicit"
 
             for direction in [ "request"; "response" ] do
@@ -173,12 +173,12 @@ let private endpointRoutes () =
 
     Expect.stringContains
         (rendered "en" (CliDescription.Endpoints(Some "operation.execute")))
-        "mutates: true"
+        "effect: LEDGER_EXECUTION"
         "Execution is a mutation"
 
     Expect.stringContains
         (rendered "en" (CliDescription.Endpoints(Some "context")))
-        "mutates: false"
+        "effect: READ_ONLY"
         "Context is a read"
 
 [<Tests>]

@@ -23,7 +23,6 @@
     <Compile Include="OidcTrustRoot.fs" />
     <Compile Include="TlsCertificate.fs" />
     <Compile Include="WebBinding.fs" />
-    <Compile Include="TicketPersistence.fs" />
     <Compile Include="Security.fs" />
     <Compile Include="SessionKeys.fs" />
     <Compile Include="Configuration.fs" />
@@ -42,6 +41,7 @@
     <Compile Include="WebProbeTransport.fs" />
     <Compile Include="WebProbe.fs" />
     <Compile Include="WebProcessLifetime.fs" />
+    <Compile Include="RecoveryProtection.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

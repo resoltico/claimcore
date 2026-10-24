@@ -25,7 +25,7 @@ let private endpointDescription fixture language =
 
     for item in
         [
-            "mutates: true"
+            "effect: LEDGER_EXECUTION"
             "ClaimCore.Cli schema operation.execute request"
             "ClaimCore.Cli schema operation.execute response"
         ] do

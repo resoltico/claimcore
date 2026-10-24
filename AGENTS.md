@@ -51,7 +51,7 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   paths, never tracked source.
 
 - Private inputs are absolute, regular files with no other-access bits and no group write or
-  execute bits, read from the admitted handle; there is no native code in the product or its tests.
+  execute bits, read from the admitted handle; only HostSecurity may use the documented system-library private-file ABI adapters; no custom native binary is shipped.
 
 ## Name by meaning, not incidental development history
 

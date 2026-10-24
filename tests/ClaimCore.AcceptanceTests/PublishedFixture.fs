@@ -69,13 +69,18 @@ let private webEnvironment
     certificate
     =
     let values = Dictionary<string, string>()
+    let keyRing = Directory.CreateDirectory(Path.Combine(directory, "key-ring"))
+
+    File.SetUnixFileMode(
+        keyRing.FullName,
+        UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
+    )
 
     for name, value in
         [
             "CLAIMCORE_CONNECTION_FILE", connection
             "CLAIMCORE_WEB_CERTIFICATE_PATH", certificate
-            "CLAIMCORE_WEB_KEY_RING_DIRECTORY",
-            Directory.CreateDirectory(Path.Combine(directory, "key-ring")).FullName
+            "CLAIMCORE_WEB_KEY_RING_DIRECTORY", keyRing.FullName
             "CLAIMCORE_WEB_ORIGIN", origin
             "CLAIMCORE_OIDC_ISSUER", identity.Issuer
             "CLAIMCORE_OIDC_CLIENT_ID", "web"
@@ -169,6 +174,7 @@ type Fixture() =
     let mutable commitProxy: CommitReplyProxy.Proxy option = None
     let proxy = new HttpsProxy.Proxy(origin, backend, certificate, http, directory)
     let mutable completed = false
+    let mutable restarts = 0
     let mutable cli = ""
     let mutable admin = ""
     let mutable webBinary = ""
@@ -190,7 +196,34 @@ type Fixture() =
     member _.ArmCommitReplyLoss() =
         commitProxy
         |> Option.defaultWith (fun () -> invalidOp "The owned database proxy is not started.")
-        |> _.Arm()
+        |> fun proxy -> proxy.Arm 2
+
+    member _.ArmJournalReplyLoss() =
+        commitProxy
+        |> Option.defaultWith (fun () -> invalidOp "The owned database proxy is not started.")
+        |> fun proxy -> proxy.Arm 1
+
+    member _.RestartWeb() =
+        task {
+            let current =
+                web
+                |> Option.defaultWith (fun () -> invalidOp "The owned Web process is not started.")
+
+            web <- None
+            (current :> IDisposable).Dispose()
+            restarts <- restarts + 1
+
+            let replacement =
+                new PublishedProcesses.Web(
+                    webBinary,
+                    webSettings,
+                    directory,
+                    logPrefix = $"web-restart-{restarts}"
+                )
+
+            web <- Some replacement
+            do! awaitReady http origin replacement
+        }
 
     member _.Administration arguments =
         ProcessRunner.dotnet 60_000 admin arguments adminEnvironment None
@@ -210,6 +243,7 @@ type Fixture() =
             settings.Host <- "127.0.0.1"
             settings.Port <- relay.Port
             settings.SslMode <- SslMode.Disable
+            settings.GssEncryptionMode <- GssEncryptionMode.Disable
 
             let proxiedRuntime =
                 FixtureFiles.text directory "proxied-runtime.connection" settings.ConnectionString

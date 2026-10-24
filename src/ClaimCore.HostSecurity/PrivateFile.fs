@@ -4,8 +4,6 @@ open System
 open System.IO
 open System.Security.Cryptography
 open System.Text
-open System.Threading.Tasks
-open Microsoft.Win32.SafeHandles
 
 /// Refusals carry neither the private path nor its content.
 [<RequireQualifiedAccess>]
@@ -20,7 +18,7 @@ type PrivateFileFailure =
     | Unreadable
     | UnsupportedPlatform
 
-/// Managed admission of bounded private inputs on Linux and macOS.
+/// Bounded private inputs admitted from one nonblocking Unix descriptor.
 module PrivateFile =
     let private forbidden =
         UnixFileMode.OtherRead
@@ -31,33 +29,26 @@ module PrivateFile =
 
     let private admitted mode = mode &&& forbidden = UnixFileMode.None
 
-    let internal readBytes (stream: Stream) (buffer: byte array) =
+    let internal readBytes read (buffer: byte array) =
         try
-            stream.ReadExactly(buffer, 0, buffer.Length)
+            read buffer
             Ok buffer
         with _ ->
             CryptographicOperations.ZeroMemory(Span<byte> buffer)
             reraise ()
 
-    let internal readOpened maximumBytes (stream: FileStream) =
-        if not stream.CanSeek then
-            Error PrivateFileFailure.NotRegular
-        else
-            let length = stream.Length
-
-            if length > int64 maximumBytes then
-                Error PrivateFileFailure.TooLarge
-            else
-                readBytes stream (Array.zeroCreate<byte>(int length))
-
-    let internal readHandle maximumBytes (handle: SafeFileHandle) =
+    let internal readHandle maximumBytes abi (handle: UnixPrivateFile.Handle) =
         use owned = handle
+        let mode, length = UnixPrivateFile.metadata abi handle
 
-        if not (admitted (File.GetUnixFileMode handle)) then
+        if mode &&& 0xF000 <> 0x8000 then
+            Error PrivateFileFailure.NotRegular
+        elif not (admitted (enum<UnixFileMode>(mode &&& 0xFFF))) then
             Error PrivateFileFailure.TooPermissive
+        elif length < 0L || length > int64 maximumBytes then
+            Error PrivateFileFailure.TooLarge
         else
-            use stream = new FileStream(handle, FileAccess.Read, 1, false)
-            readOpened maximumBytes stream
+            readBytes (UnixPrivateFile.read handle) (Array.zeroCreate<byte>(int length))
 
     let private validPath (path: string) =
         if path.Contains '\000' then
@@ -69,29 +60,13 @@ module PrivateFile =
             with :? EncoderFallbackException ->
                 false
 
-    let private abandon (worker: Task<SafeFileHandle>) =
-        worker.ContinueWith(fun (finished: Task<SafeFileHandle>) ->
-            if finished.IsCompletedSuccessfully then
-                finished.Result.Dispose()
-            elif finished.IsFaulted then
-                finished.Exception |> ignore)
-        |> ignore
-
-    let private openRead maximumBytes (path: string) =
-        if not (admitted (File.GetUnixFileMode path)) then
-            Error PrivateFileFailure.TooPermissive
-        elif Directory.Exists path then
-            Error PrivateFileFailure.NotRegular
-        else
-            let worker =
-                Task.Run(fun () -> File.OpenHandle(path, FileMode.Open, FileAccess.Read))
-
-            try
-                let handle = worker.WaitAsync(TimeSpan.FromSeconds 2.).GetAwaiter().GetResult()
-                readHandle maximumBytes handle
-            with :? TimeoutException ->
-                abandon worker
-                Error PrivateFileFailure.NotRegular
+    let private openRead maximumBytes path =
+        match UnixPrivateFile.platform () with
+        | None -> Error PrivateFileFailure.UnsupportedPlatform
+        | Some abi ->
+            let pathBytes = Encoding.UTF8.GetBytes(path + "\000")
+            let handle = UnixPrivateFile.openRead abi pathBytes
+            readHandle maximumBytes abi handle
 
     /// The caller owns the returned bytes and must clear them after use. Links are followed.
     let internal readOnPlatform supported maximumBytes (path: string) =
@@ -113,4 +88,4 @@ module PrivateFile =
             | :? UnauthorizedAccessException -> Error PrivateFileFailure.Unreadable
 
     let read maximumBytes path =
-        readOnPlatform (OperatingSystem.IsMacOS() || OperatingSystem.IsLinux()) maximumBytes path
+        readOnPlatform (UnixPrivateFile.platform () |> Option.isSome) maximumBytes path

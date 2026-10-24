@@ -85,8 +85,14 @@ module internal Transactions =
         | :? PostgresException -> StoreFailure.Unavailable
         | error -> providerFailure commitStarted error
 
+    [<RequireQualifiedAccess>]
+    type private CommitDisposition =
+        | NoWrite
+        | LedgerAppend
+        | OperationalWrite
+
     /// The commit marker is set only after all projection work and the final pre-commit cancellation check.
-    let write source settings (token: CancellationToken) action =
+    let private transact source settings (token: CancellationToken) action =
         task {
             let mutable commitStarted = false
 
@@ -99,9 +105,9 @@ module internal Transactions =
                         (fun connection transaction ->
                             task {
                                 let! _ = configure connection settings token
-                                let! result, append = action connection
+                                let! result, disposition = action connection
 
-                                if append then
+                                if disposition <> CommitDisposition.NoWrite then
                                     token.ThrowIfCancellationRequested()
                                     commitStarted <- true
                                     do! transaction.CommitAsync(token)
@@ -111,6 +117,38 @@ module internal Transactions =
             with error ->
                 return Error(failure commitStarted error)
         }
+
+    /// Only the accepted-ledger path supplies append permission.
+    let write source settings token action =
+        transact source settings token (fun connection ->
+            task {
+                let! result, append = action connection
+
+                return
+                    result,
+                    (if append then
+                         CommitDisposition.LedgerAppend
+                     else
+                         CommitDisposition.NoWrite)
+            })
+
+    [<RequireQualifiedAccess>]
+    type OperationalDecision<'Result> =
+        | ReadOnly of 'Result
+        | Persist of 'Result
+
+    /// Operational confirmation is independent of ledger append and never signals business acceptance.
+    let operational source settings token action =
+        transact source settings token (fun connection ->
+            task {
+                let! decision = action connection
+
+                return
+                    match decision with
+                    | OperationalDecision.ReadOnly result -> result, CommitDisposition.NoWrite
+                    | OperationalDecision.Persist result ->
+                        result, CommitDisposition.OperationalWrite
+            })
 
     let read source token action =
         task {

@@ -173,13 +173,15 @@ module ReplyCodecs =
             ]
 
     let execute =
-        (record (fun id outcome ->
+        (record (fun id recovery outcome ->
             {
+                RecoveryId = recovery
                 ExecuteReply.OperationId = id
                 Outcome = outcome
             })
         : Fields<ExecuteReply, _>)
         |> field "operationId" _.OperationId Codec.uuid
+        |> field "recoveryId" _.RecoveryId (nullable uuid)
         |> field "outcome" _.Outcome executeResult
         |> build
         |> named "ExecuteReply"

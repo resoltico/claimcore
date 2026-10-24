@@ -328,19 +328,23 @@ let private listBounds (path: string) =
         segments |> Array.skip (max 0 (segments.Length - 2)) |> String.concat "."
 
     let maximum =
-        match context with
-        | "AuthorityState.Grants" -> 1
-        | "CaseAdvice.Acts" -> 12
-        | "CaseAdvice.History"
-        | "CorrectionChoices.Registration" -> 2
-        | "ActorContext.Capabilities" -> 10
-        | "ActorContext.Views"
-        | "CorrectionChoices.Decision"
-        | "CorrectionChoices.Payment" -> 3
-        | "ActorContext.Offers"
-        | "CaseSummaryPage.Offers" -> 4
-        | "AdvisoryReview.Changes" -> 13
-        | _ -> 50
+        Map.ofList
+            [
+                "AuthorityState.Grants", 1
+                "CaseAdvice.Acts", 12
+                "CaseAdvice.History", 2
+                "RecoveryItem.Offers", 2
+                "CorrectionChoices.Registration", 2
+                "ActorContext.Capabilities", 10
+                "ActorContext.Views", 3
+                "CorrectionChoices.Decision", 3
+                "CorrectionChoices.Payment", 3
+                "ActorContext.Offers", 4
+                "CaseSummaryPage.Offers", 4
+                "AdvisoryReview.Changes", 13
+            ]
+        |> Map.tryFind context
+        |> Option.defaultValue 50
 
     let minimum =
         if path.Contains("HistoryEntries.", StringComparison.Ordinal) then

@@ -1,86 +1,50 @@
 import { productMetadata } from "../protocol/productMetadata";
-import { wireSchemas } from "../protocol/client";
-import {
-  resolveSchema,
-  selectedSchema,
-  unionSelector,
-  schemaConstant,
-  type FormValues,
-} from "../protocol/forms";
-import type { SchemaDocument, SchemaNode } from "../protocol/schema";
+import { wireSchemas } from "../protocol/documents";
+import { buildRequest, isObject } from "../protocol/client";
+import type { FormValues } from "../protocol/forms";
 import type { CurrentCase } from "../api/types";
+import type { Descriptors } from "@contracts/client";
 
+// Read-only protocol summaries retain their structural document.
 export const operationDocument = wireSchemas["operation.execute"].request;
-const childPath = (parent: string, child: string): string =>
-  parent ? `${parent}.${child}` : child;
-type Choice = { path: string; selector: string; options: ReadonlyArray<unknown> };
-
-const choices = (
-  document: SchemaDocument,
-  node: SchemaNode,
-  path: string,
-  values: FormValues,
-): Choice[] => {
-  const resolved = resolveSchema(document, node);
-  const own: Choice[] =
-    resolved.oneOf === undefined
-      ? []
-      : [
-          {
-            path,
-            selector: unionSelector(document, resolved),
-            options: resolved.oneOf.map((branch) =>
-              schemaConstant(
-                document,
-                resolveSchema(document, branch).properties?.[unionSelector(document, resolved)] ??
-                  {},
-              ),
-            ),
-          },
-        ];
-  const selected = selectedSchema(document, resolved, path, values);
-  return own.concat(
-    Object.entries(selected.properties ?? {}).flatMap(([key, value]) =>
-      choices(document, value, childPath(path, key), values),
-    ),
+export type InteractionInput = Descriptors["interactions"][number]["inputs"][number];
+const interactionFor = (values: FormValues): Descriptors["interactions"][number] => {
+  const definition = productMetadata.descriptors.interactions.find(
+    (item) => item.scope === values["scope"] && item.kind === values["act.kind"],
   );
-};
-const operationChoices = (values: FormValues): Choice[] =>
-  choices(operationDocument, operationDocument, "", values);
-
-const leaves = (node: SchemaNode, path: string, values: FormValues): string[] => {
-  const selected = selectedSchema(operationDocument, node, path, values);
-  if (selected.type === "object") {
-    return Object.entries(selected.properties ?? {}).flatMap(([key, value]) =>
-      leaves(value, childPath(path, key), values),
-    );
+  if (definition === undefined) {
+    throw new Error("Unknown interaction definition.");
   }
-  return Object.hasOwn(selected, "const") ? [] : [path];
+  return definition;
 };
-const operationPaths = (values: FormValues): string[] => leaves(operationDocument, "", values);
-
-const prefill = (
-  current: CurrentCase | null,
-  input: { prefill: string; currentField?: string },
-): string => {
-  if (input.prefill !== "CURRENT_FIELD" || current === null || input.currentField === undefined) {
+export const bindingPath = (input: InteractionInput): string => input.path.join(".");
+const applicableInput = (input: InteractionInput, values: FormValues): boolean =>
+  input.branches.every((branch) => values[branch.path.join(".")] === branch.value);
+const fieldValue = (current: CurrentCase | null, field: string | null): string => {
+  if (current === null || field === null) {
     return "";
   }
-  const entry = Object.entries(current.state.fields).find(([key]) => key === input.currentField);
-  return typeof entry?.[1] === "string" ? entry[1] : "";
+  if (field === "caseReference") {
+    return current.caseReference;
+  }
+  const value = Object.entries(current.state.fields).find(([name]) => name === field)?.[1];
+  return typeof value === "string" ? value : "";
 };
-const setFields = (
-  values: Record<string, string | boolean>,
-  current: CurrentCase | null,
-  fields: ReadonlyArray<{ fieldName: string; prefill: string; currentField?: string }>,
-): void => {
-  const paths = operationPaths(values);
-  for (const input of fields) {
-    const path = paths.find((candidate) => candidate.split(".").at(-1) === input.fieldName);
-    if (path === undefined) {
-      throw new Error("Descriptor input is absent from its registry schema.");
-    }
-    values[path] = prefill(current, input);
+const initialValue = (input: InteractionInput, current: CurrentCase | null, id: string) => {
+  if (input.source === "OPERATION_IDENTITY") {
+    return id;
+  }
+  if (input.source === "EXPECTED_REVISION") {
+    return String(current?.revision ?? 0);
+  }
+  switch (input.kind.kind) {
+    case "BOOLEAN":
+      return false;
+    case "CHOICE":
+    case "GROUP":
+      return input.kind.options[0] ?? "";
+    default:
+      return fieldValue(current, input.prefill);
   }
 };
 export const initialOperationValues = (
@@ -89,30 +53,14 @@ export const initialOperationValues = (
   current: CurrentCase | null,
   id = crypto.randomUUID(),
 ): FormValues => {
-  const values: Record<string, string | boolean> = { scope, operationId: id, "act.kind": kind };
-  if (scope === "AUTHORITY") {
-    return values;
+  const definition = interactionFor({ scope, "act.kind": kind });
+  const values: Record<string, string | boolean> = {};
+  for (const constant of definition.constants) {
+    values[constant.path.join(".")] =
+      typeof constant.value === "number" ? String(constant.value) : constant.value;
   }
-  values["caseReference"] = current?.caseReference ?? "";
-  values["expectedRevision"] = String(current?.revision ?? 0);
-  const command = productMetadata.descriptors.commands.find((candidate) => candidate.kind === kind);
-  if (command === undefined) {
-    throw new Error("Unknown case act descriptor.");
-  }
-  if (command.inputs.kind === "FIELDS") {
-    setFields(values, current, command.inputs.fields);
-  } else {
-    const modes = operationChoices(values).filter((choice) => choice.selector === "mode");
-    for (const group of command.inputs.groups) {
-      const choice = modes.find((candidate) => candidate.path.split(".").at(-1) === group.name);
-      if (choice === undefined) {
-        throw new Error("Correction group is absent from its schema.");
-      }
-      const selector = childPath(choice.path, choice.selector);
-      values[selector] = "REPLACE";
-      setFields(values, current, group.replaceFields);
-      values[selector] = "KEEP";
-    }
+  for (const input of definition.inputs) {
+    values[bindingPath(input)] = initialValue(input, current, id);
   }
   return values;
 };
@@ -120,121 +68,46 @@ export const refusalPath = (target: string | null, values: FormValues): string |
   if (target === null) {
     return null;
   }
-  if (Object.hasOwn(values, target)) {
-    return target;
-  }
-  if (target.startsWith("principal.")) {
-    return target.replace("principal.", "target.");
-  }
   return (
-    operationPaths(values).find((path) => path.split(".").at(-1) === target) ??
-    operationChoices(values)
-      .filter((choice) => choice.selector === "mode")
-      .map((choice) => childPath(choice.path, choice.selector))
-      .find((path) => path.split(".").at(-2) === target) ??
-    null
+    interactionFor(values)
+      .inputs.find(
+        (input) => input.diagnosticTargets.includes(target) && applicableInput(input, values),
+      )
+      ?.path.join(".") ?? null
   );
 };
-const operationFormSchema = (values: FormValues, current: CurrentCase | null): SchemaNode => {
-  const schema = selectedSchema(operationDocument, operationDocument, "", values);
-  return {
-    ...schema,
-    properties: Object.fromEntries(
-      Object.entries(schema.properties ?? {}).filter(
-        ([key]) =>
-          !["operationId", "expectedRevision", "scope"].includes(key) &&
-          !(key === "caseReference" && current !== null),
-      ),
-    ),
-  };
-};
-
-const orderedMembers = (node: SchemaNode): [string, SchemaNode][] => {
-  const fields = [
-    ...productMetadata.descriptors.fields,
-    ...productMetadata.descriptors.inputFields,
-  ];
-  const order = (name: string) => {
-    const index = fields.findIndex((field) => field.name === name);
-    return index < 0 ? fields.length : index;
-  };
-  return Object.entries(node.properties ?? {}).sort(
-    ([left], [right]) => order(left) - order(right),
-  );
-};
-const allowedBranches = (
-  schema: SchemaNode,
-  path: string,
-  values: FormValues,
-  current: CurrentCase | null,
-): ReadonlyArray<SchemaNode> => {
-  const offer = current?.advice.acts.find((item) => item.act === values["act.kind"]);
-  const allowed =
-    offer !== undefined && "correction" in offer
-      ? Object.entries(offer.correction).find(([name]) => name === path.split(".").at(-1))?.[1]
-      : undefined;
-  const selector = unionSelector(operationDocument, schema);
-  return schema.oneOf!.filter(
-    (branch) =>
-      allowed === undefined ||
-      allowed.some(
-        (mode) =>
-          mode ===
-          schemaConstant(
-            operationDocument,
-            resolveSchema(operationDocument, branch).properties?.[selector] ?? {},
-          ),
-      ),
-  );
-};
-const formNode = (
-  node: SchemaNode,
-  path: string,
-  values: FormValues,
-  current: CurrentCase | null,
-): SchemaNode => {
-  const schema = resolveSchema(operationDocument, node);
-  if (schema.oneOf !== undefined) {
-    if (path === "act") {
-      return formNode(
-        selectedSchema(operationDocument, schema, path, values),
-        path,
-        values,
-        current,
-      );
-    }
-    return {
-      ...schema,
-      oneOf: allowedBranches(schema, path, values, current).map((branch) =>
-        formNode(branch, path, values, current),
-      ),
-    };
+const assign = (
+  root: Record<string, unknown>,
+  path: ReadonlyArray<string>,
+  value: unknown,
+): void => {
+  let target = root;
+  for (const segment of path.slice(0, -1)) {
+    const child = target[segment];
+    const entries: Record<string, unknown> = isObject(child)
+      ? Object.fromEntries(Object.entries(child))
+      : {};
+    target[segment] = entries;
+    target = entries;
   }
-  if (schema.type !== "object") {
-    return schema;
+  target[path.at(-1)!] = value;
+};
+export const assembleOperation = (values: FormValues) => {
+  const definition = interactionFor(values);
+  const root: Record<string, unknown> = {};
+  for (const constant of definition.constants) {
+    assign(root, constant.path, constant.value);
   }
-  return {
-    ...schema,
-    properties: Object.fromEntries(
-      orderedMembers(schema).map(([key, value]) => [
-        key,
-        formNode(value, childPath(path, key), values, current),
-      ]),
-    ),
-  };
+  for (const input of definition.inputs.filter((item) => applicableInput(item, values))) {
+    const value = values[bindingPath(input)] ?? "";
+    assign(root, input.path, input.kind.kind === "INTEGER" ? Number(value) : value);
+  }
+  return buildRequest("operation.execute", root);
 };
-export const visibleOperationSchema = (
-  values: FormValues,
-  current: CurrentCase | null,
-): SchemaNode => {
-  const schema = operationFormSchema(values, current);
-  return formNode(
-    {
-      ...schema,
-      required: schema.required?.filter((key) => Object.hasOwn(schema.properties ?? {}, key)) ?? [],
-    },
-    "",
-    values,
-    current,
+export const visibleOperationInputs = (values: FormValues, current: CurrentCase | null) =>
+  interactionFor(values).inputs.filter(
+    (input) =>
+      input.source === "AUTHORED" &&
+      !(input.field === "caseReference" && current !== null) &&
+      applicableInput(input, values),
   );
-};

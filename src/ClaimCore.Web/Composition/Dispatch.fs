@@ -4,6 +4,7 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
 open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 [<NoEquality; NoComparison>]
 type internal PreparedCall =
@@ -41,6 +42,7 @@ module internal Dispatch =
 
     let private executeUnavailable input : ExecuteReply =
         {
+            RecoveryId = None
             OperationId = OperationInput.operationId input
             Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
         }
@@ -69,6 +71,17 @@ module internal Dispatch =
                     core.Preview(input, ct))
                 bind Api.operationExecute executeUnavailable (fun core input ct ->
                     core.Execute(input, ct))
+                bindRead Api.operationPending (fun core input ct -> core.Pending(input, ct))
+                bind
+                    Api.operationRetry
+                    (fun input ->
+                        {
+                            RecoveryId = Some input.RecoveryId
+                            OperationId = input.OperationId
+                            Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
+                        })
+                    (fun core input ct -> core.Retry(input, ct))
+                bindRead Api.operationForget (fun core input ct -> core.Forget(input, ct))
                 bindRead Api.operationObserve (fun core input ct -> core.Observe(input, ct))
                 bindRead Api.authorityList (fun core input ct -> core.ListActors(input, ct))
                 bindRead Api.authorityGrants (fun core input ct -> core.ListGrants(input, ct))
@@ -79,3 +92,23 @@ module internal Dispatch =
 
     let check () = bindings |> ignore
     let prepare endpoint value = bindings[Api.id endpoint] value
+
+    let prepareRaw endpoint value bytes =
+        if Api.id endpoint = Api.operationExecute.Id then
+            RequestCodecs.operationInput.Read "$" value
+            |> Result.bind (fun input ->
+                ExecutionEnvelope.Admit(input, bytes)
+                |> Result.map (fun envelope ->
+                    {
+                        Unavailable =
+                            fun () -> Api.operationExecute.Output.Write(executeUnavailable input)
+                        Invoke =
+                            fun core token completed ->
+                                task {
+                                    let! reply = core.ExecuteEnvelope(envelope, token)
+                                    completed ()
+                                    return Api.operationExecute.Output.Write reply
+                                }
+                    }))
+        else
+            prepare endpoint value

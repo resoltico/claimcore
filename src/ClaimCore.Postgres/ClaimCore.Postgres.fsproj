@@ -14,9 +14,11 @@
     <Compile Include="Reads/DecisionViews.fs" />
     <Compile Include="Ledger/WriteOperations.fs" />
     <Compile Include="Reads/ReadOperations.fs" />
+    <Compile Include="RecoveryStore.fs" />
     <Compile Include="Ledger/LedgerStore.fs" />
     <Compile Include="Verification/VerificationRows.fs" />
     <Compile Include="Verification/Verification.fs" />
+    <Compile Include="SessionStore.fs" />
     <Compile Include="Runtime.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -142,7 +142,13 @@ let private executeOutcomes () =
                 ExecuteResult.Failed CoreFault.StoreUnavailable, 3
                 ExecuteResult.OutcomeUnknown, 4
             ] do
-            let reply: ExecuteReply = { OperationId = id; Outcome = outcome }
+            let reply: ExecuteReply =
+                {
+                    RecoveryId = None
+                    OperationId = id
+                    Outcome = outcome
+                }
+
             admitted Api.operationExecute.Output reply |> ignore
 
             let frame: ClaimCore.Contract.FrameReply =
@@ -375,6 +381,7 @@ let private integerLexemes () =
                 Codec.encode
                     Api.operationExecute.Output
                     {
+                        RecoveryId = None
                         OperationId = id
                         Outcome =
                             ExecuteResult.Accepted

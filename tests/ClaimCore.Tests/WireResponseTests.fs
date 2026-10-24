@@ -147,39 +147,7 @@ let private frames () =
     roundTrip local
     Expect.equal (ClaimCore.Contract.Frames.exitCode local) 130 "Cancellation exit code"
 
-let private openApi () =
-    let first = (ClaimCore.Contract.OpenApi.document |> WireWriter.bytes)
-
-    Expect.equal
-        ((ClaimCore.Contract.OpenApi.document |> WireWriter.bytes))
-        first
-        "OpenAPI bytes are deterministic"
-
-    use document = JsonDocument.Parse(first.AsMemory())
-    let root = document.RootElement
-    Expect.equal (root.GetProperty("openapi").GetString()) "3.1.0" "Explicit dialect"
-    let paths = root.GetProperty "paths"
-    Expect.equal (paths.EnumerateObject() |> Seq.length) 11 "All registry endpoints emitted"
-
-    for endpoint in Api.all do
-        let operation =
-            paths
-                .GetProperty(Api.path endpoint)
-                .GetProperty(((Api.method endpoint).Method).ToLowerInvariant())
-
-        Expect.equal
-            (operation.GetProperty("operationId").GetString())
-            (Api.id endpoint)
-            "Stable endpoint identity"
-
-        Expect.isTrue
-            (operation.GetProperty("responses").TryGetProperty("200") |> fst)
-            "Successful typed response"
-
-        Expect.isTrue
-            (operation.GetProperty("responses").TryGetProperty("500") |> fst)
-            "Explicit host errors"
-
+let private checkDiscriminators (root: JsonElement) =
     let schemas = root.GetProperty("components").GetProperty "schemas"
 
     for name, property, count in [ "ReceiptScope", "kind", 2; "CaseActOffer", "act", 12 ] do
@@ -202,6 +170,50 @@ let private openApi () =
                  |> nonNull
                  |> _.StartsWith("#/components/schemas/"))
                 "Each branch is named"
+
+let private openApi () =
+    let first = (ClaimCore.Contract.OpenApi.document |> WireWriter.bytes)
+
+    Expect.equal
+        ((ClaimCore.Contract.OpenApi.document |> WireWriter.bytes))
+        first
+        "OpenAPI bytes are deterministic"
+
+    use document = JsonDocument.Parse(first.AsMemory())
+    let root = document.RootElement
+    Expect.equal (root.GetProperty("openapi").GetString()) "3.1.0" "Explicit dialect"
+    let paths = root.GetProperty "paths"
+
+    Expect.equal
+        (paths.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq)
+        (Api.all |> List.map Api.path |> Set.ofList)
+        "Exactly the current registry paths are emitted"
+
+    for endpoint in Api.all do
+        let operation =
+            paths
+                .GetProperty(Api.path endpoint)
+                .GetProperty(((Api.method endpoint).Method).ToLowerInvariant())
+
+        Expect.equal
+            (operation.GetProperty("operationId").GetString())
+            (Api.id endpoint)
+            "Stable endpoint identity"
+
+        Expect.equal
+            (operation.GetProperty("x-claimcore-effect").GetString())
+            (EndpointEffects.token (Api.effect endpoint))
+            "Delivery effect is part of the hashed public contract"
+
+        Expect.isTrue
+            (operation.GetProperty("responses").TryGetProperty("200") |> fst)
+            "Successful typed response"
+
+        Expect.isTrue
+            (operation.GetProperty("responses").TryGetProperty("500") |> fst)
+            "Explicit host errors"
+
+    checkDiscriminators root
 
 
 [<Tests>]

@@ -1,9 +1,8 @@
 import { useRef, useEffect } from "react";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
-import { ProtocolFields } from "../../components/ProtocolFields";
+import { InteractionInputs } from "../../components/InteractionInputs";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
-import { operationDocument, visibleOperationSchema } from "../../interaction/operationForm";
 import type { CurrentCase } from "../../api/service";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import { productMetadata } from "../../protocol/productMetadata";
@@ -59,10 +58,8 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
       )}
       {command?.inputs.kind === "CORRECTION_GROUPS" ? <p>{p.text("ui.correctionHint")}</p> : null}
       {offered.length === 0 ? null : (
-        <ProtocolFields
-          document={operationDocument}
-          node={visibleOperationSchema(model.values, current)}
-          path=""
+        <InteractionInputs
+          current={current}
           values={model.values}
           disabled={model.busy || model.phase === "REVIEWING" || !allowed}
           errorPath={model.fieldError}

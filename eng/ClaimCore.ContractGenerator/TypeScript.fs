@@ -58,7 +58,7 @@ module TypeScript =
                 id = Api.id endpoint
                 method = (Api.method endpoint).Method
                 path = Api.path endpoint
-                mutates = Api.mutates endpoint
+                effect = EndpointEffects.token (Api.effect endpoint)
             |})
         |> JsonSerializer.Serialize
 
@@ -72,43 +72,18 @@ module TypeScript =
         |}
         |> JsonSerializer.Serialize
 
-    let rec private descriptorType name (value: JsonElement) =
-        match value.ValueKind with
-        | JsonValueKind.Object ->
-            value.EnumerateObject()
-            |> Seq.map (fun property ->
-                "readonly "
-                + quote property.Name
-                + ": "
-                + descriptorType property.Name property.Value
-                + ";")
-            |> String.concat " "
-            |> fun fields -> "{ " + fields + " }"
-        | JsonValueKind.Array ->
-            let alternatives =
-                value.EnumerateArray()
-                |> Seq.map (descriptorType name)
-                |> Seq.distinct
-                |> String.concat " | "
-
-            "ReadonlyArray<" + (if alternatives = "" then "never" else alternatives) + ">"
-        | JsonValueKind.String ->
-            if name = "label" || name = "meaning" || name = "labelId" || name = "meaningId" then
-                "string"
-            else
-                value.GetString() |> nonNull |> quote
-        | JsonValueKind.Number -> "number"
-        | JsonValueKind.True
-        | JsonValueKind.False -> "boolean"
-        | JsonValueKind.Null -> "null"
-        | _ -> invalidOp "Unsupported descriptor value."
-
     let private metadataTypes () =
-        use document =
-            JsonDocument.Parse(System.ReadOnlyMemory<byte>(ContractDescriptors.render ()))
+        let codec = DescriptorCodecs.codec
 
-        "export type Descriptors = "
-        + descriptorType "" document.RootElement
+        let definitions =
+            codec.Definitions
+            |> Map.toList
+            |> List.map (fun (name, schema) ->
+                "export type " + identifier name + " = " + value schema + ";")
+
+        String.concat "\n" definitions
+        + "\nexport type Descriptors = "
+        + value codec.Schema
         + ";\n"
         + "export type ProductMetadata = { readonly descriptors: Descriptors; readonly productVersion: string; readonly contractIdentity: string };"
 
@@ -150,6 +125,7 @@ module TypeScript =
             "/* Generated from ClaimCore.Contract registry codecs. Do not edit. */"
             yield! definitions
             metadataTypes ()
+            ClientValidation.source ()
             endpointMap "RequestByEndpoint" false
             endpointMap "ResponseByEndpoint" true
             "export type OutcomeByEndpoint = { readonly [E in keyof ResponseByEndpoint]: ResponseByEndpoint[E][\"outcome\"] };"

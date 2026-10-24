@@ -39,7 +39,6 @@ let private configure
         configuration
         root
         (fun token -> idToken.Value <- Some token)
-        (TimeSpan.FromMinutes 30.)
         (TimeSpan.FromHours 8.)
         builder.Services
 

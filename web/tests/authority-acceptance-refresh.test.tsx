@@ -104,6 +104,7 @@ it.each(["context", "listing"] as const)(
       expect(screen.queryByLabelText("Authority action", { exact: true })).toBeNull();
     }
     await finish(contextRead, context());
+    fireEvent.click(screen.getByRole("button", { name: "Start another operation" }));
     fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
       target: { value: "SET_GRANT" },
     });
@@ -165,6 +166,7 @@ it.each(["transport", "host", "core"] as const)(
     expect(screen.queryByLabelText("Authority action", { exact: true })).toBeNull();
     expect(reads).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole("button", { name: /^Try again$/u }));
+    fireEvent.click(screen.getByRole("button", { name: "Start another operation" }));
     await waitFor(() => {
       expect(
         screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),

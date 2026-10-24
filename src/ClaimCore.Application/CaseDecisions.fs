@@ -27,7 +27,7 @@ module internal CaseDecisions =
             else
                 Error CoreFault.StoreIntegrityError)
 
-    let private permission principal actor (request: CaseRequest) (record: StoredCase option) =
+    let permission principal actor (request: CaseRequest) (record: StoredCase option) =
         if CaseActs.kind request.Act = (CaseActKind.Business BusinessActKind.Open) then
             if ActorAuthorization.canAct principal actor ResourceScope.Installation request.Act then
                 Ok()
@@ -65,6 +65,28 @@ module internal CaseDecisions =
                 request.OperationId
                 bytes
                 view.ExistingOperation
+
+    let stage installationId principal request (view: CaseReadView) =
+        match admission installationId principal request (RequestRecord.encode request) view with
+        | IdentityDecision.Refuse refusal ->
+            RecoveryAdmission.Terminal(ExecuteResult.Rejected refusal)
+        | IdentityDecision.Fail fault -> RecoveryAdmission.Terminal(ExecuteResult.Failed fault)
+        | IdentityDecision.Replay entry ->
+            LedgerEntries.receipt principal view.Actor view.Case entry
+            |> Result.map ExecuteResult.AlreadyAccepted
+            |> Result.defaultWith ExecuteResult.Failed
+            |> RecoveryAdmission.Terminal
+        | IdentityDecision.Fresh ->
+            match view.Case with
+            | Some {
+                       Snapshot = { View = CaseView.Erased }
+                   } -> RecoveryAdmission.Terminal(ExecuteResult.Rejected Refusal.CaseErased)
+            | _ ->
+                RecoveryAdmission.Ready(
+                    view.Actor.Actor.Value.ActorId,
+                    Some(CaseReferenceId.encode installationId request.CaseReference),
+                    None
+                )
 
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseReadView) =
         let before =

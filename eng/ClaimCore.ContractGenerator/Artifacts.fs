@@ -5,6 +5,7 @@ open ClaimCore.Contract
 module ContractArtifacts =
     let all () =
         CatalogValidation.validate ()
+        BindingValidation.validate InteractionDefinitions.all
 
         [
             {

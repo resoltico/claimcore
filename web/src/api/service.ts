@@ -128,6 +128,16 @@ export const service = {
       { actorId, ...(cursor === null ? {} : { cursor }), limit: 50 },
       signal,
     ),
+  pending: (cursor: string | null, token: string, signal?: AbortSignal) =>
+    request(
+      "operation.pending",
+      token,
+      { ...(cursor === null ? {} : { cursor }), limit: 50 },
+      signal,
+    ),
+  retry: (recoveryId: string, operationId: string, token: string) =>
+    request("operation.retry", token, { recoveryId, operationId }),
+  forget: (recoveryId: string, token: string) => request("operation.forget", token, { recoveryId }),
   preview: (prepared: PreparedRequest<"operation.execute">, token: string) =>
     withinResponseDeadline((owned) => send("operation.preview", token, prepared.bytes, owned)),
   execute: (prepared: PreparedRequest<"operation.execute">, token: string) =>

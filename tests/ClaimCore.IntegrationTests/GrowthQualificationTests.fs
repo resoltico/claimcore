@@ -30,6 +30,31 @@ let private subjects count =
             |> Result.defaultWith failtest
     ]
 
+let private acknowledge (actor: IActorClaimsCore) (reply: ExecuteReply) =
+    task {
+        match reply.RecoveryId with
+        | None -> failtest "Full-path execution did not disclose its recovery identity"
+        | Some recoveryId ->
+            let! result = actor.Forget({ RecoveryId = recoveryId }, token)
+            Expect.equal result (ReadReply.Succeeded()) "Known acceptance is acknowledged"
+    }
+
+let private acknowledgeSetup (actor: IActorClaimsCore) =
+    task {
+        let! pending = actor.Pending({ AfterCursor = None; Limit = 50 }, token)
+
+        match pending with
+        | ReadReply.Succeeded page ->
+            for item in page.Items do
+                let! result = actor.Forget({ RecoveryId = item.RecoveryId }, token)
+
+                Expect.equal
+                    result
+                    (ReadReply.Succeeded())
+                    "Known fixture setup grants are acknowledged"
+        | _ -> failtest "Fixture recovery setup failed"
+    }
+
 let private authority (actor: IActorClaimsCore) principals =
     task {
         for index, principal in principals |> List.indexed do
@@ -37,7 +62,7 @@ let private authority (actor: IActorClaimsCore) principals =
                 actor.Execute(
                     OperationInput.Authority(
                         authorityRequest
-                            (id (100000 + index * 2))
+                            (id (100000 + index * 20))
                             principal
                             AdmittedAuthorityAct.RegisterActor
                     ),
@@ -45,17 +70,24 @@ let private authority (actor: IActorClaimsCore) principals =
                 )
 
             acceptedAuthority registered
+            do! acknowledge actor registered
 
-            let! granted =
-                grant
-                    actor
-                    (id (100001 + index * 2))
-                    principal
-                    Role.CaseReader
-                    GrantTarget.Installation
-                    true
+            let grants =
+                [
+                    yield Role.CaseHandler, GrantTarget.Installation
+                    for target in 0..8 ->
+                        Role.CaseReader,
+                        GrantTarget.CaseReference("synthetic-growth-" + string target)
+                    if index < 7 then
+                        yield Role.Auditor, GrantTarget.Installation
+                ]
 
-            acceptedAuthority granted
+            for offset, (role, scope) in grants |> List.indexed do
+                let! granted =
+                    grant actor (id (100001 + index * 20 + offset)) principal role scope true
+
+                acceptedAuthority granted
+                do! acknowledge actor granted
     }
 
 let private openCases (actor: IActorClaimsCore) count =
@@ -74,27 +106,65 @@ let private openCases (actor: IActorClaimsCore) count =
                 )
 
             accepted result |> ignore
+            do! acknowledge actor result
     }
+
+let private command revision =
+    let amended =
+        { registration with
+            ClaimantName = "Synthetic revision " + string revision
+        }
+
+    match (revision - 1L) % 8L with
+    | 0L -> CaseAct.AmendRegistration amended
+    | 1L ->
+        CaseAct.Decide
+            {
+                PaymentDecisionDate = "2026-08-04"
+                PayableAmount = "100.00"
+                PayableCurrency = "EUR"
+            }
+    | 2L -> CaseAct.RecordPayment { PaymentDate = "2026-08-05" }
+    | 3L -> CaseAct.ClearPayment
+    | 4L ->
+        CaseAct.CorrectCase
+            {
+                Registration = RegistrationGroup.Replace amended
+                Decision = DecisionGroup.Keep
+                Payment = PaymentGroup.Keep
+            }
+    | 5L -> CaseAct.WithdrawDecision
+    | 6L -> CaseAct.Close
+    | _ -> CaseAct.Reopen
 
 let private writeLane (actor: IActorClaimsCore) workload lane =
     task {
         let durations = ResizeArray<float>()
         let revisions = Array.create workload.Cases 1L
 
+        let targets =
+            [| for index in lane .. workload.Writers .. workload.Cases - 1 -> index |]
+
+        let mutable turn = 0
+
         for index in lane .. workload.Writers .. workload.Writes - 1 do
-            let target = index % workload.Cases
+            let target = targets[turn % targets.Length]
             let revision = revisions[target]
 
-            let command = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
-
             let authored =
-                request (200000 + index) ("synthetic-growth-" + string target) revision command
+                request
+                    (200000 + index)
+                    ("synthetic-growth-" + string target)
+                    revision
+                    (command revision)
 
             let watch = Stopwatch.StartNew()
             let! result = actor.Execute(OperationInput.Case authored, token)
             accepted result |> ignore
+            do! acknowledge actor result
             durations.Add watch.Elapsed.TotalMilliseconds
             revisions[target] <- revision + 1L
+            turn <- turn + 1
 
         return durations.ToArray()
     }
@@ -171,57 +241,40 @@ let private report
 
     {|
         writes = workload.Writes
+        setupAcceptedOperations = 10 + workload.Cases + workload.Actors * 11
+        qualificationAcceptedOperations = 1006
         cases = workload.Cases
         actors = workload.Actors + 1
-        grants = workload.Actors + 3
+        grants = workload.Actors * 10 + 10
         writers = workload.Writers
         ledgerEntries = position.Sequence
         seconds = elapsed
         writesPerSecond = float workload.Writes / elapsed
         p50Milliseconds = latencies[latencies.Length / 2]
         p95Milliseconds = latencies[int (float (latencies.Length - 1) * 0.95)]
+        p99Milliseconds = latencies[int (float (latencies.Length - 1) * 0.99)]
         maximumMilliseconds = Array.last latencies
+        operatingSystem = System.Runtime.InteropServices.RuntimeInformation.OSDescription
+        architecture = string System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture
+        dotnet = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription
+        processors = Environment.ProcessorCount
+        headWaitAndHoldMilliseconds = Nullable<float>()
         verificationMilliseconds = verificationMilliseconds
         managedBytesBeforeVerification = beforeMemory
         managedBytesAfterVerification = GC.GetTotalMemory false
-        processPeakWorkingSetBytes = runner.PeakWorkingSet64
+        processPeakWorkingSetBytes =
+            if runner.PeakWorkingSet64 > 0L then
+                Nullable runner.PeakWorkingSet64
+            else
+                Nullable()
         sampledPeakManagedBytes = peakManaged
         sampledPeakWorkingSetBytes = peakWorking
         lockTimeoutMilliseconds = timeoutMilliseconds
         unexpectedErrors = 0
     |}
 
-let private measure workload (database: PostgresFixture.Database) =
+let private history workload (actor: IActorClaimsCore) =
     task {
-        let! actor = caseWorker database.Fixture
-        do! openCases actor workload.Cases
-        let watch = Stopwatch.StartNew()
-
-        let writes =
-            [| for lane in 0 .. workload.Writers - 1 -> writeLane actor workload lane |]
-
-        let authorityWork = authority actor (subjects workload.Actors)
-
-        do!
-            Task.WhenAll(
-                Array.append
-                    (writes |> Array.map (fun work -> work :> Task))
-                    [| authorityWork :> Task |]
-            )
-
-        let lanes = writes |> Array.map _.Result
-        let elapsed = watch.Elapsed.TotalSeconds
-        let latencies = lanes |> Array.concat |> Array.sort
-        let! timeoutMilliseconds = timeout database
-
-        let! verification = verifyMeasured database
-        let position, _, _, _, _ = verification
-
-        Expect.equal
-            position.Sequence
-            (int64 (3 + workload.Cases + workload.Writes + workload.Actors * 2))
-            "Every accepted write is counted"
-
         let! history =
             actor.History(
                 {
@@ -235,42 +288,159 @@ let private measure workload (database: PostgresFixture.Database) =
 
         match history with
         | ReadReply.Succeeded page ->
+            let operations = (workload.Writes + workload.Writers - 1) / workload.Writers
+            let targets = (workload.Cases + workload.Writers - 1) / workload.Writers
+
             Expect.equal
                 page.Entries.Length
-                (min 50 (1 + workload.Writes / workload.Cases))
+                (min 50 (2 + (operations + targets - 1) / targets))
                 "Bounded full history is complete"
         | _ -> failtest "Growth history read failed"
 
-        return report workload elapsed latencies timeoutMilliseconds verification
     }
 
-let private workloads completed =
-    async {
-        for writes, cases, actors in
-            [ 64, 4, 1; 256, 16, 4; 1024, 32, 16; 256, 4, 1; 256, 32, 1; 256, 4, 16 ] do
-            for writers in [ 1; 4 ] do
-                let! database = PostgresFixture.create () |> Async.AwaitTask
+let private verified workload actor database =
+    task {
+        let! verification = verifyMeasured database
+        let position, _, _, _, _ = verification
 
-                try
-                    let! report =
+        Expect.equal
+            position.Sequence
+            (int64 (1016 + workload.Cases + workload.Writes + workload.Actors * 11))
+            "Every accepted write is counted"
+
+        do! history workload actor
+
+        return verification
+    }
+
+let private measuredWrites workload database actor protection =
+    task {
+        let watch = Stopwatch.StartNew()
+
+        let writes =
+            [| for lane in 0 .. workload.Writers - 1 -> writeLane actor workload lane |]
+
+        let authorityWork = authority actor (subjects workload.Actors)
+        let sessionWork = GrowthSessions.run database protection
+
+        do!
+            Task.WhenAll(
+                Array.append
+                    (writes |> Array.map (fun work -> work :> Task))
+                    [| authorityWork :> Task; sessionWork :> Task |]
+            )
+
+        let lanes = writes |> Array.map _.Result
+        let elapsed = watch.Elapsed.TotalSeconds
+        let latencies = lanes |> Array.concat |> Array.sort
+
+        return elapsed, latencies, sessionWork.Result
+    }
+
+let private measure keyRing workload (database: PostgresFixture.Database) =
+    task {
+        let timing = SubmissionStorage.Timing(GrowthProtection.store keyRing database)
+        let sessionProtection = GrowthProtection.sessions keyRing
+
+        let database =
+            { database with
+                Fixture =
+                    { database.Fixture with
+                        Store = timing.Store
+                    }
+            }
+
+        let environment = GrowthEnvironment.source ()
+        let! databaseBefore = GrowthEnvironment.database database
+        let! actor = caseWorker database.Fixture
+        do! acknowledgeSetup actor
+        do! openCases actor workload.Cases
+
+        let! elapsed, latencies, sessions =
+            measuredWrites workload database actor sessionProtection
+
+        let! recovery =
+            GrowthRecovery.run database (database.Fixture.Owner :: subjects workload.Actors)
+
+        let! timeoutMilliseconds = timeout database
+
+        let! controls = GrowthControls.run database actor (subjects workload.Actors).Head
+        let! verification = verified workload actor database
+
+        let! databaseAfter = GrowthEnvironment.database database
+
+        Expect.equal
+            (databaseAfter.cases, databaseAfter.actors, databaseAfter.grants)
+            (1000L, 100L, 1000L)
+            "The final case, actor and grant populations match qualification inputs"
+
+        Expect.equal
+            (databaseAfter.sessions, databaseAfter.recovery)
+            (0L, 0L)
+            "Owned operational qualification state was explicitly removed"
+
+        return
+            {|
+                environment = environment
+                protection = "ASP.NET Core DataProtection with an owned filesystem key ring"
+                databaseBefore = databaseBefore
+                databaseAfter = databaseAfter
+                journalLatencyMilliseconds = timing.Summary
+                business = report workload elapsed latencies timeoutMilliseconds verification
+                sessions = sessions
+                recovery = recovery
+                controls = controls
+            |}
+    }
+
+let private profiles () =
+    let required =
+        [
+            for writes in [ 1000; 10000; 100000 ] do
+                for writers in [ 1; 4; 16 ] -> writes, writers
+        ]
+
+    match Environment.GetEnvironmentVariable("CLAIMCORE_GROWTH_PROFILE") |> Option.ofObj with
+    | None -> required
+    | Some selected ->
+        match
+            required
+            |> List.tryFind (fun (writes, writers) ->
+                selected = string writes + ":" + string writers)
+        with
+        | Some profile -> [ profile ]
+        | None -> failtest "CLAIMCORE_GROWTH_PROFILE must name a required writes:writers profile."
+
+let private workloads selected completed =
+    async {
+        for writes, writers in selected do
+            let cases, actors = 1000, 99
+
+            let! database = PostgresFixture.create () |> Async.AwaitTask
+
+            try
+                let! report =
+                    GrowthProtection.withKeyRing (fun keyRing ->
                         measure
+                            keyRing
                             {
                                 Writes = writes
                                 Cases = cases
                                 Actors = actors
                                 Writers = writers
                             }
-                            database
-                        |> Async.AwaitTask
+                            database)
+                    |> Async.AwaitTask
 
-                    completed report
-                finally
-                    database.Fixture.Dispose()
+                completed report
+            finally
+                database.Fixture.Dispose()
 
-                Expect.notEqual
-                    (string database.Container.State)
-                    "Running"
-                    "Owned growth container is stopped"
+            Expect.notEqual
+                (string database.Container.State)
+                "Running"
+                "Owned growth container is stopped"
     }
 
 let private qualify () =
@@ -289,6 +459,7 @@ let private qualify () =
             File.WriteAllBytes(path + ".writing", JsonSerializer.SerializeToUtf8Bytes value)
             File.Move(path + ".writing", path, true)
 
+        let selected = profiles ()
         let mutable count = 0
 
         let nativeRun =
@@ -302,7 +473,9 @@ let private qualify () =
                 {|
                     result = result
                     completed = count
-                    expected = 12
+                    expected = selected.Length
+                    requiredProfiles = 9
+                    completeQualification = selected.Length = 9
                     nativeRun = nativeRun
                 |}
 
@@ -310,7 +483,7 @@ let private qualify () =
 
         try
             do!
-                workloads (fun report ->
+                workloads selected (fun report ->
                     atomic (sprintf "workload-%02d.json" count) report
                     count <- count + 1
                     state "incomplete")

@@ -1,7 +1,6 @@
 import { expect, it } from "vitest";
 import { createPresenter } from "../src/presentation/presenter";
-import { initialOperationValues, operationDocument } from "../src/interaction/operationForm";
-import { formValue } from "../src/protocol/forms";
+import { initialOperationValues, assembleOperation } from "../src/interaction/operationForm";
 import { buildRequest } from "../src/protocol/client";
 import { prepareRequest } from "../src/protocol/preparedRequest";
 import { definition, operationId } from "./service-ui.fixtures";
@@ -48,7 +47,7 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
     };
     const source = buildRequest(
       "operation.execute",
-      formValue(operationDocument, operationDocument, "", {
+      assembleOperation({
         ...initialOperationValues("CASE", "OPEN", null, operationId),
         caseReference: reference,
         "act.values.claimedAmount": values.claimedAmount,

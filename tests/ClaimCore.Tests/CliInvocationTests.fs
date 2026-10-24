@@ -209,38 +209,44 @@ let grammarTests =
             testCase "preparation is exact and malformed flags fail" verbPreparation
         ]
 
-let private readVerbExamples =
+let private nonLedgerVerbExamples =
     [
         [ "case"; "get"; "SYNTHETIC" ], "case.get"
         [ "case"; "list"; "--limit"; "5"; "--cursor"; "synthetic" ], "case.list"
         [ "case"; "history"; "SYNTHETIC"; "--full" ], "case.history"
         [ "operation"; "observe"; "10000000-0000-4000-8000-000000000001" ], "operation.observe"
+        [ "operation"; "pending" ], "operation.pending"
+        [ "operation"; "forget"; "10000000-0000-4000-8000-000000000001" ], "operation.forget"
         [ "authority"; "list" ], "authority.list"
         [ "authority"; "grants"; "10000000-0000-4000-8000-000000000001" ], "authority.grants"
         [ "context" ], "context"
     ]
 
-let private assertReadVerbCoverage registry mapped =
+let private assertNonLedgerVerbCoverage registry mapped =
     // Session routes are browser transport; preview is selected by a mutation verb option.
     let excluded = Set.ofList [ "session"; "session.logout"; "operation.preview" ]
 
     let eligible =
         registry
         |> List.filter (fun endpoint ->
-            not (Api.mutates endpoint) && not (Set.contains (Api.id endpoint) excluded))
+            not (Api.executesLedger endpoint)
+            && not (Set.contains (Api.id endpoint) excluded))
         |> List.map Api.id
         |> Set.ofList
 
     Expect.equal
         (List.distinct mapped).Length
         mapped.Length
-        "Each eligible read has exactly one verb mapping"
+        "Each eligible read or operational write has exactly one verb mapping"
 
-    Expect.equal (Set.ofList mapped) eligible "Verb mappings exactly cover eligible registry reads"
+    Expect.equal
+        (Set.ofList mapped)
+        eligible
+        "Verb mappings exactly cover eligible reads and operational writes"
 
-let private readVerbs () =
+let private nonLedgerVerbs () =
     let mapped =
-        readVerbExamples
+        nonLedgerVerbExamples
         |> List.map (fun (arguments, endpoint) ->
             let invocation = prepared arguments
 
@@ -249,14 +255,26 @@ let private readVerbs () =
                 |> Result.defaultWith (fun _ -> failtest "Prepared read frame")
 
             let actual = Frames.endpoint admitted |> Api.id
-            Expect.equal actual endpoint "A read verb selects its registry endpoint"
+            Expect.equal actual endpoint "A read or operational verb selects its registry endpoint"
+
+            let expectedEffect =
+                if endpoint = "operation.forget" then
+                    EndpointEffect.OperationalWrite
+                else
+                    EndpointEffect.Read
+
+            Expect.equal
+                (Api.effect (Frames.endpoint admitted))
+                expectedEffect
+                "Declared effect agrees with the verb's actual role"
+
             actual)
 
-    assertReadVerbCoverage Api.all mapped
+    assertNonLedgerVerbCoverage Api.all mapped
 
-let private readCoverageControls () =
-    let mapped = readVerbExamples |> List.map snd
-    assertReadVerbCoverage Api.all mapped
+let private nonLedgerCoverageControls () =
+    let mapped = nonLedgerVerbExamples |> List.map snd
+    assertNonLedgerVerbCoverage Api.all mapped
 
     let additional =
         { Api.context with
@@ -269,16 +287,48 @@ let private readCoverageControls () =
         }
 
     Expect.throws
-        (fun () -> assertReadVerbCoverage (boxed :: Api.all) mapped)
+        (fun () -> assertNonLedgerVerbCoverage (boxed :: Api.all) mapped)
         "An added eligible registry endpoint requires a verb"
 
     Expect.throws
-        (fun () -> assertReadVerbCoverage Api.all (List.tail mapped))
+        (fun () -> assertNonLedgerVerbCoverage Api.all (List.tail mapped))
         "Removing a required mapping fails the same coverage assertion"
 
     Expect.throws
-        (fun () -> assertReadVerbCoverage Api.all (List.head mapped :: mapped))
+        (fun () -> assertNonLedgerVerbCoverage Api.all (List.head mapped :: mapped))
         "Duplicating a mapping fails uniqueness even when sets agree"
+
+let private opaqueRetryVerb () =
+    let recoveryId = "10000000-0000-4000-8000-000000000002"
+    let operationId = "10000000-0000-4000-8000-000000000003"
+    let invocation = prepared [ "operation"; "retry"; recoveryId; operationId ]
+
+    let admitted =
+        Frames.admit invocation.Bytes
+        |> Result.defaultWith (fun _ -> failtest "Retry frame")
+
+    Expect.equal
+        (Api.id (Frames.endpoint admitted))
+        Api.operationRetry.Id
+        "Registry-selected recovery retry"
+
+    Expect.equal
+        (Api.effect (Frames.endpoint admitted))
+        EndpointEffect.LedgerExecution
+        "Retry may accept a previously unaccepted operation"
+
+    Expect.equal
+        (Frames.input admitted)
+        (Api.operationRetry.Input.Write
+            {
+                RecoveryId = Guid.Parse recoveryId
+                OperationId = Guid.Parse operationId
+            })
+        "Caller supplies both frozen identifiers"
+
+    Expect.isTrue
+        (Frames.retryingUncertain admitted)
+        "Opaque retry intrinsically retains earlier uncertainty"
 
 let private localizedReplyRendering () =
     let path =
@@ -321,10 +371,11 @@ let renderingTests =
     testList
         "CLI verb rendering"
         [
-            testCase "every case-work read has a registry-selected verb" readVerbs
+            testCase "every read and operational write has a registry-selected verb" nonLedgerVerbs
+            testCase "opaque retry keeps explicit identifiers and prior uncertainty" opaqueRetryVerb
             testCase
-                "read coverage rejects added endpoints and missing or repeated mappings"
-                readCoverageControls
+                "non-ledger coverage rejects added endpoints and missing or repeated mappings"
+                nonLedgerCoverageControls
             testCase "frozen admitted replies render in every language" localizedReplyRendering
         ]
 

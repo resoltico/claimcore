@@ -77,12 +77,22 @@ jobs:
           advanced-security: false
 
   unit:
-    name: Native unit and architecture tests (${{ matrix.os }})
+    name: Native unit and architecture tests (${{ matrix.rid }})
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-24.04, macos-15]
+        include:
+          - os: ubuntu-24.04
+            rid: linux-x64
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
+          - os: macos-15-intel
+            rid: osx-x64
+          - os: macos-15
+            rid: osx-arm64
     runs-on: ${{ matrix.os }}
+    env:
+      CLAIMCORE_PRIVATE_FILE_RID: ${{ matrix.rid }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -94,7 +104,7 @@ jobs:
       - run: bash eng/verify.sh unit
 
   integration:
-    name: PostgreSQL ${{ matrix.major }} store tests
+    name: PostgreSQL ${{ matrix.major }} store and full-path growth tests
     needs: [configuration]
     strategy:
       fail-fast: true
@@ -102,7 +112,7 @@ jobs:
     env:
       CLAIMCORE_TEST_POSTGRES_MAJOR: ${{ matrix.major }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

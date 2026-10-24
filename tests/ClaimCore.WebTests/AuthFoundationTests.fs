@@ -92,41 +92,6 @@ let private accessTokenIdentity () =
         (PrincipalIdentity.service issuer "another-service")
         "Each other verified client is a distinct service"
 
-let private opaqueSessionStore () =
-    let principal =
-        ClaimsPrincipal(ClaimsIdentity([ Claim("sub", "synthetic-human") ], "oidc"))
-
-    let properties = AuthenticationProperties()
-    properties.ExpiresUtc <- Nullable(DateTimeOffset.UtcNow.AddMinutes(5.))
-
-    let ticket =
-        AuthenticationTicket(
-            principal,
-            properties,
-            CookieAuthenticationDefaults.AuthenticationScheme
-        )
-
-    let store =
-        OidcTicketStore(TimeSpan.FromMinutes(30.), TimeSpan.FromHours(8.)) :> ITicketStore
-
-    let key = store.StoreAsync(ticket).GetAwaiter().GetResult()
-    Expect.equal key.Length 32 "The cookie holds only a random lookup key"
-    Expect.isNotNull (store.RetrieveAsync(key).GetAwaiter().GetResult()) "Ticket stays server-side"
-    store.RemoveAsync(key).GetAwaiter().GetResult()
-    Expect.isNull (store.RetrieveAsync(key).GetAwaiter().GetResult()) "Logout revokes the ticket"
-
-    let expired = AuthenticationProperties()
-    expired.ExpiresUtc <- Nullable(DateTimeOffset.UtcNow.AddMinutes(-1.))
-
-    let stale =
-        AuthenticationTicket(principal, expired, CookieAuthenticationDefaults.AuthenticationScheme)
-
-    let staleKey = store.StoreAsync(stale).GetAwaiter().GetResult()
-
-    Expect.isNull
-        (store.RetrieveAsync(staleKey).GetAwaiter().GetResult())
-        "Expired tickets are swept"
-
 let private middlewareConfiguration () =
     {
         Issuer = Uri("https://issuer.example.test/realms/claimcore")
@@ -144,11 +109,7 @@ let private middlewarePolicy () =
     services.AddLogging() |> ignore
     services.AddDataProtection() |> ignore
 
-    AuthMiddleware.configure
-        configuration
-        (TimeSpan.FromMinutes(30.))
-        (TimeSpan.FromHours(8.))
-        services
+    AuthMiddleware.configure configuration (TimeSpan.FromHours(8.)) services
 
     use provider = services.BuildServiceProvider()
 
@@ -195,7 +156,6 @@ let private middlewarePolicy () =
                 { configuration with
                     Issuer = Uri("http://127.0.0.1:8080/realms/synthetic")
                 }
-                (TimeSpan.FromMinutes(30.))
                 (TimeSpan.FromHours(8.))
                 (ServiceCollection()))
         "Production middleware refuses a loopback HTTP issuer"
@@ -228,7 +188,6 @@ let tests =
             testCase
                 "[CC-WEB-001] bearer principal uses explicit client classification"
                 accessTokenIdentity
-            testCase "[CC-WEB-001] OIDC cookie uses revocable server-side ticket" opaqueSessionStore
             testCase "[CC-WEB-001] middleware pins OIDC and JWT validation policy" middlewarePolicy
             testCase "[CC-WEB-001] browser and bearer credentials never mix" exclusiveCredentialMode
         ]

@@ -36,5 +36,13 @@
   "cli.help.verbs": "Human commands. Business values are passed exactly. Each existing-case act requires an explicit revision. Use --preview for advice and --dry-run to print the exact frame without authentication. Commands default to text; --format json selects the closed reply frame. Mutation options: --operation-id UUID, --preview, --dry-run. Read commands: case get REF; case list; case history REF [--full]; operation observe UUID; authority list; authority grants UUID; context. Paging: --cursor C --limit N. Output: --language en|lv|ar --format text|json. Complete request schemas follow the registry. Run describe commands CORRECT_CASE to discover replacement fields.\n{grammar}\n",
   "cli.text.grants": "Grants",
   "cli.target.limit": "Page size",
-  "cli.target.cursor": "Cursor"
+  "cli.target.cursor": "Cursor",
+  "cli.text.recoveryId": "Recovery ID",
+  "cli.text.createdAt": "Submitted",
+  "cli.text.expiresAt": "Expires",
+  "cli.text.offers": "Available actions",
+  "cli.text.offer.RETRY": "Retry",
+  "cli.text.offer.FORGET": "Forget",
+  "cli.text.recoveryNotice": "Submitted requests may have an unknown outcome. Retry deliberately: it may accept a request that was never accepted. Forgetting does not cancel work or prove non-acceptance.",
+  "cli.text.forgotten": "Any matching owned recovery record was forgotten. This does not cancel work or prove non-acceptance."
 }

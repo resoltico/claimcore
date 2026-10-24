@@ -23,6 +23,7 @@
     <Compile Include="RemoteServiceCall.fs" />
     <Compile Include="FrameDelivery.fs" />
     <Compile Include="StandardSinks.fs" />
+    <Compile Include="RecoverySelection.fs" />
     <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="TextReply.fs" />
     <Compile Include="Program.fs" />

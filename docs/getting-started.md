@@ -45,8 +45,8 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 
 Compose waits for IdP readiness before Web; its management listener is container-loopback only. Require
 successful initializer exit and healthy Web; repeat `ps -a` during startup. PostgreSQL has no host port. Web
-has a read-only root/configuration, bounded ephemeral `/tmp`, and a protected persistent key-ring/session
-directory. The producer configures your UID/GID for ClaimCore; PostgreSQL/Keycloak retain required ownership.
+has a read-only root/configuration, bounded ephemeral `/tmp`, and a protected persistent key-ring
+directory (tickets and recovery bodies are in PostgreSQL). The producer configures your UID/GID for ClaimCore; PostgreSQL/Keycloak retain required ownership.
 Preserve/protect keys across restarts under the [session policy](operations.md#access-review-and-sessions).
 Initialization refuses unsupported schemas untouched; configuration generation refuses existing paths.
 

@@ -7,6 +7,7 @@ export const authorityPreview = () =>
       kind: "outcome",
       status: 200,
       value: {
+        recoveryId: null,
         operationId: prepared.input.operationId,
         outcome: {
           tag: "REVIEWED",
@@ -37,6 +38,7 @@ export const authorityAcceptance = (
     kind: "outcome",
     status: 200,
     value: {
+      recoveryId: null,
       operationId: prepared.input.operationId,
       outcome: {
         tag: "ACCEPTED",

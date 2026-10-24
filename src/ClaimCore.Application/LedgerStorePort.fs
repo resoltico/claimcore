@@ -189,9 +189,62 @@ type internal OperationReadView =
         Case: StoredCase option
     }
 
+/// The host provides purpose-isolated protection; no cryptographic/provider dependency enters the core.
+[<NoEquality; NoComparison>]
+type RecoveryProtection =
+    {
+        Prepare: unit -> unit
+        Protect: string -> byte array -> byte array
+        Unprotect: string -> byte array -> byte array
+    }
+
+[<RequireQualifiedAccess>]
+type internal RecoveryAdmission =
+    | Ready of actorId: Guid * caseId: Guid option * targetActorId: Guid option
+    | Terminal of ExecuteResult
+
+[<RequireQualifiedAccess; NoComparison>]
+type internal RecoveryStaged =
+    | Stored of recoveryId: Guid * actorId: Guid * envelope: ExecutionEnvelope
+    | Terminal of outcome: ExecuteResult * recoveryId: Guid option
+
+type internal RecoveryRecord =
+    {
+        Item: RecoveryItem
+        ActorId: Guid
+        CaseId: Guid option
+        ProtectedBody: byte array
+    }
+
+type internal IRecoveryStore =
+    abstract StageCase:
+        PrincipalKey * ExecutionEnvelope * (CaseReadView -> RecoveryAdmission) * CancellationToken ->
+            Task<Result<RecoveryStaged, StoreFailure>>
+
+    abstract StageAuthority:
+        PrincipalKey *
+        AdmittedAuthorityRequest *
+        ExecutionEnvelope *
+        (AuthorityReadView -> RecoveryAdmission) *
+        CancellationToken ->
+            Task<Result<RecoveryStaged, StoreFailure>>
+
+    abstract Pending:
+        Guid * Guid option * int * CancellationToken ->
+            Task<Result<RecoveryItem list, StoreFailure>>
+
+    abstract Load:
+        Guid * RecoveryRequest * CancellationToken ->
+            Task<Result<ExecutionEnvelope option, StoreFailure>>
+
+    abstract Forget: Guid * Guid * CancellationToken -> Task<Result<unit, StoreFailure>>
+    abstract Retained: Guid * Guid * CancellationToken -> Task<Result<bool, StoreFailure>>
+
 /// Selection callbacks authorize and validate cursors within the snapshot that fetches the page.
 /// Storage executes those selections and persists decisions; it invents no authority or transition rules.
 type internal ILedgerStore =
+    abstract Recovery: IRecoveryStore
+
     abstract WriteCase:
         principal: PrincipalKey *
         operationId: Guid *

@@ -165,5 +165,16 @@
   "ui.pagePartial": "More results are available in this visible scope.",
   "ui.pageEnd": "End of results in this visible scope.",
   "ui.noAccessibleHistory": "No accessible history entries returned.",
-  "ui.discardUnknownDescription": "The operation may already be accepted. Discarding loses this exact request and does not cancel it. Continue only if you accept losing the ability to retry from this page."
+  "ui.discardUnknownDescription": "The operation may already be accepted. Discarding loses this exact request and does not cancel it. Continue only if you accept losing the ability to retry from this page.",
+  "ui.startAnotherOperation": "Start another operation",
+  "ui.recoveryRetryDescription": "A retry may accept this submitted request now. Its outcome is unknown; selecting it does not execute it. Retry only when you intend the same operation.",
+  "ui.submittedRequests": "Submitted requests",
+  "ui.submittedDescription": "These are submitted requests, not proof of acceptance. Only your currently authorized technical metadata is shown.",
+  "ui.listSubmitted": "List submitted requests",
+  "ui.selectSubmitted": "Select submitted request",
+  "ui.forgetSubmitted": "Forget submitted request",
+  "ui.forgetSubmittedDescription": "Forgetting removes your recovery copy. It does not cancel the operation or prove it was not accepted. You may lose the ability to retry the original request.",
+  "ui.recoveryAcknowledge": "Acknowledge result and return to requests",
+  "ui.recoveryExpires": "Recovery expires: {expiresAt}",
+  "ui.moreSubmitted": "More submitted requests"
 }

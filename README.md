@@ -43,13 +43,13 @@ keeps one pure Contract model/codec/registry, Domain/Application decisions and W
 
 Every mutation rechecks locked current state. Replaying a retained accepted request returns
 its original acceptance without another ledger entry. If delivery is uncertain, preserve the operation ID, expected
-revision and exact request bytes and retry that request. The browser keeps one pending request
-for exact retries while the page remains alive; the service stores accepted operations only.
+revision and exact request bytes and retry that request. Submitted bodies are protected for seven days for explicit actor-bound recovery; reload lists metadata only.
+Known-result acknowledgement reclaims bounded journal capacity. Forget/expiry never prove non-acceptance.
 
 ## Run and verify
 
 Follow [Getting started](docs/getting-started.md) for a fresh local Compose installation and
-signed-in browser. Runtime private-file admission supports macOS and Linux. This setup is an
+signed-in browser. Private-file admission supports macOS x64/arm64 and glibc Linux x64/arm64; other ABIs refuse. This setup is an
 evaluation environment; operators own deployment, identity, TLS, backups and retention.
 Ledger verification detects inconsistency against trusted checkpoints; it does not provide
 independent freshness or protection from an administrator rewriting all evidence.

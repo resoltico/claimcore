@@ -2,32 +2,8 @@ namespace ClaimCore.Application
 
 open ClaimCore.Contract
 
-/// The closed input vocabulary required by authority operations.
-[<RequireQualifiedAccess>]
-type AuthorityInputPrimitive =
-    | Principal
-    | Role
-    | Scope
-    | Boolean
-
-type AuthorityInputDefinition =
-    {
-        Name: string
-        LabelId: string
-        Primitive: AuthorityInputPrimitive
-    }
-
-type AuthorityOperationDefinition =
-    {
-        Kind: AuthorityKind
-        LabelId: string
-        MeaningId: string
-        ConfirmationId: string
-        Inputs: AuthorityInputDefinition list
-    }
-
 module AuthorityOperationDefinitions =
-    let private input name label primitive =
+    let private input name label primitive : AuthorityInputDefinition =
         {
             Name = name
             LabelId = label

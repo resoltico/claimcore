@@ -1,6 +1,6 @@
 # Service and CLI contract
 
-[OpenAPI 3.1](../contracts/openapi.json) is the structural contract. Use `claimcore describe endpoints` and
+[OpenAPI 3.1](../contracts/openapi.json) is the structural contract, including each operation’s `x-claimcore-effect` delivery classification. Use `claimcore describe endpoints` and
 `claimcore schema <endpoint> request|response` for the current registry rather than a second endpoint list.
 `session` is GET; other endpoints are POST `/api/<endpoint>` (literal dots). Session bootstrap is anonymous;
 case/authority work requires authentication and current grants. Every API call carries matching
@@ -14,6 +14,18 @@ There is no wire CANCELLED outcome. Operation replies echo operationId; receipt 
 reference/revision/act or authority target/act. Clients check those echoes, resource identity and promised
 revision before trusting responses. ASCII case-reference folding permits case differences while preserving
 accepted spelling. Observation checks its queried operation ID; grants responses check the requested actor ID.
+
+`operation.execute` additionally echoes nullable `recoveryId`; null does not establish journal absence. An exact supplied
+accepted request can still replay when optional recovery protection is unavailable, with no unsafe acknowledgement ID.
+`operation.pending` returns a bounded keyset page of the
+caller's currently authorized metadata and Retry/Forget offers, including technical target, operation identity and fixed
+creation/expiry instants. It never returns a historical body. `operation.retry` takes `recoveryId` and `operationId`;
+the server executes the stored bytes under current authority and returns the normal correlated execute outcome. Check
+receipt scope, act and target/revision against the selected metadata. `operation.forget` takes `recoveryId` and
+idempotently acknowledges any owned row. A forgotten, expired or absent entry does not prove an operation failed. Retry
+is always an explicit user decision. Endpoints classify effects as read, operational write or ledger execution; loss of
+a forget reply is not uncertain business acceptance. Direct API clients explicitly forget only acknowledged known
+terminal results. See [recovery orchestration](architecture.md#cc-app-003) for retention, bounds and erasure.
 
 Objects and tags are closed. Strict admission rejects invalid UTF-8/Unicode, duplicate decoded members, excess
 nesting/bytes, unsafe/non-integer number lexemes and invalid technical IDs. Malformed business strings and
@@ -54,17 +66,19 @@ claimcore case open DEMO-0001 --incident-date 2026-09-01 --incident-notification
 claimcore case get DEMO-0001
 claimcore authority list
 claimcore operation observe 10000000-0000-4000-8000-000000000001
+claimcore operation pending --limit 50
+claimcore operation retry 20000000-0000-4000-8000-000000000001 10000000-0000-4000-8000-000000000001
+claimcore operation forget 20000000-0000-4000-8000-000000000001
 claimcore describe commands OPEN --format text
 claimcore schema operation.execute request
 ```
 
-Mutations mint a UUID once unless `--operation-id` is explicit. Every case act except open requires
-`--expected-revision`; the CLI never fetches/rebases it. `--preview` requests advisory review. `--dry-run`
-prints the exact call frame without configuration/authentication. Business strings are not trimmed, normalized
-or validated by the CLI. Unknown, duplicate and missing flags refuse atomically with exit 64, empty stdout and
-safe corrective help; no authored token is echoed. Text is the verb default; `--format json` selects the reply
-frame. Language defaults to en; `--language en|lv|ar` selects authored human text. No TTY detection or
-prompting changes output.
+New case/authority mutations mint a UUID once unless `--operation-id` is explicit. Every case act except open requires
+`--expected-revision`; the CLI never fetches/rebases it. `--preview` requests advisory review. `--dry-run` prints the
+exact call frame without configuration/authentication. Business strings are not trimmed, normalized or validated by the
+CLI. Unknown, duplicate and missing flags refuse atomically with exit 64, empty stdout and safe corrective help; no
+authored token is echoed. Text is the verb default; `--format json` selects the reply frame. Language defaults to en;
+`--language en|lv|ar` selects authored human text. No TTY detection or prompting changes output.
 
 Human diagnostics identify the affected input with its localized label. Current fields, both preview sides
 and full-history fields annotate suspicious Unicode scalars using the [shared display policy](domain.md#scalars);
@@ -101,14 +115,16 @@ restrictions](operations.md#access-review-and-sessions).
 
 ### CC-CLI-003 — Mutation uncertainty after dispatch
 
-Exits: 0 success, 2 rejection/protocol refusal, 3 definite failure, 4 uncertain mutation, 64 usage, 70
-internal, 130 cancellation. Session stops on 4/130 or an oversized frame. On exit 4 the last stderr line is
-the exact prepared call frame. Retain it and retry with `claimcore call --retry`; this retains earlier
-uncertainty across process boundaries. Preparation compacts the admitted JSON once while preserving exact
-strings, amount spelling, reference, ID and revision; all sends/retries use those frozen bytes. Output failure
-after dispatch preserves exit 4. If both sinks fail, only the exit can remain available. A later NOT_STARTED,
-REJECTED or FAILED result cannot resolve earlier uncertainty. Only correlated ACCEPTED/ALREADY_ACCEPTED
-confirms exact pending content. Never replace its operation ID or edit it as a retry. The service stores
-accepted operations only; no pending/recovery bundle exists. Complete writes/newline/flush establish OS
-acceptance, not downstream consumption or persistence. No consumer-acknowledgement protocol exists.
-Remote/private-file operation is qualified on macOS/Linux; offline discovery remains available elsewhere.
+Exits: 0 success, 2 rejection/protocol refusal, 3 definite failure, 4 uncertain mutation, 64 usage, 70 internal, 130
+cancellation. Session stops on 4/130 or an oversized frame. On exit 4 the last stderr line is the exact prepared call
+frame. Retain it and retry with `claimcore call --retry`; this retains earlier uncertainty across process boundaries.
+Preparation compacts the admitted JSON once while preserving exact strings, amount spelling, reference, ID and revision;
+all sends/retries use those frozen bytes. Output failure after dispatch preserves exit 4. If both sinks fail, only the
+exit can remain available. A later NOT_STARTED, REJECTED or FAILED result cannot resolve earlier uncertainty. Only
+correlated ACCEPTED/ALREADY_ACCEPTED confirms exact pending content. Never replace its operation ID or edit it as a
+retry. The service retains submitted requests under the [recovery contract](architecture.md#cc-app-003). Complete
+writes/newline/flush establish OS acceptance, not downstream consumption or persistence. After such complete known
+terminal output, CLI best-effort forgets the owned recovery row. Unresolved uncertainty and output loss prevent that
+acknowledgement; a failed forget never changes the business result. Use the pending/retry/forget endpoints for
+explicitly selected recovery. Remote/private-file operation is qualified on macOS/Linux; offline discovery remains
+available elsewhere.

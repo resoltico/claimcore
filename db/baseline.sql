@@ -334,6 +334,40 @@ CREATE INDEX grants_case ON claimcore.grants (case_id) WHERE case_id IS NOT NULL
 -- grants on the one case a request targets, never the actor's whole grant set.
 CREATE INDEX grants_actor_case ON claimcore.grants (actor_id, case_id);
 
+-- Submitted request recovery is operational evidence, never accepted history.
+CREATE TABLE claimcore.recovery_requests (
+    recovery_id uuid PRIMARY KEY,
+    actor_id uuid NOT NULL,
+    operation_id uuid NOT NULL,
+    contract_identity text NOT NULL,
+    scope text NOT NULL,
+    act text NOT NULL,
+    case_id uuid NULL,
+    case_reference text NULL,
+    expected_revision bigint NULL,
+    target_actor_id uuid NULL,
+    created_at timestamptz NOT NULL,
+    expires_at timestamptz NOT NULL,
+    protected_body bytea NOT NULL,
+    UNIQUE (actor_id, operation_id)
+);
+CREATE INDEX recovery_actor ON claimcore.recovery_requests (actor_id, recovery_id);
+CREATE INDEX recovery_expiry ON claimcore.recovery_requests (expires_at, recovery_id);
+CREATE INDEX recovery_case ON claimcore.recovery_requests (case_id);
+
+-- Server-side authentication tickets are operational state, independent of ledger ordering.
+CREATE TABLE claimcore.sessions (
+    session_key text PRIMARY KEY CHECK (session_key COLLATE "C" ~ '^[0-9a-f]{64}$'),
+    protected_ticket bytea NOT NULL CHECK (octet_length(protected_ticket) BETWEEN 1 AND 1048576),
+    payload_version integer NOT NULL CHECK (payload_version = 1),
+    created_at timestamptz NOT NULL CHECK (isfinite(created_at)),
+    absolute_expiry timestamptz NOT NULL CHECK (isfinite(absolute_expiry)),
+    last_activity timestamptz NOT NULL CHECK (isfinite(last_activity)),
+    idle_seconds double precision NOT NULL CHECK (idle_seconds > 0 AND idle_seconds < 'Infinity'::double precision),
+    CHECK (absolute_expiry > created_at AND last_activity >= created_at)
+);
+CREATE INDEX sessions_expiry ON claimcore.sessions (absolute_expiry);
+
 -- ---------------------------------------------------------------------------------------------
 -- Runtime privileges: least privilege for the one role the service connects as. It can append to
 -- the ledger but cannot change or remove a row except through erase_case_payload; it can
@@ -352,3 +386,7 @@ GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.erase_case_payload(uuid) TO claimcore_runtime;
 
 GRANT EXECUTE ON FUNCTION claimcore.is_interchange_text(text) TO claimcore_runtime;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.sessions TO claimcore_runtime;
+
+GRANT SELECT, INSERT, DELETE ON claimcore.recovery_requests TO claimcore_runtime;

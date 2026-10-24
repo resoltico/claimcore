@@ -2,16 +2,6 @@ namespace ClaimCore.Domain
 
 open ClaimCore.Contract
 
-/// Semantic operation descriptions, not widgets or client-owned transition rules.
-type CommandDefinition =
-    {
-        Kind: CaseActKind
-        LabelId: string
-        MeaningId: string
-        ConfirmationId: string
-        Inputs: CommandInputShape
-    }
-
 module CommandDefinitions =
     let private groupFields group =
         FieldTable.rows
@@ -78,7 +68,7 @@ module CommandDefinitions =
                     (groupFields FieldGroup.Payment |> List.map current)
             ]
 
-    let private definition kind label meaning inputs =
+    let private definition kind label meaning inputs : CommandDefinition =
         {
             Kind = kind
             LabelId = label
