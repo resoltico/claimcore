@@ -105,12 +105,16 @@ it("associates payment acknowledgement with the generated mode control [CC-DOM-0
     expect(payment).toHaveFocus();
   });
   expect(payment).toHaveAttribute("aria-invalid", "true");
-  const description = document.getElementById(payment.getAttribute("aria-describedby")!);
+  const description = document.getElementById("act.groups.payment.mode-error");
+  expect(payment.getAttribute("aria-describedby")?.split(" ")).toEqual([
+    "act.groups.payment.mode-meaning",
+    "act.groups.payment.mode-error",
+  ]);
   expect(description).toHaveTextContent("explicit payment reaffirmation");
   await user.selectOptions(screen.getByRole("combobox", { name: "Interface language" }), "lv");
   expect(description).toHaveTextContent("skaidri jāapstiprina");
   await user.selectOptions(payment, "CLEAR");
   expect(payment).not.toHaveAttribute("aria-invalid");
-  expect(payment).not.toHaveAttribute("aria-describedby");
+  expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.mode-meaning");
   expect(globalThis.fetch).toHaveBeenCalledOnce();
 });

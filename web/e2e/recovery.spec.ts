@@ -8,6 +8,13 @@ import type {
   ResponseByEndpoint,
 } from "@contracts/client";
 import { isResponse } from "../src/protocol/client";
+import descriptors from "../../contracts/descriptors.json" with { type: "json" };
+import enCommands from "../../src/ClaimCore.Contract/Localization/en.command.json" with { type: "json" };
+import lvCommands from "../../src/ClaimCore.Contract/Localization/lv.command.json" with { type: "json" };
+import arCommands from "../../src/ClaimCore.Contract/Localization/ar.command.json" with { type: "json" };
+import enAuthority from "../../src/ClaimCore.Contract/Localization/en.authority.json" with { type: "json" };
+import lvAuthority from "../../src/ClaimCore.Contract/Localization/lv.authority.json" with { type: "json" };
+import arAuthority from "../../src/ClaimCore.Contract/Localization/ar.authority.json" with { type: "json" };
 import { syntheticPrincipals } from "./authority-setup";
 import { openCase, startCommand, reviewDraft } from "./case-workflow";
 import {
@@ -24,6 +31,21 @@ import {
   ui,
 } from "./localization-support";
 type Language = "en" | "lv" | "ar";
+const recoveryLabel = (language: Language, item: RecoveryItem): string => {
+  const definitions = item.scope === "CASE" ? descriptors.commands : descriptors.authorityCommands;
+  const descriptor = definitions.find((candidate) => candidate.kind === item.act);
+  const catalogs = {
+    en: { ...enCommands, ...enAuthority },
+    lv: { ...lvCommands, ...lvAuthority },
+    ar: { ...arCommands, ...arAuthority },
+  };
+  const catalog: Readonly<Record<string, string>> = catalogs[language];
+  const label = descriptor === undefined ? undefined : catalog[descriptor.labelId];
+  if (label === undefined) {
+    throw new Error("E2E_RECOVERY_AUTHORED_LABEL_REQUIRED");
+  }
+  return label;
+};
 const post = async <K extends EndpointId>(page: Page, endpoint: K, input: RequestByEndpoint[K]) => {
   const response = await browserRequest(page, `/api/${endpoint}`, {
     method: "POST",
@@ -118,6 +140,13 @@ const reloadAndSelect = async (page: Page, operationId: string, language: Langua
   await page.getByRole("button", { name: ui(language, "ui.listSubmitted"), exact: true }).click();
   await pending;
   const row = await recoveryRow(page, operationId, language);
+  const item = (await pendingItems(page)).find((value) => value.operationId === operationId);
+  if (item === undefined) {
+    throw new Error("E2E_RECOVERY_OWNED_METADATA_MISSING");
+  }
+  const label = recoveryLabel(language, item);
+  await expect(row.getByText(label, { exact: true })).toBeVisible();
+  await expect(row.getByText(item.act, { exact: true })).toHaveCount(0);
   await expect(row).not.toContainText("Synthetic claimant");
   await row.getByRole("button", { name: ui(language, "ui.selectSubmitted"), exact: true }).click();
   await expect(

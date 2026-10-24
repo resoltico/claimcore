@@ -3433,7 +3433,7 @@
         },
         {
           "identity": "act.scope.caseReference",
-          "field": null,
+          "field": "caseReference",
           "path": [
             "act",
             "scope",
@@ -3453,10 +3453,12 @@
             }
           ],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 6,
           "prefill": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "caseReference"
+          ],
           "source": "AUTHORED",
           "argument": {
             "kind": "FLAG",

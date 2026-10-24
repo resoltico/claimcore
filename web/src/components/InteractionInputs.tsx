@@ -35,10 +35,35 @@ const permittedOptions = (input: InteractionInput, props: Props): ReadonlyArray<
     ? input.kind.options
     : input.kind.options.filter((mode) => group.some((value) => value === mode));
 };
+const inputError = (input: InteractionInput, props: Props) =>
+  props.errorPath === bindingPath(input) ? props.errorNotice : null;
+const descriptionIds = (input: InteractionInput, error: Notice | null) =>
+  [
+    input.meaningId === null ? null : `${input.identity}-meaning`,
+    error === null ? null : `${input.identity}-error`,
+  ]
+    .filter((id) => id !== null)
+    .join(" ") || undefined;
+const InputDescription = ({ input, error }: { input: InteractionInput; error: Notice | null }) => {
+  const p = usePresentation();
+  return (
+    <>
+      {input.meaningId === null ? null : (
+        <small id={`${input.identity}-meaning`}>{renderKey(p, input.meaningId)}</small>
+      )}
+      {error === null ? null : (
+        <small id={`${input.identity}-error`}>
+          <NoticeView value={error} />
+        </small>
+      )}
+    </>
+  );
+};
 const ChoiceInput = ({ input, ...props }: Props & { input: InteractionInput }) => {
   const p = usePresentation();
   const path = bindingPath(input);
   const group = input.kind.kind === "GROUP";
+  const error = inputError(input, props);
   return (
     <fieldset>
       {group ? <legend>{renderKey(p, input.labelId)}</legend> : null}
@@ -54,9 +79,7 @@ const ChoiceInput = ({ input, ...props }: Props & { input: InteractionInput }) =
           disabled={props.disabled}
           value={String(props.values[path] ?? "")}
           aria-invalid={props.errorPath === path || undefined}
-          aria-describedby={
-            props.errorPath === path && props.errorNotice ? `${input.identity}-error` : undefined
-          }
+          aria-describedby={descriptionIds(input, error)}
           onChange={(event) => {
             props.onChange(path, event.target.value);
           }}
@@ -68,17 +91,14 @@ const ChoiceInput = ({ input, ...props }: Props & { input: InteractionInput }) =
           ))}
         </select>
       </label>
-      {props.errorPath === path && props.errorNotice ? (
-        <small id={`${input.identity}-error`}>
-          <NoticeView value={props.errorNotice} />
-        </small>
-      ) : null}
+      <InputDescription input={input} error={error} />
     </fieldset>
   );
 };
 const ScalarInput = ({ input, ...props }: Props & { input: InteractionInput }) => {
   const p = usePresentation();
   const path = bindingPath(input);
+  const error = inputError(input, props);
   const field = [
     ...productMetadata.descriptors.fields,
     ...productMetadata.descriptors.inputFields,
@@ -90,7 +110,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: InteractionInput }) =
         inputName={path}
         value={String(props.values[path] ?? "")}
         disabled={props.disabled}
-        error={props.errorPath === path ? (props.errorNotice ?? undefined) : undefined}
+        error={error ?? undefined}
         onChange={(value) => {
           props.onChange(path, value);
         }}
@@ -98,9 +118,10 @@ const ScalarInput = ({ input, ...props }: Props & { input: InteractionInput }) =
     );
   }
   return (
-    <label>
-      {renderKey(p, input.labelId)}
+    <div className="text-field">
+      <label htmlFor={input.identity}>{renderKey(p, input.labelId)}</label>
       <input
+        id={input.identity}
         name={path}
         type="text"
         autoComplete="off"
@@ -108,35 +129,39 @@ const ScalarInput = ({ input, ...props }: Props & { input: InteractionInput }) =
         value={String(props.values[path] ?? "")}
         disabled={props.disabled}
         aria-invalid={props.errorPath === path || undefined}
+        aria-describedby={descriptionIds(input, error)}
         onChange={(event) => {
           props.onChange(path, event.target.value);
         }}
       />
-      {props.errorPath === path && props.errorNotice ? (
-        <small id={`${input.identity}-error`}>
-          <NoticeView value={props.errorNotice} />
-        </small>
-      ) : null}
-    </label>
+      <InputDescription input={input} error={error} />
+    </div>
   );
 };
 const BindingInput = ({ input, ...props }: Props & { input: InteractionInput }) => {
   const p = usePresentation();
   const path = bindingPath(input);
+  const error = inputError(input, props);
   if (input.kind.kind === "BOOLEAN") {
     return (
-      <label>
-        <input
-          type="checkbox"
-          name={path}
-          disabled={props.disabled}
-          checked={props.values[path] === true}
-          onChange={(event) => {
-            props.onChange(path, event.target.checked);
-          }}
-        />
-        {renderKey(p, input.labelId)}
-      </label>
+      <div>
+        <label htmlFor={input.identity}>
+          <input
+            id={input.identity}
+            type="checkbox"
+            name={path}
+            disabled={props.disabled}
+            checked={props.values[path] === true}
+            aria-invalid={props.errorPath === path || undefined}
+            aria-describedby={descriptionIds(input, error)}
+            onChange={(event) => {
+              props.onChange(path, event.target.checked);
+            }}
+          />
+          {renderKey(p, input.labelId)}
+        </label>
+        <InputDescription input={input} error={error} />
+      </div>
     );
   }
   return input.kind.kind === "GROUP" || input.kind.kind === "CHOICE" ? (

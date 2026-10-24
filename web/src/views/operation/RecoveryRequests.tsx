@@ -125,8 +125,11 @@ const RecoveryItems = ({
       {items.map((item) => (
         <li key={item.recoveryId}>
           <p>
-            <bdi>{item.operationId}</bdi> — <bdi>{item.act}</bdi> —{" "}
-            <bdi>{item.caseReference ?? item.targetActorId}</bdi>
+            <bdi>{item.operationId}</bdi> —{" "}
+            <bdi>
+              {item.scope === "CASE" ? p.commandLabel(item.act) : p.authorityLabel(item.act)}
+            </bdi>{" "}
+            — <bdi>{item.caseReference ?? item.targetActorId}</bdi>
           </p>
           <p>{p.text("ui.recoveryExpires", { expiresAt: item.expiresAt })}</p>
           <button

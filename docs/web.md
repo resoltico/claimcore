@@ -21,9 +21,12 @@ azp/client_id. Duplicate, blank or conflicting client claims refuse. IdP authent
 
 One explicit operation-state engine and thin effects hook serve CASE and AUTHORITY through preview, consent and execute.
 Controls, paths, tagged branches, diagnostic focus and CLI operands use checked interaction bindings;
-labels/policy/order come from typed descriptors, and permitted work from current core advice. Preview never grants
-commit permission. Authority preview applies the same authorization and last-owner constraints as execute. The prepared
-request freezes exact bytes, operation ID and expected revision. Editing an exposed request creates a fresh identity and
+labels/policy/order come from typed descriptors, and permitted work from current core advice.
+Controls retain stable authored names and associate core meanings, hints and field refusals programmatically. Diagnostic
+focus follows explicit bindings, including the nested reference in case-scoped grants. Recovery rows use authored
+scope-specific action labels while retry identities retain protocol values.
+Preview never grants commit permission. Authority preview applies the same authorization and last-owner constraints as
+execute. The prepared request freezes exact bytes, operation ID and expected revision. Editing an exposed request creates a fresh identity and
 clears consent. An uncertain request blocks editing/rebasing; retry uses exact bytes. Later failures do not clear
 uncertainty. Only correlated exact acceptance or replay resolves it. Explicit warned abandonment is distinct from
 proving failed execution. Page memory retains frozen bytes; reload lists only the actor's authorized protected

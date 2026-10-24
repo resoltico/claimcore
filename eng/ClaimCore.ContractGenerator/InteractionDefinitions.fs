@@ -192,6 +192,9 @@ module InteractionDefinitions =
                       BindingKind.Text
                       (FieldTable.labelId BusinessField.CaseReference)
                       (flag "case") with
+                    Field = Some(InputTarget.Field BusinessField.CaseReference)
+                    MeaningId = Some(FieldTable.meaningId BusinessField.CaseReference)
+                    DiagnosticTargets = [ "caseReference" ]
                     Branches = [ condition [ "act"; "scope"; "kind" ] "CASE" ]
                     WhenPresent = [ text [ "act"; "scope"; "kind" ] "CASE" ]
                 }

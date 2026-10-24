@@ -88,6 +88,37 @@ let private exactBranches () =
         [ "target"; "issuer" ]
         "Diagnostic identity binds the declared principal member"
 
+let private grantReference () =
+    let grant =
+        InteractionDefinitions.all |> List.find (fun item -> item.Kind = "SET_GRANT")
+
+    let reference =
+        grant.Inputs
+        |> List.find (fun input -> input.Path = [ "act"; "scope"; "caseReference" ])
+
+    Expect.equal
+        reference.Field
+        (Some(InputTarget.Field BusinessField.CaseReference))
+        "Shared field semantics"
+
+    Expect.equal reference.LabelId "field.caseReference.label" "Shared reference label"
+    Expect.equal reference.MeaningId (Some "field.caseReference.meaning") "Shared reference meaning"
+
+    Expect.equal
+        reference.DiagnosticTargets
+        [ "caseReference" ]
+        "Domain refusal targets the exact nested input"
+
+    Expect.equal
+        reference.Branches
+        [
+            {
+                Path = [ "act"; "scope"; "kind" ]
+                Value = "CASE"
+            }
+        ]
+        "Installation grants do not expose a case input"
+
 let private aliases () =
     let first = List.head InteractionDefinitions.all
     rejects [ first; first ]
@@ -136,5 +167,8 @@ let tests =
         [
             testCase "missing, invalid, duplicate and mismatched bindings reject" pathAndCoverage
             testCase "correction branches and principal diagnostics bind exact paths" exactBranches
+            testCase
+                "case-scoped grant reference retains shared field and diagnostic semantics"
+                grantReference
             testCase "ambiguous aliases refuse and descriptor codecs round trip" aliases
         ]

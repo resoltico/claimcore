@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
+import { inputMessage } from "./input-accessibility-messages";
 import {
   pauseJsonReply,
   confirmReview,
@@ -50,8 +51,13 @@ const preserveChoice = async (page: Page, modes: Modes) => {
     await expect(
       page.getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true }),
     ).toBeVisible();
-    for (const [group, mode] of Object.entries(modes)) {
-      await expect(page.locator(`[name="act.groups.${group}.mode"]`)).toHaveValue(mode);
+    for (const group of ["registration", "decision", "payment"] as const) {
+      const control = page.locator(`[name="act.groups.${group}.mode"]`);
+      await expect(control).toHaveValue(modes[group]);
+      await expect(control).toHaveAccessibleName(ui(language, "ui.action"));
+      await expect(control).toHaveAccessibleDescription(
+        inputMessage(language, `group.${group}.meaning`),
+      );
     }
     if (modes.registration === "REPLACE") {
       await expect(
@@ -75,9 +81,11 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
   const payment = page.locator('[name="act.groups.payment.mode"]');
   await expect(payment).toBeFocused();
   await expect(payment).toHaveAttribute("aria-invalid", "true");
-  const descriptionId = await payment.getAttribute("aria-describedby");
-  expect(descriptionId).toMatch(/^\S+$/u);
-  const description = page.locator(`[id="${descriptionId}"]`);
+  await expect(payment).toHaveAttribute(
+    "aria-describedby",
+    "act.groups.payment.mode-meaning act.groups.payment.mode-error",
+  );
+  const description = page.locator('[id="act.groups.payment.mode-error"]');
   for (const [language, text] of [
     ["en", "explicit payment reaffirmation"],
     ["lv", "skaidri jāapstiprina"],
@@ -85,11 +93,15 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
   ] as const) {
     await selectLanguage(page, language);
     await expect(description).toContainText(text);
+    await expect(payment).toHaveAccessibleName(ui(language, "ui.action"));
+    await expect(payment).toHaveAccessibleDescription(
+      `${inputMessage(language, "group.payment.meaning")} ${inputMessage(language, "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED")}`,
+    );
     await expect(payment).toHaveAttribute("aria-invalid", "true");
   }
   await payment.selectOption("CLEAR");
   await expect(payment).not.toHaveAttribute("aria-invalid");
-  await expect(payment).not.toHaveAttribute("aria-describedby");
+  await expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.mode-meaning");
 };
 for (const status of ["CLOSED"] as const) {
   for (const language of ["en", "lv", "ar"] as const) {
