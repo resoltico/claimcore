@@ -35,7 +35,7 @@ boundaries. [Development](docs/development.md) owns commands and gates.
 - Tests run with `dotnet test` on the Microsoft Testing Platform. Every test module carries
   `[<Tests>]`; there is no hand-kept registry. Focused, pending, skipped, filtered or retried
   runs cannot satisfy verification. `bash eng/verify.sh` is the complete local gate and CI calls the same stages.
-  PR browser smoke is explicitly partial; main/tag and explicit dispatch retain full qualification.
+  PR, merge queue, main/tag and explicit dispatch require complete three-engine qualification.
 - Exactly three generated artifacts are tracked in `contracts/`: `openapi.json`, `client.ts`
   and `descriptors.json`. Run
   `dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts` and review
@@ -51,7 +51,7 @@ boundaries. [Development](docs/development.md) owns commands and gates.
   paths, never tracked source.
 
 - Private inputs are absolute, regular files with no other-access bits and no group write or
-  execute bits, read from the admitted handle; there is no native code in the product or its tests.
+  execute bits, read from the admitted handle; only HostSecurity may use the documented system-library private-file ABI adapters; no custom native binary is shipped.
 
 ## Name by meaning, not incidental development history
 

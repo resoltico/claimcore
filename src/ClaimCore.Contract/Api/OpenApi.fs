@@ -111,6 +111,7 @@ module OpenApi =
         let fields =
             [
                 "operationId", text endpoint.Id
+                "x-claimcore-effect", text (EndpointEffects.token endpoint.Effect)
                 "parameters", array parameters
                 "security", security endpoint.Id
                 "responses", responses endpoint.Output.Schema

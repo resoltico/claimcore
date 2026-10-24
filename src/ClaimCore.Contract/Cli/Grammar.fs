@@ -32,17 +32,6 @@ module Grammar =
     let private memberValue key value =
         JsonValue.tryMember key value |> Option.defaultWith (fun () -> raise Usage)
 
-    let private text =
-        function
-        | JsonValue.String value -> value
-        | _ -> raise Usage
-
-    let private array =
-        function
-        | JsonValue.Array values -> values
-        | _ -> raise Usage
-
-    let private named key value = memberValue key value |> text
     let private obj = JsonValue.Object
     let private str = JsonValue.String
 
@@ -78,121 +67,116 @@ module Grammar =
         | true, parsed when parsed <= JsonValue.MaximumInteger -> JsonValue.Integer parsed
         | _ -> raise Usage
 
-    let private descriptor category choose descriptors =
-        memberValue category descriptors
-        |> array
-        |> List.find (fun row -> choose (named "kind" row))
+    let private descriptors value =
+        DescriptorCodecs.codec.Read "$" value
+        |> Result.defaultWith (fun _ -> raise Usage)
 
-    let private fields rows options =
-        rows
-        |> array
-        |> List.map (fun row ->
-            let key = named "fieldName" row
-            key, required key options |> str)
-        |> obj
+    let rec private valueAt path value =
+        match path with
+        | [] -> Some value
+        | name :: rest -> JsonValue.tryMember name value |> Option.bind (valueAt rest)
 
-    let private correction inputs options =
-        memberValue "groups" inputs
-        |> array
-        |> List.map (fun group ->
-            let name = named "name" group
-            let mode = required name options |> _.ToUpperInvariant()
+    let rec private assign path value target =
+        match path with
+        | [] -> value
+        | name :: rest ->
+            let members =
+                match target with
+                | JsonValue.Object members -> members
+                | _ -> []
 
-            if
-                not (memberValue "actions" group |> array |> List.map text |> List.contains mode)
-            then
-                raise Usage
+            let child =
+                members
+                |> List.tryFind (fst >> (=) name)
+                |> Option.map snd
+                |> Option.defaultValue (obj [])
 
-            let members = [ "mode", str mode ]
+            obj ((members |> List.filter (fst >> (<>) name)) @ [ name, assign rest value child ])
 
-            name,
-            obj (
-                if mode = "REPLACE" then
-                    members @ [ "values", fields (memberValue "replaceFields" group) options ]
-                else
-                    members
-            ))
-        |> obj
+    let private constant =
+        function
+        | BindingValue.Text value -> str value
+        | BindingValue.Boolean value -> JsonValue.Boolean value
+        | BindingValue.Integer value -> JsonValue.Integer value
 
-    let private caseAct descriptor options =
-        let kind = named "kind" descriptor
-        let inputs = memberValue "inputs" descriptor
+    let private assignments values target =
+        values
+        |> List.fold
+            (fun state (value: BindingAssignment) -> assign value.Path (constant value.Value) state)
+            target
 
-        let values =
-            if named "kind" inputs = "CORRECTION_GROUPS" then
-                [ "groups", correction inputs options ]
-            else
-                let values = fields (memberValue "fields" inputs) options
+    let private applicable target (input: InteractionInput) =
+        input.Branches
+        |> List.forall (fun branch -> valueAt branch.Path target = Some(str branch.Value))
 
-                match values with
-                | JsonValue.Object [] -> []
-                | JsonValue.Object [ "reason", reason ] -> [ "reason", reason ]
-                | _ -> [ "values", values ]
+    let private supplied (options: Map<string, string> ref) (input: InteractionInput) =
+        match input.Argument with
+        | Some(InvocationArgument.Flag name) -> Map.containsKey ("--" + name) options.Value
+        | _ -> false
 
-        obj ([ "kind", str kind ] @ values)
+    let private operand newId operands options target (input: InteractionInput) =
+        let value =
+            match input.Argument with
+            | Some(InvocationArgument.Positional index) -> List.tryItem index operands
+            | Some(InvocationArgument.Flag name) -> take name options
+            | None -> None
 
-    let private identity newId options =
-        take "operationId" options |> Option.defaultWith newId |> str
+        match input.Source, value with
+        | InputSource.OperationIdentity, None -> str (newId ())
+        | _, None -> valueAt input.Path target |> Option.defaultWith (fun () -> raise Usage)
+        | _, Some value ->
+            match input.Kind with
+            | BindingKind.Integer -> number value
+            | BindingKind.Boolean -> raise Usage
+            | BindingKind.Group _ -> str (value.ToUpperInvariant())
+            | _ -> str value
 
-    let private caseMutation newId descriptors verb operands options =
-        let reference =
-            match operands with
-            | [ value ] -> value
-            | _ -> raise Usage
+    let private mutation newId definitions family verb operands options =
+        let scope =
+            if family = "case" then OperationScopes.Case
+            elif family = "authority" then OperationScopes.Authority
+            else raise Usage
 
-        let command = descriptor "commands" (caseVerb >> (=) verb) descriptors
-        let kind = named "kind" command
+        let interaction, alias =
+            (descriptors definitions).Interactions
+            |> List.collect (fun interaction ->
+                interaction.Invocations |> List.map (fun alias -> interaction, alias))
+            |> List.tryFind (fun (interaction, alias) ->
+                interaction.Scope = scope && alias.Verb = verb)
+            |> Option.defaultWith (fun () -> raise Usage)
 
-        let revision =
-            if kind = "OPEN" then
-                JsonValue.Integer 0L
-            else
-                required "expectedRevision" options |> number
+        let initial =
+            obj [] |> assignments interaction.Constants |> assignments alias.Constants
 
-        obj
-            [
-                "scope", str "CASE"
-                "operationId", identity newId options
-                "caseReference", str reference
-                "expectedRevision", revision
-                "act", caseAct command options
-            ]
+        let selected =
+            interaction.Inputs
+            |> List.fold
+                (fun state input ->
+                    if supplied options input then
+                        assignments input.WhenPresent state
+                    else
+                        state)
+                initial
 
-    let private authorityMutation newId descriptors verb operands options =
-        if not (List.isEmpty operands) then
+        let inputs = interaction.Inputs |> List.filter (applicable selected)
+
+        let positions =
+            inputs
+            |> List.choose (fun input ->
+                match input.Argument with
+                | Some(InvocationArgument.Positional index) -> Some index
+                | _ -> None)
+
+        let count = if positions.IsEmpty then 0 else List.max positions + 1
+
+        if List.length operands <> count then
             raise Usage
 
-        let command =
-            descriptor "authorityCommands" (authorityVerbs >> List.contains verb) descriptors
-
-        let kind = named "kind" command
-
-        let target =
-            [ "kind"; "issuer"; "subject" ]
-            |> List.map (fun key -> key, required key options |> str)
-            |> obj
-
-        let values =
-            match kind with
-            | "SET_ENABLED" -> [ "enabled", JsonValue.Boolean(verb = "enable") ]
-            | "SET_GRANT" ->
-                let role = required "role" options |> str
-
-                let scope =
-                    match take "case" options with
-                    | None -> obj [ "kind", str "INSTALLATION" ]
-                    | Some reference -> obj [ "kind", str "CASE"; "caseReference", str reference ]
-
-                [ "role", role; "scope", scope; "active", JsonValue.Boolean(verb = "grant") ]
-            | _ -> []
-
-        obj
-            [
-                "scope", str "AUTHORITY"
-                "operationId", identity newId options
-                "target", target
-                "act", obj ([ "kind", str kind ] @ values)
-            ]
+        inputs
+        |> List.fold
+            (fun state input ->
+                assign input.Path (operand newId operands options state input) state)
+            selected
 
     let private page descriptors options =
         let cursor =
@@ -210,6 +194,12 @@ module Grammar =
             )
         ]
 
+    let private retryIdentifiers =
+        function
+        | [ recoveryId; operationId ] ->
+            [ "recoveryId", str recoveryId; "operationId", str operationId ]
+        | _ -> raise Usage
+
     let private read descriptors command operands options =
         let one () =
             match operands with
@@ -220,6 +210,8 @@ module Grammar =
             match command with
             | "case.get" -> [ "caseReference", one () ]
             | "operation.observe" -> [ "operationId", one () ]
+            | "operation.forget" -> [ "recoveryId", one () ]
+            | "operation.retry" -> retryIdentifiers operands
             | "authority.grants" -> [ "actorId", one () ] @ page descriptors options
             | "case.history" ->
                 let detail =
@@ -230,6 +222,7 @@ module Grammar =
 
                 [ "caseReference", one (); "detail", str detail ] @ page descriptors options
             | "case.list"
+            | "operation.pending"
             | "authority.list" when List.isEmpty operands -> page descriptors options
             | "context" when List.isEmpty operands -> []
             | _ -> raise Usage
@@ -250,8 +243,8 @@ module Grammar =
 
             let input =
                 match family with
-                | "case" -> caseMutation newId descriptors verb rest options
-                | "authority" -> authorityMutation newId descriptors verb rest options
+                | "case"
+                | "authority" -> mutation newId descriptors family verb rest options
                 | _ -> raise Usage
 
             let endpoint =
@@ -296,56 +289,59 @@ module Grammar =
         | Usage
         | :? Collections.Generic.KeyNotFoundException -> Error()
 
-    let private describedInputs inputs =
-        if named "kind" inputs = "CORRECTION_GROUPS" then
-            memberValue "groups" inputs
-            |> array
-            |> List.map (fun group ->
-                let modes =
-                    memberValue "actions" group
-                    |> array
-                    |> List.map (text >> _.ToLowerInvariant())
-                    |> String.concat "|"
+    let private argumentDescription (input: InteractionInput) =
+        match input.Argument with
+        | None -> None
+        | Some(InvocationArgument.Positional _) -> Some "REF"
+        | Some(InvocationArgument.Flag name) ->
+            let value =
+                match input.Kind with
+                | BindingKind.Group options ->
+                    options |> List.map _.ToLowerInvariant() |> String.concat "|"
+                | BindingKind.Integer -> "N"
+                | _ -> "VALUE"
 
-                "--" + named "name" group + " " + modes)
-        else
-            memberValue "fields" inputs
-            |> array
-            |> List.map (fun field -> "--" + (named "fieldName" field |> kebab) + " VALUE")
+            let text = "--" + name + " " + value
 
-    let description descriptors =
-        let cases =
-            memberValue "commands" descriptors
-            |> array
-            |> List.map (fun command ->
-                let kind = named "kind" command
-                let revision = if kind = "OPEN" then [] else [ "--expected-revision N" ]
+            Some(
+                if
+                    input.Source = InputSource.OperationIdentity || not input.WhenPresent.IsEmpty
+                then
+                    "[" + text + "]"
+                else
+                    text
+            )
 
-                String.concat
-                    " "
-                    ([ "case"; caseVerb kind; "REF" ]
-                     @ revision
-                     @ describedInputs (memberValue "inputs" command)))
+    let description value =
+        let definitions = descriptors value
 
-        let authority =
-            memberValue "authorityCommands" descriptors
-            |> array
-            |> List.collect (fun command ->
-                let token = named "kind" command
+        let mutations =
+            definitions.Interactions
+            |> List.collect (fun interaction ->
+                interaction.Invocations
+                |> List.map (fun alias ->
+                    let family =
+                        if interaction.Scope = OperationScopes.Case then
+                            "case"
+                        else
+                            "authority"
 
-                authorityVerbs token
-                |> List.map (fun verb ->
-                    "authority "
-                    + verb
-                    + " --kind KIND --issuer ISSUER --subject SUBJECT"
-                    + (if token = "SET_GRANT" then
-                           " --role ROLE [--case REF]"
-                       else
-                           "")))
+                    String.concat
+                        " "
+                        ([ family; alias.Verb ]
+                         @ List.choose argumentDescription interaction.Inputs)))
 
         let reads =
             Api.all
-            |> List.filter (fun endpoint -> not (Api.mutates endpoint))
+            |> List.filter (fun endpoint -> Api.effect endpoint <> EndpointEffect.LedgerExecution)
             |> List.map (Api.id >> fun id -> "schema " + id + " request")
 
-        String.concat "\n" (cases @ authority @ reads)
+        String.concat
+            "\n"
+            (mutations
+             @ reads
+             @ [
+                 "operation pending [--limit N] [--cursor TOKEN]"
+                 "operation retry RECOVERY_ID OPERATION_ID"
+                 "operation forget RECOVERY_ID"
+             ])

@@ -4,7 +4,6 @@ open ClaimCore.Contract
 
 open System
 open System.Security.Cryptography
-open System.Text
 open System.Threading
 open Expecto
 open ClaimCore.Application
@@ -72,22 +71,6 @@ let private populated (database: PostgresFixture.Database) =
 let private verify (database: PostgresFixture.Database) =
     Verification.verify database.OwnerSource None token
 
-let private rollbackChecked (database: PostgresFixture.Database) =
-    task {
-        use! connection = database.OwnerSource.OpenConnectionAsync()
-
-        let! rows =
-            DatabaseSession.rows
-                connection
-                "SELECT max(version),to_regclass('claimcore.rollback_fixture')::text FROM claimcore.schema_migrations"
-                [||]
-                token
-
-        Expect.equal (DatabaseSession.value<int> 0 rows.Head) 2 "No failed version recorded"
-
-        Expect.isNone (DatabaseSession.optional<string> 1 rows.Head) "DDL rolled back"
-    }
-
 let private erasureFixture (database: PostgresFixture.Database) =
     task {
         let! actor, _ = populated database
@@ -134,11 +117,84 @@ let private exec (database: PostgresFixture.Database) arguments =
             "Synthetic database backup/restore command succeeds"
     }
 
+let private concurrentInitialization (database: PostgresFixture.Database) =
+    task {
+        do! sql database "DROP SCHEMA claimcore CASCADE"
+        use! blocker = database.OwnerSource.OpenConnectionAsync()
+        use! transaction = blocker.BeginTransactionAsync()
+
+        let! _ =
+            DatabaseSession.execute
+                blocker
+                "SELECT pg_advisory_xact_lock(4849322681855856466)"
+                [||]
+                token
+
+        let attempts =
+            [| for _ in 1..8 -> Baseline.initialize database.OwnerSource "Etc/UTC" token |]
+
+        let mutable waiting = false
+        let mutable namespacePresent = false
+
+        try
+            for _ in 1..100 do
+                if not waiting then
+                    let! rows =
+                        DatabaseSession.rows
+                            blocker
+                            "SELECT count(*) FROM pg_locks WHERE locktype='advisory' AND NOT granted AND database=(SELECT oid FROM pg_database WHERE datname=current_database())"
+                            [||]
+                            token
+
+                    waiting <- DatabaseSession.value<int64> 0 rows.Head = 8L
+
+                    if not waiting then
+                        do! System.Threading.Tasks.Task.Delay 50
+
+            let! present = Baseline.exists blocker token
+            namespacePresent <- present
+        finally
+            transaction.Rollback()
+
+        let! ids = System.Threading.Tasks.Task.WhenAll attempts
+        Expect.isTrue waiting "Every initializer waits before namespace discovery"
+        Expect.isFalse namespacePresent "No installation work precedes the administration lock"
+        Expect.equal (ids |> Array.distinct |> Array.length) 1 "One immutable installation"
+        let! installation = Admission.openRuntime database.RuntimeSource token
+
+        Expect.equal
+            installation.InstallationId
+            ids[0]
+            "Admitted tuple agrees with every initializer"
+    }
+
+let private initializationRollback (database: PostgresFixture.Database) =
+    task {
+        do! sql database "DROP SCHEMA claimcore CASCADE; DROP ROLE claimcore_runtime"
+
+        do!
+            refused
+                (fun () -> Baseline.initialize database.OwnerSource "Etc/UTC" token)
+                "Missing runtime role makes the baseline fail after DDL"
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+        let! present = Baseline.exists connection token
+        Expect.isFalse present "Failed installation leaves no namespace or identity"
+        do! sql database "CREATE ROLE claimcore_runtime LOGIN"
+        let! _ = Baseline.initialize database.OwnerSource "Etc/UTC" token
+        let! _ = Baseline.require connection token
+        return ()
+    }
+
 [<Tests>]
 let tests =
     testList
         "PostgreSQL administration"
         [
+            testCaseAsync "concurrent initializers install one tuple" (run concurrentInitialization)
+            testCaseAsync
+                "baseline DDL and identity roll back together"
+                (run initializationRollback)
             testCaseAsync
                 "initialize repeats without changing identity and rejects a different zone"
                 (run (fun database ->
@@ -165,65 +221,6 @@ let tests =
                                         "invalid/zone"
                                         token)
                                 "Invalid zone rejected"
-                    }))
-            testCaseAsync
-                "migration two is applied once, checksummed and rolls back on failure"
-                (run (fun database ->
-                    task {
-                        let fixture sql =
-                            {
-                                Version = 2
-                                Name = "fixture"
-                                Sql = sql
-                                Digest = SHA256.HashData(Encoding.UTF8.GetBytes sql)
-                            }
-
-                        let script = fixture "CREATE TABLE claimcore.fixture(value int)"
-
-                        do!
-                            Migrations.migrateWith
-                                database.OwnerSource
-                                (Migrations.scripts @ [ script ])
-                                token
-
-                        do!
-                            Migrations.migrateWith
-                                database.OwnerSource
-                                (Migrations.scripts @ [ script ])
-                                token
-
-                        do!
-                            refused
-                                (fun () ->
-                                    Migrations.migrateWith
-                                        database.OwnerSource
-                                        (Migrations.scripts @ [ fixture "SELECT 1" ])
-                                        token)
-                                "Edited digest rejected"
-
-                        let third =
-                            { script with
-                                Version = 3
-                                Name = "failure"
-                                Sql =
-                                    "CREATE TABLE claimcore.rollback_fixture(value int); SELECT 1/0"
-                                Digest =
-                                    SHA256.HashData(
-                                        Encoding.UTF8.GetBytes
-                                            "CREATE TABLE claimcore.rollback_fixture(value int); SELECT 1/0"
-                                    )
-                            }
-
-                        do!
-                            refused
-                                (fun () ->
-                                    Migrations.migrateWith
-                                        database.OwnerSource
-                                        (Migrations.scripts @ [ script; third ])
-                                        token)
-                                "Migration failure surfaced"
-
-                        do! rollbackChecked database
                     }))
             testCaseAsync
                 "owner provisioning is idempotent and cannot register another initial owner"
@@ -321,9 +318,9 @@ let tests =
                     "absent schema", "DROP SCHEMA claimcore CASCADE"
                     "foreign schema",
                     "DROP SCHEMA claimcore CASCADE; CREATE SCHEMA claimcore; GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime"
-                    "behind migration", "DELETE FROM claimcore.schema_migrations"
-                    "ahead migration",
-                    "INSERT INTO claimcore.schema_migrations VALUES (2,'extra',decode(repeat('00',32),'hex'),clock_timestamp())"
+                    "missing baseline identity", "DELETE FROM claimcore.baseline_identity"
+                    "unknown baseline identity",
+                    "UPDATE claimcore.baseline_identity SET identifier='unknown'"
                     "missing installation", "DELETE FROM claimcore.installation"
                     "unresolvable zone",
                     "UPDATE claimcore.installation SET business_time_zone='Invalid/Zone'"
@@ -416,28 +413,10 @@ let tests =
 
                         diverged VerificationFinding.ExpectedPosition restored
                     }))
-            testCase "all migration files are embedded with their exact byte digests" (fun () ->
+            testCase "baseline is embedded with its exact source digest" (fun () ->
                 let root = ClaimCore.TestSupport.RepositoryRoot.find ()
-
-                let files =
-                    IO.Directory.GetFiles(IO.Path.Combine(root, "db/migrations"), "*.sql")
-                    |> Array.sort
-
-                Expect.equal
-                    files.Length
-                    Migrations.scripts.Length
-                    "Every script reaches the executable"
-
-                for index in 0 .. files.Length - 1 do
-                    Expect.equal
-                        Migrations.scripts[index].Version
-                        (index + 1)
-                        "Versions are contiguous"
-
-                    Expect.equal
-                        Migrations.scripts[index].Digest
-                        (SHA256.HashData(IO.File.ReadAllBytes files[index]))
-                        "Raw script bytes are checksum-bound")
+                let bytes = IO.File.ReadAllBytes(IO.Path.Combine(root, "db/baseline.sql"))
+                Expect.equal Baseline.digest (SHA256.HashData bytes) "Exact source bytes")
             testCase
                 "supported server majors enforce their minimum minor and reject unlisted majors"
                 (fun () ->
@@ -452,7 +431,7 @@ let tests =
 
                     for zone in [ "US/Eastern"; "Europe/Riga "; "UTC"; "Eastern Standard Time" ] do
                         Expect.throws
-                            (fun () -> Migrations.zone zone |> ignore)
+                            (fun () -> Baseline.zone zone |> ignore)
                             "Canonical IANA zone required")
             testCaseAsync
                 "public administration opens one source and refuses foreign schemas untouched"
@@ -480,11 +459,6 @@ let tests =
                             refused
                                 (fun () -> administration.Initialize("Etc/UTC", token))
                                 "Initializer refuses foreign schema"
-
-                        do!
-                            refused
-                                (fun () -> administration.Migrate(token))
-                                "Migrate refuses foreign schema"
 
                         do!
                             refused

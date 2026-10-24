@@ -10,12 +10,14 @@ import { Label } from "react-aria-components/Label";
 import { TextField } from "react-aria-components/TextField";
 import type { ProductMetadata, OperationReceipt } from "../api/service";
 import { useOperationObservation } from "../hooks/useOperationObservation";
+import { RecoveryRequests } from "./operation/RecoveryRequests";
 import { ReceiptFields } from "../components/ReceiptFields";
 
 type OperationLookupProps = {
   token: string;
   definition: ProductMetadata;
   initialOperationId?: string;
+  onLockChange?: (locked: boolean) => void;
 };
 
 const ReceiptView = ({
@@ -60,10 +62,12 @@ const ObservationFeedback = ({ message }: { message: Notice | null }) =>
     </p>
   );
 
+const unlocked = () => undefined;
 export const OperationLookup = ({
   token,
   definition,
   initialOperationId,
+  onLockChange = unlocked,
 }: OperationLookupProps) => {
   const p = usePresentation();
   const { operationId, setOperationId, receipt, message, loading, observe } =
@@ -77,6 +81,7 @@ export const OperationLookup = ({
   }, [invalid, loading]);
   return (
     <section aria-labelledby="operation-lookup-title">
+      <RecoveryRequests token={token} definition={definition} onLockChange={onLockChange} />
       <h2 id="operation-lookup-title">{p.text("ui.operationLookup")}</h2>
       <Form
         className="lookup"

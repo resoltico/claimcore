@@ -819,6 +819,34 @@
           }
         }
       }
+    },
+    {
+      "id": "operation.pending-request-0",
+      "endpoint": "operation.pending",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 50
+      }
+    },
+    {
+      "id": "operation.retry-request-0",
+      "endpoint": "operation.retry",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "recoveryId": "20000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "operation.forget-request-0",
+      "endpoint": "operation.forget",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "recoveryId": "20000000-0000-4000-8000-000000000001"
+      }
     }
   ]
 }

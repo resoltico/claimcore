@@ -232,35 +232,26 @@ module internal Core =
                 : PreviewReply)
         }
 
-    let private executeOperation store installationId calendar principal input ct =
-        task {
-            let! outcome =
-                match input with
-                | OperationInput.Case request ->
-                    caseWrite store installationId calendar principal request ct
-                | OperationInput.Authority request ->
-                    authorityWrite store installationId principal request ct
+    let private acceptOperation store installationId calendar principal input ct =
+        match input with
+        | OperationInput.Case request ->
+            caseWrite store installationId calendar principal request ct
+        | OperationInput.Authority request ->
+            authorityWrite store installationId principal request ct
 
-            return
-                ({
-                    OperationId = OperationInput.operationId input
-                    Outcome = outcome
-                }
-                : ExecuteReply)
-        }
+    let private executeOperation store installationId calendar principal envelope ct =
+        Recovery.execute
+            store
+            installationId
+            principal
+            envelope
+            (acceptOperation store installationId calendar principal)
+            ct
 
 
-    /// Every facade authorizes each read against current authoritative state.
-    let create
-        installationId
-        (store: ILedgerStore)
-        (calendar: IBusinessCalendar)
-        principal
-        : IActorClaimsCore =
-        if installationId = Guid.Empty then
-            invalidArg (nameof installationId) "Use an admitted installation."
-
-        { new IActorClaimsCore with
+    type private ActorCore
+        (installationId, store: ILedgerStore, calendar: IBusinessCalendar, principal) =
+        interface IActorClaimsCore with
             member _.Context ct =
                 Queries.context store calendar principal ct
 
@@ -268,7 +259,45 @@ module internal Core =
                 previewOperation store installationId calendar principal input ct
 
             member _.Execute(input, ct) =
-                executeOperation store installationId calendar principal input ct
+                let admission =
+                    match input with
+                    | OperationInput.Case request -> Case.validateRequest request
+                    | OperationInput.Authority request ->
+                        admitAuthority request |> Result.map ignore
+
+                match admission with
+                | Error refusal ->
+                    Task.FromResult
+                        {
+                            OperationId = OperationInput.operationId input
+                            RecoveryId = None
+                            Outcome = ExecuteResult.Rejected refusal
+                        }
+                | Ok() ->
+                    executeOperation
+                        store
+                        installationId
+                        calendar
+                        principal
+                        (ExecutionEnvelope.Create input)
+                        ct
+
+            member _.ExecuteEnvelope(envelope, ct) =
+                executeOperation store installationId calendar principal envelope ct
+
+            member _.Pending(request, ct) =
+                Recovery.pending store principal request ct
+
+            member _.Retry(request, ct) =
+                Recovery.retry
+                    store
+                    principal
+                    request
+                    (executeOperation store installationId calendar principal)
+                    ct
+
+            member _.Forget(request, ct) =
+                Recovery.forget store principal request ct
 
             member _.Get(request, ct) =
                 Queries.get store installationId principal request.CaseReference ct
@@ -287,4 +316,10 @@ module internal Core =
 
             member _.ListActors(request, ct) =
                 Queries.actors store principal request ct
-        }
+
+    /// Every facade authorizes each read against current authoritative state.
+    let create installationId store calendar principal : IActorClaimsCore =
+        if installationId = Guid.Empty then
+            invalidArg (nameof installationId) "Use an admitted installation."
+
+        ActorCore(installationId, store, calendar, principal) :> IActorClaimsCore

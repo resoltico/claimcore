@@ -11,6 +11,7 @@
     "e2e/cli-pkce-driver.mjs",
     "e2e/deployment-qualification.mjs",
     "../contracts/*.ts",
-    "src/protocol/schema.ts"
+    "src/protocol/schema.ts",
+    "e2e/published-session-driver.mjs"
   ]
 }

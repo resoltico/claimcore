@@ -78,6 +78,7 @@ const unavailable = (): ApiResult<ServiceResponse<"operation.execute">> => ({
   kind: "outcome",
   status: 200,
   value: {
+    recoveryId: null,
     operationId: "10000000-0000-4000-8000-000000000001",
     outcome: {
       tag: "REJECTED",
@@ -357,6 +358,7 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
               kind: "outcome",
               status: 200,
               value: {
+                recoveryId: null,
                 operationId: prepared.input.operationId,
                 outcome: {
                   tag: "OUTCOME_UNKNOWN",
@@ -371,6 +373,7 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
         kind: "outcome",
         status: 200,
         value: {
+          recoveryId: null,
           operationId: prepared.input.operationId,
           outcome: {
             tag: "ALREADY_ACCEPTED",

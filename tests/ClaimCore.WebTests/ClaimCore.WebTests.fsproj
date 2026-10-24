@@ -16,8 +16,6 @@
     <Compile Include="AuthTrustTests.fs" />
     <Compile Include="OidcStartupTests.fs" />
     <Compile Include="OidcStartupCancellationTests.fs" />
-    <Compile Include="SessionSweepTests.fs" />
-    <Compile Include="SessionSweepInvariantTests.fs" />
     <Compile Include="AdmissionEdgeTests.fs" />
     <Compile Include="AdmissionActorTests.fs" />
     <Compile Include="OriginConfigurationTests.fs" />
@@ -48,6 +46,7 @@
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
 
     <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
   </ItemGroup>
   <ItemGroup>

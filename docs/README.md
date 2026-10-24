@@ -6,7 +6,7 @@
   and lifetime.
 - [API](api.md): one HTTPS/CLI contract and delivery outcomes.
 - [Web](web.md): host admission and browser behavior.
-- [Database](database.md): owner inputs, initialization, migrations and verification.
+- [Database](database.md): owner inputs, initialization, baseline admission and verification.
 - [Operations](operations.md): trust, erasure limits, checkpoints and restore obligations.
 - [Development](development.md): toolchain, gate and change workflow.
 

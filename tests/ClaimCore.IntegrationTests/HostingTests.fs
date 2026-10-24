@@ -29,6 +29,13 @@ let private connectionString (database: PostgresFixture.Database) =
     settings.Password <- "synthetic-only"
     settings.ConnectionString
 
+let private configuredRuntime
+    (result: Result<ClaimCore.Web.Composition.IRuntime, ClaimCore.Application.RuntimeOpenFault>)
+    =
+    let runtime = result |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+    runtime.ConfigureRecoveryProtection(PostgresFixture.recoveryProtection().Value)
+    runtime
+
 let private call (runtime: ClaimCore.Web.Composition.IRuntime) principal action =
     task {
         let! result = runtime.WithActor(principal, action)
@@ -53,7 +60,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         let! first =
             ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
-        use first = first |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+        use first = configuredRuntime first
 
         let! page =
             call first database.Fixture.Owner (fun actor ->
@@ -78,8 +85,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         let! second =
             ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
-        use second =
-            second |> Result.defaultWith (fun _ -> failtest "Second runtime refused")
+        use second = configuredRuntime second
 
         let! continued =
             call second database.Fixture.Owner (fun actor ->
@@ -97,13 +103,13 @@ let private readinessCancellation database =
         let! opened =
             ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
-        use runtime = opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+        use runtime = configuredRuntime opened
         use! owner = database.OwnerSource.OpenConnectionAsync token
         use! transaction = owner.BeginTransactionAsync token
 
         use blocking =
             new NpgsqlCommand(
-                "LOCK claimcore.schema_migrations IN ACCESS EXCLUSIVE MODE",
+                "LOCK claimcore.baseline_identity IN ACCESS EXCLUSIVE MODE",
                 owner,
                 transaction
             )
@@ -157,8 +163,7 @@ let tests =
                                 (connectionString database)
                                 token
 
-                        use runtime =
-                            opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+                        use runtime = configuredRuntime opened
 
                         Expect.isLessThan
                             started.Elapsed.TotalSeconds
@@ -175,7 +180,7 @@ let tests =
                         let! _ =
                             ClaimCore.Postgres.DatabaseSession.execute
                                 owner
-                                "UPDATE claimcore.schema_migrations SET script_sha256=decode(repeat('00',32),'hex')"
+                                "UPDATE claimcore.baseline_identity SET script_sha256=decode(repeat('00',32),'hex')"
                                 [||]
                                 token
 
@@ -196,8 +201,7 @@ let tests =
                                 (connectionString database)
                                 token
 
-                        use runtime =
-                            opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+                        use runtime = configuredRuntime opened
 
                         Expect.equal runtime.BusinessTimeZone "Etc/UTC" "Stored calendar"
 
@@ -231,11 +235,11 @@ let tests =
                     "absent schema",
                     "DROP SCHEMA claimcore CASCADE",
                     ClaimCore.Application.RuntimeOpenFault.SchemaMismatch
-                    "behind",
-                    "DELETE FROM claimcore.schema_migrations",
+                    "missing baseline identity",
+                    "DELETE FROM claimcore.baseline_identity",
                     ClaimCore.Application.RuntimeOpenFault.SchemaMismatch
-                    "ahead",
-                    "INSERT INTO claimcore.schema_migrations VALUES(2,'extra',decode(repeat('00',32),'hex'),clock_timestamp())",
+                    "unknown baseline identity",
+                    "UPDATE claimcore.baseline_identity SET identifier='unknown'",
                     ClaimCore.Application.RuntimeOpenFault.SchemaMismatch
                     "foreign",
                     "DROP SCHEMA claimcore CASCADE;CREATE SCHEMA claimcore;GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime",
@@ -313,8 +317,7 @@ let tests =
                                 (connectionString database)
                                 token
 
-                        use runtime =
-                            opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+                        use runtime = configuredRuntime opened
 
                         use! holder = database.OwnerSource.OpenConnectionAsync()
                         use! transaction = holder.BeginTransactionAsync()

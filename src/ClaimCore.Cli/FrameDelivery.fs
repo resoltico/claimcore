@@ -41,7 +41,7 @@ type FrameDelivery(output: Stream, errors: Stream) =
 
     member _.BeforeDispatch frame =
         advance (fun () ->
-            potentiallyChanged <- Frames.endpoint frame |> Api.mutates
+            potentiallyChanged <- Frames.endpoint frame |> Api.executesLedger
             dispatched <- true
             pending <- Some frame)
 

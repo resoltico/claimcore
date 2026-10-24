@@ -7,6 +7,7 @@ import { operationDocument } from "../../interaction/operationForm";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import { resolveSchema, selectedSchema } from "../../protocol/forms";
 import type { OperationReview as Review, CaseReview } from "../../api/types";
+import { renderKey } from "../../presentation/messages";
 import { lifecycleMessageKey } from "../LifecycleStatus";
 type ReviewModel = Pick<
   OperationModel,
@@ -81,9 +82,7 @@ const ReviewConfirmation = ({
   confirmationId,
 }: {
   model: ReviewModel;
-  confirmationId:
-    | (typeof productMetadata.descriptors.commands)[number]["confirmationId"]
-    | (typeof productMetadata.descriptors.authorityCommands)[number]["confirmationId"];
+  confirmationId: (typeof productMetadata.descriptors.commands)[number]["confirmationId"];
 }) => {
   const p = usePresentation();
   return (
@@ -98,7 +97,7 @@ const ReviewConfirmation = ({
             model.confirm(event.target.checked);
           }}
         />
-        {p.text(confirmationId)}
+        {renderKey(p, confirmationId)}
       </label>
       <button
         type="button"

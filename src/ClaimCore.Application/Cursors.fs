@@ -168,3 +168,20 @@ module internal Cursors =
                 grant role caseId
             | _ -> None)
             token
+
+    let encodeRecovery (after: Guid) =
+        encode
+            [
+                "after", JsonValue.String(after.ToString "D")
+                "kind", JsonValue.String "RECOVERY"
+                "v", JsonValue.Integer 1L
+            ]
+
+    let decodeRecovery token =
+        decode
+            (function
+            | JsonValue.Object [ "after", JsonValue.String after
+                                 "kind", JsonValue.String "RECOVERY"
+                                 "v", JsonValue.Integer 1L ] -> uuid after
+            | _ -> None)
+            token

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialOperationValues, operationDocument } from "../src/interaction/operationForm";
-import { formValue } from "../src/protocol/forms";
+import { initialOperationValues, assembleOperation } from "../src/interaction/operationForm";
 import { current, firstId } from "./operation-form.fixtures";
 import { correctionSerializations } from "./correction-serialization.fixtures";
 for (const status of ["OPENED", "CLOSED"] as const) {
@@ -28,7 +27,7 @@ for (const status of ["OPENED", "CLOSED"] as const) {
           "act.groups.payment.mode": payment,
           "act.groups.payment.values.paymentDate": "2026-09-04",
         };
-        expect(formValue(operationDocument, operationDocument, "", values)).toEqual({
+        expect(assembleOperation(values)).toEqual({
           scope: "CASE",
           ...JSON.parse(expected),
         });

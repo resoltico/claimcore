@@ -215,7 +215,7 @@ let private uncertainSession () =
                 let reply = CliReply.local ClientFailure.Unavailable
 
                 Task.FromResult(
-                    if (frameEndpoint invocation |> Api.mutates) then
+                    if (frameEndpoint invocation |> Api.executesLedger) then
                         CliReply.unknown reply
                     else
                         reply

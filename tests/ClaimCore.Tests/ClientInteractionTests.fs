@@ -42,6 +42,7 @@ let private priorUncertainty () =
         let reply =
             Api.operationExecute.Output.Write
                 {
+                    RecoveryId = None
                     OperationId = CliReplyFixtures.id
                     Outcome = outcome
                 }
@@ -77,6 +78,7 @@ let private acceptance () =
         let value =
             Api.operationExecute.Output.Write
                 {
+                    RecoveryId = None
                     OperationId = CliReplyFixtures.id
                     Outcome = outcome
                 }
@@ -101,6 +103,7 @@ let private freshAttempt () =
     let rejected =
         Api.operationExecute.Output.Write
             {
+                RecoveryId = None
                 OperationId = CliReplyFixtures.id
                 Outcome = ExecuteResult.Rejected Refusal.ResourceUnavailable
             }

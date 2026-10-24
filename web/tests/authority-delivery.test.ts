@@ -135,7 +135,7 @@ const retryResult = (
   return {
     kind: "outcome",
     status: 200,
-    value: { operationId: prepared.input.operationId, outcome },
+    value: { recoveryId: null, operationId: prepared.input.operationId, outcome },
   };
 };
 it.each(["refusal", "conflict", "failed", "not-started", "replay"] as const)(

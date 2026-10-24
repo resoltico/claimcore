@@ -3,8 +3,13 @@ namespace ClaimCore.Postgres
 open ClaimCore.Application
 open Npgsql
 
-type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
+type internal LedgerStore(source: NpgsqlDataSource, installationId, settings, ?protection) =
+    let protection = defaultArg protection (fun () -> None)
+
     interface ILedgerStore with
+        member _.Recovery =
+            RecoveryStore(source, installationId, settings, protection) :> IRecoveryStore
+
         member _.WriteCase(principal, id, reference, decide, token) =
             WriteOperations.case source settings installationId principal id reference decide token
 

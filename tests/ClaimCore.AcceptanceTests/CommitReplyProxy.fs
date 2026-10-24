@@ -43,12 +43,15 @@ let private carries (text: string) (bytes: byte array) =
         .GetString(bytes, 5, bytes.Length - 5)
         .Contains(text, StringComparison.OrdinalIgnoreCase)
 
-/// Only one armed ledger-write commit is intercepted; reads and startup are transparent.
+/// Count head-lock commits globally, so staging and acceptance may use different connections.
 type private Control() =
     let gate = obj ()
-    let mutable armed: TaskCompletionSource option = None
+    let mutable armed: (int * TaskCompletionSource) option = None
 
-    member _.Arm() =
+    member _.Arm(commitNumber) =
+        if commitNumber < 1 then
+            invalidArg (nameof commitNumber) "Select a positive head-write commit."
+
         lock gate (fun () ->
             if armed.IsSome then
                 invalidOp "Synthetic commit loss is already armed."
@@ -56,14 +59,19 @@ type private Control() =
             let completion =
                 TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
 
-            armed <- Some completion
+            armed <- Some(commitNumber, completion)
             completion.Task)
 
     member _.Take() =
         lock gate (fun () ->
-            let current = armed
-            armed <- None
-            current)
+            match armed with
+            | None -> None
+            | Some(remaining, completion) when remaining > 1 ->
+                armed <- Some(remaining - 1, completion)
+                None
+            | Some(_, completion) ->
+                armed <- None
+                Some completion)
 
 type private Transaction() =
     let gate = obj ()
@@ -184,7 +192,7 @@ type Proxy(host: string, port: int) =
         }
 
     member _.Port = (listener.LocalEndpoint :?> IPEndPoint).Port
-    member _.Arm() = control.Arm()
+    member _.Arm(commitNumber) = control.Arm commitNumber
 
     interface IDisposable with
         member _.Dispose() =

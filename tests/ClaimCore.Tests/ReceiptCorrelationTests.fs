@@ -45,6 +45,7 @@ let private matches value =
         (Api.operationExecute.Input.Write request)
         (Api.operationExecute.Output.Write
             {
+                RecoveryId = None
                 OperationId = id
                 Outcome = ExecuteResult.Accepted value
             })

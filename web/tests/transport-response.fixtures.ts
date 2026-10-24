@@ -62,7 +62,11 @@ const envelope = (endpoint: string, tag: string, original: unknown) => {
     echo = { operationId: request["operationId"] };
     data = responseData(tag, data, request);
   }
-  return { ...echo, outcome: { tag, data } };
+  return {
+    ...echo,
+    ...(endpoint === "operation.execute" ? { recoveryId: null } : {}),
+    outcome: { tag, data },
+  };
 };
 /** Synthetic replies are correlated with the bytes handed to the mocked platform transport. */
 export const transportResponse = (

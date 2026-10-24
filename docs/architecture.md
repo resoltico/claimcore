@@ -8,7 +8,7 @@ One HTTPS service fronts one PostgreSQL authority; CLI and browser hold no datab
 
 | Project | Responsibility and direct project dependencies |
 | --- | --- |
-| Contract | Pure vocabulary, public models, field table, JSON/codecs, registry, refusals, messages, CLI grammar; none |
+| Contract | Pure vocabulary/models, typed interaction bindings/codecs, registry, fields, refusals/messages/CLI grammar; none |
 | Domain | Private validated case state, admission and transitions; Contract |
 | RecordFormat | Versioned durable records; Domain, Contract |
 | Application | Pure authorization, operation decisions, queries and verification folds; Domain, RecordFormat, Contract |
@@ -18,14 +18,14 @@ One HTTPS service fronts one PostgreSQL authority; CLI and browser hold no datab
 | CLI | Authenticated HTTPS client; Contract, HostSecurity |
 | Database | Owner administration; Application, Postgres, Contract, HostSecurity |
 
-Evaluated project references define the graph. Compiled guards reject I/O, clocks, environment, randomness and
-resource access in Contract/Domain/RecordFormat/Application; Postgres references outside Web/Database; server
-decision/persistence assemblies in the published CLI closure; and `JsonSerializer` in Contract/RecordFormat.
-Negative compiled fixtures exercise each guard. Web's `Composition/` dispatch binds registry endpoints to the
-actor core. Adapters render decisions. The generator derives OpenAPI and client types from Contract and
-descriptors from Domain/Application. All byte readers use one strict JSON tree and typed codecs; wire and
-canonical writers differ in member order. Domain retains private validated types; public request/reply types
-exist once.
+Evaluated project references define the graph. Compiled guards reject I/O, clocks, environment, randomness and resource
+access in Contract/Domain/RecordFormat/Application; Postgres references outside Web/Database; server
+decision/persistence assemblies in the published CLI closure; and `JsonSerializer` in Contract/RecordFormat. Negative
+compiled fixtures exercise each guard. Web's `Composition/` dispatch binds registry endpoints to the actor core.
+Adapters render decisions. The generator derives OpenAPI and client types from Contract and descriptors from
+Domain/Application. Generated TypeScript admits drafts, requests and complete replies without runtime schema walking;
+exact interaction paths and tagged branches drive forms and CLI operands. All byte readers retain strict JSON; wire and
+canonical writers differ in member order. Domain retains private validated types; public request/reply types exist once.
 
 #### Durable records
 
@@ -46,9 +46,10 @@ retain readers for every released format and ship forward migrations.
 
 ### CC-RUN-001 — Runtime admission and shutdown
 
-A runtime lease keeps admitted work alive. Shutdown closes admission, drains leases within its bound and
-closes the source once. Expiry does not relabel an outcome or cancel an admitted durable mutation. Readiness
-checks installation/schema access, never freshness or operator approval.
+A runtime lease keeps admitted work alive. Shutdown closes admission, drains leases within its bound and closes the
+source once. Expiry reports the bound without disposing resources still leased or relabeling/cancelling admitted work.
+Ticket/recovery operations share that lease; the source closes once after all users drain. Readiness checks
+installation/schema access, never freshness or operator approval.
 
 <a id="cc-auth-001"></a>
 
@@ -75,7 +76,7 @@ pages are separate snapshots.
 ### CC-APP-001 — Rejection changes no accepted state
 
 Every accepted case/authority operation appends exactly one ledger entry and updates projections in one READ
-COMMITTED transaction. Rejection records nothing. Writers first call `claimcore.lock_ledger_head()`, then read
+COMMITTED transaction. Rejection changes no accepted ledger or projection state; a submitted recovery copy may remain. Writers first call `claimcore.lock_ledger_head()`, then read
 authority, operation ID and case; nothing influencing the decision is read before that lock. The store loads,
 invokes one pure decision and persists it. The lock helper reads the database instant after locking in a
 separate statement, avoiding an instant captured before a waiting writer acquires the lock. That instant and
@@ -100,6 +101,48 @@ chain and projections without reapplying today's admission/capability rules. Det
 integrity faults; provider/I/O failures are availability faults and programming failures are
 `CORE_INTERNAL_ERROR`.
 
+<a id="cc-app-003"></a>
+
+### CC-APP-003 — Submitted request recovery
+
+Every ordinary actor-core execution first admits its validated frozen wire envelope in a separate head-locked
+transaction. Current actor, target and operation permissions and accepted replay identity are checked there. A fresh
+authorized request stores protected raw bytes before the business transaction starts; preview and owner bootstrap do not
+journal. Only confirmed journal persistence permits the ordinary acceptance path, which acquires the head and
+independently reloads authority. Lost journal confirmation returns a store fault for this attempt without starting
+acceptance; prior client uncertainty remains sticky. Recovery rows never establish acceptance or trigger background
+execution.
+
+Reservation is temporary and scoped to actor/operation ID. Canonical-equal resubmission retains the first frozen body
+and original expiry; differing content refuses. Global accepted ledger identity remains controlling. Protection purposes
+bind installation, actor, recovery identity, operation, contract identity and technical metadata. Decrypted bytes must
+decode and agree with the protected metadata before use. Web attempts to warm its recovery key-ring provider at startup
+and preflights it before acquiring the head. Unavailable protection prevents fresh staging, but cannot veto an authorized
+exact accepted-ledger replay; an unreadable optional copy returns no acknowledgement locator. Such read-only decisions
+require no operational COMMIT. Genuine database faults retain their classifications. Purpose-specific protection shares that initialized provider. DataProtection
+may still refresh its internal key-ring cache during a protection call; this is not a guarantee that per-record
+protection performs no filesystem I/O. Key-ring rotation, availability and retention remain host operational
+responsibilities.
+
+Recovery lists only the current actor's currently authorized technical metadata and Application-owned offers. It exposes
+no historical request-body retrieval. Retry loads an owned protected envelope and executes it under current
+authorization; absent, expired and foreign identities share the unavailable refusal. Forget removes an owned row and
+returns indistinguishable idempotent success for foreign or absent IDs after the actor boundary. Forget does not cancel
+work already admitted and never proves non-acceptance.
+
+Recovery defaults in `ServiceLimits` are seven days from creation, 100 active rows per actor and 10,000 per
+installation. Head locking serializes cap admission. A full journal refuses new acceptance rather than silently evicting
+live uncertainty; expiry cleanup removes at most 100 rows per admission. Accepted ERASE atomically deletes every indexed
+recovery copy for that case, including its own request. Staging observes the tombstone under the same head lock and
+cannot recreate the content.
+
+Execute replies carry a nullable owned recovery ID; null does not prove that no row exists. Known results remain until explicit acknowledgement, forget, expiry
+or erasure. CLI may acknowledge only after complete known terminal output has been accepted and flushed by the OS;
+output failure, exit 4 and unresolved prior uncertainty prevent cleanup. Operational forget failure cannot alter a
+confirmed result or justify business retry. Expiry, absence, logout, forget and key loss never resolve earlier
+uncertainty. Key custodians must retain protection keys for retained operational state and align backup retention; the
+live-database erasure guarantee excludes backups, WAL and in-flight memory.
+
 <a id="cc-cat-001"></a>
 
 ### CC-CAT-001 — Consumer vocabulary and presentation ownership
@@ -109,6 +152,6 @@ admission/transitions; Application owns authorization. Authored en/lv/ar JSON un
 `src/ClaimCore.Contract/Localization/` is the sole message source. Hosts embed/import it; pure modules open no
 resources. CLI and browser render codes/parameters locally, never server prose. [API](api.md) owns wire shape,
 identity and artifacts. Structural descriptors retain message keys, scalar policy hints, field ordering and
-correction/authority metadata without duplicating transport paths. Forms derive paths from schemas. Language
+correction/authority metadata without duplicating transport paths. Forms and CLI operands consume checked exact bindings. Language
 and display-format preferences are independent. Contract also owns the bounded Unicode display-warning
 policy; generated descriptors carry its category and count limits to the browser.

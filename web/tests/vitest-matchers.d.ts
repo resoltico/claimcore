@@ -9,6 +9,8 @@ declare module "vitest" {
     toBeDisabled: (this: Assertion<R, T>) => R;
     toBeVisible: () => R;
     toHaveAttribute: (attribute: string, value?: unknown) => R;
+    toHaveAccessibleName: (name?: string | RegExp) => R;
+    toHaveAccessibleDescription: (description?: string | RegExp) => R;
     toHaveTextContent: (text: string | RegExp, options?: { normalizeWhitespace: boolean }) => R;
     toHaveValue: (value?: string | string[] | number | null) => R;
   }

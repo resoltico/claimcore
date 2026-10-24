@@ -1,25 +1,8 @@
 namespace ClaimCore.ContractGeneration
 
 open ClaimCore.Contract
-
-open ClaimCore.Contract.Protocol
-
-open System
-open System.Buffers
-open System.Text
-open System.Text.Json
-open ClaimCore.Application
 open ClaimCore.Domain
-
-module internal ContractJson =
-    let contract write =
-        let buffer = ArrayBufferWriter<byte>()
-        use writer = new Utf8JsonWriter(buffer, JsonWriterOptions(Indented = true))
-        write writer
-        writer.Flush()
-        let bytes = Array.append (buffer.WrittenSpan.ToArray()) [| byte '\n' |]
-
-        bytes
+open ClaimCore.Application
 
 /// Presentation names for protocol structure, separate from the business fields.
 module internal ProtocolFieldPresentation =
@@ -46,15 +29,6 @@ module internal ProtocolFieldPresentation =
             | [ name, identity ] -> name, identity
             | _ -> invalidOp "Protocol field presentation identities disagree.")
 
-type FieldPresentationDefinition =
-    {
-        Name: BusinessField
-        LabelId: string
-        MeaningId: string
-        Scalar: ScalarRule
-        AllowsAbsence: bool
-    }
-
 type PresentationDefinitions =
     {
         Fields: FieldPresentationDefinition list
@@ -63,186 +37,8 @@ type PresentationDefinitions =
         AuthorityCommands: AuthorityOperationDefinition list
     }
 
+/// Domain and Application own metadata values; Contract owns their public encoding.
 module ContractDescriptors =
-    let private textPolicy (writer: Utf8JsonWriter) (value: TextAdmissionPolicy) =
-        writer.WriteStartObject()
-        writer.WriteNumber("maximumCharacters", value.MaximumCharacters)
-        writer.WriteBoolean("requiresNonBlank", value.RequiresNonBlank)
-        writer.WriteBoolean("rejectsSurroundingWhitespace", value.RejectsSurroundingWhitespace)
-        writer.WriteBoolean("rejectsControlCharacters", value.RejectsControlCharacters)
-
-        writer.WriteBoolean(
-            "rejectsForbiddenInvisibleCharacters",
-            value.RejectsForbiddenInvisibleCharacters
-        )
-
-        writer.WriteEndObject()
-
-    let private text (writer: Utf8JsonWriter) (value: ScalarTextConstraints) =
-        writer.WritePropertyName("format")
-        writer.WriteStartObject()
-        writer.WriteNumber("minimumCharacters", value.Format.MinimumCharacters)
-
-        match value.Format.Grammar with
-        | Some grammar -> writer.WriteString("grammar", grammar)
-        | None -> writer.WriteNull("grammar")
-
-        writer.WriteEndObject()
-        writer.WritePropertyName("policy")
-
-        match value.Policy with
-        | Some policy -> textPolicy writer policy
-        | None -> writer.WriteNullValue()
-
-    let private scalar (writer: Utf8JsonWriter) =
-        function
-        | ScalarRule.Text value ->
-            writer.WriteString("kind", "TEXT")
-            text writer value
-        | ScalarRule.CalendarDate value ->
-            writer.WriteString("kind", "CALENDAR_DATE")
-            writer.WriteString("exactFormat", value.ExactFormat)
-            writer.WriteString("minimum", value.Minimum.ToString("O"))
-            writer.WriteString("maximum", value.Maximum.ToString("O"))
-        | ScalarRule.Amount value ->
-            writer.WriteString("kind", "AMOUNT")
-            writer.WriteString("grammar", value.Grammar)
-            writer.WriteNumber("maximumIntegerDigits", value.MaximumIntegerDigits)
-            writer.WriteNumber("maximumFractionalDigits", value.MaximumFractionalDigits)
-        | ScalarRule.Currency value ->
-            writer.WriteString("kind", "CURRENCY")
-            writer.WriteString("grammar", value.Grammar)
-            writer.WriteNumber("exactCharacters", value.ExactCharacters)
-        | ScalarRule.CaseStatus value ->
-            writer.WriteString("kind", "CASE_STATUS")
-            writer.WritePropertyName("allowedValues")
-            writer.WriteStartArray()
-            value.AllowedValues |> List.iter (CaseStatuses.token >> writer.WriteStringValue)
-            writer.WriteEndArray()
-
-    let private fields definitions (writer: Utf8JsonWriter) =
-        writer.WritePropertyName("fields")
-        writer.WriteStartArray()
-
-        for field in definitions.Fields do
-            writer.WriteStartObject()
-            writer.WriteString("name", BusinessField.token field.Name)
-            writer.WriteString("labelId", field.LabelId)
-            writer.WriteString("meaningId", field.MeaningId)
-            writer.WriteBoolean("allowsAbsence", field.AllowsAbsence)
-            writer.WritePropertyName("scalar")
-            writer.WriteStartObject()
-            scalar writer field.Scalar
-            writer.WriteEndObject()
-            writer.WriteEndObject()
-
-        writer.WriteEndArray()
-
-    let private commands definitions (writer: Utf8JsonWriter) =
-        writer.WritePropertyName("commands")
-        writer.WriteStartArray()
-
-        for command in definitions.Commands do
-            writer.WriteStartObject()
-            writer.WriteString("kind", CaseActKinds.token command.Kind)
-            writer.WriteString("labelId", command.LabelId)
-
-            writer.WriteString("meaningId", command.MeaningId)
-
-            writer.WriteString("confirmationId", command.ConfirmationId)
-            CommandInputRendering.write writer command.Inputs
-            writer.WriteEndObject()
-
-        writer.WriteEndArray()
-
-    let private inputFields (writer: Utf8JsonWriter) =
-        writer.WritePropertyName("inputFields")
-        writer.WriteStartArray()
-        writer.WriteStartObject()
-        writer.WriteString("name", "reason")
-        writer.WriteString("labelId", "field.reason.label")
-        writer.WriteString("meaningId", "field.reason.meaning")
-        writer.WritePropertyName("scalar")
-        writer.WriteStartObject()
-        scalar writer (FieldDefinitions.scalar InputTarget.Reason)
-        writer.WriteEndObject()
-        writer.WriteEndObject()
-        writer.WriteEndArray()
-
-    let private authorityPrimitive =
-        function
-        | AuthorityInputPrimitive.Principal -> "PRINCIPAL"
-        | AuthorityInputPrimitive.Role -> "ROLE"
-        | AuthorityInputPrimitive.Scope -> "SCOPE"
-        | AuthorityInputPrimitive.Boolean -> "BOOLEAN"
-
-    let private authorityInput (writer: Utf8JsonWriter) (input: AuthorityInputDefinition) =
-        writer.WriteStartObject()
-        writer.WriteString("fieldName", input.Name)
-        writer.WriteString("labelId", input.LabelId)
-        writer.WriteString("primitive", authorityPrimitive input.Primitive)
-        writer.WriteEndObject()
-
-    let private authorityFields definitions (writer: Utf8JsonWriter) =
-        writer.WritePropertyName("authorityFields")
-        writer.WriteStartArray()
-
-        for name, labelId in
-            ProtocolFieldPresentation.authorityFields
-                definitions.AuthorityTarget
-                definitions.AuthorityCommands do
-            writer.WriteStartObject()
-            writer.WriteString("name", name)
-            writer.WriteString("labelId", labelId)
-            writer.WriteEndObject()
-
-        writer.WriteEndArray()
-
-    let private authority definitions (writer: Utf8JsonWriter) =
-        writer.WritePropertyName("authorityTarget")
-        authorityInput writer definitions.AuthorityTarget
-        writer.WritePropertyName("authorityCommands")
-        writer.WriteStartArray()
-
-        for definition in definitions.AuthorityCommands do
-            writer.WriteStartObject()
-            writer.WriteString("kind", AuthorityKinds.token definition.Kind)
-
-            writer.WriteString("labelId", definition.LabelId)
-
-            writer.WriteString("meaningId", definition.MeaningId)
-
-            writer.WriteString("confirmationId", definition.ConfirmationId)
-            writer.WritePropertyName("inputs")
-            writer.WriteStartArray()
-            definition.Inputs |> List.iter (authorityInput writer)
-            writer.WriteEndArray()
-            writer.WriteEndObject()
-
-        writer.WriteEndArray()
-
-    let private diagnostics (writer: Utf8JsonWriter) name definitions =
-        writer.WritePropertyName(name: string)
-        writer.WriteStartArray()
-
-        for (value: DiagnosticDefinition) in definitions do
-            writer.WriteStartObject()
-            writer.WriteString("id", value.Id)
-            writer.WritePropertyName("parameters")
-            writer.WriteStartArray()
-
-            for parameter in value.Parameters do
-                writer.WriteStartObject()
-                writer.WriteString("name", parameter.Name)
-                writer.WriteNumber("minimum", parameter.Minimum)
-                writer.WriteNumber("maximum", parameter.Maximum)
-                writer.WriteEndObject()
-
-            writer.WriteEndArray()
-            writer.WriteEndObject()
-
-        writer.WriteEndArray()
-
     let defaults =
         {
             Fields =
@@ -260,50 +56,55 @@ module ContractDescriptors =
             AuthorityCommands = AuthorityOperationDefinitions.all
         }
 
+    let valueFrom definitions : PresentationDescriptors =
+        {
+            Fields = definitions.Fields
+            Commands = definitions.Commands
+            InputFields =
+                [
+                    {
+                        Name = InputTarget.Reason
+                        LabelId = "field.reason.label"
+                        MeaningId = "field.reason.meaning"
+                        Scalar = FieldDefinitions.scalar InputTarget.Reason
+                    }
+                ]
+            AuthorityTarget = definitions.AuthorityTarget
+            AuthorityCommands = definitions.AuthorityCommands
+            AuthorityFields =
+                ProtocolFieldPresentation.authorityFields
+                    definitions.AuthorityTarget
+                    definitions.AuthorityCommands
+                |> List.map (fun (name, label) -> { Name = name; LabelId = label })
+            CharacterWarnings =
+                {
+                    MaximumCodePoints = TextDisplay.maximumCodePoints
+                    Categories = TextDisplay.categoryTokens
+                }
+            Statuses = CaseStatuses.all
+            RejectionDiagnostics = Refusals.definitions
+            FaultDiagnostics = CoreFaults.definitions
+            Roles =
+                RoleTokens.all
+                |> List.map (fun role ->
+                    {
+                        Role = role
+                        Capabilities = ActorAuthorization.capabilities role
+                    })
+            Limits =
+                {
+                    DefaultPageSize = ServiceLimits.DefaultPageSize
+                    MaximumPageSize = ServiceLimits.MaximumPageSize
+                    RequestByteLimit = ServiceLimits.RequestByteLimit
+                }
+            Interactions = InteractionDefinitions.all
+            ProductVersion = BuildIdentity.current.Version
+        }
+
     let renderFrom definitions =
-        ContractJson.contract (fun writer ->
-            writer.WriteStartObject()
-            fields definitions writer
-            commands definitions writer
-            inputFields writer
-            authority definitions writer
-            authorityFields definitions writer
-            writer.WritePropertyName("characterWarnings")
-            writer.WriteStartObject()
-            writer.WriteNumber("maximumCodePoints", TextDisplay.maximumCodePoints)
-            writer.WritePropertyName("categories")
-            writer.WriteStartArray()
-            TextDisplay.categoryTokens |> List.iter writer.WriteStringValue
-            writer.WriteEndArray()
-            writer.WriteEndObject()
-            writer.WritePropertyName("statuses")
-            writer.WriteStartArray()
-            CaseStatuses.all |> List.iter (CaseStatuses.token >> writer.WriteStringValue)
-            writer.WriteEndArray()
-            diagnostics writer "rejectionDiagnostics" Refusals.definitions
-            diagnostics writer "faultDiagnostics" CoreFaults.definitions
-            writer.WritePropertyName("roles")
-            writer.WriteStartArray()
-
-            for role in RoleTokens.all do
-                writer.WriteStartObject()
-                writer.WriteString("role", RoleTokens.token role)
-                writer.WritePropertyName("capabilities")
-                writer.WriteStartArray()
-
-                ActorAuthorization.capabilities role
-                |> List.iter (Capabilities.token >> writer.WriteStringValue)
-
-                writer.WriteEndArray()
-                writer.WriteEndObject()
-
-            writer.WriteEndArray()
-            writer.WritePropertyName("limits")
-            writer.WriteStartObject()
-            writer.WriteNumber("defaultPageSize", ServiceLimits.DefaultPageSize)
-            writer.WriteNumber("maximumPageSize", ServiceLimits.MaximumPageSize)
-            writer.WriteNumber("requestByteLimit", ServiceLimits.RequestByteLimit)
-            writer.WriteEndObject()
-            writer.WriteEndObject())
+        valueFrom definitions
+        |> DescriptorCodecs.codec.Write
+        |> WireWriter.indentedBytes
+        |> fun bytes -> Array.append bytes [| byte '\n' |]
 
     let render () = renderFrom defaults

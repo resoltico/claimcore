@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { operationReducer } from "../src/interaction/operationState";
+import { operationReducer, operationView } from "../src/interaction/operationState";
 import {
   initial,
   begin,
@@ -7,6 +7,7 @@ import {
   reviewed,
   firstId,
   secondId,
+  effect,
 } from "./operation-identity.fixtures";
 it("unexposed edits keep identity and changed exposed input receives fresh identity", () => {
   expect(
@@ -21,7 +22,7 @@ it("unexposed edits keep identity and changed exposed input receives fresh ident
     id: secondId,
   });
   expect(changed.values["operationId"]).toBe(secondId);
-  expect(changed.prepared).toBeNull();
+  expect(operationView(changed).prepared).toBeNull();
   expect(
     operationReducer(exposed, {
       type: "EDIT",
@@ -32,7 +33,7 @@ it("unexposed edits keep identity and changed exposed input receives fresh ident
   ).toBe(exposed);
 });
 it("uncertainty survives later definite failures and blocks edits while allowing exact retry", () => {
-  const submitting = operationReducer(reviewed(), { type: "EXECUTE" });
+  const submitting = operationReducer(reviewed(), { type: "EXECUTE", identity: effect("execute") });
   const unknown = operationReducer(submitting, {
     type: "REFUSE",
     notice: { kind: "local", reason: "outcomeUnknown" },
@@ -41,8 +42,8 @@ it("uncertainty survives later definite failures and blocks edits while allowing
     disclosure: false,
   });
   const rejected = refused(unknown);
-  expect(rejected.priorUncertain).toBe(true);
-  expect(rejected.prepared).toBe(submitting.prepared);
+  expect(operationView(rejected).priorUncertain).toBe(true);
+  expect(operationView(rejected).prepared).toBe(operationView(submitting).prepared);
   expect(
     operationReducer(rejected, {
       type: "EDIT",
@@ -51,14 +52,21 @@ it("uncertainty survives later definite failures and blocks edits while allowing
       id: secondId,
     }),
   ).toBe(rejected);
-  expect(operationReducer(rejected, { type: "EXECUTE" }).phase).toBe("SUBMITTING");
+  expect(
+    operationView(operationReducer(rejected, { type: "EXECUTE", identity: effect("execute") }))
+      .phase,
+  ).toBe("SUBMITTING");
 });
 it("requires an exact review and consent and blocks edits while an attempt is pending", () => {
-  expect(operationReducer(initial(), { type: "EXECUTE" })).toEqual(initial());
-  expect(operationReducer(begin(), { type: "CONFIRM", value: true }).confirmed).toBe(false);
+  expect(operationReducer(initial(), { type: "EXECUTE", identity: effect("execute") })).toEqual(
+    initial(),
+  );
+  expect(operationView(operationReducer(begin(), { type: "CONFIRM", value: true })).confirmed).toBe(
+    false,
+  );
   const original = reviewed();
-  const pending = operationReducer(original, { type: "EXECUTE" });
-  expect(pending.prepared).toBe(original.prepared);
+  const pending = operationReducer(original, { type: "EXECUTE", identity: effect("execute") });
+  expect(operationView(pending).prepared).toBe(operationView(original).prepared);
   expect(
     operationReducer(pending, {
       type: "EDIT",

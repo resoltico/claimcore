@@ -1,11 +1,11 @@
--- ClaimCore schema migration 0001: baseline.
+-- ClaimCore installation baseline.
 --
 -- Applied by `ClaimCore.Database initialize` as the schema owner, inside one transaction, to a
 -- database that has no `claimcore` schema. The administration tool inserts the `installation`
--- row and the `schema_migrations` row for this script in that same transaction.
+-- row and the `baseline_identity` row for this source in that same transaction.
 --
 -- The role `claimcore_runtime` must already exist (cluster roles are an operator concern, not a
--- migration concern). It is the only role the HTTPS service connects as.
+-- schema concern). It is the only role the HTTPS service connects as.
 --
 -- Integer domains: sequences and revisions are 1 .. 2^53-1 so every value is an exact JSON
 -- number in every client (I-JSON, RFC 7493). Checks below encode format invariants only:
@@ -28,9 +28,9 @@ RETURNS boolean LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
 SET search_path = pg_catalog
 AS $$ SELECT value COLLATE "C" !~ U&'[\FDD0-\FDEF\FFFE\FFFF\+01FFFE\+01FFFF\+02FFFE\+02FFFF\+03FFFE\+03FFFF\+04FFFE\+04FFFF\+05FFFE\+05FFFF\+06FFFE\+06FFFF\+07FFFE\+07FFFF\+08FFFE\+08FFFF\+09FFFE\+09FFFF\+0AFFFE\+0AFFFF\+0BFFFE\+0BFFFF\+0CFFFE\+0CFFFF\+0DFFFE\+0DFFFF\+0EFFFE\+0EFFFF\+0FFFFE\+0FFFFF\+10FFFE\+10FFFF]' $$;
 
-CREATE TABLE claimcore.schema_migrations (
-    version integer PRIMARY KEY CHECK (version > 0),
-    name text NOT NULL CHECK (name ~ '^[a-z][a-z0-9_]{0,63}$'),
+CREATE TABLE claimcore.baseline_identity (
+    singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+    identifier text NOT NULL CHECK (identifier ~ '^[a-z][a-z0-9-]{0,63}$'),
     script_sha256 bytea NOT NULL CHECK (octet_length(script_sha256) = 32),
     applied_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
@@ -334,6 +334,40 @@ CREATE INDEX grants_case ON claimcore.grants (case_id) WHERE case_id IS NOT NULL
 -- grants on the one case a request targets, never the actor's whole grant set.
 CREATE INDEX grants_actor_case ON claimcore.grants (actor_id, case_id);
 
+-- Submitted request recovery is operational evidence, never accepted history.
+CREATE TABLE claimcore.recovery_requests (
+    recovery_id uuid PRIMARY KEY,
+    actor_id uuid NOT NULL,
+    operation_id uuid NOT NULL,
+    contract_identity text NOT NULL,
+    scope text NOT NULL,
+    act text NOT NULL,
+    case_id uuid NULL,
+    case_reference text NULL,
+    expected_revision bigint NULL,
+    target_actor_id uuid NULL,
+    created_at timestamptz NOT NULL,
+    expires_at timestamptz NOT NULL,
+    protected_body bytea NOT NULL,
+    UNIQUE (actor_id, operation_id)
+);
+CREATE INDEX recovery_actor ON claimcore.recovery_requests (actor_id, recovery_id);
+CREATE INDEX recovery_expiry ON claimcore.recovery_requests (expires_at, recovery_id);
+CREATE INDEX recovery_case ON claimcore.recovery_requests (case_id);
+
+-- Server-side authentication tickets are operational state, independent of ledger ordering.
+CREATE TABLE claimcore.sessions (
+    session_key text PRIMARY KEY CHECK (session_key COLLATE "C" ~ '^[0-9a-f]{64}$'),
+    protected_ticket bytea NOT NULL CHECK (octet_length(protected_ticket) BETWEEN 1 AND 1048576),
+    payload_version integer NOT NULL CHECK (payload_version = 1),
+    created_at timestamptz NOT NULL CHECK (isfinite(created_at)),
+    absolute_expiry timestamptz NOT NULL CHECK (isfinite(absolute_expiry)),
+    last_activity timestamptz NOT NULL CHECK (isfinite(last_activity)),
+    idle_seconds double precision NOT NULL CHECK (idle_seconds > 0 AND idle_seconds < 'Infinity'::double precision),
+    CHECK (absolute_expiry > created_at AND last_activity >= created_at)
+);
+CREATE INDEX sessions_expiry ON claimcore.sessions (absolute_expiry);
+
 -- ---------------------------------------------------------------------------------------------
 -- Runtime privileges: least privilege for the one role the service connects as. It can append to
 -- the ledger but cannot change or remove a row except through erase_case_payload; it can
@@ -343,7 +377,7 @@ REVOKE ALL ON ALL TABLES IN SCHEMA claimcore FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA claimcore FROM PUBLIC;
 
 GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
-GRANT SELECT ON claimcore.schema_migrations, claimcore.installation, claimcore.ledger_head
+GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head
     TO claimcore_runtime;
 GRANT SELECT, INSERT ON claimcore.ledger TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.actors TO claimcore_runtime;
@@ -352,3 +386,7 @@ GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.erase_case_payload(uuid) TO claimcore_runtime;
 
 GRANT EXECUTE ON FUNCTION claimcore.is_interchange_text(text) TO claimcore_runtime;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.sessions TO claimcore_runtime;
+
+GRANT SELECT, INSERT, DELETE ON claimcore.recovery_requests TO claimcore_runtime;

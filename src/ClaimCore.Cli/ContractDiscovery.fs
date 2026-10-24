@@ -28,13 +28,14 @@ module ContractDiscovery =
 
     let descriptors () = resource "descriptors.json"
 
+    let descriptorValue () =
+        Codec.decode Limits.MaximumResponseBytes DescriptorCodecs.codec (descriptors ())
+        |> Result.defaultWith (fun _ -> invalidOp "Invalid embedded descriptors.")
+        |> DescriptorCodecs.codec.Write
+
     let helpTopic language topic =
         if topic = "verbs" then
-            let grammar =
-                descriptors ()
-                |> StrictJson.read Limits.MaximumResponseBytes
-                |> Result.defaultWith (fun _ -> invalidOp "Invalid embedded descriptors.")
-                |> Grammar.description
+            let grammar = descriptorValue () |> Grammar.description
 
             MessageCatalogs.render language "cli.help.verbs" (Map.ofList [ "grammar", grammar ])
         else
@@ -51,7 +52,7 @@ module ContractDiscovery =
                     id = Api.id endpoint
                     method = (Api.method endpoint).Method
                     path = Api.path endpoint
-                    mutates = Api.mutates endpoint
+                    effect = EndpointEffects.token (Api.effect endpoint)
                 |})
 
         JsonSerializer.SerializeToUtf8Bytes {| endpoints = endpoints |}

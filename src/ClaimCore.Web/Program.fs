@@ -11,7 +11,6 @@ open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery
 open Microsoft.AspNetCore.Builder
-open Microsoft.AspNetCore.DataProtection
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.StaticFiles
@@ -84,8 +83,8 @@ let private configureKestrel (configuration: WebConfiguration) (builder: WebAppl
         ))
     |> ignore
 
-let private configureAntiforgery directory idle (services: IServiceCollection) =
-    SessionKeys.configure directory idle services
+let private configureAntiforgery directory idle sessions (services: IServiceCollection) =
+    SessionKeys.configure directory idle sessions services
 
     services.AddAntiforgery(fun options ->
         options.HeaderName <- "X-ClaimCore-Antiforgery"
@@ -132,25 +131,40 @@ let private openRuntime (configuration: WebConfiguration) (ct: CancellationToken
         let! opened = ServiceRuntime.openConnection configuration.ConnectionString ct
 
         match opened with
-        | Ok value -> return value
+        | Ok value ->
+            try
+                value.ConfigureRecoveryProtection(
+                    RecoveryProtection.create configuration.KeyRingDirectory
+                )
+
+                return value
+            with error ->
+                value.Dispose()
+                return raise error
         | Error "Cancelled" when ct.IsCancellationRequested ->
             return raise (OperationCanceledException(ct))
         | Error reason -> return WebStartupDiagnostics.refuse (WebStartupProblem.RuntimeOpen reason)
     }
 
-let private configuredBuilder assets (configuration: WebConfiguration) oidc =
+let private configuredBuilder
+    assets
+    (configuration: WebConfiguration)
+    oidc
+    (runtime: IServiceRuntime)
+    =
     let builder =
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
 
     builder.Logging.ClearProviders() |> ignore
     configureKestrel configuration builder
-    configureAntiforgery configuration.KeyRingDirectory configuration.SessionIdle builder.Services
 
-    AuthMiddleware.configure
-        oidc
+    configureAntiforgery
+        configuration.KeyRingDirectory
         configuration.SessionIdle
-        configuration.SessionAbsolute
+        runtime.Sessions
         builder.Services
+
+    AuthMiddleware.configure oidc configuration.SessionAbsolute builder.Services
 
     RateLimits.configure configuration.Admission builder.Services
     builder.Services.AddAuthorization() |> ignore
@@ -234,7 +248,7 @@ let private runAsync (ct: CancellationToken) =
         use! _runtimeLease = Task.FromResult(runtimeLifetime runtime)
         ct.ThrowIfCancellationRequested()
 
-        let builder = configuredBuilder assets configuration oidc
+        let builder = configuredBuilder assets configuration oidc runtime
         use application = builder.Build()
 
         configureRoutes assets configuration runtime application

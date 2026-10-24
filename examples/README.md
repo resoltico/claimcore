@@ -66,6 +66,19 @@ acceptance or exact replay resolves uncertainty about this request. Discarding i
 the operation. `operation.observe` reports retained acceptance metadata and cannot prove that
 pending content matches it. See the [delivery contract](../docs/api.md).
 
+The service protects admitted submissions before new acceptance. After a process restart, use
+`operation pending --limit 50` to list your currently visible recovery metadata. Listing does not execute
+anything or expose a saved request body. Select an item and deliberately run
+`operation retry RECOVERY_ID OPERATION_ID`, using both original identifiers from that item. The server
+reauthorizes the retained request; the CLI checks the selected target and receipt before resolving uncertainty.
+
+After a correlated known result reaches its output sink, the CLI best-effort acknowledges the retained copy.
+Use `operation forget RECOVERY_ID` for an explicit acknowledgement or deliberate abandonment; forgetting,
+absence and expiry never prove that the business operation did not commit. Recovery expires after seven days
+and has bounded capacity. Erasure removes every live recovery copy indexed to the case, including its own
+submission, so a lost erasure reply may remain unresolved. See the [recovery contract](../docs/architecture.md#cc-app-003)
+for these limits and the [complete CLI syntax](../docs/api.md#cc-cli-001).
+
 Published acceptance derives all nine human mutation invocations from these independent frames,
 checks exact dry-run equality, and executes them through the published CLI with fresh
 Testcontainers PostgreSQL and Keycloak. It verifies receipts, replay, the final case,

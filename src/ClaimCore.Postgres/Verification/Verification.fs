@@ -30,6 +30,22 @@ module internal Verification =
             return! LedgerVerification.append installationId expected state raw.Entry raw.Metadata
         }
 
+    /// Run inside the scan's repeatable-read snapshot; only the fold decides precedence.
+    let private earliestDuplicate connection token =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    "SELECT min(sequence) FROM (SELECT sequence,row_number() OVER (PARTITION BY operation_id ORDER BY sequence) AS occurrence FROM claimcore.ledger) AS occurrences WHERE occurrence=2"
+                    [||]
+                    token
+
+            return
+                match List.exactlyOne rows |> Array.exactlyOne with
+                | :? DBNull -> None
+                | value -> Some(unbox<int64> value)
+        }
+
     let private scan
         connection
         installationId
@@ -37,7 +53,8 @@ module internal Verification =
         (token: CancellationToken)
         =
         task {
-            let mutable state = Ok(LedgerVerification.initial expected)
+            let! duplicate = earliestDuplicate connection token
+            let mutable state = Ok(LedgerVerification.initial expected duplicate)
 
             use command =
                 DatabaseSession.command
@@ -135,12 +152,7 @@ module internal Verification =
         DatabaseSession.read source token (fun connection ->
             task {
                 ServerSupport.require connection.PostgreSqlVersion
-                let! count = Migrations.history connection Migrations.scripts token
-
-                if count <> Migrations.scripts.Length then
-                    invalidOp "Unsupported schema version."
-
-                let! installationId, _ = Migrations.installation connection token
+                let! installationId, _ = Baseline.require connection token
                 let! result = scan connection installationId expected token
 
                 match result with

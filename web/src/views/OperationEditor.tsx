@@ -19,7 +19,10 @@ export const OperationEditor = (props: OperationEditorProps) => {
         definition={props.definition}
         receipt={{ ...model.receipt, scope: model.receipt.scope }}
         message={model.notice}
-        onCommitted={props.onCommitted}
+        onCommitted={(receipt) => {
+          model.acknowledge();
+          props.onCommitted(receipt);
+        }}
       />
     );
   }

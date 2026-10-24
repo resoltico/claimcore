@@ -50,7 +50,7 @@ let parse code (result: ProcessRunner.Result) =
     deliveryFields code reply
     reply
 
-let private invoke
+let internal invoke
     (fixture: PublishedFixture.Fixture)
     (environment: IReadOnlyDictionary<string, string>)
     arguments

@@ -64,12 +64,21 @@ module Correlation =
         | Ok input, Ok reply -> check input reply
         | _ -> false
 
+    let private retry (request: RecoveryRequest) (reply: ExecuteReply) =
+        request.OperationId = reply.OperationId
+        && (reply.RecoveryId.IsNone || reply.RecoveryId = Some request.RecoveryId)
+        && match reply.Outcome with
+           | ExecuteResult.Accepted receipt
+           | ExecuteResult.AlreadyAccepted receipt -> receipt.OperationId = request.OperationId
+           | _ -> true
+
     let matches endpoint input reply =
         match Api.id endpoint with
         | "operation.preview" ->
             admitted RequestCodecs.operationInput ReplyCodecs.preview preview input reply
         | "operation.execute" ->
             admitted RequestCodecs.operationInput ReplyCodecs.execute execute input reply
+        | "operation.retry" -> admitted RecoveryCodecs.retry ReplyCodecs.execute retry input reply
         | "operation.observe" ->
             admitted
                 Api.operationObserve.Input

@@ -627,11 +627,72 @@ let private ioFailure (database: PostgresFixture.Database) =
             "Unavailable database stays an I/O failure, not divergence"
     }
 
+let private duplicateIdentity earlierFailure occurrences (database: PostgresFixture.Database) =
+    task {
+        let! actor = populated database
+
+        let! closed =
+            actor.Execute(OperationInput.Case(request 11 "synthetic-a" 1L CaseAct.Close), token)
+
+        accepted closed |> ignore
+
+        let! reopened =
+            actor.Execute(OperationInput.Case(request 12 "synthetic-a" 2L CaseAct.Reopen), token)
+
+        accepted reopened |> ignore
+        do! sql database "ALTER TABLE claimcore.ledger DROP CONSTRAINT ledger_operation_id_key" [||]
+
+        for sequence in [ 5L .. int64 (3 + occurrences) ] do
+            do!
+                rewrite database sequence (fun value ->
+                    let request, snapshot = livePayload value
+
+                    { value with
+                        Metadata =
+                            { value.Metadata with
+                                OperationId = id 10
+                            }
+                    }
+                    |> updateCase { request with OperationId = id 10 } snapshot)
+
+        match earlierFailure with
+        | Some sequence ->
+            do!
+                guardedSql
+                    database
+                    "UPDATE claimcore.ledger SET entry_hash=set_byte(entry_hash,0,(get_byte(entry_hash,0)+1)%256) WHERE sequence=$1"
+                    [| box sequence |]
+        | None -> ()
+
+        let! result = Verification.verify database.OwnerSource None token
+        let sequence = earlierFailure |> Option.defaultValue 5L
+
+        let expected =
+            if earlierFailure.IsSome then
+                VerificationFinding.EntryHash
+            else
+                VerificationFinding.PayloadFormat
+
+        Expect.equal
+            result
+            (VerificationResult.Diverged
+                {
+                    Sequence = Some sequence
+                    Finding = expected
+                })
+            "Earliest second occurrence is checked after hash and payload, before history"
+    }
+
 [<Tests>]
 let tests =
     testList
         "typed ledger verification"
         [
+            for occurrences in [ 2; 3 ] do
+                for earlier in [ None; Some 4L; Some 5L ] do
+                    testCaseAsync
+                        ($"duplicate identity with {occurrences} occurrences and corruption {earlier}")
+                        (run (duplicateIdentity earlier occurrences))
             testCase "all seventeen finding identifiers are explicitly covered" (fun () ->
                 Expect.equal findingCases.Length 17 "Closed finding vocabulary"
 

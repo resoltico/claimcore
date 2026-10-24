@@ -6,8 +6,8 @@ Read [Domain](docs/domain.md), [Architecture](docs/architecture.md) and
 Contract owns shared public models, typed codecs, the endpoint registry, vocabulary and source
 locale JSON. Domain/Application own decisions and authorization; RecordFormat owns versioned
 durable encodings. Postgres persists decisions and Web owns runtime composition/dispatch.
-CLI references Contract/HostSecurity; browser and CLI derive forms/verbs from schemas, the field
-table and structural descriptors. Coordinate service, clients and the three tracked generated
+CLI references Contract/HostSecurity; browser and CLI consume exact interaction bindings and generated executable validation, with typed
+descriptors and independently checked wire corpora. Coordinate service, clients and the three tracked generated
 artifacts; keep affected callers, lockfiles, tests and docs together. Challenge assumptions against
 current code, standards and independent tests before building around them. A design's adoption
 does not make a newly discovered defect correct; resolve it explicitly with evidence.

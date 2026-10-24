@@ -153,7 +153,9 @@ const DashboardContent = (props: ContentProps) => {
     return <AuthorityPanel token={props.token} onLockChange={props.setLocked} />;
   }
   if (props.active === "operations") {
-    return <OperationLookup token={props.token} definition={definition} />;
+    return (
+      <OperationLookup token={props.token} definition={definition} onLockChange={props.setLocked} />
+    );
   }
   return (
     <CasesPane

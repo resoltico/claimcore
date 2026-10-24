@@ -73,6 +73,5 @@ type internal AdmissionGate(close: unit -> unit) =
                 if obj.ReferenceEquals(finished, drain) then
                     ShutdownOutcome.Drained
                 else
-                    lock sync dispose
                     ShutdownOutcome.BoundExpired
         }

@@ -173,12 +173,13 @@ let private expectedCorrectionGroups =
          [ current BusinessField.PaymentDate ])
     ]
 
-let private correctionGroupDetails groups =
+let private correctionGroupDetails (groups: CorrectionGroupDefinition list) =
     groups
     |> List.map (fun group ->
         group.Name,
         group.Actions,
-        group.ReplaceFields |> List.map (fun field -> field.FieldName, field.Prefill))
+        group.ReplaceFields
+        |> List.map (fun (field: FieldInputDefinition) -> field.FieldName, field.Prefill))
 
 let private commandInventoryTest =
     testCase "all twelve case act definitions are the sole command inventory" (fun () ->

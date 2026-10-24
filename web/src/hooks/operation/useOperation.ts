@@ -7,16 +7,22 @@ import {
   type ServiceResponse,
   type OperationReceipt,
 } from "../../api/service";
+import type { RecoveryItem } from "@contracts/client";
 import { isDisclosureRefused } from "../../api/outcomes";
-import { mutationAccepted, mutationUncertain } from "../../protocol/delivery";
+import { mutationUncertain } from "../../protocol/delivery";
 import { prepareRequest, ProtocolInputError } from "../../protocol/preparedRequest";
 import { buildRequest } from "../../protocol/client";
-import { formValue, type FormValues } from "../../protocol/forms";
-import { initialOperationValues, operationDocument } from "../../interaction/operationForm";
+import type { FormValues } from "../../protocol/forms";
+import { initialOperationValues, assembleOperation } from "../../interaction/operationForm";
 import {
   operationReducer,
-  type OperationAction,
+  operationView,
+  operationSource,
+  recoveryTarget,
   type OperationState,
+  type OperationEffect,
+  type OperationAction,
+  type EffectIdentity,
 } from "../../interaction/operationState";
 import type { Notice } from "../../api/notices";
 
@@ -35,74 +41,152 @@ const fresh = (options: Options, kind = options.kind): OperationState => {
   const values = initialOperationValues(options.scope, kind, options.current);
   return {
     target: targetKey(options),
+    context: { token: options.token, target: targetKey(options) },
     disclosureToken: options.token,
     disclosureRefused: false,
-    phase: "EDITING",
     values,
     baseline: values,
-    prepared: null,
-    priorUncertain: false,
-    review: null,
-    receipt: null,
+    generation: 0,
+    operation: { tag: "EDITING", exposed: null },
+    effects: [],
     notice: null,
     fieldError: null,
-    confirmed: false,
     pendingDiscard: null,
   };
 };
-const useStateControl = (options: Options) => {
-  const [state, update] = useReducer(operationReducer, options, fresh);
-  const latest = useRef(state);
-  const renderedContext = useRef({ token: options.token, target: targetKey(options) });
-  const control = useRef({
-    serial: 0,
-    busy: false,
-    mutating: false,
-    token: options.token,
-    alive: true,
-  });
-  const dispatch = (action: OperationAction) => {
-    latest.current = operationReducer(latest.current, action);
-    update(action);
-  };
-  useLayoutEffect(() => {
-    latest.current = state;
-    renderedContext.current = { token: options.token, target: targetKey(options) };
-    if (control.current.token !== options.token) {
-      const uncertain = control.current.mutating;
-      control.current.token = options.token;
-      control.current.serial += 1;
-      control.current.busy = false;
-      control.current.mutating = false;
-      dispatch({ type: "INVALIDATE", uncertain, refused: false });
-    }
-  });
-  useEffect(() => {
-    const value = control.current;
-    value.alive = true;
-    return () => {
-      value.alive = false;
-      value.serial += 1;
-    };
-  }, []);
-  const reset = (kind = options.kind) => {
-    const next = fresh(options, kind);
-    dispatch({
-      type: "RESET",
-      state: { ...next, disclosureToken: latest.current.disclosureToken },
-    });
-  };
-  return { state, dispatch, latest, control, renderedContext, reset };
+const activeTarget = (state: OperationState, options: Options): string => {
+  const source = operationSource(state.operation);
+  return source?.kind === "RECOVERED" ? recoveryTarget(source.item) : targetKey(options);
 };
-type Model = ReturnType<typeof useStateControl>;
+const identity = (options: Options, state: OperationState): EffectIdentity => ({
+  id: crypto.randomUUID(),
+  token: options.token,
+  target: activeTarget(state, options),
+});
 const dirtyValues = (left: FormValues, right: FormValues): boolean =>
   Object.keys(left).length !== Object.keys(right).length ||
   Object.entries(left).some(([key, value]) => right[key] !== value);
-const useLock = (model: Model, onLockChange: Options["onLockChange"]) => {
-  const { state } = model;
+type Reply = ApiResult<ServiceResponse<"operation.execute"> | ServiceResponse<"operation.preview">>;
+const completion = (
+  effect: Extract<OperationEffect, { kind: "PREVIEW" | "EXECUTE" }>,
+  result: Reply,
+): OperationAction => {
+  const recoverable =
+    result.kind === "outcome" && "recoveryId" in result.value ? result.value.recoveryId : null;
+  if (result.kind === "outcome") {
+    const { outcome } = result.value;
+    if (outcome.tag === "ACCEPTED" || outcome.tag === "ALREADY_ACCEPTED") {
+      return {
+        type: "RECORD",
+        receipt: outcome.data,
+        identity: effect.identity,
+        recoveryId: recoverable,
+      };
+    }
+    if (outcome.tag === "REVIEWED") {
+      return { type: "REVIEW", review: outcome.data.review, identity: effect.identity };
+    }
+  }
+  return {
+    type: "REFUSE",
+    identity: effect.identity,
+    notice: resultNotice(result),
+    target:
+      result.kind === "outcome" && result.value.outcome.tag === "REJECTED"
+        ? result.value.outcome.data.target
+        : null,
+    uncertain: effect.kind === "EXECUTE" && mutationUncertain(result),
+    disclosure: isDisclosureRefused(result),
+    recoveryId: recoverable,
+  };
+};
+const recoveredReceiptMatches = (item: RecoveryItem, result: Reply): boolean => {
+  if (
+    result.kind !== "outcome" ||
+    (result.value.outcome.tag !== "ACCEPTED" && result.value.outcome.tag !== "ALREADY_ACCEPTED")
+  ) {
+    return true;
+  }
+  const receipt = result.value.outcome.data;
+  if (
+    receipt.operationId !== item.operationId ||
+    receipt.scope.kind !== item.scope ||
+    receipt.scope.act !== item.act
+  ) {
+    return false;
+  }
+  return receipt.scope.kind === "CASE"
+    ? receipt.scope.caseReference.toUpperCase() === item.caseReference?.toUpperCase() &&
+        receipt.scope.revision === (item.expectedRevision ?? -1) + 1
+    : receipt.scope.targetActorId === item.targetActorId;
+};
+const runNetwork = async (
+  effect: Extract<OperationEffect, { kind: "PREVIEW" | "EXECUTE" }>,
+): Promise<OperationAction> => {
+  if (effect.kind === "PREVIEW") {
+    return completion(effect, await service.preview(effect.source.prepared, effect.identity.token));
+  }
+  if (effect.source.kind === "LOCAL") {
+    return completion(effect, await service.execute(effect.source.prepared, effect.identity.token));
+  }
+  const { item } = effect.source;
+  const result = await service.retry(item.recoveryId, item.operationId, effect.identity.token);
+  return completion(
+    effect,
+    recoveredReceiptMatches(item, result)
+      ? result
+      : { kind: "deliveryFailure", notice: { kind: "local", reason: "incomplete" } },
+  );
+};
+const useEffects = (
+  state: OperationState,
+  dispatch: React.Dispatch<OperationAction>,
+  options: Options,
+) => {
+  const started = useRef(new Set<string>());
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    const queued = new Set(state.effects.map((effect) => `${effect.kind}:${effect.identity.id}`));
+    started.current = new Set([...started.current].filter((id) => queued.has(id)));
+    for (const effect of state.effects) {
+      const scheduled = `${effect.kind}:${effect.identity.id}`;
+      if (started.current.has(scheduled)) {
+        continue;
+      }
+      started.current.add(scheduled);
+      dispatch({ type: "EFFECT_STARTED", id: effect.identity.id });
+      if (
+        effect.identity.token !== options.token ||
+        effect.identity.target !== activeTarget(state, options)
+      ) {
+        continue;
+      }
+      if (effect.kind === "RECORDED") {
+        options.onRecorded?.(effect.receipt);
+      } else if (effect.kind === "DISCLOSURE_REFUSED") {
+        options.onDisclosureRefused?.(effect.notice);
+      } else if (effect.kind === "FORGET") {
+        void service.forget(effect.recoveryId, effect.identity.token);
+      } else {
+        void runNetwork(effect).then((action) => {
+          if (alive.current) {
+            dispatch(action);
+          }
+        });
+      }
+    }
+  }, [state, dispatch, options]);
+};
+const useLock = (state: OperationState, onLockChange: Options["onLockChange"]) => {
   const locked =
-    state.phase !== "ACCEPTED" &&
-    (state.prepared !== null || state.priorUncertain || dirtyValues(state.values, state.baseline));
+    state.operation.tag !== "ACCEPTED" &&
+    (operationSource(state.operation) !== null || dirtyValues(state.values, state.baseline));
   useEffect(() => {
     onLockChange(locked);
     return () => {
@@ -110,228 +194,126 @@ const useLock = (model: Model, onLockChange: Options["onLockChange"]) => {
     };
   }, [locked, onLockChange]);
 };
-const sameContext = (model: Model, options: Options): boolean =>
-  model.renderedContext.current.token === options.token &&
-  model.renderedContext.current.target === targetKey(options);
-const complete = (model: Model, serial: number, options: Options): boolean => {
-  const control = model.control.current;
-  if (!control.alive || control.serial !== serial) {
-    return false;
+type Dispatch = React.Dispatch<OperationAction>;
+const acknowledge = (state: OperationState, options: Options) => {
+  const id = identity(options, state);
+  const next = operationReducer(state, { type: "ACKNOWLEDGE", identity: id });
+  const effect = next.effects.find(
+    (value) => value.kind === "FORGET" && value.identity.id === id.id,
+  );
+  if (effect?.kind === "FORGET") {
+    void service.forget(effect.recoveryId, effect.identity.token);
   }
-  if (sameContext(model, options)) {
-    return true;
-  }
-  model.dispatch({ type: "INVALIDATE", uncertain: control.mutating, refused: false });
-  control.busy = false;
-  control.mutating = false;
-  return false;
 };
-const begin = (model: Model, mutating: boolean): number => {
-  const control = model.control.current;
-  control.busy = true;
-  control.mutating = mutating;
-  return ++control.serial;
-};
-const prepare = (model: Model) => {
-  const state = model.latest.current;
+const previewDraft = (
+  state: OperationState,
+  dispatch: Dispatch,
+  options: Options,
+): Promise<void> => {
   try {
-    return (
-      state.prepared ??
+    const view = operationView(state);
+    const prepared =
+      view.prepared ??
       prepareRequest(
         "operation.execute",
-        buildRequest(
-          "operation.execute",
-          formValue(operationDocument, operationDocument, "", state.values),
-        ),
-      )
-    );
+        buildRequest("operation.execute", assembleOperation(state.values)),
+      );
+    dispatch({
+      type: "PREVIEW",
+      prepared,
+      identity: identity(options, state),
+      generation: state.generation,
+    });
   } catch (error) {
-    model.dispatch({
+    dispatch({
       type: "REFUSE",
       notice: { kind: "local", reason: "invalidInput" },
       target: error instanceof ProtocolInputError ? error.path.join(".") : null,
       uncertain: false,
       disclosure: false,
     });
-    return null;
   }
+  return Promise.resolve();
 };
-const refused = (
-  model: Model,
-  options: Options,
-  result:
-    | ApiResult<ServiceResponse<"operation.execute">>
-    | ApiResult<ServiceResponse<"operation.preview">>,
-  uncertain: boolean,
-) => {
-  const notice = resultNotice(result);
-  const disclosure = isDisclosureRefused(result);
-  if (disclosure) {
-    options.onDisclosureRefused?.(notice);
-  }
-  const target =
-    result.kind === "outcome" && result.value.outcome.tag === "REJECTED"
-      ? result.value.outcome.data.target
-      : null;
-  model.dispatch({ type: "REFUSE", notice, target, uncertain, disclosure });
-};
-const preview = async (model: Model, options: Options): Promise<void> => {
-  const state = model.latest.current;
-  if (
-    model.control.current.busy ||
-    state.priorUncertain ||
-    state.phase === "ACCEPTED" ||
-    state.target !== targetKey(options)
-  ) {
-    return;
-  }
-  const prepared = prepare(model);
-  if (prepared === null) {
-    return;
-  }
-  const serial = begin(model, false);
-  model.dispatch({ type: "PREVIEW", prepared });
-  const result = await service.preview(prepared, options.token);
-  if (!complete(model, serial, options)) {
-    return;
-  }
-  model.control.current.busy = false;
-  if (result.kind === "outcome" && result.value.outcome.tag === "REVIEWED") {
-    model.dispatch({
-      type: "REVIEW",
-      review: result.value.outcome.data.review,
-      token: options.token,
-    });
-  } else if (result.kind === "outcome" && result.value.outcome.tag === "ALREADY_ACCEPTED") {
-    model.dispatch({ type: "RECORD", receipt: result.value.outcome.data, token: options.token });
-    options.onRecorded?.(result.value.outcome.data);
-  } else {
-    refused(model, options, result, false);
-  }
-};
-const reviewed = (state: OperationState, options: Options): boolean =>
-  state.phase === "REVIEWING" &&
-  state.review !== null &&
-  !state.disclosureRefused &&
-  state.disclosureToken === options.token &&
-  state.target === targetKey(options);
-const mayExecute = (model: Model, options: Options): boolean => {
-  const state = model.latest.current;
-  return (
-    !model.control.current.busy &&
-    state.prepared !== null &&
-    (state.priorUncertain || (state.confirmed && reviewed(state, options)))
-  );
-};
-const execute = async (model: Model, options: Options): Promise<void> => {
-  const state = model.latest.current;
-  if (!mayExecute(model, options) || state.prepared === null) {
-    return;
-  }
-  const serial = begin(model, true);
-  model.dispatch({ type: "EXECUTE" });
-  const result = await service.execute(state.prepared, options.token);
-  if (!complete(model, serial, options)) {
-    return;
-  }
-  model.control.current.busy = false;
-  model.control.current.mutating = false;
-  if (
-    result.kind === "outcome" &&
-    (result.value.outcome.tag === "ACCEPTED" || result.value.outcome.tag === "ALREADY_ACCEPTED")
-  ) {
-    model.dispatch({ type: "RECORD", receipt: result.value.outcome.data, token: options.token });
-    options.onRecorded?.(result.value.outcome.data);
-  } else {
-    refused(
-      model,
-      options,
-      result,
-      mutationUncertain(result) || (state.priorUncertain && !mutationAccepted(result)),
-    );
-  }
-};
-const editing = (model: Model, options: Options) => {
-  const blocked = () =>
-    model.control.current.busy ||
-    model.latest.current.priorUncertain ||
-    model.latest.current.phase === "ACCEPTED" ||
-    model.latest.current.target !== targetKey(options);
+const editing = (state: OperationState, dispatch: Dispatch, options: Options) => {
+  const view = operationView(state);
+  const blocked =
+    view.busy ||
+    view.priorUncertain ||
+    view.phase === "ACCEPTED" ||
+    state.target !== targetKey(options);
   return {
     edit: (path: string, value: string | boolean) => {
-      const state = model.latest.current;
-      if (!blocked() && state.values[path] !== value) {
-        model.dispatch({
-          type: "EDIT",
-          path,
-          value,
-          id: state.prepared === null ? String(state.values["operationId"]) : crypto.randomUUID(),
-        });
+      if (!blocked) {
+        if (state.operation.tag === "EDITING" && state.operation.exposed?.recoveryId !== null) {
+          acknowledge(state, options);
+        }
+        dispatch({ type: "EDIT", path, value, id: crypto.randomUUID() });
       }
     },
     returnToEdit: () => {
-      if (!blocked()) {
-        model.dispatch({ type: "RETURN" });
+      if (!blocked) {
+        dispatch({ type: "RETURN" });
       }
     },
     confirm: (value: boolean) => {
-      if (
-        !model.control.current.busy &&
-        !model.latest.current.priorUncertain &&
-        reviewed(model.latest.current, options)
-      ) {
-        model.dispatch({ type: "CONFIRM", value });
+      if (!blocked) {
+        dispatch({ type: "CONFIRM", value });
       }
     },
     discard: (acknowledgedUncertainty = false, kind = options.kind) => {
-      if (
-        !model.control.current.busy &&
-        (!model.latest.current.priorUncertain || acknowledgedUncertainty)
-      ) {
-        model.reset(kind);
+      if (!view.busy && (!view.priorUncertain || acknowledgedUncertainty)) {
+        if (!view.priorUncertain) {
+          acknowledge(state, options);
+        }
+        dispatch({ type: "RESET", state: fresh(options, kind), abandon: acknowledgedUncertainty });
       }
     },
+    preview: () => (blocked ? Promise.resolve() : previewDraft(state, dispatch, options)),
   };
 };
-const disclosureActions = (model: Model) => ({
+const actions = (state: OperationState, dispatch: Dispatch, options: Options) => ({
+  ...editing(state, dispatch, options),
+  acknowledge: () => {
+    acknowledge(state, options);
+  },
   requestDiscard: (kind: string | null) => {
-    if (!model.control.current.busy) {
-      model.dispatch({ type: "DISCARD", kind });
-    }
+    dispatch({ type: "DISCARD", kind });
   },
   restoreDisclosure: () => {
-    if (model.latest.current.disclosureRefused) {
-      model.dispatch({ type: "INVALIDATE", uncertain: false, refused: false });
-    }
+    dispatch({ type: "RESTORE" });
   },
   invalidateDisclosure: () => {
-    const control = model.control.current;
-    model.dispatch({ type: "INVALIDATE", uncertain: control.mutating, refused: true });
-    control.serial += 1;
-    control.busy = false;
-    control.mutating = false;
+    dispatch({ type: "INVALIDATE", refused: true });
+  },
+  recover: (item: RecoveryItem) => {
+    dispatch({ type: "RECOVER", item });
+  },
+  execute: () => {
+    dispatch({ type: "EXECUTE", identity: identity(options, state) });
+    return Promise.resolve();
   },
 });
-/** Both scopes share the reducer, frozen bytes, prior uncertainty and consent boundary. */
+/** One pure state owner; refs contain only effect scheduling and mounted-lifetime controls. */
 export const useOperation = (options: Options) => {
-  const model = useStateControl(options);
-  useLock(model, options.onLockChange);
+  const [state, dispatch] = useReducer(operationReducer, options, fresh);
+  const target = activeTarget(state, options);
+  useLayoutEffect(() => {
+    dispatch({ type: "CONTEXT", token: options.token, target });
+  }, [options.token, target]);
+  useEffects(state, dispatch, options);
+  useLock(state, options.onLockChange);
+  const view = operationView(state);
   const disclosureCurrent =
-    model.state.disclosureToken === options.token &&
-    model.state.target === targetKey(options) &&
-    !model.state.disclosureRefused;
+    state.disclosureToken === options.token && state.target === target && !state.disclosureRefused;
   return {
-    ...model.state,
-    busy: model.state.phase === "PREVIEWING" || model.state.phase === "SUBMITTING",
-    dirty: dirtyValues(model.state.values, model.state.baseline),
-    ...editing(model, options),
-    ...disclosureActions(model),
-    preview: () => preview(model, options),
-    execute: () => execute(model, options),
+    ...view,
+    ...actions(state, dispatch, options),
+    dirty: dirtyValues(state.values, state.baseline),
     disclosureCurrent,
-    review: disclosureCurrent ? model.state.review : null,
-    receipt: disclosureCurrent ? model.state.receipt : null,
-    contextChanged: model.state.target !== targetKey(options),
+    review: disclosureCurrent ? view.review : null,
+    receipt: disclosureCurrent ? view.receipt : null,
+    contextChanged: state.target !== target,
   };
 };
 export type OperationModel = ReturnType<typeof useOperation>;
