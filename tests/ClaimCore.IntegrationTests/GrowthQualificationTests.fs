@@ -419,23 +419,33 @@ let private workloads selected completed =
 
             let! database = PostgresFixture.create () |> Async.AwaitTask
 
-            try
-                let! report =
-                    GrowthProtection.withKeyRing (fun keyRing ->
-                        measure
-                            keyRing
-                            {
-                                Writes = writes
-                                Cases = cases
-                                Actors = actors
-                                Writers = writers
-                            }
-                            database)
-                    |> Async.AwaitTask
+            let mutable failure: exn option = None
 
-                completed report
+            try
+                try
+                    let! report =
+                        GrowthProtection.withKeyRing (fun keyRing ->
+                            measure
+                                keyRing
+                                {
+                                    Writes = writes
+                                    Cases = cases
+                                    Actors = actors
+                                    Writers = writers
+                                }
+                                database)
+                        |> Async.AwaitTask
+
+                    completed report
+                with error ->
+                    failure <- Some error
             finally
-                database.Fixture.Dispose()
+                match failure with
+                | None -> database.Fixture.Dispose()
+                | Some error ->
+                    ClaimCore.TestSupport.FixtureDisposal.afterFailure
+                        error
+                        [ database.Fixture.Dispose ]
 
             Expect.notEqual
                 (string database.Container.State)
