@@ -103,7 +103,7 @@ let private readinessCancellation database =
 
         use blocking =
             new NpgsqlCommand(
-                "LOCK claimcore.schema_migrations IN ACCESS EXCLUSIVE MODE",
+                "LOCK claimcore.baseline_identity IN ACCESS EXCLUSIVE MODE",
                 owner,
                 transaction
             )
@@ -175,7 +175,7 @@ let tests =
                         let! _ =
                             ClaimCore.Postgres.DatabaseSession.execute
                                 owner
-                                "UPDATE claimcore.schema_migrations SET script_sha256=decode(repeat('00',32),'hex')"
+                                "UPDATE claimcore.baseline_identity SET script_sha256=decode(repeat('00',32),'hex')"
                                 [||]
                                 token
 
@@ -231,11 +231,11 @@ let tests =
                     "absent schema",
                     "DROP SCHEMA claimcore CASCADE",
                     ClaimCore.Application.RuntimeOpenFault.SchemaMismatch
-                    "behind",
-                    "DELETE FROM claimcore.schema_migrations",
+                    "missing baseline identity",
+                    "DELETE FROM claimcore.baseline_identity",
                     ClaimCore.Application.RuntimeOpenFault.SchemaMismatch
-                    "ahead",
-                    "INSERT INTO claimcore.schema_migrations VALUES(2,'extra',decode(repeat('00',32),'hex'),clock_timestamp())",
+                    "unknown baseline identity",
+                    "UPDATE claimcore.baseline_identity SET identifier='unknown'",
                     ClaimCore.Application.RuntimeOpenFault.SchemaMismatch
                     "foreign",
                     "DROP SCHEMA claimcore CASCADE;CREATE SCHEMA claimcore;GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime",

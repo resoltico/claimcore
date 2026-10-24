@@ -1,11 +1,11 @@
--- ClaimCore schema migration 0001: baseline.
+-- ClaimCore installation baseline.
 --
 -- Applied by `ClaimCore.Database initialize` as the schema owner, inside one transaction, to a
 -- database that has no `claimcore` schema. The administration tool inserts the `installation`
--- row and the `schema_migrations` row for this script in that same transaction.
+-- row and the `baseline_identity` row for this source in that same transaction.
 --
 -- The role `claimcore_runtime` must already exist (cluster roles are an operator concern, not a
--- migration concern). It is the only role the HTTPS service connects as.
+-- schema concern). It is the only role the HTTPS service connects as.
 --
 -- Integer domains: sequences and revisions are 1 .. 2^53-1 so every value is an exact JSON
 -- number in every client (I-JSON, RFC 7493). Checks below encode format invariants only:
@@ -28,9 +28,9 @@ RETURNS boolean LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
 SET search_path = pg_catalog
 AS $$ SELECT value COLLATE "C" !~ U&'[\FDD0-\FDEF\FFFE\FFFF\+01FFFE\+01FFFF\+02FFFE\+02FFFF\+03FFFE\+03FFFF\+04FFFE\+04FFFF\+05FFFE\+05FFFF\+06FFFE\+06FFFF\+07FFFE\+07FFFF\+08FFFE\+08FFFF\+09FFFE\+09FFFF\+0AFFFE\+0AFFFF\+0BFFFE\+0BFFFF\+0CFFFE\+0CFFFF\+0DFFFE\+0DFFFF\+0EFFFE\+0EFFFF\+0FFFFE\+0FFFFF\+10FFFE\+10FFFF]' $$;
 
-CREATE TABLE claimcore.schema_migrations (
-    version integer PRIMARY KEY CHECK (version > 0),
-    name text NOT NULL CHECK (name ~ '^[a-z][a-z0-9_]{0,63}$'),
+CREATE TABLE claimcore.baseline_identity (
+    singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+    identifier text NOT NULL CHECK (identifier ~ '^[a-z][a-z0-9-]{0,63}$'),
     script_sha256 bytea NOT NULL CHECK (octet_length(script_sha256) = 32),
     applied_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
@@ -343,7 +343,7 @@ REVOKE ALL ON ALL TABLES IN SCHEMA claimcore FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA claimcore FROM PUBLIC;
 
 GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
-GRANT SELECT ON claimcore.schema_migrations, claimcore.installation, claimcore.ledger_head
+GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head
     TO claimcore_runtime;
 GRANT SELECT, INSERT ON claimcore.ledger TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.actors TO claimcore_runtime;

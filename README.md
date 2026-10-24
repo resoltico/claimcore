@@ -28,7 +28,7 @@ Read the [erasure limits](docs/operations.md#erasure-limits).
 | -------------------- | ---------------------------------------------------------------------------- |
 | `ClaimCore.Web`      | HTTPS service, OIDC browser authentication and bearer API                    |
 | `ClaimCore.Cli`      | Human verbs and JSON frames over HTTPS, with PKCE or client credentials |
-| `ClaimCore.Database` | Separate owner-only initialization, migration, provisioning and verification |
+| `ClaimCore.Database` | Separate owner-only initialization, provisioning and verification |
 
 The browser offers English, Latvian and Arabic, right-to-left layout and independent display
 formats. The installation's immutable IANA business time zone governs business dates.
@@ -59,8 +59,7 @@ with their matching software. See the [database boundary](docs/database.md).
 
 [Development](docs/development.md) owns the complete gate: typed core and property tests,
 architecture rules with rejecting controls, real PostgreSQL and Web integration, frontend
-checks, published CLI scenarios and Chromium, Firefox and WebKit tests. PR CI uses explicitly
-labeled Chromium smoke; complete qualification runs separately. A green gate is
+checks, published CLI scenarios and Chromium, Firefox and WebKit tests. PR and merge queue CI require complete qualification on Chromium, Firefox and WebKit. A green gate is
 execution evidence; the repository owner reviews and merges.
 
 Read [Contributing](CONTRIBUTING.md), [Support](SUPPORT.md) and [Security](SECURITY.md).

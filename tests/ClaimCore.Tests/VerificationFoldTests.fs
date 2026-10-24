@@ -37,7 +37,7 @@ let private owner =
             }
         ]
 
-let private state = LedgerVerification.initial None
+let private state = LedgerVerification.initial None None
 let private unitResult result = Result.map (fun _ -> ()) result
 
 let private row payload =
@@ -227,6 +227,49 @@ let private finding expected run =
         Expect.equal divergence.Finding expected "Stable finding token and precedence"
     | Ok() -> failtest "Corrupt synthetic input was accepted"
 
+let private duplicatePrecedence () =
+    let bytes =
+        LedgerEntry.encodePayload
+            {
+                Request =
+                    AuthorityRecord.encode
+                        {
+                            OperationId = id
+                            Target = PrincipalKey.describe human
+                            Act = RecordedAuthorityAct.ProvisionOwner
+                        }
+                Snapshot = Array.empty
+            }
+
+    let entry, metadata = row bytes
+    let duplicate = LedgerVerification.initial None (Some 1L)
+
+    let append state entry metadata =
+        LedgerVerification.append installation None state entry metadata |> unitResult
+
+    Expect.isOk (append state entry metadata) "Independent valid bootstrap control"
+    finding VerificationFinding.PayloadFormat (fun () -> append duplicate entry metadata)
+
+    finding VerificationFinding.EntryHash (fun () ->
+        append
+            duplicate
+            { entry with
+                EntryHash = Array.zeroCreate 32
+            }
+            metadata)
+
+    finding VerificationFinding.Commitment (fun () ->
+        append
+            duplicate
+            { entry with
+                PayloadNonce = Some(Array.zeroCreate 32)
+            }
+            metadata)
+
+    Expect.isOk
+        (append (LedgerVerification.initial None (Some 2L)) entry metadata)
+        "A later duplicate cannot hide an earlier valid row"
+
 [<Tests>]
 let tests =
     let cases = ledgerChecks @ caseChecks @ authorityChecks
@@ -234,6 +277,7 @@ let tests =
     testList
         "pure verification findings"
         [
+            testCase "duplicate prepass preserves per-row precedence" duplicatePrecedence
             testCase "every finding has a pure rejection case" (fun () ->
                 Expect.equal
                     (cases |> List.map fst |> Set.ofList)

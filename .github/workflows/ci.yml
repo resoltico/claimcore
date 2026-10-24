@@ -7,11 +7,6 @@ on:
   pull_request:
   merge_group:
   workflow_dispatch:
-    inputs:
-      full_browser_qualification:
-        description: Run every browser specification on Chromium, Firefox and WebKit.
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
@@ -168,13 +163,12 @@ jobs:
             '
 
   acceptance:
-    name: Published clients (${{ matrix.engine }}, ${{ matrix.scope }})
+    name: Published clients (${{ matrix.engine }}, complete)
     needs: [frontend]
     strategy:
       fail-fast: true
       matrix:
-        engine: ${{ fromJSON((github.event_name == 'push' || inputs.full_browser_qualification) && '["chromium","firefox","webkit"]' || '["chromium"]') }}
-        scope: ${{ fromJSON((github.event_name == 'push' || inputs.full_browser_qualification) && '["complete"]' || '["smoke"]') }}
+        engine: [chromium, firefox, webkit]
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -186,12 +180,12 @@ jobs:
         env:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/claimcore-npm-cache
           CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ matrix.engine }}
-          CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: ${{ matrix.scope }}
+          CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: complete
         run: bash eng/verify.sh browsers acceptance
       - name: Report browser execution
         env:
           BROWSER_ENGINE: ${{ matrix.engine }}
-          BROWSER_SCOPE: ${{ matrix.scope }}
+          BROWSER_SCOPE: complete
         run: |
           python3 - <<'PYTHON'
           import json, os, pathlib
@@ -205,7 +199,7 @@ jobs:
               raise ValueError("Browser execution differs from scheduled scope")
           if type(result["passed"]) is not int or result["passed"] < 1:
               raise ValueError("Missing executed browser count")
-          message = f"Browser execution: {result['engine']} / {result['scope']}: {result['passed']} passed; {result['duration']}. Smoke is not complete qualification."
+          message = f"Browser execution: {result['engine']} / {result['scope']}: {result['passed']} passed; {result['duration']}."
           print(message)
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
               summary.write(message + "\n")

@@ -52,8 +52,8 @@ Fresh-login tests budget one admission window plus normal OIDC work. Their share
 browser challenge and recovers only from a validated login-admission refusal.
 
 CI runs independent lint/unit/frontend/PostgreSQL/Web jobs and requires every scheduled job in `Gate`.
-PR/merge queue browser scope is Chromium smoke; main/tag and explicit full dispatch use three isolated
-complete engines. Green PR smoke does not establish full browser qualification. The frontend runs in the
+PR, merge queue, main/tag and explicit dispatch use three isolated complete engines.
+Every scheduled engine must succeed in the aggregate Gate. The frontend runs in the
 pinned Node container without executable .NET. PostgreSQL majors/images come from
 [postgresql-baseline.json](../db/postgresql-baseline.json); each listed major needs actual qualification.
 `CLAIMCORE_TEST_POSTGRES_MAJOR` selects exactly one listed major; unset selects the first. Invalid selectors
@@ -83,8 +83,8 @@ Diagnostics exclude payloads, credentials and provider exception text.
 Read the owner contract and behavior tests before editing. An endpoint belongs in the typed registry; fields
 belong in the field table, Domain admission and RecordFormat codec. Update affected consumers, SQL, tests,
 source locales and docs together. Before 1.0.0 baseline replacement may explicitly refuse older installations;
-otherwise schema changes are numbered forward migrations. No compatibility layer or conversion is provided by
-this baseline. Do not edit shipped migrations outside that policy. Production and tests retain
+the current build admits one exact source-bound baseline. There is no in-place upgrade or conversion;
+preserve existing installations with matching software. Production and tests retain
 function/lambda/member length 50 and complexity 12. Only inline named rule exceptions with reasons are
 allowed. File/module length is not a gate. Required deterministic properties run 200 cases with state
 sequences up to 20. Shrinking stops after 100 successful descent steps, retaining the failing replay token;

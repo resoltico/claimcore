@@ -1,7 +1,7 @@
 # Database administration
 
 Database is the separate owner executable; it serves no case work. Use its `help` command for invocation
-syntax. Its commands are initialize, migrate, provision-owner, verify, head, help and version. Discovery opens
+syntax. Its commands are initialize, provision-owner, verify, head, help and version. Discovery opens
 no database.
 
 <a id="cc-db-002"></a>
@@ -22,14 +22,15 @@ credentials are separately admitted with no schema-owner authority.
 
 <a id="cc-db-001"></a>
 
-### CC-DB-001 — Atomic initialization and ordered migrations
+### CC-DB-001 — Atomic initialization and exact baseline admission
 
-[0001_baseline.sql](../db/migrations/0001_baseline.sql) is the current schema source. Initialization
-atomically installs the baseline and immutable canonical IANA business zone. Repeated initialization requires
-the same zone. Unsupported namespaces or migration histories are refused untouched. There is no adoption,
-reset or conversion of existing installations. Migrations are numbered forward-only scripts, subject to the
-[baseline compatibility policy](architecture.md#durable-records). Opening requires history to be exactly the
-checksum-bound prefix of the shipped scripts.
+[baseline.sql](../db/baseline.sql) is the only supported schema source. Initialization atomically installs
+its checksum-bound identity and immutable canonical IANA business zone. Initializers lock before namespace
+discovery. Repeated initialization requires the same complete identity and installation tuple, including zone;
+runtime admission, readiness, verification, head and owner provisioning share that admission. The digest
+identifies source, not proof that a trusted owner left the live schema unchanged. Unknown, partial, historical
+or incompatible namespaces refuse untouched. Keep existing installations with matching software and initialize
+a separate fresh installation; there is no migrate command, script history, adoption, reset or conversion.
 
 Provision-owner bootstraps only an empty authority with its stable operation ID. Database outputs are
 structured tags and positions. Exit 0 succeeds; 2 refuses invocation or input; 3 fails; 4 reports lost commit
@@ -49,12 +50,13 @@ The supported-major list and enforced minimum minor are owned by
 text/date/money guards mirror format, never current admission policy. Dates/instants are finite and in years
 0001–9999. Reference identity uses ASCII folding with C-collation semantics.
 
-Verification chooses the first divergence deterministically: sequence-ordered ledger metadata,
-link/hash/commitment/payload and permanent history, then projections, head and expected checkpoint. Its typed
-finding identifies the violated property; global findings have sequence null. I/O remains FAILED. Permanent
-bootstrap, enabled-executor, human-target and last-owner invariants are verified without reapplying current
-capability policy. `claimcore describe` documents case work; Database help owns administrative invocation, and
-its structured output carries verification findings.
+Verification computes the earliest second occurrence of an operation ID in the same REPEATABLE READ snapshot
+as the scan, checking it after that row's link/hash/commitment/payload checks and before history. Earlier
+corruption wins; projections, head and expected checkpoint follow. PostgreSQL may sort/spill for the prepass;
+this does not establish constant total-system memory. The typed finding identifies the violated property;
+global findings have sequence null. Permanent bootstrap, enabled-executor, human-target and last-owner
+invariants are verified without reapplying current capability policy. Database help owns invocation and its
+structured output carries findings. See [Operations](operations.md) for the trust and erasure limits.
 
 The ledger rejects inserts/updates/deletes outside its append and case-payload erasure paths. The trusted
 owner payload-clear exception and verification limits are described in

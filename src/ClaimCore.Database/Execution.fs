@@ -18,9 +18,6 @@ module Execution =
                             installationId = id
                         |},
                     0
-            | Migrate ->
-                do! administration.Migrate(CancellationToken.None)
-                return Replies.tag "MIGRATED" 0
             | ProvisionOwner ->
                 let operationId, principal = Inputs.owner ()
 

@@ -35,7 +35,7 @@ boundaries. [Development](docs/development.md) owns commands and gates.
 - Tests run with `dotnet test` on the Microsoft Testing Platform. Every test module carries
   `[<Tests>]`; there is no hand-kept registry. Focused, pending, skipped, filtered or retried
   runs cannot satisfy verification. `bash eng/verify.sh` is the complete local gate and CI calls the same stages.
-  PR browser smoke is explicitly partial; main/tag and explicit dispatch retain full qualification.
+  PR, merge queue, main/tag and explicit dispatch require complete three-engine qualification.
 - Exactly three generated artifacts are tracked in `contracts/`: `openapi.json`, `client.ts`
   and `descriptors.json`. Run
   `dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts` and review

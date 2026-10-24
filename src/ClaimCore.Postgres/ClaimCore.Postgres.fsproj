@@ -4,7 +4,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Admission/ServerSupport.fs" />
     <Compile Include="DatabaseSession.fs" />
-    <Compile Include="Migrations/Migrations.fs" />
+    <Compile Include="Schema/Baseline.fs" />
     <Compile Include="Admission/Admission.fs" />
     <Compile Include="Reads/CaseProjectionLayout.fs" />
     <Compile Include="Reads/Projections.fs" />
@@ -24,7 +24,7 @@
     <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
     <PackageReference Include="Npgsql" PrivateAssets="compile;build" />
-    <EmbeddedResource Include="../../db/migrations/*.sql" />
+    <EmbeddedResource Include="../../db/baseline.sql" LogicalName="ClaimCore.Postgres.baseline.sql" />
     <EmbeddedResource Include="../../db/postgresql-baseline.json" />
   </ItemGroup>
 </Project>

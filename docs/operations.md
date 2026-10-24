@@ -82,9 +82,9 @@ production assurance. Keep older installations with matching software; no conver
 
 ## Serialized writes and verification growth
 
-Accepted writes intentionally serialize on one ledger head. Verification streams rows but retains operation
-identities and folded case/actor/grant state; its memory grows with accepted history and projection
-cardinality. A streaming reader does not imply constant-memory verification. [Synthetic
+Accepted writes intentionally serialize on one ledger head. Verification streams rows and retains folded case/actor/grant state. A same-snapshot SQL prepass finds
+the earliest duplicate operation ID, with database sorting/spill costs. Application memory still grows
+with folded resource cardinality; streaming does not imply constant total-system memory. [Synthetic
 reports](development.md#synthetic-growth-qualification) qualify bounded isolated workloads, not
 memory/asymptotic bounds or production capacity. Timeout/cancellation guards remain enforced. More writers do
 not remove serialization or promise throughput; qualify actual workloads/storage.
