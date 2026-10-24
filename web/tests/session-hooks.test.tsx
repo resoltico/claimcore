@@ -1,11 +1,48 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import { response } from "./service-ui.fixtures";
+import { response, unavailable } from "./service-ui.fixtures";
 import { useSession } from "../src/hooks/useSession";
 
 const session = (data: Record<string, unknown>) => response("session", "SUCCEEDED", data);
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+
+const unsuccessful = [
+  ["REJECTED", unavailable],
+  ["FAILED", { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" }],
+] as const;
+
+it.each(unsuccessful)("surfaces a valid %s session bootstrap outcome", async (tag, data) => {
+  vi.mocked(fetch).mockResolvedValueOnce(response("session", tag, data));
+  const { result } = renderHook(() => useSession());
+  await waitFor(() => {
+    expect(result.current.state).toMatchObject({
+      kind: "failure",
+      message: { kind: "diagnostic", diagnostic: { code: data.code } },
+    });
+  });
+});
+
+it.each(unsuccessful)("surfaces a valid %s logout without claiming success", async (tag, data) => {
+  vi.mocked(fetch).mockResolvedValueOnce(
+    session({ authenticated: true, antiforgeryToken: "token" }),
+  );
+  const { result } = renderHook(() => useSession());
+  await waitFor(() => {
+    expect(result.current.state.kind).toBe("authenticated");
+  });
+  const previousEpoch = result.current.state.epoch;
+  vi.mocked(fetch).mockResolvedValueOnce(response("session.logout", tag, data));
+  await act(async () => {
+    await result.current.logout();
+  });
+  expect(result.current.state).toMatchObject({
+    kind: "failure",
+    epoch: previousEpoch + 1,
+    message: { kind: "diagnostic", diagnostic: { code: data.code } },
+  });
+  expect("token" in result.current.state).toBe(false);
+});
 
 it("fails a malformed authenticated session and leaves logout inert", async () => {
   const fetch = vi.mocked(globalThis.fetch);

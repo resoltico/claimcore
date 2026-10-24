@@ -4,7 +4,7 @@ open System.Collections.Generic
 open System.Text
 open System.Text.Json
 open Expecto
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 let private configurationRefusals (fixture: PublishedFixture.Fixture) =
     let source = Some(Encoding.UTF8.GetBytes "{\"endpoint\":\"context\",\"input\":{}}")
@@ -35,7 +35,7 @@ let private configurationRefusals (fixture: PublishedFixture.Fixture) =
         use document = JsonDocument.Parse result.StandardOutput
 
         let parameters =
-            document.RootElement.GetProperty("diagnostic").GetProperty("parameters")
+            document.RootElement.GetProperty("result").GetProperty("localFailure")
 
         Expect.equal
             (parameters.GetProperty("setting").GetString())
@@ -61,7 +61,7 @@ let private configurationGuidance (fixture: PublishedFixture.Fixture) =
     use frame = JsonDocument.Parse result.StandardOutput
 
     Expect.equal
-        (frame.RootElement.GetProperty("attemptKnowledge").GetString())
+        (frame.RootElement.GetProperty("delivery").GetString())
         "NOT_SENT"
         "This attempt was not sent"
 
@@ -69,19 +69,10 @@ let private configurationGuidance (fixture: PublishedFixture.Fixture) =
         (Encoding.UTF8.GetString(result.StandardOutput).Contains "SECRET-CANARY")
         "No configuration value echo"
 
-    let id =
-        frame.RootElement.GetProperty("diagnostic").GetProperty("id").GetString()
-        |> nonNull
+    let id = InputDiagnostics.configurationId
 
     let invoke args =
         ProcessRunner.dotnet 8000 fixture.Cli args (Dictionary<string, string>()) None
-
-    let discovery = invoke [ "describe"; "diagnostics" ]
-    use messages = JsonDocument.Parse discovery.StandardOutput
-
-    Expect.isTrue
-        (messages.RootElement.TryGetProperty("diagnostic." + id) |> fst)
-        "Returned ID exists in JSON discovery"
 
     for language in LocalizationPolicy.languages do
         let alias = invoke [ "help"; id; "--language"; language ]
@@ -92,13 +83,6 @@ let private configurationGuidance (fixture: PublishedFixture.Fixture) =
             (alias.StandardOutput = topic.StandardOutput)
             "Both entry points render identical core content"
 
-        let text =
-            invoke [ "describe"; "diagnostics"; "--format"; "text"; "--language"; language ]
-
-        Expect.isTrue
-            (Encoding.UTF8.GetString(text.StandardOutput).Contains
-                "ClaimCore.Cli help configuration")
-            "Text discovery resolves the same topic"
 
 let private missingConfiguration
     (invoke: string list -> byte array option -> ProcessRunner.Result)
@@ -110,7 +94,7 @@ let private missingConfiguration
     use document = JsonDocument.Parse configured.StandardOutput
 
     let parameters =
-        document.RootElement.GetProperty("diagnostic").GetProperty("parameters")
+        document.RootElement.GetProperty("result").GetProperty("localFailure")
 
     Expect.equal
         (parameters.GetProperty("setting").GetString())
@@ -134,7 +118,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
         ProcessRunner.dotnet 8_000 fixture.Cli args environment input
 
     for language in LocalizationPolicy.languages do
-        for topic in CliHelp.topics do
+        for topic in CliCommands.topics do
             let result = invoke [ "help"; topic; "--language"; language ] None
             Expect.equal result.ExitCode 0 "All topics work offline"
             Expect.equal result.StandardError.Length 0 "Human help has no errors"
@@ -153,7 +137,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
                 identity
                 "Human summary includes exact generated capability and field identities"
 
-    for command in CliHelp.commands do
+    for command in CliCommands.commands do
         for alias in [ "--help"; "-h" ] do
             let result = invoke [ command; alias ] None
             Expect.equal result.ExitCode 0 "Alias never opens stdin/config/network"

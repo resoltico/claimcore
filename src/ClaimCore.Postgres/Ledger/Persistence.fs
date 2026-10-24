@@ -1,6 +1,6 @@
 namespace ClaimCore.Postgres
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open ClaimCore.Application
@@ -38,41 +38,6 @@ module internal Persistence =
             |]
             token
 
-    let private snapshotParameters id (snapshot: CaseSnapshot) =
-        let fields, disposition =
-            match snapshot.View with
-            | CaseView.Live(fields, Disposition.Active) -> fields, "ACTIVE"
-            | CaseView.Live(fields, Disposition.Voided) -> fields, "VOIDED"
-            | CaseView.Erased -> invalidArg (nameof snapshot) "Use the erasure projection."
-
-        let date text =
-            DateOnly.ParseExact(text, "yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture)
-
-        let amount (text: string) =
-            Decimal.Parse(text, Globalization.CultureInfo.InvariantCulture)
-
-        [|
-            box id
-            box fields.CaseReference
-            box snapshot.Revision
-            box disposition
-            box (date fields.IncidentDate)
-            box (date fields.IncidentNotificationDate)
-            box fields.IncidentCountry
-            box fields.ClaimantName
-            box fields.InsurerName
-            box (amount fields.ClaimedAmount)
-            box fields.ClaimedCurrency
-            DatabaseSession.parameter (fields.PaymentDecisionDate |> Option.map date)
-            DatabaseSession.parameter (fields.PayableAmount |> Option.map amount)
-            DatabaseSession.parameter fields.PayableCurrency
-            DatabaseSession.parameter (fields.PaymentDate |> Option.map date)
-            box (CaseStatuses.token fields.Status)
-        |]
-
-    let private updateCase =
-        "UPDATE claimcore.cases SET case_reference=$2,revision=$3,disposition=$4,incident_date=$5,incident_notification_date=$6,incident_country=$7,claimant_name=$8,insurer_name=$9,claimed_amount=$10,claimed_currency=$11,payment_decision_date=$12,payable_amount=$13,payable_currency=$14,payment_date=$15,status=$16 WHERE case_id=$1"
-
     let case connection projection token =
         task {
             match projection with
@@ -80,8 +45,8 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.cases VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)"
-                        (snapshotParameters id snapshot)
+                        CaseProjectionLayout.insert
+                        (CaseProjectionLayout.parameters id snapshot)
                         token
 
                 return ()
@@ -89,8 +54,8 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        updateCase
-                        (snapshotParameters id snapshot)
+                        CaseProjectionLayout.update
+                        (CaseProjectionLayout.parameters id snapshot)
                         token
 
                 if changed <> 1 then
@@ -106,7 +71,7 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.cases SET revision=$2,disposition='ERASED',incident_date=NULL,incident_notification_date=NULL,incident_country=NULL,claimant_name=NULL,insurer_name=NULL,claimed_amount=NULL,claimed_currency=NULL,payment_decision_date=NULL,payable_amount=NULL,payable_currency=NULL,payment_date=NULL,status=NULL WHERE case_id=$1"
+                        CaseProjectionLayout.erase
                         [| box id; box revision |]
                         token
 

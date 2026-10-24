@@ -2,16 +2,14 @@
   <PropertyGroup><Optimize>false</Optimize></PropertyGroup>
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../PublishedClientClosure.fs" Link="PublishedClientClosure.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
-    <Compile Include="Manifest.fs" />
-    <Compile Include="ProjectGraph.fs" />
+    <Compile Include="ProjectReferences.fs" />
     <Compile Include="NegativeFixtures.fs" />
     <Compile Include="ApiRules.fs" />
-    <Compile Include="FacadeSignatures.fs" />
     <Compile Include="ArchitectureTests.fs" />
-    <ProjectReference Include="../../src/ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
@@ -19,7 +17,7 @@
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
+
     <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />

@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.OidcLiveApi
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 open System
 open System.Collections.Generic
@@ -62,7 +63,7 @@ let private caseRequest (local: HttpClient) token browserCookies reference =
         request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + token)
         |> ignore
 
-        request.Headers.TryAddWithoutValidation("ClaimCore-Contract", ConsumerContract.identity)
+        request.Headers.TryAddWithoutValidation("ClaimCore-Contract", ContractIdentity.value)
         |> ignore
 
         browserCookies

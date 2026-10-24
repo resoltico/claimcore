@@ -1,6 +1,7 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 open System
 open System.Diagnostics
@@ -8,7 +9,7 @@ open System.IO
 open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 [<NoEquality; NoComparison>]
 type internal RequestLogEntry =
@@ -82,10 +83,10 @@ module internal RequestLog =
         task {
             if context.Request.Path.StartsWithSegments(PathString "/api") then
                 let endpoint =
-                    Endpoint.all
+                    Api.all
                     |> List.tryFind (fun e ->
-                        Some(Endpoint.path e) = Option.ofObj context.Request.Path.Value)
-                    |> Option.map Endpoint.id
+                        Some(Api.path e) = Option.ofObj context.Request.Path.Value)
+                    |> Option.map Api.id
                     |> Option.defaultValue "unknown"
 
                 let value = start endpoint context

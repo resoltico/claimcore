@@ -1,6 +1,6 @@
 module ClaimCore.Tests.VerificationFoldTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto
@@ -57,7 +57,7 @@ let private row payload =
                 LedgerScope.Authority
                     {
                         TargetActorId = id
-                        Act = RecordedAuthorityKind.ProvisionOwner
+                        Act = AuthorityKind.ProvisionOwner
                     }
         }
 
@@ -68,7 +68,7 @@ let private row payload =
             OperationId = id
             ActorId = id
             RecordedAt = instant
-            Scope = StoredScope.Authority(id, RecordedAuthorityKind.ProvisionOwner)
+            Scope = StoredScope.Authority(id, AuthorityKind.ProvisionOwner)
             PayloadCommitment = commitment
             PayloadNonce = Some nonce
             Payload = Some payload
@@ -197,14 +197,17 @@ let private authorityChecks =
         fun () ->
             let entry =
                 { entry with
-                    Scope = StoredScope.Authority(id, RecordedAuthorityKind.RegisterActor)
+                    Scope = StoredScope.Authority(id, AuthorityKind.RegisterActor)
                 }
 
             let request: AuthorityRequestRecord =
                 {
                     OperationId = id
                     Target = PrincipalKey.describe human
-                    Act = RecordedAuthorityAct.RegisterActor
+                    Act =
+                        RecordedAuthorityAct.Operation(
+                            ClaimCore.Contract.AuthorityAct.RegisterActor
+                        )
                 }
 
             AuthorityFold.apply

@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.TransportGuards
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 open System
 open System.IO
@@ -116,7 +117,7 @@ let private failurePhase dispatched completed phase =
     use response =
         System.Text.Json.JsonDocument.Parse((context.Response.Body :?> MemoryStream).ToArray())
 
-    let actual = response.RootElement.GetProperty("executionPhase")
+    let actual = response.RootElement.GetProperty("hostFailure").GetProperty("phase")
 
     Expect.equal
         (actual.ValueKind = System.Text.Json.JsonValueKind.Null)

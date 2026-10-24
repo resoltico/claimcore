@@ -1,7 +1,7 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Wire
-open ClaimCore.Catalog
+open ClaimCore.Contract.Protocol
+open ClaimCore.Contract
 
 open System
 

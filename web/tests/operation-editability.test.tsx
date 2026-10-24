@@ -5,7 +5,7 @@ import { render, screen, waitFor } from "./presentation-test-support";
 import { deferredResponse, editor, previewReply } from "./presentation-state.fixtures";
 import { fields } from "./service-ui.fixtures";
 import { type CurrentCase } from "../src/api/service";
-import { generatedResponse } from "./contract-corpus.fixtures";
+import { wireResponse } from "./contract-corpus.fixtures";
 
 const current: CurrentCase = {
   caseReference: fields.caseReference,
@@ -37,7 +37,7 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
   const committed = vi.fn();
   vi.mocked(globalThis.fetch)
     .mockImplementationOnce(() => Promise.resolve(previewReply()))
-    .mockResolvedValueOnce(generatedResponse("case.execute"));
+    .mockResolvedValueOnce(wireResponse("operation.execute"));
   render(editor({ current, initialCommand: "CLOSE", onCommitted: committed }));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));

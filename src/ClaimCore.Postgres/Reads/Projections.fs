@@ -1,6 +1,6 @@
 namespace ClaimCore.Postgres
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Globalization
@@ -21,7 +21,7 @@ module internal Projections =
         let text = required<string> index row
 
         let grammar =
-            match FieldDefinitions.scalar (InputField.Business BusinessField.ClaimedAmount) with
+            match FieldDefinitions.scalar (InputTarget.Field BusinessField.ClaimedAmount) with
             | ScalarRule.Amount rule -> rule.Grammar
             | _ -> invalidOp "Expected amount format."
 
@@ -52,54 +52,51 @@ module internal Projections =
         else
             Some(formatter index row)
 
-    let caseColumns =
-        [
-            "case_id"
-            "case_reference"
-            "revision"
-            "disposition"
-            DatabaseSession.dateExpression "incident_date"
-            DatabaseSession.dateExpression "incident_notification_date"
-            "incident_country"
-            "claimant_name"
-            "insurer_name"
-            "claimed_amount::text"
-            "claimed_currency"
-            DatabaseSession.dateExpression "payment_decision_date"
-            "payable_amount::text"
-            "payable_currency"
-            DatabaseSession.dateExpression "payment_date"
-            "status"
-        ]
-        |> String.concat ","
+    let caseColumns = CaseProjectionLayout.select
 
     let private fields reference row : CaseFields =
         {
             CaseReference = reference
-            IncidentDate = date 4 row
-            IncidentNotificationDate = date 5 row
-            IncidentCountry = required 6 row
-            ClaimantName = required 7 row
-            InsurerName = required 8 row
-            ClaimedAmount = amount 9 row
-            ClaimedCurrency = required 10 row
-            PaymentDecisionDate = optionalText date 11 row
-            PayableAmount = optionalText amount 12 row
-            PayableCurrency = optional<string> 13 row
-            PaymentDate = optionalText date 14 row
+            IncidentDate = date (CaseProjectionLayout.ordinal BusinessField.IncidentDate) row
+            IncidentNotificationDate =
+                date (CaseProjectionLayout.ordinal BusinessField.IncidentNotificationDate) row
+            IncidentCountry =
+                required (CaseProjectionLayout.ordinal BusinessField.IncidentCountry) row
+            ClaimantName = required (CaseProjectionLayout.ordinal BusinessField.ClaimantName) row
+            InsurerName = required (CaseProjectionLayout.ordinal BusinessField.InsurerName) row
+            ClaimedAmount = amount (CaseProjectionLayout.ordinal BusinessField.ClaimedAmount) row
+            ClaimedCurrency =
+                required (CaseProjectionLayout.ordinal BusinessField.ClaimedCurrency) row
+            PaymentDecisionDate =
+                optionalText
+                    date
+                    (CaseProjectionLayout.ordinal BusinessField.PaymentDecisionDate)
+                    row
+            PayableAmount =
+                optionalText amount (CaseProjectionLayout.ordinal BusinessField.PayableAmount) row
+            PayableCurrency =
+                optional<string> (CaseProjectionLayout.ordinal BusinessField.PayableCurrency) row
+            PaymentDate =
+                optionalText date (CaseProjectionLayout.ordinal BusinessField.PaymentDate) row
             Status =
-                CaseStatuses.tryParse (required<string> 15 row)
+                CaseStatuses.tryParse (
+                    required<string> (CaseProjectionLayout.ordinal BusinessField.Status) row
+                )
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid stored status."))
         }
 
     let caseRow (row: obj array) : StoredCase =
-        let reference = required<string> 1 row
+        let reference =
+            required<string> (CaseProjectionLayout.ordinal BusinessField.CaseReference) row
 
         let view =
-            match required<string> 3 row with
+            match required<string> CaseProjectionLayout.dispositionOrdinal row with
             | "ERASED" ->
-                if row[4..] |> Array.exists (Convert.IsDBNull >> not) then
+                if
+                    row[CaseProjectionLayout.payloadOrdinal ..]
+                    |> Array.exists (Convert.IsDBNull >> not)
+                then
                     raise (RecordCorruptException "Erased projection retains business fields.")
 
                 CaseView.Erased
@@ -110,7 +107,7 @@ module internal Projections =
         let snapshot =
             {
                 Reference = reference
-                Revision = required<int64> 2 row
+                Revision = required<int64> CaseProjectionLayout.revisionOrdinal row
                 View = view
             }
 
@@ -223,7 +220,7 @@ module internal Projections =
         | Some(StoredScope.Case(id, _, _, _)) -> [ id ]
         | _ -> []
 
-    let actorSummary row : ActorSummary =
+    let actorRow row : Actor =
         {
             ActorId = required 0 row
             Principal =

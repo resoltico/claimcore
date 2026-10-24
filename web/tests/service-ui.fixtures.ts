@@ -1,13 +1,16 @@
 import { transportResponse } from "./transport-response.fixtures";
 import { consumerContractIdentity } from "@contracts/client";
 export { productMetadata as definition } from "../src/protocol/productMetadata";
-export { caseFields as fields, operationId, review } from "./service-foundation.fixtures";
+export { caseFields as fields, operationId } from "./service-foundation.fixtures";
 export const runtime = {
   productVersion: "0.8.0",
   businessDate: "2026-09-09",
   timeZone: "Etc/UTC",
 };
-const fixtureData = (endpoint: string, data: unknown): unknown => {
+const fixtureData = (endpoint: string, tag: string, data: unknown): unknown => {
+  if (tag !== "SUCCEEDED") {
+    return data;
+  }
   if (endpoint === "session.logout") {
     return null;
   }
@@ -20,7 +23,7 @@ const fixtureData = (endpoint: string, data: unknown): unknown => {
   return data;
 };
 export const response = (endpoint: string, tag: string, data: unknown, status = 200): Response =>
-  transportResponse(endpoint, tag, fixtureData(endpoint, data), status);
+  transportResponse(endpoint, tag, fixtureData(endpoint, tag, data), status);
 
 export const context = {
   ...runtime,
@@ -30,9 +33,9 @@ export const context = {
 };
 
 export const unavailable = {
-  diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
-  message: "Synthetic unavailable resource",
-  field: null,
+  code: "ACCESS_RESOURCE_UNAVAILABLE",
+  action: "NONE_REQUIRED",
+  target: null,
   actualRevision: null,
-  recommendedAction: "NONE_REQUIRED",
+  limits: {},
 } as const;

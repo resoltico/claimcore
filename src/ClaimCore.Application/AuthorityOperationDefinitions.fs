@@ -1,6 +1,6 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 /// The closed input vocabulary required by authority operations.
 [<RequireQualifiedAccess>]

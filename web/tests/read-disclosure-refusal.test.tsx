@@ -11,7 +11,6 @@ const initial: ApiResult<ListResponse> = {
   kind: "outcome",
   status: 200,
   value: {
-    endpoint: "case.list",
     outcome: {
       tag: "SUCCEEDED",
       data: {
@@ -38,15 +37,14 @@ const unavailable: ApiResult<ListResponse> = {
   kind: "outcome",
   status: 200,
   value: {
-    endpoint: "case.list",
     outcome: {
       tag: "REJECTED",
       data: {
-        message: "Translated text is not the policy",
-        diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
-        field: null,
+        code: "ACCESS_RESOURCE_UNAVAILABLE",
+        action: "NONE_REQUIRED",
+        target: null,
         actualRevision: null,
-        recommendedAction: "NONE_REQUIRED",
+        limits: {},
       },
     },
   },
@@ -56,12 +54,8 @@ const sessionRejected: ApiResult<ListResponse> = {
   kind: "hostFailure",
   status: 401,
   failure: {
-    kind: "HOST_FAILURE",
     code: "SESSION_REJECTED",
-    status: 401,
-    message: "Translated text is not the policy",
-    diagnostic: { id: "HOST_SESSIONREJECTED", parameters: {} },
-    executionPhase: "NOT_STARTED",
+    phase: "NOT_STARTED",
   },
 };
 
@@ -107,7 +101,7 @@ it("does not interpret a local delivery notice as a definite server refusal", ()
       kind: "deliveryFailure",
       notice: {
         kind: "diagnostic",
-        diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
+        diagnostic: { code: "ACCESS_RESOURCE_UNAVAILABLE", limits: {} },
       },
     }),
   ).toBe(false);
@@ -119,15 +113,14 @@ it("resets an invalid continuation locally and waits for a deliberate fresh relo
     kind: "outcome",
     status: 200,
     value: {
-      endpoint: "case.list",
       outcome: {
         tag: "REJECTED",
         data: {
-          diagnostic: { id: "QUERY_CURSOR_INVALID", parameters: {} },
-          message: "Synthetic invalid continuation",
-          field: null,
+          code: "QUERY_CURSOR_INVALID",
+          action: "READ_CURRENT",
+          target: "cursor",
           actualRevision: null,
-          recommendedAction: "READ_CURRENT",
+          limits: {},
         },
       },
     },

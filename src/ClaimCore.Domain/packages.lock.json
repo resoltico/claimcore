@@ -8,7 +8,7 @@
         "resolved": "10.1.401",
         "contentHash": "/lvOK51KD8IangBYkfDVna3/HrE/r4VUnX3dI01KDspctoYXmind3POeoYkqWKeXHwiKlf6Hc9TxwSnoSCWcjw=="
       },
-      "claimcore.catalog": {
+      "claimcore.contract": {
         "type": "Project",
         "dependencies": {
           "FSharp.Core": "[10.1.401, )"

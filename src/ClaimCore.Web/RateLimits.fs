@@ -1,8 +1,8 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 open System
 open System.Threading
@@ -12,7 +12,7 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
 open Microsoft.Extensions.DependencyInjection
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 /// One process-wide budget, including cookie authentication and OIDC callbacks.
 type internal DynamicIngress() =
@@ -28,7 +28,10 @@ module internal RateLimits =
     let private busy context =
         task {
             HttpHeaders.noStore context
-            do! (RouteSupport.hostFailure context HostFailure.RateLimited).ExecuteAsync(context)
+
+            do!
+                (RouteSupport.hostFailure context HostFailureReason.RateLimited)
+                    .ExecuteAsync(context)
         }
 
     let ingress (context: HttpContext) (next: RequestDelegate) : Task =

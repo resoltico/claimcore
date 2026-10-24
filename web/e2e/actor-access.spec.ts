@@ -1,3 +1,4 @@
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
@@ -12,6 +13,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
   try {
     for (const role of ownerRoles) {
       await applyAuthority(page, {
+        scope: "AUTHORITY",
         operationId: randomUUID(),
         target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
         act: { kind: "SET_GRANT", role, scope: { kind: "INSTALLATION" }, active },
@@ -22,6 +24,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
     if (!active) {
       for (const role of changed.reverse()) {
         await applyAuthority(page, {
+          scope: "AUTHORITY",
           operationId: randomUUID(),
           target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
           act: { kind: "SET_GRANT", role, scope: { kind: "INSTALLATION" }, active: true },
@@ -51,6 +54,7 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
   page,
   browser,
 }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
   const fixture = await prepareRoleFixture(page);
   let restore: () => Promise<void> = () => Promise.resolve();
   const context = await browser.newContext({
@@ -59,6 +63,7 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
   });
   const enable = (enabled: boolean) =>
     applyAuthority(page, {
+      scope: "AUTHORITY",
       operationId: randomUUID(),
       target: fixture.principal,
       act: { kind: "SET_ENABLED", enabled },
@@ -95,6 +100,7 @@ test("unregistered human authenticates without gaining a wider grant [CC-AUTH-00
   page,
   browser,
 }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
   const fixture = await prepareRoleFixture(page);
   const context = await browser.newContext({
     baseURL: new URL(page.url()).origin,

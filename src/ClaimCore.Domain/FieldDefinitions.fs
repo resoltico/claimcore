@@ -1,15 +1,12 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 /// Describes an existing business field; descriptors are not additional claim entries.
 type FieldDefinition =
     {
-        Name: BusinessField
-        LabelId: string
-        MeaningId: string
+        Field: BusinessField
         Scalar: ScalarRule
-        AllowsAbsence: bool
     }
 
 module FieldDefinitions =
@@ -87,133 +84,51 @@ module FieldDefinitions =
 
     let private status = ScalarRule.CaseStatus { AllowedValues = CaseStatuses.all }
 
-    let private field name label meaning scalar allowsAbsence =
-        {
-            Name = name
-            LabelId = label
-            MeaningId = meaning
-            Scalar = scalar
-            AllowsAbsence = allowsAbsence
-        }
-
-    let private incidentFields =
-        [
-            field
-                BusinessField.IncidentDate
-                "field.incidentDate.label"
-                "field.incidentDate.meaning"
-                calendarDate
-                false
-            field
-                BusinessField.IncidentNotificationDate
-                "field.incidentNotificationDate.label"
-                "field.incidentNotificationDate.meaning"
-                calendarDate
-                false
-            field
-                BusinessField.IncidentCountry
-                "field.incidentCountry.label"
-                "field.incidentCountry.meaning"
-                (ScalarRule.Text(token "[A-Z]{2}"))
-                false
-        ]
-
-    let private registrationPartiesAndClaim =
-        [
-            field
-                BusinessField.ClaimantName
-                "field.claimantName.label"
-                "field.claimantName.meaning"
-                (ScalarRule.Text(text TextAdmission.MaximumCharacters))
-                false
-            field
-                BusinessField.InsurerName
-                "field.insurerName.label"
-                "field.insurerName.meaning"
-                (ScalarRule.Text(text TextAdmission.MaximumCharacters))
-                false
-            field
-                BusinessField.ClaimedAmount
-                "field.claimedAmount.label"
-                "field.claimedAmount.meaning"
-                amount
-                false
-            field
-                BusinessField.ClaimedCurrency
-                "field.claimedCurrency.label"
-                "field.claimedCurrency.meaning"
-                currency
-                false
-        ]
-
-    let private caseIdentity =
-        [
-            field
-                BusinessField.CaseReference
-                "field.caseReference.label"
-                "field.caseReference.meaning"
-                (ScalarRule.Text(token "[!-~]{1,80}"))
-                false
-        ]
-
-    let private decisionPaymentAndStatus =
-        [
-            field
-                BusinessField.PaymentDecisionDate
-                "field.paymentDecisionDate.label"
-                "field.paymentDecisionDate.meaning"
-                calendarDate
-                true
-            field
-                BusinessField.PayableAmount
-                "field.payableAmount.label"
-                "field.payableAmount.meaning"
-                amount
-                true
-            field
-                BusinessField.PayableCurrency
-                "field.payableCurrency.label"
-                "field.payableCurrency.meaning"
-                currency
-                true
-            field
-                BusinessField.PaymentDate
-                "field.paymentDate.label"
-                "field.paymentDate.meaning"
-                calendarDate
-                true
-            field BusinessField.Status "field.status.label" "field.status.meaning" status false
-        ]
+    let private forScalar =
+        function
+        | ScalarKind.Date -> calendarDate
+        | ScalarKind.Country -> ScalarRule.Text(token "[A-Z]{2}")
+        | ScalarKind.Reference -> ScalarRule.Text(token "[!-~]{1,80}")
+        | ScalarKind.Text -> ScalarRule.Text(text TextAdmission.MaximumCharacters)
+        | ScalarKind.Amount -> amount
+        | ScalarKind.Currency -> currency
+        | ScalarKind.Status -> status
 
     let all =
-        incidentFields
-        @ registrationPartiesAndClaim
-        @ caseIdentity
-        @ decisionPaymentAndStatus
+        FieldTable.rows
+        |> List.map (fun row ->
+            {
+                Field = row.Field
+                Scalar = forScalar row.Kind
+            })
 
     let forField field =
-        all |> List.find (fun definition -> definition.Name = field)
+        all |> List.find (fun definition -> definition.Field = field)
 
     let scalar =
         function
-        | InputField.Reason -> ScalarRule.Text(text TextAdmission.MaximumCharacters)
-        | InputField.Business field -> (forField field).Scalar
+        | InputTarget.Reason -> ScalarRule.Text(text TextAdmission.MaximumCharacters)
+        | InputTarget.Field field -> (forField field).Scalar
+        | _ -> invalidArg "field" "The target has no business scalar definition."
 
-    /// Core-owned scalar projection in the same order as the thirteen-field definition.
-    /// Values stay exact text; adapters choose layout, not interpretation or calculations.
+    /// Exact values follow the authoritative field-table order.
     let values (fields: CaseFields) =
-        [
-            BusinessField.IncidentDate, Some fields.IncidentDate
-            BusinessField.IncidentNotificationDate, Some fields.IncidentNotificationDate
-            BusinessField.IncidentCountry, Some fields.IncidentCountry
-            BusinessField.ClaimantName, Some fields.ClaimantName
-            BusinessField.InsurerName, Some fields.InsurerName
-            BusinessField.ClaimedAmount, Some fields.ClaimedAmount
-            BusinessField.ClaimedCurrency, Some fields.ClaimedCurrency
-            BusinessField.CaseReference, Some fields.CaseReference
-            BusinessField.PaymentDecisionDate, fields.PaymentDecisionDate
-            BusinessField.PayableAmount, fields.PayableAmount
-            BusinessField.PayableCurrency, fields.PayableCurrency
-            BusinessField.PaymentDate, fields.PaymentDate
-            BusinessField.Status, Some(CaseStatuses.token fields.Status)
-        ]
+        let values =
+            [
+                BusinessField.IncidentDate, Some fields.IncidentDate
+                BusinessField.IncidentNotificationDate, Some fields.IncidentNotificationDate
+                BusinessField.IncidentCountry, Some fields.IncidentCountry
+                BusinessField.ClaimantName, Some fields.ClaimantName
+                BusinessField.InsurerName, Some fields.InsurerName
+                BusinessField.ClaimedAmount, Some fields.ClaimedAmount
+                BusinessField.ClaimedCurrency, Some fields.ClaimedCurrency
+                BusinessField.CaseReference, Some fields.CaseReference
+                BusinessField.PaymentDecisionDate, fields.PaymentDecisionDate
+                BusinessField.PayableAmount, fields.PayableAmount
+                BusinessField.PayableCurrency, fields.PayableCurrency
+                BusinessField.PaymentDate, fields.PaymentDate
+                BusinessField.Status, Some(CaseStatuses.token fields.Status)
+            ]
+            |> Map.ofList
+
+        FieldTable.rows |> List.map (fun row -> row.Field, Map.find row.Field values)

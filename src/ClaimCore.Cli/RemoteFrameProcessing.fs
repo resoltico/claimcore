@@ -1,8 +1,7 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
 
 open System
 open System.IO
@@ -65,17 +64,20 @@ module private FrameInvocation =
         }
 
 type RemoteFrameProcessor
-    private (input: Stream, output: Stream, errors: Stream, invoke, owned: IDisposable) =
+    private (input: Stream, output: Stream, errors: Stream, invoke, owned: IDisposable, retry) =
     let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
 
     let interpret frame stopped =
         match frame with
         | InputFrame.EndOfInput -> None
-        | InputFrame.TooLarge -> Some(CliReply.protocol ProtocolFailure.InvalidFrame)
+        | InputFrame.TooLarge -> Some(CliReply.protocol CliFailure.InvalidFrame)
         | InputFrame.Bytes bytes ->
             match Frames.admit bytes with
-            | Error _ -> Some(CliReply.protocol ProtocolFailure.InvalidFrame)
-            | Ok frame ->
+            | Error _ -> Some(CliReply.protocol CliFailure.InvalidFrame)
+            | Ok frame when retry && not (Api.mutates (Frames.endpoint frame)) ->
+                Some(CliReply.protocol CliFailure.InvalidFrame)
+            | Ok admitted ->
+                let frame = if retry then Frames.retry admitted else admitted
                 delivery.Prepare frame
 
                 Some(
@@ -86,16 +88,26 @@ type RemoteFrameProcessor
                             Frames.decode reply.Bytes
                             |> Result.defaultWith (fun _ -> invalidOp "Invalid local reply.")
 
-                        let knowledge = (Frames.metadata decoded).AttemptKnowledge
+                        let delivery = decoded.Delivery
 
-                        CliReply.forAttempt frame knowledge reply
+                        CliReply.forAttempt frame delivery reply
                 )
 
-    new(input, output, errors) =
+    new(input, output, errors, retry) =
         let holder = new RemoteSessionHolder()
-        new RemoteFrameProcessor(input, output, errors, FrameInvocation.invoke holder, holder)
 
-    static member internal ForTest(input, output, errors, invoke) =
+        new RemoteFrameProcessor(
+            input,
+            output,
+            errors,
+            FrameInvocation.invoke holder,
+            holder,
+            retry
+        )
+
+    new(input, output, errors) = new RemoteFrameProcessor(input, output, errors, false)
+
+    static member internal ForTest(input, output, errors, invoke, ?retry) =
         new RemoteFrameProcessor(
             input,
             output,
@@ -103,7 +115,8 @@ type RemoteFrameProcessor
             invoke,
             { new IDisposable with
                 member _.Dispose() = ()
-            }
+            },
+            defaultArg retry false
         )
 
     member _.Interrupt() = delivery.Interrupt()

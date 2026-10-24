@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.TransactionTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -87,7 +87,7 @@ let private waiter (database: PostgresFixture.Database) settings =
             database.Fixture.Owner,
             id 20,
             "synthetic-timeout",
-            (fun _ -> LedgerDecision.Refuse Rejection.ResourceUnavailable),
+            (fun _ -> LedgerDecision.Refuse Refusal.ResourceUnavailable),
             token
         )
 
@@ -99,7 +99,7 @@ let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandle
              Actor = ({ Actor = Some _ } as authority)
              Case = Some {
                              Snapshot = {
-                                            View = ClaimCore.Domain.CaseView.Live(fields, _)
+                                            View = ClaimCore.Contract.CaseView.Live(fields, _)
                                         }
                          }
          } ->
@@ -126,11 +126,13 @@ let tests =
                             [|
                                 for index in 1..20 ->
                                     actor.Execute(
-                                        request
-                                            (100 + index)
-                                            ($"synthetic-{index}")
-                                            0L
-                                            (ClaimCore.Domain.BusinessCommand.Open registration),
+                                        OperationInput.Case(
+                                            request
+                                                (100 + index)
+                                                ($"synthetic-{index}")
+                                                0L
+                                                (ClaimCore.Contract.CaseAct.Open registration)
+                                        ),
                                         token
                                     )
                             |]
@@ -207,7 +209,7 @@ let tests =
 
                         Expect.equal
                             recovered
-                            (Ok(LedgerWriteResult.Refused Rejection.ResourceUnavailable))
+                            (Ok(LedgerWriteResult.Refused Refusal.ResourceUnavailable))
                             "Next writer proceeds"
 
                         let! head = Verification.verify database.OwnerSource None token
@@ -217,7 +219,7 @@ let tests =
                             3L
                             "Neither waiter wrote"
 
-                        let! _ = actor.Get("absent", token)
+                        let! _ = actor.Get({ CaseReference = "absent" }, token)
                         return ()
                     }))
             testCaseAsync
@@ -312,13 +314,13 @@ let tests =
                                 20
                                 "synthetic-deferred"
                                 0L
-                                (ClaimCore.Domain.BusinessCommand.Open registration)
+                                (ClaimCore.Contract.CaseAct.Open registration)
 
-                        let! failed = actor.Execute(operation, token)
+                        let! failed = actor.Execute(OperationInput.Case operation, token)
 
                         Expect.equal
-                            failed
-                            (ExecuteOutcome.Failed CoreFault.StoreUnavailable)
+                            failed.Outcome
+                            (ExecuteResult.Failed CoreFault.StoreUnavailable)
                             "SQLSTATE is definite"
 
                         let! head = Verification.verify database.OwnerSource None token
@@ -329,7 +331,7 @@ let tests =
                             "Failed commit did not append"
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
-                        let! retry = actor.Execute(operation, token)
+                        let! retry = actor.Execute(OperationInput.Case operation, token)
                         accepted retry |> ignore
                     }))
             testCaseAsync
@@ -369,11 +371,13 @@ let tests =
 
                         let! opened =
                             actor.Execute(
-                                request
-                                    20
-                                    "synthetic-snapshot"
-                                    0L
-                                    (ClaimCore.Domain.BusinessCommand.Open registration),
+                                OperationInput.Case(
+                                    request
+                                        20
+                                        "synthetic-snapshot"
+                                        0L
+                                        (ClaimCore.Contract.CaseAct.Open registration)
+                                ),
                                 token
                             )
 

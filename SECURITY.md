@@ -32,7 +32,7 @@ retained case reference may still identify someone.
 The included loopback Compose installation is for evaluation. Operators own deployment,
 TLS, identity administration, monitoring, backup/restore, retention and incident response.
 Read [Operations](docs/operations.md). The project supplies no multi-tenancy or production
-qualification. The repository promises no security fixes for historical revisions;
+qualification. The repository promises no security fixes for unmaintained revisions;
 identify the affected revision and reproduce against maintained source where possible.
 
 Format invariants preserve retained history independently of current admission policy. Current

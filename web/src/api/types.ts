@@ -7,30 +7,20 @@ import type {
 } from "@contracts/client";
 import type { productMetadata } from "../protocol/productMetadata";
 import type { Notice } from "./notices";
-export type { CaseFields, CaseView, CaseReceipt, Review, Rejection } from "@contracts/client";
+export type {
+  CaseFields,
+  CaseView,
+  CaseReceipt,
+  CaseReview,
+  OperationReview,
+  Diagnostic,
+} from "@contracts/client";
 export type HistoryEntry = HistoryEntries[number];
-export type { Receipt as OperationReceipt } from "@contracts/client";
+export type { OperationReceipt } from "@contracts/client";
 export type Descriptors = typeof productMetadata.descriptors;
 export type ProductMetadata = typeof productMetadata;
 export type FieldDescriptor = Descriptors["fields"][number] | Descriptors["inputFields"][number];
-export type CommandDescriptor = Descriptors["commands"][number];
-export type CommandInputShape = CommandDescriptor["inputs"];
-export type CommandInputDescriptor =
-  | Extract<CommandInputShape, { kind: "FIELDS" }>["fields"][number]
-  | CorrectionGroupDescriptor["replaceFields"][number];
-type GeneratedCorrectionGroup = Extract<
-  CommandInputShape,
-  { kind: "CORRECTION_GROUPS" }
->["groups"][number];
-export type CorrectionGroupDescriptor = Omit<GeneratedCorrectionGroup, "actions"> & {
-  readonly actions: ReadonlyArray<GeneratedCorrectionGroup["actions"][number]>;
-};
-export type CommandDraft = Omit<RequestByEndpoint["case.execute"], "act"> & {
-  readonly act: Extract<
-    RequestByEndpoint["case.execute"]["act"],
-    { kind: CommandDescriptor["kind"] }
-  >;
-};
+export type CommandDraft = Extract<RequestByEndpoint["operation.execute"], { scope: "CASE" }>;
 export type ServiceResponse<K extends keyof ResponseByEndpoint> = ResponseByEndpoint[K];
 export type EndpointOutcome = ResponseByEndpoint[keyof ResponseByEndpoint];
 type Success<K extends keyof ResponseByEndpoint> = Extract<

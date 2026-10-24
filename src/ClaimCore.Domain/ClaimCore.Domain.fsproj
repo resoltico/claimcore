@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
+    <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="UnicodeText.fs" />
     <Compile Include="TextAdmission.fs" />
-    <Compile Include="InputProblems.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="Vocabulary.fs" />
     <Compile Include="Descriptors.fs" />

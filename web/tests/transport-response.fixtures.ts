@@ -14,33 +14,37 @@ const snapshot = (value: unknown): unknown => {
       : state,
   };
 };
-const responseData = (
-  endpoint: string,
-  tag: string,
-  data: unknown,
-  request: Record<string, unknown>,
-): unknown => {
-  if (isObject(data) && ["ACCEPTED", "ALREADY_ACCEPTED", "OUTCOME_UNKNOWN"].includes(tag)) {
-    const receipt = { ...data, operationId: request["operationId"] };
-    if (tag === "OUTCOME_UNKNOWN" || !isObject(request["act"])) {
-      return receipt;
-    }
+const responseData = (tag: string, data: unknown, request: Record<string, unknown>): unknown => {
+  if (tag === "OUTCOME_UNKNOWN") {
+    return null;
+  }
+  if (isObject(data) && ["ACCEPTED", "ALREADY_ACCEPTED"].includes(tag) && isObject(data["scope"])) {
+    const { scope } = data;
     return {
-      ...receipt,
-      act: request["act"]["kind"],
-      ...(endpoint.startsWith("case.")
-        ? {
-            caseReference: request["caseReference"],
-            revision: Number(request["expectedRevision"]) + 1,
-          }
-        : {}),
+      ...data,
+      operationId: request["operationId"],
+      scope: {
+        ...scope,
+        ...(isObject(request["act"]) ? { act: request["act"]["kind"] } : {}),
+        ...(scope["kind"] === "CASE" && request["scope"] === "CASE"
+          ? {
+              caseReference: request["caseReference"],
+              revision: Number(request["expectedRevision"]) + 1,
+            }
+          : {}),
+      },
     };
   }
   if (tag === "REVIEWED" && isObject(data) && isObject(data["review"])) {
     const { review } = data;
     return {
       ...data,
-      review: { ...review, before: snapshot(review["before"]), after: snapshot(review["after"]) },
+      review: {
+        ...review,
+        scope: request["scope"],
+        before: snapshot(review["before"]),
+        after: snapshot(review["after"]),
+      },
     };
   }
   return data;
@@ -53,12 +57,12 @@ const envelope = (endpoint: string, tag: string, original: unknown) => {
   if (
     isObject(request) &&
     "operationId" in request &&
-    ["case.preview", "case.execute", "authority.execute"].includes(endpoint)
+    ["operation.preview", "operation.execute"].includes(endpoint)
   ) {
     echo = { operationId: request["operationId"] };
-    data = responseData(endpoint, tag, data, request);
+    data = responseData(tag, data, request);
   }
-  return { endpoint, ...echo, outcome: { tag, data } };
+  return { ...echo, outcome: { tag, data } };
 };
 /** Synthetic replies are correlated with the bytes handed to the mocked platform transport. */
 export const transportResponse = (

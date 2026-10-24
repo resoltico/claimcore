@@ -14,12 +14,22 @@ export const resolveSchema = (document: SchemaDocument, node: SchemaNode): Schem
   }
   return node;
 };
+export const schemaConstant = (document: SchemaDocument, node: SchemaNode): unknown => {
+  const resolved = resolveSchema(document, node);
+  if (Object.hasOwn(resolved, "const")) {
+    return resolved.const;
+  }
+  return resolved.enum?.length === 1 ? resolved.enum[0] : undefined;
+};
 export const unionSelector = (document: SchemaDocument, schema: SchemaNode): string => {
+  if (schema.discriminator !== undefined) {
+    return schema.discriminator.propertyName;
+  }
   const branches =
     schema.oneOf?.map((branch) => resolveSchema(document, branch).properties ?? {}) ?? [];
   const first = branches[0] ?? {};
   const selector = Object.keys(first).find((name) =>
-    branches.every((branch) => Object.hasOwn(branch[name] ?? {}, "const")),
+    branches.every((branch) => schemaConstant(document, branch[name] ?? {}) !== undefined),
   );
   if (selector === undefined) {
     throw new Error("Unsupported union form primitive.");
@@ -37,11 +47,13 @@ export const selectedSchema = (
     return resolved;
   }
   const selector = unionSelector(document, resolved);
-  const selected = values[`${path}.${selector}`];
+  const selected = values[path ? `${path}.${selector}` : selector];
   return resolveSchema(
     document,
     resolved.oneOf.find(
-      (branch) => resolveSchema(document, branch).properties?.[selector]?.const === selected,
+      (branch) =>
+        schemaConstant(document, resolveSchema(document, branch).properties?.[selector] ?? {}) ===
+        selected,
     ) ?? resolved.oneOf[0]!,
   );
 };

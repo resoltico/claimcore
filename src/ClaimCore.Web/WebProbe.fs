@@ -1,12 +1,13 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 open System
 open System.Net
 open System.Net.Http
 open System.Threading
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 /// A probe has no runtime factory, database credential reader or schema/authority mutation.
 module internal WebProbe =

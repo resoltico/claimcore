@@ -39,7 +39,7 @@ export const draftAt = (index: number): CommandDraft => {
 };
 export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
-  return response("case.preview", "REVIEWED", {
+  return response("operation.preview", "REVIEWED", {
     review: {
       before: {
         caseReference: fields.caseReference,

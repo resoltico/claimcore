@@ -1,5 +1,7 @@
 import { parseSync } from "oxc-parser";
-import { posix } from "node:path";
+import { posix, join, relative } from "node:path";
+import { readFileSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 /** @param {unknown} value @param {(node:Record<string,any>)=>void} visit */
 function walk(value, visit) {
@@ -227,4 +229,33 @@ function ambientCall(node) {
     ].includes(path[0] ?? "") ||
     (path[0] === "Date" && node["arguments"]?.length === 0)
   );
+}
+
+/** @param {string} directory @returns {string[]} */
+function sourceFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((item) => {
+    const file = join(directory, item.name);
+    if (item.isDirectory()) {
+      return sourceFiles(file);
+    }
+    return /\.(ts|tsx|js|mjs|json)$/u.test(item.name) ? [file] : [];
+  });
+}
+
+function checkModules() {
+  const root = fileURLToPath(new URL("..", import.meta.url));
+  const sources = Object.fromEntries(
+    ["src", "../contracts"]
+      .flatMap((directory) => sourceFiles(join(root, directory)))
+      .map((file) => [relative(root, file).split("\\").join("/"), readFileSync(file, "utf8")]),
+  );
+  const config = JSON.parse(readFileSync(join(root, "tsconfig.base.json"), "utf8"));
+  const failures = moduleViolations(sources, config.compilerOptions.paths);
+  if (failures.length) {
+    throw new Error(failures.join("\n"));
+  }
+}
+
+if (import.meta.main) {
+  checkModules();
 }

@@ -1,11 +1,10 @@
 module ClaimCore.Tests.PayloadBudgetTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Hosting
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
@@ -59,14 +58,13 @@ let private receipt disclosure : OperationReceipt =
     }
 
 let private encodedHistory count disclosure =
-    OutcomeMapping.caseHistory (
-        QueryOutcome.Succeeded
+    Codec.encode
+        Api.caseHistory.Output
+        (ReadReply.Succeeded
             {
                 Entries = List.replicate count (HistoryEntry.FullEntry(receipt disclosure))
                 NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
-            }
-    )
-    |> ClaimCore.Wire.Replies.encode
+            })
 
 let private fullHistoryBudget () =
     let accepted = snapshot TextFormat.MaximumFreeTextBytes
@@ -85,10 +83,11 @@ let private fullHistoryBudget () =
 
     Expect.isLessThan
         bound
-        ClaimCore.Wire.Limits.MaximumResponseBytes
+        ClaimCore.Contract.Limits.MaximumResponseBytes
         "All fifty entries fit the response limit"
 
-    Expect.equal ClaimCore.Wire.Limits.MaximumResponseBytes 4194304 "Public response limit"
+    Expect.equal ClaimCore.Contract.Limits.MaximumResponseBytes 4194304 "Public response limit"
+
     Expect.equal FormatLimits.MaximumPayloadBytes 32768 "Permanent framed payload bound"
 
     Expect.throws
@@ -105,7 +104,7 @@ let private authorityFixture () =
     let actor: ActorSummary =
         {
             ActorId = id
-            Principal = principal
+            Principal = PrincipalKey.describe principal
             Enabled = false
         }
 
@@ -121,34 +120,32 @@ let private boundedAuthority () =
     let actor, grant = authorityFixture ()
 
     let actors count =
-        OutcomeMapping.authorityList (
-            QueryOutcome.Succeeded
+        Codec.encode
+            Api.authorityList.Output
+            (ReadReply.Succeeded
                 {
                     Items = List.replicate count actor
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
-                }
-        )
-        |> ClaimCore.Wire.Replies.encode
+                })
 
     let grants count =
-        OutcomeMapping.authorityGrants (
-            QueryOutcome.Succeeded
+        Codec.encode
+            Api.authorityGrants.Output
+            (ReadReply.Succeeded
                 {
                     Actor = actor
                     Items = List.replicate count grant
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
-                }
-        )
-        |> ClaimCore.Wire.Replies.encode
+                })
 
     Expect.isLessThan
         (actors 50).Length
-        ClaimCore.Wire.Limits.MaximumResponseBytes
+        ClaimCore.Contract.Limits.MaximumResponseBytes
         "Maximal admitted actor headers fit"
 
     Expect.isLessThan
         (grants 50).Length
-        ClaimCore.Wire.Limits.MaximumResponseBytes
+        ClaimCore.Contract.Limits.MaximumResponseBytes
         "Maximal scoped grants and target header fit"
 
     Expect.throws (fun () -> actors 51 |> ignore) "Actor overproduction refuses, never truncates"

@@ -1,9 +1,8 @@
 namespace ClaimCore.Postgres
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open ClaimCore.Application
-open ClaimCore.RecordFormat
 
 module internal WriteOperations =
     let private persist connection token project decision =
@@ -22,39 +21,26 @@ module internal WriteOperations =
         Transactions.write source settings token (fun connection ->
             task {
                 let! head, instant, nonce = Transactions.head connection token
-                let! existing = StoredEntries.operation connection installationId operationId token
 
-                let ids =
-                    CaseReferenceId.encode installationId reference
-                    :: Projections.operationCases existing
-
-                let! actor = Projections.actor connection principal ids token
-
-                let! case =
-                    Projections.caseById
+                let! read =
+                    DecisionViews.case
                         connection
-                        (CaseReferenceId.encode installationId reference)
+                        installationId
+                        principal
+                        (Some operationId)
+                        reference
+                        instant
                         token
 
                 let view: CaseLockedView =
                     {
                         Head = head
-                        ObservedAt = instant
                         PayloadNonce = nonce
-                        Actor = actor
-                        ExistingOperation = existing
-                        Case = case
+                        Read = read
                     }
 
                 return! persist connection token Persistence.case (decide view)
             })
-
-    let private counts connection token =
-        DatabaseSession.rows
-            connection
-            "SELECT (SELECT count(*)::int FROM claimcore.actors),count(*)::int FROM claimcore.actors a JOIN claimcore.grants g USING(actor_id) WHERE a.enabled AND a.principal_kind='HUMAN' AND g.role=$1 AND g.case_id IS NULL"
-            [| box (RoleTokens.token Role.Owner) |]
-            token
 
     let authority
         source
@@ -70,44 +56,23 @@ module internal WriteOperations =
         Transactions.write source settings token (fun connection ->
             task {
                 let! head, instant, nonce = Transactions.head connection token
-                let! existing = StoredEntries.operation connection installationId operationId token
 
-                let ids =
-                    reference
-                    |> Option.map (CaseReferenceId.encode installationId)
-                    |> Option.toList
-
-                let! actor =
-                    Projections.actor
+                let! read =
+                    DecisionViews.authority
                         connection
+                        installationId
                         principal
-                        (ids @ Projections.operationCases existing)
+                        operationId
+                        target
+                        reference
+                        instant
                         token
-
-                let! target = Projections.actor connection target ids token
-
-                let! case =
-                    match reference with
-                    | Some reference ->
-                        Projections.caseById
-                            connection
-                            (CaseReferenceId.encode installationId reference)
-                            token
-                    | None -> System.Threading.Tasks.Task.FromResult None
-
-                let! counts = counts connection token
 
                 let view: AuthorityLockedView =
                     {
                         Head = head
-                        ObservedAt = instant
                         PayloadNonce = nonce
-                        Actor = actor
-                        ExistingOperation = existing
-                        Target = target
-                        TargetCase = case
-                        ActorCount = DatabaseSession.value 0 counts.Head
-                        EnabledHumanOwners = DatabaseSession.value 1 counts.Head
+                        Read = read
                     }
 
                 return! persist connection token Persistence.authority (decide view)

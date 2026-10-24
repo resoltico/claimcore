@@ -6,8 +6,8 @@ import { useSession } from "../src/hooks/useSession";
 import { deferredResponse } from "./presentation-state.fixtures";
 import { operationId, response, unavailable } from "./service-ui.fixtures";
 
-import { generatedWebValue } from "./contract-corpus.fixtures";
-const accepted = generatedWebValue("case.execute");
+import { wireReply } from "./contract-corpus.fixtures";
+const accepted = wireReply("operation.execute");
 if (accepted.outcome.tag !== "ACCEPTED") {
   throw new Error("CaseReceipt fixture absent.");
 }
@@ -35,7 +35,7 @@ it("coalesces observation and discards an older receipt after changing the opera
   });
   expect(result.current.message).toEqual({
     kind: "diagnostic",
-    diagnostic: unavailable.diagnostic,
+    diagnostic: { code: unavailable.code, limits: unavailable.limits },
   });
   await act(async () => {
     first.resolve(response("operation.observe", "SUCCEEDED", receipt));
@@ -44,7 +44,7 @@ it("coalesces observation and discards an older receipt after changing the opera
   expect(result.current.receipt).toBeNull();
   expect(result.current.message).toEqual({
     kind: "diagnostic",
-    diagnostic: unavailable.diagnostic,
+    diagnostic: { code: unavailable.code, limits: unavailable.limits },
   });
 });
 

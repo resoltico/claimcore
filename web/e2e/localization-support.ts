@@ -6,12 +6,12 @@ import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
-import en from "../../contracts/locale.en.ui.json" with { type: "json" };
-import lv from "../../contracts/locale.lv.ui.json" with { type: "json" };
-import ar from "../../contracts/locale.ar.ui.json" with { type: "json" };
-import enPresentation from "../src/presentation/generated/en.json" with { type: "json" };
-import lvPresentation from "../src/presentation/generated/lv.json" with { type: "json" };
-import arPresentation from "../src/presentation/generated/ar.json" with { type: "json" };
+import en from "../../src/ClaimCore.Contract/Localization/en.ui.json" with { type: "json" };
+import lv from "../../src/ClaimCore.Contract/Localization/lv.ui.json" with { type: "json" };
+import ar from "../../src/ClaimCore.Contract/Localization/ar.ui.json" with { type: "json" };
+import enPresentation from "../../src/ClaimCore.Contract/Localization/en.command.json" with { type: "json" };
+import lvPresentation from "../../src/ClaimCore.Contract/Localization/lv.command.json" with { type: "json" };
+import arPresentation from "../../src/ClaimCore.Contract/Localization/ar.command.json" with { type: "json" };
 import type { ReviewIdentity } from "./case-workflow";
 
 export const seedPresentation = async (
@@ -29,9 +29,7 @@ export const seedPresentation = async (
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
   ({ en, lv, ar })[language][key];
 export const openLabel = (language: "en" | "lv" | "ar"): string =>
-  ({ en: enPresentation, lv: lvPresentation, ar: arPresentation })[language]["command.OPEN.label"]
-    .map((part) => part.value)
-    .join("");
+  ({ en: enPresentation, lv: lvPresentation, ar: arPresentation })[language]["command.OPEN.label"];
 // Role lookup includes inert background controls; require the active native control.
 export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
   const control = page
@@ -67,7 +65,7 @@ export const trackRequests = (page: Page) => {
   return requests;
 };
 export const reviewFrom = (
-  value: ServiceResponse<"case.preview">,
+  value: ServiceResponse<"operation.preview">,
   bytes: Buffer,
 ): ReviewIdentity => {
   if (value.outcome.tag !== "REVIEWED") {
@@ -97,7 +95,7 @@ const deferred = <T>() => {
 type Captured<T> = { reply: T; bytes: Buffer };
 const replyCategory = (endpoint: EndpointId, status: number, payload: unknown): string => {
   if (isHostFailure(payload, status)) {
-    return `HOST_${payload.code}_${payload.executionPhase ?? "UNSPECIFIED"}`;
+    return `HOST_${payload.hostFailure.code}_${payload.hostFailure.phase ?? "UNSPECIFIED"}`;
   }
   return isResponse(endpoint, payload) ? payload.outcome.tag : "UNRECOGNIZED";
 };
@@ -213,7 +211,7 @@ export const expectBusinessFormatRefusal = async (
   diagnostic: keyof typeof businessFormatRefusalText,
   submit: () => Promise<void>,
 ) => {
-  const pending = await pauseJsonReply(page, "case.preview");
+  const pending = await pauseJsonReply(page, "operation.preview");
   try {
     await submit();
     const { outcome } = (await pending.ready).reply;
@@ -221,11 +219,11 @@ export const expectBusinessFormatRefusal = async (
     if (outcome.tag !== "REJECTED") {
       throw new Error("Expected a typed business format refusal.");
     }
-    expect(outcome.data.field).toBe(field);
-    expect(outcome.data.diagnostic.id).toBe(diagnostic);
-    expect(outcome.data.recommendedAction).toBe("CORRECT_INPUT");
+    expect(outcome.data.target).toBe(field);
+    expect(outcome.data.code).toBe(diagnostic);
+    expect(outcome.data.action).toBe("CORRECT_INPUT");
     if (diagnostic === "INPUT_DECIMAL_FORMAT") {
-      expect(outcome.data.diagnostic.parameters).toEqual({
+      expect(outcome.data.limits).toEqual({
         maximumIntegerDigits: 18,
         maximumFractionalDigits: 4,
       });

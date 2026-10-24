@@ -1,6 +1,6 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Buffers.Binary
@@ -19,7 +19,7 @@ type CaseEntryMetadata =
 type AuthorityEntryMetadata =
     {
         TargetActorId: Guid
-        Act: RecordedAuthorityKind
+        Act: AuthorityKind
     }
 
 [<RequireQualifiedAccess>]
@@ -87,10 +87,10 @@ module LedgerEntry =
 
     let private authorityCode =
         function
-        | RecordedAuthorityKind.ProvisionOwner -> 32uy
-        | RecordedAuthorityKind.RegisterActor -> 33uy
-        | RecordedAuthorityKind.SetGrant -> 34uy
-        | RecordedAuthorityKind.SetEnabled -> 35uy
+        | AuthorityKind.ProvisionOwner -> 32uy
+        | AuthorityKind.RegisterActor -> 33uy
+        | AuthorityKind.SetGrant -> 34uy
+        | AuthorityKind.SetEnabled -> 35uy
 
     let encodePayload (payload: LedgerPayload) =
         Array.concat

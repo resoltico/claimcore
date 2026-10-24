@@ -1,4 +1,4 @@
-import { attemptKnowledge } from "../protocol/delivery";
+import { mutationUncertain } from "../protocol/delivery";
 import type { ApiResult, EndpointOutcome } from "./types";
 import { localNotice, type Notice } from "./notices";
 export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
@@ -8,26 +8,33 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
   if (result.kind === "hostFailure") {
     return result.failure.code === "CONTRACT_MISMATCH"
       ? localNotice("definitionMismatch")
-      : { kind: "diagnostic", diagnostic: result.failure.diagnostic };
+      : {
+          kind: "diagnostic",
+          diagnostic: {
+            code: result.failure.code,
+            limits: {},
+          },
+        };
   }
   const { outcome } = result.value;
   if (outcome.tag === "REJECTED" || outcome.tag === "FAILED") {
-    return { kind: "diagnostic", diagnostic: outcome.data.diagnostic };
-  }
-  if (outcome.tag === "CANCELLED") {
-    return localNotice("cancelled");
+    return {
+      kind: "diagnostic",
+      diagnostic: {
+        code: outcome.data.code,
+        limits: "limits" in outcome.data ? outcome.data.limits : {},
+      },
+    };
   }
   if (outcome.tag === "OUTCOME_UNKNOWN") {
     return localNotice("outcomeUnknown");
   }
   return localNotice("incomplete");
 };
-export const isMutationUncertain = (result: ApiResult<EndpointOutcome>): boolean =>
-  attemptKnowledge(result.kind === "outcome" ? result.value.endpoint : "case.execute", result) ===
-  "UNCONFIRMED";
+export const isMutationUncertain = mutationUncertain;
 export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean =>
   (result.kind === "hostFailure" &&
     (result.failure.code === "SESSION_REJECTED" || result.failure.code === "SESSION_FORBIDDEN")) ||
   (result.kind === "outcome" &&
     result.value.outcome.tag === "REJECTED" &&
-    result.value.outcome.data.diagnostic.id === "ACCESS_RESOURCE_UNAVAILABLE");
+    result.value.outcome.data.code === "ACCESS_RESOURCE_UNAVAILABLE");

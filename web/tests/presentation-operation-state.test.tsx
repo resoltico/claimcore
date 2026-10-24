@@ -28,8 +28,8 @@ it("preserves authored content, DOM selection and operation identity across lang
   );
   render(editor({ current: null, initialCommand: "OPEN" }));
   fillRegistrationInputs({ claimantName: " " });
-  const name = document.querySelector<HTMLInputElement>('input[name="claimantName"]')!;
-  const date = document.querySelector<HTMLInputElement>('input[name="incidentDate"]')!;
+  const name = document.querySelector<HTMLInputElement>('input[data-field-name="claimantName"]')!;
+  const date = document.querySelector<HTMLInputElement>('input[data-field-name="incidentDate"]')!;
   fireEvent.change(name, { target: { value: "A\u0308 <unchanged> العربية" } });
   fireEvent.change(date, { target: { value: "2026-02-30" } });
   name.setSelectionRange(1, 3);
@@ -105,12 +105,12 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.selectOptions(languageControl(), "lv");
   pending.resolve(
-    response("case.preview", "REJECTED", {
-      message: "UNTRUSTED_ENGLISH_CANARY",
-      field: "claimantName",
+    response("operation.preview", "REJECTED", {
+      code: "INPUT_TEXT_REQUIRED",
+      action: "CORRECT_INPUT",
+      target: "claimantName",
       actualRevision: null,
-      recommendedAction: "CORRECT_INPUT",
-      diagnostic: { id: "INPUT_TEXT_REQUIRED", parameters: {} },
+      limits: {},
     }),
   );
   await waitFor(() => {

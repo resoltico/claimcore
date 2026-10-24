@@ -20,6 +20,9 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
                 decide
                 token
 
+        member _.ReadAuthorityTarget(principal, id, target, reference, token) =
+            ReadOperations.authority source installationId principal id target reference token
+
         member _.ReadCase(principal, id, reference, token) =
             ReadOperations.case source installationId principal id reference token
 

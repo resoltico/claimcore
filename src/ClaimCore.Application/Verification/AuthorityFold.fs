@@ -1,6 +1,6 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open ClaimCore.RecordFormat
@@ -8,6 +8,8 @@ open ClaimCore.Application.VerificationChecks
 
 /// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
+    type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
+
     let private ownerGrant: ActorGrant =
         {
             Role = Role.Owner
@@ -127,8 +129,8 @@ module internal AuthorityFold =
 
             let! scope =
                 match scope with
-                | RecordedGrantScope.Installation -> Ok GrantScope.Installation
-                | RecordedGrantScope.CaseReference reference ->
+                | GrantTarget.Installation -> Ok GrantScope.Installation
+                | GrantTarget.CaseReference reference ->
                     let id = CaseReferenceId.encode installationId reference
 
                     require (Some entry.Sequence) VerificationFinding.AuthorityFold (caseExists id)
@@ -154,11 +156,16 @@ module internal AuthorityFold =
         =
         match request.Act with
         | RecordedAuthorityAct.ProvisionOwner -> register actors entry id principal true
-        | RecordedAuthorityAct.RegisterActor -> register actors entry id principal false
-        | RecordedAuthorityAct.SetEnabled enabled ->
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.RegisterActor) ->
+            register actors entry id principal false
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetEnabled enabled) ->
             target actors entry id principal
             |> Result.map (fun actor -> Map.add id { actor with Enabled = enabled } actors)
-        | RecordedAuthorityAct.SetGrant(role, scope, active) ->
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetGrant {
+                                                                         Role = role
+                                                                         Scope = scope
+                                                                         Active = active
+                                                                     }) ->
             target actors entry id principal
             |> Result.bind (fun actor ->
                 grant installationId caseExists entry actor role scope active

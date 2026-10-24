@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.AdmissionActorTests
 
+open ClaimCore.Contract
+
 open System
 open System.Net
 open System.Security.Claims

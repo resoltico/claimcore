@@ -1,27 +1,33 @@
 module ClaimCore.Tests.TransitionOracle
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open ClaimCore.Domain
 
 // This oracle covers the fixed synthetic vocabulary in TransitionPropertyTests, not arbitrary drafts.
-let private eligible (fields: CaseFields) command =
+let private activeEligible (fields: CaseFields) =
     let decided = fields.PaymentDecisionDate.IsSome
     let paid = fields.PaymentDate.IsSome
 
-    match command with
-    | BusinessCommand.Open _ -> false
-    | BusinessCommand.Reopen -> fields.Status = CaseStatus.Closed
-    | BusinessCommand.CorrectCase _ -> fields.Status = CaseStatus.Closed || decided
-    | _ when fields.Status = CaseStatus.Closed -> false
-    | BusinessCommand.Close -> true
-    | BusinessCommand.AmendRegistration _ -> not decided
-    | BusinessCommand.Decide _ -> not paid
-    | BusinessCommand.WithdrawDecision -> decided && not paid
-    | BusinessCommand.RecordPayment _ -> decided && not paid && fields.PayableAmount <> Some "0"
-    | BusinessCommand.ClearPayment -> paid
+    function
+    | CaseAct.Close -> true
+    | CaseAct.AmendRegistration _ -> not decided
+    | CaseAct.Decide _ -> not paid
+    | CaseAct.WithdrawDecision -> decided && not paid
+    | CaseAct.RecordPayment _ -> decided && not paid && fields.PayableAmount <> Some "0"
+    | CaseAct.ClearPayment -> paid
+    | _ -> false
 
-let private registration (value: RegistrationInput) (fields: CaseFields) =
+let private eligible (fields: CaseFields) command =
+    match command with
+    | CaseAct.Open _ -> false
+    | CaseAct.Reopen -> fields.Status = CaseStatus.Closed
+    | CaseAct.CorrectCase _ ->
+        fields.Status = CaseStatus.Closed || fields.PaymentDecisionDate.IsSome
+    | _ when fields.Status = CaseStatus.Closed -> false
+    | _ -> activeEligible fields command
+
+let private registration (value: Registration) (fields: CaseFields) =
     { fields with
         IncidentDate = value.IncidentDate
         IncidentNotificationDate = value.IncidentNotificationDate
@@ -32,43 +38,51 @@ let private registration (value: RegistrationInput) (fields: CaseFields) =
         ClaimedCurrency = value.ClaimedCurrency
     }
 
+let private correctedRegistration fields =
+    function
+    | RegistrationGroup.Replace value -> registration value fields
+    | RegistrationGroup.Keep -> fields
+
 let private changed fields command =
     match command with
-    | BusinessCommand.AmendRegistration value -> registration value fields
-    | BusinessCommand.CorrectCase value ->
-        match value.Registration with
-        | RegistrationCorrection.Replace value -> registration value fields
-        | RegistrationCorrection.Keep -> fields
-    | BusinessCommand.Decide value ->
+    | CaseAct.AmendRegistration value -> registration value fields
+    | CaseAct.CorrectCase value -> correctedRegistration fields value.Registration
+    | CaseAct.Decide value ->
         { fields with
             PaymentDecisionDate = Some value.PaymentDecisionDate
             PayableAmount = Some(if value.PayableAmount = "0" then "0" else "750")
             PayableCurrency = Some value.PayableCurrency
         }
-    | BusinessCommand.WithdrawDecision ->
+    | CaseAct.WithdrawDecision ->
         { fields with
             PaymentDecisionDate = None
             PayableAmount = None
             PayableCurrency = None
         }
-    | BusinessCommand.RecordPayment date -> { fields with PaymentDate = Some date }
-    | BusinessCommand.ClearPayment -> { fields with PaymentDate = None }
-    | BusinessCommand.Close ->
+    | CaseAct.RecordPayment date ->
+        { fields with
+            PaymentDate = Some date.PaymentDate
+        }
+    | CaseAct.ClearPayment -> { fields with PaymentDate = None }
+    | CaseAct.Close ->
         { fields with
             Status = CaseStatus.Closed
         }
-    | BusinessCommand.Reopen ->
+    | CaseAct.Reopen ->
         { fields with
             Status = CaseStatus.Opened
         }
-    | BusinessCommand.Open _ -> fields
+    | CaseAct.Open _
+    | CaseAct.Void _
+    | CaseAct.Reinstate _
+    | CaseAct.Erase -> fields
 
 let private business before fields stale command =
     let nextFields = changed fields command
 
     let noOpCorrection =
         match command with
-        | BusinessCommand.CorrectCase _ -> nextFields = fields
+        | CaseAct.CorrectCase _ -> nextFields = fields
         | _ -> false
 
     if stale || not (eligible fields command) || noOpCorrection then
@@ -93,17 +107,16 @@ let advance (before: CaseSnapshot) stale act =
 
         match before.View, act with
         | CaseView.Erased, _ -> None
-        | CaseView.Live(fields, Disposition.Active), CaseAct.Business command ->
-            business before fields stale command
-        | CaseView.Live(_, Disposition.Voided), CaseAct.Business _ -> None
-        | CaseView.Live(fields, Disposition.Active), CaseAct.Stewardship(StewardshipAct.Void _) ->
+        | CaseView.Live(fields, Disposition.Active), CaseAct.Void _ ->
             changed (CaseView.Live(fields, Disposition.Voided))
-        | CaseView.Live(fields, Disposition.Voided), CaseAct.Stewardship(StewardshipAct.Reinstate _) ->
+        | CaseView.Live(fields, Disposition.Voided), CaseAct.Reinstate _ ->
             changed (CaseView.Live(fields, Disposition.Active))
-        | CaseView.Live _, CaseAct.Stewardship StewardshipAct.Erase -> changed CaseView.Erased
-        | _ -> None
+        | CaseView.Live _, CaseAct.Erase -> changed CaseView.Erased
+        | _, (CaseAct.Void _ | CaseAct.Reinstate _) -> None
+        | CaseView.Live(fields, Disposition.Active), command -> business before fields stale command
+        | CaseView.Live(_, Disposition.Voided), _ -> None
 
-let matches expected (actual: Result<CaseSnapshot, CaseRefusal>) =
+let matches expected (actual: Result<CaseSnapshot, Refusal>) =
     match expected, actual with
     | Some view, Ok observed -> view = observed
     | None, Error _ -> true

@@ -3,6 +3,30 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+# These assignments are also the inputs each native stage executes.
+unit_projects=(tests/ClaimCore.Tests/ClaimCore.Tests.fsproj tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj)
+postgres_projects=(tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj)
+web_projects=(tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj)
+acceptance_projects=(tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj)
+assigned_projects=("${unit_projects[@]}" "${postgres_projects[@]}" "${web_projects[@]}" "${acceptance_projects[@]}")
+
+for project in "${assigned_projects[@]}"; do
+  if [[ ! -f "${project}" ]]; then
+    echo "Assigned test project is absent: ${project}" >&2
+    exit 64
+  fi
+done
+for project in tests/*/*.fsproj; do
+  assignments=0
+  for assigned in "${assigned_projects[@]}"; do
+    if [[ "${project}" == "${assigned}" ]]; then assignments=$((assignments + 1)); fi
+  done
+  if [[ "${assignments}" -ne 1 ]]; then
+    echo "Test project must be assigned to exactly one stage: ${project} (${assignments} assignments)" >&2
+    exit 64
+  fi
+done
+
 if [[ $# -eq 0 ]]; then
   stages=(lint unit frontend workflows integration acceptance)
 elif [[ "$1" == --fast ]]; then
@@ -79,21 +103,16 @@ for stage in "${stages[@]}"; do
   esac
 done
 
-# Floors follow complete discovery. No filtered or retried run qualifies a stage.
-tests() { # <project> <minimum-expected-tests> [configuration] [timeout] [settings]
+# Discovery/source-membership guards and MTP enforce complete, nonempty runs.
+tests() { # <project> [configuration] [timeout] [settings]
   local report_directory report_root
   report_root="${CLAIMCORE_TEST_REPORT_DIRECTORY:-${PWD}/artifacts/verification}"
   mkdir -p "${report_root}"
   report_directory="$(mktemp -d "${report_root}/native.XXXXXXXX")"
-  python3 eng/verification_evidence.py begin "${report_directory}" "$1"
-  local result=0 reporting=0
-  CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" dotnet test --project "$1" --configuration "${3:-Release}" --no-build --no-restore \
-    --minimum-expected-tests="$2" --zero-tests-policy=strict --timeout="${4:-30m}" \
+  CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" dotnet test --project "$1" --configuration "${2:-Release}" --no-build --no-restore \
+    --zero-tests-policy=strict --timeout="${3:-30m}" \
     --report-trx --report-trx-filename="${report_directory}/results.trx" \
-    -- --settings="${PWD}/${5:-eng/expecto.runsettings}" || result=$?
-  python3 eng/verification_evidence.py finish "${report_directory}" "${result}" || reporting=$?
-  if [[ "${result}" -ne 0 ]]; then return "${result}"; fi
-  return "${reporting}"
+    -- --settings="${PWD}/${4:-eng/expecto.runsettings}"
 }
 
 native_restored=false
@@ -137,11 +156,15 @@ lint() {
 
 unit() {
   build_native
-  # Native freshness tests check the complete tracked contracts/ inventory and exact bytes.
-  tests tests/ClaimCore.Tests/ClaimCore.Tests.fsproj 435
-  dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
-    --configuration Debug --no-restore -p:Optimize=false
-  tests tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj 41 Debug 15m
+  local project
+  for project in "${unit_projects[@]}"; do
+    if [[ "${project}" == */ClaimCore.ArchitectureTests.fsproj ]]; then
+      dotnet build "${project}" --configuration Debug --no-restore -p:Optimize=false
+      tests "${project}" Debug 15m
+    else
+      tests "${project}"
+    fi
+  done
 }
 
 frontend() { # Node only: no generated contract prerequisite or .NET process.
@@ -173,13 +196,19 @@ integration() {
 }
 
 postgres() {
-  build_native tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
-  tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj 129 Release 20m eng/expecto.integration.runsettings
+  local project
+  for project in "${postgres_projects[@]}"; do
+    build_native "${project}"
+    tests "${project}" Release 20m eng/expecto.integration.runsettings
+  done
 }
 
 web() {
-  build_native tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
-  tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj 88 Release 20m
+  local project
+  for project in "${web_projects[@]}"; do
+    build_native "${project}"
+    tests "${project}" Release 20m
+  done
 }
 
 browsers() {
@@ -191,14 +220,14 @@ browsers() {
       *) echo "invalid browser engine" >&2; return 64 ;;
     esac
   fi
-  # Published CLI PKCE setup uses Chromium even when specifications select another engine.
+  # Every Chromium launch is headless; CLI PKCE also needs its shell for other engines.
   restore_node
   local platform
   platform="$(uname -s)"
   if [[ "${platform}" == Linux ]]; then
-    npm --prefix web exec -- playwright install --with-deps "${engines[@]}"
+    npm --prefix web exec -- playwright install --with-deps --only-shell "${engines[@]}"
   else
-    npm --prefix web exec -- playwright install "${engines[@]}"
+    npm --prefix web exec -- playwright install --only-shell "${engines[@]}"
   fi
 }
 
@@ -206,7 +235,10 @@ acceptance() {
   build_native
   build_frontend
   # One native case sequences every selected engine and stops before starting a later engine after a failure.
-  tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 28 Release 40m
+  local project
+  for project in "${acceptance_projects[@]}"; do
+    tests "${project}" Release 40m
+  done
 }
 
 for stage in "${stages[@]}"; do

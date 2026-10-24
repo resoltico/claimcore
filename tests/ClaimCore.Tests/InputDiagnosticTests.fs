@@ -4,8 +4,8 @@ open System
 open System.Text
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Catalog
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 open ClaimCore.Application
 
 let private principal () =
@@ -16,102 +16,37 @@ let private principal () =
 
         for issuer, subject, target, issue in
             [
-                "", "", PrincipalInputTarget.TargetIssuer, InputIssue.Missing
-                "https://issuer.example/",
-                "",
-                PrincipalInputTarget.TargetSubject,
-                InputIssue.Missing
-                "secret-canary", "synthetic", PrincipalInputTarget.TargetIssuer, InputIssue.Invalid
+                "", "", InputTarget.PrincipalIssuer, Violation.TextRequired
+                "https://issuer.example/", "", InputTarget.PrincipalSubject, Violation.TextRequired
+                "secret-canary", "synthetic", InputTarget.PrincipalIssuer, Violation.PrincipalFormat
             ] do
             Expect.equal
                 (PrincipalKey.admit kind issuer subject)
-                (Error { Target = target; Issue = issue })
+                (Error(Refusal.InvalidInput(target, issue)))
                 "Pure admission preserves cause without input"
 
-let private hostDetailBoundaries () =
-    let principal =
-        HostFailures.encode (
-            HostFailure.PrincipalInput
-                {
-                    Target = PrincipalInputTarget.TargetIssuer
-                    Issue = InputIssue.Missing
-                }
-        )
-        |> JsonNode.Parse
-        |> nonNull
-
-    for reason in HostFailures.all do
-        match reason with
-        | HostFailure.InputInvalid
-        | HostFailure.PrincipalInput _ -> ()
-        | _ ->
-            let bytes = HostFailures.encode reason
-
-            Expect.isOk
-                (HostFailures.decode bytes)
-                "The other status/code/phase header is independently valid"
-
-            let poison = JsonNode.Parse bytes |> nonNull
-            poison["diagnostic"] <- (principal["diagnostic"] |> nonNull).DeepClone()
-
-            Expect.isError
-                (HostFailures.decode (Encoding.UTF8.GetBytes(poison.ToJsonString())))
-                "Only principal detail changes; incompatible host variants must refuse it"
-
-let private hostDiagnostics () =
-    for target, _ in InputDiagnostics.targets do
-        for issue, _ in InputDiagnostics.issues do
-            let reason = HostFailure.PrincipalInput { Target = target; Issue = issue }
-            let bytes = HostFailures.encode reason
-
-            Expect.equal
-                (HostFailures.decode bytes |> Result.map _.Reason)
-                (Ok reason)
-                "Same codec round trip"
-
-            let original = JsonNode.Parse bytes |> nonNull
-
-            for key, value in
-                [
-                    "status", JsonValue.Create(401) :> JsonNode
-                    "code", (JsonValue.Create("SESSION_REJECTED") |> nonNull) :> JsonNode
-                    "executionPhase",
-                    (JsonValue.Create("STARTED_UNCONFIRMED") |> nonNull) :> JsonNode
-                ] do
-                let poison = original.DeepClone()
-                poison[key] <- value.DeepClone()
-
-                Expect.isError
-                    (HostFailures.decode (Encoding.UTF8.GetBytes(poison.ToJsonString())))
-                    "Principal detail cannot cross status/code/phase boundary"
-
-    hostDetailBoundaries ()
-
 let private localDiagnostics () =
-    let metadata =
-        {
-            OperationId = None
-            AttemptKnowledge = AttemptKnowledge.NotSent
-            ResolutionEvidence = ResolutionEvidence.NoEvidence
-        }
-
     for setting, _ in InputDiagnostics.settings do
         for issue, _ in InputDiagnostics.configurationIssues do
-            let frame =
-                FrameReply.LocalFailure(
-                    metadata,
-                    None,
-                    LocalFailure.ConfigurationIssue(setting, issue)
-                )
+            let frame: ClaimCore.Contract.FrameReply =
+                {
+                    Endpoint = None
+                    OperationId = None
+                    Delivery = DeliveryState.NotSent
+                    Result = FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue))
+                }
 
-            let bytes = Frames.encode frame
+            let bytes = ClaimCore.Contract.Frames.encode frame
 
             Expect.equal
-                (Frames.decode bytes)
+                (ClaimCore.Contract.Frames.decode bytes)
                 (Ok frame)
                 "Closed configuration facts survive framing"
 
-            Expect.equal (Frames.exitCode frame) 3 "Definite pre-dispatch failure"
+            Expect.equal
+                (ClaimCore.Contract.Frames.exitCode frame)
+                3
+                "Definite pre-dispatch failure"
 
 [<Tests>]
 let tests =
@@ -119,6 +54,5 @@ let tests =
         "repairable input diagnostics"
         [
             testCase "principal admission retains deterministic closed issues" principal
-            testCase "principal diagnostics use the existing strict host codec" hostDiagnostics
             testCase "configuration diagnostics retain machine delivery semantics" localDiagnostics
         ]

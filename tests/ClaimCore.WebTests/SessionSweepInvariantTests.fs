@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.SessionSweepInvariantTests
 
+open ClaimCore.Contract
+
 open System
 open System.Collections
 open System.Reflection

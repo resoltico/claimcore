@@ -1,6 +1,6 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -29,7 +29,7 @@ type internal StoredCase =
 [<RequireQualifiedAccess>]
 type internal StoredScope =
     | Case of caseId: Guid * revision: int64 * act: CaseActKind * businessDate: DateOnly
-    | Authority of targetActorId: Guid * act: RecordedAuthorityKind
+    | Authority of targetActorId: Guid * act: AuthorityKind
 
 type internal StoredEntry =
     {
@@ -55,11 +55,8 @@ type internal CaseReadView =
 type internal CaseLockedView =
     {
         Head: LedgerHead
-        ObservedAt: DateTimeOffset
         PayloadNonce: byte array
-        Actor: AuthorityView
-        ExistingOperation: StoredEntry option
-        Case: StoredCase option
+        Read: CaseReadView
     }
 
 [<RequireQualifiedAccess>]
@@ -86,27 +83,32 @@ type internal EntryDraft =
 type internal LedgerDecision<'projection> =
     | Append of EntryDraft * 'projection * OperationReceipt
     | Replay of OperationReceipt
-    | Refuse of Rejection
+    | Refuse of Refusal
     | Fail of CoreFault
 
 [<RequireQualifiedAccess>]
 type internal LedgerWriteResult =
     | Appended of OperationReceipt
     | Replayed of OperationReceipt
-    | Refused of Rejection
+    | Refused of Refusal
     | Failed of CoreFault
 
-type internal AuthorityLockedView =
+type internal AuthorityReadView =
     {
-        Head: LedgerHead
         ObservedAt: DateTimeOffset
-        PayloadNonce: byte array
         Actor: AuthorityView
         ExistingOperation: StoredEntry option
         Target: AuthorityView
         TargetCase: StoredCase option
         EnabledHumanOwners: int
         ActorCount: int
+    }
+
+type internal AuthorityLockedView =
+    {
+        Head: LedgerHead
+        PayloadNonce: byte array
+        Read: AuthorityReadView
     }
 
 [<RequireQualifiedAccess>]
@@ -157,7 +159,7 @@ type internal StoredActorPage =
     {
         ObservedAt: DateTimeOffset
         Actor: AuthorityView
-        Items: ActorSummary list
+        Items: Actor list
         NextAfterActorId: Guid option
     }
 
@@ -167,14 +169,14 @@ type internal GrantReadView =
     {
         ObservedAt: DateTimeOffset
         Actor: AuthorityView
-        Target: ActorSummary option
+        Target: Actor option
     }
 
 type internal StoredGrantPage =
     {
         ObservedAt: DateTimeOffset
         Actor: AuthorityView
-        Target: ActorSummary
+        Target: Actor
         Items: AuthorityGrant list
         NextAfterGrant: GrantPosition option
     }
@@ -207,6 +209,14 @@ type internal ILedgerStore =
         cancellationToken: CancellationToken ->
             Task<Result<LedgerWriteResult, StoreFailure>>
 
+    abstract ReadAuthorityTarget:
+        principal: PrincipalKey *
+        operationId: Guid *
+        target: PrincipalKey *
+        targetCaseReference: string option *
+        cancellationToken: CancellationToken ->
+            Task<Result<AuthorityReadView, StoreFailure>>
+
     abstract ReadCase:
         principal: PrincipalKey *
         operationId: Guid option *
@@ -217,33 +227,33 @@ type internal ILedgerStore =
     abstract ListCases:
         principal: PrincipalKey *
         readRoles: Role list *
-        select: (ActorReadView -> Result<CasePageSelection, Rejection>) *
+        select: (ActorReadView -> Result<CasePageSelection, Refusal>) *
         limit: int *
         cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredCasePage, Rejection>, StoreFailure>>
+            Task<Result<Result<StoredCasePage, Refusal>, StoreFailure>>
 
     abstract ReadHistory:
         principal: PrincipalKey *
         caseReference: string *
-        select: (HistoryReadView -> Result<int64, Rejection>) *
+        select: (HistoryReadView -> Result<int64, Refusal>) *
         limit: int *
         cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredHistoryPage, Rejection>, StoreFailure>>
+            Task<Result<Result<StoredHistoryPage, Refusal>, StoreFailure>>
 
     abstract ListActors:
         principal: PrincipalKey *
-        select: (ActorReadView -> Result<Guid option, Rejection>) *
+        select: (ActorReadView -> Result<Guid option, Refusal>) *
         limit: int *
         cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredActorPage, Rejection>, StoreFailure>>
+            Task<Result<Result<StoredActorPage, Refusal>, StoreFailure>>
 
     abstract ListGrants:
         principal: PrincipalKey *
         targetActorId: Guid *
-        select: (GrantReadView -> Result<GrantPosition option, Rejection>) *
+        select: (GrantReadView -> Result<GrantPosition option, Refusal>) *
         limit: int *
         cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredGrantPage, Rejection>, StoreFailure>>
+            Task<Result<Result<StoredGrantPage, Refusal>, StoreFailure>>
 
     abstract ReadOperation:
         principal: PrincipalKey * operationId: Guid * cancellationToken: CancellationToken ->

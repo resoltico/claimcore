@@ -67,11 +67,11 @@ it("recovers a refused continuation with a fresh no-cursor request without repor
     )
     .mockResolvedValueOnce(
       response("case.history", "REJECTED", {
-        diagnostic: { id: "QUERY_CURSOR_INVALID", parameters: {} },
-        message: "Synthetic invalid continuation",
-        field: null,
+        code: "QUERY_CURSOR_INVALID",
+        action: "READ_CURRENT",
+        target: "cursor",
         actualRevision: null,
-        recommendedAction: "READ_CURRENT",
+        limits: {},
       }),
     )
     .mockResolvedValueOnce(

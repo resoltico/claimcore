@@ -1,49 +1,50 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Catalog
-
-open ClaimCore.Wire
-
+open ClaimCore.Contract
 open System
 open System.Net
 open System.Net.Http
 open System.Net.Http.Headers
 open System.Threading
-open System.Threading.Tasks
 
 module RemoteServiceCall =
     [<Literal>]
     let MaximumResponseBytes = Limits.MaximumResponseBytes
 
     let private invalid frame =
-        CliReply.protocol ProtocolFailure.InvalidResponse
-        |> CliReply.forAttempt
-            frame
-            (Delivery.knowledge
-                (Frames.request frame |> WireRequest.endpoint)
-                AttemptResult.DispatchedWithoutReply)
+        CliReply.protocol CliFailure.InvalidResponse
+        |> CliReply.forAttempt frame DeliveryState.Uncertain
 
-    let private encodeResult frame reply =
+    let private encode frame make =
         try
-            CliReply.result frame reply
-        with :? ArgumentException ->
-            // A valid HTTP body can exceed the frame cap once delivery metadata is added.
-            invalid frame
-
-    let private encodeServiceFailure frame failure =
-        try
-            CliReply.serviceFailure frame failure
+            make ()
         with :? ArgumentException ->
             invalid frame
+
+    let private readReply frame bytes =
+        StrictJson.read MaximumResponseBytes bytes
+        |> Result.bind (fun reply ->
+            Api.admitOutput (Frames.endpoint frame) reply
+            |> Result.bind (fun () ->
+                if Correlation.matches (Frames.endpoint frame) (Frames.input frame) reply then
+                    Ok reply
+                else
+                    Error
+                        {
+                            Path = "$"
+                            Reason = "reply echo does not match"
+                        }))
+        |> Result.map (fun reply -> encode frame (fun () -> CliReply.result frame reply))
+        |> Result.defaultWith (fun _ -> invalid frame)
 
     let internal readResponse frame (response: HttpResponseMessage) cancelled =
         task {
             let media =
                 response.Content.Headers.ContentType
                 |> Option.ofObj
-                |> Option.exists (fun contentType ->
+                |> Option.exists (fun value ->
                     String.Equals(
-                        contentType.MediaType,
+                        value.MediaType,
                         "application/json",
                         StringComparison.OrdinalIgnoreCase
                     ))
@@ -57,21 +58,13 @@ module RemoteServiceCall =
                 if bytes.Length > MaximumResponseBytes then
                     return invalid frame
                 elif response.StatusCode = HttpStatusCode.OK then
-                    return
-                        Replies.decode (Frames.request frame |> WireRequest.endpoint) bytes
-                        |> Result.bind (fun reply ->
-                            if Correlation.matches (Frames.request frame) reply then
-                                Ok reply
-                            else
-                                Error { Path = "$"; Reason = "CORRELATION" })
-                        |> Result.map (encodeResult frame)
-                        |> Result.defaultWith (fun _ -> invalid frame)
+                    return readReply frame bytes
                 else
-                    match HostFailures.decode bytes with
-                    | Ok reason when HostFailures.status reason.Reason = int response.StatusCode ->
-                        let reply = encodeServiceFailure frame reason
-
-                        return reply
+                    match HostFailureCodecs.decode bytes with
+                    | Ok failure when
+                        HostFailureCodecs.matchesStatus (int response.StatusCode) failure
+                        ->
+                        return encode frame (fun () -> CliReply.serviceFailure frame failure)
                     | _ -> return invalid frame
         }
 
@@ -84,21 +77,17 @@ module RemoteServiceCall =
         (cancelled: CancellationToken)
         =
         task {
-            let endpoint = Frames.request frame |> WireRequest.endpoint
+            let endpoint = Frames.endpoint frame
             use deadline = HttpRequestDeadline.link client cancelled
 
             use request =
-                new HttpRequestMessage(
-                    HttpMethod(Endpoint.method endpoint),
-                    Uri(service, Endpoint.path endpoint)
-                )
+                new HttpRequestMessage(Api.method endpoint, Uri(service, "/api/" + Api.id endpoint))
 
             request.Headers.Authorization <- authorization
             request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue "application/json")
+            request.Headers.Add("ClaimCore-Contract", ContractIdentity.value)
 
-            request.Headers.Add("ClaimCore-Contract", ConsumerContract.identity)
-
-            if Endpoint.method endpoint = "POST" then
+            if Api.method endpoint = HttpMethod.Post then
                 let content = new ByteArrayContent(Frames.inputBytes frame)
                 content.Headers.ContentType <- MediaTypeHeaderValue "application/json"
                 request.Content <- content
@@ -120,11 +109,7 @@ module RemoteServiceCall =
             | :? OperationCanceledException
             | :? IO.IOException
             | :? InvalidOperationException ->
-                let reply = CliReply.local ClientFailure.Unavailable
-
                 return
-                    CliReply.forAttempt
-                        frame
-                        (Delivery.knowledge endpoint AttemptResult.DispatchedWithoutReply)
-                        reply
+                    CliReply.local ClientFailure.Unavailable
+                    |> CliReply.forAttempt frame DeliveryState.Uncertain
         }

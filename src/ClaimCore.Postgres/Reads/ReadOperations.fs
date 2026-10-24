@@ -1,6 +1,6 @@
 namespace ClaimCore.Postgres
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading.Tasks
@@ -37,31 +37,32 @@ module internal ReadOperations =
             task {
                 let! time = instant connection token
 
-                let! existing =
-                    match operationId with
-                    | Some id -> StoredEntries.operation connection installationId id token
-                    | None -> Task.FromResult None
-
-                let ids =
-                    CaseReferenceId.encode installationId reference
-                    :: Projections.operationCases existing
-
-                let! actor = Projections.actor connection principal ids token
-
-                let! record =
-                    Projections.caseById
+                return!
+                    DecisionViews.case
                         connection
-                        (CaseReferenceId.encode installationId reference)
+                        installationId
+                        principal
+                        operationId
+                        reference
+                        time
                         token
+            })
 
-                return
-                    ({
-                        ObservedAt = time
-                        Actor = actor
-                        ExistingOperation = existing
-                        Case = record
-                    }
-                    : CaseReadView)
+    let authority source installationId principal operationId target reference token =
+        Transactions.read source token (fun connection ->
+            task {
+                let! time = instant connection token
+
+                return!
+                    DecisionViews.authority
+                        connection
+                        installationId
+                        principal
+                        operationId
+                        target
+                        reference
+                        time
+                        token
             })
 
     let operation source installationId principal id token =
@@ -237,7 +238,7 @@ module internal ReadOperations =
                             [| DatabaseSession.parameter after; box (limit + 1) |]
                             token
 
-                    let items = rows |> List.truncate limit |> List.map Projections.actorSummary
+                    let items = rows |> List.truncate limit |> List.map Projections.actorRow
 
                     let next =
                         if rows.Length > limit then
@@ -267,7 +268,7 @@ module internal ReadOperations =
                     [| box targetId |]
                     token
 
-            return headers |> List.tryExactlyOne |> Option.map Projections.actorSummary
+            return headers |> List.tryExactlyOne |> Option.map Projections.actorRow
         }
 
     let private grantRows connection targetId (after: GrantPosition option) limit token =
@@ -291,7 +292,7 @@ module internal ReadOperations =
         source
         principal
         targetId
-        (select: GrantReadView -> Result<GrantPosition option, Rejection>)
+        (select: GrantReadView -> Result<GrantPosition option, Refusal>)
         limit
         token
         =

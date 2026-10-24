@@ -1,6 +1,6 @@
 module ClaimCore.Tests.WireRoundTripPropertyTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Collections
@@ -13,7 +13,7 @@ open Microsoft.FSharp.Reflection
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.Tests.PropertyHarness
 
@@ -23,9 +23,10 @@ open ClaimCore.Tests.PropertyHarness
 type private Seeds =
     {
         Values: Dictionary<Type, ResizeArray<obj | null>>
+        ContextValues: Dictionary<string * Type, ResizeArray<obj | null>>
         Tokens: Dictionary<string, ResizeArray<string>>
-        Requests: Map<Endpoint, WireRequest list>
-        Replies: Map<Endpoint, WireReply list>
+        Requests: Map<string, JsonValue list>
+        Replies: Map<string, JsonValue list>
     }
 
 let private isList (kind: Type) =
@@ -47,6 +48,7 @@ let private unionContext (kind: Type) (case: UnionCaseInfo) (field: Reflection.P
 
 let rec private collect (seeds: Seeds) context (kind: Type) (value: obj | null) =
     add seeds.Values kind value
+    add seeds.ContextValues (context, kind) value
 
     if kind = typeof<string> then
         add seeds.Tokens context (unbox<string> value)
@@ -58,7 +60,7 @@ let rec private collect (seeds: Seeds) context (kind: Type) (value: obj | null) 
     elif FSharpType.IsRecord kind then
         Array.zip (FSharpType.GetRecordFields kind) (FSharpValue.GetRecordFields(nonNull value))
         |> Array.iter (fun (field, item) ->
-            collect seeds (recordContext kind field) field.PropertyType item)
+            collect seeds (context + "." + recordContext kind field) field.PropertyType item)
     elif FSharpType.IsUnion kind then
         let case, fields = FSharpValue.GetUnionFields(value, kind)
 
@@ -68,66 +70,62 @@ let rec private collect (seeds: Seeds) context (kind: Type) (value: obj | null) 
                 if isOption kind then
                     context
                 else
-                    unionContext kind case field
+                    context + "." + unionContext kind case field
 
             collect seeds key field.PropertyType item)
 
 let private admitted =
     function
     | Ok value -> value
-    | Error _ -> failtest "The generated positive seed corpus must admit completely."
+    | Error _ -> failtest "The authored positive seed corpus must admit completely."
 
-let private sameJson (original: JsonElement) bytes =
-    use encoded = JsonDocument.Parse(ReadOnlyMemory<byte> bytes)
+let private examples filename =
+    let path = Path.Combine(RepositoryRoot.find (), "tests/fixtures", filename)
+    use source = JsonDocument.Parse(File.ReadAllBytes(path))
 
-    Expect.isTrue
-        (JsonElement.DeepEquals(original, encoded.RootElement))
-        "Typed seed encoding retains every JSON value."
+    source.RootElement.GetProperty("cases").EnumerateArray()
+    |> Seq.filter (fun sample -> sample.GetProperty("valid").GetBoolean())
+    |> Seq.map (fun sample ->
+        let endpoint = sample.GetProperty("endpoint").GetString() |> nonNull
+
+        let value =
+            sample.GetProperty("value").GetRawText()
+            |> Encoding.UTF8.GetBytes
+            |> StrictJson.read Limits.MaximumResponseBytes
+            |> admitted
+
+        endpoint, value)
+    |> Seq.groupBy fst
+    |> Seq.map (fun (key, values) -> key, values |> Seq.map snd |> Seq.toList)
+    |> Map.ofSeq
 
 let private load () =
-    let path = Path.Combine(RepositoryRoot.find (), "contracts/corpus.json")
-    use source = JsonDocument.Parse(File.ReadAllBytes(path))
-    let mutable requests, replies = Map.empty, Map.empty
-    let values, tokens = Dictionary(), Dictionary()
-
-    for sample in source.RootElement.GetProperty("cases").EnumerateArray() do
-        if sample.GetProperty("valid").GetBoolean() then
-            let endpoint =
-                sample.GetProperty("endpoint").GetString()
-                |> nonNull
-                |> Endpoint.tryParse
-                |> Option.get
-
-            let bytes = sample.GetProperty("value").GetRawText() |> Encoding.UTF8.GetBytes
-
-            if sample.GetProperty("direction").GetString() = "request" then
-                let value = Admission.admit endpoint bytes |> admitted
-                sameJson (sample.GetProperty "value") (Admission.encode value)
-
-                requests <-
-                    Map.change endpoint (fun old -> Some(value :: defaultArg old [])) requests
-            else
-                let value = Replies.decode endpoint bytes |> admitted
-                sameJson (sample.GetProperty "value") (Replies.encode value)
-                replies <- Map.change endpoint (fun old -> Some(value :: defaultArg old [])) replies
-
-    let seeds =
+    let source =
         {
-            Values = values
-            Tokens = tokens
-            Requests = requests
-            Replies = replies
+            Values = Dictionary()
+            ContextValues = Dictionary()
+            Tokens = Dictionary()
+            Requests = examples "wire-request-examples.json"
+            Replies = examples "wire-response-examples.json"
         }
 
-    for KeyValue(_, entries) in requests do
-        for entry in entries do
-            collect seeds "request" typeof<WireRequest> (box entry)
+    for endpoint in Api.all do
+        endpoint.Accept
+            { new IEndpointVisitor<bool> with
+                member _.Visit(endpoint: Endpoint<'Input, 'Output>) =
+                    for value in source.Requests[endpoint.Id] do
+                        let typed = endpoint.Input.Read "$" value |> admitted
+                        collect source "request" typeof<'Input> (box typed)
 
-    for KeyValue(_, entries) in replies do
-        for entry in entries do
-            collect seeds "reply" typeof<WireReply> (box entry)
+                    for value in source.Replies[endpoint.Id] do
+                        let typed = endpoint.Output.Read "$" value |> admitted
+                        collect source "reply" typeof<'Output> (box typed)
 
-    seeds
+                    true
+            }
+        |> ignore
+
+    source
 
 let private seeds = lazy (load ())
 
@@ -245,6 +243,8 @@ let private responseStrings =
     Map.ofList
         [
             "CaseReference", reference
+            "caseReference", reference
+            "Reference", reference
             "IncidentCountry", uppercase 2
             "ClaimedCurrency", uppercase 3
             "PayableCurrency", uppercase 3
@@ -267,10 +267,10 @@ let private generatedString response (source: Seeds) context =
 
     if
         Set.contains field tokens
-        || context.StartsWith("InstallationOffer.AuthorityAct", StringComparison.Ordinal)
+        || context.Contains("InstallationOffer.AuthorityAct", StringComparison.Ordinal)
     then
         Gen.item (source.Tokens[context] |> Seq.distinct |> Seq.toArray)
-    elif field = "Cursor" then
+    elif field = "Cursor" || field = "AfterCursor" then
         scalarText
     elif response then
         responseString field
@@ -281,18 +281,38 @@ let private integer response context =
     let field = name context
 
     let low, high =
-        if context.StartsWith("InstallationOffer.Open", StringComparison.Ordinal) then
+        if context.Contains("InstallationOffer.Open", StringComparison.Ordinal) then
             0L, 0L
         elif field = "Limit" then
             1L, 50L
-        elif field = "MaximumCharacters" || field = "MaximumFractionalDigits" then
+        elif
+            Set.contains
+                field
+                (set
+                    [
+                        "MaximumCharacters"
+                        "MaximumFractionalDigits"
+                        "maximumCharacters"
+                        "fractionDigits"
+                    ])
+        then
             0L, int64 Int32.MaxValue
-        elif field = "MaximumPageSize" || field = "MaximumIntegerDigits" then
+        elif
+            Set.contains
+                field
+                (set
+                    [
+                        "MaximumPageSize"
+                        "MaximumIntegerDigits"
+                        "maximumPageSize"
+                        "integerDigits"
+                    ])
+        then
             1L, int64 Int32.MaxValue
         elif not response || field = "ExpectedRevision" || field = "expectedRevision" then
-            0L, Strict.MaximumSafeInteger
+            0L, JsonValue.MaximumInteger
         else
-            1L, Strict.MaximumSafeInteger
+            1L, JsonValue.MaximumInteger
 
     Gen.frequency
         [
@@ -301,23 +321,29 @@ let private integer response context =
             3, Gen.int64 (Range.constant low high)
         ]
 
-let private listBounds (context: string) =
+let private listBounds (path: string) =
+    let segments = path.Split('.')
+
+    let context =
+        segments |> Array.skip (max 0 (segments.Length - 2)) |> String.concat "."
+
     let maximum =
         match context with
+        | "AuthorityState.Grants" -> 1
         | "CaseAdvice.Acts" -> 12
         | "CaseAdvice.History"
-        | "CorrectionAdvice.Registration" -> 2
+        | "CorrectionChoices.Registration" -> 2
         | "ActorContext.Capabilities" -> 10
         | "ActorContext.Views"
-        | "CorrectionAdvice.Decision"
-        | "CorrectionAdvice.Payment" -> 3
+        | "CorrectionChoices.Decision"
+        | "CorrectionChoices.Payment" -> 3
         | "ActorContext.Offers"
-        | "CasesPage.Offers" -> 4
-        | "Review.Changes" -> 13
+        | "CaseSummaryPage.Offers" -> 4
+        | "AdvisoryReview.Changes" -> 13
         | _ -> 50
 
     let minimum =
-        if context.StartsWith("HistoryEntries.", StringComparison.Ordinal) then
+        if path.Contains("HistoryEntries.", StringComparison.Ordinal) then
             1
         else
             0
@@ -342,16 +368,26 @@ let private listValue (kind: Type) entries =
         entries
         (FSharpValue.MakeUnion(empty, [||]))
 
-let private choose (source: Seeds) kind =
-    source.Values[kind] |> Seq.toArray |> Gen.item
+let private choose (source: Seeds) context kind =
+    let values =
+        match source.ContextValues.TryGetValue((context, kind)) with
+        | true, values -> values
+        | false, _ -> source.Values[kind]
+
+    values |> Seq.toArray |> Gen.item
 
 let rec private fresh response source context (kind: Type) (value: obj | null) =
     if kind = typeof<string> then
         generatedString response source context |> Gen.map box
     elif kind = typeof<Guid> then
         guid |> Gen.map box
+    elif kind = typeof<int> then
+        integer response context |> Gen.map (int >> box)
     elif kind = typeof<int64> then
         integer response context |> Gen.map box
+    elif kind = typeof<DateOnly> then
+        Gen.int32 (Range.constant DateOnly.MinValue.DayNumber DateOnly.MaxValue.DayNumber)
+        |> Gen.map (DateOnly.FromDayNumber >> box)
     elif kind = typeof<DateTimeOffset> then
         instant |> Gen.map box
     elif kind = typeof<bool> then
@@ -361,9 +397,9 @@ let rec private fresh response source context (kind: Type) (value: obj | null) =
     elif isList kind then
         freshList response source context kind
     elif FSharpType.IsRecord kind then
-        freshRecord response source kind value
+        freshRecord response source context kind value
     elif FSharpType.IsUnion kind then
-        choose source kind |> Gen.bind (freshUnion response source context kind)
+        choose source context kind |> Gen.bind (freshUnion response source context kind)
     else
         invalidOp ("Unsupported typed Wire property node: " + kind.FullName)
 
@@ -373,15 +409,22 @@ and private freshList response source context kind =
 
     gen {
         let! size = count minimum maximum
-        let entry = choose source item |> Gen.bind (fresh response source context item)
+        let! seed = choose source context item
+
+        let entry =
+            if item = typeof<HistoryEntry> then
+                freshUnion response source context item seed
+            else
+                choose source context item |> Gen.bind (fresh response source context item)
+
         let! entries = Gen.list (Range.singleton size) entry
         return listValue kind entries
     }
 
-and private freshRecord response source kind value =
+and private freshRecord response source context kind value =
     Array.zip (FSharpType.GetRecordFields kind) (FSharpValue.GetRecordFields(nonNull value))
     |> Array.map (fun (field, item) ->
-        fresh response source (recordContext kind field) field.PropertyType item)
+        fresh response source (context + "." + recordContext kind field) field.PropertyType item)
     |> Array.toList
     |> sequence
     |> Gen.map (fun values -> FSharpValue.MakeRecord(kind, List.toArray values))
@@ -395,81 +438,116 @@ and private freshUnion response source context kind value =
             if isOption kind then
                 context
             else
-                unionContext kind case field
+                context + "." + unionContext kind case field
 
         fresh response source key field.PropertyType item)
     |> Array.toList
     |> sequence
     |> Gen.map (fun values -> FSharpValue.MakeUnion(case, List.toArray values))
 
-let private requestProperty endpoint =
+let private codecProperty response (codec: Codec<'T>) samples =
     let source = seeds.Value
-    let values = source.Requests[endpoint]
+    let context = if response then "reply" else "request"
 
     property {
-        let! seed = Gen.item values
+        let! seed = Gen.item samples
+        let typed = codec.Read "$" seed |> admitted
 
         let! value =
-            freshUnion false source "request" typeof<WireRequest> (box seed)
-            |> Gen.map unbox<WireRequest>
+            fresh response source context typeof<'T> (box typed) |> Gen.map unbox<'T>
 
-        return Admission.admit endpoint (Admission.encode value) = Ok value
+        let maximum =
+            if response then
+                Limits.MaximumResponseBytes
+            else
+                Limits.MaximumRequestBytes
+
+        return
+            match Codec.encode codec value |> Codec.decode maximum codec with
+            | Ok decoded -> Unchecked.equals decoded value
+            | Error _ -> false
+
     }
 
-let private replyProperty endpoint =
-    let source = seeds.Value
-    let values = source.Replies[endpoint]
+let private requestProperty (endpoint: AnyEndpoint) =
+    endpoint.Accept
+        { new IEndpointVisitor<Property<bool>> with
+            member _.Visit endpoint =
+                codecProperty false endpoint.Input seeds.Value.Requests[endpoint.Id]
+        }
 
-    property {
-        let! seed = Gen.item values
-
-        let! value =
-            freshUnion true source "reply" typeof<WireReply> (box seed)
-            |> Gen.map unbox<WireReply>
-
-        return Replies.decode endpoint (Replies.encode value) = Ok value
-    }
+let private replyProperty (endpoint: AnyEndpoint) =
+    endpoint.Accept
+        { new IEndpointVisitor<Property<bool>> with
+            member _.Visit endpoint =
+                codecProperty true endpoint.Output seeds.Value.Replies[endpoint.Id]
+        }
 
 let private closedUnionCoverage (source: Seeds) =
-    for KeyValue(kind, entries) in source.Values do
-        if FSharpType.IsUnion kind && not (isOption kind) && not (isList kind) then
-            let expected = FSharpType.GetUnionCases kind |> Array.map _.Tag |> Set.ofArray
+    let missing =
+        [
+            for KeyValue(kind, entries) in source.Values do
+                if FSharpType.IsUnion kind && not (isOption kind) && not (isList kind) then
+                    let actual =
+                        entries
+                        |> Seq.map (fun value ->
+                            FSharpValue.GetUnionFields(value, kind) |> fst |> _.Tag)
+                        |> Set.ofSeq
 
-            let actual =
-                entries
-                |> Seq.map (fun value -> FSharpValue.GetUnionFields(value, kind) |> fst |> _.Tag)
-                |> Set.ofSeq
+                    for case in FSharpType.GetUnionCases kind do
+                        if not (Set.contains case.Tag actual) then
+                            yield kind.Name + "." + case.Name
+        ]
 
-            Expect.equal
-                actual
-                expected
-                ("Closed typed alternatives remain reachable: " + kind.Name)
+    Expect.isEmpty
+        missing
+        ("Closed alternatives missing from authored examples: "
+         + String.concat ", " missing)
 
 let private seedCases () =
     let source = seeds.Value
     closedUnionCoverage source
 
-    for endpoint in Endpoint.all do
-        for value in source.Requests[endpoint] do
-            Expect.isTrue
-                (Admission.admit endpoint (Admission.encode value) = Ok value)
-                "Every request seed alternative round trips."
+    for endpoint in Api.all do
+        endpoint.Accept
+            { new IEndpointVisitor<bool> with
+                member _.Visit endpoint =
+                    for value in source.Requests[endpoint.Id] do
+                        endpoint.Input.Read "$" value
+                        |> admitted
+                        |> endpoint.Input.Write
+                        |> CanonicalWriter.bytes
+                        |> fun encoded ->
+                            Expect.equal
+                                encoded
+                                (CanonicalWriter.bytes value)
+                                "Every request seed round trips."
 
-        for value in source.Replies[endpoint] do
-            Expect.isTrue
-                (Replies.decode endpoint (Replies.encode value) = Ok value)
-                "Every reply seed alternative round trips."
+                    for value in source.Replies[endpoint.Id] do
+                        endpoint.Output.Read "$" value
+                        |> admitted
+                        |> endpoint.Output.Write
+                        |> CanonicalWriter.bytes
+                        |> fun encoded ->
+                            Expect.equal
+                                encoded
+                                (CanonicalWriter.bytes value)
+                                "Every response seed round trips."
+
+                    true
+            }
+        |> ignore
 
 [<Tests>]
 let tests =
     testList
         "typed Wire property round trips"
         [
-            testCase "generated positive alternatives seed every endpoint and direction" seedCases
-            for endpoint in Endpoint.all do
-                testCase (Endpoint.id endpoint + " request DTO property") (fun () ->
+            testCase "authored positive alternatives seed every endpoint and direction" seedCases
+            for endpoint in Api.all do
+                testCase (Api.id endpoint + " request DTO property") (fun () ->
                     run (wireId endpoint false) (requestProperty endpoint))
 
-                testCase (Endpoint.id endpoint + " reply DTO property") (fun () ->
+                testCase (Api.id endpoint + " reply DTO property") (fun () ->
                     run (wireId endpoint true) (replyProperty endpoint))
         ]

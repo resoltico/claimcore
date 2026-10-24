@@ -1,0 +1,16 @@
+{
+  "host.ANTIFORGERY_REJECTED": "Pieprasījuma pārbaude ir atteikta.",
+  "host.BODY_TOO_LARGE": "Pieprasījuma saturs ir pārāk liels.",
+  "host.CONNECTION_REJECTED": "Savienojums ir atteikts.",
+  "host.CONTRACT_MISMATCH": "Klienta līgums atšķiras. Pārlādējiet lapu vai izmantojiet atbilstošu klientu.",
+  "host.ENDPOINT_MISSING": "Galapunkts nav atrasts.",
+  "host.INPUT_INVALID": "Ievade neatbilst galapunkta līgumam.",
+  "host.INTERNAL": "Pieprasījumu nevarēja pabeigt.",
+  "host.MEDIA_TYPE_REJECTED": "Izmantojiet galapunkta noteikto satura tipu.",
+  "host.METHOD_REJECTED": "Metode netiek atbalstīta.",
+  "host.ORIGIN_REJECTED": "Izcelsme ir atteikta.",
+  "host.RATE_LIMITED": "Pieprasījumu uzņemšana ir aizņemta.",
+  "host.RESPONSE_FAILED": "Pabeigtās darbības atbildi neizdevās piegādāt.",
+  "host.SESSION_FORBIDDEN": "Piekļuve sesijai ir atteikta.",
+  "host.SESSION_REJECTED": "Autentifikācija ir atteikta."
+}

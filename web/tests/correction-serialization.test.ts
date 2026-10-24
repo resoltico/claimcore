@@ -1,54 +1,37 @@
-import { caseOffers } from "./case-advice.fixtures";
 import { describe, expect, it } from "vitest";
-import type { CurrentCase } from "../src/api/service";
-import { createDraft, isGroupedDraftValues, prefilledValues } from "../src/interaction/metadata";
-import { caseFields, definition } from "./service-foundation.fixtures";
+import { initialOperationValues, operationDocument } from "../src/interaction/operationForm";
+import { formValue } from "../src/protocol/forms";
+import { current, firstId } from "./operation-form.fixtures";
 import { correctionSerializations } from "./correction-serialization.fixtures";
-
 for (const status of ["OPENED", "CLOSED"] as const) {
   describe(`correction serialization while ${status}`, () => {
     it.each(correctionSerializations)(
       "encodes literal %s/%s/%s request [CC-DOM-002]",
       (registration, decision, payment, expected) => {
-        const current: CurrentCase = {
-          caseReference: "CASE-SERIALIZATION",
-          revision: 4,
-          advice: { acts: caseOffers(["CORRECT_CASE"]), history: ["SUMMARY", "FULL"] },
-
-          state: {
-            tag: "LIVE",
-            disposition: "ACTIVE",
-            fields: { ...caseFields, status },
-          },
+        const values = {
+          ...initialOperationValues(
+            "CASE",
+            "CORRECT_CASE",
+            {
+              ...current,
+              state: { ...current.state, fields: { ...current.state.fields, status } },
+            },
+            firstId,
+          ),
+          "act.groups.registration.mode": registration,
+          "act.groups.registration.values.claimantName": "Synthetic replacement",
+          "act.groups.registration.values.claimedAmount": "1.0000",
+          "act.groups.decision.mode": decision,
+          "act.groups.decision.values.paymentDecisionDate": "2026-09-03",
+          "act.groups.decision.values.payableAmount": "2.0000",
+          "act.groups.decision.values.payableCurrency": "EUR",
+          "act.groups.payment.mode": payment,
+          "act.groups.payment.values.paymentDate": "2026-09-04",
         };
-        const values = prefilledValues(definition, "CORRECT_CASE", current);
-        if (!isGroupedDraftValues(values)) {
-          throw new Error("Expected grouped correction inputs.");
-        }
-        const registrationValues = values["registration"];
-        if (registrationValues === undefined) {
-          throw new Error("Expected registration inputs.");
-        }
-        registrationValues.mode = registration;
-        registrationValues.values["claimantName"] = "Synthetic replacement";
-        registrationValues.values["claimedAmount"] = "1.0000";
-        values["decision"] = {
-          mode: decision,
-          values: {
-            paymentDecisionDate: "2026-09-03",
-            payableAmount: "2.0000",
-            payableCurrency: "EUR",
-          },
-        };
-        values["payment"] = { mode: payment, values: { paymentDate: "2026-09-04" } };
-        const request = createDraft(
-          "00000000-0000-4000-8000-000000000001",
-          "CASE-SERIALIZATION",
-          current.revision,
-          "CORRECT_CASE",
-          values,
-        );
-        expect(JSON.stringify(request)).toBe(expected);
+        expect(formValue(operationDocument, operationDocument, "", values)).toEqual({
+          scope: "CASE",
+          ...JSON.parse(expected),
+        });
       },
     );
   });

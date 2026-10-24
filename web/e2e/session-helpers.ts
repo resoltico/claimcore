@@ -1,3 +1,8 @@
+import {
+  loginNavigationTimeout,
+  loginAdmissionAttempt,
+  waitForLoginPermit,
+} from "./admission-window";
 import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 
@@ -140,6 +145,9 @@ export const sessionToken = async (page: Page): Promise<string> => {
   if (!isResponse("session", reply.payload)) {
     throw new Error("Invalid session response.");
   }
+  if (reply.payload.outcome.tag !== "SUCCEEDED") {
+    throw new Error("Session refused.");
+  }
   const snapshot = reply.payload.outcome.data;
   if (reply.status !== 200 || snapshot.antiforgeryToken === null) {
     throw new Error("Session response did not provide an antiforgery token.");
@@ -155,7 +163,7 @@ export const expectHostFailure = (reply: BrowserReply, status: number, code: str
   if (!valid) {
     throw new Error("Invalid host-failure response.");
   }
-  expect(reply.payload.code).toBe(code);
+  expect(reply.payload.hostFailure.code).toBe(code);
 };
 
 const awaitOidcReturn = async (
@@ -215,6 +223,51 @@ const fillOidcCredentials = async (
   await progress("oidc-password-filled");
 };
 
+const loginAttempt = (page: Page, address: URL, signIn: string | null, remaining: number) => {
+  const controller = new AbortController();
+  const response = page.waitForResponse(
+    (value) =>
+      value.url() === address.href &&
+      value.request().isNavigationRequest() &&
+      value.request().frame() === page.mainFrame(),
+    { timeout: remaining },
+  );
+  const options = { timeout: loginNavigationTimeout, signal: controller.signal };
+  const navigation =
+    signIn === null
+      ? page.goto(address.href, { ...options, waitUntil: "domcontentloaded" })
+      : page.getByRole("link", { name: signIn, exact: true }).click(options);
+  return loginAdmissionAttempt(response, navigation, controller, remaining);
+};
+const awaitLoginAdmission = async (page: Page, signIn: string, applicationOrigin: string) => {
+  const href = await page.getByRole("link", { name: signIn, exact: true }).getAttribute("href");
+  if (href === null) {
+    throw new Error("E2E_LOGIN_LINK_MISSING");
+  }
+  const address = new URL(href, applicationOrigin);
+  if (
+    address.origin !== applicationOrigin ||
+    address.pathname !== "/auth/login" ||
+    address.search !== "" ||
+    address.hash !== ""
+  ) {
+    throw new Error("E2E_LOGIN_LINK_INVALID");
+  }
+  let first = true;
+  let acceptedNavigation: Promise<unknown> = Promise.resolve();
+  await waitForLoginPermit(
+    async (remaining) => {
+      const attempt = await loginAttempt(page, address, first ? signIn : null, remaining);
+      first = false;
+      if (attempt.status === 302) {
+        acceptedNavigation = attempt.navigation;
+      }
+      return attempt.status;
+    },
+    (milliseconds) => page.waitForTimeout(milliseconds),
+  );
+  await acceptedNavigation;
+};
 export const login = async (
   page: Page,
   workspaceHeading: string | null = "Cases",
@@ -245,7 +298,7 @@ export const login = async (
   await progress("login-anon");
   const applicationOrigin = new URL(page.url()).origin;
   const owner = await syntheticCredentials(username);
-  await page.getByRole("link", { name: signIn, exact: true }).click();
+  await awaitLoginAdmission(page, signIn, applicationOrigin);
   await page.locator('input[name="username"]').or(authenticated).first().waitFor();
   if (await authenticated.isVisible()) {
     await progress("login-ready");
@@ -276,6 +329,9 @@ export const logout = async (page: Page): Promise<void> => {
   const reply = await browserRequest(page, "/api/session");
   if (!isResponse("session", reply.payload)) {
     throw new Error("Invalid logout response.");
+  }
+  if (reply.payload.outcome.tag !== "SUCCEEDED") {
+    throw new Error("Session refused.");
   }
   expect(reply.payload.outcome.data.authenticated).toBe(false);
 };

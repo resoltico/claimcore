@@ -1,6 +1,6 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open ClaimCore.Domain.ResultFlow
 
@@ -8,27 +8,27 @@ open ClaimCore.Domain.ResultFlow
 module internal CaseCorrections =
     let private registrationInput =
         function
-        | RegistrationCorrection.Keep -> Ok ValidatedRegistrationCorrection.Keep
-        | RegistrationCorrection.Replace value ->
+        | RegistrationGroup.Keep -> Ok ValidatedRegistrationCorrection.Keep
+        | RegistrationGroup.Replace value ->
             Validation.registration value
             |> Result.map ValidatedRegistrationCorrection.Replace
 
     let private decisionInput =
         function
-        | DecisionCorrection.Keep -> Ok ValidatedDecisionCorrection.Keep
-        | DecisionCorrection.Clear -> Ok ValidatedDecisionCorrection.Clear
-        | DecisionCorrection.Replace value ->
+        | DecisionGroup.Keep -> Ok ValidatedDecisionCorrection.Keep
+        | DecisionGroup.Clear -> Ok ValidatedDecisionCorrection.Clear
+        | DecisionGroup.Replace value ->
             Validation.decision value |> Result.map ValidatedDecisionCorrection.Replace
 
     let private paymentInput =
         function
-        | PaymentCorrection.Keep -> Ok ValidatedPaymentCorrection.Keep
-        | PaymentCorrection.Clear -> Ok ValidatedPaymentCorrection.Clear
-        | PaymentCorrection.Replace value ->
-            Validation.date InputTarget.PaymentDate value
+        | PaymentGroup.Keep -> Ok ValidatedPaymentCorrection.Keep
+        | PaymentGroup.Clear -> Ok ValidatedPaymentCorrection.Clear
+        | PaymentGroup.Replace value ->
+            Validation.date (InputTarget.Field BusinessField.PaymentDate) value.PaymentDate
             |> Result.map ValidatedPaymentCorrection.Replace
 
-    let parse (correction: CaseCorrection) =
+    let parse (correction: Correction) : Result<ValidatedCaseCorrection, Refusal> =
         result {
             let! registration = registrationInput correction.Registration
             let! decision = decisionInput correction.Decision
@@ -47,7 +47,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | ValidatedDecisionCorrection.Keep, _ -> Ok current
-        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
+        | _, None -> Error Refusal.CorrectionRequiresExistingValue
         | ValidatedDecisionCorrection.Replace replacement, Some _ -> Ok(Some replacement)
         | ValidatedDecisionCorrection.Clear, Some _ -> Ok None
 
@@ -56,7 +56,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | ValidatedPaymentCorrection.Keep, _ -> Ok current
-        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
+        | _, None -> Error Refusal.CorrectionRequiresExistingValue
         | ValidatedPaymentCorrection.Replace replacement, Some _ -> Ok(Some replacement)
         | ValidatedPaymentCorrection.Clear, Some _ -> Ok None
 
@@ -89,15 +89,11 @@ module internal CaseCorrections =
         | PaymentProgress.Paid _, ValidatedDecisionCorrection.Clear, payment when
             payment <> ValidatedPaymentCorrection.Clear
             ->
-            Validation.invalidCorrection
-                InputTarget.Payment
-                CorrectionViolation.PaymentClearRequired
+            Validation.invalid InputTarget.PaymentGroup Violation.PaymentClearRequired
         | PaymentProgress.Paid _,
           ValidatedDecisionCorrection.Replace _,
           ValidatedPaymentCorrection.Keep ->
-            Validation.invalidCorrection
-                InputTarget.Payment
-                CorrectionViolation.PaymentAcknowledgementRequired
+            Validation.invalid InputTarget.PaymentGroup Violation.PaymentAcknowledgementRequired
         | _ -> Ok()
 
     let apply facts progress (correction: ValidatedCaseCorrection) =
@@ -113,7 +109,7 @@ module internal CaseCorrections =
             let! nextProgress = PaymentProgress.fromGroups nextDecision nextPayment
 
             if nextFacts = facts && nextProgress = progress then
-                return! Error CaseRefusal.CorrectionNoChanges
+                return! Error Refusal.CorrectionNoChanges
             else
                 return nextFacts, nextProgress
         }

@@ -1,6 +1,6 @@
 module internal ClaimCore.IntegrationTests.VerificationSupport
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -62,7 +62,10 @@ let populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! opened =
-            actor.Execute(request 10 "synthetic-a" 0L (BusinessCommand.Open registration), token)
+            actor.Execute(
+                OperationInput.Case(request 10 "synthetic-a" 0L (CaseAct.Open registration)),
+                token
+            )
 
         accepted opened |> ignore
         let! _ = verified database

@@ -1,6 +1,8 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+
+open ClaimCore.Contract.Protocol
 
 open System.Text
 open System.Text.Json
@@ -45,23 +47,12 @@ module Discovery =
         | CliDescription.Authority kind -> select descriptors "authorityCommands" "kind" kind
         | CliDescription.Endpoints None -> Some(ContractDiscovery.catalogue ())
         | CliDescription.Endpoints(Some endpoint) ->
-            select (ContractDiscovery.catalogue ()) "endpoints" "id" (Some(Endpoint.id endpoint))
+            select (ContractDiscovery.catalogue ()) "endpoints" "id" (Some endpoint)
         | CliDescription.Diagnostics -> Some(ContractDiscovery.presentation ())
 
     let private describeMessages language (value: JsonElement) =
         value.EnumerateObject()
-        |> Seq.filter (fun item ->
-            item.Name.StartsWith("diagnostic.", System.StringComparison.Ordinal))
-        |> Seq.map (fun item ->
-            let template =
-                item.Value.EnumerateArray()
-                |> Seq.map (fun part ->
-                    match part.TryGetProperty "literal" with
-                    | true, text -> text.GetString() |> nonNull
-                    | _ -> "{" + (part.GetProperty("hole").GetString() |> nonNull) + "}")
-                |> String.concat ""
-
-            item.Name + ": " + ContractDiscovery.localized language item.Name template)
+        |> Seq.map (fun item -> item.Name + ": " + ContractDiscovery.localized language item.Name)
         |> String.concat "\n"
 
     let private summary language =
@@ -87,7 +78,6 @@ module Discovery =
                         ContractDiscovery.localized
                             language
                             (item.GetProperty("labelId").GetString() |> nonNull)
-                            (item.GetProperty("label").GetString() |> nonNull)
 
                     name + " — " + label)
                 |> Seq.toList)
@@ -104,11 +94,13 @@ module Discovery =
             let routes =
                 match selection with
                 | CliDescription.Endpoints endpoint ->
-                    (endpoint |> Option.map List.singleton |> Option.defaultValue Endpoint.all)
+                    (endpoint
+                     |> Option.map List.singleton
+                     |> Option.defaultValue (Api.all |> List.map Api.id))
                     |> List.collect (fun endpoint ->
                         [
-                            "ClaimCore.Cli schema " + Endpoint.id endpoint + " request"
-                            "ClaimCore.Cli schema " + Endpoint.id endpoint + " response"
+                            "ClaimCore.Cli schema " + endpoint + " request"
+                            "ClaimCore.Cli schema " + endpoint + " response"
                         ])
                     |> String.concat "\n"
                 | _ -> "ClaimCore.Cli schema invocation"
@@ -142,6 +134,5 @@ module Discovery =
     let schema =
         function
         | CliSchema.Named name -> ContractDiscovery.schema name
-        | CliSchema.Request endpoint -> ContractDiscovery.schema (Endpoint.id endpoint + ".request")
-        | CliSchema.Response endpoint ->
-            ContractDiscovery.schema (Endpoint.id endpoint + ".response")
+        | CliSchema.Request endpoint -> ContractDiscovery.schema (endpoint + ".request")
+        | CliSchema.Response endpoint -> ContractDiscovery.schema (endpoint + ".response")

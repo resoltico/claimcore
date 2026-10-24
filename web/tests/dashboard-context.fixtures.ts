@@ -5,7 +5,6 @@ export const stubDashboardContext = () =>
     kind: "outcome",
     status: 200,
     value: {
-      endpoint: "context",
       outcome: {
         tag: "SUCCEEDED",
         data: {

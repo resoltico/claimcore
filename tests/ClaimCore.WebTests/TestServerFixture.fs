@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.TestServerFixture
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 open System
 open System.IO
@@ -162,12 +163,21 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
         HostRoutes.map
             assets
             (configuration certificate)
-            (ClaimCore.Hosting.ServiceGateway.bind (fun principal ->
-                facade.Principal <- Some principal
+            (fun principal action ->
+                task {
+                    if not facade.AdmissionOpen then
+                        return None
+                    else
+                        facade.Principal <- Some principal
 
-                match forActor with
-                | Some factory -> factory principal
-                | None -> facade.ActorCore))
+                        let actor =
+                            match forActor with
+                            | Some factory -> factory principal
+                            | None -> facade.ActorCore
+
+                        let! result = action actor
+                        return Some result
+                })
             application
 
         application.StartAsync().GetAwaiter().GetResult()
@@ -221,7 +231,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
             HttpMethod.Get,
             "/api/session",
             None,
-            [ "ClaimCore-Contract", ConsumerContract.identity ]
+            [ "ClaimCore-Contract", ContractIdentity.value ]
         )
 
     member this.Token() =
@@ -249,7 +259,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
             [
                 "Origin", origin.GetLeftPart(UriPartial.Authority)
                 "X-ClaimCore-Antiforgery", token
-                "ClaimCore-Contract", defaultArg fingerprint (ConsumerContract.identity)
+                "ClaimCore-Contract", defaultArg fingerprint (ContractIdentity.value)
             ]
         )
 

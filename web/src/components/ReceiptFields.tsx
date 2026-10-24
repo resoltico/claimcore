@@ -3,16 +3,16 @@ import { usePresentation } from "../presentation/context";
 import { CaseFieldsView } from "./CaseFieldsView";
 
 export const ReceiptFields = ({
-  receipt,
+  scope,
   fields,
   context,
 }: {
-  receipt: CaseReceipt;
+  scope: CaseReceipt["scope"];
   fields: ReadonlyArray<FieldDescriptor>;
   context: string;
 }) => {
   const p = usePresentation();
-  switch (receipt.snapshot.tag) {
+  switch (scope.snapshot.disclosure) {
     case "WITHHELD":
       return <p>{p.text("ui.snapshotWithheld")}</p>;
     case "ERASED":
@@ -20,8 +20,8 @@ export const ReceiptFields = ({
     case "DISCLOSED":
       return (
         <CaseFieldsView
-          values={receipt.snapshot.state.fields}
-          revision={receipt.revision}
+          values={scope.snapshot.view.fields}
+          revision={scope.revision}
           fields={fields}
           context={context}
         />

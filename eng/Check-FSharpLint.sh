@@ -15,17 +15,17 @@ run_pattern() {
   fi
 }
 
-run_individual() {
+run_individual() (
   local root="$1"
   local extension="$2"
   local source_list
   source_list="$(mktemp "${TMPDIR:-/tmp}/claimcore-lint-sources.XXXXXXXX")"
+  trap 'rm -f -- "${source_list}"' EXIT
   find "${root}" -type f -name "*.${extension}" -print0 >"${source_list}"
   while IFS= read -r -d '' source; do
     dotnet fsharplint lint --file-type file "${source}" --lint-config config/fsharplint.json
   done <"${source_list}"
-  rm -f -- "${source_list}"
-}
+)
 
 run_root() {
   local source_root="$1"

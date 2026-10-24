@@ -4,7 +4,7 @@ import { previewForRequest } from "./preview-request.fixtures";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase, Rejection } from "../src/api/service";
+import type { CurrentCase, Diagnostic } from "../src/api/service";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { definition, fields, response, runtime } from "./service-ui.fixtures";
 
@@ -36,7 +36,7 @@ const editor = (current: CurrentCase | null, initialCommand: "OPEN" | "CLOSE" | 
 );
 
 const preparedResponse = () =>
-  response("case.preview", "REVIEWED", {
+  response("operation.preview", "REVIEWED", {
     review: {
       before: null,
       after: {
@@ -50,31 +50,32 @@ const preparedResponse = () =>
   });
 
 const refusedResponse = () =>
-  response("case.execute", "REJECTED", {
-    diagnostic: { id: "OPERATION_CONTENT_CONFLICT", parameters: {} },
-    message: "Synthetic conflict",
-    field: null,
+  response("operation.execute", "REJECTED", {
+    code: "OPERATION_CONTENT_CONFLICT",
+    action: "STOP_AND_INVESTIGATE",
+    target: null,
     actualRevision: null,
-    recommendedAction: "STOP_AND_INVESTIGATE",
+    limits: {},
   });
 
-const validationRefusal: Rejection = {
-  message: "Synthetic validation refusal.",
-  diagnostic: { id: "INPUT_TEXT_REQUIRED", parameters: {} },
-  field: "claimantName",
+const validationRefusal: Diagnostic = {
+  code: "INPUT_TEXT_REQUIRED",
+  action: "CORRECT_INPUT",
+  target: "claimantName",
   actualRevision: null,
-  recommendedAction: "CORRECT_INPUT",
+  limits: {},
 };
 
-const staleRefusal: Rejection = {
-  message: "Synthetic stale revision.",
-  diagnostic: { id: "CASE_REVISION_CONFLICT", parameters: {} },
-  field: null,
+const staleRefusal: Diagnostic = {
+  code: "CASE_REVISION_CONFLICT",
+  action: "READ_CURRENT",
+  target: null,
   actualRevision: 2,
-  recommendedAction: "READ_CURRENT",
+  limits: {},
 };
 
-const rejectedResponse = (rejection: Rejection) => response("case.preview", "REJECTED", rejection);
+const rejectedResponse = (rejection: Diagnostic) =>
+  response("operation.preview", "REJECTED", rejection);
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 

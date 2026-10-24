@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.PaginationTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -12,11 +12,11 @@ open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private query after limit : CaseListRequest = { AfterCursor = after; Limit = limit }
+let private query after limit : PageRequest = { AfterCursor = after; Limit = limit }
 
-let private page =
-    function
-    | QueryOutcome.Succeeded value -> value
+let private page (outcome: ReadReply<CaseSummaryPage>) =
+    match outcome with
+    | ReadReply.Succeeded value -> value
     | _ -> failtest "Expected authorized page"
 
 let private reference =
@@ -30,7 +30,10 @@ let private setup (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CASE-A"; 11, "CASE-B"; 12, "CASE-C" ] do
             let! result =
-                admin.Execute(request n reference 0L (BusinessCommand.Open registration), token)
+                admin.Execute(
+                    OperationInput.Case(request n reference 0L (CaseAct.Open registration)),
+                    token
+                )
 
             accepted result |> ignore
 
@@ -39,8 +42,10 @@ let private setup (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 3) principal AuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 3) principal AdmittedAuthorityAct.RegisterActor
+                ),
                 token
             )
 
@@ -68,7 +73,7 @@ let private revocation (database: PostgresFixture.Database) =
 
         Expect.equal
             next
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Current grants are rechecked at the real database boundary"
     }
 
@@ -89,6 +94,9 @@ type internal PausedPageStore
 
         member _.WriteAuthority(principal, operationId, target, reference, decide, ct) =
             inner.WriteAuthority(principal, operationId, target, reference, decide, ct)
+
+        member _.ReadAuthorityTarget(principal, operationId, target, reference, ct) =
+            inner.ReadAuthorityTarget(principal, operationId, target, reference, ct)
 
         member _.ReadCase(principal, operationId, reference, ct) =
             inner.ReadCase(principal, operationId, reference, ct)
@@ -155,8 +163,8 @@ let private snapshot (database: PostgresFixture.Database) =
                 principal
 
         let reading =
-            Task.Run<QueryOutcome<CaseSummaryPage>>(
-                Func<Task<QueryOutcome<CaseSummaryPage>>>(fun () ->
+            Task.Run<ReadReply<CaseSummaryPage>>(
+                Func<Task<ReadReply<CaseSummaryPage>>>(fun () ->
                     facade.List(query cursor 50, token))
             )
 
@@ -169,7 +177,10 @@ let private snapshot (database: PostgresFixture.Database) =
             acceptedAuthority revoked
 
             let! later =
-                admin.Execute(request 13 "CASE-AFTER" 0L (BusinessCommand.Open registration), token)
+                admin.Execute(
+                    OperationInput.Case(request 13 "CASE-AFTER" 0L (CaseAct.Open registration)),
+                    token
+                )
 
             accepted later |> ignore
         finally

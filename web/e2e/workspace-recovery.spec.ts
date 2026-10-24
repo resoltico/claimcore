@@ -1,3 +1,4 @@
+import { isResponse } from "../src/protocol/client";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
@@ -23,25 +24,28 @@ test("keyboard navigation focuses editor and destination after return", async ({
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeFocused();
 });
 
-test("authority technical refusal preserves authored bytes and requires fresh review after edit", async ({
+test("authority input refusal preserves authored bytes and requires fresh review after edit", async ({
   page,
 }) => {
   await openAuthenticated(page);
   await page.getByRole("button", { name: "Authority", exact: true }).click();
   await page.locator('[name="target.subject"]').fill(`repair-${randomUUID()}`);
+  const event = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
-  await expect(page.getByText("Empty input", { exact: true })).toBeVisible();
-  await page.getByRole("checkbox").check();
-  const event = page.waitForResponse((reply) => reply.url().endsWith("/api/authority.execute"));
-  await page.getByRole("button", { name: "Submit operation", exact: true }).click();
-  expect((await event).status()).toBe(400);
-  await expect(page.getByRole("alert")).toContainText("issuer");
-  await page.getByRole("button", { name: "Edit input", exact: true }).click();
+  const response = await event;
+  expect(response.status()).toBe(200);
+  const reply: unknown = await response.json();
+  if (!isResponse("operation.preview", reply) || reply.outcome.tag !== "REJECTED") {
+    throw new Error("Expected an Application principal refusal.");
+  }
+  expect(reply.outcome.data.code).toBe("INPUT_TEXT_REQUIRED");
+  expect(reply.outcome.data.target).toBe("principal.issuer");
+  await expect(page.getByRole("alert")).toContainText("A non-blank value is required.");
   await expect(page.locator('[name="target.issuer"]')).toBeFocused();
   await expect(page.locator('[name="target.subject"]')).toHaveValue(/^repair-/u);
   await page.locator('[name="target.issuer"]').fill("https://issuer.example/");
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   await expect(page.getByRole("checkbox")).not.toBeChecked();
-  await expect(page.getByRole("button", { name: "Submit operation", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Record changes", exact: true })).toBeDisabled();
   await expectAccessible(page);
 });

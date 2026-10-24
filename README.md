@@ -1,7 +1,7 @@
 # ClaimCore
 
 A claims case register for people and automation. Record claim facts, payment decisions and
-payment dates through a browser or structured CLI. Both use one authenticated HTTPS service
+payment dates through a browser or human verbs and structured CLI. Both use one authenticated HTTPS service
 that validates changes and actor authorization. One PostgreSQL database holds accepted ledger
 entries and current projections.
 
@@ -11,7 +11,7 @@ entries and current projections.
 
 ## Case work
 
-The [thirteen business fields](docs/domain.md) cover incident and notification details,
+The [business fields](docs/domain.md) cover incident and notification details,
 parties, amounts, reference, decision and payment dates, and status. Technical metadata stays
 outside that record. Register or amend a case; record or withdraw a decision; record or clear
 a payment date; close or reopen; correct facts atomically. Payment progress and open/closed
@@ -27,14 +27,19 @@ Read the [erasure limits](docs/operations.md#erasure-limits).
 | Application          | Responsibility                                                               |
 | -------------------- | ---------------------------------------------------------------------------- |
 | `ClaimCore.Web`      | HTTPS service, OIDC browser authentication and bearer API                    |
-| `ClaimCore.Cli`      | Strict JSON frames over authenticated HTTPS, with PKCE or client credentials |
+| `ClaimCore.Cli`      | Human verbs and JSON frames over HTTPS, with PKCE or client credentials |
 | `ClaimCore.Database` | Separate owner-only initialization, migration, provisioning and verification |
 
 The browser offers English, Latvian and Arabic, right-to-left layout and independent display
 formats. The installation's immutable IANA business time zone governs business dates.
 Seven default-deny role presets and scoped grants control case work and administration.
 Typed core advice drives browser business, stewardship and authority forms. Both clients use one
-[consumer contract](contracts/contract-manifest.json), generated from typed core definitions, with strict byte admission and correlated delivery replies.
+[OpenAPI contract](contracts/openapi.json), generated from typed core definitions, with strict byte admission and correlated delivery replies.
+
+`claimcore case open ...`, `claimcore case get <reference>` and `claimcore authority grant ...`
+serve human callers; `--dry-run` prints the equivalent JSON frame without authentication.
+See [examples](examples/README.md). The nine-project [architecture](docs/architecture.md#cc-arch-001)
+keeps one pure Contract model/codec/registry, Domain/Application decisions and Web composition.
 
 Every mutation rechecks locked current state. Replaying a retained accepted request returns
 its original acceptance without another ledger entry. If delivery is uncertain, preserve the operation ID, expected

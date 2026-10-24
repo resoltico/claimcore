@@ -1,6 +1,6 @@
 module ClaimCore.Tests.RecordBoundaryTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Globalization
@@ -12,7 +12,7 @@ open ClaimCore.Tests.Fixtures
 
 let private recordBytes revision =
     let original =
-        request 0L (BusinessCommand.Open registration)
+        request 0L (CaseAct.Open registration)
         |> RequestRecord.encode
         |> Encoding.UTF8.GetString
 
@@ -34,7 +34,7 @@ let private revisions () =
 
     Expect.equal
         (RequestRecord.encode zero)
-        (RequestRecord.encode (request 0L (BusinessCommand.Open registration)))
+        (RequestRecord.encode (request 0L (CaseAct.Open registration)))
         "Negative zero has one canonical identity"
 
     let terminal =
@@ -78,7 +78,7 @@ let private textFormats () =
     let reaffirm =
         request
             1L
-            (BusinessCommand.AmendRegistration
+            (CaseAct.AmendRegistration
                 { registration with
                     ClaimantName = oldFields.ClaimantName
                 })
@@ -129,33 +129,32 @@ let private envelope () =
 
     let wire =
         Encoding.UTF8.GetString durable
-        |> fun value -> value.Replace("\"format\":2,", "") |> Encoding.UTF8.GetBytes
+        |> fun value -> value.Replace("\"format\":3,", "") |> Encoding.UTF8.GetBytes
 
     Expect.isError
-        (ClaimCore.Wire.Admission.admit ClaimCore.Wire.Endpoint.AuthorityExecute wire)
+        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input wire)
         "Provisioning is never case-work authority API input"
 
-    let case = request 0L (BusinessCommand.Open registration) |> RequestRecord.encode
+    let case = request 0L (CaseAct.Open registration) |> RequestRecord.encode
 
     Expect.isError
-        (ClaimCore.Wire.Admission.admit ClaimCore.Wire.Endpoint.CaseExecute case)
+        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input case)
         "Durable format is not a wire member"
 
     let authored =
-        { request 1L BusinessCommand.Close with
+        { request 1L CaseAct.Close with
             CaseReference = "unit-001"
         }
 
     Expect.isTrue
-        (RequestRecord.encode authored
-         <> RequestRecord.encode (request 1L BusinessCommand.Close))
+        (RequestRecord.encode authored <> RequestRecord.encode (request 1L CaseAct.Close))
         "Canonical request identity preserves authored reference case"
 
 let private culture () =
     let original = CultureInfo.CurrentCulture
     let replacement = CultureInfo("ar-EG").Clone() :?> CultureInfo
     replacement.NumberFormat.NegativeSign <- "~"
-    let request = request 0L (BusinessCommand.Open registration)
+    let request = request 0L (CaseAct.Open registration)
     let expected = RequestRecord.encode request
 
     try

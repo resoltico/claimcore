@@ -28,7 +28,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await decide(page);
   await completeCommand(page, "Withdraw payment decision");
   await expect(page.locator("section.case-fields").first().getByText("Revision 4")).toBeVisible();
-  await page.getByLabel("History detail", { exact: true }).selectOption("FULL");
+  await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   await expect(page.locator(".history-list > li > details")).toHaveCount(4);
   const opening = page
     .locator(".history-list > li > details")
@@ -67,7 +67,7 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeCommand(page, "Reopen the case");
   await expect(page.locator("section.case-fields").first().getByText("Revision 6")).toBeVisible();
-  await page.getByLabel("History detail", { exact: true }).selectOption("FULL");
+  await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   await expect(page.locator(".history-list > li > details")).toHaveCount(6);
   await expectAccessible(page);
 });

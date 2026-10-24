@@ -1,9 +1,8 @@
 namespace ClaimCore.ContractGeneration
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
-open ClaimCore.ContractGeneration.Presentation
+open ClaimCore.Contract.Protocol
 
 open System
 open System.Buffers
@@ -22,7 +21,7 @@ module internal ContractJson =
 
         bytes
 
-/// Presentation names for protocol structure, separate from the thirteen business fields.
+/// Presentation names for protocol structure, separate from the business fields.
 module internal ProtocolFieldPresentation =
     let authorityFields
         (target: AuthorityInputDefinition)
@@ -44,12 +43,21 @@ module internal ProtocolFieldPresentation =
         |> List.groupBy fst
         |> List.map (fun (_, values) ->
             match values with
-            | [ name, identity ] -> name, MessageText.literal identity, identity
+            | [ name, identity ] -> name, identity
             | _ -> invalidOp "Protocol field presentation identities disagree.")
+
+type FieldPresentationDefinition =
+    {
+        Name: BusinessField
+        LabelId: string
+        MeaningId: string
+        Scalar: ScalarRule
+        AllowsAbsence: bool
+    }
 
 type PresentationDefinitions =
     {
-        Fields: FieldDefinition list
+        Fields: FieldPresentationDefinition list
         Commands: CommandDefinition list
         AuthorityTarget: AuthorityInputDefinition
         AuthorityCommands: AuthorityOperationDefinition list
@@ -119,9 +127,7 @@ module ContractDescriptors =
         for field in definitions.Fields do
             writer.WriteStartObject()
             writer.WriteString("name", BusinessField.token field.Name)
-            writer.WriteString("label", MessageText.literal field.LabelId)
             writer.WriteString("labelId", field.LabelId)
-            writer.WriteString("meaning", (MessageText.literal field.MeaningId))
             writer.WriteString("meaningId", field.MeaningId)
             writer.WriteBoolean("allowsAbsence", field.AllowsAbsence)
             writer.WritePropertyName("scalar")
@@ -139,8 +145,6 @@ module ContractDescriptors =
         for command in definitions.Commands do
             writer.WriteStartObject()
             writer.WriteString("kind", CaseActKinds.token command.Kind)
-            writer.WriteString("label", (MessageText.literal command.LabelId))
-            writer.WriteString("meaning", (MessageText.literal command.MeaningId))
             writer.WriteString("labelId", command.LabelId)
 
             writer.WriteString("meaningId", command.MeaningId)
@@ -158,11 +162,9 @@ module ContractDescriptors =
         writer.WriteString("name", "reason")
         writer.WriteString("labelId", "field.reason.label")
         writer.WriteString("meaningId", "field.reason.meaning")
-        writer.WriteString("label", (MessageText.literal "field.reason.label"))
-        writer.WriteString("meaning", (MessageText.literal "field.reason.meaning"))
         writer.WritePropertyName("scalar")
         writer.WriteStartObject()
-        scalar writer (FieldDefinitions.scalar InputField.Reason)
+        scalar writer (FieldDefinitions.scalar InputTarget.Reason)
         writer.WriteEndObject()
         writer.WriteEndObject()
         writer.WriteEndArray()
@@ -174,32 +176,23 @@ module ContractDescriptors =
         | AuthorityInputPrimitive.Scope -> "SCOPE"
         | AuthorityInputPrimitive.Boolean -> "BOOLEAN"
 
-    let private authorityInput (writer: Utf8JsonWriter) prefix (input: AuthorityInputDefinition) =
+    let private authorityInput (writer: Utf8JsonWriter) (input: AuthorityInputDefinition) =
         writer.WriteStartObject()
         writer.WriteString("fieldName", input.Name)
-        writer.WriteString("label", (MessageText.literal input.LabelId))
         writer.WriteString("labelId", input.LabelId)
         writer.WriteString("primitive", authorityPrimitive input.Primitive)
-        writer.WritePropertyName("path")
-        writer.WriteStartArray()
-
-        for part in prefix @ [ input.Name ] do
-            writer.WriteStringValue(part: string)
-
-        writer.WriteEndArray()
         writer.WriteEndObject()
 
     let private authorityFields definitions (writer: Utf8JsonWriter) =
         writer.WritePropertyName("authorityFields")
         writer.WriteStartArray()
 
-        for name, label, labelId in
+        for name, labelId in
             ProtocolFieldPresentation.authorityFields
                 definitions.AuthorityTarget
                 definitions.AuthorityCommands do
             writer.WriteStartObject()
             writer.WriteString("name", name)
-            writer.WriteString("label", label)
             writer.WriteString("labelId", labelId)
             writer.WriteEndObject()
 
@@ -207,15 +200,13 @@ module ContractDescriptors =
 
     let private authority definitions (writer: Utf8JsonWriter) =
         writer.WritePropertyName("authorityTarget")
-        authorityInput writer [] definitions.AuthorityTarget
+        authorityInput writer definitions.AuthorityTarget
         writer.WritePropertyName("authorityCommands")
         writer.WriteStartArray()
 
         for definition in definitions.AuthorityCommands do
             writer.WriteStartObject()
             writer.WriteString("kind", AuthorityKinds.token definition.Kind)
-            writer.WriteString("label", (MessageText.literal definition.LabelId))
-            writer.WriteString("meaning", (MessageText.literal definition.MeaningId))
 
             writer.WriteString("labelId", definition.LabelId)
 
@@ -224,7 +215,7 @@ module ContractDescriptors =
             writer.WriteString("confirmationId", definition.ConfirmationId)
             writer.WritePropertyName("inputs")
             writer.WriteStartArray()
-            definition.Inputs |> List.iter (authorityInput writer [ "act" ])
+            definition.Inputs |> List.iter (authorityInput writer)
             writer.WriteEndArray()
             writer.WriteEndObject()
 
@@ -254,7 +245,16 @@ module ContractDescriptors =
 
     let defaults =
         {
-            Fields = FieldDefinitions.all
+            Fields =
+                FieldDefinitions.all
+                |> List.map (fun field ->
+                    {
+                        Name = field.Field
+                        LabelId = FieldTable.labelId field.Field
+                        MeaningId = FieldTable.meaningId field.Field
+                        Scalar = field.Scalar
+                        AllowsAbsence = (FieldTable.forField field.Field).Optional
+                    })
             Commands = CommandDefinitions.all
             AuthorityTarget = AuthorityOperationDefinitions.target
             AuthorityCommands = AuthorityOperationDefinitions.all
@@ -268,11 +268,19 @@ module ContractDescriptors =
             inputFields writer
             authority definitions writer
             authorityFields definitions writer
+            writer.WritePropertyName("characterWarnings")
+            writer.WriteStartObject()
+            writer.WriteNumber("maximumCodePoints", TextDisplay.maximumCodePoints)
+            writer.WritePropertyName("categories")
+            writer.WriteStartArray()
+            TextDisplay.categoryTokens |> List.iter writer.WriteStringValue
+            writer.WriteEndArray()
+            writer.WriteEndObject()
             writer.WritePropertyName("statuses")
             writer.WriteStartArray()
             CaseStatuses.all |> List.iter (CaseStatuses.token >> writer.WriteStringValue)
             writer.WriteEndArray()
-            diagnostics writer "rejectionDiagnostics" RejectionDiagnosticIds.definitions
+            diagnostics writer "rejectionDiagnostics" Refusals.definitions
             diagnostics writer "faultDiagnostics" CoreFaults.definitions
             writer.WritePropertyName("roles")
             writer.WriteStartArray()

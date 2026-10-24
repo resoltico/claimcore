@@ -5,8 +5,7 @@ derives RFC 8785 canonical bytes, case-reference identities (UUIDv8), framed led
 salted commitments, the 183-byte entry preimage and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 4 --snapshot 3 --authority 2   # 0.10.0 formats
-  python3 -I generate_vectors.py --request 5 --snapshot 4 --authority 2   # D7 formats
+  python3 -I generate_vectors.py --request 6 --snapshot 4 --authority 3
 
 Writes JSON to standard output.
 """
@@ -195,7 +194,14 @@ def main():
                          for reference in sources["caseReferenceIds"]["accepted"]],
             "refused": sources["caseReferenceIds"]["refused"],
         },
-        "ledgerEntries": ledger(sources, requests, snapshot, authority),
+        "ledgerPayloads": {
+            "caseRequest": canonical(sources["ledgerPayloads"]["case"]["request"]),
+            "caseSnapshot": canonical(sources["ledgerPayloads"]["case"]["snapshot"]),
+            "authorityRequest": canonical(sources["ledgerPayloads"]["authority"]["request"]),
+        },
+        "ledgerEntries": ledger(sources, [sources["ledgerPayloads"]["case"]["request"]],
+                                sources["ledgerPayloads"]["case"]["snapshot"],
+                                sources["ledgerPayloads"]["authority"]["request"]),
     }
     print(json.dumps(document, ensure_ascii=False, indent=2))
 

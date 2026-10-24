@@ -1,6 +1,6 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open ClaimCore.Domain
@@ -128,16 +128,16 @@ module ActorAuthorization =
     /// Reaffirmation is still a requested replacement and requires its group's capability.
     let requiredCapabilities =
         function
-        | CaseAct.Business(BusinessCommand.CorrectCase correction) ->
+        | (CaseAct.CorrectCase correction) ->
             [
                 match correction.Registration with
-                | RegistrationCorrection.Keep -> ()
+                | RegistrationGroup.Keep -> ()
                 | _ -> yield correctionCapability CorrectionGroup.Registration
                 match correction.Decision with
-                | DecisionCorrection.Keep -> ()
+                | DecisionGroup.Keep -> ()
                 | _ -> yield correctionCapability CorrectionGroup.Decision
                 match correction.Payment with
-                | PaymentCorrection.Keep -> ()
+                | PaymentGroup.Keep -> ()
                 | _ -> yield correctionCapability CorrectionGroup.Payment
             ]
         | act -> [ ordinaryActs[CaseActs.kind act] ]

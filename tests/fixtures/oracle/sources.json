@@ -62,8 +62,9 @@
     },
     "caseReference": "Demo-0001",
     "expectedRevision": 0,
-    "format": 4,
-    "operationId": "10000000-0000-4000-8000-000000000001"
+    "format": 6,
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "scope": "CASE"
    }
   },
   {
@@ -90,8 +91,9 @@
     },
     "caseReference": "Demo-0001",
     "expectedRevision": 5,
-    "format": 4,
-    "operationId": "10000000-0000-4000-8000-000000000006"
+    "format": 6,
+    "operationId": "10000000-0000-4000-8000-000000000006",
+    "scope": "CASE"
    }
   },
   {
@@ -103,8 +105,9 @@
     },
     "caseReference": "Demo-0001",
     "expectedRevision": 6,
-    "format": 4,
-    "operationId": "10000000-0000-4000-8000-000000000007"
+    "format": 6,
+    "operationId": "10000000-0000-4000-8000-000000000007",
+    "scope": "CASE"
    }
   },
   {
@@ -115,8 +118,9 @@
     },
     "caseReference": "Demo-0001",
     "expectedRevision": 9007199254740990,
-    "format": 4,
-    "operationId": "10000000-0000-4000-8000-000000000009"
+    "format": 6,
+    "operationId": "10000000-0000-4000-8000-000000000009",
+    "scope": "CASE"
    }
   }
  ],
@@ -139,7 +143,7 @@
     "paymentDecisionDate": null,
     "status": "OPENED"
    },
-   "format": 3,
+   "format": 4,
    "revision": 1
   }
  },
@@ -155,13 +159,14 @@
      "kind": "CASE"
     }
    },
-   "format": 2,
+   "format": 3,
    "operationId": "20000000-0000-4000-8000-000000000002",
    "target": {
     "issuer": "https://issuer.example/",
     "kind": "HUMAN",
     "subject": "handler-1"
-   }
+   },
+   "scope": "AUTHORITY"
   }
  },
  "caseReferenceIds": {
@@ -207,5 +212,67 @@
    "payloadNonce": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
    "subjectId": "b0000000-0000-4000-8000-000000000002"
   }
- ]
+ ],
+ "ledgerPayloads": {
+  "case": {
+   "request": {
+    "act": {
+     "kind": "OPEN",
+     "values": {
+      "claimantName": "Rīgas Tulkojumu Birojs SIA",
+      "claimedAmount": "1000.00",
+      "claimedCurrency": "EUR",
+      "incidentCountry": "LV",
+      "incidentDate": "2026-08-01",
+      "incidentNotificationDate": "2026-08-03",
+      "insurerName": "شركة التأمين المثال"
+     }
+    },
+    "caseReference": "Demo-0001",
+    "expectedRevision": 0,
+    "format": 5,
+    "operationId": "10000000-0000-4000-8000-000000000001"
+   },
+   "snapshot": {
+    "disposition": "ACTIVE",
+    "fields": {
+     "caseReference": "Demo-0001",
+     "claimantName": "Rīgas Tulkojumu Birojs SIA",
+     "claimedAmount": "1000",
+     "claimedCurrency": "EUR",
+     "incidentCountry": "LV",
+     "incidentDate": "2026-08-01",
+     "incidentNotificationDate": "2026-08-03",
+     "insurerName": "شركة التأمين المثال",
+     "payableAmount": null,
+     "payableCurrency": null,
+     "paymentDate": null,
+     "paymentDecisionDate": null,
+     "status": "OPENED"
+    },
+    "format": 4,
+    "revision": 1
+   }
+  },
+  "authority": {
+   "request": {
+    "act": {
+     "active": true,
+     "kind": "SET_GRANT",
+     "role": "CASE_HANDLER",
+     "scope": {
+      "caseReference": "Demo-0001",
+      "kind": "CASE"
+     }
+    },
+    "format": 2,
+    "operationId": "20000000-0000-4000-8000-000000000002",
+    "target": {
+     "issuer": "https://issuer.example/",
+     "kind": "HUMAN",
+     "subject": "handler-1"
+    }
+   }
+  }
+ }
 }

@@ -41,7 +41,7 @@ const result = async <K extends EndpointId>(
     return { kind: "outcome", value, status: response.status };
   }
   if (isHostFailure(value, response.status)) {
-    return { kind: "hostFailure", failure: value, status: response.status };
+    return { kind: "hostFailure", failure: value.hostFailure, status: response.status };
   }
   return { kind: "deliveryFailure", notice: { kind: "invalidHttp", status: response.status } };
 };
@@ -128,10 +128,8 @@ export const service = {
       { actorId, ...(cursor === null ? {} : { cursor }), limit: 50 },
       signal,
     ),
-  authorityExecute: (prepared: PreparedRequest<"authority.execute">, token: string) =>
-    withinResponseDeadline((owned) => send(prepared.endpoint, token, prepared.bytes, owned)),
-  preview: (prepared: PreparedRequest<"case.execute">, token: string) =>
-    withinResponseDeadline((owned) => send("case.preview", token, prepared.bytes, owned)),
-  execute: (prepared: PreparedRequest<"case.execute">, token: string) =>
+  preview: (prepared: PreparedRequest<"operation.execute">, token: string) =>
+    withinResponseDeadline((owned) => send("operation.preview", token, prepared.bytes, owned)),
+  execute: (prepared: PreparedRequest<"operation.execute">, token: string) =>
     withinResponseDeadline((owned) => send(prepared.endpoint, token, prepared.bytes, owned)),
 };

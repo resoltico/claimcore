@@ -1,10 +1,11 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 module CaseReference =
     let validate reference =
-        Validation.text InputTarget.CaseReference reference |> Result.map ignore
+        Validation.text (InputTarget.Field BusinessField.CaseReference) reference
+        |> Result.map ignore
 
     /// The profile is ASCII; folding never consults culture or Unicode normalization.
     let key (reference: string) =

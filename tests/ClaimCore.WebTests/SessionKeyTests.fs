@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.SessionKeyTests
 
+open ClaimCore.Contract
+
 open System
 open System.IO
 open System.Net

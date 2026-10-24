@@ -1,3 +1,5 @@
+import { createPresenter } from "../src/presentation/presenter";
+import { defaults } from "../src/presentation/preferences";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "./presentation-test-support";
@@ -6,17 +8,17 @@ import { AuthorityPanel } from "../src/views/AuthorityPanel";
 import { productMetadata } from "../src/protocol/productMetadata";
 import { isRequest, isResponse } from "../src/protocol/client";
 import type { EndpointId, RequestByEndpoint, ResponseByEndpoint } from "@contracts/client";
-import type { CurrentCase, Review } from "../src/api/service";
+import type { CurrentCase, CaseReview } from "../src/api/service";
 import type { CommandKind } from "../src/interaction/metadata";
 import { caseOffers } from "./case-advice.fixtures";
 import { installationOffers } from "./installation-advice.fixtures";
-import { generatedWebValue } from "./contract-corpus.fixtures";
+import { wireReply } from "./contract-corpus.fixtures";
 import { caseFields } from "./service-foundation.fixtures";
 import { fillRegistrationInputs } from "./registration-inputs.fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
-type CaseInput = RequestByEndpoint["case.execute"];
-type AuthorityInput = RequestByEndpoint["authority.execute"];
+type CaseInput = Extract<RequestByEndpoint["operation.execute"], { scope: "CASE" }>;
+type AuthorityInput = Extract<RequestByEndpoint["operation.execute"], { scope: "AUTHORITY" }>;
 type Dispatch<T> = { path: string; bytes: string; input: T };
 const { commands, authorityCommands } = productMetadata.descriptors;
 const runtime = {
@@ -66,7 +68,7 @@ const authorCase = (kind: CommandKind) => {
       input("claimantName", "Synthetic replacement");
       break;
     case "CORRECT_CASE":
-      fireEvent.change(document.querySelector("#correction-registration-mode")!, {
+      fireEvent.change(document.querySelector('[name="act.groups.registration.mode"]')!, {
         target: { value: "REPLACE" },
       });
       input("claimantName", "Synthetic correction");
@@ -85,7 +87,7 @@ const authorCase = (kind: CommandKind) => {
       break;
     case "VOID":
     case "REINSTATE":
-      input("reason", "Synthetic reason العربية");
+      input("act.reason", "Synthetic reason العربية");
       break;
     default:
       break;
@@ -101,28 +103,31 @@ const response = <K extends EndpointId>(endpoint: K, value: ResponseByEndpoint[K
   });
 };
 const caseReceipt = (request: CaseInput) => {
-  const source = generatedWebValue("case.execute");
-  if (source.outcome.tag !== "ACCEPTED") {
+  const source = wireReply("operation.execute");
+  if (source.outcome.tag !== "ACCEPTED" || source.outcome.data.scope.kind !== "CASE") {
     throw new Error("Missing frozen receipt alternative.");
   }
   return {
     ...source.outcome.data,
     operationId: request.operationId,
-    act: request.act.kind,
-    caseReference: request.caseReference,
-    revision: request.expectedRevision + 1,
-    snapshot: { tag: "WITHHELD" as const },
+    scope: {
+      kind: "CASE" as const,
+      act: request.act.kind,
+      caseReference: request.caseReference,
+      revision: request.expectedRevision + 1,
+      snapshot: { disclosure: "WITHHELD" as const },
+    },
   };
 };
-const canonicalChanges = (request: CaseInput): Review["changes"] =>
+const canonicalChanges = (request: CaseInput): CaseReview["changes"] =>
   request.act.kind === "DECIDE" ? [{ field: "payableAmount", before: null, after: "5" }] : [];
 const caseReview = (request: CaseInput) => ({
-  endpoint: "case.preview" as const,
   operationId: request.operationId,
   outcome: {
     tag: "REVIEWED" as const,
     data: {
       review: {
+        scope: "CASE" as const,
         before: null,
         after: {
           caseReference: request.caseReference,
@@ -145,19 +150,18 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
       throw new Error("Expected a typed case dispatch.");
     }
     const parsed: unknown = JSON.parse(init.body);
-    if (!isRequest("case.execute", parsed)) {
+    if (!isRequest("operation.execute", parsed) || parsed.scope !== "CASE") {
       throw new Error("Production editor did not produce a complete case request.");
     }
     calls.push({ path, bytes: init.body, input: parsed });
-    if (path === "/api/case.preview") {
-      return Promise.resolve(response("case.preview", caseReview(parsed)));
+    if (path === "/api/operation.preview") {
+      return Promise.resolve(response("operation.preview", caseReview(parsed)));
     }
-    if (path !== "/api/case.execute") {
+    if (path !== "/api/operation.execute") {
       throw new Error("Unexpected case endpoint.");
     }
     return Promise.resolve(
-      response("case.execute", {
-        endpoint: "case.execute",
+      response("operation.execute", {
         operationId: parsed.operationId,
         outcome: { tag: "ACCEPTED", data: caseReceipt(parsed) },
       }),
@@ -212,7 +216,9 @@ it.each(commands)(
         onMutationLockChange={vi.fn()}
       />,
     );
-    expect(screen.getByRole("heading", { name: command.label })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: createPresenter(defaults).commandLabel(command.kind) }),
+    ).toBeVisible();
     authorCase(command.kind);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Review changes" }));
@@ -227,7 +233,10 @@ it.each(commands)(
     await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
     await user.click(screen.getByRole("button", { name: "Record changes" }));
     await screen.findByRole("heading", { name: "Recorded change" });
-    expect(calls.map((call) => call.path)).toEqual(["/api/case.preview", "/api/case.execute"]);
+    expect(calls.map((call) => call.path)).toEqual([
+      "/api/operation.preview",
+      "/api/operation.execute",
+    ]);
     expect(calls[1]!.bytes).toBe(calls[0]!.bytes);
     expect(calls[1]!.input.act.kind).toBe(command.kind);
     expect(calls[1]!.input.expectedRevision).toBe(command.kind === "OPEN" ? 0 : 1);
@@ -235,19 +244,18 @@ it.each(commands)(
   },
 );
 const authorityReceipt = (request: AuthorityInput) => {
-  const source = generatedWebValue("authority.execute");
-  if (source.outcome.tag !== "ACCEPTED") {
+  const source = wireReply("operation.execute", "AUTHORITY");
+  if (source.outcome.tag !== "ACCEPTED" || source.outcome.data.scope.kind !== "AUTHORITY") {
     throw new Error("Missing frozen authority alternative.");
   }
   return {
     ...source.outcome.data,
     operationId: request.operationId,
-    act: request.act.kind,
+    scope: { ...source.outcome.data.scope, act: request.act.kind },
   };
 };
 const contextReply = (): Response =>
   response("context", {
-    endpoint: "context",
     outcome: {
       tag: "SUCCEEDED",
       data: {
@@ -266,22 +274,42 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
     if (path === "/api/authority.list") {
       return Promise.resolve(
         response("authority.list", {
-          endpoint: "authority.list",
           outcome: { tag: "SUCCEEDED", data: { items: [], nextCursor: null } },
         }),
       );
     }
-    if (path !== "/api/authority.execute" || typeof init?.body !== "string") {
+    if (
+      typeof path !== "string" ||
+      !["/api/operation.execute", "/api/operation.preview"].includes(path) ||
+      typeof init?.body !== "string"
+    ) {
       throw new Error("Unexpected authority endpoint.");
     }
     const parsed: unknown = JSON.parse(init.body);
-    if (!isRequest("authority.execute", parsed)) {
+    if (!isRequest("operation.execute", parsed) || parsed.scope !== "AUTHORITY") {
       throw new Error("Production authority form did not produce a complete request.");
     }
     calls.push({ path, bytes: init.body, input: parsed });
+    if (path === "/api/operation.preview") {
+      return Promise.resolve(
+        response("operation.preview", {
+          operationId: parsed.operationId,
+          outcome: {
+            tag: "REVIEWED",
+            data: {
+              review: {
+                scope: "AUTHORITY",
+                target: null,
+                before: { enabled: false, grants: [] },
+                after: { enabled: true, grants: [] },
+              },
+            },
+          },
+        }),
+      );
+    }
     return Promise.resolve(
-      response("authority.execute", {
-        endpoint: "authority.execute",
+      response("operation.execute", {
         operationId: parsed.operationId,
         outcome: { tag: "ACCEPTED", data: authorityReceipt(parsed) },
       }),
@@ -321,12 +349,13 @@ it.each(authorityCommands)(
     await authorAuthority(command.kind);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Review changes" }));
-    await screen.findByRole("heading", { name: "Review exact request" });
-    const before = document.querySelector(".authority-panel")!.textContent;
+    await screen.findByRole("heading", { name: "Review changes" });
+    const before = screen.getByRole("dialog").textContent;
     await user.click(screen.getByRole("checkbox", { name: "I confirm this exact request." }));
-    await user.click(screen.getByRole("button", { name: "Submit operation" }));
+    await user.click(screen.getByRole("button", { name: "Record changes" }));
     await waitFor(() => {
-      expect(calls).toHaveLength(1);
+      expect(calls).toHaveLength(2);
+      expect(calls[1]!.bytes).toBe(calls[0]!.bytes);
     });
     await screen.findByText(calls[0]!.input.operationId, { exact: true });
     expect(before).toContain(calls[0]!.input.operationId);

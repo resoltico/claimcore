@@ -1,6 +1,6 @@
 module ClaimCore.Tests.TransitionPropertyTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open Expecto
 open Hedgehog
@@ -13,36 +13,36 @@ type private Step = { Act: CaseAct; Stale: bool }
 
 let private businessCommands =
     [
-        BusinessCommand.Open registration
-        BusinessCommand.AmendRegistration
+        CaseAct.Open registration
+        CaseAct.AmendRegistration
             { registration with
                 ClaimantName = "Amended Synthetic Name"
             }
-        BusinessCommand.CorrectCase
+        CaseAct.CorrectCase
             {
                 Registration =
-                    RegistrationCorrection.Replace
+                    RegistrationGroup.Replace
                         { registration with
                             ClaimantName = "Corrected Synthetic Name"
                         }
-                Decision = DecisionCorrection.Keep
-                Payment = PaymentCorrection.Keep
+                Decision = DecisionGroup.Keep
+                Payment = PaymentGroup.Keep
             }
-        BusinessCommand.Decide decision
-        BusinessCommand.Decide { decision with PayableAmount = "0" }
-        BusinessCommand.WithdrawDecision
-        BusinessCommand.RecordPayment "2026-08-20"
-        BusinessCommand.ClearPayment
-        BusinessCommand.Close
-        BusinessCommand.Reopen
+        CaseAct.Decide decision
+        CaseAct.Decide { decision with PayableAmount = "0" }
+        CaseAct.WithdrawDecision
+        CaseAct.RecordPayment { PaymentDate = "2026-08-20" }
+        CaseAct.ClearPayment
+        CaseAct.Close
+        CaseAct.Reopen
     ]
 
 let private commands =
-    (businessCommands |> List.map CaseAct.Business)
+    businessCommands
     @ [
-        CaseAct.Stewardship(StewardshipAct.Void "Entry error")
-        CaseAct.Stewardship(StewardshipAct.Reinstate "Entry confirmed")
-        CaseAct.Stewardship StewardshipAct.Erase
+        CaseAct.Void "Entry error"
+        CaseAct.Reinstate "Entry confirmed"
+        CaseAct.Erase
     ]
 
 let private stepGenerator =
@@ -104,30 +104,26 @@ let private checkSequence steps =
 
 let private acceptingPath =
     [
-        BusinessCommand.Decide decision
-        BusinessCommand.RecordPayment "2026-08-20"
-        BusinessCommand.Close
-        BusinessCommand.Reopen
-        BusinessCommand.ClearPayment
-        BusinessCommand.WithdrawDecision
-        BusinessCommand.AmendRegistration registration
-        BusinessCommand.Close
-        BusinessCommand.Close
-        BusinessCommand.Reopen
+        CaseAct.Decide decision
+        CaseAct.RecordPayment { PaymentDate = "2026-08-20" }
+        CaseAct.Close
+        CaseAct.Reopen
+        CaseAct.ClearPayment
+        CaseAct.WithdrawDecision
+        CaseAct.AmendRegistration registration
+        CaseAct.Close
+        CaseAct.Close
+        CaseAct.Reopen
     ]
-    |> List.map (fun command ->
-        {
-            Act = CaseAct.Business command
-            Stale = false
-        })
+    |> List.map (fun command -> { Act = command; Stale = false })
     |> fun steps ->
         let tail =
             [
-                CaseAct.Stewardship(StewardshipAct.Void "Entry error")
-                CaseAct.Business BusinessCommand.Close
-                CaseAct.Stewardship(StewardshipAct.Reinstate "Entry confirmed")
-                CaseAct.Stewardship StewardshipAct.Erase
-                CaseAct.Business(BusinessCommand.Open registration)
+                CaseAct.Void "Entry error"
+                CaseAct.Close
+                CaseAct.Reinstate "Entry confirmed"
+                CaseAct.Erase
+                CaseAct.Open registration
             ]
 
         steps @ (tail |> List.map (fun act -> { Act = act; Stale = false }))
@@ -138,28 +134,25 @@ let private sequenceProperty =
 
     property {
         let! steps = sequenceGenerator
-        return checkSequence acceptingPath && checkSequence steps
+        return checkSequence steps
     }
 
 let private negativeControls () =
     let decided =
-        TransitionOracle.advance initial false (CaseAct.Business(BusinessCommand.Decide decision))
-        |> Option.get
+        TransitionOracle.advance initial false ((CaseAct.Decide decision)) |> Option.get
 
     let paid =
         TransitionOracle.advance
             decided
             false
-            (CaseAct.Business(BusinessCommand.RecordPayment "2026-08-20"))
+            ((CaseAct.RecordPayment { PaymentDate = "2026-08-20" }))
         |> Option.get
 
-    let closed =
-        TransitionOracle.advance paid false (CaseAct.Business BusinessCommand.Close)
-        |> Option.get
+    let closed = TransitionOracle.advance paid false (CaseAct.Close) |> Option.get
 
     let controls =
         [
-            Some decided, Error CaseRefusal.NotFound
+            Some decided, Error Refusal.ResourceUnavailable
             Some paid,
             Ok
                 { paid with
@@ -213,24 +206,16 @@ let private reach state =
     | OpenDecided -> decided ()
     | OpenZeroDecision ->
         opened ()
-        |> apply (BusinessCommand.Decide { decision with PayableAmount = "0" })
+        |> apply (CaseAct.Decide { decision with PayableAmount = "0" })
         |> accepted
     | OpenPaid -> paid ()
-    | ClosedUndecided -> opened () |> apply BusinessCommand.Close |> accepted
-    | ClosedDecided -> decided () |> apply BusinessCommand.Close |> accepted
-    | ClosedPaid -> paid () |> apply BusinessCommand.Close |> accepted
+    | ClosedUndecided -> opened () |> apply CaseAct.Close |> accepted
+    | ClosedDecided -> decided () |> apply CaseAct.Close |> accepted
+    | ClosedPaid -> paid () |> apply CaseAct.Close |> accepted
     | Voided ->
-        Case.decide
-            today
-            (actRequest 1L (CaseAct.Stewardship(StewardshipAct.Void "Entry error")))
-            (Some(opened ()))
+        Case.decide today (actRequest 1L ((CaseAct.Void "Entry error"))) (Some(opened ()))
         |> accepted
-    | Erased ->
-        Case.decide
-            today
-            (actRequest 1L (CaseAct.Stewardship StewardshipAct.Erase))
-            (Some(opened ()))
-        |> accepted
+    | Erased -> Case.decide today (actRequest 1L (CaseAct.Erase)) (Some(opened ())) |> accepted
 
 let private expectedBusiness =
     function
@@ -291,6 +276,7 @@ let tests =
         "Hedgehog state invariants"
         [
             testCase "accepted and rejected sequences match complete independent state" (fun () ->
+                Expect.isTrue (checkSequence acceptingPath) "Complete fixed acceptance path"
                 run "CC-PROP-TRANSITION-001" sequenceProperty)
             testCase
                 "sequence oracle rejects refusal-only and corrupt accepted outcomes"

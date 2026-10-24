@@ -16,12 +16,12 @@ const stewardAct = async (page: Page, label: string, reason?: string) => {
   }
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   await confirmReview(page);
-  const pending = page.waitForResponse((reply) => reply.url().endsWith("/api/case.execute"));
+  const pending = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.execute"));
   await page.getByRole("button", { name: "Record changes", exact: true }).click();
   const reply = await pending;
   const value: unknown = await reply.json();
-  expect(isResponse("case.execute", value)).toBe(true);
-  if (!isResponse("case.execute", value)) {
+  expect(isResponse("operation.execute", value)).toBe(true);
+  if (!isResponse("operation.execute", value)) {
     throw new Error("Missing stewardship response.");
   }
   expect(value.outcome.tag).toBe("ACCEPTED");
@@ -60,18 +60,32 @@ const authorityTarget = async (page: Page, issuer: string, subject: string) => {
   await page.locator('[name="target.subject"]').fill(subject);
 };
 const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") => {
+  const previewed = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
+  const previewResponse = await previewed;
+  const preview: unknown = await previewResponse.json();
+  if (!isResponse("operation.preview", preview)) {
+    throw new Error("Missing authority preview.");
+  }
+  expect(preview.outcome.tag).toBe(expected === "ACCEPTED" ? "REVIEWED" : "REJECTED");
+  if (expected === "REJECTED") {
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    return;
+  }
+  if (preview.outcome.tag !== "REVIEWED" || preview.outcome.data.review.scope !== "AUTHORITY") {
+    throw new Error("Expected authority review.");
+  }
   await page.getByRole("checkbox", { name: "I confirm this exact request.", exact: true }).check();
-  const pending = page.waitForResponse((reply) => reply.url().endsWith("/api/authority.execute"));
-  await page.getByRole("button", { name: "Submit operation", exact: true }).click();
+  const pending = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.execute"));
+  await page.getByRole("button", { name: "Record changes", exact: true }).click();
   const reply = await pending;
+  expect(reply.request().postData()).toBe(previewResponse.request().postData());
   const value: unknown = await reply.json();
-  expect(isResponse("authority.execute", value)).toBe(true);
-  if (!isResponse("authority.execute", value)) {
+  if (!isResponse("operation.execute", value)) {
     throw new Error("Missing authority response.");
   }
-  expect(value.outcome.tag).toBe(expected);
-  if (value.outcome.tag === "ACCEPTED" || value.outcome.tag === "ALREADY_ACCEPTED") {
+  expect(value.outcome.tag).toBe("ACCEPTED");
+  if (value.outcome.tag === "ACCEPTED") {
     await expect(
       page.getByRole("status").filter({ hasText: value.outcome.data.operationId }),
     ).toBeVisible();

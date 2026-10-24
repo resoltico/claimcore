@@ -1,3 +1,4 @@
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
@@ -8,11 +9,10 @@ import { login, logout } from "./session-helpers";
 test.use({ storageState: { cookies: [], origins: [] } });
 
 type SessionEnvelope = {
-  endpoint: "session";
   outcome: { tag: "SUCCEEDED"; data: { authenticated: boolean; antiforgeryToken: string } };
 };
 
-type HostFailure = { kind: "HOST_FAILURE"; code: string; executionPhase: string | null };
+type HostFailure = { hostFailure: { code: string; phase: string | null } };
 type ApiReply<T> = { status: number; cacheControl: string | null; payload: T };
 
 const readSession = (page: Page) =>
@@ -65,13 +65,13 @@ const expectAnonymousSessionBoundary = async (page: Page) => {
   expect(missing).toMatchObject({
     status: 404,
     cacheControl: expect.stringContaining("no-store"),
-    payload: { kind: "HOST_FAILURE", code: "ENDPOINT_MISSING" },
+    payload: { hostFailure: { code: "ENDPOINT_MISSING" } },
   });
   const session = await readSession(page);
   expect(session).toMatchObject({
     status: 200,
     cacheControl: expect.stringContaining("no-store"),
-    payload: { endpoint: "session", outcome: { tag: "SUCCEEDED", data: { authenticated: false } } },
+    payload: { outcome: { tag: "SUCCEEDED", data: { authenticated: false } } },
   });
   return session.payload.outcome.data.antiforgeryToken;
 };
@@ -81,7 +81,7 @@ const expectSessionRejection = async (page: Page, token: string) => {
   expect(rejected).toMatchObject({
     status: 401,
     cacheControl: expect.stringContaining("no-store"),
-    payload: { kind: "HOST_FAILURE", code: "SESSION_REJECTED", executionPhase: "NOT_STARTED" },
+    payload: { hostFailure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" } },
   });
 };
 
@@ -95,11 +95,12 @@ const expectAnonymousSession = async (page: Page) => {
   const session = await readSession(page);
   expect(session).toMatchObject({
     status: 200,
-    payload: { endpoint: "session", outcome: { tag: "SUCCEEDED", data: { authenticated: false } } },
+    payload: { outcome: { tag: "SUCCEEDED", data: { authenticated: false } } },
   });
 };
 
 test("uses OIDC sign-in and the accessible actor-bound case workspace", async ({ page }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
   await page.goto("/", { waitUntil: "commit" });
   await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
@@ -110,7 +111,7 @@ test("uses OIDC sign-in and the accessible actor-bound case workspace", async ({
   await expect(page.getByRole("heading", { name: "Cases" })).toBeVisible();
   await expect(readSession(page)).resolves.toMatchObject({
     status: 200,
-    payload: { endpoint: "session", outcome: { tag: "SUCCEEDED", data: { authenticated: true } } },
+    payload: { outcome: { tag: "SUCCEEDED", data: { authenticated: true } } },
   });
   await expect(new AxeBuilder({ page }).analyze()).resolves.toMatchObject({ violations: [] });
   await logout(page);

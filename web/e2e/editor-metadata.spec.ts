@@ -17,13 +17,13 @@ test("prefills metadata fields and confirms dirty command changes before review"
   await expect(claimant).toHaveValue("Synthetic claimant");
   await claimant.fill("Synthetic amended claimant");
   await progress("metadata-dirty-change");
-  await page.getByLabel("Case action", { exact: true }).selectOption("DECIDE");
+  await page.getByRole("combobox", { name: "Case action", exact: true }).selectOption("DECIDE");
   const discard = page.getByRole("dialog", { name: "Discard these draft changes?" });
   await expectAccessible(page);
   await discard.getByRole("button", { name: "Keep editing" }).click();
   await progress("metadata-kept-editing");
   await expect(claimant).toHaveValue("Synthetic amended claimant");
-  await page.getByLabel("Case action", { exact: true }).selectOption("DECIDE");
+  await page.getByRole("combobox", { name: "Case action", exact: true }).selectOption("DECIDE");
   await discard.getByRole("button", { name: "Discard and change action" }).click();
   await progress("metadata-discarded");
   await expect(page.getByLabel("Payment decision date")).toHaveValue("");

@@ -73,7 +73,7 @@ const acceptSetup = async (
   request: CommandDraft,
   fields: CaseFields,
 ): Promise<CaseReceipt> => {
-  const endpoint = endpoints.find((item) => item.id === "case.execute");
+  const endpoint = endpoints.find((item) => item.id === "operation.execute");
   if (endpoint === undefined) {
     throw new Error("E2E_CORRECTION_SETUP_ENDPOINT_MISSING");
   }
@@ -87,22 +87,25 @@ const acceptSetup = async (
   });
   expect(reply.status).toBe(200);
   expect(reply.cacheControl).toContain("no-store");
-  if (!isResponse("case.execute", reply.payload)) {
+  if (!isResponse("operation.execute", reply.payload)) {
     throw new Error("E2E_CORRECTION_SETUP_RESPONSE_INVALID");
   }
   const { outcome } = reply.payload;
   if (outcome.tag !== "ACCEPTED") {
     throw new Error(`E2E_CORRECTION_SETUP_${outcome.tag}`);
   }
-  const receipt = outcome.data;
+  if (outcome.data.scope.kind !== "CASE") {
+    throw new Error("Expected case receipt.");
+  }
+  const receipt: CaseReceipt = { ...outcome.data, scope: outcome.data.scope };
   const revision = request.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
-  expect(receipt.caseReference).toBe(request.caseReference);
-  expect(receipt.act).toBe(request.act.kind);
-  expect(receipt.revision).toBe(revision);
-  expect(receipt.snapshot).toEqual({
-    tag: "DISCLOSED",
-    state: { tag: "LIVE", disposition: "ACTIVE", fields },
+  expect(receipt.scope.caseReference).toBe(request.caseReference);
+  expect(receipt.scope.act).toBe(request.act.kind);
+  expect(receipt.scope.revision).toBe(revision);
+  expect(receipt.scope.snapshot).toEqual({
+    disclosure: "DISCLOSED",
+    view: { tag: "LIVE", disposition: "ACTIVE", fields },
   });
   return receipt;
 };
@@ -116,6 +119,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       page,
       token,
       {
+        scope: "CASE",
         operationId: randomUUID(),
         caseReference: reference,
         expectedRevision: revision,
@@ -123,7 +127,8 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       },
       step.fields,
     );
-    const { recordedBy: acceptedActor, revision: acceptedRevision } = receipt;
+    const { recordedBy: acceptedActor } = receipt;
+    const acceptedRevision = receipt.scope.revision;
     if (recordedBy !== undefined) {
       expect(acceptedActor).toBe(recordedBy);
     }
@@ -141,7 +146,7 @@ export const chooseGroups = async (page: Page, modes: Modes, language: Language)
   await startCommand(page, "Correct case facts");
   await selectLanguage(page, language);
   for (const [group, mode] of Object.entries(modes)) {
-    await page.locator(`#correction-${group}-mode`).selectOption(mode);
+    await page.locator(`[name="act.groups.${group}.mode"]`).selectOption(mode);
   }
   const replacements = {
     registration: { claimantName: "A\u0308 العربية\u200D <tag>", claimedAmount: "1.0000" },
@@ -155,7 +160,7 @@ export const chooseGroups = async (page: Page, modes: Modes, language: Language)
   for (const group of ["registration", "decision", "payment"] as const) {
     if (modes[group] === "REPLACE") {
       for (const [name, value] of Object.entries(replacements[group])) {
-        await page.locator(`input[name="${group}.${name}"]`).fill(value);
+        await page.locator(`input[name="act.groups.${group}.values.${name}"]`).fill(value);
       }
     }
   }

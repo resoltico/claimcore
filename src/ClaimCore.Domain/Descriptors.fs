@@ -1,6 +1,6 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 
@@ -72,7 +72,7 @@ type PrefillSource =
 /// Ordered authored scalar metadata. The immutable case target is never an input field.
 type FieldInputDefinition =
     {
-        FieldName: InputField
+        FieldName: InputTarget
         Prefill: PrefillSource
     }
 

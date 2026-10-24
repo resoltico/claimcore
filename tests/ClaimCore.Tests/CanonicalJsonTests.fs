@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CanonicalJsonTests
 
+open ClaimCore.Contract
+
 open System
 open System.Globalization
 open System.IO
@@ -14,7 +16,7 @@ open ClaimCore.Tests.PropertyHarness
 
 let private canonical (text: string) =
     use document = JsonDocument.Parse(text)
-    document.RootElement |> CanonicalJson.ofElement |> CanonicalJson.encode
+    document.RootElement |> StrictJson.ofElement |> CanonicalWriter.bytes
 
 let private text (element: JsonElement) =
     element.GetString()
@@ -63,13 +65,12 @@ let private refusalTests =
 
             for value in [ Int64.MinValue; -9007199254740992L; 9007199254740992L; Int64.MaxValue ] do
                 Expect.throws
-                    (fun () -> CanonicalJson.encode (CanonicalValue.Integer value) |> ignore)
+                    (fun () -> CanonicalWriter.bytes (JsonValue.Integer value) |> ignore)
                     "Closed values enforce safe bounds too"
 
             Expect.throws
                 (fun () ->
-                    CanonicalJson.encode (CanonicalValue.String(String([| char 0xD800 |])))
-                    |> ignore)
+                    CanonicalWriter.bytes (JsonValue.String(String([| char 0xD800 |]))) |> ignore)
                 "Constructed malformed strings refuse")
 
 let private cultureTest =
@@ -104,23 +105,19 @@ let private values =
         let! flag = Gen.bool
 
         return
-            CanonicalValue.Object
+            JsonValue.Object
                 [
                     "z",
-                    CanonicalValue.Array
-                        [
-                            CanonicalValue.Integer number
-                            CanonicalValue.Boolean flag
-                            CanonicalValue.Null
-                        ]
-                    "a", CanonicalValue.String text
+                    JsonValue.Array
+                        [ JsonValue.Integer number; JsonValue.Boolean flag; JsonValue.Null ]
+                    "a", JsonValue.String text
                 ]
     }
 
 let private roundTrip =
     property {
         let! value = values
-        let encoded = CanonicalJson.encode value
+        let encoded = CanonicalWriter.bytes value
         return canonical (Encoding.UTF8.GetString encoded) = encoded
     }
 
@@ -141,7 +138,7 @@ let private alternateSpelling (encoded: byte array) =
 let private respelling =
     property {
         let! value = values
-        let encoded = CanonicalJson.encode value
+        let encoded = CanonicalWriter.bytes value
         return canonical (alternateSpelling encoded) = encoded
     }
 

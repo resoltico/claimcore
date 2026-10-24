@@ -7,6 +7,8 @@ export type SchemaNode = {
   readonly const?: unknown;
   readonly enum?: ReadonlyArray<unknown>;
   readonly oneOf?: ReadonlyArray<SchemaNode>;
+  readonly discriminator?: { readonly propertyName: string };
+  readonly allOf?: ReadonlyArray<SchemaNode>;
   readonly properties?: Readonly<Record<string, SchemaNode>>;
   readonly required?: ReadonlyArray<string>;
   readonly additionalProperties?: boolean | SchemaNode;
@@ -115,21 +117,42 @@ const objectMatches = (document: SchemaDocument, schema: SchemaNode, value: obje
       : schema.additionalProperties !== false;
   });
 };
-function check(document: SchemaDocument, schema: SchemaNode, value: unknown): boolean {
+const scalarConstraints = (schema: SchemaNode, value: unknown): boolean =>
+  (!Object.hasOwn(schema, "const") || value === schema.const) &&
+  (schema.enum === undefined || schema.enum.includes(value));
+function compositeConstraints(
+  document: SchemaDocument,
+  schema: SchemaNode,
+  value: unknown,
+): boolean {
   if (schema.$ref !== undefined) {
-    const target = document.components?.schemas[schema.$ref.replace("#/components/schemas/", "")];
-    return target !== undefined && check(document, target, value);
+    const prefix = "#/components/schemas/";
+    const target = schema.$ref.startsWith(prefix)
+      ? document.components?.schemas[schema.$ref.slice(prefix.length)]
+      : undefined;
+    if (target === undefined || !check(document, target, value)) {
+      return false;
+    }
   }
-  if (Object.hasOwn(schema, "const")) {
-    return value === schema.const;
+  return (
+    (schema.oneOf === undefined ||
+      schema.oneOf.filter((item) => check(document, item, value)).length === 1) &&
+    (schema.allOf === undefined || schema.allOf.every((item) => check(document, item, value)))
+  );
+}
+function check(document: SchemaDocument, schema: SchemaNode, value: unknown): boolean {
+  if (!scalarConstraints(schema, value) || !compositeConstraints(document, schema, value)) {
+    return false;
   }
-  if (schema.enum !== undefined) {
-    return schema.enum.includes(value);
+  if (schema.type !== undefined) {
+    return primitiveMatches(document, schema, value);
   }
-  if (schema.oneOf !== undefined) {
-    return schema.oneOf.filter((item) => check(document, item, value)).length === 1;
-  }
-  return primitiveMatches(document, schema, value);
+  return (
+    Object.hasOwn(schema, "const") ||
+    [schema.$ref, schema.enum, schema.oneOf, schema.allOf].some(
+      (constraint) => constraint !== undefined,
+    )
+  );
 }
 function primitiveMatches(document: SchemaDocument, schema: SchemaNode, value: unknown): boolean {
   switch (schema.type) {

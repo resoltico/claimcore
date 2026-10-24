@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.AcceptedHistoryFixtures
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto
@@ -46,7 +46,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             10
             "HISTORICAL-1"
             0L
-            (BusinessCommand.Open
+            (CaseAct.Open
                 { registration with
                     ClaimantName = claimant
                 })
@@ -58,12 +58,12 @@ let internal seed (database: PostgresFixture.Database) claimant =
     |> ignore
 
     let decide (view: CaseLockedView) =
-        Expect.isNone view.Case "Fixture reference is fresh"
-        Expect.isNone view.ExistingOperation "Fixture operation is fresh"
+        Expect.isNone view.Read.Case "Fixture reference is fresh"
+        Expect.isNone view.Read.ExistingOperation "Fixture operation is fresh"
         let id = CaseReferenceId.encode fixture.InstallationId snapshot.Reference
 
         let actor =
-            view.Actor.Actor
+            view.Read.Actor.Actor
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
         let scope =
@@ -71,14 +71,14 @@ let internal seed (database: PostgresFixture.Database) claimant =
                 id,
                 1L,
                 (CaseActKind.Business BusinessActKind.Open),
-                fixture.Calendar.DateAt view.ObservedAt
+                fixture.Calendar.DateAt view.Read.ObservedAt
             )
 
         let entry =
             LedgerEntries.create
                 fixture.InstallationId
                 view.Head
-                view.ObservedAt
+                view.Read.ObservedAt
                 view.PayloadNonce
                 actor.ActorId
                 request.OperationId
@@ -90,7 +90,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
         let receipt =
             LedgerEntries.validate fixture.InstallationId (LedgerEntries.stored entry)
-            |> Result.bind (LedgerEntries.receipt fixture.Owner view.Actor (Some current))
+            |> Result.bind (LedgerEntries.receipt fixture.Owner view.Read.Actor (Some current))
             |> Result.defaultWith (fun _ ->
                 failtest "Historical fixture receipt is structurally valid")
 
@@ -116,12 +116,12 @@ let private grandfathering (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
         let name = String.replicate 201 "A"
         do! seed database name
-        let! current = actor.Get("historical-1", token)
+        let! current = actor.Get({ CaseReference = "historical-1" }, token)
 
         match current with
-        | QueryOutcome.Succeeded {
-                                     Snapshot = { View = CaseView.Live(fields, _) }
-                                 } ->
+        | ReadReply.Succeeded {
+                                  Snapshot = { View = CaseView.Live(fields, _) }
+                              } ->
             Expect.equal fields.ClaimantName name "Retained record renders without admission"
         | _ -> failtest "Historical record could not be read"
 
@@ -133,7 +133,7 @@ let private grandfathering (database: PostgresFixture.Database) =
 
         let! reaffirm =
             actor.Execute(
-                request 11 "HISTORICAL-1" 1L (BusinessCommand.AmendRegistration values),
+                OperationInput.Case(request 11 "HISTORICAL-1" 1L (CaseAct.AmendRegistration values)),
                 token
             )
 
@@ -141,26 +141,26 @@ let private grandfathering (database: PostgresFixture.Database) =
 
         let! changed =
             actor.Execute(
-                request
-                    12
-                    "HISTORICAL-1"
-                    2L
-                    (BusinessCommand.AmendRegistration
-                        { values with
-                            ClaimantName = name + "B"
-                        }),
+                OperationInput.Case(
+                    request
+                        12
+                        "HISTORICAL-1"
+                        2L
+                        (CaseAct.AmendRegistration
+                            { values with
+                                ClaimantName = name + "B"
+                            })
+                ),
                 token
             )
 
         Expect.equal
-            changed
-            (ExecuteOutcome.Rejected(
-                Rejection.Case(
-                    CaseRefusal.InvalidInput(
-                        InputTarget.ClaimantName,
-                        InputViolation.Text(TextViolation.TooLong 200)
-                    )
-                )
+            changed.Outcome
+            (ExecuteResult.Rejected(
+                (Refusal.InvalidInput(
+                    (InputTarget.Field BusinessField.ClaimantName),
+                    (Violation.TooLong 200)
+                ))
             ))
             "Changed assertion follows current policy"
 
@@ -171,14 +171,13 @@ let private grandfathering (database: PostgresFixture.Database) =
 let private appendTransitions (actor: IActorClaimsCore) =
     task {
         for revision in 1L .. 59L do
-            let act =
-                if revision % 2L = 1L then
-                    BusinessCommand.Close
-                else
-                    BusinessCommand.Reopen
+            let act = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
 
             let! result =
-                actor.Execute(request (100 + int revision) "HISTORICAL-1" revision act, token)
+                actor.Execute(
+                    OperationInput.Case(request (100 + int revision) "HISTORICAL-1" revision act),
+                    token
+                )
 
             accepted result |> ignore
 
@@ -202,7 +201,7 @@ let private assertRetained name entries =
 
 let private historyPage =
     function
-    | QueryOutcome.Succeeded page -> page
+    | ReadReply.Succeeded page -> page
     | _ -> failtest "Expected accepted history page"
 
 let private remainingHistory (actor: IActorClaimsCore) (query: HistoryRequest) =
@@ -253,11 +252,11 @@ let private assertRemainingHistoryAccess
         let summary = historyPage summary
         Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
 
-        let! observed = actor.Observe(original.OperationId, token)
+        let! observed = actor.Observe({ OperationId = original.OperationId }, token)
 
         Expect.equal
             observed
-            (QueryOutcome.Succeeded(withheldReceipt original))
+            (ReadReply.Succeeded(withheldReceipt original))
             "Superseded OPEN keeps every acceptance metadata field and withholds its snapshot"
     }
 
@@ -302,7 +301,7 @@ let private revokedFullHistory
 
             Expect.equal
                 refused
-                (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+                (ReadReply.Rejected Refusal.ResourceUnavailable)
                 "FULL requires current rights before accepting or comparing a cursor"
 
         do! assertRemainingHistoryAccess actor query original
@@ -361,8 +360,7 @@ let private retainedPages (database: PostgresFixture.Database) =
             )
 
         match summary with
-        | QueryOutcome.Succeeded p ->
-            Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
+        | ReadReply.Succeeded p -> Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
         | _ -> failtest "Retained summary page"
 
         do! revokedFullHistory database actor query first

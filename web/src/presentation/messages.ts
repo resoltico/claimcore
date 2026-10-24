@@ -1,5 +1,5 @@
 import IntlMessageFormat from "intl-messageformat";
-import { type MessageFormatElement } from "@formatjs/icu-messageformat-parser";
+import { parse, type MessageFormatElement } from "@formatjs/icu-messageformat-parser";
 import { catalogs as generatedCatalogs } from "./generated/catalogs";
 import { presentationPseudolanguage, presentationDefaults } from "@contracts/client";
 import { languageDirection } from "./preferences";
@@ -8,15 +8,11 @@ import shapes from "./generated/arguments.json";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
-// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Generated ICU ASTs are validated before emission.
-const catalogs = generatedCatalogs as unknown as Record<
-  string,
-  Record<string, MessageFormatElement[]>
->;
+const catalogs: Readonly<Record<string, Readonly<Record<string, string>>>> = generatedCatalogs;
 const shapeTable: Readonly<Record<string, Readonly<Record<string, string>>>> = shapes;
 const cache = new Map<string, IntlMessageFormat>();
 const message = (key: string, preferences: Preferences): IntlMessageFormat => {
-  const cacheKey = `${preferences.language}|${preferences.displayLocale}|${key}`;
+  const cacheKey = `${preferences.language}|${key}`;
   const cached = cache.get(cacheKey);
   if (cached !== undefined) {
     return cached;
@@ -25,21 +21,15 @@ const message = (key: string, preferences: Preferences): IntlMessageFormat => {
     preferences.language === presentationPseudolanguage
       ? ([
           { type: 0, value: "⟦" },
-          ...pseudolocalize(catalogs[presentationDefaults.language]![key]!),
+          ...pseudolocalize(parse(catalogs[presentationDefaults.language]![key]!)),
           { type: 0, value: "⟧" },
         ] satisfies MessageFormatElement[])
-      : catalogs[preferences.language]![key]!;
+      : parse(catalogs[preferences.language]![key]!);
   const grammar =
     preferences.language === presentationPseudolanguage
       ? presentationDefaults.language
       : preferences.language;
-  const formatter = new IntlMessageFormat(ast, grammar, undefined, {
-    formatters: {
-      getNumberFormat: () => new Intl.NumberFormat(preferences.displayLocale),
-      getDateTimeFormat: Intl.DateTimeFormat,
-      getPluralRules: (_locales, options) => new Intl.PluralRules(grammar, options),
-    },
-  });
+  const formatter = new IntlMessageFormat(ast, grammar);
   cache.set(cacheKey, formatter);
   return formatter;
 };

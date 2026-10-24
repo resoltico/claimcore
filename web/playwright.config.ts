@@ -47,7 +47,7 @@ export default defineConfig({
   globalTimeout: 840_000,
   workers: 1,
   outputDir: privateOutput,
-  reporter: [["list"]],
+  reporter: [["list"], ["json", { outputFile: resolve(privateOutput, "playwright.json") }]],
   retries: 0,
   use: {
     baseURL,

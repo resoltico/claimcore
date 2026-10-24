@@ -1,0 +1,7 @@
+{
+  "fault.CORE_INTERNAL_ERROR": "An internal error occurred. Stop and investigate.",
+  "fault.CORE_OPERATION_CONTENT_CONFLICT": "Stored operation content is inconsistent. Stop and investigate.",
+  "fault.CORE_SCHEMA_MISMATCH": "The schema differs from this build. Run migrate or use a matching build.",
+  "fault.CORE_STORE_INTEGRITY_ERROR": "Stored data failed verification. Stop and run verify.",
+  "fault.CORE_STORE_UNAVAILABLE": "The store is unavailable. Retry."
+}

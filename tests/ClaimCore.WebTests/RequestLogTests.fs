@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.RequestLogTests
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 open System
 open System.Net.Http
@@ -71,17 +72,17 @@ let private actorIdentity () =
         use host = new Host(true)
         let! _ = host.Login()
         let! token = host.Token()
-        let endpoint = Endpoint.CaseExecute
+        let endpoint = Api.operationExecute
         let input = Array.copy commandInput
 
         for outcome, known in
             [
-                ExecuteOutcome.Accepted(receipt operationId "WEB-001"), true
-                ExecuteOutcome.AlreadyAccepted(receipt operationId "WEB-001"), false
+                ExecuteResult.Accepted(receipt operationId "WEB-001"), true
+                ExecuteResult.AlreadyAccepted(receipt operationId "WEB-001"), false
             ] do
             host.ClearLog()
             host.Facade.Execute <- (fun _ -> Task.FromResult outcome)
-            let! status, _ = host.Call(Endpoint.id endpoint, input, token)
+            let! status, _ = host.Call(endpoint.Id, input, token)
             Expect.equal status 200 "Mutation"
             use entry = JsonDocument.Parse((lines host.Log)[0])
 

@@ -1,43 +1,38 @@
 import { caseOffers } from "./case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../src/api/service";
-import {
-  commandFor,
-  commandInputs,
-  prefilledValues,
-  createDraft,
-} from "../src/interaction/metadata";
+import { initialOperationValues, operationDocument } from "../src/interaction/operationForm";
+import { formValue } from "../src/protocol/forms";
 import { fields, definition } from "./service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
-import { generatedResponse } from "./contract-corpus.fixtures";
+import { wireResponse } from "./contract-corpus.fixtures";
 describe("core command metadata", () => {
-  it("describes all twelve commands and registration inputs", () => {
+  it("prefills registration from descriptors and builds scoped input from the root schema", () => {
     expect(definition.descriptors.fields).toHaveLength(13);
     expect(definition.descriptors.commands).toHaveLength(12);
-    expect(commandFor(definition.descriptors, "OPEN").kind).toBe("OPEN");
-    expect(
-      commandInputs(definition.descriptors, "AMEND_REGISTRATION").map((x) => x.field.name),
-    ).toEqual([
-      "incidentDate",
-      "incidentNotificationDate",
-      "incidentCountry",
-      "claimantName",
-      "insurerName",
-      "claimedAmount",
-      "claimedCurrency",
-    ]);
-    expect(
-      prefilledValues(definition.descriptors, "AMEND_REGISTRATION", {
-        caseReference: fields.caseReference,
-        revision: 1,
-        advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
-
-        state: { tag: "LIVE", disposition: "ACTIVE", fields },
-      }),
-    ).toMatchObject({ claimantName: fields.claimantName });
-    expect(createDraft("id", "reference", 1, "CLOSE", {})).toEqual({
-      operationId: "id",
-      caseReference: "reference",
+    const current = {
+      caseReference: fields.caseReference,
+      revision: 1,
+      advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] as const },
+      state: { tag: "LIVE" as const, disposition: "ACTIVE" as const, fields },
+    };
+    const values = initialOperationValues(
+      "CASE",
+      "AMEND_REGISTRATION",
+      current,
+      "10000000-0000-4000-8000-000000000001",
+    );
+    expect(values["act.values.claimantName"]).toBe(fields.claimantName);
+    const close = initialOperationValues(
+      "CASE",
+      "CLOSE",
+      current,
+      "10000000-0000-4000-8000-000000000001",
+    );
+    expect(formValue(operationDocument, operationDocument, "", close)).toEqual({
+      scope: "CASE",
+      operationId: "10000000-0000-4000-8000-000000000001",
+      caseReference: fields.caseReference,
       expectedRevision: 1,
       act: { kind: "CLOSE" },
     });
@@ -46,7 +41,7 @@ describe("core command metadata", () => {
 describe("catalogue-bound requests", () => {
   beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
   it("sends the handshake and exact root endpoint path", async () => {
-    vi.mocked(fetch).mockResolvedValue(generatedResponse("case.list"));
+    vi.mocked(fetch).mockResolvedValue(wireResponse("case.list"));
     await service.list(null, 50, "csrf");
     expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe(
       endpoints.find((e) => e.id === "case.list")!.path,
@@ -57,7 +52,7 @@ describe("catalogue-bound requests", () => {
     });
   });
   it("rejects wrong endpoints missing consumed fields and non-JSON replies", async () => {
-    const valid = (await generatedResponse("case.list").json()) as object;
+    const valid = (await wireResponse("case.list").json()) as object;
     for (const response of [
       new Response(
         JSON.stringify({
@@ -68,7 +63,7 @@ describe("catalogue-bound requests", () => {
           headers: { "content-type": "application/json" },
         },
       ),
-      generatedResponse("case.get"),
+      wireResponse("case.get"),
       new Response(JSON.stringify(valid), { headers: { "content-type": "application/jsonp" } }),
     ]) {
       vi.mocked(fetch).mockResolvedValueOnce(response);

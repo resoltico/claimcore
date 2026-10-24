@@ -1,4 +1,4 @@
-import type { Review, CaseFields } from "../src/api/service";
+import type { CaseReview, CaseFields } from "../src/api/service";
 
 export const caseFields: CaseFields = {
   incidentDate: "2026-09-01",
@@ -16,27 +16,9 @@ export const caseFields: CaseFields = {
   status: "OPENED",
 };
 
-export const groupedCorrectionValues = {
-  registration: {
-    mode: "REPLACE" as const,
-    values: {
-      incidentDate: "2026-09-01",
-      incidentNotificationDate: "2026-09-02",
-      incidentCountry: "LV",
-      claimantName: "Synthetic A",
-      insurerName: "Synthetic insurer",
-      claimedAmount: "12.34",
-      claimedCurrency: "EUR",
-    },
-  },
-  decision: { mode: "KEEP" as const, values: {} },
-  payment: { mode: "KEEP" as const, values: {} },
-};
-
-import { productMetadata } from "../src/protocol/productMetadata";
-export const definition = productMetadata.descriptors;
 export const operationId = "10000000-0000-4000-8000-000000000001";
-export const review: Review = {
+export const review: CaseReview = {
+  scope: "CASE",
   before: null,
   after: {
     caseReference: caseFields.caseReference,

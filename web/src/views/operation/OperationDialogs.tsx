@@ -4,47 +4,7 @@ import { useEffect, useRef } from "react";
 import type { Notice } from "../../api/notices";
 import { NoticeView } from "../../presentation/Message";
 import type { ProductMetadata, CaseReceipt } from "../../api/service";
-import { AccessibleModal } from "../../components/AccessibleModal";
 import { ReceiptFields } from "../../components/ReceiptFields";
-import type { OperationEditorModel } from "../../interaction/editorTypes";
-
-type CommandChangeProps = { model: OperationEditorModel; onClose: () => void };
-
-export const CommandChangeDialog = ({ model, onClose }: CommandChangeProps) => {
-  const p = usePresentation();
-  if (model.pendingDiscard === null) {
-    return null;
-  }
-  const { pendingDiscard } = model;
-  return (
-    <AccessibleModal
-      closeLabel={p.text("ui.keepEditing")}
-      title={p.text("ui.changeCommandTitle")}
-      description={p.text(
-        pendingDiscard === "LEAVE" ? "ui.leaveDraftDescription" : "ui.changeCommandDescription",
-      )}
-      isOpen
-      isDismissable
-      onOpenChange={() => {
-        model.setPendingDiscard(null);
-      }}
-    >
-      <div className="dialog-actions">
-        <Button
-          onPress={() => {
-            if (pendingDiscard === "LEAVE") {
-              onClose();
-            } else {
-              model.applyCommand(pendingDiscard);
-            }
-          }}
-        >
-          {p.text(pendingDiscard === "LEAVE" ? "ui.discardAndLeave" : "ui.discardAndChange")}
-        </Button>
-      </div>
-    </AccessibleModal>
-  );
-};
 
 type AcceptedOperationProps = {
   definition: ProductMetadata;
@@ -76,7 +36,7 @@ export const AcceptedOperation = ({
       </h2>
       <p>{p.text("ui.operationAccepted", { operationId: receipt.operationId })}</p>
       <ReceiptFields
-        receipt={receipt}
+        scope={receipt.scope}
         fields={definition.descriptors.fields}
         context={p.text("ui.acceptedContext", { operationId: receipt.operationId })}
       />

@@ -1,6 +1,6 @@
 module ClaimCore.Tests.AuthorityTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -20,42 +20,45 @@ let private service subject =
     |> Result.defaultWith failtest
 
 let private execute (actor: IActorClaimsCore) n target act =
-    actor.ExecuteAuthority(authorityRequest (id n) target act, CancellationToken.None)
+    actor.Execute(
+        OperationInput.Authority(authorityRequest (id n) target act),
+        CancellationToken.None
+    )
 
 let private register actor n target =
     task {
-        let! result = execute actor n target AuthorityAct.RegisterActor
+        let! result = execute actor n target AdmittedAuthorityAct.RegisterActor
         acceptedAuthority result
     }
 
 let private lastOwner (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = bootstrap fixture
-        let! disabled = execute actor 2 owner (AuthorityAct.SetEnabled false)
+        let! disabled = execute actor 2 owner (AdmittedAuthorityAct.SetEnabled false)
 
         Expect.equal
-            disabled
-            (ExecuteOutcome.Rejected Rejection.LastOwner)
+            disabled.Outcome
+            (ExecuteResult.Rejected Refusal.LastOwner)
             "Last owner disable refuses"
 
         let! removed = grant actor (id 3) owner Role.Owner GrantTarget.Installation false
 
         Expect.equal
-            removed
-            (ExecuteOutcome.Rejected Rejection.LastOwner)
+            removed.Outcome
+            (ExecuteResult.Rejected Refusal.LastOwner)
             "Last installation grant removal refuses"
 
         let other = human "other-owner"
         do! register actor 4 other
         let! granted = grant actor (id 5) other Role.Owner GrantTarget.Installation true
         acceptedAuthority granted
-        let! disabled = execute actor 6 owner (AuthorityAct.SetEnabled false)
+        let! disabled = execute actor 6 owner (AdmittedAuthorityAct.SetEnabled false)
         acceptedAuthority disabled
         let! context = actor.Context CancellationToken.None
 
         Expect.equal
             context
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Disabled owner has no cached authority"
     }
 
@@ -72,8 +75,8 @@ let private exactReplay (store: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! replay = grant actor (id 3) target Role.CaseReader GrantTarget.Installation true
 
         Expect.equal
-            replay
-            (ExecuteOutcome.AlreadyAccepted receipt)
+            replay.Outcome
+            (ExecuteResult.AlreadyAccepted receipt)
             "Original accepted authority receipt"
 
         match receipt.Scope with
@@ -87,15 +90,15 @@ let private exactReplay (store: MemoryLedgerStore.Store) (fixture: Fixture) =
             grant actor (id 3) target Role.CaseReader GrantTarget.Installation false
 
         Expect.equal
-            conflict
-            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+            conflict.Outcome
+            (ExecuteResult.Rejected Refusal.IdempotencyConflict)
             "Different content conflicts"
 
-        let! observed = actor.Observe(id 3, CancellationToken.None)
+        let! observed = actor.Observe({ OperationId = id 3 }, CancellationToken.None)
 
         Expect.equal
             observed
-            (QueryOutcome.Succeeded receipt)
+            (ReadReply.Succeeded receipt)
             "Unified observation returns the same metadata"
 
         Expect.equal store.Entries.Length 3 "No extra authority operation"
@@ -153,7 +156,7 @@ let private serviceBootstrap (store: MemoryLedgerStore.Store) (fixture: Fixture)
 
         Expect.equal
             result
-            (Ok(LedgerWriteResult.Refused Rejection.HumanPrincipalRequired))
+            (Ok(LedgerWriteResult.Refused Refusal.HumanPrincipalRequired))
             "Bootstrap is human-only"
 
         Expect.isEmpty store.Entries "Refusal records nothing"
@@ -165,7 +168,10 @@ let private humanGrantTargets (store: MemoryLedgerStore.Store) (fixture: Fixture
         let! actor = caseWorker fixture
         let target = service "automation"
         do! register actor 3 target
-        let! opened = actor.Execute(openRequest 10 "SCOPED", CancellationToken.None)
+
+        let! opened =
+            actor.Execute(OperationInput.Case(openRequest 10 "SCOPED"), CancellationToken.None)
+
         accepted opened |> ignore
         let before = store.Entries.Length
         let mutable n = 20
@@ -177,8 +183,8 @@ let private humanGrantTargets (store: MemoryLedgerStore.Store) (fixture: Fixture
                     n <- n + 1
 
                     Expect.equal
-                        outcome
-                        (ExecuteOutcome.Rejected Rejection.HumanPrincipalRequired)
+                        outcome.Outcome
+                        (ExecuteResult.Rejected Refusal.HumanPrincipalRequired)
                         "Locked grant-target rule"
 
         Expect.equal store.Entries.Length before "Invalid grants append nothing"
@@ -190,7 +196,7 @@ let private humanGrantTargets (store: MemoryLedgerStore.Store) (fixture: Fixture
                 .ListActors({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
 
         match review with
-        | QueryOutcome.Succeeded _ -> ()
+        | ReadReply.Succeeded _ -> ()
         | _ -> failtest "Registered service auditor should review authority"
     }
 
@@ -200,22 +206,24 @@ let private uncertainty (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         for n, lands in [ 10, true; 11, false ] do
             let target = human (if lands then "landed" else "not-landed")
-            let request = authorityRequest (id n) target AuthorityAct.RegisterActor
+            let request = authorityRequest (id n) target AdmittedAuthorityAct.RegisterActor
             store.UnknownCommitLands <- lands
             store.NextFailure <- StoreFailure.CommitOutcomeUnknown
-            let! outcome = actor.ExecuteAuthority(request, CancellationToken.None)
 
-            match outcome with
-            | ExecuteOutcome.OutcomeUnknown operationId ->
-                Expect.equal operationId request.OperationId "Original authority identity"
+            let! outcome =
+                actor.Execute(OperationInput.Authority request, CancellationToken.None)
+
+            match outcome.Outcome with
+            | ExecuteResult.OutcomeUnknown ->
+                Expect.equal outcome.OperationId request.OperationId "Original authority identity"
 
             | _ -> failtest "Authority uncertainty relabeled"
 
-            let! retry = actor.ExecuteAuthority(request, CancellationToken.None)
+            let! retry = actor.Execute(OperationInput.Authority request, CancellationToken.None)
 
-            match retry, lands with
-            | ExecuteOutcome.AlreadyAccepted _, true
-            | ExecuteOutcome.Accepted _, false -> ()
+            match retry.Outcome, lands with
+            | ExecuteResult.AlreadyAccepted _, true
+            | ExecuteResult.Accepted _, false -> ()
             | _ -> failtest "Exact authority retry failed"
 
             Expect.equal
@@ -229,19 +237,46 @@ let private uncertainty (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 let private failureAndCancellation (store: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = bootstrap fixture
-        let request = authorityRequest (id 10) (human "reader") AuthorityAct.RegisterActor
+
+        let request =
+            authorityRequest (id 10) (human "reader") AdmittedAuthorityAct.RegisterActor
+
         store.NextFailure <- StoreFailure.Unavailable
-        let! failure = actor.ExecuteAuthority(request, CancellationToken.None)
+
+        let! failure =
+            actor.Execute(OperationInput.Authority request, CancellationToken.None)
 
         Expect.equal
-            failure
-            (ExecuteOutcome.Failed CoreFault.StoreUnavailable)
+            failure.Outcome
+            (ExecuteResult.Failed CoreFault.StoreUnavailable)
             "Definite authority failure"
 
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
-        let! cancelled = actor.ExecuteAuthority(request, cancellation.Token)
-        Expect.equal cancelled ExecuteOutcome.Cancelled "Before dispatch"
+        let! cancelled = actor.Execute(OperationInput.Authority request, cancellation.Token)
+
+        Expect.equal
+            cancelled.Outcome
+            (ExecuteResult.Failed CoreFault.StoreUnavailable)
+            "Before dispatch"
+
+        Expect.equal
+            cancelled.OperationId
+            request.OperationId
+            "Cancelled authority keeps original identity"
+
+        let! preview = actor.Preview(OperationInput.Authority request, cancellation.Token)
+
+        Expect.equal
+            preview.OperationId
+            request.OperationId
+            "Cancelled authority preview keeps original identity"
+
+        Expect.equal
+            preview.Outcome
+            (PreviewResult.Failed CoreFault.StoreUnavailable)
+            "Cancelled authority preview is a definite failure"
+
         Expect.equal store.Entries.Length 1 "No authority acceptance"
     }
 
@@ -254,7 +289,7 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! context = ungranted.Context CancellationToken.None
 
         match context with
-        | QueryOutcome.Succeeded value ->
+        | ReadReply.Succeeded value ->
             Expect.isEmpty value.Capabilities "Enabled actor may read context without grants"
         | _ -> failtest "Missing enabled-actor context"
 
@@ -263,26 +298,26 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Authority remains default deny"
 
         let! missing = (core fixture (human "absent")).Context CancellationToken.None
 
         Expect.equal
             missing
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Unregistered principal has no context"
 
         let! review =
             actor.ListActors({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
 
         match review with
-        | QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             let found = page.Items |> List.find (fun value -> value.ActorId = id 2)
 
             Expect.equal
                 found.Principal
-                target
+                (PrincipalKey.describe target)
                 "RecordedBy attribution includes principal and actor ID"
 
             Expect.isTrue found.Enabled "Current enabled state"
@@ -298,7 +333,7 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                 )
 
             match grants with
-            | QueryOutcome.Succeeded value -> Expect.isEmpty value.Items "No implied grants"
+            | ReadReply.Succeeded value -> Expect.isEmpty value.Items "No implied grants"
             | _ -> failtest "Expected grant review"
         | _ -> failtest "Owner review unavailable"
     }
@@ -306,16 +341,19 @@ let private contextAndReview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        let! opened = actor.Execute(openRequest 10 "UNIT-001", CancellationToken.None)
+
+        let! opened =
+            actor.Execute(OperationInput.Case(openRequest 10 "UNIT-001"), CancellationToken.None)
+
         let receipt = accepted opened
-        let! authority = actor.Observe(id 1, CancellationToken.None)
+        let! authority = actor.Observe({ OperationId = id 1 }, CancellationToken.None)
 
         match authority with
-        | QueryOutcome.Succeeded { Scope = ReceiptScope.Authority _ } -> ()
+        | ReadReply.Succeeded { Scope = ReceiptScope.Authority _ } -> ()
         | _ -> failtest "Unified authority observation failed"
 
-        let! observed = actor.Observe(id 10, CancellationToken.None)
-        Expect.equal observed (QueryOutcome.Succeeded receipt) "Unified case observation"
+        let! observed = actor.Observe({ OperationId = id 10 }, CancellationToken.None)
+        Expect.equal observed (ReadReply.Succeeded receipt) "Unified case observation"
         let reader = human "reader"
         do! register actor 3 reader
 
@@ -323,11 +361,13 @@ let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             grant actor (id 4) reader Role.CaseReader GrantTarget.Installation true
 
         acceptedAuthority granted
-        let! denied = (core fixture reader).Observe(id 1, CancellationToken.None)
+
+        let! denied =
+            (core fixture reader).Observe({ OperationId = id 1 }, CancellationToken.None)
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Case rights do not grant installation authority review"
 
         let auditor = human "case-auditor"
@@ -344,14 +384,14 @@ let private observationRights (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             list
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Case auditor cannot enumerate installation"
 
-        let! denied = scoped.Observe(id 1, CancellationToken.None)
+        let! denied = scoped.Observe({ OperationId = id 1 }, CancellationToken.None)
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Authority observation requires installation ReadAuthority"
     }
 
@@ -360,7 +400,7 @@ let private actorContext (actor: IActorClaimsCore) =
         let! context = actor.Context CancellationToken.None
 
         match context with
-        | QueryOutcome.Succeeded value -> return value
+        | ReadReply.Succeeded value -> return value
         | _ -> return failtest "Expected enabled actor context"
     }
 
@@ -384,7 +424,10 @@ let private contextOffers (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             grant admin (id 2) owner Role.CaseHandler GrantTarget.Installation true
 
         acceptedAuthority handler
-        let! opened = admin.Execute(openRequest 3 "OFFER-1", CancellationToken.None)
+
+        let! opened =
+            admin.Execute(OperationInput.Case(openRequest 3 "OFFER-1"), CancellationToken.None)
+
         accepted opened |> ignore
         let target = service "scoped-reader"
         do! register admin 4 target
@@ -414,11 +457,41 @@ let private contextOffers (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         Expect.isEmpty context.Views "Revoked reads remove every view"
     }
 
+let private exhaustedHead (store: MemoryLedgerStore.Store) (fixture: Fixture) =
+    task {
+        let! actor = bootstrap fixture
+
+        store.HeadOverride <-
+            Some
+                {
+                    Sequence = Revision.Maximum
+                    EntryHash = Array.zeroCreate 32
+                }
+
+        let input = authorityRequest (id 2) fixture.Owner AdmittedAuthorityAct.RegisterActor
+
+        let! preview = actor.Preview(OperationInput.Authority input, CancellationToken.None)
+
+        Expect.equal
+            preview.Outcome
+            (PreviewResult.Rejected Refusal.ActorAlreadyRegistered)
+            "Advisory preview applies target rules without a ledger head."
+
+        let! execution =
+            actor.Execute(OperationInput.Authority input, CancellationToken.None)
+
+        Expect.equal
+            execution.Outcome
+            (ExecuteResult.Rejected Refusal.LedgerExhausted)
+            "Locked execution preserves capacity refusal before projection validation."
+    }
+
 [<Tests>]
 let tests =
     testList
         "authority decisions and review"
         [
+            testCaseAsync "ledger capacity retains execution refusal precedence" (run exhaustedHead)
             testCaseAsync
                 "installation offers respect scope principal and revocation"
                 (run contextOffers)

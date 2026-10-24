@@ -5,12 +5,18 @@
     <WebClientDirectory>$(MSBuildProjectDirectory)/../../web</WebClientDirectory>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
+    <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Content Remove="wwwroot/**/*" />
     <None Remove="wwwroot/**/*" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Composition/AuthenticatedSubject.fs" />
+    <Compile Include="Composition/BusinessCalendar.fs" />
+    <Compile Include="Composition/AdmissionGate.fs" />
+    <Compile Include="Composition/Dispatch.fs" />
+    <Compile Include="Composition/Runtime.fs" />
+    <Compile Include="Composition/ServiceRuntime.fs" />
     <Compile Include="StartupDiagnostics.fs" />
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="AuthFoundation.fs" />
@@ -40,8 +46,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
-    <ProjectReference Include="../ClaimCore.Wire/ClaimCore.Wire.fsproj" />
-    <ProjectReference Include="../ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
+    <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />

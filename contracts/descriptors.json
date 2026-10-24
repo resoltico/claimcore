@@ -2,9 +2,7 @@
   "fields": [
     {
       "name": "incidentDate",
-      "label": "Incident date",
       "labelId": "field.incidentDate.label",
-      "meaning": "Date on which the incident occurred.",
       "meaningId": "field.incidentDate.meaning",
       "allowsAbsence": false,
       "scalar": {
@@ -16,9 +14,7 @@
     },
     {
       "name": "incidentNotificationDate",
-      "label": "Incident notification date (FNOL)",
       "labelId": "field.incidentNotificationDate.label",
-      "meaning": "Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified.",
       "meaningId": "field.incidentNotificationDate.meaning",
       "allowsAbsence": false,
       "scalar": {
@@ -30,9 +26,7 @@
     },
     {
       "name": "incidentCountry",
-      "label": "Country of incident (ISO alpha-2 code)",
       "labelId": "field.incidentCountry.label",
-      "meaning": "Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international.",
       "meaningId": "field.incidentCountry.meaning",
       "allowsAbsence": false,
       "scalar": {
@@ -46,9 +40,7 @@
     },
     {
       "name": "claimantName",
-      "label": "Claimant name",
       "labelId": "field.claimantName.label",
-      "meaning": "Name of the person or company making the claim.",
       "meaningId": "field.claimantName.meaning",
       "allowsAbsence": false,
       "scalar": {
@@ -68,9 +60,7 @@
     },
     {
       "name": "insurerName",
-      "label": "Responsible insurer",
       "labelId": "field.insurerName.label",
-      "meaning": "Insurer recorded by the claims handler as responsible for this claim.",
       "meaningId": "field.insurerName.meaning",
       "allowsAbsence": false,
       "scalar": {
@@ -90,9 +80,7 @@
     },
     {
       "name": "claimedAmount",
-      "label": "Amount claimed",
       "labelId": "field.claimedAmount.label",
-      "meaning": "Amount requested by the claimant.",
       "meaningId": "field.claimedAmount.meaning",
       "allowsAbsence": false,
       "scalar": {
@@ -104,9 +92,7 @@
     },
     {
       "name": "claimedCurrency",
-      "label": "Currency of claimed amount",
       "labelId": "field.claimedCurrency.label",
-      "meaning": "Currency in which the amount is claimed.",
       "meaningId": "field.claimedCurrency.meaning",
       "allowsAbsence": false,
       "scalar": {
@@ -117,9 +103,7 @@
     },
     {
       "name": "caseReference",
-      "label": "Handler\u0027s case reference",
       "labelId": "field.caseReference.label",
-      "meaning": "Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained.",
       "meaningId": "field.caseReference.meaning",
       "allowsAbsence": false,
       "scalar": {
@@ -133,9 +117,7 @@
     },
     {
       "name": "paymentDecisionDate",
-      "label": "Payment decision date",
       "labelId": "field.paymentDecisionDate.label",
-      "meaning": "Date when this claims handler decided the amount to be paid. Not recorded until a decision is made.",
       "meaningId": "field.paymentDecisionDate.meaning",
       "allowsAbsence": true,
       "scalar": {
@@ -147,9 +129,7 @@
     },
     {
       "name": "payableAmount",
-      "label": "Amount to be paid",
       "labelId": "field.payableAmount.label",
-      "meaning": "Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount.",
       "meaningId": "field.payableAmount.meaning",
       "allowsAbsence": true,
       "scalar": {
@@ -161,9 +141,7 @@
     },
     {
       "name": "payableCurrency",
-      "label": "Currency of amount to be paid",
       "labelId": "field.payableCurrency.label",
-      "meaning": "Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency.",
       "meaningId": "field.payableCurrency.meaning",
       "allowsAbsence": true,
       "scalar": {
@@ -174,9 +152,7 @@
     },
     {
       "name": "paymentDate",
-      "label": "Payment date",
       "labelId": "field.paymentDate.label",
-      "meaning": "Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer.",
       "meaningId": "field.paymentDate.meaning",
       "allowsAbsence": true,
       "scalar": {
@@ -188,9 +164,7 @@
     },
     {
       "name": "status",
-      "label": "Case status",
       "labelId": "field.status.label",
-      "meaning": "Whether the case is open or closed. Closing a case does not mean that payment was made.",
       "meaningId": "field.status.meaning",
       "allowsAbsence": false,
       "scalar": {
@@ -205,8 +179,6 @@
   "commands": [
     {
       "kind": "OPEN",
-      "label": "Open a case",
-      "meaning": "Register the incident, claimant, insurer and amount claimed.",
       "labelId": "command.OPEN.label",
       "meaningId": "command.OPEN.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -246,8 +218,6 @@
     },
     {
       "kind": "AMEND_REGISTRATION",
-      "label": "Amend registration",
-      "meaning": "Replace the initial facts. The handler\u0027s case reference remains unchanged.",
       "labelId": "command.AMEND_REGISTRATION.label",
       "meaningId": "command.AMEND_REGISTRATION.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -294,8 +264,6 @@
     },
     {
       "kind": "CORRECT_CASE",
-      "label": "Correct case facts",
-      "meaning": "Correct recorded details on a case with a decision, payment or closed status. All changes are recorded together. Clearing a payment date does not refund money.",
       "labelId": "command.CORRECT_CASE.label",
       "meaningId": "command.CORRECT_CASE.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -304,9 +272,7 @@
         "groups": [
           {
             "name": "registration",
-            "label": "Registration",
             "labelId": "group.registration.label",
-            "meaning": "Keep the current registration details or replace all seven details together.",
             "meaningId": "group.registration.meaning",
             "actions": [
               "KEEP",
@@ -352,9 +318,7 @@
           },
           {
             "name": "decision",
-            "label": "Payment decision",
             "labelId": "group.decision.label",
-            "meaning": "Keep the current payment decision, replace its date, amount and currency together, or clear the decision.",
             "meaningId": "group.decision.meaning",
             "actions": [
               "KEEP",
@@ -381,9 +345,7 @@
           },
           {
             "name": "payment",
-            "label": "Payment record",
             "labelId": "group.payment.label",
-            "meaning": "Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money.",
             "meaningId": "group.payment.meaning",
             "actions": [
               "KEEP",
@@ -403,8 +365,6 @@
     },
     {
       "kind": "DECIDE",
-      "label": "Record payment decision",
-      "meaning": "Record or replace the decided amount and currency. This does not send money.",
       "labelId": "command.DECIDE.label",
       "meaningId": "command.DECIDE.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -431,8 +391,6 @@
     },
     {
       "kind": "WITHDRAW_DECISION",
-      "label": "Withdraw payment decision",
-      "meaning": "Clear the unpaid decision while preserving its history.",
       "labelId": "command.WITHDRAW_DECISION.label",
       "meaningId": "command.WITHDRAW_DECISION.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -443,8 +401,6 @@
     },
     {
       "kind": "RECORD_PAYMENT",
-      "label": "Record actual payment",
-      "meaning": "Record the date the full decided amount was actually paid. This does not execute or verify a transfer.",
       "labelId": "command.RECORD_PAYMENT.label",
       "meaningId": "command.RECORD_PAYMENT.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -460,8 +416,6 @@
     },
     {
       "kind": "CLEAR_PAYMENT",
-      "label": "Correct an erroneous payment record",
-      "meaning": "Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains.",
       "labelId": "command.CLEAR_PAYMENT.label",
       "meaningId": "command.CLEAR_PAYMENT.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -472,8 +426,6 @@
     },
     {
       "kind": "CLOSE",
-      "label": "Close the case",
-      "meaning": "Close the case. Closing does not mean that payment was made.",
       "labelId": "command.CLOSE.label",
       "meaningId": "command.CLOSE.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -484,8 +436,6 @@
     },
     {
       "kind": "REOPEN",
-      "label": "Reopen the case",
-      "meaning": "Reopen the case, preserving its details and history.",
       "labelId": "command.REOPEN.label",
       "meaningId": "command.REOPEN.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -496,8 +446,6 @@
     },
     {
       "kind": "VOID",
-      "label": "Void case record",
-      "meaning": "Block business commands while retaining the case and its history.",
       "labelId": "command.VOID.label",
       "meaningId": "command.VOID.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -513,8 +461,6 @@
     },
     {
       "kind": "REINSTATE",
-      "label": "Reinstate case record",
-      "meaning": "Restore ordinary case work on a voided record.",
       "labelId": "command.REINSTATE.label",
       "meaningId": "command.REINSTATE.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -530,8 +476,6 @@
     },
     {
       "kind": "ERASE",
-      "label": "Erase case payload",
-      "meaning": "Permanently remove business payload from the live database. WAL, backups and copies elsewhere are not erased.",
       "labelId": "command.ERASE.label",
       "meaningId": "command.ERASE.meaning",
       "confirmationId": "ui.reviewConfirmation",
@@ -546,8 +490,6 @@
       "name": "reason",
       "labelId": "field.reason.label",
       "meaningId": "field.reason.meaning",
-      "label": "Stewardship reason",
-      "meaning": "Explain the record stewardship action.",
       "scalar": {
         "kind": "TEXT",
         "format": {
@@ -566,18 +508,12 @@
   ],
   "authorityTarget": {
     "fieldName": "target",
-    "label": "Actor principal",
     "labelId": "authority.field.target.label",
-    "primitive": "PRINCIPAL",
-    "path": [
-      "target"
-    ]
+    "primitive": "PRINCIPAL"
   },
   "authorityCommands": [
     {
       "kind": "REGISTER_ACTOR",
-      "label": "Register actor",
-      "meaning": "Register a principal without granting case or administration capabilities.",
       "labelId": "authority.REGISTER_ACTOR.label",
       "meaningId": "authority.REGISTER_ACTOR.meaning",
       "confirmationId": "ui.confirmExactRequest",
@@ -585,61 +521,37 @@
     },
     {
       "kind": "SET_GRANT",
-      "label": "Set actor grant",
-      "meaning": "Grant or revoke a role at installation or case scope.",
       "labelId": "authority.SET_GRANT.label",
       "meaningId": "authority.SET_GRANT.meaning",
       "confirmationId": "ui.confirmExactRequest",
       "inputs": [
         {
           "fieldName": "role",
-          "label": "Role",
           "labelId": "authority.field.role.label",
-          "primitive": "ROLE",
-          "path": [
-            "act",
-            "role"
-          ]
+          "primitive": "ROLE"
         },
         {
           "fieldName": "scope",
-          "label": "Grant scope",
           "labelId": "authority.field.scope.label",
-          "primitive": "SCOPE",
-          "path": [
-            "act",
-            "scope"
-          ]
+          "primitive": "SCOPE"
         },
         {
           "fieldName": "active",
-          "label": "Grant active",
           "labelId": "authority.field.active.label",
-          "primitive": "BOOLEAN",
-          "path": [
-            "act",
-            "active"
-          ]
+          "primitive": "BOOLEAN"
         }
       ]
     },
     {
       "kind": "SET_ENABLED",
-      "label": "Set actor enabled",
-      "meaning": "Enable or disable an actor. The final enabled human owner remains protected.",
       "labelId": "authority.SET_ENABLED.label",
       "meaningId": "authority.SET_ENABLED.meaning",
       "confirmationId": "ui.confirmExactRequest",
       "inputs": [
         {
           "fieldName": "enabled",
-          "label": "Actor enabled",
           "labelId": "authority.field.enabled.label",
-          "primitive": "BOOLEAN",
-          "path": [
-            "act",
-            "enabled"
-          ]
+          "primitive": "BOOLEAN"
         }
       ]
     }
@@ -647,60 +559,58 @@
   "authorityFields": [
     {
       "name": "operationId",
-      "label": "Operation ID",
       "labelId": "authority.field.operationId.label"
     },
     {
       "name": "expectedRevision",
-      "label": "Expected revision",
       "labelId": "authority.field.expectedRevision.label"
     },
     {
       "name": "act",
-      "label": "Operation",
       "labelId": "authority.field.act.label"
     },
     {
       "name": "kind",
-      "label": "Type",
       "labelId": "authority.field.kind.label"
     },
     {
       "name": "issuer",
-      "label": "Identity issuer",
       "labelId": "authority.field.issuer.label"
     },
     {
       "name": "subject",
-      "label": "Subject or client ID",
       "labelId": "authority.field.subject.label"
     },
     {
       "name": "target",
-      "label": "Actor principal",
       "labelId": "authority.field.target.label"
     },
     {
       "name": "role",
-      "label": "Role",
       "labelId": "authority.field.role.label"
     },
     {
       "name": "scope",
-      "label": "Grant scope",
       "labelId": "authority.field.scope.label"
     },
     {
       "name": "active",
-      "label": "Grant active",
       "labelId": "authority.field.active.label"
     },
     {
       "name": "enabled",
-      "label": "Actor enabled",
       "labelId": "authority.field.enabled.label"
     }
   ],
+  "characterWarnings": {
+    "maximumCodePoints": 8,
+    "categories": [
+      "Cc",
+      "Cf",
+      "Zl",
+      "Zp"
+    ]
+  },
   "statuses": [
     "OPENED",
     "CLOSED"
@@ -745,6 +655,10 @@
       "parameters": []
     },
     {
+      "id": "INPUT_PRINCIPAL_FORMAT",
+      "parameters": []
+    },
+    {
       "id": "INPUT_CALENDAR_DATE_REQUIRED",
       "parameters": []
     },
@@ -784,8 +698,14 @@
       "parameters": []
     },
     {
-      "id": "REVISION_EXHAUSTED",
-      "parameters": []
+      "id": "QUERY_PAGE_LIMIT_RANGE",
+      "parameters": [
+        {
+          "name": "maximumPageSize",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      ]
     },
     {
       "id": "CORRECTION_PAYMENT_CLEAR_REQUIRED",
@@ -796,11 +716,27 @@
       "parameters": []
     },
     {
+      "id": "CASE_REVISION_CONFLICT",
+      "parameters": []
+    },
+    {
       "id": "CASE_ALREADY_EXISTS",
       "parameters": []
     },
     {
-      "id": "CASE_REVISION_CONFLICT",
+      "id": "CASE_ERASED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_VOIDED",
+      "parameters": []
+    },
+    {
+      "id": "ALREADY_VOIDED",
+      "parameters": []
+    },
+    {
+      "id": "NOT_VOIDED",
       "parameters": []
     },
     {
@@ -848,21 +784,7 @@
       "parameters": []
     },
     {
-      "id": "QUERY_PAGE_LIMIT_RANGE",
-      "parameters": [
-        {
-          "name": "maximumPageSize",
-          "minimum": 1,
-          "maximum": 2147483647
-        }
-      ]
-    },
-    {
-      "id": "QUERY_CURSOR_INVALID",
-      "parameters": []
-    },
-    {
-      "id": "ACT_NOT_PERMITTED",
+      "id": "REVISION_EXHAUSTED",
       "parameters": []
     },
     {
@@ -878,19 +800,7 @@
       "parameters": []
     },
     {
-      "id": "CASE_VOIDED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_ERASED",
-      "parameters": []
-    },
-    {
-      "id": "ALREADY_VOIDED",
-      "parameters": []
-    },
-    {
-      "id": "NOT_VOIDED",
+      "id": "ACT_NOT_PERMITTED",
       "parameters": []
     },
     {
@@ -907,6 +817,10 @@
     },
     {
       "id": "HUMAN_PRINCIPAL_REQUIRED",
+      "parameters": []
+    },
+    {
+      "id": "QUERY_CURSOR_INVALID",
       "parameters": []
     }
   ],
@@ -997,1083 +911,5 @@
     "maximumPageSize": 50,
     "requestByteLimit": 65536
   },
-  "productVersion": "0.11.0",
-  "messages": {
-    "authority.REGISTER_ACTOR.label": [
-      {
-        "literal": "Register actor"
-      }
-    ],
-    "authority.REGISTER_ACTOR.meaning": [
-      {
-        "literal": "Register a principal without granting case or administration capabilities."
-      }
-    ],
-    "authority.SET_ENABLED.label": [
-      {
-        "literal": "Set actor enabled"
-      }
-    ],
-    "authority.SET_ENABLED.meaning": [
-      {
-        "literal": "Enable or disable an actor. The final enabled human owner remains protected."
-      }
-    ],
-    "authority.SET_GRANT.label": [
-      {
-        "literal": "Set actor grant"
-      }
-    ],
-    "authority.SET_GRANT.meaning": [
-      {
-        "literal": "Grant or revoke a role at installation or case scope."
-      }
-    ],
-    "authority.field.act.label": [
-      {
-        "literal": "Operation"
-      }
-    ],
-    "authority.field.active.label": [
-      {
-        "literal": "Grant active"
-      }
-    ],
-    "authority.field.enabled.label": [
-      {
-        "literal": "Actor enabled"
-      }
-    ],
-    "authority.field.expectedRevision.label": [
-      {
-        "literal": "Expected revision"
-      }
-    ],
-    "authority.field.issuer.label": [
-      {
-        "literal": "Identity issuer"
-      }
-    ],
-    "authority.field.kind.label": [
-      {
-        "literal": "Type"
-      }
-    ],
-    "authority.field.operationId.label": [
-      {
-        "literal": "Operation ID"
-      }
-    ],
-    "authority.field.role.label": [
-      {
-        "literal": "Role"
-      }
-    ],
-    "authority.field.scope.label": [
-      {
-        "literal": "Grant scope"
-      }
-    ],
-    "authority.field.subject.label": [
-      {
-        "literal": "Subject or client ID"
-      }
-    ],
-    "authority.field.target.label": [
-      {
-        "literal": "Actor principal"
-      }
-    ],
-    "command.AMEND_REGISTRATION.label": [
-      {
-        "literal": "Amend registration"
-      }
-    ],
-    "command.AMEND_REGISTRATION.meaning": [
-      {
-        "literal": "Replace the initial facts. The handler\u0027s case reference remains unchanged."
-      }
-    ],
-    "command.CLEAR_PAYMENT.label": [
-      {
-        "literal": "Correct an erroneous payment record"
-      }
-    ],
-    "command.CLEAR_PAYMENT.meaning": [
-      {
-        "literal": "Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains."
-      }
-    ],
-    "command.CLOSE.label": [
-      {
-        "literal": "Close the case"
-      }
-    ],
-    "command.CLOSE.meaning": [
-      {
-        "literal": "Close the case. Closing does not mean that payment was made."
-      }
-    ],
-    "command.CORRECT_CASE.label": [
-      {
-        "literal": "Correct case facts"
-      }
-    ],
-    "command.CORRECT_CASE.meaning": [
-      {
-        "literal": "Correct recorded details on a case with a decision, payment or closed status. All changes are recorded together. Clearing a payment date does not refund money."
-      }
-    ],
-    "command.DECIDE.label": [
-      {
-        "literal": "Record payment decision"
-      }
-    ],
-    "command.DECIDE.meaning": [
-      {
-        "literal": "Record or replace the decided amount and currency. This does not send money."
-      }
-    ],
-    "command.ERASE.label": [
-      {
-        "literal": "Erase case payload"
-      }
-    ],
-    "command.ERASE.meaning": [
-      {
-        "literal": "Permanently remove business payload from the live database. WAL, backups and copies elsewhere are not erased."
-      }
-    ],
-    "command.OPEN.label": [
-      {
-        "literal": "Open a case"
-      }
-    ],
-    "command.OPEN.meaning": [
-      {
-        "literal": "Register the incident, claimant, insurer and amount claimed."
-      }
-    ],
-    "command.RECORD_PAYMENT.label": [
-      {
-        "literal": "Record actual payment"
-      }
-    ],
-    "command.RECORD_PAYMENT.meaning": [
-      {
-        "literal": "Record the date the full decided amount was actually paid. This does not execute or verify a transfer."
-      }
-    ],
-    "command.REINSTATE.label": [
-      {
-        "literal": "Reinstate case record"
-      }
-    ],
-    "command.REINSTATE.meaning": [
-      {
-        "literal": "Restore ordinary case work on a voided record."
-      }
-    ],
-    "command.REOPEN.label": [
-      {
-        "literal": "Reopen the case"
-      }
-    ],
-    "command.REOPEN.meaning": [
-      {
-        "literal": "Reopen the case, preserving its details and history."
-      }
-    ],
-    "command.VOID.label": [
-      {
-        "literal": "Void case record"
-      }
-    ],
-    "command.VOID.meaning": [
-      {
-        "literal": "Block business commands while retaining the case and its history."
-      }
-    ],
-    "command.WITHDRAW_DECISION.label": [
-      {
-        "literal": "Withdraw payment decision"
-      }
-    ],
-    "command.WITHDRAW_DECISION.meaning": [
-      {
-        "literal": "Clear the unpaid decision while preserving its history."
-      }
-    ],
-    "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [
-      {
-        "literal": "The requested resource is unavailable."
-      }
-    ],
-    "diagnostic.ACTOR_ALREADY_REGISTERED": [
-      {
-        "literal": "This principal is already registered."
-      }
-    ],
-    "diagnostic.ACTOR_UNKNOWN": [
-      {
-        "literal": "This principal is not registered."
-      }
-    ],
-    "diagnostic.ACT_NOT_PERMITTED": [
-      {
-        "literal": "This act is not permitted."
-      }
-    ],
-    "diagnostic.ALREADY_VOIDED": [
-      {
-        "literal": "This case is already voided."
-      }
-    ],
-    "diagnostic.CASE_ALREADY_CLOSED": [
-      {
-        "literal": "The case is already closed."
-      }
-    ],
-    "diagnostic.CASE_ALREADY_EXISTS": [
-      {
-        "literal": "The case reference already exists."
-      }
-    ],
-    "diagnostic.CASE_ALREADY_OPENED": [
-      {
-        "literal": "The case is already open."
-      }
-    ],
-    "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
-      {
-        "literal": "\u201CAmend registration\u201D requires an undecided case. Use \u201CCorrect case facts\u201D to correct recorded registration while keeping its decision."
-      }
-    ],
-    "diagnostic.CASE_CLOSED": [
-      {
-        "literal": "This action cannot change a closed case. Use \u201CCorrect case facts\u201D for factual corrections while keeping its status, or \u201CReopen the case\u201D when you intend to resume ordinary case work."
-      }
-    ],
-    "diagnostic.CASE_DECISION_ALREADY_PAID": [
-      {
-        "literal": "\u201CRecord payment decision\u201D and \u201CWithdraw payment decision\u201D cannot change a paid decision. Use \u201CCorrect case facts\u201D for a factual correction, with explicit payment reaffirmation or clearing when replacing a paid decision."
-      }
-    ],
-    "diagnostic.CASE_DECISION_REQUIRED": [
-      {
-        "literal": "Record a payment decision first."
-      }
-    ],
-    "diagnostic.CASE_ERASED": [
-      {
-        "literal": "This case has been erased."
-      }
-    ],
-    "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
-      {
-        "literal": "ClaimCore records one full payment."
-      }
-    ],
-    "diagnostic.CASE_PAYMENT_NOT_RECORDED": [
-      {
-        "literal": "There is no payment record to clear."
-      }
-    ],
-    "diagnostic.CASE_REVISION_CONFLICT": [
-      {
-        "literal": "Read the current case before making a changed request."
-      }
-    ],
-    "diagnostic.CASE_VOIDED": [
-      {
-        "literal": "This case is voided."
-      }
-    ],
-    "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
-      {
-        "literal": "A zero decision is not a payment."
-      }
-    ],
-    "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
-      {
-        "literal": "Use an integer revision from 0 through 9007199254740991."
-      }
-    ],
-    "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [
-      {
-        "literal": "Use a non-empty UUID."
-      }
-    ],
-    "diagnostic.CORE_INTERNAL_ERROR": [
-      {
-        "literal": "An internal error occurred. Stop and investigate."
-      }
-    ],
-    "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
-      {
-        "literal": "Stored operation content is inconsistent. Stop and investigate."
-      }
-    ],
-    "diagnostic.CORE_SCHEMA_MISMATCH": [
-      {
-        "literal": "The schema differs from this build. Run migrate or use a matching build."
-      }
-    ],
-    "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
-      {
-        "literal": "Stored data failed verification. Stop and run verify."
-      }
-    ],
-    "diagnostic.CORE_STORE_UNAVAILABLE": [
-      {
-        "literal": "The store is unavailable. Retry."
-      }
-    ],
-    "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
-      {
-        "literal": "A correction can only replace or clear a value already recorded on this case."
-      }
-    ],
-    "diagnostic.CORRECTION_NO_CHANGES": [
-      {
-        "literal": "Choose at least one factual correction that changes the current case."
-      }
-    ],
-    "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": [
-      {
-        "literal": "Replacing a paid decision requires explicit payment reaffirmation or clearing the payment record."
-      }
-    ],
-    "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
-      {
-        "literal": "Clearing a paid decision requires clearing the payment record."
-      }
-    ],
-    "diagnostic.HOST_ANTIFORGERYREJECTED": [
-      {
-        "literal": "Request verification was refused."
-      }
-    ],
-    "diagnostic.HOST_BEFOREDISPATCHFAILED": [
-      {
-        "literal": "Processing failed before dispatch."
-      }
-    ],
-    "diagnostic.HOST_BODYTOOLARGE": [
-      {
-        "literal": "Request body is too large."
-      }
-    ],
-    "diagnostic.HOST_COMPLETEDRESPONSEFAILED": [
-      {
-        "literal": "The completed response could not be delivered."
-      }
-    ],
-    "diagnostic.HOST_CONNECTIONREJECTED": [
-      {
-        "literal": "Connection was refused."
-      }
-    ],
-    "diagnostic.HOST_CONTRACTMISMATCH": [
-      {
-        "literal": "The client contract differs. Reload or use a matching client."
-      }
-    ],
-    "diagnostic.HOST_DISPATCHUNCONFIRMED": [
-      {
-        "literal": "Preserve the exact request and replay it."
-      }
-    ],
-    "diagnostic.HOST_ENDPOINTMISSING": [
-      {
-        "literal": "Endpoint was not found."
-      }
-    ],
-    "diagnostic.HOST_INPUTINVALID": [
-      {
-        "literal": "The input does not satisfy the endpoint contract."
-      }
-    ],
-    "diagnostic.HOST_MEDIATYPEREJECTED": [
-      {
-        "literal": "Use the endpoint media type."
-      }
-    ],
-    "diagnostic.HOST_METHODREJECTED": [
-      {
-        "literal": "The method is unsupported."
-      }
-    ],
-    "diagnostic.HOST_ORIGINREJECTED": [
-      {
-        "literal": "Origin was refused."
-      }
-    ],
-    "diagnostic.HOST_RATELIMITED": [
-      {
-        "literal": "Request admission is busy."
-      }
-    ],
-    "diagnostic.HOST_SESSIONFORBIDDEN": [
-      {
-        "literal": "Session access was refused."
-      }
-    ],
-    "diagnostic.HOST_SESSIONREJECTED": [
-      {
-        "literal": "Authentication was refused."
-      }
-    ],
-    "diagnostic.HUMAN_PRINCIPAL_REQUIRED": [
-      {
-        "literal": "This role requires a human principal."
-      }
-    ],
-    "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
-      {
-        "literal": "Use one valid calendar date in YYYY-MM-DD format."
-      }
-    ],
-    "diagnostic.INPUT_CASE_REFERENCE_FORMAT": [
-      {
-        "literal": "Use 1 to 80 printable non-space ASCII characters."
-      }
-    ],
-    "diagnostic.INPUT_CONTROL_CHARACTERS": [
-      {
-        "literal": "Control characters are not accepted."
-      }
-    ],
-    "diagnostic.INPUT_COUNTRY_FORMAT": [
-      {
-        "literal": "Use two uppercase ASCII letters for the country code."
-      }
-    ],
-    "diagnostic.INPUT_CURRENCY_FORMAT": [
-      {
-        "literal": "Use three uppercase ASCII letters (A\u2013Z) for the currency identifier."
-      }
-    ],
-    "diagnostic.INPUT_DATE_ORDER": [
-      {
-        "literal": "The dates are in an invalid chronological order."
-      }
-    ],
-    "diagnostic.INPUT_DECIMAL_FORMAT": [
-      {
-        "literal": "Use non-negative decimal text: up to "
-      },
-      {
-        "hole": "maximumIntegerDigits"
-      },
-      {
-        "literal": " integer digits and "
-      },
-      {
-        "hole": "maximumFractionalDigits"
-      },
-      {
-        "literal": " fractional digits; no sign, exponent or redundant leading zeros: 0.10 is valid; 00.10 is invalid."
-      }
-    ],
-    "diagnostic.INPUT_FUTURE_DATE": [
-      {
-        "literal": "A future date cannot record an event that has already occurred."
-      }
-    ],
-    "diagnostic.INPUT_MALFORMED_UNICODE": [
-      {
-        "literal": "Malformed Unicode is not accepted."
-      }
-    ],
-    "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
-      {
-        "literal": "Leading or trailing whitespace is not accepted."
-      }
-    ],
-    "diagnostic.INPUT_TEXT_REQUIRED": [
-      {
-        "literal": "A non-blank value is required."
-      }
-    ],
-    "diagnostic.INPUT_TEXT_TOO_LONG": [
-      {
-        "literal": "The value must not exceed "
-      },
-      {
-        "hole": "maximumCharacters"
-      },
-      {
-        "literal": " Unicode characters."
-      }
-    ],
-    "diagnostic.LAST_OWNER": [
-      {
-        "literal": "At least one enabled human owner is required."
-      }
-    ],
-    "diagnostic.LEDGER_SEQUENCE_EXHAUSTED": [
-      {
-        "literal": "The ledger has reached its final sequence."
-      }
-    ],
-    "diagnostic.NOT_VOIDED": [
-      {
-        "literal": "This case is not voided."
-      }
-    ],
-    "diagnostic.OPERATION_CONTENT_CONFLICT": [
-      {
-        "literal": "This operation ID belongs to different command content. Do not reuse it."
-      }
-    ],
-    "diagnostic.PRINCIPAL_INPUT_INVALID": [
-      {
-        "literal": "Correct principal field "
-      },
-      {
-        "hole": "target"
-      },
-      {
-        "literal": ": "
-      },
-      {
-        "hole": "issue"
-      },
-      {
-        "literal": ". No operation was dispatched by this attempt."
-      }
-    ],
-    "diagnostic.QUERY_CURSOR_INVALID": [
-      {
-        "literal": "Use one pagination cursor returned by ClaimCore."
-      }
-    ],
-    "diagnostic.QUERY_PAGE_LIMIT_RANGE": [
-      {
-        "literal": "Use a value from 1 through "
-      },
-      {
-        "hole": "maximumPageSize"
-      },
-      {
-        "literal": "."
-      }
-    ],
-    "diagnostic.REVISION_EXHAUSTED": [
-      {
-        "literal": "The case has reached its final revision."
-      }
-    ],
-    "diagnostic.TEXT_FORMATTING_CHARACTER": [
-      {
-        "literal": "Formatting characters are not accepted in a new assertion."
-      }
-    ],
-    "field.caseReference.label": [
-      {
-        "literal": "Handler\u0027s case reference"
-      }
-    ],
-    "field.caseReference.meaning": [
-      {
-        "literal": "Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained."
-      }
-    ],
-    "field.claimantName.label": [
-      {
-        "literal": "Claimant name"
-      }
-    ],
-    "field.claimantName.meaning": [
-      {
-        "literal": "Name of the person or company making the claim."
-      }
-    ],
-    "field.claimedAmount.label": [
-      {
-        "literal": "Amount claimed"
-      }
-    ],
-    "field.claimedAmount.meaning": [
-      {
-        "literal": "Amount requested by the claimant."
-      }
-    ],
-    "field.claimedCurrency.label": [
-      {
-        "literal": "Currency of claimed amount"
-      }
-    ],
-    "field.claimedCurrency.meaning": [
-      {
-        "literal": "Currency in which the amount is claimed."
-      }
-    ],
-    "field.incidentCountry.label": [
-      {
-        "literal": "Country of incident (ISO alpha-2 code)"
-      }
-    ],
-    "field.incidentCountry.meaning": [
-      {
-        "literal": "Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international."
-      }
-    ],
-    "field.incidentDate.label": [
-      {
-        "literal": "Incident date"
-      }
-    ],
-    "field.incidentDate.meaning": [
-      {
-        "literal": "Date on which the incident occurred."
-      }
-    ],
-    "field.incidentNotificationDate.label": [
-      {
-        "literal": "Incident notification date (FNOL)"
-      }
-    ],
-    "field.incidentNotificationDate.meaning": [
-      {
-        "literal": "Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified."
-      }
-    ],
-    "field.insurerName.label": [
-      {
-        "literal": "Responsible insurer"
-      }
-    ],
-    "field.insurerName.meaning": [
-      {
-        "literal": "Insurer recorded by the claims handler as responsible for this claim."
-      }
-    ],
-    "field.payableAmount.label": [
-      {
-        "literal": "Amount to be paid"
-      }
-    ],
-    "field.payableAmount.meaning": [
-      {
-        "literal": "Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount."
-      }
-    ],
-    "field.payableCurrency.label": [
-      {
-        "literal": "Currency of amount to be paid"
-      }
-    ],
-    "field.payableCurrency.meaning": [
-      {
-        "literal": "Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency."
-      }
-    ],
-    "field.paymentDate.label": [
-      {
-        "literal": "Payment date"
-      }
-    ],
-    "field.paymentDate.meaning": [
-      {
-        "literal": "Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer."
-      }
-    ],
-    "field.paymentDecisionDate.label": [
-      {
-        "literal": "Payment decision date"
-      }
-    ],
-    "field.paymentDecisionDate.meaning": [
-      {
-        "literal": "Date when this claims handler decided the amount to be paid. Not recorded until a decision is made."
-      }
-    ],
-    "field.reason.label": [
-      {
-        "literal": "Stewardship reason"
-      }
-    ],
-    "field.reason.meaning": [
-      {
-        "literal": "Explain the record stewardship action."
-      }
-    ],
-    "field.status.label": [
-      {
-        "literal": "Case status"
-      }
-    ],
-    "field.status.meaning": [
-      {
-        "literal": "Whether the case is open or closed. Closing a case does not mean that payment was made."
-      }
-    ],
-    "group.decision.label": [
-      {
-        "literal": "Payment decision"
-      }
-    ],
-    "group.decision.meaning": [
-      {
-        "literal": "Keep the current payment decision, replace its date, amount and currency together, or clear the decision."
-      }
-    ],
-    "group.payment.label": [
-      {
-        "literal": "Payment record"
-      }
-    ],
-    "group.payment.meaning": [
-      {
-        "literal": "Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money."
-      }
-    ],
-    "group.registration.label": [
-      {
-        "literal": "Registration"
-      }
-    ],
-    "group.registration.meaning": [
-      {
-        "literal": "Keep the current registration details or replace all seven details together."
-      }
-    ]
-  },
-  "requestBindings": [
-    {
-      "fields": [
-        {
-          "fieldName": "incidentDate",
-          "path": [
-            "values",
-            "incidentDate"
-          ]
-        },
-        {
-          "fieldName": "incidentNotificationDate",
-          "path": [
-            "values",
-            "incidentNotificationDate"
-          ]
-        },
-        {
-          "fieldName": "incidentCountry",
-          "path": [
-            "values",
-            "incidentCountry"
-          ]
-        },
-        {
-          "fieldName": "claimantName",
-          "path": [
-            "values",
-            "claimantName"
-          ]
-        },
-        {
-          "fieldName": "insurerName",
-          "path": [
-            "values",
-            "insurerName"
-          ]
-        },
-        {
-          "fieldName": "claimedAmount",
-          "path": [
-            "values",
-            "claimedAmount"
-          ]
-        },
-        {
-          "fieldName": "claimedCurrency",
-          "path": [
-            "values",
-            "claimedCurrency"
-          ]
-        }
-      ],
-      "kind": "OPEN"
-    },
-    {
-      "fields": [
-        {
-          "fieldName": "incidentDate",
-          "path": [
-            "values",
-            "incidentDate"
-          ]
-        },
-        {
-          "fieldName": "incidentNotificationDate",
-          "path": [
-            "values",
-            "incidentNotificationDate"
-          ]
-        },
-        {
-          "fieldName": "incidentCountry",
-          "path": [
-            "values",
-            "incidentCountry"
-          ]
-        },
-        {
-          "fieldName": "claimantName",
-          "path": [
-            "values",
-            "claimantName"
-          ]
-        },
-        {
-          "fieldName": "insurerName",
-          "path": [
-            "values",
-            "insurerName"
-          ]
-        },
-        {
-          "fieldName": "claimedAmount",
-          "path": [
-            "values",
-            "claimedAmount"
-          ]
-        },
-        {
-          "fieldName": "claimedCurrency",
-          "path": [
-            "values",
-            "claimedCurrency"
-          ]
-        }
-      ],
-      "kind": "AMEND_REGISTRATION"
-    },
-    {
-      "groups": [
-        {
-          "actions": [
-            "KEEP",
-            "REPLACE"
-          ],
-          "fields": [
-            {
-              "fieldName": "incidentDate",
-              "path": [
-                "groups",
-                "registration",
-                "values",
-                "incidentDate"
-              ]
-            },
-            {
-              "fieldName": "incidentNotificationDate",
-              "path": [
-                "groups",
-                "registration",
-                "values",
-                "incidentNotificationDate"
-              ]
-            },
-            {
-              "fieldName": "incidentCountry",
-              "path": [
-                "groups",
-                "registration",
-                "values",
-                "incidentCountry"
-              ]
-            },
-            {
-              "fieldName": "claimantName",
-              "path": [
-                "groups",
-                "registration",
-                "values",
-                "claimantName"
-              ]
-            },
-            {
-              "fieldName": "insurerName",
-              "path": [
-                "groups",
-                "registration",
-                "values",
-                "insurerName"
-              ]
-            },
-            {
-              "fieldName": "claimedAmount",
-              "path": [
-                "groups",
-                "registration",
-                "values",
-                "claimedAmount"
-              ]
-            },
-            {
-              "fieldName": "claimedCurrency",
-              "path": [
-                "groups",
-                "registration",
-                "values",
-                "claimedCurrency"
-              ]
-            }
-          ],
-          "name": "registration",
-          "path": [
-            "groups",
-            "registration"
-          ]
-        },
-        {
-          "actions": [
-            "KEEP",
-            "REPLACE",
-            "CLEAR"
-          ],
-          "fields": [
-            {
-              "fieldName": "paymentDecisionDate",
-              "path": [
-                "groups",
-                "decision",
-                "values",
-                "paymentDecisionDate"
-              ]
-            },
-            {
-              "fieldName": "payableAmount",
-              "path": [
-                "groups",
-                "decision",
-                "values",
-                "payableAmount"
-              ]
-            },
-            {
-              "fieldName": "payableCurrency",
-              "path": [
-                "groups",
-                "decision",
-                "values",
-                "payableCurrency"
-              ]
-            }
-          ],
-          "name": "decision",
-          "path": [
-            "groups",
-            "decision"
-          ]
-        },
-        {
-          "actions": [
-            "KEEP",
-            "REPLACE",
-            "CLEAR"
-          ],
-          "fields": [
-            {
-              "fieldName": "paymentDate",
-              "path": [
-                "groups",
-                "payment",
-                "values",
-                "paymentDate"
-              ]
-            }
-          ],
-          "name": "payment",
-          "path": [
-            "groups",
-            "payment"
-          ]
-        }
-      ],
-      "kind": "CORRECT_CASE"
-    },
-    {
-      "fields": [
-        {
-          "fieldName": "paymentDecisionDate",
-          "path": [
-            "values",
-            "paymentDecisionDate"
-          ]
-        },
-        {
-          "fieldName": "payableAmount",
-          "path": [
-            "values",
-            "payableAmount"
-          ]
-        },
-        {
-          "fieldName": "payableCurrency",
-          "path": [
-            "values",
-            "payableCurrency"
-          ]
-        }
-      ],
-      "kind": "DECIDE"
-    },
-    {
-      "fields": [],
-      "kind": "WITHDRAW_DECISION"
-    },
-    {
-      "fields": [
-        {
-          "fieldName": "paymentDate",
-          "path": [
-            "values",
-            "paymentDate"
-          ]
-        }
-      ],
-      "kind": "RECORD_PAYMENT"
-    },
-    {
-      "fields": [],
-      "kind": "CLEAR_PAYMENT"
-    },
-    {
-      "fields": [],
-      "kind": "CLOSE"
-    },
-    {
-      "fields": [],
-      "kind": "REOPEN"
-    },
-    {
-      "fields": [
-        {
-          "fieldName": "reason",
-          "path": [
-            "reason"
-          ]
-        }
-      ],
-      "kind": "VOID"
-    },
-    {
-      "fields": [
-        {
-          "fieldName": "reason",
-          "path": [
-            "reason"
-          ]
-        }
-      ],
-      "kind": "REINSTATE"
-    },
-    {
-      "fields": [],
-      "kind": "ERASE"
-    }
-  ]
+  "productVersion": "0.11.0"
 }

@@ -1,6 +1,6 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open ClaimCore.Domain.ResultFlow
 
@@ -13,17 +13,21 @@ module internal StateValidation =
             | Some decision ->
                 do!
                     Validation.onOrBefore
-                        InputTarget.PaymentDecisionDate
+                        (InputTarget.Field BusinessField.PaymentDecisionDate)
                         facts.NotificationDate
                         decision.Date
 
                 match PaymentProgress.paymentDate value with
                 | None -> return ()
                 | Some paid ->
-                    do! Validation.onOrBefore InputTarget.PaymentDate decision.Date paid
+                    do!
+                        Validation.onOrBefore
+                            (InputTarget.Field BusinessField.PaymentDate)
+                            decision.Date
+                            paid
 
                     if decision.Payable.Value = 0M then
-                        return! Error CaseRefusal.ZeroDecisionCannotBePaid
+                        return! Error Refusal.ZeroDecisionCannotBePaid
         }
 
     let newlyAssertedDates today (before: Validation.Facts) prior (after: Validation.Facts) next =
@@ -36,25 +40,25 @@ module internal StateValidation =
         result {
             do!
                 asserted
-                    InputTarget.IncidentDate
+                    (InputTarget.Field BusinessField.IncidentDate)
                     (Some before.IncidentDate)
                     (Some after.IncidentDate)
 
             do!
                 asserted
-                    InputTarget.IncidentNotificationDate
+                    (InputTarget.Field BusinessField.IncidentNotificationDate)
                     (Some before.NotificationDate)
                     (Some after.NotificationDate)
 
             do!
                 asserted
-                    InputTarget.PaymentDecisionDate
+                    (InputTarget.Field BusinessField.PaymentDecisionDate)
                     (PaymentProgress.decision prior |> Option.map _.Date)
                     (PaymentProgress.decision next |> Option.map _.Date)
 
             do!
                 asserted
-                    InputTarget.PaymentDate
+                    (InputTarget.Field BusinessField.PaymentDate)
                     (PaymentProgress.paymentDate prior)
                     (PaymentProgress.paymentDate next)
         }

@@ -1,5 +1,7 @@
 module ClaimCore.AcceptanceTests.ThirdPartyNoticeTests
 
+open ClaimCore.Contract
+
 open System
 open System.IO
 open System.Text.Json.Nodes

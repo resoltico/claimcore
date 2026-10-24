@@ -14,12 +14,7 @@ const context = {
 const sessionRefusal = () =>
   new Response(
     JSON.stringify({
-      kind: "HOST_FAILURE",
-      code: "SESSION_REJECTED",
-      status: 401,
-      diagnostic: { id: "HOST_SESSIONREJECTED", parameters: {} },
-      message: "Synthetic session refusal",
-      executionPhase: "NOT_STARTED",
+      hostFailure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" },
     }),
     { status: 401, headers: { "content-type": "application/json" } },
   );

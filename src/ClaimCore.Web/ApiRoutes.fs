@@ -1,31 +1,31 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 module internal ApiRoutes =
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
-        | true, values when values.Count = 1 -> string values[0] = ConsumerContract.identity
+        | true, values when values.Count = 1 -> string values[0] = ContractIdentity.value
         | _ -> false
 
     let ingress (context: HttpContext) (next: RequestDelegate) : Task =
         task {
             match
-                Endpoint.all
+                Api.all
                 |> List.tryFind (fun endpoint ->
-                    Some(Endpoint.path endpoint) = Option.ofObj context.Request.Path.Value)
+                    Some(Api.path endpoint) = Option.ofObj context.Request.Path.Value)
             with
-            | Some endpoint when context.Request.Method <> Endpoint.method endpoint ->
+            | Some endpoint when context.Request.Method <> (Api.method endpoint).Method ->
                 do!
-                    (RouteSupport.hostFailure context HostFailure.MethodRejected).ExecuteAsync
+                    (RouteSupport.hostFailure context HostFailureReason.MethodRejected).ExecuteAsync
                         context
             | _ -> do! next.Invoke context
         }
@@ -42,7 +42,7 @@ module internal ApiRoutes =
                 context
 
     let private input
-        (endpoint: ClaimCore.Wire.Endpoint)
+        (endpoint: AnyEndpoint)
         (configuration: WebConfiguration)
         (context: HttpContext)
         =
@@ -50,37 +50,57 @@ module internal ApiRoutes =
             match! HttpBody.readRequest configuration.Admission.MaximumJsonBytes context with
             | Error problem -> return Error(RouteSupport.inputFailure context problem)
             | Ok bytes ->
-                match
-                    ClaimCore.Wire.Admission.admit endpoint bytes
-                    |> Result.mapError (fun _ -> HostFailure.InputInvalid)
-                    |> Result.bind ServiceGateway.admitTechnical
-                with
-                | Error reason -> return Error(RouteSupport.hostFailure context reason)
-                | Ok _ when context.RequestAborted.IsCancellationRequested ->
-                    return Error(RouteSupport.inputFailure context BodyProblem.BodyCancelled)
-                | Ok input -> return Ok input
+                match StrictJson.read configuration.Admission.MaximumJsonBytes bytes with
+                | Error _ ->
+                    return Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
+                | Ok value ->
+                    match Dispatch.prepare endpoint value with
+                    | Error _ ->
+                        return
+                            Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
+                    | Ok _ when context.RequestAborted.IsCancellationRequested ->
+                        return Error(RouteSupport.inputFailure context BodyProblem.BodyCancelled)
+                    | Ok prepared -> return Ok(value, prepared)
         }
 
-    let handle endpoint configuration (service: IProtocolService) (context: HttpContext) =
+    let handle endpoint configuration withActor (context: HttpContext) =
         task {
             HttpHeaders.noStore context
 
             if not (handshake context) then
-                return RouteSupport.hostFailure context HostFailure.ContractMismatch
+                return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
             else
                 match! admit configuration context with
                 | Error reason -> return RouteSupport.admissionFailure context reason
                 | Ok principal ->
                     match! input endpoint configuration context with
                     | Error result -> return result
-                    | Ok input ->
-                        WireRequest.operationId input
-                        |> Option.iter (fun id -> RequestLog.operation id context)
+                    | Ok(input, prepared) ->
+                        JsonValue.tryMember "operationId" input
+                        |> Option.iter (function
+                            | JsonValue.String text ->
+                                RequestLog.operation (System.Guid.Parse text) context
+                            | _ -> ())
 
                         RouteSupport.markDispatched context
 
-                        let! outcome = service.Invoke(principal, input, context.RequestAborted)
+                        let cancellation =
+                            if Api.mutates endpoint then
+                                System.Threading.CancellationToken.None
+                            else
+                                context.RequestAborted
 
-                        RouteSupport.markCompleted context
+                        let! result =
+                            withActor (AuthenticatedSubjects.key principal) (fun core ->
+                                prepared.Invoke core cancellation (fun () ->
+                                    RouteSupport.markCompleted context))
+
+                        let outcome =
+                            match result with
+                            | Some reply -> reply
+                            | None ->
+                                RouteSupport.markCompleted context
+                                prepared.Unavailable()
+
                         return RouteSupport.reply outcome context
         }

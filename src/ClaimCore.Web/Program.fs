@@ -1,8 +1,8 @@
 module ClaimCore.Web.Program
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 open System
 open System.IO
@@ -19,7 +19,7 @@ open Microsoft.AspNetCore.Server.Kestrel.Core
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Hosting
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 let private help () =
     printfn "ClaimCore.Web %s — HTTPS human interface" ServiceIdentity.version
@@ -123,7 +123,7 @@ let private requireTrustedConnection
         if Admission.trustedConnection configuration.Binding context then
             do! next.Invoke(context)
         else
-            do! writeHostFailure context HostFailure.ConnectionRejected
+            do! writeHostFailure context HostFailureReason.ConnectionRejected
     }
     :> Task)
 
@@ -197,7 +197,11 @@ let private configureRoutes
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
 
-    HostRoutes.map assets configuration runtime.Service application
+    HostRoutes.map
+        assets
+        configuration
+        (fun principal action -> runtime.WithActor(principal, action))
+        application
 
 
 let private runtimeLifetime (runtime: IServiceRuntime) =

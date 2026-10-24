@@ -1,5 +1,7 @@
 module ClaimCore.AcceptanceTests.CliDriverCompletionTests
 
+open ClaimCore.Contract
+
 open System
 open System.Diagnostics
 open System.IO

@@ -1,8 +1,8 @@
 module internal ClaimCore.AcceptanceTests.HttpsProxy
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 open System
 open System.Net
@@ -70,12 +70,15 @@ let private relay
             context.Response.Headers.Location <- "/__synthetic/redirect-destination"
         elif armed = Some RedirectControl.beforeDispatchFailure then
             control.Original None
-            context.Response.StatusCode <- HostFailures.status HostFailure.BeforeDispatchFailed
+
+            context.Response.StatusCode <-
+                HostFailures.status HostFailureReason.BeforeDispatchFailed
+
             context.Response.ContentType <- "application/json"
 
             do!
                 context.Response.Body.WriteAsync(
-                    HostFailures.encode HostFailure.BeforeDispatchFailed
+                    HostFailureCodecs.encode HostFailureReason.BeforeDispatchFailed
                 )
         else
             use request = request backend context

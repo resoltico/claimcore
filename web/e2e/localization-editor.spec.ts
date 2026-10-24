@@ -66,43 +66,46 @@ const unacceptedCase = async (page: Page, reference: string) => {
   }
   expect(reply.payload.outcome.tag).toBe("REJECTED");
   if (reply.payload.outcome.tag === "REJECTED") {
-    expect(reply.payload.outcome.data.diagnostic.id).toBe("ACCESS_RESOURCE_UNAVAILABLE");
+    expect(reply.payload.outcome.data.code).toBe("ACCESS_RESOURCE_UNAVAILABLE");
   }
 };
 const invalidCalendar = async (page: Page, requests: string[]) => {
   await expectBusinessFormatRefusal(page, "incidentDate", "INPUT_CALENDAR_DATE_REQUIRED", () =>
     page.getByRole("button", { name: "Review changes" }).click(),
   );
-  await expect(page.locator('input[name="incidentDate"]')).toBeFocused();
-  await expect(page.locator('input[name="incidentDate"]')).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator('input[data-field-name="incidentDate"]')).toBeFocused();
+  await expect(page.locator('input[data-field-name="incidentDate"]')).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
     await expect(page.getByRole("alert")).toContainText(
       businessFormatRefusalText.INPUT_CALENDAR_DATE_REQUIRED[language],
     );
   }
-  await expect(page.locator('input[name="incidentDate"]')).toHaveValue("2026-02-30");
-  await expect(page.locator('input[name="claimantName"]')).toHaveValue("A\u0308 / العربية");
-  expect(requests).toEqual(["POST /api/case.preview"]);
+  await expect(page.locator('input[data-field-name="incidentDate"]')).toHaveValue("2026-02-30");
+  await expect(page.locator('input[data-field-name="claimantName"]')).toHaveValue(
+    "A\u0308 / العربية",
+  );
+  expect(requests).toEqual(["POST /api/operation.preview"]);
   await expect(page.locator("section.receipt")).toHaveCount(0);
   await expectAccessible(page);
 };
 const policyRefusal = async (page: Page, requests: string[]) => {
-  const name = page.locator('input[name="claimantName"]');
+  const name = page.locator('input[data-field-name="claimantName"]');
   const authored = `A\u0308 / العربية${"x".repeat(201)}`;
-  await page.locator('input[name="incidentDate"]').fill("2026-09-01");
+  await page.locator('input[data-field-name="incidentDate"]').fill("2026-09-01");
   await name.fill(authored);
-  const pending = await pauseJsonReply(page, "case.preview");
+  const pending = await pauseJsonReply(page, "operation.preview");
   try {
     await page.getByRole("button", { name: "Review changes" }).click();
     const { outcome } = (await pending.ready).reply;
     expect(outcome.tag).toBe("REJECTED");
     if (outcome.tag === "REJECTED") {
-      expect(outcome.data.field).toBe("claimantName");
-      expect(outcome.data.diagnostic).toEqual({
-        id: "INPUT_TEXT_TOO_LONG",
-        parameters: { maximumCharacters: 200 },
-      });
+      expect(outcome.data.target).toBe("claimantName");
+      expect(outcome.data.code).toBe("INPUT_TEXT_TOO_LONG");
+      expect(outcome.data.limits).toEqual({ maximumCharacters: 200 });
     }
     await selectLanguage(page, "lv");
     pending.release();
@@ -118,7 +121,7 @@ const policyRefusal = async (page: Page, requests: string[]) => {
       await expect(name).toHaveAttribute("aria-invalid", "true");
     }
     await expect(name).toHaveValue(authored);
-    expect(requests).toEqual(["POST /api/case.preview", "POST /api/case.preview"]);
+    expect(requests).toEqual(["POST /api/operation.preview", "POST /api/operation.preview"]);
   } finally {
     pending.release();
   }
@@ -130,9 +133,9 @@ test("preserves authored Unicode and malformed calendar input, then localizes a 
   const reference = `LOCALE-VALIDATE-${randomUUID()}`;
   await openAuthenticated(page);
   await startOpen(page, reference);
-  const name = page.locator('input[name="claimantName"]');
+  const name = page.locator('input[data-field-name="claimantName"]');
   await name.fill("A\u0308 / العربية");
-  await page.locator('input[name="incidentDate"]').fill("2026-02-30");
+  await page.locator('input[data-field-name="incidentDate"]').fill("2026-02-30");
   await name.evaluate((element: HTMLInputElement) => {
     element.setSelectionRange(1, 3);
   });
@@ -159,7 +162,7 @@ test("switches language and independent display format during draft review witho
   await openAuthenticated(page);
   await startOpen(page, `LOCALE-REVIEW-${randomUUID()}`);
   const requests = trackRequests(page);
-  const pending = await pauseJsonReply(page, "case.preview");
+  const pending = await pauseJsonReply(page, "operation.preview");
   try {
     await page.getByRole("button", { name: "Review changes" }).click();
     const captured = await pending.ready;

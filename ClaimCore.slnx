@@ -1,6 +1,5 @@
 <Solution>
-  <Project Path="src/ClaimCore.Catalog/ClaimCore.Catalog.fsproj" />
-  <Project Path="src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
+  <Project Path="src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
   <Project Path="src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
   <Project Path="src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
   <Project Path="tests/ClaimCore.Tests/ClaimCore.Tests.fsproj" />
@@ -8,7 +7,6 @@
   <Project Path="src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
   <Project Path="tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" />
   <Project Path="src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
-  <Project Path="src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
   <Project Path="eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
   <Project Path="src/ClaimCore.Web/ClaimCore.Web.fsproj" />
   <Project Path="tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj" />

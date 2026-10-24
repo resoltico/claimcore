@@ -3,10 +3,10 @@ module ClaimCore.Tests.ConfigurationHelpTests
 open System
 open System.IO
 open Expecto
-open ClaimCore.Catalog
+open ClaimCore.Contract
 open ClaimCore.Cli
 open ClaimCore.HostSecurity
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 let private create service issuer clientId =
     RemoteConfiguration.create service issuer clientId RemoteClientMode.Interactive None
@@ -88,12 +88,7 @@ let private privateForms () =
 let private helpAlias () =
     for language in LocalizationPolicy.languages do
         let rendered topic =
-            CliHelp.text
-                language
-                topic
-                Limits.MaximumInvocationBytes
-                Limits.MaximumRequestBytes
-                Limits.MaximumResponseBytes
+            ContractDiscovery.helpTopic language topic
 
         let content = rendered "configuration"
 
@@ -118,16 +113,6 @@ let private helpAlias () =
                 content
                 literal
                 "Exact documented forms and distinctions survive localization"
-
-        Expect.equal
-            (CliHelp.diagnosticDiscovery
-                language
-                InputDiagnostics.configurationId
-                Limits.MaximumInvocationBytes
-                Limits.MaximumRequestBytes
-                Limits.MaximumResponseBytes)
-            "ClaimCore.Cli help configuration\n"
-            "Discovery points to the one topic rather than duplicating its essay"
 
         Expect.stringContains
             (rendered InputDiagnostics.protocolId)
@@ -161,12 +146,7 @@ let private operatorPhrases =
 
 let private localizedExplanations () =
     let render language =
-        CliHelp.text
-            language
-            "configuration"
-            Limits.MaximumInvocationBytes
-            Limits.MaximumRequestBytes
-            Limits.MaximumResponseBytes
+        ContractDiscovery.helpTopic language "configuration"
 
     for language, accepted, refused, syntax, missingSlash, notRoot, trim in operatorPhrases do
         let content = render language
@@ -206,9 +186,6 @@ let private localizedExplanations () =
                 Expect.isFalse
                     (content.Contains english)
                     "Non-English help cannot retain untranslated example explanations"
-
-        let generated = ContractDiscovery.helpTopic language "configuration"
-        Expect.equal generated content "Published generated help matches authored core content"
 
         Expect.equal
             (ContractDiscovery.helpTopic language InputDiagnostics.configurationId)

@@ -1,6 +1,6 @@
 module ClaimCore.Tests.PaginationTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -15,13 +15,15 @@ open ClaimCore.Tests.ApplicationFixtures
 let private cases (actor: IActorClaimsCore) =
     task {
         for n, reference in [ 10, "Case-c"; 11, "case-A"; 12, "CASE-B" ] do
-            let! result = actor.Execute(openRequest n reference, CancellationToken.None)
+            let! result =
+                actor.Execute(OperationInput.Case(openRequest n reference), CancellationToken.None)
+
             accepted result |> ignore
     }
 
 let private succeeded =
     function
-    | QueryOutcome.Succeeded page -> page
+    | ReadReply.Succeeded page -> page
     | _ -> failtest "Missing case page"
 
 let private reference =
@@ -41,8 +43,10 @@ let private reader fixture (admin: IActorClaimsCore) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 20) target AuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 20) target AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 
@@ -131,8 +135,10 @@ let private elapsedTimeAndRevocation (store: MemoryLedgerStore.Store) (fixture: 
         store.Instant <- instant
 
         let! disabled =
-            admin.ExecuteAuthority(
-                authorityRequest (id 22) target (AuthorityAct.SetEnabled false),
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 22) target (AdmittedAuthorityAct.SetEnabled false)
+                ),
                 CancellationToken.None
             )
 
@@ -141,13 +147,15 @@ let private elapsedTimeAndRevocation (store: MemoryLedgerStore.Store) (fixture: 
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "A position confers no rights after revocation"
     }
 
 let private createHistory (actor: IActorClaimsCore) =
     task {
-        let! opened = actor.Execute(openRequest 10 "HISTORY-1", CancellationToken.None)
+        let! opened =
+            actor.Execute(OperationInput.Case(openRequest 10 "HISTORY-1"), CancellationToken.None)
+
         accepted opened |> ignore
 
         for n, revision in [ 11, 1L; 12, 2L ] do
@@ -158,7 +166,9 @@ let private createHistory (actor: IActorClaimsCore) =
 
             let! amended =
                 actor.Execute(
-                    request n "HISTORY-1" revision (BusinessCommand.AmendRegistration values),
+                    OperationInput.Case(
+                        request n "HISTORY-1" revision (CaseAct.AmendRegistration values)
+                    ),
                     CancellationToken.None
                 )
 
@@ -173,8 +183,10 @@ let private registerActors (actor: IActorClaimsCore) =
                 |> Result.defaultWith failtest
 
             let! registered =
-                actor.ExecuteAuthority(
-                    authorityRequest (id n) target AuthorityAct.RegisterActor,
+                actor.Execute(
+                    OperationInput.Authority(
+                        authorityRequest (id n) target AdmittedAuthorityAct.RegisterActor
+                    ),
                     CancellationToken.None
                 )
 
@@ -183,7 +195,9 @@ let private registerActors (actor: IActorClaimsCore) =
 
 let private differentHistoryResource (actor: IActorClaimsCore) (query: HistoryRequest) cursor =
     task {
-        let! other = actor.Execute(openRequest 13 "OTHER", CancellationToken.None)
+        let! other =
+            actor.Execute(OperationInput.Case(openRequest 13 "OTHER"), CancellationToken.None)
+
         accepted other |> ignore
 
         let! resource =
@@ -195,7 +209,7 @@ let private differentHistoryResource (actor: IActorClaimsCore) (query: HistoryRe
                 CancellationToken.None
             )
 
-        Expect.equal resource (QueryOutcome.Rejected Rejection.InvalidCursor) "Resource is bound"
+        Expect.equal resource (ReadReply.Rejected Refusal.InvalidCursor) "Resource is bound"
     }
 
 let private historyBinding (_: MemoryLedgerStore.Store) (fixture: Fixture) =
@@ -226,7 +240,7 @@ let private historyBinding (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             )
 
         match rest with
-        | QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             Expect.equal
                 page.Entries.Length
                 2
@@ -286,7 +300,7 @@ let private authorityLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             )
 
         match third with
-        | QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             Expect.equal (page.Items |> List.map _.ActorId) [ id 12 ] "No omission"
             Expect.isNone page.NextCursor "End of review"
         | _ -> failtest "Missing final review page"
@@ -302,7 +316,7 @@ let private authorityLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         Expect.equal
             wrongEndpoint
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
+            (ReadReply.Rejected Refusal.InvalidCursor)
             "Authority continuation is endpoint-bound even when its position is valid ASCII"
     }
 
@@ -325,7 +339,7 @@ let private malformedAndRestart (_: MemoryLedgerStore.Store) (fixture: Fixture) 
 
             Expect.equal
                 outcome
-                (QueryOutcome.Rejected Rejection.InvalidCursor)
+                (ReadReply.Rejected Refusal.InvalidCursor)
                 "No malformed position is trusted"
 
         let restarted = Core.create installation fixture.Store calendar owner
@@ -366,7 +380,7 @@ let private singleSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             )
 
         match history with
-        | QueryOutcome.Succeeded _ -> ()
+        | ReadReply.Succeeded _ -> ()
         | _ -> failtest "History unavailable"
 
         Expect.equal proxy.ReadCalls 2 "History performs no separate actor read"
@@ -375,7 +389,7 @@ let private singleSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             actor.ListActors({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
 
         match authority with
-        | QueryOutcome.Succeeded _ -> ()
+        | ReadReply.Succeeded _ -> ()
         | _ -> failtest "Authority review unavailable"
 
         Expect.equal proxy.ReadCalls 3 "Authority review performs no separate actor read"
@@ -433,15 +447,11 @@ let private pageAdvice (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 let private appendHistory (actor: IActorClaimsCore) =
     task {
         for revision in 1L .. 52L do
-            let act =
-                if revision % 2L = 1L then
-                    BusinessCommand.Close
-                else
-                    BusinessCommand.Reopen
+            let act = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
 
             let! result =
                 actor.Execute(
-                    request (20 + int revision) "LONG-HISTORY" revision act,
+                    OperationInput.Case(request (20 + int revision) "LONG-HISTORY" revision act),
                     CancellationToken.None
                 )
 
@@ -452,7 +462,13 @@ let private appendHistory (actor: IActorClaimsCore) =
 let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        let! opened = actor.Execute(openRequest 10 "LONG-HISTORY", CancellationToken.None)
+
+        let! opened =
+            actor.Execute(
+                OperationInput.Case(openRequest 10 "LONG-HISTORY"),
+                CancellationToken.None
+            )
+
         accepted opened |> ignore
 
         do! appendHistory actor
@@ -507,7 +523,7 @@ let private disabledGrantTarget
     (store: MemoryLedgerStore.Store)
     (admin: IActorClaimsCore)
     target
-    (query: AuthorityGrantListRequest)
+    (query: GrantsRequest)
     cursor
     =
     task {
@@ -520,11 +536,13 @@ let private disabledGrantTarget
                 CancellationToken.None
             )
 
-        Expect.equal crossed (QueryOutcome.Rejected Rejection.InvalidCursor) "Cursor binds target"
+        Expect.equal crossed (ReadReply.Rejected Refusal.InvalidCursor) "Cursor binds target"
 
         let! disabled =
-            admin.ExecuteAuthority(
-                authorityRequest (id 31) target (AuthorityAct.SetEnabled false),
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 31) target (AdmittedAuthorityAct.SetEnabled false)
+                ),
                 CancellationToken.None
             )
 
@@ -555,7 +573,7 @@ let private grantBinding (store: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let targetId =
             (succeeded actors).Items
-            |> List.find (fun a -> a.Principal = target)
+            |> List.find (fun a -> a.Principal = PrincipalKey.describe target)
             |> _.ActorId
 
         let query =
@@ -638,7 +656,7 @@ let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture
 
             Expect.equal
                 refused
-                (QueryOutcome.Rejected Rejection.InvalidCursor)
+                (ReadReply.Rejected Refusal.InvalidCursor)
                 "A plain envelope does not admit an invalid grant position"
 
         let! invalidLimit =
@@ -653,7 +671,9 @@ let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture
 
         Expect.equal
             invalidLimit
-            (QueryOutcome.Rejected(Rejection.PageLimitOutOfRange 50))
+            (ReadReply.Rejected(
+                Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50)
+            ))
             "Public grant page is bounded"
     }
 

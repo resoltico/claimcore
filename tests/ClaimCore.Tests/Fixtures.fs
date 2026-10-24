@@ -1,6 +1,6 @@
 module ClaimCore.Tests.Fixtures
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto
@@ -31,7 +31,7 @@ let request revision command =
         OperationId = Guid.Parse("20000000-0000-4000-8000-000000000001")
         CaseReference = "UNIT-001"
         ExpectedRevision = revision
-        Act = CaseAct.Business command
+        Act = command
     }
 
 let accepted result =
@@ -40,25 +40,26 @@ let accepted result =
     | Error _ -> failtest "Expected acceptance."
 
 let opened () =
-    Case.decide today (request 0L (BusinessCommand.Open registration)) None
-    |> accepted
+    Case.decide today (request 0L (CaseAct.Open registration)) None |> accepted
 
 let apply command claim =
     Case.decide today (request (Case.snapshot claim).Revision command) (Some claim)
 
 let decided () =
-    opened () |> apply (BusinessCommand.Decide decision) |> accepted
+    opened () |> apply (CaseAct.Decide decision) |> accepted
 
 let paid () =
-    decided () |> apply (BusinessCommand.RecordPayment "2026-08-20") |> accepted
+    decided ()
+    |> apply (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+    |> accepted
 
 let isInvalid result =
     match result with
-    | Error(CaseRefusal.InvalidInput _) -> true
+    | Error(Refusal.InvalidInput _) -> true
     | _ -> false
 
 let actRequest revision act =
-    { request revision BusinessCommand.Close with
+    { request revision CaseAct.Close with
         Act = act
     }
 

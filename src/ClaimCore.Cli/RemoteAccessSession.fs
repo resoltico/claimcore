@@ -1,7 +1,7 @@
 namespace ClaimCore.Cli
 
 open System
-open ClaimCore.Catalog
+open ClaimCore.Contract
 open System.Net.Http
 open System.Threading
 

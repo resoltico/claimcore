@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Contract
+
 open System
 open System.Text.Json
 open System.Security.Claims
@@ -69,13 +71,13 @@ module PrincipalIdentity =
 
     let human (issuer: Uri) subject =
         if nonBlank subject then
-            ClaimCore.Hosting.AuthenticatedSubjects.human issuer.AbsoluteUri subject
+            AuthenticatedSubjects.human issuer.AbsoluteUri subject
         else
             Error "OIDC_SUBJECT_INVALID"
 
     let service (issuer: Uri) clientId =
         if nonBlank clientId then
-            ClaimCore.Hosting.AuthenticatedSubjects.service issuer.AbsoluteUri clientId
+            AuthenticatedSubjects.service issuer.AbsoluteUri clientId
         else
             Error "OIDC_CLIENT_INVALID"
 

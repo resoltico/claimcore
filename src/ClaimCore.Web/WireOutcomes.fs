@@ -1,10 +1,11 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 [<Sealed>]
 type private EncodedJsonResult(bytes: byte array, status: int) =
@@ -23,7 +24,7 @@ module internal WebWire =
         EncodedJsonResult(bytes, status) :> IResult
 
     let reply value =
-        let bytes = Replies.encode value
+        let bytes = WireWriter.bytes value
 
         if bytes.Length > Limits.MaximumResponseBytes then
             invalidOp "The encoded response exceeds the response limit."
@@ -31,4 +32,4 @@ module internal WebWire =
         result 200 bytes
 
     let hostFailure reason =
-        HostFailures.encode reason |> result (HostFailures.status reason)
+        HostFailureCodecs.encode reason |> result (HostFailures.status reason)

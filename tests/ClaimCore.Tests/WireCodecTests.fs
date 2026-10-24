@@ -3,7 +3,8 @@ module ClaimCore.Tests.WireCodecTests
 open System
 open System.Text
 open Expecto
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 [<NoComparison>]
 type private Probe =
@@ -29,11 +30,7 @@ let private probe =
 let private bytes (value: string) = Encoding.UTF8.GetBytes value
 let private read codec value = Codec.decode 65536 codec (bytes value)
 
-let private strict value =
-    Strict.parse 65536 value
-    |> Result.map (fun document ->
-        use owned = document
-        ())
+let private strict value = StrictJson.read 65536 value
 
 let private byteProfile () =
     for raw in
@@ -42,7 +39,6 @@ let private byteProfile () =
             "// comment\n{}"
             "{}{}"
             "{\"x\":1,\"\\u0078\":2}"
-            "\"\\u0000\""
             "\"\\ud800\""
             "\"\\uffff\""
             "\"\\udbff\\udfff\""
@@ -53,8 +49,9 @@ let private byteProfile () =
         ] do
         Expect.isError (strict (bytes raw)) "Strict wire bytes refuse"
 
+    Expect.isError (read Codec.text "\"\\u0000\"") "Wire text refuses NUL"
     Expect.isError (strict [| 0xffuy |]) "Fatal UTF8"
-    Expect.isError (Strict.parse 1 (bytes "{}")) "Byte limit"
+    Expect.isError (StrictJson.read 1 (bytes "{}")) "Byte limit"
 
     let nested count =
         bytes (String('[', count) + "0" + String(']', count))
@@ -66,10 +63,8 @@ let private byteProfile () =
         Expect.isOk (strict (bytes raw)) "Supported lexical values"
 
 let private privateMemberNames () =
-    match Strict.parse 65536 (bytes "{\"synthetic-private-member\":1.0}") with
-    | Ok document ->
-        document.Dispose()
-        failtest "Invalid numeric lexeme was accepted"
+    match StrictJson.read 65536 (bytes "{\"synthetic-private-member\":1.0}") with
+    | Ok _ -> failtest "Invalid numeric lexeme was accepted"
     | Error problem ->
         Expect.isFalse
             (problem.Path.Contains("synthetic-private-member"))
@@ -176,11 +171,50 @@ let private encoderBounds () =
         Codec.encode Codec.instant (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero).AddTicks 1L)
         |> ignore)
 
+let private sharedWriters () =
+    let value =
+        {
+            Text = "Rīga 😀\u2028"
+            Count = 7L
+            Enabled = true
+        }
+
+    let tree = probe.Write value
+    let wire = WireWriter.bytes tree
+    let canonical = CanonicalWriter.bytes tree
+
+    Expect.equal
+        (wire |> Encoding.UTF8.GetString)
+        "{\"text\":\"Rīga 😀\u2028\",\"count\":7,\"enabled\":true}"
+        "Declaration order"
+
+    Expect.equal
+        (canonical |> Encoding.UTF8.GetString)
+        "{\"count\":7,\"enabled\":true,\"text\":\"Rīga 😀\u2028\"}"
+        "Ordinal member order"
+
+    Expect.equal (Codec.decode 65536 probe canonical) (Ok value) "One codec reads canonical bytes"
+
+    Expect.equal
+        (StrictJson.read 65536 (WireWriter.indentedBytes tree))
+        (Ok tree)
+        "Indentation preserves the tree"
+
+    Expect.isFalse
+        ((WireWriter.indentedBytes tree |> Encoding.UTF8.GetString).Contains("\\u2028"))
+        "Indented strings share raw Unicode escaping"
+
+    let duplicate = JsonValue.Object [ "x", JsonValue.Null; "x", JsonValue.Null ]
+
+    for write in [ WireWriter.bytes; WireWriter.indentedBytes; CanonicalWriter.bytes ] do
+        Expect.throws (fun () -> write duplicate |> ignore) "Constructed duplicates refuse"
+
 [<Tests>]
 let tests =
     testList
         "standalone typed wire codec"
         [
+            testCase "one codec and shared writer rules" sharedWriters
             testCase "encoder value bounds" encoderBounds
             testCase "strict byte profile" byteProfile
             testCase "unknown member names remain private" privateMemberNames

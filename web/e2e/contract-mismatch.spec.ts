@@ -12,19 +12,18 @@ test("a real contract refusal prompts reload without replaying the draft [CC-WEB
   let previews = 0;
   let executions = 0;
   page.on("request", (request) => {
-    if (request.url().endsWith("/api/case.execute")) {
+    if (request.url().endsWith("/api/operation.execute")) {
       executions += 1;
     }
   });
-  await page.route("**/api/case.preview", async (route) => {
+  await page.route("**/api/operation.preview", async (route) => {
     previews += 1;
     const headers = { ...route.request().headers(), "claimcore-contract": "0".repeat(64) };
     expect(headers["claimcore-contract"]).not.toBe(consumerContractIdentity);
     const response = await route.fetch({ headers, maxRedirects: 0 });
     expect(response.status()).toBe(409);
     expect(await response.json()).toMatchObject({
-      code: "CONTRACT_MISMATCH",
-      executionPhase: "NOT_STARTED",
+      hostFailure: { code: "CONTRACT_MISMATCH", phase: "NOT_STARTED" },
     });
     await route.fulfill({ response });
   });

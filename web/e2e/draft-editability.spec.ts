@@ -9,16 +9,18 @@ test("protects exact amendment edits on action change and Back while untouched d
   await openAuthenticated(page);
   await openCase(page, `DRAFT-${randomUUID()}`);
   await startCommand(page, "Amend registration");
-  await page.getByLabel("Case action").selectOption("CLOSE");
+  await page.getByRole("combobox", { name: "Case action", exact: true }).selectOption("CLOSE");
   await expect(page.getByRole("heading", { name: "Close the case" })).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByLabel("Case action").selectOption("AMEND_REGISTRATION");
+  await page
+    .getByRole("combobox", { name: "Case action", exact: true })
+    .selectOption("AMEND_REGISTRATION");
   const fields = page.locator(".operation-editor form input");
   await expect(fields).toHaveCount(7);
   for (const input of await fields.all()) {
     await input.fill("");
   }
-  await page.getByLabel("Case action").selectOption("CLOSE");
+  await page.getByRole("combobox", { name: "Case action", exact: true }).selectOption("CLOSE");
   await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toBeVisible();
   await page.getByRole("button", { name: "Keep editing" }).click();
   await page.getByRole("button", { name: "Back to case" }).click();

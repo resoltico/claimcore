@@ -5,9 +5,9 @@ open System.IO
 open System.Text
 open System.Text.Json
 open Expecto
-open ClaimCore.Catalog
+open ClaimCore.Contract
 open ClaimCore.Cli
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 let private rendered language selection =
     Discovery.describeText language selection
@@ -18,21 +18,22 @@ let private text name (item: JsonElement) =
     item.GetProperty(name: string).GetString() |> nonNull
 
 let private expectedLabel language (item: JsonElement) =
-    if language = "en" then
-        text "label" item
-    else
-        let identity = text "labelId" item
-        let domain = identity.Split('.')[0]
-        let root = ClaimCore.TestSupport.RepositoryRoot.find ()
+    let identity = text "labelId" item
+    let domain = identity.Split('.')[0]
+    let root = ClaimCore.TestSupport.RepositoryRoot.find ()
 
-        use document =
-            JsonDocument.Parse(
-                File.ReadAllBytes(
-                    Path.Combine(root, "contracts", "locale." + language + "." + domain + ".json")
+    use document =
+        JsonDocument.Parse(
+            File.ReadAllBytes(
+                Path.Combine(
+                    root,
+                    "src/ClaimCore.Contract/Localization",
+                    language + "." + domain + ".json"
                 )
             )
+        )
 
-        document.RootElement.GetProperty(identity).GetString() |> nonNull
+    document.RootElement.GetProperty(identity).GetString() |> nonNull
 
 let private elements name (value: JsonElement) =
     let array = value.GetProperty(name: string)
@@ -154,35 +155,29 @@ let private authorityInputs () =
 
                 Expect.stringContains output (text "primitive" input) "Primitive is visible"
 
-                for path in input.GetProperty("path").EnumerateArray() do
-                    Expect.stringContains
-                        output
-                        (path.GetString() |> nonNull)
-                        "Binding path is visible"
-
 let private endpointRoutes () =
     for language in LocalizationPolicy.languages do
-        for endpoint in Endpoint.all do
-            let output = rendered language (CliDescription.Endpoints(Some endpoint))
+        for endpoint in Api.all do
+            let output = rendered language (CliDescription.Endpoints(Some(Api.id endpoint)))
 
             Expect.stringContains
                 output
-                ("mutates: " + (if Endpoint.mutates endpoint then "true" else "false"))
+                ("mutates: " + (if Api.mutates endpoint then "true" else "false"))
                 "Mutation nature is explicit"
 
             for direction in [ "request"; "response" ] do
                 Expect.stringContains
                     output
-                    ("ClaimCore.Cli schema " + Endpoint.id endpoint + " " + direction)
+                    ("ClaimCore.Cli schema " + Api.id endpoint + " " + direction)
                     "Exact selected schema route"
 
     Expect.stringContains
-        (rendered "en" (CliDescription.Endpoints(Some Endpoint.CaseExecute)))
+        (rendered "en" (CliDescription.Endpoints(Some "operation.execute")))
         "mutates: true"
         "Execution is a mutation"
 
     Expect.stringContains
-        (rendered "en" (CliDescription.Endpoints(Some Endpoint.Context)))
+        (rendered "en" (CliDescription.Endpoints(Some "context")))
         "mutates: false"
         "Context is a read"
 

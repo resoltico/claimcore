@@ -2,8 +2,8 @@ import { caseOffers } from "./case-advice.fixtures";
 import { act, renderHook } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { CurrentCase } from "../src/api/service";
-import { useOperationEditor } from "../src/hooks/operation/useOperationEditor";
-import { definition, fields, response, runtime } from "./service-ui.fixtures";
+import { useOperation } from "../src/hooks/operation/useOperation";
+import { fields, response, runtime } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
   caseReference: fields.caseReference,
@@ -21,14 +21,12 @@ it("coalesces duplicate preview activation while retention is pending", async ()
   const fetch = vi.fn(() => pending);
   vi.stubGlobal("fetch", fetch);
   const { result } = renderHook(() =>
-    useOperationEditor({
+    useOperation({
       token: "token",
-      definition,
       current,
-      initialCommand: "CLOSE",
-      onClose: vi.fn(),
-      onCommitted: vi.fn(),
-      onMutationLockChange: vi.fn(),
+      kind: "CLOSE",
+      scope: "CASE",
+      onLockChange: vi.fn(),
     }),
   );
   let first: Promise<void> = Promise.resolve();
@@ -39,7 +37,7 @@ it("coalesces duplicate preview activation while retention is pending", async ()
   expect(fetch).toHaveBeenCalledOnce();
   await act(async () => {
     finish?.(
-      response("case.preview", "REVIEWED", {
+      response("operation.preview", "REVIEWED", {
         review: {
           before: {
             caseReference: current.caseReference,
@@ -58,5 +56,5 @@ it("coalesces duplicate preview activation while retention is pending", async ()
     );
     await first;
   });
-  expect(result.current.state.delivery).toBe("REVIEWING");
+  expect(result.current.phase).toBe("REVIEWING");
 });

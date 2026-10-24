@@ -1,25 +1,13 @@
 namespace ClaimCore.ContractGeneration
 
-open System.Reflection
-open System.Text.Json
-open ClaimCore.Catalog
+open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Application
 
 /// Structural identity checks happen before publication; Node additionally validates ICU and arguments.
 module CatalogValidation =
     let private authoredEnglish () =
-        let assembly = Assembly.GetExecutingAssembly()
-
-        assembly.GetManifestResourceNames()
-        |> Array.filter (fun name ->
-            name.StartsWith("ClaimCore.Localization.en.", System.StringComparison.Ordinal))
-        |> Array.collect (fun name ->
-            use source = assembly.GetManifestResourceStream(name) |> nonNull
-            use document = JsonDocument.Parse source
-            document.RootElement.EnumerateObject() |> Seq.map _.Name |> Seq.toArray)
-        |> Set.ofArray
-        |> Set.union (MessageText.all |> Map.keys |> Set.ofSeq)
+        AuthoredMessages.templates "en" |> Map.keys |> Set.ofSeq
 
     let validateIdentity known identity =
         if not (Set.contains identity known) then
@@ -30,8 +18,8 @@ module CatalogValidation =
         let validate = validateIdentity known
 
         for field in FieldDefinitions.all do
-            validate field.LabelId
-            validate field.MeaningId
+            validate (FieldTable.labelId field.Field)
+            validate (FieldTable.meaningId field.Field)
 
         for command in CommandDefinitions.all do
             validate command.LabelId

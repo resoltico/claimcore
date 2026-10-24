@@ -29,7 +29,7 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
     await steward.locator("form.lookup button[type=submit]").click();
     await steward.getByRole("button", { name: /Vööïïd/u }).click();
     const reason = "Exact 1.0000 العربية";
-    await steward.locator('input[name="reason"]').fill(reason);
+    await steward.locator('input[name="act.reason"]').fill(reason);
     const preview = steward.locator(".operation-editor button[type=submit]");
     await preview.click();
     const dialog = steward.getByRole("dialog");

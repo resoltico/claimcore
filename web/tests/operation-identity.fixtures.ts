@@ -1,97 +1,36 @@
-import { expect } from "vitest";
-import { localNotice } from "../src/api/notices";
-import { createDraft } from "../src/interaction/metadata";
-import {
-  initialOperation,
-  operationReducer,
-  type OperationState,
-} from "../src/interaction/operationReducer";
-import { groupedCorrectionValues, review } from "./service-foundation.fixtures";
-
-export const firstId = "00000000-0000-4000-8000-000000000001";
-export const secondId = "00000000-0000-4000-8000-000000000002";
-export const initial = () =>
-  initialOperation(
-    firstId,
-    "OPEN",
-    { ...groupedCorrectionValues.registration.values, claimantName: "Synthetic A" },
-    "CASE-SYNTHETIC",
-  );
-export const begin = (state: OperationState, requestId: number) =>
+import type { OperationState } from "../src/interaction/operationState";
+import { operationReducer } from "../src/interaction/operationState";
+import { valuesFor, preparedFor } from "./operation-form.fixtures";
+import { review } from "./service-foundation.fixtures";
+export { firstId, secondId } from "./operation-form.fixtures";
+export const initial = (): OperationState => ({
+  target: "CASE:CASE-SERIALIZATION",
+  disclosureToken: "token",
+  disclosureRefused: false,
+  phase: "EDITING",
+  values: valuesFor(),
+  baseline: valuesFor(),
+  prepared: null,
+  priorUncertain: false,
+  review: null,
+  receipt: null,
+  notice: null,
+  fieldError: null,
+  confirmed: false,
+  pendingDiscard: null,
+});
+export const begin = (state = initial()) =>
+  operationReducer(state, { type: "PREVIEW", prepared: preparedFor() });
+export const refused = (state = begin()) =>
   operationReducer(state, {
-    type: "PREVIEWING",
-    requestId,
-    draft:
-      state.exposedRequest ??
-      createDraft(state.operationId, state.caseReference, 0, state.command, state.values),
-  });
-export const refused = (state: OperationState, requestId: number) =>
-  operationReducer(state, {
-    type: "DEFINITELY_REJECTED",
-    requestId,
-    message: localNotice("unreachable"),
-    field: null,
+    type: "REFUSE",
+    notice: { kind: "local", reason: "unreachable" },
+    target: null,
+    uncertain: false,
+    disclosure: false,
   });
 export const reviewed = () =>
-  operationReducer(begin(initial(), 1), {
-    type: "REVIEWED",
-    requestId: 1,
-    review,
+  operationReducer(operationReducer(begin(), { type: "REVIEW", review, token: "token" }), {
+    type: "CONFIRM",
+    value: true,
   });
-
-const correctionActions = () => ({
-  edit: (group: "registration" | "decision", value: string) => ({
-    type: "EDIT_CORRECTION" as const,
-    group,
-    field: "claimantName",
-    value,
-    nextOperationId: secondId,
-  }),
-  mode: (value: "KEEP" | "REPLACE") => ({
-    type: "SET_CORRECTION_MODE" as const,
-    group: "registration" as const,
-    mode: value,
-    nextOperationId: secondId,
-  }),
-});
-
-const expectCorrectionGuards = (flat: OperationState) => {
-  const grouped = initialOperation(
-    firstId,
-    "CORRECT_CASE",
-    groupedCorrectionValues,
-    "CASE-SYNTHETIC",
-  );
-  const working = begin(grouped, 1);
-  const { edit, mode } = correctionActions();
-  expect(operationReducer(flat, edit("registration", "Synthetic B"))).toBe(flat);
-  expect(operationReducer(flat, mode("KEEP"))).toBe(flat);
-  expect(operationReducer(working, edit("registration", "Synthetic B"))).toBe(working);
-  expect(operationReducer(working, mode("KEEP"))).toBe(working);
-  expect(operationReducer(grouped, edit("registration", "Synthetic A"))).toBe(grouped);
-  expect(operationReducer(grouped, edit("decision", "Synthetic B"))).toBe(grouped);
-  expect(operationReducer(grouped, mode("REPLACE"))).toBe(grouped);
-  expect(operationReducer(grouped, edit("registration", "Synthetic B")).operationId).toBe(firstId);
-  expect(operationReducer(grouped, mode("KEEP")).operationId).toBe(firstId);
-};
-
-/** Transitions that must change nothing, and the identity an unexposed edit keeps. */
-export const expectGuardedTransitionsInert = (fresh: OperationState) => {
-  expect(operationReducer(fresh, { type: "RETURN_TO_EDIT" })).toBe(fresh);
-  expect(
-    operationReducer(fresh, {
-      type: "EDIT_REFERENCE",
-      value: fresh.caseReference,
-      nextOperationId: secondId,
-    }),
-  ).toBe(fresh);
-  const rejectedWithField = operationReducer(begin(fresh, 1), {
-    type: "DEFINITELY_REJECTED",
-    requestId: 1,
-    message: localNotice("unreachable"),
-    field: "claimantName",
-  });
-  expect(rejectedWithField.fieldError?.name).toBe("claimantName");
-  expect(refused(begin(fresh, 1), 1).fieldError).toBeNull();
-  expectCorrectionGuards(fresh);
-};

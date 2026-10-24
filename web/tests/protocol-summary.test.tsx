@@ -5,14 +5,15 @@ import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import { ProtocolSummary } from "../src/components/ProtocolSummary";
 import { PageStatus } from "../src/components/PageStatus";
+import { selectedSchema } from "../src/protocol/forms";
 import { wireSchemas } from "../src/protocol/client";
 import type { SchemaDocument } from "../src/protocol/schema";
 it("localizes generated enum tokens while preserving identical authored principal strings", () => {
-  const document = wireSchemas["authority.execute"].request;
+  const document = wireSchemas["operation.execute"].request;
   render(
     <ProtocolSummary
       document={document}
-      node={document}
+      node={selectedSchema(document, document, "", { scope: "AUTHORITY" })}
       value={{
         operationId: "10000000-0000-4000-8000-000000000001",
         target: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "HUMAN" },

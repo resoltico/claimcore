@@ -60,7 +60,7 @@ it("renders ordinary text input without an error and forwards edits", async () =
 });
 
 it("keeps generated endpoint inventory callable and presents suspicious Unicode defensively", () => {
-  expect(isEndpointId("case.preview")).toBe(true);
+  expect(isEndpointId("operation.preview")).toBe(true);
   expect(isEndpointId("nope")).toBe(false);
   expect(hasSuspiciousCharacters("plain")).toBe(false);
   expect(hasSuspiciousCharacters("a\u202Eb")).toBe(true);

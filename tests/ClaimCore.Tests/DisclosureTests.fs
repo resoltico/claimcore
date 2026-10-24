@@ -1,6 +1,6 @@
 module ClaimCore.Tests.DisclosureTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Threading
 open Expecto
@@ -27,8 +27,10 @@ let private createReader fixture (admin: IActorClaimsCore) role =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 3) principal AuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 3) principal AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 
@@ -41,19 +43,19 @@ let private createReader fixture (admin: IActorClaimsCore) role =
 let private history (admin: IActorClaimsCore) =
     task {
         let original = openRequest 10 "PROBE-1"
-        let! first = admin.Execute(original, CancellationToken.None)
+        let! first = admin.Execute(OperationInput.Case original, CancellationToken.None)
 
         let amendment =
             request
                 11
                 "PROBE-1"
                 1L
-                (BusinessCommand.AmendRegistration
+                (CaseAct.AmendRegistration
                     { registration with
                         ClaimantName = "Corrected Party"
                     })
 
-        let! current = admin.Execute(amendment, CancellationToken.None)
+        let! current = admin.Execute(OperationInput.Case amendment, CancellationToken.None)
         return original, accepted first, accepted current
     }
 
@@ -71,14 +73,14 @@ let private metadata (receipt: OperationReceipt) =
 
 let private observed expected receipt outcome =
     match outcome with
-    | QueryOutcome.Succeeded value ->
+    | ReadReply.Succeeded value ->
         Expect.equal (metadata value) (metadata receipt) "Disclosure changes no acceptance metadata"
         Expect.equal (caseReceipt value).Snapshot expected "Snapshot follows authoritative rights"
     | _ -> failtest "Expected operation observation"
 
-let private fullPage erased (outcome: QueryOutcome<HistoryResultPage>) =
+let private fullPage erased (outcome: ReadReply<HistoryResultPage>) =
     match outcome with
-    | QueryOutcome.Succeeded page ->
+    | ReadReply.Succeeded page ->
         for entry in page.Entries do
             match entry with
             | HistoryEntry.FullEntry receipt ->
@@ -94,16 +96,16 @@ let private fullPage erased (outcome: QueryOutcome<HistoryResultPage>) =
             | _ -> failtest "FULL returns receipt views"
     | _ -> failtest "Expected full history"
 
-let private summaryPage readable (outcome: QueryOutcome<HistoryResultPage>) =
+let private summaryPage readable (outcome: ReadReply<HistoryResultPage>) =
     match outcome, readable with
-    | QueryOutcome.Succeeded page, true ->
+    | ReadReply.Succeeded page, true ->
         Expect.equal page.Entries.Length 2 "Every operation ID remains visible"
 
         for entry in page.Entries do
             match entry with
             | HistoryEntry.SummaryEntry _ -> ()
             | _ -> failtest "Summary contains no snapshot"
-    | QueryOutcome.Rejected Rejection.ResourceUnavailable, false -> ()
+    | ReadReply.Rejected Refusal.ResourceUnavailable, false -> ()
     | _ -> failtest "Unexpected summary disclosure"
 
 let private historyRequest reference detail : HistoryRequest =
@@ -120,8 +122,8 @@ let private roleDisclosure role readable full =
             let! admin = caseWorker fixture
             let! _, first, current = history admin
             let! reader = createReader fixture admin role
-            let! older = reader.Observe(id 10, CancellationToken.None)
-            let! latest = reader.Observe(id 11, CancellationToken.None)
+            let! older = reader.Observe({ OperationId = id 10 }, CancellationToken.None)
+            let! latest = reader.Observe({ OperationId = id 11 }, CancellationToken.None)
 
             if readable then
                 let expected =
@@ -135,7 +137,7 @@ let private roleDisclosure role readable full =
             else
                 Expect.equal
                     older
-                    (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+                    (ReadReply.Rejected Refusal.ResourceUnavailable)
                     "No history right"
 
                 Expect.equal latest older "No current snapshot through observation"
@@ -159,7 +161,7 @@ let private roleDisclosure role readable full =
             else
                 Expect.equal
                     detailed
-                    (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+                    (ReadReply.Rejected Refusal.ResourceUnavailable)
                     "No full history"
         })
 
@@ -168,11 +170,11 @@ let private replayAndPreview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         let! admin = caseWorker fixture
         let! original, first, _ = history admin
         let! reader = createReader fixture admin Role.CaseRegistrar
-        let! replay = reader.Execute(original, CancellationToken.None)
+        let! replay = reader.Execute(OperationInput.Case original, CancellationToken.None)
 
         let receipt =
-            match replay with
-            | ExecuteOutcome.AlreadyAccepted receipt -> receipt
+            match replay.Outcome with
+            | ExecuteResult.AlreadyAccepted receipt -> receipt
             | _ -> failtest "Authorized exact replay missing"
 
         Expect.equal
@@ -185,14 +187,15 @@ let private replayAndPreview (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             SnapshotDisclosure.Withheld
             "Superseded replay snapshot is withheld"
 
-        let! preview = reader.Preview(original, CancellationToken.None)
+        let! preview = reader.Preview(OperationInput.Case original, CancellationToken.None)
 
         Expect.equal
-            preview
-            (PreviewOutcome.AlreadyAccepted receipt)
+            preview.Outcome
+            (PreviewResult.AlreadyAccepted receipt)
             "Preview acceptance follows the same disclosure rule"
 
-        let! fresh = reader.Execute(openRequest 20 "FRESH-1", CancellationToken.None)
+        let! fresh =
+            reader.Execute(OperationInput.Case(openRequest 20 "FRESH-1"), CancellationToken.None)
 
         match (accepted fresh |> caseReceipt).Snapshot with
         | SnapshotDisclosure.Disclosed _ -> ()
@@ -212,7 +215,7 @@ let private erasedHistory (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let! erase =
             admin.Execute(
-                actRequest 12 "probe-1" 2L (CaseAct.Stewardship StewardshipAct.Erase),
+                OperationInput.Case(actRequest 12 "probe-1" 2L (CaseAct.Erase)),
                 CancellationToken.None
             )
 
@@ -221,7 +224,7 @@ let private erasedHistory (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             SnapshotDisclosure.Erased
             "Erase acceptance is explicit"
 
-        let! result = reader.Observe(id 10, CancellationToken.None)
+        let! result = reader.Observe({ OperationId = id 10 }, CancellationToken.None)
         observed SnapshotDisclosure.Erased first result
 
         let! history =
@@ -233,30 +236,30 @@ let private erasedHistory (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 let private stewardshipReplay (_: MemoryLedgerStore.Store) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
-        let! _ = admin.Execute(openRequest 10 "PROBE-1", CancellationToken.None)
+
+        let! _ =
+            admin.Execute(OperationInput.Case(openRequest 10 "PROBE-1"), CancellationToken.None)
+
         let! reader = createReader fixture admin Role.DataSteward
 
-        let original =
-            actRequest 11 "PROBE-1" 1L (CaseAct.Stewardship(StewardshipAct.Void "Entered in error"))
+        let original = actRequest 11 "PROBE-1" 1L ((CaseAct.Void "Entered in error"))
 
-        let! voided = reader.Execute(original, CancellationToken.None)
+        let! voided = reader.Execute(OperationInput.Case original, CancellationToken.None)
         let first = accepted voided
 
         let! reinstated =
             reader.Execute(
-                actRequest
-                    12
-                    "PROBE-1"
-                    2L
-                    (CaseAct.Stewardship(StewardshipAct.Reinstate "Entry confirmed")),
+                OperationInput.Case(
+                    actRequest 12 "PROBE-1" 2L ((CaseAct.Reinstate "Entry confirmed"))
+                ),
                 CancellationToken.None
             )
 
         accepted reinstated |> ignore
-        let! replay = reader.Execute(original, CancellationToken.None)
+        let! replay = reader.Execute(OperationInput.Case original, CancellationToken.None)
 
-        match replay with
-        | ExecuteOutcome.AlreadyAccepted receipt ->
+        match replay.Outcome with
+        | ExecuteResult.AlreadyAccepted receipt ->
             Expect.equal (metadata receipt) (metadata first) "Stewardship metadata is stable"
 
             Expect.equal
@@ -275,8 +278,10 @@ let private commitSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 3) principal AuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 3) principal AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 
@@ -294,12 +299,12 @@ let private commitSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
                         11
                         "PROBE-1"
                         1L
-                        (BusinessCommand.AmendRegistration
+                        (CaseAct.AmendRegistration
                             { registration with
                                 ClaimantName = "Later Party"
                             })
 
-                let! amended = admin.Execute(amendment, CancellationToken.None)
+                let! amended = admin.Execute(OperationInput.Case amendment, CancellationToken.None)
                 accepted amended |> ignore
 
                 let! revoked =
@@ -312,7 +317,9 @@ let private commitSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
 
         let actor = Core.create installation (store :> ILedgerStore) calendar principal
 
-        let! result = actor.Execute(openRequest 10 "PROBE-1", CancellationToken.None)
+        let! result =
+            actor.Execute(OperationInput.Case(openRequest 10 "PROBE-1"), CancellationToken.None)
+
         let receipt = accepted result
         Expect.equal store.ReadCalls 0 "No state is fetched after commit to shape the receipt"
 
@@ -322,11 +329,13 @@ let private commitSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             "Disclosure uses the write's locked context"
 
         Expect.equal receipt.RecordedBy (id 3) "Original executor"
-        let! denied = (core fixture principal).Get("PROBE-1", CancellationToken.None)
+
+        let! denied =
+            (core fixture principal).Get({ CaseReference = "PROBE-1" }, CancellationToken.None)
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Later reads use revoked authority"
     }
 

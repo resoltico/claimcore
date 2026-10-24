@@ -1,119 +1,56 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Catalog
-
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 open ClaimCore.Domain
 
 module CaseRecord =
-    let private optionalText =
-        function
-        | Some text -> CanonicalValue.String text
-        | None -> CanonicalValue.Null
+    let private live (snapshot: ClaimCore.Contract.CaseSnapshot) =
+        match snapshot.View with
+        | CaseView.Live(fields, disposition) -> fields, disposition
+        | CaseView.Erased -> invalidArg (nameof snapshot) "A payload requires live case fields."
 
-    /// Exactly the thirteen business fields; technical state remains outside the object.
-    let fieldsValue (fields: CaseFields) =
-        CanonicalValue.Object
-            [
-                "incidentDate", CanonicalValue.String fields.IncidentDate
-                "incidentNotificationDate", CanonicalValue.String fields.IncidentNotificationDate
-                "incidentCountry", CanonicalValue.String fields.IncidentCountry
-                "claimantName", CanonicalValue.String fields.ClaimantName
-                "insurerName", CanonicalValue.String fields.InsurerName
-                "claimedAmount", CanonicalValue.String fields.ClaimedAmount
-                "claimedCurrency", CanonicalValue.String fields.ClaimedCurrency
-                "caseReference", CanonicalValue.String fields.CaseReference
-                "paymentDecisionDate", optionalText fields.PaymentDecisionDate
-                "payableAmount", optionalText fields.PayableAmount
-                "payableCurrency", optionalText fields.PayableCurrency
-                "paymentDate", optionalText fields.PaymentDate
-                "status", CanonicalValue.String(CaseStatuses.token fields.Status)
-            ]
-
-    let encodeSnapshot (snapshot: CaseSnapshot) =
-        match Case.ofAccepted snapshot with
-        | Error _ -> invalidArg (nameof snapshot) "Invalid accepted case format."
-        | Ok _ ->
-            match snapshot.View with
-            | CaseView.Erased -> Array.empty
-            | CaseView.Live(fields, disposition) ->
-                CanonicalValue.Object
-                    [
-                        "format", CanonicalValue.Integer(int64 RecordVersions.Snapshot)
-                        "revision", CanonicalValue.Integer snapshot.Revision
-                        "disposition",
-                        CanonicalValue.String(
-                            if disposition = Disposition.Active then
-                                "ACTIVE"
-                            else
-                                "VOIDED"
-                        )
-                        "fields", fieldsValue fields
-                    ]
-                |> CanonicalJson.encode
-
-    let private readFields root : CaseFields =
-        let path = "$.fields"
-
-        Json.properties
-            path
-            [
-                "incidentDate"
-                "incidentNotificationDate"
-                "incidentCountry"
-                "claimantName"
-                "insurerName"
-                "claimedAmount"
-                "claimedCurrency"
-                "caseReference"
-                "paymentDecisionDate"
-                "payableAmount"
-                "payableCurrency"
-                "paymentDate"
-                "status"
-            ]
-            root
-
-        let status =
-            match Json.text path "status" root |> CaseStatuses.tryParse with
-            | Some value -> value
-            | None -> Json.reject "$.fields.status" "Unknown persisted case status."
-
-        {
-            IncidentDate = Json.text path "incidentDate" root
-            IncidentNotificationDate = Json.text path "incidentNotificationDate" root
-            IncidentCountry = Json.text path "incidentCountry" root
-            ClaimantName = Json.text path "claimantName" root
-            InsurerName = Json.text path "insurerName" root
-            ClaimedAmount = Json.text path "claimedAmount" root
-            ClaimedCurrency = Json.text path "claimedCurrency" root
-            CaseReference = Json.text path "caseReference" root
-            PaymentDecisionDate = Json.optionalString path "paymentDecisionDate" root
-            PayableAmount = Json.optionalString path "payableAmount" root
-            PayableCurrency = Json.optionalString path "payableCurrency" root
-            PaymentDate = Json.optionalString path "paymentDate" root
-            Status = status
-        }
-
-    let private readFormat4 root =
-        Json.properties "$" [ "format"; "fields"; "revision"; "disposition" ] root
-        let fields = Json.required "$" "fields" root |> readFields
-
-        let disposition =
-            match Json.text "$" "disposition" root with
-            | "ACTIVE" -> Disposition.Active
-            | "VOIDED" -> Disposition.Voided
-            | _ -> Json.reject "$.disposition" "Unknown persisted disposition."
-
-        let snapshot =
+    let private codec: Codec<ClaimCore.Contract.CaseSnapshot> =
+        Codec.record (fun revision disposition (fields: CaseFields) ->
             {
                 Reference = fields.CaseReference
-                Revision = Json.integer "$" "revision" root
+                Revision = revision
                 View = CaseView.Live(fields, disposition)
-            }
+            })
+        |> Codec.field
+            "revision"
+            (fun (snapshot: CaseSnapshot) -> snapshot.Revision)
+            RequestCodecs.sequence
+        |> Codec.field
+            "disposition"
+            (live >> snd)
+            (Codec.enumeration [ Disposition.Active, "ACTIVE"; Disposition.Voided, "VOIDED" ])
+        |> Codec.field "fields" (live >> fst) ResponseCodecs.caseFields
+        |> Codec.build
+        |> Codec.withFormat (int64 RecordVersions.Snapshot)
+        |> Codec.named "CaseSnapshotRecord"
 
+    let private validate snapshot =
         match Case.ofAccepted snapshot with
-        | Ok _ -> snapshot
-        | Error _ -> Json.reject "$.fields" "Invalid accepted case format."
+        | Ok _ -> Ok snapshot
+        | Error _ ->
+            Error
+                {
+                    Field = "$.fields"
+                    Message = "Invalid accepted case format."
+                }
+
+    let encodeSnapshot snapshot =
+        match validate snapshot with
+        | Error _ -> invalidArg (nameof snapshot) "Invalid accepted case format."
+        | Ok { View = CaseView.Erased } -> Array.empty
+        | Ok value -> codec.Write value |> CanonicalWriter.bytes
 
     let decodeSnapshot bytes =
-        Json.bounded FormatLimits.MaximumPayloadBytes bytes (Json.dispatch [ 4L, readFormat4 ])
+        Codec.decode FormatLimits.MaximumPayloadBytes codec bytes
+        |> Result.mapError (fun problem ->
+            {
+                Field = problem.Path
+                Message = problem.Reason
+            })
+        |> Result.bind validate

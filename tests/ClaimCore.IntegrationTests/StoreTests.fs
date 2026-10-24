@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.StoreTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Threading
 open Expecto
@@ -12,8 +12,10 @@ open ClaimCore.TestSupport.StoreContractTests
 let private serviceCases (admin: IActorClaimsCore) principal =
     task {
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 400) principal AuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 400) principal AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 
@@ -24,7 +26,9 @@ let private serviceCases (admin: IActorClaimsCore) principal =
 
             let! opened =
                 admin.Execute(
-                    request (410 + number) reference 0L (BusinessCommand.Open registration),
+                    OperationInput.Case(
+                        request (410 + number) reference 0L (CaseAct.Open registration)
+                    ),
                     CancellationToken.None
                 )
 
@@ -72,11 +76,13 @@ let private serviceScopeCorruption () =
                     database.Fixture.Calendar
                     principal
 
-            let! hidden = service.Get("SERVICE-1", CancellationToken.None) |> Async.AwaitTask
+            let! hidden =
+                service.Get({ CaseReference = "SERVICE-1" }, CancellationToken.None)
+                |> Async.AwaitTask
 
             Expect.equal
                 hidden
-                (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+                (ReadReply.Rejected Refusal.ResourceUnavailable)
                 "Loaded human-only corruption refuses the scoped view"
 
             let! visible =
@@ -84,7 +90,7 @@ let private serviceScopeCorruption () =
                 |> Async.AwaitTask
 
             match visible with
-            | QueryOutcome.Succeeded page ->
+            | ReadReply.Succeeded page ->
                 Expect.equal
                     (page.Items
                      |> List.map (function

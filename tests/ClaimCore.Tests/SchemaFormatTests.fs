@@ -3,7 +3,8 @@ module ClaimCore.Tests.SchemaFormatTests
 open System
 open System.Text.Json
 open Expecto
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 let private admits codec (value: string) =
     Codec.decode 4096 codec (JsonSerializer.SerializeToUtf8Bytes value)
@@ -55,7 +56,7 @@ let private businessAdmission () =
         let raw = JsonSerializer.SerializeToUtf8Bytes {| caseReference = reference |}
 
         Expect.isOk
-            (Admission.admit Endpoint.CaseGet raw)
+            (Codec.decode Limits.MaximumRequestBytes Api.caseGet.Input raw)
             "Business format reaches typed Application refusal"
 
     for raw in [ "0"; "123456789012345678.1234" ] do

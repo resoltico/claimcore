@@ -8,11 +8,7 @@ module DescriptorText =
     let private text (value: JsonElement) = value.GetString() |> nonNull
 
     let private localized language (value: JsonElement) (name: string) =
-        let fallback = value.GetProperty(name).GetString() |> nonNull
-
-        match value.TryGetProperty(name + "Id") with
-        | true, identity -> ContractDiscovery.localized language (text identity) fallback
-        | _ -> fallback
+        ContractDiscovery.localized language (value.GetProperty(name + "Id") |> text)
 
     let private fieldLabel language (definitions: JsonElement) (input: JsonElement) =
         let name = input.GetProperty("fieldName") |> text
@@ -49,14 +45,13 @@ module DescriptorText =
         let rows =
             value.EnumerateObject()
             |> Seq.filter (fun item ->
-                not (List.contains item.Name [ "labelId"; "meaningId"; "confirmationId" ])
-                && not (hasField && item.Name = "label"))
+                item.Name <> "confirmationId" && not (hasField && item.Name = "labelId"))
             |> Seq.map (fun item ->
                 let content =
                     match item.Name with
                     | "fieldName" -> fieldLabel language definitions value
-                    | "label"
-                    | "meaning" -> localized language value item.Name
+                    | "labelId" -> localized language value "label"
+                    | "meaningId" -> localized language value "meaning"
                     | _ -> renderValue language definitions (depth + 1) item.Value
 
                 let separator =
@@ -68,7 +63,13 @@ module DescriptorText =
                     else
                         " "
 
-                indent + item.Name + ":" + separator + content)
+                let name =
+                    match item.Name with
+                    | "labelId" -> "label"
+                    | "meaningId" -> "meaning"
+                    | name -> name
+
+                indent + name + ":" + separator + content)
             |> Seq.toList
 
         if rows.IsEmpty then "{}" else String.concat "\n" rows

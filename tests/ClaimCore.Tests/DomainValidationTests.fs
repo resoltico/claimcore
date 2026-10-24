@@ -1,6 +1,6 @@
 module ClaimCore.Tests.DomainValidationTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open Expecto
 open ClaimCore.Domain
@@ -17,7 +17,7 @@ let private chronologyTests =
                 Expect.isTrue
                     (opened ()
                      |> apply (
-                         BusinessCommand.Decide
+                         CaseAct.Decide
                              { decision with
                                  PaymentDecisionDate = "2026-08-02"
                              }
@@ -26,11 +26,15 @@ let private chronologyTests =
                     "Chronology")
             testCase "payment before decision is rejected" (fun () ->
                 Expect.isTrue
-                    (decided () |> apply (BusinessCommand.RecordPayment "2026-08-14") |> isInvalid)
+                    (decided ()
+                     |> apply (CaseAct.RecordPayment { PaymentDate = "2026-08-14" })
+                     |> isInvalid)
                     "Chronology")
             testCase "future payment is rejected" (fun () ->
                 Expect.isTrue
-                    (decided () |> apply (BusinessCommand.RecordPayment "2026-09-08") |> isInvalid)
+                    (decided ()
+                     |> apply (CaseAct.RecordPayment { PaymentDate = "2026-09-08" })
+                     |> isInvalid)
                     "No future payment recorded as done")
         ]
 
@@ -79,13 +83,10 @@ let private restorationTests =
                     Expect.isEmpty (availableActs current) "No successor can be represented"
 
                     Expect.isTrue
-                        ((Case.decide
-                            today
-                            (request Revision.Maximum BusinessCommand.Close)
-                            (Some current)
+                        ((Case.decide today (request Revision.Maximum CaseAct.Close) (Some current)
                           |> Result.map Case.snapshot)
                             =
-                            Error CaseRefusal.RevisionExhausted)
+                            Error Refusal.RevisionExhausted)
                         "Terminal state refuses without arithmetic"
 
                     Expect.isError
@@ -108,8 +109,7 @@ let private precisionAndRoundTripTests =
                         ClaimedAmount = maximum
                     }
 
-                let claim =
-                    Case.decide today (request 0L (BusinessCommand.Open facts)) None |> accepted
+                let claim = Case.decide today (request 0L (CaseAct.Open facts)) None |> accepted
 
                 Expect.isTrue
                     ((Case.snapshot claim |> viewFields).ClaimedAmount = maximum)
@@ -120,7 +120,7 @@ let private precisionAndRoundTripTests =
                         opened ()
                         decided ()
                         paid ()
-                        opened () |> apply BusinessCommand.Close |> accepted
+                        opened () |> apply CaseAct.Close |> accepted
                     ] do
                     let view = Case.snapshot state
 
@@ -156,8 +156,7 @@ let private decimalGrammarTests =
                         }
 
                     Expect.isTrue
-                        (Case.decide today (request 0L (BusinessCommand.Open facts)) None
-                         |> isInvalid)
+                        (Case.decide today (request 0L (CaseAct.Open facts)) None |> isInvalid)
                         "Exact decimal grammar")
         ]
 
@@ -174,8 +173,7 @@ let private dateGrammarTests =
                         }
 
                     Expect.isTrue
-                        (Case.decide today (request 0L (BusinessCommand.Open facts)) None
-                         |> isInvalid)
+                        (Case.decide today (request 0L (CaseAct.Open facts)) None |> isInvalid)
                         "Calendar grammar")
         ]
 
@@ -191,8 +189,7 @@ let private currencyGrammarTests =
                         }
 
                     Expect.isTrue
-                        (Case.decide today (request 0L (BusinessCommand.Open facts)) None
-                         |> isInvalid)
+                        (Case.decide today (request 0L (CaseAct.Open facts)) None |> isInvalid)
                         "Currency grammar")
         ]
 
@@ -203,8 +200,7 @@ let private authoredUnicodeRoundTrip () =
                 ClaimantName = value
             }
 
-        let claim =
-            Case.decide today (request 0L (BusinessCommand.Open facts)) None |> accepted
+        let claim = Case.decide today (request 0L (CaseAct.Open facts)) None |> accepted
 
         let snapshot = Case.snapshot claim
 

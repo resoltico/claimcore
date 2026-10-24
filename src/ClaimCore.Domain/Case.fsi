@@ -1,6 +1,6 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 
@@ -17,9 +17,9 @@ type CaseState =
 type CaseRecord
 
 module Case =
-    val validateRequest: CaseRequest -> Result<unit, CaseRefusal>
+    val validateRequest: CaseRequest -> Result<unit, Refusal>
     val ofAccepted: CaseSnapshot -> Result<CaseRecord, RecordViolation>
     val snapshot: CaseRecord -> CaseSnapshot
-    val decide: DateOnly -> CaseRequest -> CaseRecord option -> Result<CaseRecord, CaseRefusal>
+    val decide: DateOnly -> CaseRequest -> CaseRecord option -> Result<CaseRecord, Refusal>
     val eligibleActs: CaseRecord -> CaseActKind list
     val correctionActions: CaseRecord -> CorrectionGroup -> CorrectionGroupAction list

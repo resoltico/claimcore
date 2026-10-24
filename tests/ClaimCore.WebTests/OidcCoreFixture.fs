@@ -1,6 +1,6 @@
 module internal ClaimCore.WebTests.OidcCoreFixture
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -15,6 +15,7 @@ type Fixture
         fixture: ClaimCore.TestSupport.StoreContractTests.Fixture
     ) =
     member _.Actor principal = core fixture principal
+    member _.EntryCount = store.Entries.Length
 
     interface IDisposable with
         member _.Dispose() = (store :> IDisposable).Dispose()
@@ -45,8 +46,10 @@ let createFor issuer subject =
             let service = PrincipalKey.service issuer "service" |> Result.defaultWith invalidOp
 
             let! registered =
-                owner.ExecuteAuthority(
-                    authorityRequest (id 20) service AuthorityAct.RegisterActor,
+                owner.Execute(
+                    OperationInput.Authority(
+                        authorityRequest (id 20) service AdmittedAuthorityAct.RegisterActor
+                    ),
                     CancellationToken.None
                 )
 
@@ -59,7 +62,7 @@ let createFor issuer subject =
 
             let! opened =
                 owner.Execute(
-                    request 10 "SYNTHETIC-001" 0L (BusinessCommand.Open registration),
+                    OperationInput.Case(request 10 "SYNTHETIC-001" 0L (CaseAct.Open registration)),
                     CancellationToken.None
                 )
 

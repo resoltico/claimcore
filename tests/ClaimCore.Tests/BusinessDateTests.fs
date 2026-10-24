@@ -1,6 +1,6 @@
 module ClaimCore.Tests.BusinessDateTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto
@@ -13,7 +13,7 @@ let private applyAt date command claim =
 let private future field result =
     Expect.equal
         (result |> Result.map (fun _ -> ()))
-        (Error(CaseRefusal.InvalidInput(field, InputViolation.Date DateViolation.FutureDate)))
+        (Error(Refusal.InvalidInput(field, Violation.FutureDate)))
         "A newly asserted date is bounded by business time"
 
 let private amendmentRetainsDates =
@@ -26,7 +26,7 @@ let private amendmentRetainsDates =
             }
 
         let after =
-            applyAt (DateOnly(2026, 7, 31)) (BusinessCommand.AmendRegistration changed) before
+            applyAt (DateOnly(2026, 7, 31)) (CaseAct.AmendRegistration changed) before
             |> accepted
             |> Case.snapshot
 
@@ -44,8 +44,8 @@ let private newIncidentIsBounded =
             }
 
         opened ()
-        |> applyAt (DateOnly(2026, 7, 31)) (BusinessCommand.AmendRegistration changed)
-        |> future InputTarget.IncidentDate)
+        |> applyAt (DateOnly(2026, 7, 31)) (CaseAct.AmendRegistration changed)
+        |> future (InputTarget.Field BusinessField.IncidentDate))
 
 let private newNotificationIsBounded =
     testCase "[CC-DOM-002] newly replaced notification dates are checked independently" (fun () ->
@@ -55,8 +55,8 @@ let private newNotificationIsBounded =
             }
 
         opened ()
-        |> applyAt (DateOnly(2026, 8, 3)) (BusinessCommand.AmendRegistration changed)
-        |> future InputTarget.IncidentNotificationDate)
+        |> applyAt (DateOnly(2026, 8, 3)) (CaseAct.AmendRegistration changed)
+        |> future (InputTarget.Field BusinessField.IncidentNotificationDate))
 
 let private decisionRetainsDate =
     testCase
@@ -66,7 +66,7 @@ let private decisionRetainsDate =
 
             let after =
                 decided ()
-                |> applyAt (DateOnly(2026, 8, 10)) (BusinessCommand.Decide changed)
+                |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide changed)
                 |> accepted
                 |> Case.snapshot
 
@@ -84,49 +84,49 @@ let private newDecisionDateIsBounded =
             }
 
         decided ()
-        |> applyAt (DateOnly(2026, 8, 10)) (BusinessCommand.Decide changed)
-        |> future InputTarget.PaymentDecisionDate)
+        |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide changed)
+        |> future (InputTarget.Field BusinessField.PaymentDecisionDate))
 
 let private initialDecisionIsBounded =
     testCase "[CC-DOM-002] initial decisions cannot reuse a future historical date" (fun () ->
         opened ()
-        |> applyAt (DateOnly(2026, 8, 10)) (BusinessCommand.Decide decision)
-        |> future InputTarget.PaymentDecisionDate)
+        |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide decision)
+        |> future (InputTarget.Field BusinessField.PaymentDecisionDate))
 
 let private withdrawnDateIsAbsent =
     testCase
         "[CC-DOM-002] withdrawing a decision removes its date reaffirmation authority"
         (fun () ->
             decided ()
-            |> apply BusinessCommand.WithdrawDecision
+            |> apply CaseAct.WithdrawDecision
             |> accepted
-            |> applyAt (DateOnly(2026, 8, 10)) (BusinessCommand.Decide decision)
-            |> future InputTarget.PaymentDecisionDate)
+            |> applyAt (DateOnly(2026, 8, 10)) (CaseAct.Decide decision)
+            |> future (InputTarget.Field BusinessField.PaymentDecisionDate))
 
 let private clearedPaymentDateIsAbsent =
     testCase "[CC-DOM-002] clearing payment removes its date reaffirmation authority" (fun () ->
         paid ()
-        |> apply BusinessCommand.ClearPayment
+        |> apply CaseAct.ClearPayment
         |> accepted
-        |> applyAt (DateOnly(2026, 8, 16)) (BusinessCommand.RecordPayment "2026-08-20")
-        |> future InputTarget.PaymentDate)
+        |> applyAt (DateOnly(2026, 8, 16)) (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+        |> future (InputTarget.Field BusinessField.PaymentDate))
 
 let private closedCorrectionRetainsDates =
     testCase
         "[CC-DOM-002] a closed paid correction reaffirms accepted dates after rollback"
         (fun () ->
-            let before = paid () |> apply BusinessCommand.Close |> accepted
+            let before = paid () |> apply CaseAct.Close |> accepted
 
             let command =
-                BusinessCommand.CorrectCase
+                CaseAct.CorrectCase
                     {
                         Registration =
-                            RegistrationCorrection.Replace
+                            RegistrationGroup.Replace
                                 { registration with
                                     ClaimantName = "Synthetic corrected party"
                                 }
-                        Decision = DecisionCorrection.Replace decision
-                        Payment = PaymentCorrection.Replace "2026-08-20"
+                        Decision = DecisionGroup.Replace decision
+                        Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
                     }
 
             let after =
@@ -145,36 +145,36 @@ let private correctionIncidentIsBounded =
         "[CC-DOM-002] a correction cannot hide a new future incident behind accepted dates"
         (fun () ->
             let command =
-                BusinessCommand.CorrectCase
+                CaseAct.CorrectCase
                     {
                         Registration =
-                            RegistrationCorrection.Replace
+                            RegistrationGroup.Replace
                                 { registration with
                                     IncidentDate = "2026-08-02"
                                 }
-                        Decision = DecisionCorrection.Keep
-                        Payment = PaymentCorrection.Keep
+                        Decision = DecisionGroup.Keep
+                        Payment = PaymentGroup.Keep
                     }
 
             paid ()
             |> applyAt (DateOnly(2026, 7, 31)) command
-            |> future InputTarget.IncidentDate)
+            |> future (InputTarget.Field BusinessField.IncidentDate))
 
 let private spellingDoesNotRevise =
     testCase
         "[CC-DOM-002] equivalent amount spelling remains a correction no-op after rollback"
         (fun () ->
             let command =
-                BusinessCommand.CorrectCase
+                CaseAct.CorrectCase
                     {
-                        Registration = RegistrationCorrection.Keep
-                        Decision = DecisionCorrection.Replace decision
-                        Payment = PaymentCorrection.Replace "2026-08-20"
+                        Registration = RegistrationGroup.Keep
+                        Decision = DecisionGroup.Replace decision
+                        Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
                     }
 
             let result = paid () |> applyAt (DateOnly(2026, 7, 31)) command
 
-            Expect.equal result (Error CaseRefusal.CorrectionNoChanges) "No spelling-only revision")
+            Expect.equal result (Error Refusal.CorrectionNoChanges) "No spelling-only revision")
 
 let private ordinary =
     testList

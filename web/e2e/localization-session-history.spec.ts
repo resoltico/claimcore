@@ -1,3 +1,4 @@
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openCase } from "./case-workflow";
@@ -11,7 +12,7 @@ test("updates visible detail and expanded history immediately with independent f
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
   await openCase(page, reference);
-  await page.getByLabel("History detail", { exact: true }).selectOption("FULL");
+  await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   const history = page.locator(".history-list > li > details").first();
   await expect(history).toBeVisible();
   await history.locator(":scope > summary").click();
@@ -44,6 +45,8 @@ test("updates visible detail and expanded history immediately with independent f
 test("preserves language and independent display preferences through real logout and OIDC relogin", async ({
   page,
 }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  // This workflow owns the server-side ticket that logout revokes.
   await page.goto("/", { waitUntil: "commit" });
   await login(page);
   await selectFormat(page, "lv-LV");

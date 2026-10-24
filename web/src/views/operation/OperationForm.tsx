@@ -1,263 +1,141 @@
-import { CorrectionMode } from "./CorrectionMode";
+import { useRef, useEffect } from "react";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
+import { ProtocolFields } from "../../components/ProtocolFields";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
-import { Button } from "react-aria-components/Button";
-import { Form } from "react-aria-components/Form";
-import type { RefObject } from "react";
-import type { CurrentCase, ProductMetadata } from "../../api/service";
-import { DescriptorField } from "../../components/DescriptorField";
-import {
-  correctionGroupName,
-  isGroupedDraftValues,
-  type CorrectionGroupName,
-} from "../../interaction/metadata";
-import type { OperationEditorModel } from "../../interaction/editorTypes";
+import { operationDocument, visibleOperationSchema } from "../../interaction/operationForm";
+import type { CurrentCase } from "../../api/service";
+import type { OperationModel } from "../../hooks/operation/useOperation";
+import { productMetadata } from "../../protocol/productMetadata";
 
-type OperationFormProps = {
-  definition: ProductMetadata;
+export type OperationFormProps = {
+  model: OperationModel;
   current: CurrentCase | null;
-  model: OperationEditorModel;
-  onClose: () => void;
-  previewButtonRef: RefObject<HTMLButtonElement | null>;
+  offered: ReadonlyArray<string>;
+  onCommand: (kind: string) => void;
+  onClose?: () => void;
 };
-
-const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
+const CommandPicker = ({ model, offered, onCommand }: OperationFormProps) => {
   const p = usePresentation();
-  if (model.available.length < 2) {
-    return null;
-  }
-  const change = (next: string): void => {
-    const command = model.available.find((candidate) => candidate === next);
-    if (command === undefined || command === model.state.command) {
-      return;
-    }
-    if (model.dirty) {
-      model.setPendingDiscard(command);
-    } else {
-      model.applyCommand(command);
-    }
-  };
-  return (
-    <>
-      <label htmlFor="command-picker">{p.text("ui.command")}</label>
+  return offered.length < 2 ? null : (
+    <label>
+      {p.text(model.values["scope"] === "CASE" ? "ui.command" : "ui.authorityAction")}
       <select
         id="command-picker"
-        value={model.state.command}
-        disabled={!model.canPreview}
+        value={String(model.values["act.kind"])}
+        disabled={model.busy || model.phase === "REVIEWING" || model.priorUncertain}
         onChange={(event) => {
-          change(event.target.value);
+          onCommand(event.target.value);
         }}
       >
-        {model.available.map((kind) => (
+        {offered.map((kind) => (
           <option key={kind} value={kind}>
-            {p.commandLabel(kind)}
+            {model.values["scope"] === "CASE" ? p.commandLabel(kind) : p.authorityLabel(kind)}
           </option>
         ))}
       </select>
-    </>
+    </label>
   );
 };
-
-const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "model">) => {
+const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
   const p = usePresentation();
-  if (current === null && model.referenceField !== undefined) {
-    return (
-      <DescriptorField
-        field={model.referenceField}
-        value={model.state.caseReference}
-        disabled={!model.canPreview}
-        error={
-          model.state.fieldError?.name === model.referenceField.name
-            ? model.state.fieldError.message
-            : undefined
-        }
-        onChange={model.editReference}
-      />
-    );
-  }
-  return current === null ? null : (
-    <p>
-      <ReferenceSummary
-        id="ui.reference"
-        values={{ label: p.fieldLabel("caseReference"), reference: model.state.caseReference }}
-      />
-    </p>
+  const allowed = offered.includes(String(model.values["act.kind"]));
+  const command = productMetadata.descriptors.commands.find(
+    (item) => model.values["scope"] === "CASE" && item.kind === model.values["act.kind"],
   );
-};
-
-const AuthoringFields = ({ model }: Pick<OperationFormProps, "model">) => {
-  const p = usePresentation();
-  if (isGroupedDraftValues(model.state.values)) {
-    return null;
-  }
-  const { values } = model.state;
   return (
     <>
-      {model.fields.map(({ field }) => (
-        <DescriptorField
-          key={field.name}
-          field={field}
-          value={values[field.name] ?? ""}
-          disabled={!model.canPreview}
-          error={
-            model.state.fieldError?.name === field.name ? model.state.fieldError.message : undefined
-          }
-          onChange={(value) => {
-            model.edit(field.name, value);
-          }}
+      {" "}
+      {current === null ? null : (
+        <p>
+          <ReferenceSummary
+            id="ui.reference"
+            values={{
+              label: p.fieldLabel("caseReference"),
+              reference: String(model.values["caseReference"]),
+            }}
+          />
+        </p>
+      )}
+      {command?.inputs.kind === "CORRECTION_GROUPS" ? <p>{p.text("ui.correctionHint")}</p> : null}
+      {offered.length === 0 ? null : (
+        <ProtocolFields
+          document={operationDocument}
+          node={visibleOperationSchema(model.values, current)}
+          path=""
+          values={model.values}
+          disabled={model.busy || model.phase === "REVIEWING" || !allowed}
+          errorPath={model.fieldError}
+          errorNotice={model.notice}
+          onChange={model.edit}
         />
-      ))}
-      {model.fields.length === 0 ? <p>{p.text("ui.noAuthoredValues")}</p> : null}
+      )}
+      {model.notice === null ? null : (
+        <p role="alert" tabIndex={-1} data-error-summary>
+          <NoticeView value={model.notice} />
+        </p>
+      )}
     </>
   );
 };
-
-const ReplacementFields = ({
-  model,
-  name,
-  values,
-  fields,
-}: {
-  model: OperationEditorModel;
-  name: CorrectionGroupName;
-  values: Record<string, string>;
-  fields: ReadonlyArray<OperationEditorModel["groups"][number]["fields"][number]>;
-}) =>
-  fields.map((field) => (
-    <DescriptorField
-      key={field.name}
-      field={field}
-      inputName={`${name}.${field.name}`}
-      value={values[field.name] ?? ""}
-      disabled={!model.canPreview}
-      error={
-        model.state.fieldError?.name === field.name ||
-        model.state.fieldError?.name === `${name}.${field.name}`
-          ? model.state.fieldError.message
-          : undefined
-      }
-      onChange={(next) => {
-        model.editCorrection(name, field.name, next);
+const useReviewReturnFocus = (model: OperationModel) => {
+  const preview = useRef<HTMLButtonElement>(null);
+  const previousPhase = useRef(model.phase);
+  useEffect(() => {
+    if (
+      previousPhase.current === "REVIEWING" &&
+      model.phase === "EDITING" &&
+      model.notice === null &&
+      preview.current?.isConnected === true &&
+      !preview.current.disabled
+    ) {
+      preview.current.focus();
+    }
+    previousPhase.current = model.phase;
+  }, [model.phase, model.notice]);
+  return preview;
+};
+export const OperationForm = (props: OperationFormProps) => {
+  const { model, current, offered, onClose } = props;
+  const p = usePresentation();
+  const preview = useReviewReturnFocus(model);
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (model.notice === null) {
+      return;
+    }
+    const input = [
+      ...form.current!.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input,select"),
+    ].find((item) => item.name === model.fieldError);
+    (input ?? form.current?.querySelector<HTMLElement>("[data-error-summary]"))?.focus();
+  }, [model.fieldError, model.notice]);
+  const allowed = offered.includes(String(model.values["act.kind"]));
+  return (
+    <form
+      ref={form}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (allowed) {
+          void model.preview();
+        }
       }}
-    />
-  ));
-
-const CorrectionGroup = ({
-  model,
-  name,
-  label,
-  meaning,
-  actions,
-  fields,
-}: {
-  model: OperationEditorModel;
-  name: CorrectionGroupName;
-  label: string;
-  meaning: string;
-  actions: ReadonlyArray<"KEEP" | "REPLACE" | "CLEAR">;
-  fields: ReadonlyArray<OperationEditorModel["groups"][number]["fields"][number]>;
-}) => {
-  if (!isGroupedDraftValues(model.state.values)) {
-    return null;
-  }
-  const { values } = model.state;
-  const value = values[name];
-  if (value === undefined) {
-    throw new Error(`The editor is missing correction group ${name}.`);
-  }
-  return (
-    <fieldset>
-      <legend>{label}</legend>
-      <p>{meaning}</p>
-      <CorrectionMode
-        name={name}
-        mode={value.mode}
-        actions={actions}
-        locked={!model.canPreview}
-        error={
-          model.state.fieldError?.name === name || model.state.fieldError?.name === `${name}.action`
-            ? model.state.fieldError.message
-            : undefined
-        }
-        onChange={(next) => {
-          model.setCorrectionMode(name, next);
-        }}
-      />
-      {value.mode === "REPLACE" ? (
-        <ReplacementFields model={model} name={name} values={value.values} fields={fields} />
-      ) : null}
-    </fieldset>
+    >
+      <CommandPicker {...props} />
+      <OperationInputs {...props} />
+      <div className="actions">
+        <button
+          ref={preview}
+          type="submit"
+          disabled={model.busy || model.phase === "REVIEWING" || !allowed}
+        >
+          {p.text(model.phase === "PREVIEWING" ? "ui.previewing" : "ui.previewOperation")}
+        </button>
+        {onClose === undefined ? null : (
+          <button type="button" disabled={model.busy} onClick={onClose}>
+            {p.text(current === null ? "ui.backToCases" : "ui.backToCase")}
+          </button>
+        )}
+      </div>
+    </form>
   );
 };
-
-const CorrectionFields = ({ model }: Pick<OperationFormProps, "model">) => {
-  const p = usePresentation();
-  return model.groups.length === 0 ? null : (
-    <>
-      <p>{p.text("ui.correctionHint")}</p>
-      {model.groups.map(({ group, fields }) => (
-        <CorrectionGroup
-          key={group.name}
-          model={model}
-          name={correctionGroupName(group.name)}
-          label={p.groupLabel(group.name)}
-          meaning={p.groupMeaning(group.name)}
-          actions={group.actions}
-          fields={fields}
-        />
-      ))}
-    </>
-  );
-};
-
-const Actions = ({
-  current,
-  model,
-  onClose,
-  previewButtonRef,
-}: Pick<OperationFormProps, "current" | "model" | "onClose" | "previewButtonRef">) => {
-  const p = usePresentation();
-  return (
-    <div className="actions">
-      <Button ref={previewButtonRef} type="submit" isDisabled={!model.canPreview}>
-        {model.state.delivery === "PREVIEWING"
-          ? p.text("ui.previewing")
-          : p.text("ui.previewOperation")}
-      </Button>
-      <Button className="secondary-button" onPress={onClose} isDisabled={model.locked}>
-        {p.text(current === null ? "ui.backToCases" : "ui.backToCase")}
-      </Button>
-    </div>
-  );
-};
-
-export const OperationForm = ({
-  current,
-  model,
-  onClose,
-  previewButtonRef,
-}: OperationFormProps) => (
-  <Form
-    onSubmit={(event) => {
-      event.preventDefault();
-      void model.preview();
-    }}
-  >
-    <Reference current={current} model={model} />
-    <CommandPicker model={model} />
-    <AuthoringFields model={model} />
-    <CorrectionFields model={model} />
-    {model.state.message === null ? null : (
-      <p className="error" role="alert" tabIndex={-1} data-error-summary>
-        <NoticeView value={model.state.message} />
-      </p>
-    )}
-    <Actions
-      current={current}
-      model={model}
-      onClose={onClose}
-      previewButtonRef={previewButtonRef}
-    />
-  </Form>
-);

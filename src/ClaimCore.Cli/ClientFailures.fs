@@ -1,8 +1,6 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Catalog
-
-open ClaimCore.Wire
+open ClaimCore.Contract
 
 type ClientFailure =
     | Configuration
@@ -15,6 +13,16 @@ type ClientFailure =
 type CliReply = { Bytes: byte array; ExitCode: int }
 
 module CliReply =
+    let private encoded frame =
+        {
+            Bytes = Frames.encode frame
+            ExitCode = Frames.exitCode frame
+        }
+
+    let private decode reply =
+        Frames.decode reply.Bytes
+        |> Result.defaultWith (fun _ -> invalidArg "reply" "Expected an admitted CLI reply.")
+
     let admitted bytes =
         let frame =
             Frames.decode bytes
@@ -25,98 +33,68 @@ module CliReply =
             ExitCode = Frames.exitCode frame
         }
 
-    let private encoded frame =
+    let private initial result =
         {
-            Bytes = Frames.encode frame
-            ExitCode = Frames.exitCode frame
-        }
-
-    let private initial: ClaimCore.Wire.FrameDelivery =
-        {
+            Endpoint = None
             OperationId = None
-            AttemptKnowledge = AttemptKnowledge.NotSent
-            ResolutionEvidence = ResolutionEvidence.NoEvidence
+            Delivery = DeliveryState.NotSent
+            Result = result
         }
 
     let protocol code =
-        FrameReply.ProtocolFailure(initial, None, code) |> encoded
+        initial (FrameResult.LocalFailure code) |> encoded
 
     let local failure =
         let code =
             match failure with
-            | ClientFailure.Configuration -> LocalFailure.ConfigurationInvalid
+            | ClientFailure.Configuration -> CliFailure.ConfigurationInvalid
             | ClientFailure.ConfigurationIssue(setting, issue) ->
-                LocalFailure.ConfigurationIssue(setting, issue)
-            | ClientFailure.Authentication -> LocalFailure.AuthenticationFailed
-            | ClientFailure.Unavailable -> LocalFailure.ServiceUnavailable
-            | ClientFailure.Cancelled -> LocalFailure.Cancelled
-            | ClientFailure.Unexpected -> LocalFailure.Internal
+                CliFailure.ConfigurationIssue(setting, issue)
+            | ClientFailure.Authentication -> CliFailure.AuthenticationFailed
+            | ClientFailure.Unavailable -> CliFailure.ServiceUnavailable
+            | ClientFailure.Cancelled -> CliFailure.Cancelled
+            | ClientFailure.Unexpected -> CliFailure.Internal
 
-        FrameReply.LocalFailure(initial, None, code) |> encoded
+        initial (FrameResult.LocalFailure code) |> encoded
 
-    let private decode reply =
-        Frames.decode reply.Bytes
-        |> Result.defaultWith (fun _ -> invalidArg "reply" "Expected an admitted CLI reply.")
-
-    let private operation invocation =
-        match Frames.request invocation with
-        | WireRequest.CasePreview value
-        | WireRequest.CaseExecute value -> Some value.OperationId
-        | WireRequest.AuthorityExecute value -> Some value.OperationId
-        | WireRequest.OperationObserve value -> Some value.OperationId
-        | _ -> None
-
-    let private metadata invocation attempt evidence : ClaimCore.Wire.FrameDelivery =
-        let endpoint = Frames.request invocation |> WireRequest.endpoint
-
+    let private frame invocation delivery result =
         {
-            OperationId = operation invocation
-            AttemptKnowledge = Delivery.knowledge endpoint attempt
-            ResolutionEvidence = evidence
+            Endpoint = Some(Api.id (Frames.endpoint invocation))
+            OperationId = Frames.operationId invocation
+            Delivery = delivery
+            Result = result
         }
+        |> Frames.retainUncertainty invocation
 
     let result invocation reply =
-        let endpoint = Frames.request invocation |> WireRequest.endpoint
-        let attempt = WireReply.attempt reply
+        if
+            not (Correlation.matches (Frames.endpoint invocation) (Frames.input invocation) reply)
+        then
+            invalidArg (nameof reply) "Reply does not match the prepared request."
 
-        Frames.fromReply (metadata invocation attempt (Delivery.evidence endpoint attempt)) reply
-        |> encoded
+        let delivery =
+            if Frames.outcome reply = Some "OUTCOME_UNKNOWN" then
+                DeliveryState.Uncertain
+            else
+                DeliveryState.Delivered
 
-    let serviceFailure invocation (failure: HostFailureReply) =
-        let endpoint = Frames.request invocation |> WireRequest.endpoint
-        let attempt = AttemptResult.HostFailure(HostFailures.phase failure.Reason)
+        frame invocation delivery (FrameResult.Reply reply) |> encoded
 
-        FrameReply.ServiceFailure(
-            metadata invocation attempt ResolutionEvidence.NoEvidence,
-            endpoint,
-            failure
-        )
-        |> encoded
+    let serviceFailure invocation (failure: HostFailure) =
+        let delivery =
+            if failure.Phase = Some ExecutionPhase.NotStarted then
+                DeliveryState.Delivered
+            else
+                DeliveryState.Uncertain
 
-    let forAttempt invocation knowledge reply =
-        let frame = decode reply
+        frame invocation delivery (FrameResult.HostFailure failure) |> encoded
 
-        let meta =
-            { Frames.metadata frame with
-                OperationId = operation invocation
-                AttemptKnowledge = knowledge
-            }
-
-        let endpoint =
-            Frames.request invocation |> WireRequest.endpoint |> Endpoint.id |> Some
-
-        match frame with
-        | FrameReply.LocalFailure(_, _, code) -> FrameReply.LocalFailure(meta, endpoint, code)
-        | FrameReply.ProtocolFailure(_, _, code) -> FrameReply.ProtocolFailure(meta, endpoint, code)
-        | value -> Frames.withMetadata meta value
-        |> encoded
+    let forAttempt invocation delivery reply =
+        let decoded = decode reply
+        frame invocation delivery decoded.Result |> encoded
 
     let unknown reply =
-        let frame = decode reply
-
-        Frames.withMetadata
-            { Frames.metadata frame with
-                AttemptKnowledge = AttemptKnowledge.Unconfirmed
-            }
-            frame
+        { decode reply with
+            Delivery = DeliveryState.Uncertain
+        }
         |> encoded

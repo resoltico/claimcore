@@ -1,6 +1,6 @@
 module ClaimCore.WebTests.FacadeStub
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -10,7 +10,7 @@ open ClaimCore.Domain
 
 let operationId = Guid.Parse "40000000-0000-4000-8000-000000000001"
 
-let position =
+let position: LedgerPosition =
     {
         Sequence = 1L
         EntryHash = String.replicate 64 "a"
@@ -19,6 +19,7 @@ let position =
 let commandInput =
     System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
         {|
+            scope = "CASE"
             operationId = operationId.ToString("D")
             caseReference = "WEB-001"
             expectedRevision = 0L
@@ -45,18 +46,16 @@ let view reference =
             CaseReference = reference
             ExpectedRevision = 0L
             Act =
-                CaseAct.Business(
-                    BusinessCommand.Open
-                        {
-                            IncidentDate = "2026-08-01"
-                            IncidentNotificationDate = "2026-08-03"
-                            IncidentCountry = "LV"
-                            ClaimantName = "Synthetic claimant"
-                            InsurerName = "Synthetic insurer"
-                            ClaimedAmount = "1.00"
-                            ClaimedCurrency = "EUR"
-                        }
-                )
+                (CaseAct.Open
+                    {
+                        IncidentDate = "2026-08-01"
+                        IncidentNotificationDate = "2026-08-03"
+                        IncidentCountry = "LV"
+                        ClaimantName = "Synthetic claimant"
+                        InsurerName = "Synthetic insurer"
+                        ClaimedAmount = "1.00"
+                        ClaimedCurrency = "EUR"
+                    })
         }
 
     Case.decide (DateOnly(2026, 10, 13)) request None
@@ -79,15 +78,15 @@ let receipt id reference =
         RecordedBy = operationId
     }
 
-let authorityReceipt (request: AuthorityRequest) =
+let authorityReceipt (request: ClaimCore.Contract.AuthorityRequest) =
     { receipt request.OperationId "WEB-001" with
         Scope =
             ReceiptScope.Authority
                 {
                     TargetActorId = operationId
                     Act =
-                        AuthorityRequests.toRecord request
-                        |> fun value -> ClaimCore.RecordFormat.RecordedAuthorityActs.kind value.Act
+                        ClaimCore.RecordFormat.RecordedAuthorityAct.Operation request.Act
+                        |> fun value -> ClaimCore.RecordFormat.RecordedAuthorityActs.kind value
                         |> AuthorityRecordKinds.fromRecord
                 }
     }
@@ -108,16 +107,18 @@ let description =
 type Facade() =
     let calls = ResizeArray<string>()
     member _.Calls = List.ofSeq calls
+    member val AdmissionOpen = true with get, set
     member val Error: exn option = None with get, set
 
-    member val Execute: CaseRequest * CancellationToken -> Task<ExecuteOutcome> =
+    member val Execute: CaseRequest * CancellationToken -> Task<ExecuteResult> =
         (fun (request, _) ->
             Task.FromResult(
-                ExecuteOutcome.Accepted(receipt request.OperationId request.CaseReference)
+                ExecuteResult.Accepted(receipt request.OperationId request.CaseReference)
             )) with get, set
 
-    member val ExecuteAuthority: AuthorityRequest * CancellationToken -> Task<ExecuteOutcome> =
-        (fun (request, _) -> Task.FromResult(ExecuteOutcome.Accepted(authorityReceipt request))) with get, set
+    member val ExecuteAuthority: ClaimCore.Contract.AuthorityRequest * CancellationToken
+        -> Task<ExecuteResult> =
+        (fun (request, _) -> Task.FromResult(ExecuteResult.Accepted(authorityReceipt request))) with get, set
 
     member val Principal: PrincipalKey option = None with get, set
 
@@ -132,24 +133,51 @@ type Facade() =
 
     interface IActorClaimsCore with
         member this.Context _ =
-            this.Invoke "context" (QueryOutcome.Succeeded description)
+            this.Invoke "context" (ReadReply.Succeeded description)
 
-        member this.Preview(request, _) =
+        member this.Preview(input, _) =
+            let outcome =
+                match input with
+                | OperationInput.Case request ->
+                    PreviewResult.AlreadyAccepted(receipt request.OperationId request.CaseReference)
+                | OperationInput.Authority request ->
+                    PreviewResult.AlreadyAccepted(authorityReceipt request)
+
             this.Invoke
-                "case.preview"
-                (PreviewOutcome.AlreadyAccepted(receipt request.OperationId request.CaseReference))
+                "operation.preview"
+                ({
+                    OperationId = OperationInput.operationId input
+                    Outcome = outcome
+                }
+                : PreviewReply)
 
-        member this.Execute(request, token) =
-            calls.Add "case.execute"
+        member this.Execute(input, token) =
+            task {
+                match this.Error with
+                | Some error -> return raise error
+                | None ->
+                    let! outcome =
+                        match input with
+                        | OperationInput.Case request ->
+                            calls.Add "operation.execute"
+                            this.Execute(request, token)
+                        | OperationInput.Authority request ->
+                            calls.Add "operation.execute"
+                            this.ExecuteAuthority(request, token)
 
-            match this.Error with
-            | Some error -> raise error
-            | None -> this.Execute(request, token)
+                    return
+                        {
+                            OperationId = OperationInput.operationId input
+                            Outcome = outcome
+                        }
+            }
 
-        member this.Get(reference, _) =
+        member this.Get(request, _) =
+            let reference = request.CaseReference
+
             this.Invoke
                 "case.get"
-                (QueryOutcome.Succeeded
+                (ReadReply.Succeeded
                     {
                         Snapshot = view reference
                         Advice = { Acts = []; History = [] }
@@ -158,7 +186,7 @@ type Facade() =
         member this.List(_, _) =
             this.Invoke
                 "case.list"
-                (QueryOutcome.Succeeded
+                (ReadReply.Succeeded
                     {
                         Items = []
                         NextCursor = None
@@ -166,17 +194,11 @@ type Facade() =
                     })
 
         member this.History(_, _) =
-            this.Invoke "case.history" (QueryOutcome.Succeeded { Entries = []; NextCursor = None })
+            this.Invoke "case.history" (ReadReply.Succeeded { Entries = []; NextCursor = None })
 
-        member this.Observe(id, _) =
-            this.Invoke "operation.observe" (QueryOutcome.Succeeded(receipt id "WEB-001"))
-
-        member this.ExecuteAuthority(request, token) =
-            calls.Add "authority.execute"
-
-            match this.Error with
-            | Some error -> raise error
-            | None -> this.ExecuteAuthority(request, token)
+        member this.Observe(request, _) =
+            let id = request.OperationId
+            this.Invoke "operation.observe" (ReadReply.Succeeded(receipt id "WEB-001"))
 
         member this.ListGrants(request, _) =
             let principal =
@@ -185,12 +207,12 @@ type Facade() =
 
             this.Invoke
                 "authority.grants"
-                (QueryOutcome.Succeeded
+                (ReadReply.Succeeded
                     {
                         Actor =
                             {
                                 ActorId = request.ActorId
-                                Principal = principal
+                                Principal = PrincipalKey.describe principal
                                 Enabled = false
                             }
                         Items = []
@@ -198,4 +220,4 @@ type Facade() =
                     })
 
         member this.ListActors(_, _) =
-            this.Invoke "authority.list" (QueryOutcome.Succeeded { Items = []; NextCursor = None })
+            this.Invoke "authority.list" (ReadReply.Succeeded { Items = []; NextCursor = None })

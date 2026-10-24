@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.GrantPaginationTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -14,7 +14,7 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 let private page =
     function
-    | QueryOutcome.Succeeded p -> p
+    | ReadReply.Succeeded p -> p
     | _ -> failtest "Expected grant page"
 
 let private seedCases (admin: IActorClaimsCore) target =
@@ -24,7 +24,7 @@ let private seedCases (admin: IActorClaimsCore) target =
 
             let! opened =
                 admin.Execute(
-                    request (300 + n) reference 0L (BusinessCommand.Open registration),
+                    OperationInput.Case(request (300 + n) reference 0L (CaseAct.Open registration)),
                     token
                 )
 
@@ -61,10 +61,10 @@ let private eraseCase (database: PostgresFixture.Database) (admin: IActorClaimsC
                 OperationId = id 605
                 CaseReference = "GRANT-1"
                 ExpectedRevision = 1L
-                Act = CaseAct.Stewardship(StewardshipAct.Erase)
+                Act = (CaseAct.Erase)
             }
 
-        let! erased = admin.Execute(erase, token)
+        let! erased = admin.Execute(OperationInput.Case erase, token)
         accepted erased |> ignore
     }
 
@@ -77,8 +77,10 @@ let private prepare (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 200) target AuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 200) target AdmittedAuthorityAct.RegisterActor
+                ),
                 token
             )
 
@@ -93,11 +95,15 @@ let private prepare (database: PostgresFixture.Database) =
         let! actors = admin.ListActors({ AfterCursor = None; Limit = 50 }, token)
 
         let actorId =
-            (page actors).Items |> List.find (fun a -> a.Principal = target) |> _.ActorId
+            (page actors).Items
+            |> List.find (fun a -> a.Principal = PrincipalKey.describe target)
+            |> _.ActorId
 
         let! disabled =
-            admin.ExecuteAuthority(
-                authorityRequest (id 603) target (AuthorityAct.SetEnabled false),
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 603) target (AdmittedAuthorityAct.SetEnabled false)
+                ),
                 token
             )
 
@@ -168,8 +174,10 @@ let private callerRevocation (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 620) target AuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 620) target AdmittedAuthorityAct.RegisterActor
+                ),
                 token
             )
 
@@ -199,11 +207,11 @@ let private callerRevocation (database: PostgresFixture.Database) =
 
         Expect.equal
             denied
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Current caller authority precedes token acceptance"
     }
 
-let private cursorIsolation (admin: IActorClaimsCore) (query: AuthorityGrantListRequest) cursor =
+let private cursorIsolation (admin: IActorClaimsCore) (query: GrantsRequest) cursor =
     task {
         let! crossTarget =
             admin.ListGrants(
@@ -214,20 +222,17 @@ let private cursorIsolation (admin: IActorClaimsCore) (query: AuthorityGrantList
                 token
             )
 
-        Expect.equal crossTarget (QueryOutcome.Rejected Rejection.InvalidCursor) "Target is bound"
+        Expect.equal crossTarget (ReadReply.Rejected Refusal.InvalidCursor) "Target is bound"
 
         let! crossEndpoint = admin.ListActors({ AfterCursor = cursor; Limit = 50 }, token)
 
-        Expect.equal
-            crossEndpoint
-            (QueryOutcome.Rejected Rejection.InvalidCursor)
-            "Endpoint is bound"
+        Expect.equal crossEndpoint (ReadReply.Rejected Refusal.InvalidCursor) "Endpoint is bound"
 
         let! missing = admin.ListGrants({ query with ActorId = id 999 }, token)
 
         Expect.equal
             missing
-            (QueryOutcome.Rejected Rejection.ResourceUnavailable)
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
             "Absent target refuses generically"
 
     }
@@ -319,8 +324,10 @@ let private changeTarget (admin: IActorClaimsCore) =
             |> Result.defaultWith failtest
 
         let! enabled =
-            admin.ExecuteAuthority(
-                authorityRequest (id 630) target (AuthorityAct.SetEnabled true),
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 630) target (AdmittedAuthorityAct.SetEnabled true)
+                ),
                 token
             )
 
@@ -360,9 +367,8 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
             }
 
         let reading =
-            Task.Run<QueryOutcome<AuthorityGrantPage>>(
-                Func<Task<QueryOutcome<AuthorityGrantPage>>>(fun () ->
-                    actor.ListGrants(query, token))
+            Task.Run<ReadReply<AuthorityGrantPage>>(
+                Func<Task<ReadReply<AuthorityGrantPage>>>(fun () -> actor.ListGrants(query, token))
             )
 
         try

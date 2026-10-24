@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.RejectedDrafts
 
+open ClaimCore.Contract
+
 open System.IO
 open System.Text.Json.Nodes
 open Expecto
@@ -28,23 +30,23 @@ let private businessRefusals fixture =
         ] do
         let input = input fixture field value
 
-        for endpoint in [ "case.preview"; "case.execute" ] do
+        for endpoint in [ "operation.preview"; "operation.execute" ] do
             let reply = automation fixture endpoint input 2
 
             Expect.equal
-                (reply.GetProperty("kind").GetString())
-                "result"
+                (reply.GetProperty("delivery").GetString())
+                "DELIVERED"
                 "Malformed business input reaches the typed refusal"
 
             let rejection = require "REJECTED" reply
 
             Expect.equal
-                (rejection.GetProperty("field").GetString())
+                (rejection.GetProperty("target").GetString())
                 field
                 "Field guidance is retained"
 
             Expect.equal
-                (rejection.GetProperty("diagnostic").GetProperty("id").GetString())
+                (rejection.GetProperty("code").GetString())
                 diagnostic
                 "Application owns format refusal"
 
@@ -52,18 +54,18 @@ let private businessRefusals fixture =
         [ " ", "INPUT_TEXT_REQUIRED"; String.replicate 201 "x", "INPUT_TEXT_TOO_LONG" ] do
         let input = input fixture "claimantName" value
 
-        for endpoint in [ "case.preview"; "case.execute" ] do
+        for endpoint in [ "operation.preview"; "operation.execute" ] do
             let reply = automation fixture endpoint input 2
 
             Expect.equal
-                (reply.GetProperty("kind").GetString())
-                "result"
+                (reply.GetProperty("delivery").GetString())
+                "DELIVERED"
                 "Domain owns current admission"
 
             let rejection = require "REJECTED" reply
 
             Expect.equal
-                (rejection.GetProperty("diagnostic").GetProperty("id").GetString())
+                (rejection.GetProperty("code").GetString())
                 diagnostic
                 "Current policy diagnostic remains reachable"
 
@@ -71,15 +73,16 @@ let private businessRefusals fixture =
 let private principalRefusals fixture =
     for issuer, subject, target, issue in
         [
-            "", "", "issuer", "MISSING"
-            "https://issuer.example/", "", "subject", "MISSING"
-            "secret-canary", "synthetic", "issuer", "INVALID"
+            "", "", "principal.issuer", "INPUT_TEXT_REQUIRED"
+            "https://issuer.example/", "", "principal.subject", "INPUT_TEXT_REQUIRED"
+            "secret-canary", "synthetic", "principal.issuer", "INPUT_PRINCIPAL_FORMAT"
         ] do
         let reply =
             automation
                 fixture
-                "authority.execute"
+                "operation.execute"
                 {|
+                    scope = "AUTHORITY"
                     operationId = id ()
                     target =
                         {|
@@ -89,14 +92,11 @@ let private principalRefusals fixture =
                         |}
                     act = {| kind = "REGISTER_ACTOR" |}
                 |}
-                3
+                2
 
-        let failure = reply.GetProperty("failure")
-        Expect.equal (failure.GetProperty("status").GetInt32()) 400 "Technical input refusal"
-        Expect.equal (failure.GetProperty("executionPhase").GetString()) "NOT_STARTED" "No dispatch"
-        let parameters = failure.GetProperty("diagnostic").GetProperty("parameters")
-        Expect.equal (parameters.GetProperty("target").GetString()) target "Core field guidance"
-        Expect.equal (parameters.GetProperty("issue").GetString()) issue "Core cause"
+        let refusal = require "REJECTED" reply
+        Expect.equal (refusal.GetProperty("target").GetString()) target "Application field guidance"
+        Expect.equal (refusal.GetProperty("code").GetString()) issue "Application cause"
         Expect.isFalse (reply.GetRawText().Contains "secret-canary") "No authored principal echo"
 
 

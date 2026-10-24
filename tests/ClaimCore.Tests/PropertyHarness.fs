@@ -14,12 +14,12 @@ let wireId endpoint response =
     "CC-PROP-WIRE-"
     + direction
     + "-"
-    + (ClaimCore.Wire.Endpoint.id endpoint).Replace('.', '-').ToUpperInvariant()
+    + (ClaimCore.Contract.Api.id endpoint).Replace('.', '-').ToUpperInvariant()
     + "-001"
 
 let private wirePropertyIds =
     [
-        for endpoint in ClaimCore.Wire.Endpoint.all do
+        for endpoint in ClaimCore.Contract.Api.all do
             yield wireId endpoint false
             yield wireId endpoint true
     ]
@@ -53,6 +53,9 @@ let sequenceMaximum () = 20
 
 let private caseCount = 200
 
+// A failure remains a failure when minimization stops; retain its deterministic replay token.
+let private shrinkMaximum = 100
+
 let private seedFor (baseSeed: uint64) (propertyId: string) =
     let bytes = Array.zeroCreate<byte> 8
     BinaryPrimitives.WriteUInt64BigEndian(bytes, baseSeed)
@@ -66,6 +69,7 @@ let private config propertyId =
     PropertyConfig.defaults
     |> PropertyConfig.withTests (LanguagePrimitives.Int32WithMeasure<tests>(caseCount))
     |> PropertyConfig.withSeed (seedFor fixedBaseSeed propertyId)
+    |> PropertyConfig.withShrinks (LanguagePrimitives.Int32WithMeasure<shrinks>(shrinkMaximum))
 
 let failureText propertyId (report: Report) =
     match report.Status with

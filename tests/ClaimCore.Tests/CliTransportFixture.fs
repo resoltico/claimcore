@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CliTransportFixture
 
-open ClaimCore.Wire
+open ClaimCore.Contract
 
 open System
 open System.IO
@@ -15,49 +15,47 @@ open ClaimCore.Cli
 
 let bytes (text: string) = Encoding.UTF8.GetBytes text
 
-let samples file endpoint =
-    let root = ClaimCore.TestSupport.RepositoryRoot.find ()
-
-    use document =
-        JsonDocument.Parse(File.ReadAllBytes(Path.Combine(root, "tests", "fixtures", file)))
-
-    document.RootElement.GetProperty("cases").EnumerateArray()
-    |> Seq.filter (fun item -> item.GetProperty("endpoint").GetString() = endpoint)
-    |> Seq.map (fun item -> item.GetProperty("value").GetRawText() |> bytes)
-    |> Seq.toList
+let samples endpoint = CliReplyFixtures.responses endpoint
 
 let frame endpoint =
-    let input =
-        match endpoint with
-        | "session"
-        | "session.logout"
-        | "context" -> bytes "{}"
-        | _ -> samples "wire-request-examples.json" endpoint |> List.head
-
-    use document = JsonDocument.Parse(ReadOnlyMemory<byte> input)
-    let input = JsonSerializer.SerializeToUtf8Bytes document.RootElement
-
-    bytes ($"{{\"endpoint\":\"{endpoint}\",\"input\":{Encoding.UTF8.GetString input}}}")
+    ClaimCore.Contract.JsonValue.Object
+        [
+            "endpoint", ClaimCore.Contract.JsonValue.String endpoint
+            "input", CliReplyFixtures.input endpoint
+        ]
+    |> WireWriter.bytes
     |> Frames.admit
     |> Result.defaultWith (fun _ -> failwith "Fixture frame refused.")
 
-let frameEndpoint invocation =
-    Frames.request invocation |> WireRequest.endpoint
+let authorityFrame () =
+    ClaimCore.Contract.JsonValue.Object
+        [
+            "endpoint", ClaimCore.Contract.JsonValue.String "operation.execute"
+            "input",
+            Api.operationExecute.Input.Write(
+                OperationInput.Authority CliReplyFixtures.authorityRequest
+            )
+        ]
+    |> WireWriter.bytes
+    |> Frames.admit
+    |> Result.defaultWith (fun _ -> failwith "Authority fixture refused.")
 
-let frameBytes invocation =
-    bytes (
-        $"{{\"endpoint\":\"{Endpoint.id (frameEndpoint invocation)}\",\"input\":{Encoding.UTF8.GetString(Frames.inputBytes invocation)}}}"
-    )
+let frameEndpoint invocation = Frames.endpoint invocation
+let frameBytes invocation = Frames.encodeInvocation invocation
 
 let result invocation body =
-    Replies.decode (frameEndpoint invocation) body
+    StrictJson.read Limits.MaximumResponseBytes body
     |> Result.bind (fun reply ->
-        if Correlation.matches (Frames.request invocation) reply then
-            Ok reply
-        else
-            Error { Path = "$"; Reason = "CORRELATION" })
+        Api.admitOutput (frameEndpoint invocation) reply
+        |> Result.bind (fun () ->
+            if Correlation.matches (frameEndpoint invocation) (Frames.input invocation) reply then
+                Ok reply
+            else
+                Error { Path = "$"; Reason = "CORRELATION" }))
 
-let replyJson encoded =
+let replyJson (encoded: byte array) =
+    let encoded = encoded |> Array.takeWhile ((<>) (byte '\n'))
+
     Frames.decode encoded
     |> Result.defaultWith (fun _ -> failwith "Invalid reply.")
     |> ignore

@@ -1,6 +1,6 @@
 module ClaimCore.Tests.ContractTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Text
@@ -11,9 +11,7 @@ open Expecto
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Application
-open ClaimCore.Hosting
-open ClaimCore.Hosting.Presentation
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
@@ -22,21 +20,21 @@ let private bytes (value: string) = Encoding.UTF8.GetBytes value
 let private id = Guid.Parse "20000000-0000-4000-8000-000000000001"
 let private digest = String.replicate 64 "a"
 
-let private position: ClaimCore.Application.LedgerPosition =
+let private position: ClaimCore.Contract.LedgerPosition =
     { Sequence = 1L; EntryHash = digest }
 
-let private receipt: ClaimCore.Application.OperationReceipt =
+let private receipt: ClaimCore.Contract.OperationReceipt =
     {
         OperationId = id
         Position = position
         Scope =
-            ClaimCore.Application.ReceiptScope.Case
+            ClaimCore.Contract.ReceiptScope.Case
                 {
                     Reference = "UNIT-001"
                     Revision = 1L
                     Act = (CaseActKind.Business BusinessActKind.Open)
                     Snapshot =
-                        ClaimCore.Application.SnapshotDisclosure.Disclosed
+                        ClaimCore.Contract.SnapshotDisclosure.Disclosed
                             (Case.snapshot (opened ())).View
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
@@ -46,46 +44,36 @@ let private receipt: ClaimCore.Application.OperationReceipt =
 let private authority =
     { receipt with
         Scope =
-            ClaimCore.Application.ReceiptScope.Authority
+            ClaimCore.Contract.ReceiptScope.Authority
                 {
                     TargetActorId = id
                     Act = AuthorityKind.RegisterActor
                 }
     }
 
-let private admitted (value: WireReply) =
-    let encoded = Replies.encode value
+let private admitted codec value =
+    let encoded = Codec.encode codec value
 
     Expect.equal
-        (Replies.decode (WireReply.endpoint value) encoded)
+        (Codec.decode Limits.MaximumResponseBytes codec encoded)
         (Ok value)
         "Typed reply round trips"
 
     use document = JsonDocument.Parse(encoded.AsMemory())
     document.RootElement.Clone()
 
-let private wireRegistration (value: RegistrationInput) : Registration =
-    {
-        IncidentDate = value.IncidentDate
-        IncidentNotificationDate = value.IncidentNotificationDate
-        IncidentCountry = value.IncidentCountry
-        ClaimantName = value.ClaimantName
-        InsurerName = value.InsurerName
-        ClaimedAmount = value.ClaimedAmount
-        ClaimedCurrency = value.ClaimedCurrency
-    }
-
-let private wireRequest values : ClaimCore.Wire.CaseRequest =
+let private caseRequest values : ClaimCore.Contract.CaseRequest =
     {
         OperationId = id
         CaseReference = "UNIT-001"
         ExpectedRevision = 0L
-        Act = ClaimCore.Wire.CaseAct.Open(wireRegistration values)
+        Act = ClaimCore.Contract.CaseAct.Open values
     }
 
 let private contextCodec () =
-    OutcomeMapping.context (
-        QueryOutcome.Succeeded
+    admitted
+        Api.context.Output
+        (ReadReply.Succeeded
             {
                 Runtime =
                     {
@@ -96,9 +84,8 @@ let private contextCodec () =
                 Capabilities = []
                 Views = []
                 Offers = []
-            }
-    )
-    |> admitted
+            })
+
     |> ignore
 
 let private queryCodecs () =
@@ -108,75 +95,77 @@ let private queryCodecs () =
         [
             snapshot
             { snapshot with
-                View = ClaimCore.Domain.CaseView.Erased
+                View = ClaimCore.Contract.CaseView.Erased
             }
         ] do
-        OutcomeMapping.caseGet (
-            QueryOutcome.Succeeded
+        admitted
+            Api.caseGet.Output
+            (ReadReply.Succeeded
                 {
                     Snapshot = view
                     Advice = { Acts = []; History = [] }
-                }
-        )
-        |> admitted
+                })
+
         |> ignore
 
-    OutcomeMapping.caseList (
-        QueryOutcome.Succeeded
+    admitted
+        Api.caseList.Output
+        (ReadReply.Succeeded
             {
                 Items = []
                 NextCursor = None
                 Offers = []
-            }
-    )
-    |> admitted
+            })
+
     |> ignore
 
-    OutcomeMapping.caseHistory (QueryOutcome.Succeeded { Entries = []; NextCursor = None })
-    |> admitted
+    admitted Api.caseHistory.Output (ReadReply.Succeeded { Entries = []; NextCursor = None })
+
     |> ignore
 
-    OutcomeMapping.operationObserve (QueryOutcome.Succeeded authority)
-    |> admitted
+    admitted Api.operationObserve.Output (ReadReply.Succeeded authority)
+
     |> ignore
 
-    OutcomeMapping.authorityList (QueryOutcome.Succeeded { Items = []; NextCursor = None })
-    |> admitted
+    admitted Api.authorityList.Output (ReadReply.Succeeded { Items = []; NextCursor = None })
+
     |> ignore
 
 
 let private executeOutcomes () =
-    for map, receiptValue in
-        [ OutcomeMapping.execute, receipt; OutcomeMapping.authorityExecute, authority ] do
+    for receiptValue in [ receipt; authority ] do
         for outcome, exit in
             [
-                ExecuteOutcome.Accepted receiptValue, 0
-                ExecuteOutcome.AlreadyAccepted receiptValue, 0
-                ExecuteOutcome.Rejected ClaimCore.Application.Rejection.ActNotPermitted, 2
-                ExecuteOutcome.Failed CoreFault.StoreUnavailable, 3
-                ExecuteOutcome.Cancelled, 130
-                ExecuteOutcome.OutcomeUnknown id, 4
+                ExecuteResult.Accepted receiptValue, 0
+                ExecuteResult.AlreadyAccepted receiptValue, 0
+                ExecuteResult.Rejected Refusal.ActNotPermitted, 2
+                ExecuteResult.Failed CoreFault.StoreUnavailable, 3
+                ExecuteResult.OutcomeUnknown, 4
             ] do
-            let reply = map id outcome
-            admitted reply |> ignore
+            let reply: ExecuteReply = { OperationId = id; Outcome = outcome }
+            admitted Api.operationExecute.Output reply |> ignore
 
-            let frame =
-                Frames.fromReply
-                    {
-                        OperationId = Some id
-                        AttemptKnowledge =
-                            Delivery.knowledge (WireReply.endpoint reply) (WireReply.attempt reply)
-                        ResolutionEvidence =
-                            Delivery.evidence (WireReply.endpoint reply) (WireReply.attempt reply)
-                    }
-                    reply
+            let frame: ClaimCore.Contract.FrameReply =
+                {
+                    Endpoint = Some "operation.execute"
+                    OperationId = Some id
+                    Delivery =
+                        if exit = 4 then
+                            DeliveryState.Uncertain
+                        else
+                            DeliveryState.Delivered
+                    Result = FrameResult.Reply(Api.operationExecute.Output.Write reply)
+                }
 
             Expect.equal
-                (Frames.decode (Frames.encode frame))
+                (ClaimCore.Contract.Frames.decode (ClaimCore.Contract.Frames.encode frame))
                 (Ok frame)
                 "CLI frames share mutation outcomes"
 
-            Expect.equal (Frames.exitCode frame) exit "Mutation scope preserves exit semantics"
+            Expect.equal
+                (ClaimCore.Contract.Frames.exitCode frame)
+                exit
+                "Mutation scope preserves exit semantics"
 
 let private disclosures () =
     for snapshot, tag in
@@ -184,7 +173,7 @@ let private disclosures () =
         let value =
             { receipt with
                 Scope =
-                    ClaimCore.Application.ReceiptScope.Case
+                    ClaimCore.Contract.ReceiptScope.Case
                         {
                             Reference = "UNIT-001"
                             Revision = 1L
@@ -193,15 +182,15 @@ let private disclosures () =
                         }
             }
 
-        let result =
-            OutcomeMapping.operationObserve (QueryOutcome.Succeeded value) |> admitted
+        let result = admitted Api.operationObserve.Output (ReadReply.Succeeded value)
 
         Expect.equal
             (result
                 .GetProperty("outcome")
                 .GetProperty("data")
+                .GetProperty("scope")
                 .GetProperty("snapshot")
-                .GetProperty("tag")
+                .GetProperty("disclosure")
                 .GetString())
             tag
             "Disclosure remains explicit"
@@ -222,64 +211,51 @@ let private previewCodecs () =
 
     for value in
         [
-            PreviewOutcome.Reviewed review
-            PreviewOutcome.AlreadyAccepted receipt
-            PreviewOutcome.Rejected ClaimCore.Application.Rejection.ActNotPermitted
-            PreviewOutcome.Failed CoreFault.StoreIntegrityError
-            PreviewOutcome.Cancelled
+            PreviewResult.Reviewed(OperationReview.Case review)
+            PreviewResult.AlreadyAccepted receipt
+            PreviewResult.Rejected ClaimCore.Contract.Refusal.ActNotPermitted
+            PreviewResult.Failed CoreFault.StoreIntegrityError
         ] do
-        OutcomeMapping.preview id value |> admitted |> ignore
+        admitted Api.operationPreview.Output { OperationId = id; Outcome = value }
+        |> ignore
 
 let private diagnostics () =
-    for identifier, _ in RejectionDiagnosticIds.all do
-        Expect.isNonEmpty
-            (RejectionPresentation.template identifier)
-            "Every public diagnostic has presentation"
-
     for fault, _ in CoreFaults.all do
-        OutcomeMapping.caseGet (QueryOutcome.Failed fault) |> admitted |> ignore
+        admitted Api.caseGet.Output (ReadReply.Failed fault) |> ignore
 
     for value in
         [
-            ClaimCore.Application.Rejection.LedgerExhausted
-            ClaimCore.Application.Rejection.InvalidCursor
-            ClaimCore.Application.Rejection.LastOwner
-            ClaimCore.Application.Rejection.ActNotPermitted
-            ClaimCore.Application.Rejection.ResourceUnavailable
+            ClaimCore.Contract.Refusal.LedgerExhausted
+            ClaimCore.Contract.Refusal.InvalidCursor
+            ClaimCore.Contract.Refusal.LastOwner
+            ClaimCore.Contract.Refusal.ActNotPermitted
+            ClaimCore.Contract.Refusal.ResourceUnavailable
         ] do
-        let result = OutcomeMapping.caseGet (QueryOutcome.Rejected value) |> admitted
+        let result = admitted Api.caseGet.Output (ReadReply.Rejected value)
 
-        Expect.isFalse
-            (result.GetProperty("outcome").GetProperty("data").TryGetProperty("code") |> fst)
-            "No coarse refusal code"
+        Expect.equal
+            (result.GetProperty("outcome").GetProperty("data").GetProperty("code").GetString())
+            (Refusals.row value).Code
+            "The refusal carries its stable code"
 
 let private actionExpectations =
     [
-        ClaimCore.Application.Rejection.Case(
-            CaseRefusal.InvalidInput(
-                InputTarget.Reason,
-                InputViolation.Text TextViolation.NonBlankRequired
-            )
-        ),
+        (Refusal.InvalidInput(InputTarget.Reason, Violation.TextRequired)),
         RecommendedAction.CorrectInput,
         "CORRECT_INPUT",
         Some "reason",
         None
-        ClaimCore.Application.Rejection.PageLimitOutOfRange 50,
+        Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50),
         RecommendedAction.CorrectInput,
         "CORRECT_INPUT",
         Some "limit",
         None
-        ClaimCore.Application.Rejection.InvalidCursor,
+        ClaimCore.Contract.Refusal.InvalidCursor,
         RecommendedAction.ReadCurrent,
         "READ_CURRENT",
         Some "cursor",
         None
-        ClaimCore.Application.Rejection.Case(CaseRefusal.RevisionConflict 7L),
-        RecommendedAction.ReadCurrent,
-        "READ_CURRENT",
-        None,
-        Some 7L
+        (Refusal.RevisionConflict 7L), RecommendedAction.ReadCurrent, "READ_CURRENT", None, Some 7L
     ]
 
 let private actionEnums () =
@@ -289,19 +265,52 @@ let private actionEnums () =
             expected
             "Input correction and current-state recovery are distinct"
 
+let private diagnosticRevisions () =
+    let reason = Refusal.RevisionConflict 0L
+    let codec = DiagnosticCodecs.diagnostic
+
+    Expect.equal
+        (Codec.encode codec reason |> Codec.decode 10000 codec)
+        (Ok reason)
+        "An absent record can report actual revision zero"
+
+    Expect.throws
+        (fun () -> Codec.encode codec (Refusal.RevisionConflict -1L) |> ignore)
+        "Negative actual revisions remain invalid"
+
+    let snapshot =
+        { Case.snapshot (opened ()) with
+            Revision = 0L
+        }
+
+    Expect.throws
+        (fun () -> Codec.encode ResponseCodecs.caseSnapshot snapshot |> ignore)
+        "An accepted snapshot revision stays positive"
+
+    let invalidReceipt =
+        match receipt.Scope with
+        | ReceiptScope.Case target ->
+            { receipt with
+                Scope = ReceiptScope.Case { target with Revision = 0L }
+            }
+        | _ -> failtest "Case receipt fixture"
+
+    Expect.throws
+        (fun () -> Codec.encode ReceiptCodecs.receipt invalidReceipt |> ignore)
+        "An accepted receipt revision stays positive"
+
 let private actionTokens () =
+    diagnosticRevisions ()
+
     for refusal, _, expected, field, revision in actionExpectations do
-        let result = OutcomeMapping.caseGet (QueryOutcome.Rejected refusal) |> admitted
+        let result = admitted Api.caseGet.Output (ReadReply.Rejected refusal)
 
         let data = result.GetProperty("outcome").GetProperty("data")
 
-        Expect.equal
-            (data.GetProperty("recommendedAction").GetString())
-            expected
-            "Literal wire guidance"
+        Expect.equal (data.GetProperty("action").GetString()) expected "Literal wire guidance"
 
         Expect.equal
-            (data.GetProperty("field").GetString())
+            (data.GetProperty("target").GetString())
             (Option.toObj field)
             "Serialized field metadata is retained"
 
@@ -320,54 +329,59 @@ let private rejectFrames () =
             "not-json"
         ] do
         Expect.isError
-            (Frames.admit (bytes value))
+            (ClaimCore.Contract.Frames.admit (bytes value))
             "Malformed, duplicate and unknown members refuse"
 
-    Expect.isError (Frames.admit [| 0xffuy |]) "UTF8 is strict"
+    Expect.isError (ClaimCore.Contract.Frames.admit [| 0xffuy |]) "UTF8 is strict"
 
     Expect.isError
-        (Frames.admit (Array.create (Limits.MaximumRequestBytes + 1) 32uy))
+        (ClaimCore.Contract.Frames.admit (Array.create (Limits.MaximumInvocationBytes + 1) 32uy))
         "Frames are bounded"
 
     let original = bytes "{ \"endpoint\": \"context\", \"input\": { } }"
-    let invocation = Frames.admit original |> accepted
-    let copy = Frames.inputBytes invocation
+    let invocation = ClaimCore.Contract.Frames.admit original |> accepted
+    let copy = ClaimCore.Contract.Frames.inputBytes invocation
     copy[0] <- 0uy
 
     Expect.equal
-        (Frames.inputBytes invocation)
-        (bytes "{ }")
-        "Stored original input bytes survive caller mutation"
+        (ClaimCore.Contract.Frames.inputBytes invocation)
+        (bytes "{}")
+        "Stored prepared input bytes survive caller mutation"
 
 let private integerLexemes () =
     let wire =
-        Admission.encode (WireRequest.CaseExecute(wireRequest registration))
+        Codec.encode Api.operationExecute.Input (OperationInput.Case(caseRequest registration))
         |> Encoding.UTF8.GetString
 
     for value in [ "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\"" ] do
         Expect.isError
-            (Admission.admit
-                Endpoint.CaseExecute
+            (Codec.decode
+                Limits.MaximumRequestBytes
+                Api.operationExecute.Input
                 (bytes (wire.Replace("\"expectedRevision\":0", "\"expectedRevision\":" + value))))
             "Strict lexical request integers"
 
     for value in [ "0"; "-0"; "9007199254740991" ] do
         Expect.isOk
-            (Admission.admit
-                Endpoint.CaseExecute
+            (Codec.decode
+                Limits.MaximumRequestBytes
+                Api.operationExecute.Input
                 (bytes (wire.Replace("\"expectedRevision\":0", "\"expectedRevision\":" + value))))
             "Safe integer boundaries"
 
     for sequence in [ 0L; 9007199254740992L ] do
         Expect.throws
             (fun () ->
-                OutcomeMapping.execute
-                    id
-                    (ExecuteOutcome.Accepted
-                        { receipt with
-                            Position = { position with Sequence = sequence }
-                        })
-                |> Replies.encode
+                Codec.encode
+                    Api.operationExecute.Output
+                    {
+                        OperationId = id
+                        Outcome =
+                            ExecuteResult.Accepted
+                                { receipt with
+                                    Position = { position with Sequence = sequence }
+                                }
+                    }
                 |> ignore)
             "Accepted sequence bounds"
 
@@ -382,19 +396,19 @@ let private retainedText () =
 
         let snapshot =
             { original with
-                View = ClaimCore.Domain.CaseView.Live(fields, Disposition.Active)
+                View = ClaimCore.Contract.CaseView.Live(fields, Disposition.Active)
             }
 
         let prior = Case.ofAccepted snapshot |> accepted
 
-        OutcomeMapping.caseGet (
-            QueryOutcome.Succeeded
+        admitted
+            Api.caseGet.Output
+            (ReadReply.Succeeded
                 {
                     Snapshot = snapshot
                     Advice = { Acts = []; History = [] }
-                }
-        )
-        |> admitted
+                })
+
         |> ignore
 
         let values =
@@ -403,15 +417,18 @@ let private retainedText () =
                 InsurerName = "Changed insurer"
             }
 
-        let reaffirm = request 1L (BusinessCommand.AmendRegistration values)
+        let reaffirm = request 1L (CaseAct.AmendRegistration values)
 
         let input =
-            { wireRequest values with
+            { caseRequest values with
                 ExpectedRevision = 1L
-                Act = ClaimCore.Wire.CaseAct.AmendRegistration(wireRegistration values)
+                Act = ClaimCore.Contract.CaseAct.AmendRegistration values
             }
 
-        Admission.admit Endpoint.CaseExecute (Admission.encode (WireRequest.CaseExecute input))
+        Codec.decode
+            Limits.MaximumRequestBytes
+            Api.operationExecute.Input
+            (Codec.encode Api.operationExecute.Input (OperationInput.Case input))
         |> accepted
         |> ignore
 
@@ -420,12 +437,10 @@ let private retainedText () =
         let changed =
             { reaffirm with
                 Act =
-                    ClaimCore.Domain.CaseAct.Business(
-                        BusinessCommand.AmendRegistration
-                            { values with
-                                ClaimantName = name + "B"
-                            }
-                    )
+                    (CaseAct.AmendRegistration
+                        { values with
+                            ClaimantName = name + "B"
+                        })
             }
 
         Expect.isError
@@ -435,6 +450,7 @@ let private retainedText () =
 let private authorityWire kind issuer subject =
     JsonSerializer.SerializeToUtf8Bytes
         {|
+            scope = "AUTHORITY"
             operationId = id.ToString("D")
             target =
                 {|
@@ -475,16 +491,22 @@ let private principalAdmission () =
     for admitted, kind, issuer, subject in expected do
         let wire = authorityWire kind issuer subject
 
-        let syntax = Admission.admit Endpoint.AuthorityExecute wire |> accepted
+        let syntax =
+            Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input wire
+            |> accepted
 
         Expect.equal
-            (ServiceGateway.admitTechnical syntax |> Result.isOk)
+            (match syntax with
+             | OperationInput.Authority request -> AuthorityRequests.admit request |> Result.isOk
+             | _ -> false)
             admitted
             "Only authoritative principal admission judges identity semantics"
 
     let invalidKind = authorityWire "UNKNOWN" "https://issuer.example/" "subject"
 
-    Expect.isError (Admission.admit Endpoint.AuthorityExecute invalidKind) "Closed principal kind"
+    Expect.isError
+        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input invalidKind)
+        "Closed principal kind"
 
 let private artifact name =
     JsonDocument.Parse(
@@ -541,16 +563,14 @@ let private authorityFieldPresentation () =
         let labelId = field.GetProperty("labelId").GetString() |> nonNull
         Expect.equal labelId ("authority.field." + name + ".label") "Stable message identifier"
 
-        let literal =
-            root.GetProperty("messages").GetProperty(labelId).EnumerateArray() |> Seq.head
-
-        Expect.equal
-            (literal.GetProperty("literal").GetString())
-            (field.GetProperty("label").GetString())
-            "English follows owned field metadata"
+        Expect.isFalse
+            (field.TryGetProperty "label" |> fst)
+            "Descriptors carry keys, not authored prose."
 
 let private decoderProperty =
-    let seed = Admission.encode (WireRequest.CaseExecute(wireRequest registration))
+    let seed =
+        Codec.encode Api.operationExecute.Input (OperationInput.Case(caseRequest registration))
+
     let generator = Gen.choice [ DecoderCorpora.jsonLike; DecoderCorpora.mutated seed ]
 
     property {
@@ -564,11 +584,16 @@ let private decoderProperty =
                 false
 
         return
-            total Frames.admit
-            && total Frames.decode
-            && (Endpoint.all
+            total ClaimCore.Contract.Frames.admit
+            && total ClaimCore.Contract.Frames.decode
+            && (Api.all
                 |> List.forall (fun endpoint ->
-                    total (Admission.admit endpoint) && total (Replies.decode endpoint)))
+                    total (fun bytes ->
+                        StrictJson.read Limits.MaximumRequestBytes bytes
+                        |> Result.bind (Api.admitInput endpoint))
+                    && total (fun bytes ->
+                        StrictJson.read Limits.MaximumResponseBytes bytes
+                        |> Result.bind (Api.admitOutput endpoint))))
     }
 
 [<Tests>]

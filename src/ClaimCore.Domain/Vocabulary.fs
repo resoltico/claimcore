@@ -1,32 +1,29 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
-
-module BusinessCommands =
-    let kind command =
-        match command with
-        | BusinessCommand.Open _ -> BusinessActKind.Open
-        | BusinessCommand.AmendRegistration _ -> BusinessActKind.AmendRegistration
-        | BusinessCommand.CorrectCase _ -> BusinessActKind.CorrectCase
-        | BusinessCommand.Decide _ -> BusinessActKind.Decide
-        | BusinessCommand.WithdrawDecision -> BusinessActKind.WithdrawDecision
-        | BusinessCommand.RecordPayment _ -> BusinessActKind.RecordPayment
-        | BusinessCommand.ClearPayment -> BusinessActKind.ClearPayment
-        | BusinessCommand.Close -> BusinessActKind.Close
-        | BusinessCommand.Reopen -> BusinessActKind.Reopen
-
-    let name command =
-        command |> kind |> CaseActKind.Business |> CaseActKinds.token
+open ClaimCore.Contract
 
 module CaseActs =
     let kind =
         function
-        | CaseAct.Business command -> BusinessCommands.kind command |> CaseActKind.Business
-        | CaseAct.Stewardship(StewardshipAct.Void _) ->
-            (CaseActKind.Stewardship StewardshipActKind.Void)
-        | CaseAct.Stewardship(StewardshipAct.Reinstate _) ->
-            (CaseActKind.Stewardship StewardshipActKind.Reinstate)
-        | CaseAct.Stewardship StewardshipAct.Erase ->
-            (CaseActKind.Stewardship StewardshipActKind.Erase)
+        | CaseAct.Open _ -> CaseActKind.Business BusinessActKind.Open
+        | CaseAct.AmendRegistration _ -> CaseActKind.Business BusinessActKind.AmendRegistration
+        | CaseAct.CorrectCase _ -> CaseActKind.Business BusinessActKind.CorrectCase
+        | CaseAct.Decide _ -> CaseActKind.Business BusinessActKind.Decide
+        | CaseAct.WithdrawDecision -> CaseActKind.Business BusinessActKind.WithdrawDecision
+        | CaseAct.RecordPayment _ -> CaseActKind.Business BusinessActKind.RecordPayment
+        | CaseAct.ClearPayment -> CaseActKind.Business BusinessActKind.ClearPayment
+        | CaseAct.Close -> CaseActKind.Business BusinessActKind.Close
+        | CaseAct.Reopen -> CaseActKind.Business BusinessActKind.Reopen
+        | CaseAct.Void _ -> CaseActKind.Stewardship StewardshipActKind.Void
+        | CaseAct.Reinstate _ -> CaseActKind.Stewardship StewardshipActKind.Reinstate
+        | CaseAct.Erase -> CaseActKind.Stewardship StewardshipActKind.Erase
 
     let name act = kind act |> CaseActKinds.token
+
+module BusinessCommands =
+    let kind act =
+        match CaseActs.kind act with
+        | CaseActKind.Business kind -> kind
+        | CaseActKind.Stewardship _ -> invalidArg (nameof act) "Expected a business act."
+
+    let name act = CaseActs.name act

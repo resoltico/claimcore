@@ -1,10 +1,12 @@
 module ClaimCore.IntegrationTests.HostingTests
 
+open ClaimCore.Contract
+
 open System
 open System.Threading
 open Expecto
 open Npgsql
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreContractTests
 
@@ -27,6 +29,12 @@ let private connectionString (database: PostgresFixture.Database) =
     settings.Password <- "synthetic-only"
     settings.ConnectionString
 
+let private call (runtime: ClaimCore.Web.Composition.IRuntime) principal action =
+    task {
+        let! result = runtime.WithActor(principal, action)
+        return result |> Option.defaultWith (fun () -> failtest "Expected admitted operation")
+    }
+
 let private runtimeCursors (database: PostgresFixture.Database) =
     task {
         let! owner = caseWorker database.Fixture
@@ -34,46 +42,51 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         for n, reference in [ 10, "CURSOR-A"; 11, "CURSOR-B" ] do
             let! result =
                 owner.Execute(
-                    request n reference 0L (ClaimCore.Domain.BusinessCommand.Open registration),
+                    OperationInput.Case(
+                        request n reference 0L (ClaimCore.Contract.CaseAct.Open registration)
+                    ),
                     token
                 )
 
             accepted result |> ignore
 
         let! first =
-            ClaimCore.Hosting.Runtime.openConnection (connectionString database) token
+            ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
         use first = first |> Result.defaultWith (fun _ -> failtest "Runtime refused")
 
         let! page =
-            (first.Actor database.Fixture.Owner).List({ AfterCursor = None; Limit = 1 }, token)
+            call first database.Fixture.Owner (fun actor ->
+                actor.List({ AfterCursor = None; Limit = 1 }, token))
 
         let cursor =
             match page with
-            | ClaimCore.Application.QueryOutcome.Succeeded page -> page.NextCursor
+            | ReadReply.Succeeded page -> page.NextCursor
             | _ -> failtest "Missing page"
 
         Expect.isSome cursor "A page is available"
 
         let! same =
-            (first.Actor database.Fixture.Owner).List({ AfterCursor = cursor; Limit = 2 }, token)
+            call first database.Fixture.Owner (fun actor ->
+                actor.List({ AfterCursor = cursor; Limit = 2 }, token))
 
         match same with
-        | ClaimCore.Application.QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             Expect.equal page.Items.Length 1 "Every facade accepts the plain position"
         | _ -> failtest "Same-runtime continuation refused"
 
         let! second =
-            ClaimCore.Hosting.Runtime.openConnection (connectionString database) token
+            ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
         use second =
             second |> Result.defaultWith (fun _ -> failtest "Second runtime refused")
 
         let! continued =
-            (second.Actor database.Fixture.Owner).List({ AfterCursor = cursor; Limit = 2 }, token)
+            call second database.Fixture.Owner (fun actor ->
+                actor.List({ AfterCursor = cursor; Limit = 2 }, token))
 
         match continued with
-        | ClaimCore.Application.QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             Expect.equal page.Items.Length 1 "Plain positions survive runtime restart"
         | _ -> failtest "Restart continuation refused"
 
@@ -82,7 +95,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 let private readinessCancellation database =
     task {
         let! opened =
-            ClaimCore.Hosting.Runtime.openConnection (connectionString database) token
+            ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
         use runtime = opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
         use! owner = database.OwnerSource.OpenConnectionAsync token
@@ -140,7 +153,7 @@ let tests =
                         let started = Diagnostics.Stopwatch.StartNew()
 
                         let! opened =
-                            ClaimCore.Hosting.Runtime.openConnection
+                            ClaimCore.Web.Composition.Runtime.openConnection
                                 (connectionString database)
                                 token
 
@@ -179,7 +192,7 @@ let tests =
                         let! _ = caseWorker database.Fixture
 
                         let! opened =
-                            ClaimCore.Hosting.Runtime.openConnection
+                            ClaimCore.Web.Composition.Runtime.openConnection
                                 (connectionString database)
                                 token
 
@@ -187,28 +200,31 @@ let tests =
                             opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
 
                         Expect.equal runtime.BusinessTimeZone "Etc/UTC" "Stored calendar"
-                        let actor = runtime.Actor database.Fixture.Owner
 
                         let! result =
-                            actor.Execute(
-                                request
-                                    30
-                                    "synthetic-hosting"
-                                    0L
-                                    (ClaimCore.Domain.BusinessCommand.Open registration),
-                                token
-                            )
+                            call runtime database.Fixture.Owner (fun actor ->
+                                actor.Execute(
+                                    OperationInput.Case(
+                                        request
+                                            30
+                                            "synthetic-hosting"
+                                            0L
+                                            (ClaimCore.Contract.CaseAct.Open registration)
+                                    ),
+                                    token
+                                ))
 
                         accepted result |> ignore
                         let! closed = runtime.Shutdown(TimeSpan.FromSeconds 1.)
                         Expect.equal closed ShutdownOutcome.Drained "Shutdown"
-                        let! after = actor.Context token
 
-                        Expect.equal
-                            after
-                            (ClaimCore.Application.QueryOutcome.Failed
-                                ClaimCore.Application.CoreFault.StoreUnavailable)
-                            "Admission closed"
+                        let! after =
+                            runtime.WithActor(
+                                database.Fixture.Owner,
+                                fun actor -> actor.Context token
+                            )
+
+                        Expect.isNone after "Admission closed"
                     }))
             for name, change, expected in
                 [
@@ -248,7 +264,7 @@ let tests =
                             let! _ = DatabaseSession.execute connection change [||] token
 
                             let! opened =
-                                ClaimCore.Hosting.Runtime.openConnection
+                                ClaimCore.Web.Composition.Runtime.openConnection
                                     (connectionString database)
                                     token
 
@@ -262,7 +278,7 @@ let tests =
                 "remote unverified transport and pre-cancellation have typed faults"
                 (async {
                     let! opened =
-                        ClaimCore.Hosting.Runtime.openConnection
+                        ClaimCore.Web.Composition.Runtime.openConnection
                             "Host=remote.example;SSL Mode=Require"
                             token
                         |> Async.AwaitTask
@@ -276,7 +292,9 @@ let tests =
                     cancelled.Cancel()
 
                     let! result =
-                        ClaimCore.Hosting.Runtime.openConnection "Host=localhost" cancelled.Token
+                        ClaimCore.Web.Composition.Runtime.openConnection
+                            "Host=localhost"
+                            cancelled.Token
                         |> Async.AwaitTask
 
                     Expect.equal
@@ -291,7 +309,7 @@ let tests =
                         let! _ = caseWorker database.Fixture
 
                         let! opened =
-                            ClaimCore.Hosting.Runtime.openConnection
+                            ClaimCore.Web.Composition.Runtime.openConnection
                                 (connectionString database)
                                 token
 
@@ -303,15 +321,17 @@ let tests =
                         let! _ = Transactions.head holder token
 
                         let running =
-                            (runtime.Actor database.Fixture.Owner)
-                                .Execute(
-                                    request
-                                        40
-                                        "synthetic-drain"
-                                        0L
-                                        (ClaimCore.Domain.BusinessCommand.Open registration),
+                            call runtime database.Fixture.Owner (fun actor ->
+                                actor.Execute(
+                                    OperationInput.Case(
+                                        request
+                                            40
+                                            "synthetic-drain"
+                                            0L
+                                            (ClaimCore.Contract.CaseAct.Open registration)
+                                    ),
                                     token
-                                )
+                                ))
 
                         let deadline = DateTimeOffset.UtcNow.AddSeconds 3.
                         let mutable waiting = false
@@ -359,7 +379,5 @@ let tests =
                         result
                         (Some ClaimCore.Application.RuntimeOpenFault.UnsupportedServer)
                         "One admission vocabulary")
-            testCaseAsync
-                "plain cursor positions survive actor facade and runtime lifetimes"
-                (run runtimeCursors)
+            testCaseAsync "plain cursor positions survive runtime lifetimes" (run runtimeCursors)
         ]

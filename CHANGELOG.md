@@ -4,6 +4,28 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking for installations:** initialize a separate fresh installation. Installations created through 0.11.0 are refused untouched; preserve them with matching software. No conversion, migration from that baseline or compatibility layer is supplied. Case-request format is 6 and authority format is 3; snapshot 4, ledger-entry 2 and case-identity 2 remain unchanged. See [database compatibility](docs/architecture.md#durable-records).
+- **Breaking for API and CLI consumers:** rebuild and deploy the service, CLI and browser together. Case and authority work use `operation.preview`/`operation.execute` with `scope: CASE|AUTHORITY`, scoped receipts and generic reply envelopes; the service has no `CANCELLED` outcome or authored prose. CLI reply frames contain `endpoint`, `operationId`, `delivery` (`NOT_SENT|DELIVERED|UNCERTAIN`) and typed `result`, replacing `attemptKnowledge`/`resolutionEvidence`. Invalid authored principal semantics return field-targeted `REJECTED` with HTTP 200 instead of an HTTP 400 host refusal; structural input errors remain host refusals. Update consumers using the [API contract](docs/api.md).
+- **For uncertain CLI mutations:** exit 4 prints the exact prepared call frame last on stderr. Retain it privately and send it unchanged to `call --retry`, preserving operation ID, case expected revision and frozen bytes across processes. A later refusal, failure or `NOT_STARTED` does not resolve earlier uncertainty; only correlated exact acceptance/replay does. Complete output establishes OS write acceptance, not downstream consumption. See [delivery limits](docs/api.md#cc-cli-003).
+- **Breaking for generated-contract consumers:** consumer identity is SHA-256 of canonical OpenAPI; locale/help/presentation-only changes leave it unchanged. The generator publishes exactly `openapi.json`, `client.ts` and `descriptors.json`; generated manifests, identity files, bindings, policy/vector/corpus files, standalone frame schemas and locale/help copies are removed. Consumers use the three artifacts and authored Contract source catalogs; offline `schema invocation` and `schema response` expose CLI frame schemas. Regenerate and review outputs with their typed producer; see [generation](docs/development.md#generated-contracts-and-boundary-verification).
+- **Breaking for .NET integrations:** `ClaimCore.Contract` owns the shared public models, typed codecs, endpoint registry, field table and source JSON localization. The Catalog, Wire and Hosting projects and their public interfaces are removed; Web owns runtime composition. Rebuild integrations against the [component boundaries](docs/architecture.md#cc-arch-001).
+
+### Added
+
+- Human case, authority and read verbs derive from the shared registry and support English, Latvian and Arabic text and structured `--format json`. Mutation verbs offer `--preview`; `--dry-run` prints the exact call frame offline. Diagnostics identify the affected input; case fields, both preview sides and full history show bounded Unicode code-point warnings without rewriting accepted text or JSON. Use `help verbs` and the [walkthrough](examples/README.md) for exact invocations.
+- Authority preview evaluates current authorization and last-owner constraints without recording an operation. Browser case and authority forms share schema-derived authoring, before/after review, explicit consent and exact-request retries; execution always rechecks locked state. Uncertain requests survive read remounts while the page lives, but reload/close loses them and nothing automatically replays. See [browser behavior](docs/web.md).
+
+### Fixed
+
+- Opening an absent case with a positive expected revision returns the revision-conflict rejection, including actual revision zero, instead of an HTTP 500 response-encoding failure. Preview and execution record no operation for this rejection.
+
+### Internal
+
+- Native stage assignment, evaluated source/discovery checks and same-run browser completion reports replace fixed test-count floors. CI uses logs/check status rather than uploaded qualification-summary artifacts; local TRX and private failure evidence remain available. [Verification](docs/development.md#verification-stages) still refuses focused, skipped, retried and incomplete runs.
+- Deterministic properties retain 200 cases and state sequences up to 20; failure minimization stops after 100 successful shrink steps while retaining the failing replay token. This bounds successful descent, not candidate count or wall time. Dependency-download caches are shared by exact lockfile keys, and browser installation omits unused full Chromium while retaining its headless shell for CLI authentication.
+
 ## [0.11.0] - 2026-10-21
 
 ### Security
@@ -293,7 +315,7 @@ Notable changes to this project are documented in this file. The format is based
 ### Internal
 
 - Required boundary-decoding qualification covers strict JSON, CLI framing, canonical requests and snapshots, recovery envelopes, and history/recovery cursors with arbitrary bytes, mutated encodings, adversarial JSON and invalid UTF-8. It requires typed refusals rather than escaping exceptions on Linux, macOS and Windows, with larger scheduled runs. This qualification found no defect in those boundaries.
-- [`config/architecture.json`](config/architecture.json) declares the component architecture and generates its documentation table. Compiled checks enforce exact project, package and shared-framework edges, reject permitted but unused edges, review `InternalsVisibleTo` grants, and confine time-zone resolution to installation-calendar components.
+- [`config/architecture.json`](https://github.com/resoltico/claimcore/blob/5b15553172396ad6a7cbd04c1c79179cc3a8bd5e/config/architecture.json) declares the component architecture and generates its documentation table. Compiled checks enforce exact project, package and shared-framework edges, reject permitted but unused edges, review `InternalsVisibleTo` grants, and confine time-zone resolution to installation-calendar components.
 - `ClaimCore.Hosting` owns PostgreSQL runtime composition; `ClaimCore.CliProtocol` owns CLI-v3 framing and dispatch; `ClaimCore.Cli` remains the process entry point. `ClaimCore.Contracts` renders database-free CLI discovery. Emitted bytes and published contracts are unchanged.
 - Canonical request identity is derived directly from the request rather than a recovery view, and recovery-cursor identity writes are checked. Both paths were correct in 0.3.0; this is preventive hardening, not a fix to released behaviour.
 - Removed frontend npm `engine-strict`, which prevented the dependency updater from resolving the graph. Workflows and dependency-currency checks still require the exact toolchain and audited, signature-verified locked graph; the lock file now agrees with the manifest's Node 26.9.0 requirement.

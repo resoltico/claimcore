@@ -18,7 +18,8 @@
     "noUnusedParameters": true,
     "noPropertyAccessFromIndexSignature": true,
     "paths": {
-      "@contracts/*": ["../contracts/*"]
+      "@contracts/*": ["../contracts/*"],
+      "@locales/*": ["../src/ClaimCore.Contract/Localization/*"]
     }
   }
 }

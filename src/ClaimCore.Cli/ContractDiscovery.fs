@@ -5,7 +5,8 @@ open System.Reflection
 open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 /// Offline discovery consumes the same tracked resources published for HTTPS clients.
 module ContractDiscovery =
@@ -19,71 +20,68 @@ module ContractDiscovery =
         output.ToArray()
 
     let message identity =
-        use document =
-            JsonDocument.Parse(System.ReadOnlyMemory<byte>(resource "cli-messages.json"))
+        MessageCatalogs.render "en" identity Map.empty
 
-        document.RootElement.GetProperty(identity: string).GetString() |> nonNull
 
-    let helpTopic language topic =
-        use document =
-            JsonDocument.Parse(System.ReadOnlyMemory<byte>(resource "cli-help.json"))
-
-        document.RootElement.GetProperty(language + "." + topic).GetString() |> nonNull
-
-    let localized language identity fallback =
-        let diagnostic =
-            ClaimCore.Catalog.CliHelp.diagnosticTopics
-            |> List.tryFind (fun id -> identity = "diagnostic." + id)
-
-        if diagnostic.IsSome then
-            helpTopic language ("diagnostic." + diagnostic.Value)
-        elif language = "en" then
-            fallback
-        else
-            let domain = (identity: string).Split('.')[0]
-
-            use document =
-                JsonDocument.Parse(
-                    System.ReadOnlyMemory<byte>(
-                        resource ("locale." + language + "." + domain + ".json")
-                    )
-                )
-
-            match document.RootElement.TryGetProperty identity with
-            | true, text -> text.GetString() |> nonNull
-            | _ -> fallback
+    let localized language identity =
+        MessageCatalogs.template language identity
 
     let descriptors () = resource "descriptors.json"
-    let private openapi () = resource "openapi.json"
+
+    let helpTopic language topic =
+        if topic = "verbs" then
+            let grammar =
+                descriptors ()
+                |> StrictJson.read Limits.MaximumResponseBytes
+                |> Result.defaultWith (fun _ -> invalidOp "Invalid embedded descriptors.")
+                |> Grammar.description
+
+            MessageCatalogs.render language "cli.help.verbs" (Map.ofList [ "grammar", grammar ])
+        else
+            MessageCatalogs.help language topic
+
+    let private openapi () =
+        WireWriter.indentedBytes ClaimCore.Contract.OpenApi.document
 
     let catalogue () =
         let endpoints =
-            Endpoint.all
+            Api.all
             |> List.map (fun endpoint ->
                 {|
-                    id = Endpoint.id endpoint
-                    method = Endpoint.method endpoint
-                    path = Endpoint.path endpoint
-                    mutates = Endpoint.mutates endpoint
+                    id = Api.id endpoint
+                    method = (Api.method endpoint).Method
+                    path = Api.path endpoint
+                    mutates = Api.mutates endpoint
                 |})
 
         JsonSerializer.SerializeToUtf8Bytes {| endpoints = endpoints |}
 
     let presentation () =
-        use document = JsonDocument.Parse(System.ReadOnlyMemory<byte>(descriptors ()))
+        let keys =
+            [
+                yield!
+                    Refusals.definitions
+                    |> List.map (fun definition -> "diagnostic." + definition.Id)
+                yield! CoreFaults.all |> List.map (fun (_, code) -> "fault." + code)
+                yield!
+                    HostFailures.all |> List.map (fun reason -> "host." + HostFailures.code reason)
+            ]
+            |> Set.ofList
 
-        let messages =
-            JsonNode.Parse(document.RootElement.GetProperty("messages").GetRawText())
-            |> nonNull
+        let templates = MessageCatalogs.templates "en"
 
-        for id in ClaimCore.Catalog.CliHelp.diagnosticTopics do
-            let part = JsonObject()
-            part["literal"] <- JsonValue.Create(helpTopic "en" ("diagnostic." + id))
-            let parts = JsonArray()
-            parts.Add part
-            messages["diagnostic." + id] <- parts
+        keys
+        |> Seq.map (fun key ->
+            let parts =
+                Map.find key templates
+                |> Template.parts
+                |> List.map (function
+                    | TemplatePart.Literal text -> Map.ofList [ "literal", text ]
+                    | TemplatePart.Hole name -> Map.ofList [ "hole", name ])
 
-        messages.ToJsonString() |> Encoding.UTF8.GetBytes
+            key, parts)
+        |> Map.ofSeq
+        |> JsonSerializer.SerializeToUtf8Bytes
 
     let private schemaDocument schema (definitions: Map<string, Schema>) =
         use output = new MemoryStream()
@@ -109,12 +107,12 @@ module ContractDiscovery =
         let operation =
             root
                 .GetProperty("paths")
-                .GetProperty(Endpoint.path endpoint)
-                .GetProperty((Endpoint.method endpoint).ToLowerInvariant())
+                .GetProperty(Api.path endpoint)
+                .GetProperty(((Api.method endpoint).Method).ToLowerInvariant())
 
         let content =
             if direction = "request" then
-                if endpoint = Endpoint.Session then
+                if Api.id endpoint = "session" then
                     None
                 else
                     Some(operation.GetProperty("requestBody").GetProperty("content"))
@@ -131,13 +129,11 @@ module ContractDiscovery =
         match name with
         | "openapi" -> Some(openapi ())
         | "session.request" ->
-            let schema, definitions = Admission.schema Endpoint.Session
-            Some(schemaDocument schema definitions)
-        | "invocation" ->
-            Some(schemaDocument Frames.invocationCodec.Schema Frames.invocationCodec.Definitions)
-        | "response" -> Some(schemaDocument Frames.replyCodec.Schema Frames.replyCodec.Definitions)
+            Some(schemaDocument Api.session.Input.Schema Api.session.Input.Definitions)
+        | "invocation" -> Some(schemaDocument CliSchemas.invocation CliSchemas.definitions)
+        | "response" -> Some(schemaDocument CliSchemas.response CliSchemas.definitions)
         | "host-failure" ->
-            Some(schemaDocument HostFailures.codec.Schema HostFailures.codec.Definitions)
+            Some(schemaDocument HostFailureCodecs.reply.Schema HostFailureCodecs.reply.Definitions)
         | _ ->
             let separator = name.LastIndexOf '.'
 
@@ -145,7 +141,7 @@ module ContractDiscovery =
                 if separator < 0 then
                     None
                 else
-                    Endpoint.tryParse (name.Substring(0, separator))
+                    Api.tryFind (name.Substring(0, separator))
 
             let schema =
                 match endpoint with

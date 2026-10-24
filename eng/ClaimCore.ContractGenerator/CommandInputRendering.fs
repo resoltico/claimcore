@@ -1,9 +1,8 @@
 namespace ClaimCore.ContractGeneration
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
-open ClaimCore.ContractGeneration.Presentation
+open ClaimCore.Contract.Protocol
 
 open System.Text.Json
 open ClaimCore.Domain
@@ -13,7 +12,7 @@ open ClaimCore.Domain
 module internal CommandInputRendering =
     let private field (writer: Utf8JsonWriter) (input: FieldInputDefinition) =
         writer.WriteStartObject()
-        writer.WriteString("fieldName", InputField.token input.FieldName)
+        writer.WriteString("fieldName", InputTargets.token input.FieldName)
 
         match input.Prefill with
         | PrefillSource.Blank -> writer.WriteString("prefill", "BLANK")
@@ -49,9 +48,7 @@ module internal CommandInputRendering =
             |> List.iter (fun group ->
                 writer.WriteStartObject()
                 writer.WriteString("name", CorrectionGroup.token group.Name)
-                writer.WriteString("label", (MessageText.literal group.LabelId))
                 writer.WriteString("labelId", group.LabelId)
-                writer.WriteString("meaning", (MessageText.literal group.MeaningId))
                 writer.WriteString("meaningId", group.MeaningId)
                 writer.WritePropertyName("actions")
                 writer.WriteStartArray()

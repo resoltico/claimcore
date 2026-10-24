@@ -1,8 +1,8 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 open System
 open System.IO
@@ -16,7 +16,7 @@ open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
 open Microsoft.AspNetCore.StaticFiles
 open Microsoft.Extensions.DependencyInjection
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 
 module HostRoutes =
     let internal loginReturnProperties () =
@@ -27,7 +27,7 @@ module HostRoutes =
     let private session configuration (context: HttpContext) =
         task {
             if not (ApiRoutes.handshake context) then
-                return RouteSupport.hostFailure context HostFailure.ContractMismatch
+                return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
             else
                 let! authenticated =
                     task {
@@ -42,24 +42,21 @@ module HostRoutes =
                 let token = antiforgery.GetAndStoreTokens(context).RequestToken |> Option.ofObj
 
                 return
-                    RouteSupport.outcome
-                        (WireReply.Session
+                    Api.session.Output.Write(
+                        ReadReply.Succeeded
                             {
-                                Outcome =
-                                    SessionOutcome.Succeeded
-                                        {
-                                            Authenticated = authenticated
-                                            ContractIdentity = ConsumerContract.identity
-                                            AntiforgeryToken = token
-                                        }
-                            })
-                        context
+                                Authenticated = authenticated
+                                ContractIdentity = ContractIdentity.value
+                                AntiforgeryToken = token
+                            }
+                    )
+                    |> fun reply -> RouteSupport.reply reply context
         }
 
     let private logout configuration context =
         task {
             if not (ApiRoutes.handshake context) then
-                return RouteSupport.hostFailure context HostFailure.ContractMismatch
+                return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
             else
                 match configuration.Oidc, Admission.credentialMode context with
                 | Some oidc, CredentialMode.BrowserCookie ->
@@ -73,9 +70,10 @@ module HostRoutes =
                         match! HttpBody.readRequest 1024 context with
                         | Error problem -> return RouteSupport.inputFailure context problem
                         | Ok bytes ->
-                            match ClaimCore.Wire.Admission.admit Endpoint.SessionLogout bytes with
+                            match Codec.decode 1024 Api.logout.Input bytes with
                             | Error _ ->
-                                return RouteSupport.hostFailure context HostFailure.InputInvalid
+                                return
+                                    RouteSupport.hostFailure context HostFailureReason.InputInvalid
                             | Ok _ ->
                                 do!
                                     context.SignOutAsync(
@@ -85,13 +83,9 @@ module HostRoutes =
                                 context.User <- ClaimsPrincipal(ClaimsIdentity())
 
                                 return
-                                    RouteSupport.outcome
-                                        (WireReply.SessionLogout
-                                            {
-                                                Outcome = SessionLogoutOutcome.Succeeded()
-                                            })
-                                        context
-                | _ -> return RouteSupport.hostFailure context HostFailure.SessionRejected
+                                    Api.logout.Output.Write(ReadReply.Succeeded())
+                                    |> fun reply -> RouteSupport.reply reply context
+                | _ -> return RouteSupport.hostFailure context HostFailureReason.SessionRejected
         }
 
     let health
@@ -107,7 +101,7 @@ module HostRoutes =
                 context.Response.StatusCode <- if ready then 200 else 503
             | _, ("/health/live" | "/health/ready") ->
                 do!
-                    (RouteSupport.hostFailure context HostFailure.MethodRejected).ExecuteAsync
+                    (RouteSupport.hostFailure context HostFailureReason.MethodRejected).ExecuteAsync
                         context
             | _ -> do! next.Invoke context
         }
@@ -118,15 +112,15 @@ module HostRoutes =
 
             if context.Request.Path.StartsWithSegments(PathString "/api") then
                 let known =
-                    Endpoint.all
+                    Api.all
                     |> List.exists (fun endpoint ->
-                        Some(Endpoint.path endpoint) = Option.ofObj context.Request.Path.Value)
+                        Some(Api.path endpoint) = Option.ofObj context.Request.Path.Value)
 
                 let reason =
                     if known then
-                        HostFailure.MethodRejected
+                        HostFailureReason.MethodRejected
                     else
-                        HostFailure.EndpointMissing
+                        HostFailureReason.EndpointMissing
 
                 do! (RouteSupport.hostFailure context reason).ExecuteAsync context
             else
@@ -137,7 +131,8 @@ module HostRoutes =
                         context
         }
 
-    let map assets configuration (service: IProtocolService) (application: WebApplication) =
+    let map assets configuration withActor (application: WebApplication) =
+        Dispatch.check ()
         let files = StaticFileOptions()
 
         files.OnPrepareResponse <-
@@ -146,29 +141,33 @@ module HostRoutes =
         application.UseDefaultFiles() |> ignore
         application.UseStaticFiles files |> ignore
 
-        for endpoint in Endpoint.all do
+        for endpoint in Api.all do
             let handler =
-                match (Endpoint.id endpoint) with
+                match (Api.id endpoint) with
                 | "session" -> session configuration
                 | "session.logout" -> logout configuration
-                | _ -> ApiRoutes.handle endpoint configuration service
+                | _ -> ApiRoutes.handle endpoint configuration withActor
 
             let exact (context: HttpContext) =
-                if Option.ofObj context.Request.Path.Value <> Some(Endpoint.path endpoint) then
-                    Task.FromResult(RouteSupport.hostFailure context HostFailure.EndpointMissing)
-                elif context.Request.Method <> (Endpoint.method endpoint) then
-                    Task.FromResult(RouteSupport.hostFailure context HostFailure.MethodRejected)
+                if Option.ofObj context.Request.Path.Value <> Some(Api.path endpoint) then
+                    Task.FromResult(
+                        RouteSupport.hostFailure context HostFailureReason.EndpointMissing
+                    )
+                elif context.Request.Method <> ((Api.method endpoint).Method) then
+                    Task.FromResult(
+                        RouteSupport.hostFailure context HostFailureReason.MethodRejected
+                    )
                 else
                     handler context
 
             let route =
                 application.MapMethods(
-                    (Endpoint.path endpoint),
-                    [| (Endpoint.method endpoint) |],
+                    (Api.path endpoint),
+                    [| ((Api.method endpoint).Method) |],
                     Func<HttpContext, Task<IResult>>(exact)
                 )
 
-            if (Endpoint.id endpoint) <> "session" then
+            if (Api.id endpoint) <> "session" then
                 route.RequireRateLimiting "core" |> ignore
 
         application

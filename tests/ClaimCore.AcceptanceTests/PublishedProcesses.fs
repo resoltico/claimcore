@@ -51,27 +51,9 @@ let publish root directory name =
     ThirdPartyNotices.qualify root output name |> ignore
 
     if name = "ClaimCore.Cli" then
-        let forbidden =
-            [
-                "ClaimCore.Domain"
-                "ClaimCore.RecordFormat"
-                "ClaimCore.Application"
-                "ClaimCore.Contracts"
-                "ClaimCore.Hosting"
-                "ClaimCore.Postgres"
-            ]
-
-        for assembly in forbidden do
-            Expect.isFalse
-                (File.Exists(Path.Combine(output, assembly + ".dll")))
-                ("Published client excludes " + assembly)
-
-        let dependencies = File.ReadAllText(Path.Combine(output, name + ".deps.json"))
-
-        for assembly in forbidden do
-            Expect.isFalse
-                (dependencies.Contains(assembly, StringComparison.Ordinal))
-                ("Resolved client closure excludes " + assembly)
+        Expect.isEmpty
+            (ClaimCore.TestSupport.PublishedClientClosure.violations output)
+            "Published CLI excludes server assemblies and resolved dependencies"
 
     Path.Combine(output, name + ".dll")
 

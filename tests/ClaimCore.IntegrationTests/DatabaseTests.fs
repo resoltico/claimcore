@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.DatabaseTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Security.Cryptography
@@ -48,7 +48,9 @@ let private populated (database: PostgresFixture.Database) =
 
         let! outcome =
             actor.Execute(
-                request 10 "synthetic-a" 0L (ClaimCore.Domain.BusinessCommand.Open registration),
+                OperationInput.Case(
+                    request 10 "synthetic-a" 0L (ClaimCore.Contract.CaseAct.Open registration)
+                ),
                 token
             )
 
@@ -56,7 +58,9 @@ let private populated (database: PostgresFixture.Database) =
 
         let! second =
             actor.Execute(
-                request 11 "synthetic-b" 0L (ClaimCore.Domain.BusinessCommand.Open registration),
+                OperationInput.Case(
+                    request 11 "synthetic-b" 0L (ClaimCore.Contract.CaseAct.Open registration)
+                ),
                 token
             )
 
@@ -103,14 +107,9 @@ let private erasureFixture (database: PostgresFixture.Database) =
 
 let private erased (actor: IActorClaimsCore) =
     task {
-        let request =
-            actRequest
-                13
-                "synthetic-a"
-                1L
-                (ClaimCore.Domain.CaseAct.Stewardship ClaimCore.Domain.StewardshipAct.Erase)
+        let request = actRequest 13 "synthetic-a" 1L (ClaimCore.Contract.CaseAct.Erase)
 
-        let! result = actor.Execute(request, token)
+        let! result = actor.Execute(OperationInput.Case request, token)
         return accepted result
     }
 
@@ -237,7 +236,9 @@ let tests =
                                 database.Fixture.Owner
                                 token
 
-                        acceptedAuthority first
+                        match first with
+                        | ProvisionOwnerOutcome.Accepted { Scope = ReceiptScope.Authority _ } -> ()
+                        | _ -> failtest "Expected accepted owner provisioning."
 
                         let! repeated =
                             LedgerAdministration.provisionOwner
@@ -248,7 +249,7 @@ let tests =
 
                         Expect.isTrue
                             (match repeated with
-                             | ExecuteOutcome.AlreadyAccepted _ -> true
+                             | ProvisionOwnerOutcome.AlreadyAccepted _ -> true
                              | _ -> false)
                             "Exact repeat"
 
@@ -265,7 +266,7 @@ let tests =
 
                         Expect.equal
                             otherResult
-                            (ExecuteOutcome.Rejected Rejection.ActorAlreadyRegistered)
+                            (ProvisionOwnerOutcome.Rejected Refusal.ActorAlreadyRegistered)
                             "No second bootstrap"
 
                         let! changed =
@@ -277,7 +278,7 @@ let tests =
 
                         Expect.equal
                             changed
-                            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+                            (ProvisionOwnerOutcome.Rejected Refusal.IdempotencyConflict)
                             "Different principal is a conflict"
                     }))
             testCaseAsync

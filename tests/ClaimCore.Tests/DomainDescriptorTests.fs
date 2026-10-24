@@ -1,6 +1,6 @@
 module ClaimCore.Tests.DomainDescriptorTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open Expecto
@@ -40,10 +40,10 @@ let private expectFields kind expected =
     | CommandInputShape.CorrectionGroups _ -> failtest "Expected an ordered scalar input shape."
 
 let private blank fieldName =
-    InputField.Business fieldName, PrefillSource.Blank
+    InputTarget.Field fieldName, PrefillSource.Blank
 
 let private current fieldName =
-    InputField.Business fieldName, PrefillSource.CurrentField fieldName
+    InputTarget.Field fieldName, PrefillSource.CurrentField fieldName
 
 let private registrationFields =
     [
@@ -243,11 +243,11 @@ let private derivedFieldsAreNotCommandInputsTest =
         let inputs = authoredInputFields ()
 
         Expect.isFalse
-            (Set.contains (InputField.Business BusinessField.CaseReference) inputs)
+            (Set.contains (InputTarget.Field BusinessField.CaseReference) inputs)
             "Immutable target is separate"
 
         Expect.isFalse
-            (Set.contains (InputField.Business BusinessField.Status) inputs)
+            (Set.contains (InputTarget.Field BusinessField.Status) inputs)
             "Status is core-derived")
 
 let private commandInputTests =

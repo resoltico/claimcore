@@ -18,7 +18,6 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
   kind: "outcome",
   status: 200,
   value: {
-    endpoint: "case.get",
     outcome: {
       tag: "SUCCEEDED",
       data: {
@@ -34,13 +33,12 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
 const refused: ApiResult<ServiceResponse<"case.history">> = {
   kind: "outcome",
   status: 200,
-  value: { endpoint: "case.history", outcome: { tag: "REJECTED", data: unavailable } },
+  value: { outcome: { tag: "REJECTED", data: unavailable } },
 };
 const empty: ApiResult<ServiceResponse<"case.history">> = {
   kind: "outcome",
   status: 200,
   value: {
-    endpoint: "case.history",
     outcome: { tag: "SUCCEEDED", data: { entries: [], nextCursor: null } },
   },
 };

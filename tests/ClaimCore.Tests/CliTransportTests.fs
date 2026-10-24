@@ -1,8 +1,7 @@
 module ClaimCore.Tests.CliTransportTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
-open ClaimCore.Wire
 
 open System
 open System.IO
@@ -24,13 +23,12 @@ let private resultExits () =
                 "REJECTED", 2
                 "FAILED", 3
                 "OUTCOME_UNKNOWN", 4
-                "CANCELLED", 130
             ]
 
     let mutable seen = Set.empty
 
-    for endpoint in Endpoint.all do
-        for body in samples "wire-response-examples.json" (Endpoint.id endpoint) do
+    for endpoint in Api.all do
+        for body in samples (Api.id endpoint) do
             use document = JsonDocument.Parse(ReadOnlyMemory body)
 
             let tag =
@@ -38,22 +36,7 @@ let private resultExits () =
                 |> Option.ofObj
                 |> Option.get
 
-            let invocation = frame (Endpoint.id endpoint)
-
-            let body =
-                if
-                    (Endpoint.id endpoint) = "authority.execute"
-                    && (tag = "ACCEPTED" || tag = "ALREADY_ACCEPTED")
-                then
-                    let value = System.Text.Json.Nodes.JsonNode.Parse(body) |> nonNull
-
-                    let receipt =
-                        value["outcome"] |> nonNull |> fun outcome -> outcome["data"] |> nonNull
-
-                    receipt["act"] <- System.Text.Json.Nodes.JsonValue.Create("REGISTER_ACTOR")
-                    Encoding.UTF8.GetBytes(value.ToJsonString())
-                else
-                    body
+            let invocation = frame (Api.id endpoint)
 
             use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
             let reply = send handler invocation
@@ -61,7 +44,7 @@ let private resultExits () =
             Expect.equal
                 reply.ExitCode
                 (Map.tryFind tag expected |> Option.defaultValue 0)
-                ("Outcome selects exit for " + (Endpoint.id endpoint) + " " + tag)
+                ("Outcome selects exit for " + (Api.id endpoint) + " " + tag)
 
             Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
             seen <- Set.add tag seen
@@ -70,25 +53,28 @@ let private resultExits () =
         Expect.isTrue (Set.contains tag seen) "Each specified outcome exit has a fixture"
 
 let private requestBytes () =
-    for endpoint in Endpoint.all do
-        let invocation = frame (Endpoint.id endpoint)
+    for endpoint in Api.all do
+        let invocation = frame (Api.id endpoint)
 
         use handler =
             new Handler(fun request ->
                 task {
-                    Expect.equal request.Method.Method (Endpoint.method endpoint) "Exact method"
+                    Expect.equal
+                        request.Method.Method
+                        ((Api.method endpoint).Method)
+                        "Exact method"
 
                     Expect.equal
                         (request.RequestUri |> Option.ofObj |> Option.get |> _.AbsolutePath)
-                        (Endpoint.path endpoint)
+                        (("/api/" + Api.id endpoint))
                         "Exact route"
 
                     Expect.equal
                         (request.Headers.GetValues("ClaimCore-Contract") |> Seq.toList)
-                        [ ConsumerContract.identity ]
+                        [ ContractIdentity.value ]
                         "Compiled handshake"
 
-                    if (Endpoint.method endpoint) = "POST" then
+                    if ((Api.method endpoint).Method) = "POST" then
                         let content = request.Content |> Option.ofObj |> Option.get
                         let! sent = content.ReadAsByteArrayAsync()
 
@@ -99,51 +85,53 @@ let private requestBytes () =
                     else
                         Expect.isNull request.Content "Session GET has no body"
 
-                    return response 500 (HostFailures.encode HostFailure.BeforeDispatchFailed)
+                    return
+                        response
+                            500
+                            (HostFailureCodecs.encode HostFailureReason.BeforeDispatchFailed)
                 })
 
         Expect.equal (send handler invocation).ExitCode 3 "Definite admission refusal"
 
 let private failurePhases () =
-    for endpoint in Endpoint.all do
-        for reason in HostFailures.all do
+    for endpoint in Api.all do
+        for reason in ClaimCore.Contract.Protocol.HostFailures.all do
             use handler =
                 new Handler(fun _ ->
                     Task.FromResult(
-                        response (HostFailures.status reason) (HostFailures.encode reason)
+                        response
+                            (ClaimCore.Contract.Protocol.HostFailures.status reason)
+                            (HostFailureCodecs.encode reason)
                     ))
 
             let expected =
                 if
-                    (Endpoint.mutates endpoint)
-                    && HostFailures.phase reason <> Some ExecutionPhase.NotStarted
+                    (Api.mutates endpoint)
+                    && ClaimCore.Contract.Protocol.HostFailures.phase reason
+                       <> Some ExecutionPhase.NotStarted
                 then
                     4
                 else
                     3
 
             Expect.equal
-                (send handler (frame (Endpoint.id endpoint))).ExitCode
+                (send handler (frame (Api.id endpoint))).ExitCode
                 expected
                 "Phase and durable mutation determine uncertainty"
 
 let private invalidReplies () =
-    for endpoint in [ "case.get"; "case.execute"; "authority.execute" ] do
+    for endpoint in [ "case.get"; "operation.execute"; "operation.execute" ] do
         for body in
             [
                 bytes "{}"
                 bytes "{"
                 bytes "null"
-                HostFailures.encode HostFailure.DispatchUnconfirmed
+                HostFailureCodecs.encode HostFailureReason.DispatchUnconfirmed
             ] do
             use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
             let invocation = frame endpoint
 
-            let expected =
-                if (frameEndpoint invocation |> Endpoint.mutates) then
-                    4
-                else
-                    2
+            let expected = if (frameEndpoint invocation |> Api.mutates) then 4 else 2
 
             Expect.equal
                 (send handler invocation).ExitCode
@@ -152,11 +140,13 @@ let private invalidReplies () =
 
         use wrongStatus =
             new Handler(fun _ ->
-                Task.FromResult(response 403 (HostFailures.encode HostFailure.SessionRejected)))
+                Task.FromResult(
+                    response 403 (HostFailureCodecs.encode HostFailureReason.SessionRejected)
+                ))
 
         Expect.equal
             (send wrongStatus (frame endpoint)).ExitCode
-            (if (frame endpoint |> frameEndpoint |> Endpoint.mutates) then
+            (if (frame endpoint |> frameEndpoint |> Api.mutates) then
                  4
              else
                  2)
@@ -164,12 +154,12 @@ let private invalidReplies () =
 
 let private successfulBody endpoint invocation =
     let tag =
-        if (frameEndpoint invocation |> Endpoint.mutates) then
+        if (frameEndpoint invocation |> Api.mutates) then
             "ACCEPTED"
         else
             "SUCCEEDED"
 
-    samples "wire-response-examples.json" endpoint
+    samples endpoint
     |> List.find (fun body ->
         use document = JsonDocument.Parse(ReadOnlyMemory body)
 
@@ -177,13 +167,13 @@ let private successfulBody endpoint invocation =
         && (result invocation body |> Result.isOk))
 
 let private mediaVariants () =
-    for endpoint in [ "case.get"; "case.execute" ] do
+    for endpoint in [ "case.get"; "operation.execute" ] do
         let invocation = frame endpoint
 
         for status, body, exit in
             [
                 200, successfulBody endpoint invocation, 0
-                500, HostFailures.encode HostFailure.BeforeDispatchFailed, 3
+                500, HostFailureCodecs.encode HostFailureReason.BeforeDispatchFailed, 3
             ] do
             use canonical = new Handler(fun _ -> Task.FromResult(response status body))
             let expected = send canonical invocation
@@ -209,21 +199,17 @@ let private mediaVariants () =
                     "Typed result and delivery remain identical"
 
 let private mixedMediaRefusals () =
-    for endpoint in [ "case.get"; "case.execute" ] do
+    for endpoint in [ "case.get"; "operation.execute" ] do
         let invocation = frame endpoint
 
-        let expected =
-            if (frameEndpoint invocation |> Endpoint.mutates) then
-                4
-            else
-                2
+        let expected = if (frameEndpoint invocation |> Api.mutates) then 4 else 2
 
         for media in [ Some "Application/JSON"; Some "text/plain"; None ] do
             for status, body in
                 [
                     200, bytes "{"
                     200, bytes "{}"
-                    403, HostFailures.encode HostFailure.SessionRejected
+                    403, HostFailureCodecs.encode HostFailureReason.SessionRejected
                 ] do
                 use handler =
                     new Handler(fun _ ->
@@ -242,15 +228,11 @@ let private mixedMediaRefusals () =
                     "Invalid replies stay refused"
 
 let private absentJsonMedia () =
-    for endpoint in [ "case.get"; "case.execute" ] do
+    for endpoint in [ "case.get"; "operation.execute" ] do
         let invocation = frame endpoint
         let body = successfulBody endpoint invocation
 
-        let expected =
-            if (frameEndpoint invocation |> Endpoint.mutates) then
-                4
-            else
-                2
+        let expected = if (frameEndpoint invocation |> Api.mutates) then 4 else 2
 
         for media in [ Some "text/plain"; None ] do
             use handler =
@@ -267,14 +249,18 @@ let private absentJsonMedia () =
             Expect.equal (send handler invocation).ExitCode expected "JSON media is required"
 
 let private mixedMediaCorrelation () =
-    let invocation = frame "case.execute"
+    let invocation = frame "operation.execute"
 
     let node =
-        successfulBody "case.execute" invocation
+        successfulBody "operation.execute" invocation
         |> System.Text.Json.Nodes.JsonNode.Parse
         |> nonNull
 
-    let receipt = node["outcome"] |> nonNull |> fun value -> value["data"] |> nonNull
+    let receipt =
+        node["outcome"]
+        |> nonNull
+        |> fun value -> value["data"] |> nonNull |> fun value -> value["scope"] |> nonNull
+
     receipt["caseReference"] <- System.Text.Json.Nodes.JsonValue.Create("another")
     let body = node.ToJsonString() |> bytes
 
@@ -337,9 +323,9 @@ let private localExits () =
     Expect.equal (child.StandardOutput.ReadToEnd()) "" "Unsupported invocation has no result"
 
 let private responseBounds () =
-    for endpoint in [ "case.get"; "authority.execute" ] do
+    for endpoint in [ "case.get"; "operation.execute" ] do
         let invocation = frame endpoint
-        let mutates = (frameEndpoint invocation |> Endpoint.mutates)
+        let mutates = (frameEndpoint invocation |> Api.mutates)
 
         use oversize =
             new Handler(fun _ ->
@@ -356,7 +342,8 @@ let private responseBounds () =
 
         use media =
             new Handler(fun _ ->
-                let message = response 500 (HostFailures.encode HostFailure.BeforeDispatchFailed)
+                let message =
+                    response 500 (HostFailureCodecs.encode HostFailureReason.BeforeDispatchFailed)
 
                 message.Content.Headers.ContentType <-
                     System.Net.Http.Headers.MediaTypeHeaderValue "text/html"
@@ -370,14 +357,24 @@ let private responseBounds () =
 
 let private dispatchGuards () =
     let forged =
-        HostFailures.encode HostFailure.DispatchUnconfirmed
+        HostFailureCodecs.encode HostFailureReason.SessionRejected
         |> Encoding.UTF8.GetString
-        |> fun text -> text.Replace("STARTED_UNCONFIRMED", "NOT_STARTED") |> bytes
+        |> fun text -> text.Replace("NOT_STARTED", "STARTED_UNCONFIRMED") |> bytes
 
-    Expect.isError (HostFailures.decode forged) "A phase cannot be detached from its diagnostic"
+    Expect.isError
+        (HostFailureCodecs.decode forged)
+        "A phase cannot be detached from its diagnostic"
+
+    use forgedHost = new Handler(fun _ -> Task.FromResult(response 401 forged))
+
+    Expect.equal
+        (send forgedHost (frame "operation.execute")).ExitCode
+        4
+        "A forged pre-dispatch guarantee cannot settle a mutation."
+
 
     let code, _, _ =
-        call (frameBytes (frame "authority.execute")) (fun _ dispatched _ ->
+        call (frameBytes (frame "operation.execute")) (fun _ dispatched _ ->
             dispatched ()
             raise (InvalidOperationException "synthetic-after-dispatch"))
 
@@ -392,7 +389,7 @@ let private dispatchGuards () =
         RemoteServiceCall.send
             client
             (Uri "https://localhost/")
-            (frame "authority.execute")
+            (frame "operation.execute")
             (System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "synthetic-token"))
             (fun () -> dispatched <- true)
             cancelled.Token
@@ -404,19 +401,19 @@ let private dispatchGuards () =
         Expect.isFalse dispatched "Cancellation is checked before dispatch knowledge"
 
 let private malformedBusinessInput () =
-    let original = frame "case.execute"
+    let original = frame "operation.execute"
     let input = Frames.inputBytes original |> Encoding.UTF8.GetString
 
     let malformed =
         input.Replace("2026-01-01", "not-a-calendar-date").Replace("\"x\"", "\"\\u0078\"")
 
     let invocation =
-        bytes ($"{{\"endpoint\":\"case.execute\",\"input\":{malformed}}}")
+        bytes ($"{{\"endpoint\":\"operation.execute\",\"input\":{malformed}}}")
         |> Frames.admit
         |> Fixtures.accepted
 
     let rejected =
-        samples "wire-response-examples.json" "case.execute"
+        samples "operation.execute"
         |> List.find (fun body ->
             use document = JsonDocument.Parse(ReadOnlyMemory<byte> body)
             document.RootElement.GetProperty("outcome").GetProperty("tag").GetString() = "REJECTED")
@@ -428,8 +425,8 @@ let private malformedBusinessInput () =
 
                 Expect.equal
                     sent
-                    (bytes malformed)
-                    "The malformed business string and original escape spelling are sent unchanged."
+                    (Frames.inputBytes invocation)
+                    "Prepared malformed business content is frozen before dispatch."
 
                 return response 200 rejected
             })
@@ -437,16 +434,22 @@ let private malformedBusinessInput () =
     let reply = send handler invocation
     Expect.equal reply.ExitCode 2 "A typed business rejection exits two after dispatch."
 
-    match Frames.decode reply.Bytes |> Fixtures.accepted with
-    | FrameReply.CaseExecute(_, CaseExecuteOutcome.Rejected _) -> ()
-    | _ -> failtest "Business format refusal remains a typed result, not a protocol failure."
+    let frame = Frames.decode reply.Bytes |> Fixtures.accepted
+
+    match frame.Result with
+    | FrameResult.Reply value ->
+        Expect.equal
+            (Frames.outcome value)
+            (Some "REJECTED")
+            "Business refusal is an admitted result."
+    | _ -> failtest "Expected a business refusal."
 
 let private nearFrameLimitBody endpoint failure =
     let original =
         if failure then
-            HostFailures.encode HostFailure.BeforeDispatchFailed
+            HostFailureCodecs.encode HostFailureReason.BeforeDispatchFailed
         else
-            samples "wire-response-examples.json" endpoint
+            samples endpoint
             |> List.find (fun body ->
                 use document = JsonDocument.Parse(ReadOnlyMemory<byte> body)
 
@@ -472,7 +475,7 @@ let private nearFrameLimitBody endpoint failure =
     node.ToJsonString() |> bytes
 
 let private frameResponseBounds () =
-    for endpoint in [ "case.get"; "case.execute" ] do
+    for endpoint in [ "case.get"; "operation.execute" ] do
         for failure in [ false; true ] do
             let body = nearFrameLimitBody endpoint failure
             let invocation = frame endpoint
@@ -484,9 +487,13 @@ let private frameResponseBounds () =
                 "The HTTP body is within its own bound."
 
             if failure then
-                Expect.isOk (HostFailures.decode body) "Host failure body is well formed."
+                Expect.isError
+                    (HostFailureCodecs.decode body)
+                    "Host failures reject injected prose."
             else
-                Expect.isOk (Replies.decode selected body) "Outcome body is well formed."
+                Expect.isError
+                    (result invocation body)
+                    "Structured refusals reject an injected prose member."
 
             use handler =
                 new Handler(fun _ -> Task.FromResult(response (if failure then 500 else 200) body))
@@ -495,7 +502,7 @@ let private frameResponseBounds () =
 
             Expect.equal
                 reply.ExitCode
-                (if Endpoint.mutates selected then 4 else 2)
+                (if Api.mutates selected then 4 else 2)
                 "An unencodable response cannot settle a mutation."
 
             Expect.isLessThanOrEqual
@@ -503,16 +510,17 @@ let private frameResponseBounds () =
                 Limits.MaximumResponseBytes
                 "The delivered frame stays bounded."
 
-            match Frames.decode reply.Bytes |> Fixtures.accepted with
-            | FrameReply.ProtocolFailure(meta, _, ProtocolFailure.InvalidResponse) ->
-                Expect.equal
-                    meta.AttemptKnowledge
-                    (if Endpoint.mutates selected then
-                         AttemptKnowledge.Unconfirmed
-                     else
-                         AttemptKnowledge.ReadFailed)
-                    "Invalid response metadata preserves dispatch uncertainty."
-            | _ -> failtest "Expected a bounded invalid-response frame."
+            let frame = Frames.decode reply.Bytes |> Fixtures.accepted
+
+            Expect.equal
+                frame.Result
+                (FrameResult.LocalFailure CliFailure.InvalidResponse)
+                "An invalid response produces a bounded local failure."
+
+            Expect.equal
+                frame.Delivery
+                DeliveryState.Uncertain
+                "The frame retains that dispatch occurred without an admitted reply."
 
 [<Tests>]
 let tests =

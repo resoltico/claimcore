@@ -2,7 +2,6 @@ module ClaimCore.AcceptanceTests.BrowserTests
 
 open System
 open System.Text
-open System.Text.RegularExpressions
 open System.Text.Json
 open System.Collections.Generic
 open System.IO
@@ -39,31 +38,31 @@ let private smoke =
 
     selected
 
-let private executedCount minimum text =
-    let plain = Regex.Replace(text, "\\x1B\\[[0-?]*[ -/]*[@-~]", "")
-    let summary = Regex.Match(plain, @"(?m)^\s*([0-9]+) passed(?: \(([^\r\n]+)\))?\s*$")
-    Expect.isTrue summary.Success "A successful browser run must report its executed tests"
+let private selectedSpecifications =
+    if smoke then
+        [
+            "authority-uncertainty.spec.ts"
+            "command-lifecycle.spec.ts"
+            "localization-correction.spec.ts"
+            "stewardship-localization.spec.ts"
+            "unicode-parity.spec.ts"
+        ]
+    else
+        []
 
-    let count =
-        Int32.Parse(summary.Groups[1].Value, Globalization.CultureInfo.InvariantCulture)
+let private expectedFiles root =
+    let directory = Path.Combine(root, "web", "e2e")
 
-    Expect.isGreaterThanOrEqual
-        count
-        minimum
-        "The declared browser scope must execute its whole inventory"
+    (if smoke then
+         selectedSpecifications |> Seq.map (fun file -> Path.Combine(directory, file))
+     else
+         Directory.EnumerateFiles(directory, "*.spec.ts", SearchOption.AllDirectories))
+    |> Seq.map Path.GetFullPath
+    |> Set.ofSeq
 
-    Expect.isFalse
-        (Regex.IsMatch(
-            plain,
-            @"\b[1-9][0-9]* (skipped|did not run|failed|interrupted|flaky|timed out)\b"
-        ))
-        "No incomplete browser qualification"
-
-    count, summary.Groups[2].Value
-
-let private report minimum engine (result: ClaimCore.TestSupport.BoundedProcessResult) =
+let private report root output engine =
     let count, duration =
-        executedCount minimum (Encoding.UTF8.GetString result.StandardOutput)
+        BrowserCompletion.read (expectedFiles root) engine (Path.Combine(output, "playwright.json"))
 
     let scope =
         if smoke then
@@ -97,23 +96,92 @@ let private report minimum engine (result: ClaimCore.TestSupport.BoundedProcessR
 
     Console.WriteLine($"Published {engine} ({scope}): {count} passed; {duration}")
 
+let private completionFixture nested =
+    let test =
+        """{"projectName":"chromium","expectedStatus":"passed","status":"expected","results":[{"status":"passed","retry":0,"errors":[]}]}"""
+
+    let spec id file =
+        $"""{{"id":"{id}","file":"{file}","ok":true,"tests":[{test}]}}"""
+
+    let specifications =
+        [ spec "a" "synthetic-a.spec.ts"; spec "b" "synthetic-b.spec.ts" ]
+        |> String.concat ","
+
+    let suites =
+        if nested then
+            $"""[{{"specs":[],"suites":[{{"specs":[{specifications}]}}]}}]"""
+        else
+            $"""[{{"specs":[{specifications}]}}]"""
+
+    let directory = JsonSerializer.Serialize(Path.GetTempPath())
+
+    $"""{{"config":{{"rootDir":{directory},"forbidOnly":true,"projects":[{{"name":"chromium","retries":0,"repeatEach":1}}]}},"errors":[],"suites":{suites},"stats":{{"duration":1200,"expected":2,"unexpected":0,"flaky":0,"skipped":0}}}}"""
+
+let private completionFileControls (original: string) files =
+    let directory =
+        Directory.CreateTempSubdirectory("claimcore-browser-report-control-")
+
+    try
+        let path = Path.Combine(directory.FullName, "playwright.json")
+        File.WriteAllText(path, original)
+        Expect.equal (BrowserCompletion.read files "chromium" path) (2, "1.2s") "Owned report reads"
+
+        let resize length =
+            use stream = File.OpenWrite path
+            stream.SetLength length
+
+        resize 8_388_609L
+
+        Expect.throws
+            (fun () -> BrowserCompletion.read files "chromium" path |> ignore)
+            "Oversize report rejects before allocation"
+
+        resize 0L
+
+        Expect.throws
+            (fun () -> BrowserCompletion.read files "chromium" path |> ignore)
+            "Empty report rejects"
+    finally
+        directory.Delete true
+
 let private completionControls () =
-    for minimum, underFloor in [ 11, "10 passed"; 132, "131 passed" ] do
-        let complete = $"{minimum} passed (4.7m)"
+    let original = completionFixture false
 
-        for incomplete in
-            [ ""; "0 passed"; underFloor ]
-            @ ([ "skipped"; "did not run"; "failed"; "flaky"; "interrupted"; "timed out" ]
-               |> List.map (fun reason -> $"{complete}\n1 {reason}")) do
-            Expect.throws
-                (fun () -> executedCount minimum incomplete |> ignore)
-                "Smoke and complete reports refuse under-floor or incomplete execution"
+    let files =
+        [ "synthetic-a.spec.ts"; "synthetic-b.spec.ts" ]
+        |> List.map (fun file -> Path.GetFullPath(Path.Combine(Path.GetTempPath(), file)))
+        |> Set.ofList
 
-        for report in [ complete; $"\u001b[32m{complete}\u001b[0m" ] do
-            Expect.equal
-                (executedCount minimum report)
-                (minimum, "4.7m")
-                "Each declared scope admits complete evidence, including terminal colour"
+    let inspect (text: string) =
+        BrowserCompletion.inspect files "chromium" (Encoding.UTF8.GetBytes text)
+
+    Expect.equal (inspect original) (2, "1.2s") "Complete structured execution is admitted"
+    Expect.equal (inspect (completionFixture true)) (2, "1.2s") "Nested suites are traversed"
+    completionFileControls original files
+
+    for before, after in
+        [
+            "synthetic-b.spec.ts", "omitted.spec.ts"
+            "\"specs\":[", "\"specs\":[],\"unused\":["
+            "\"results\":[{\"status\":\"passed\",\"retry\":0,\"errors\":[]}]", "\"results\":[]"
+            "\"status\":\"passed\"", "\"status\":\"skipped\""
+            "\"retry\":0", "\"retry\":1"
+            "\"retry\":0,\"errors\":[]", "\"retry\":0,\"errors\":[{}]"
+            "\"tests\":[", "\"tests\":[],\"unused\":["
+            "\"projectName\":\"chromium\"", "\"projectName\":\"firefox\""
+            "\"status\":\"expected\"", "\"status\":\"flaky\""
+            "\"errors\":[]", "\"errors\":[{}]"
+            "\"forbidOnly\":true", "\"forbidOnly\":false"
+            "\"retries\":0", "\"retries\":1"
+            "\"repeatEach\":1", "\"repeatEach\":2"
+            "\"id\":\"b\"", "\"id\":\"a\""
+            "\"expected\":2", "\"expected\":1"
+            "\"results\":[{\"status\":\"passed\",\"retry\":0,\"errors\":[]}]",
+            "\"results\":[{\"status\":\"passed\",\"retry\":0,\"errors\":[]},{\"status\":\"passed\",\"retry\":0,\"errors\":[]}]"
+        ] do
+        let changed = original.Replace(before, after, StringComparison.Ordinal)
+        Expect.notEqual changed original "The rejecting control changes its intended input"
+        Expect.throws (fun () -> inspect changed |> ignore) "Incomplete execution is rejected"
 
 let private selectionControls () =
     Expect.equal
@@ -172,20 +240,8 @@ let private orchestrationControls () =
         Expect.equal (Seq.toList observed) expected "Failure never starts later expensive fixtures"
 
 let private browserArguments engine =
-    let specifications =
-        if smoke then
-            [
-                "authority-uncertainty.spec.ts"
-                "command-lifecycle.spec.ts"
-                "localization-correction.spec.ts"
-                "stewardship-localization.spec.ts"
-                "unicode-parity.spec.ts"
-            ]
-        else
-            []
-
     [ "exec"; "--"; "playwright"; "test" ]
-    @ specifications
+    @ selectedSpecifications
     @ [ "--project"; engine; "--forbid-only"; "--max-failures=1" ]
     @ (if smoke then [ "--global-timeout=120000" ] else [])
 
@@ -272,7 +328,7 @@ let private qualifyEngine engine =
             0
             ("Published browser scope " + engine + "; private evidence retained")
 
-        report (if smoke then 11 else 132) engine result
+        report fixture.Root output engine
         BrowserReadback.qualify fixture output
         fixture.Complete()
     }
@@ -287,7 +343,7 @@ let tests =
              "published browser qualification")
         [
             testCase
-                "completion evidence rejects missing, under-floor and skipped reports"
+                "completion evidence rejects missing files, incomplete and retried executions"
                 (fun () ->
                     completionControls ()
                     selectionControls ()

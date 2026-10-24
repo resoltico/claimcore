@@ -1,87 +1,70 @@
 import { expect, it } from "vitest";
-import { localNotice } from "../src/api/notices";
-import { createDraft } from "../src/interaction/metadata";
-import { operationReducer, initialOperation } from "../src/interaction/operationReducer";
-import { groupedCorrectionValues, review } from "./service-foundation.fixtures";
+import { operationReducer } from "../src/interaction/operationState";
 import {
-  begin,
   initial,
-  firstId,
-  secondId,
+  begin,
   refused,
   reviewed,
-  expectGuardedTransitionsInert,
+  firstId,
+  secondId,
 } from "./operation-identity.fixtures";
-it("unexposed edits retain identity but changes after a refusal get a fresh identity", () => {
+it("unexposed edits keep identity and changed exposed input receives fresh identity", () => {
   expect(
-    operationReducer(initial(), {
-      type: "EDIT",
-      field: "claimantName",
-      value: "B",
-      nextOperationId: secondId,
-    }).operationId,
+    operationReducer(initial(), { type: "EDIT", path: "act.reason", value: "B", id: secondId })
+      .values["operationId"],
   ).toBe(firstId);
-  const rejected = refused(begin(initial(), 1), 1);
-  const next = operationReducer(rejected, {
+  const exposed = refused();
+  const changed = operationReducer(exposed, {
     type: "EDIT",
-    field: "claimantName",
+    path: "act.reason",
     value: "B",
-    nextOperationId: secondId,
+    id: secondId,
   });
-  expect(next.operationId).toBe(secondId);
-  expect(next.exposedRequest).toBeNull();
+  expect(changed.values["operationId"]).toBe(secondId);
+  expect(changed.prepared).toBeNull();
+  expect(
+    operationReducer(exposed, {
+      type: "EDIT",
+      path: "caseReference",
+      value: "CASE-SERIALIZATION",
+      id: secondId,
+    }),
+  ).toBe(exposed);
+});
+it("uncertainty survives later definite failures and blocks edits while allowing exact retry", () => {
+  const submitting = operationReducer(reviewed(), { type: "EXECUTE" });
+  const unknown = operationReducer(submitting, {
+    type: "REFUSE",
+    notice: { kind: "local", reason: "outcomeUnknown" },
+    target: null,
+    uncertain: true,
+    disclosure: false,
+  });
+  const rejected = refused(unknown);
+  expect(rejected.priorUncertain).toBe(true);
+  expect(rejected.prepared).toBe(submitting.prepared);
   expect(
     operationReducer(rejected, {
-      type: "EDIT_REFERENCE",
-      value: "changed",
-      nextOperationId: secondId,
-    }).operationId,
-  ).toBe(secondId);
-});
-it("unknown delivery preserves exact request bytes and refuses edits while permitting retry", () => {
-  const submitting = operationReducer(reviewed(), { type: "SUBMITTING", requestId: 2 });
-  const unknown = operationReducer(submitting, {
-    type: "OUTCOME_UNKNOWN",
-    requestId: 2,
-    message: localNotice("outcomeUnknown"),
-  });
-  expect(unknown.requestBytes).toBe(submitting.requestBytes);
-  expect(unknown.exposedRequest).toBe(submitting.exposedRequest);
-  expect(
-    operationReducer(unknown, {
-      type: "EDIT_REFERENCE",
-      value: "changed",
-      nextOperationId: secondId,
+      type: "EDIT",
+      path: "caseReference",
+      value: "OTHER",
+      id: secondId,
     }),
-  ).toBe(unknown);
-  const retry = operationReducer(unknown, { type: "SUBMITTING", requestId: 3 });
-  expect(retry.delivery).toBe("SUBMITTING");
-  expect(retry.requestBytes).toBe(unknown.requestBytes);
+  ).toBe(rejected);
+  expect(operationReducer(rejected, { type: "EXECUTE" }).phase).toBe("SUBMITTING");
 });
-it("late responses and illegal transitions cannot replace the current operation", () => {
-  const working = begin(initial(), 2);
-  expect(operationReducer(working, { type: "REVIEWED", requestId: 1, review })).toBe(working);
-  expect(operationReducer(initial(), { type: "SUBMITTING", requestId: 1 })).toEqual(initial());
-  const foreign = createDraft(secondId, "different", 0, "OPEN", {});
-  const fresh = initial();
-  expect(operationReducer(fresh, { type: "PREVIEWING", requestId: 3, draft: foreign })).toBe(fresh);
-  expectGuardedTransitionsInert(fresh);
-});
-it("freezes all correction groups before exposure and forks after changed corrections", () => {
-  const working = begin(
-    initialOperation(firstId, "CORRECT_CASE", groupedCorrectionValues, "CASE-SYNTHETIC"),
-    1,
-  );
-  const rejected = refused(working, 1);
-  const next = operationReducer(rejected, {
-    type: "EDIT_CORRECTION",
-    group: "registration",
-    field: "claimantName",
-    value: "B",
-    nextOperationId: secondId,
-  });
-  expect(next.operationId).toBe(secondId);
-  expect(working.exposedRequest?.act).toMatchObject({
-    groups: { registration: { mode: "REPLACE", values: { claimantName: "Synthetic A" } } },
-  });
+it("requires an exact review and consent and blocks edits while an attempt is pending", () => {
+  expect(operationReducer(initial(), { type: "EXECUTE" })).toEqual(initial());
+  expect(operationReducer(begin(), { type: "CONFIRM", value: true }).confirmed).toBe(false);
+  const original = reviewed();
+  const pending = operationReducer(original, { type: "EXECUTE" });
+  expect(pending.prepared).toBe(original.prepared);
+  expect(
+    operationReducer(pending, {
+      type: "EDIT",
+      path: "caseReference",
+      value: "OTHER",
+      id: secondId,
+    }),
+  ).toBe(pending);
 });

@@ -1,12 +1,16 @@
-import { act, fireEvent, waitFor } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { authorityPreview } from "./authority-operation.fixtures";
+import { act, fireEvent, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { Dashboard } from "../src/views/Dashboard";
 import { AuthorityPanel } from "../src/views/AuthorityPanel";
 import { service, type ApiResult, type ServiceResponse } from "../src/api/service";
-import { generatedWebValue } from "./contract-corpus.fixtures";
+import { wireReply } from "./contract-corpus.fixtures";
 
+beforeEach(() => {
+  authorityPreview();
+});
 afterEach(() => vi.restoreAllMocks());
 const disclosedActor = {
   actorId: "10000000-0000-4000-8000-000000000001",
@@ -20,11 +24,11 @@ const disclosedActor = {
 const success = <K extends "context" | "authority.list">(
   endpoint: K,
 ): ApiResult<ServiceResponse<K>> => {
-  const value = generatedWebValue(endpoint);
+  const value = wireReply(endpoint);
   if (value.outcome.tag !== "SUCCEEDED") {
     throw new Error("Missing successful fixture");
   }
-  if (value.endpoint === "context") {
+  if (endpoint === "context") {
     return {
       kind: "outcome",
       status: 200,
@@ -62,35 +66,27 @@ const success = <K extends "context" | "authority.list">(
   };
 };
 const refused = (): Extract<
-  ApiResult<ServiceResponse<"authority.execute">>,
+  ApiResult<ServiceResponse<"operation.execute">>,
   { kind: "hostFailure" }
 > => ({
   kind: "hostFailure",
   status: 403,
-  failure: {
-    kind: "HOST_FAILURE",
-    code: "SESSION_FORBIDDEN",
-    status: 403,
-    diagnostic: { id: "HOST_SESSIONFORBIDDEN", parameters: {} },
-    message: "Synthetic refusal",
-    executionPhase: "NOT_STARTED",
-  },
+  failure: { code: "SESSION_FORBIDDEN", phase: "NOT_STARTED" },
 });
 const finishRead = (complete: () => void) => act(() => Promise.resolve().then(complete));
-const unavailable = (): ApiResult<ServiceResponse<"authority.execute">> => ({
+const unavailable = (): ApiResult<ServiceResponse<"operation.execute">> => ({
   kind: "outcome",
   status: 200,
   value: {
-    endpoint: "authority.execute",
     operationId: "10000000-0000-4000-8000-000000000001",
     outcome: {
       tag: "REJECTED",
       data: {
-        diagnostic: { id: "ACCESS_RESOURCE_UNAVAILABLE", parameters: {} },
-        message: "Synthetic unavailable actor",
-        field: null,
+        code: "ACCESS_RESOURCE_UNAVAILABLE",
+        action: "NONE_REQUIRED",
+        target: null,
         actualRevision: null,
-        recommendedAction: "NONE_REQUIRED",
+        limits: {},
       },
     },
   },
@@ -109,11 +105,11 @@ const author = async () => {
 const prepare = async () => {
   await author();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(await screen.findByRole("checkbox"));
 };
 const listPrincipal = () => "synthetic-disclosed";
 const emptyOffers = () => {
-  const response = generatedWebValue("context");
+  const response = wireReply("context");
   if (response.outcome.tag !== "SUCCEEDED") {
     throw new Error("Missing context fixture");
   }
@@ -143,16 +139,16 @@ it.each([false, true])(
           finish = resolve;
         }),
     );
-    vi.spyOn(service, "authorityExecute").mockResolvedValue(unavailable());
+    vi.spyOn(service, "execute").mockResolvedValue(unavailable());
     render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
     await screen.findByText(listPrincipal());
     await prepare();
-    fireEvent.click(screen.getByRole("button", { name: "Submit operation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
     await waitFor(() => {
       expect(context).toHaveBeenCalledTimes(2);
     });
     expect(screen.queryByText(listPrincipal())).toBeNull();
-    expect(screen.getByText("synthetic-authored")).toBeVisible();
+    expect(screen.queryByText("synthetic-authored")).toBeNull();
     await finishRead(() => {
       finish?.(retainsRead ? success("authority.list") : refused());
     });
@@ -161,7 +157,6 @@ it.each([false, true])(
     } else {
       expect(screen.queryByText(listPrincipal())).toBeNull();
     }
-    fireEvent.click(screen.getByRole("button", { name: "Edit input" }));
     expect(screen.queryByRole("option")).toBeNull();
     expect(listing).toHaveBeenCalledTimes(2);
   },
@@ -181,7 +176,7 @@ it("aborts prior authority reads and ignores their late completion after an unce
     )
     .mockResolvedValue(refused());
   const execute = vi
-    .spyOn(service, "authorityExecute")
+    .spyOn(service, "execute")
     .mockResolvedValueOnce({
       kind: "deliveryFailure",
       notice: { kind: "local", reason: "unreachable" },
@@ -189,7 +184,7 @@ it("aborts prior authority reads and ignores their late completion after an unce
     .mockResolvedValue(unavailable());
   render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
   await prepare();
-  fireEvent.click(screen.getByRole("button", { name: "Submit operation" }));
+  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
   fireEvent.click(await screen.findByRole("button", { name: "Retry the same operation" }));
   await waitFor(() => {
     expect(listing).toHaveBeenCalledTimes(2);
@@ -225,16 +220,33 @@ const revalidatingReads = async () => {
           finishListing = resolve;
         }),
     );
-  vi.spyOn(service, "authorityExecute").mockResolvedValue(unavailable());
+  vi.spyOn(service, "execute").mockResolvedValue(unavailable());
   render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
   await screen.findByText(listPrincipal());
   await prepare();
-  fireEvent.click(screen.getByRole("button", { name: "Submit operation" }));
+  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
   await waitFor(() => {
     expect(listing).toHaveBeenCalledTimes(2);
   });
   return { context, listing, finishContext, finishListing };
 };
+it("keeps discard actionable when readonly restoration completes during a pointer press", async () => {
+  const { finishContext, finishListing } = await revalidatingReads();
+  const user = userEvent.setup();
+  const discard = screen.getByRole("button", { name: "Discard and leave" });
+  expect(discard).not.toBeDisabled();
+  await user.pointer({ target: discard, keys: "[MouseLeft>]" });
+  await finishRead(() => {
+    finishContext?.(emptyOffers());
+    finishListing?.(success("authority.list"));
+  });
+  expect(screen.getByRole("button", { name: "Discard and leave" })).toBe(discard);
+  await user.pointer({ keys: "[/MouseLeft]" });
+  const dialog = screen.getByRole("dialog");
+  expect(dialog).toBeVisible();
+  await user.click(within(dialog).getByRole("button", { name: "Discard and leave" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
 it.each(["context", "listing"] as const)(
   "a %s success during revalidation cannot survive the other read's refusal",
   async (first) => {
@@ -259,8 +271,7 @@ it.each(["context", "listing"] as const)(
     expect(screen.queryByText(listPrincipal())).toBeNull();
     expect(context).toHaveBeenCalledTimes(2);
     expect(listing).toHaveBeenCalledTimes(2);
-    expect(screen.getByText("synthetic-authored")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Edit input" }));
+    expect(screen.queryByText("synthetic-authored")).toBeNull();
     expect(screen.queryByRole("option")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Reload actors" }));
     await waitFor(() => {
@@ -283,9 +294,9 @@ it.each([
     vi.spyOn(service, "list").mockResolvedValue({
       kind: "outcome",
       status: 200,
-      value: generatedWebValue("case.list"),
+      value: wireReply("case.list"),
     });
-    vi.spyOn(service, "authorityExecute").mockImplementation(() => {
+    vi.spyOn(service, "execute").mockImplementation(() => {
       context.mockResolvedValue(emptyOffers());
       return Promise.resolve(unavailable());
     });
@@ -293,7 +304,14 @@ it.each([
     await user.click(await screen.findByRole("button", { name: "Authority" }));
     if (reviewed) {
       await prepare();
-      await user.click(screen.getByRole("button", { name: "Submit operation" }));
+      if (returned) {
+        await user.click(screen.getByRole("button", { name: "Return to editing" }));
+        context.mockResolvedValue(emptyOffers());
+        listing.mockResolvedValue(refused());
+        await user.click(screen.getByRole("button", { name: "Reload actors" }));
+      } else {
+        await user.click(screen.getByRole("button", { name: "Record changes" }));
+      }
     } else {
       await author();
       context.mockResolvedValue(emptyOffers());
@@ -303,13 +321,12 @@ it.each([
     await waitFor(() => {
       expect(context).toHaveBeenCalledTimes(3);
     });
-    if (returned) {
-      await user.click(screen.getByRole("button", { name: "Edit input" }));
-    }
     expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Cases" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Discard and leave" }));
-    await user.click(screen.getByRole("button", { name: "Discard and change action" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Discard and leave" }),
+    );
     expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Cases" })).not.toBeDisabled();
     expect(screen.queryByText("synthetic-authored")).toBeNull();
@@ -319,16 +336,16 @@ it.each([
   },
 );
 const authorityReceipt = () => {
-  const accepted = generatedWebValue("authority.execute");
-  if (accepted.outcome.tag !== "ACCEPTED") {
+  const accepted = wireReply("operation.execute", "AUTHORITY");
+  if (accepted.outcome.tag !== "ACCEPTED" || accepted.outcome.data.scope.kind !== "AUTHORITY") {
     throw new Error("Missing authority receipt fixture");
   }
-  return accepted.outcome.data;
+  return { ...accepted.outcome.data, scope: accepted.outcome.data.scope };
 };
 const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
   const receipt = authorityReceipt();
   return vi
-    .spyOn(service, "authorityExecute")
+    .spyOn(service, "execute")
     .mockImplementationOnce((prepared) =>
       Promise.resolve(
         first === "lost"
@@ -340,13 +357,10 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
               kind: "outcome",
               status: 200,
               value: {
-                endpoint: "authority.execute",
                 operationId: prepared.input.operationId,
                 outcome: {
                   tag: "OUTCOME_UNKNOWN",
-                  data: {
-                    operationId: prepared.input.operationId,
-                  },
+                  data: null,
                 },
               },
             },
@@ -357,14 +371,17 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
         kind: "outcome",
         status: 200,
         value: {
-          endpoint: "authority.execute",
           operationId: prepared.input.operationId,
           outcome: {
             tag: "ALREADY_ACCEPTED",
             data: {
               ...receipt,
               operationId: prepared.input.operationId,
-              act: prepared.input.act.kind,
+              scope: {
+                ...receipt.scope,
+                act:
+                  prepared.input.scope === "AUTHORITY" ? prepared.input.act.kind : "REGISTER_ACTOR",
+              },
             },
           },
         },
@@ -379,7 +396,7 @@ it.each(["lost", "unknown"] as const)(
     const execute = authorityRecoveryDelivery(first);
     render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
     await prepare();
-    fireEvent.click(screen.getByRole("button", { name: "Submit operation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
     const retry = await screen.findByRole("button", { name: "Retry the same operation" });
     expect(screen.getByRole("alert")).toBeVisible();
     const [pending] = execute.mock.calls[0]!;
@@ -388,7 +405,9 @@ it.each(["lost", "unknown"] as const)(
       expect(screen.queryByRole("alert")).toBeNull();
     });
     expect(
-      screen.getByText(pending.input.operationId, { exact: false }).closest('[role="status"]'),
+      (await screen.findByText(pending.input.operationId, { exact: false })).closest(
+        '[role="status"]',
+      ),
     ).not.toBeNull();
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "accepted" })).toHaveFocus();

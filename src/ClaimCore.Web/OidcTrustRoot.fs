@@ -1,11 +1,12 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Wire
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 open System
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
-open ClaimCore.Hosting
+open ClaimCore.Web.Composition
 open ClaimCore.HostSecurity
 
 /// An optional owner-private trust root for a local HTTPS qualification issuer only.

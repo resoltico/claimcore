@@ -2,7 +2,7 @@ import { it, expect, vi, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "./presentation-test-support";
 import { editor, previewReply } from "./presentation-state.fixtures";
-import { generatedWebValue } from "./contract-corpus.fixtures";
+import { wireReply } from "./contract-corpus.fixtures";
 import { response } from "./service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("readonly preview can be repeated with its unchanged exact draft after lost output", async () => {
@@ -18,12 +18,12 @@ it("readonly preview can be repeated with its unchanged exact draft after lost o
   expect(vi.mocked(fetch).mock.calls[1]?.[1]?.body).toBe(vi.mocked(fetch).mock.calls[0]?.[1]?.body);
 });
 it("already accepted preview returns its recorded receipt without another execution", async () => {
-  const value = generatedWebValue("case.execute");
+  const value = wireReply("operation.execute");
   if (value.outcome.tag !== "ACCEPTED") {
     throw new Error("Accepted fixture required.");
   }
   vi.mocked(fetch).mockResolvedValueOnce(
-    response("case.preview", "ALREADY_ACCEPTED", value.outcome.data),
+    response("operation.preview", "ALREADY_ACCEPTED", value.outcome.data),
   );
   render(editor());
   await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));

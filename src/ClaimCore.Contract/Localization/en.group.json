@@ -1,0 +1,8 @@
+{
+  "group.decision.label": "Payment decision",
+  "group.decision.meaning": "Keep the current payment decision, replace its date, amount and currency together, or clear the decision.",
+  "group.payment.label": "Payment record",
+  "group.payment.meaning": "Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money.",
+  "group.registration.label": "Registration",
+  "group.registration.meaning": "Keep the current registration details or replace all seven details together."
+}

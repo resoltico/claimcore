@@ -1,95 +1,187 @@
-import type { MutationLifecycle } from "./mutationLifecycle";
-import type { ResolutionEvidence } from "../protocol/delivery";
-import type { PreparedRequest } from "../protocol/preparedRequest";
+import type { OperationReceipt, OperationReview } from "../api/types";
 import type { Notice } from "../api/notices";
-import type { Review, CommandDraft, CaseReceipt } from "../api/service";
-import type { CommandKind, CorrectionGroupName, CorrectionMode, DraftValues } from "./metadata";
-
-export type DeliveryState =
-  | "EDITING"
-  | "PREVIEWING"
-  | "REVIEWING"
-  | "SUBMITTING"
-  | "ACCEPTED"
-  | "DEFINITELY_REJECTED"
-  | "OUTCOME_UNKNOWN";
+import type { FormValues } from "../protocol/forms";
+import type { PreparedRequest } from "../protocol/preparedRequest";
+import { refusalPath } from "./operationForm";
 export type OperationState = {
-  mutation: MutationLifecycle<"case.execute">;
-  delivery: DeliveryState;
-  unresolved: boolean;
+  target: string;
+  disclosureToken: string;
   disclosureRefused: boolean;
-  operationId: string;
-  caseReference: string;
-  command: CommandKind;
-  values: DraftValues;
-  requestBytes: string | null;
-  prepared: PreparedRequest<"case.execute"> | null;
-  review: Review | null;
-  receipt: CaseReceipt | null;
-  message: Notice | null;
-  fieldError: { name: string; message: Notice } | null;
-  exposedRequest: CommandDraft | null;
-  pending: { kind: "PREVIEW" | "SUBMIT"; requestId: number } | null;
+  phase: "EDITING" | "PREVIEWING" | "REVIEWING" | "SUBMITTING" | "ACCEPTED";
+  values: FormValues;
+  baseline: FormValues;
+  prepared: PreparedRequest<"operation.execute"> | null;
+  priorUncertain: boolean;
+  review: OperationReview | null;
+  receipt: OperationReceipt | null;
+  notice: Notice | null;
+  fieldError: string | null;
+  confirmed: boolean;
+  pendingDiscard: string | null;
 };
 export type OperationAction =
-  | { type: "INPUT_INVALID"; field: string; message: Notice }
-  | { type: "EDIT"; field: string; value: string; nextOperationId: string }
+  | { type: "RESET"; state: OperationState }
+  | { type: "EDIT"; path: string; value: string | boolean; id: string }
+  | { type: "DISCARD"; kind: string | null }
+  | { type: "PREVIEW"; prepared: PreparedRequest<"operation.execute"> }
+  | { type: "REVIEW"; review: OperationReview; token: string }
+  | { type: "RECORD"; receipt: OperationReceipt; token: string }
   | {
-      type: "EDIT_CORRECTION";
-      group: CorrectionGroupName;
-      field: string;
-      value: string;
-      nextOperationId: string;
+      type: "REFUSE";
+      notice: Notice;
+      target: string | null;
+      uncertain: boolean;
+      disclosure: boolean;
     }
-  | {
-      type: "SET_CORRECTION_MODE";
-      group: CorrectionGroupName;
-      mode: CorrectionMode;
-      nextOperationId: string;
-    }
-  | { type: "EDIT_REFERENCE"; value: string; nextOperationId: string }
-  | { type: "CHANGE_COMMAND"; command: CommandKind; values: DraftValues; nextOperationId: string }
-  | {
-      type: "PREVIEWING";
-      requestId: number;
-      draft: CommandDraft;
-      prepared?: PreparedRequest<"case.execute">;
-    }
-  | { type: "REVIEWED"; requestId: number; review: Review }
-  | {
-      type: "DEFINITELY_REJECTED";
-      requestId: number;
-      message: Notice;
-      field: string | null;
-      evidence?: ResolutionEvidence;
-      disclosureRefused?: boolean;
-    }
-  | { type: "SUBMITTING"; requestId: number }
-  | { type: "ACCEPTED"; requestId: number; receipt: CaseReceipt; message?: Notice | null }
-  | { type: "OUTCOME_UNKNOWN"; requestId: number; message: Notice }
-  | { type: "RETURN_TO_EDIT" }
-  | { type: "RESET_MESSAGE" };
-
-type DerivedDelivery =
-  "delivery" | "prepared" | "requestBytes" | "exposedRequest" | "unresolved" | "pending";
-export const projectOperation = (state: Omit<OperationState, DerivedDelivery>): OperationState => {
-  const { mutation } = state;
-  const { prepared } = mutation;
+  | { type: "INVALIDATE"; uncertain: boolean; refused: boolean }
+  | { type: "RETURN" }
+  | { type: "CONFIRM"; value: boolean }
+  | { type: "EXECUTE" };
+const canEdit = (state: OperationState): boolean =>
+  !state.priorUncertain && ["EDITING", "REVIEWING"].includes(state.phase);
+const canConfirm = (state: OperationState): boolean =>
+  state.phase === "REVIEWING" &&
+  state.review !== null &&
+  !state.priorUncertain &&
+  !state.disclosureRefused;
+const edited = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "EDIT" }>,
+): OperationState => {
+  if (!canEdit(state) || state.values[action.path] === action.value) {
+    return state;
+  }
   return {
     ...state,
-    delivery: mutation.phase,
-    prepared,
-    requestBytes: prepared?.bytes ?? null,
-    exposedRequest: prepared?.input ?? null,
-    unresolved:
-      mutation.phase === "OUTCOME_UNKNOWN" ||
-      (mutation.phase === "SUBMITTING" && mutation.prior === "UNCONFIRMED"),
-    pending:
-      mutation.phase === "SUBMITTING" || mutation.phase === "PREVIEWING"
-        ? {
-            kind: mutation.phase === "PREVIEWING" ? "PREVIEW" : "SUBMIT",
-            requestId: mutation.requestId,
-          }
-        : null,
+    phase: "EDITING",
+    prepared: null,
+    review: null,
+    receipt: null,
+    values: {
+      ...state.values,
+      [action.path]: action.value,
+      operationId: state.prepared === null ? state.values["operationId"]! : action.id,
+    },
+    notice: null,
+    fieldError: null,
+    confirmed: false,
   };
+};
+const previewed = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "PREVIEW" }>,
+): OperationState => {
+  if (!canEdit(state)) {
+    return state;
+  }
+  return {
+    ...state,
+    phase: "PREVIEWING",
+    prepared: action.prepared,
+    review: null,
+    notice: null,
+    fieldError: null,
+    confirmed: false,
+  };
+};
+const reviewed = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "REVIEW" }>,
+): OperationState => {
+  if (state.phase === "PREVIEWING") {
+    return {
+      ...state,
+      phase: "REVIEWING",
+      review: action.review,
+      disclosureToken: action.token,
+      disclosureRefused: false,
+      confirmed: false,
+    };
+  }
+  return state;
+};
+const recorded = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "RECORD" }>,
+): OperationState => ({
+  ...state,
+  phase: "ACCEPTED",
+  pendingDiscard: null,
+  receipt: action.receipt,
+  priorUncertain: false,
+  disclosureToken: action.token,
+  disclosureRefused: false,
+  notice: null,
+  confirmed: false,
+});
+const refused = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "REFUSE" }>,
+): OperationState => {
+  const priorUncertain = state.priorUncertain || action.uncertain;
+  return {
+    ...state,
+    phase: priorUncertain ? "REVIEWING" : "EDITING",
+    priorUncertain,
+    notice: action.notice,
+    review: null,
+    confirmed: false,
+    fieldError: refusalPath(action.target, state.values),
+    disclosureRefused: action.disclosure,
+  };
+};
+const invalidated = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "INVALIDATE" }>,
+): OperationState => ({
+  ...state,
+  phase: "EDITING",
+  priorUncertain: state.priorUncertain || action.uncertain,
+  disclosureRefused: action.refused,
+  review: null,
+  receipt: null,
+  confirmed: false,
+});
+const returnToEdit = (state: OperationState): OperationState =>
+  canEdit(state) ? { ...state, phase: "EDITING", review: null, confirmed: false } : state;
+const confirmed = (state: OperationState, value: boolean): OperationState =>
+  canConfirm(state) ? { ...state, confirmed: value } : state;
+const executing = (state: OperationState): OperationState => {
+  if (
+    state.prepared === null ||
+    (!state.priorUncertain && (!canConfirm(state) || !state.confirmed))
+  ) {
+    return state;
+  }
+  return { ...state, phase: "SUBMITTING", notice: null };
+};
+/** Acceptance alone resolves an earlier uncertain execution; editing never rebases frozen bytes. */
+export const operationReducer = (
+  state: OperationState,
+  action: OperationAction,
+): OperationState => {
+  switch (action.type) {
+    case "RESET":
+      return action.state;
+    case "EDIT":
+      return edited(state, action);
+    case "DISCARD":
+      return { ...state, pendingDiscard: action.kind };
+    case "PREVIEW":
+      return previewed(state, action);
+    case "REVIEW":
+      return reviewed(state, action);
+    case "RECORD":
+      return recorded(state, action);
+    case "REFUSE":
+      return refused(state, action);
+    case "INVALIDATE":
+      return invalidated(state, action);
+    case "RETURN":
+      return returnToEdit(state);
+    case "CONFIRM":
+      return confirmed(state, action.value);
+    case "EXECUTE":
+      return executing(state);
+  }
 };

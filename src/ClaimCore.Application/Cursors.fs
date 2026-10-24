@@ -1,6 +1,6 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Text
@@ -17,7 +17,7 @@ module internal Cursors =
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
 
     let private encode members =
-        CanonicalValue.Object members |> CanonicalJson.encode |> base64
+        JsonValue.Object members |> CanonicalWriter.bytes |> base64
 
     let private alphabet character =
         (character >= 'A' && character <= 'Z')
@@ -33,7 +33,7 @@ module internal Cursors =
             || token.Length % 4 = 1
             || not (Seq.forall alphabet token)
         then
-            Error Rejection.InvalidCursor
+            Error Refusal.InvalidCursor
         else
             try
                 let padded =
@@ -46,19 +46,19 @@ module internal Cursors =
                 use document =
                     JsonDocument.Parse(ReadOnlyMemory bytes, JsonDocumentOptions(MaxDepth = 32))
 
-                let value = CanonicalJson.ofElement document.RootElement
+                let value = StrictJson.ofElement document.RootElement
 
-                if base64 bytes <> token || CanonicalJson.encode value <> bytes then
-                    Error Rejection.InvalidCursor
+                if base64 bytes <> token || CanonicalWriter.bytes value <> bytes then
+                    Error Refusal.InvalidCursor
                 else
                     match read value with
                     | Some position -> Ok position
-                    | None -> Error Rejection.InvalidCursor
+                    | None -> Error Refusal.InvalidCursor
             with
             | :? ArgumentException
             | :? FormatException
             | :? InvalidOperationException
-            | :? JsonException -> Error Rejection.InvalidCursor
+            | :? JsonException -> Error Refusal.InvalidCursor
 
     let private reference value =
         CaseReference.validate value |> Result.isOk && CaseReference.key value = value
@@ -71,37 +71,36 @@ module internal Cursors =
     let encodeCases after =
         encode
             [
-                "after", CanonicalValue.String(CaseReference.key after)
-                "kind", CanonicalValue.String "CASES"
-                "v", CanonicalValue.Integer 1L
+                "after", JsonValue.String(CaseReference.key after)
+                "kind", JsonValue.String "CASES"
+                "v", JsonValue.Integer 1L
             ]
 
     let decodeCases token =
         decode
             (function
-            | CanonicalValue.Object [ "after", CanonicalValue.String after
-                                      "kind", CanonicalValue.String "CASES"
-                                      "v", CanonicalValue.Integer 1L ] when reference after ->
-                Some after
+            | JsonValue.Object [ "after", JsonValue.String after
+                                 "kind", JsonValue.String "CASES"
+                                 "v", JsonValue.Integer 1L ] when reference after -> Some after
             | _ -> None)
             token
 
     let encodeHistory reference after =
         encode
             [
-                "after", CanonicalValue.Integer after
-                "case", CanonicalValue.String(CaseReference.key reference)
-                "kind", CanonicalValue.String "HISTORY"
-                "v", CanonicalValue.Integer 1L
+                "after", JsonValue.Integer after
+                "case", JsonValue.String(CaseReference.key reference)
+                "kind", JsonValue.String "HISTORY"
+                "v", JsonValue.Integer 1L
             ]
 
     let decodeHistory requested token =
         decode
             (function
-            | CanonicalValue.Object [ "after", CanonicalValue.Integer after
-                                      "case", CanonicalValue.String target
-                                      "kind", CanonicalValue.String "HISTORY"
-                                      "v", CanonicalValue.Integer 1L ] when
+            | JsonValue.Object [ "after", JsonValue.Integer after
+                                 "case", JsonValue.String target
+                                 "kind", JsonValue.String "HISTORY"
+                                 "v", JsonValue.Integer 1L ] when
                 after >= 1L
                 && after <= Revision.Maximum
                 && reference target
@@ -114,44 +113,44 @@ module internal Cursors =
     let encodeActors (after: Guid) =
         encode
             [
-                "after", CanonicalValue.String(after.ToString("D"))
-                "kind", CanonicalValue.String "ACTORS"
-                "v", CanonicalValue.Integer 1L
+                "after", JsonValue.String(after.ToString("D"))
+                "kind", JsonValue.String "ACTORS"
+                "v", JsonValue.Integer 1L
             ]
 
     let decodeActors token =
         decode
             (function
-            | CanonicalValue.Object [ "after", CanonicalValue.String after
-                                      "kind", CanonicalValue.String "ACTORS"
-                                      "v", CanonicalValue.Integer 1L ] -> uuid after
+            | JsonValue.Object [ "after", JsonValue.String after
+                                 "kind", JsonValue.String "ACTORS"
+                                 "v", JsonValue.Integer 1L ] -> uuid after
             | _ -> None)
             token
 
     let encodeGrants (actorId: Guid) (after: GrantPosition) =
         let position =
-            CanonicalValue.Object
+            JsonValue.Object
                 [
                     "caseId",
                     after.CaseId
-                    |> Option.map (fun id -> CanonicalValue.String(id.ToString("D")))
-                    |> Option.defaultValue CanonicalValue.Null
-                    "role", CanonicalValue.String(RoleTokens.token after.Role)
+                    |> Option.map (fun id -> JsonValue.String(id.ToString("D")))
+                    |> Option.defaultValue JsonValue.Null
+                    "role", JsonValue.String(RoleTokens.token after.Role)
                 ]
 
         encode
             [
-                "actor", CanonicalValue.String(actorId.ToString("D"))
+                "actor", JsonValue.String(actorId.ToString("D"))
                 "after", position
-                "kind", CanonicalValue.String "GRANTS"
-                "v", CanonicalValue.Integer 1L
+                "kind", JsonValue.String "GRANTS"
+                "v", JsonValue.Integer 1L
             ]
 
     let private grant role caseId =
         let scope =
             match caseId with
-            | CanonicalValue.Null -> Some None
-            | CanonicalValue.String value -> uuid value |> Option.map Some
+            | JsonValue.Null -> Some None
+            | JsonValue.String value -> uuid value |> Option.map Some
             | _ -> None
 
         match RoleTokens.tryParse role, scope with
@@ -161,14 +160,11 @@ module internal Cursors =
     let decodeGrants actorId token =
         decode
             (function
-            | CanonicalValue.Object [ "actor", CanonicalValue.String target
-                                      "after",
-                                      CanonicalValue.Object [ "caseId", caseId
-                                                              "role", CanonicalValue.String role ]
-                                      "kind", CanonicalValue.String "GRANTS"
-                                      "v", CanonicalValue.Integer 1L ] when
-                uuid target = Some actorId
-                ->
+            | JsonValue.Object [ "actor", JsonValue.String target
+                                 "after",
+                                 JsonValue.Object [ "caseId", caseId; "role", JsonValue.String role ]
+                                 "kind", JsonValue.String "GRANTS"
+                                 "v", JsonValue.Integer 1L ] when uuid target = Some actorId ->
                 grant role caseId
             | _ -> None)
             token

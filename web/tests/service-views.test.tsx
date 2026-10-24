@@ -7,7 +7,7 @@ import type { CurrentCase } from "../src/api/service";
 import { CaseDetail } from "../src/views/CaseDetail";
 import { CaseList } from "../src/views/CaseList";
 import { Dashboard } from "../src/views/Dashboard";
-import { generatedResponse, historyVariants } from "./contract-corpus.fixtures";
+import { wireResponse, historyVariants } from "./contract-corpus.fixtures";
 import { context, definition, fields, operationId, response } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
@@ -138,7 +138,7 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", { offers: context.offers, items: [], nextCursor: null }),
   );
-  fetch.mockResolvedValueOnce(generatedResponse("operation.observe"));
+  fetch.mockResolvedValueOnce(wireResponse("operation.observe"));
   render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
   await user.click(await screen.findByRole("button", { name: "Operations" }));
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
@@ -148,17 +148,10 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
 
 it("reports a failed list as a request-local error without manufacturing rows", async () => {
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    new Response(
-      JSON.stringify({
-        kind: "HOST_FAILURE",
-        code: "RATE_LIMITED",
-        status: 429,
-        diagnostic: { id: "HOST_RATELIMITED", parameters: {} },
-        message: "Busy",
-        executionPhase: "NOT_STARTED",
-      }),
-      { status: 429, headers: { "content-type": "application/json" } },
-    ),
+    new Response(JSON.stringify({ hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } }), {
+      status: 429,
+      headers: { "content-type": "application/json" },
+    }),
   );
   render(<CaseList token="token" onSelect={vi.fn()} onOpen={vi.fn()} />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Request admission is busy.");
@@ -169,14 +162,7 @@ it("keeps public metadata and other panes available when a case read is refused"
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
     new Response(
-      JSON.stringify({
-        kind: "HOST_FAILURE",
-        code: "SESSION_REJECTED",
-        status: 401,
-        diagnostic: { id: "HOST_SESSIONREJECTED", parameters: {} },
-        message: "No",
-        executionPhase: "NOT_STARTED",
-      }),
+      JSON.stringify({ hostFailure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" } }),
       { status: 401, headers: { "content-type": "application/json" } },
     ),
   );

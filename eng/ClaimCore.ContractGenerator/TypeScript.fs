@@ -1,10 +1,10 @@
 namespace ClaimCore.ContractGeneration
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Text
 open System.Text.Json
-open ClaimCore.Wire
+open ClaimCore.Contract.Protocol
 
 /// The browser receives types and immutable core policy data for generic interpreters.
 module TypeScript =
@@ -34,41 +34,31 @@ module TypeScript =
         | Schema.OneOf(variants, _) -> variants |> List.map value |> String.concat " | "
         | Schema.Ref name -> identifier name
 
-    let private endpointMap name schema =
-        Endpoint.all
+    let private endpointMap name response =
+        Api.all
         |> List.map (fun endpoint ->
-            "  readonly "
-            + quote (Endpoint.id endpoint)
-            + ": "
-            + value (schema endpoint |> fst)
-            + ";")
+            let schema =
+                endpoint.Accept
+                    { new IEndpointVisitor<Schema> with
+                        member _.Visit endpoint =
+                            if response then
+                                endpoint.Output.Schema
+                            else
+                                endpoint.Input.Schema
+                    }
+
+            "  readonly " + quote (Api.id endpoint) + ": " + value schema + ";")
         |> String.concat "\n"
         |> fun members -> "export type " + name + " = {\n" + members + "\n};\n"
 
     let private endpoints () =
-        Endpoint.all
+        Api.all
         |> List.map (fun endpoint ->
             {|
-                id = Endpoint.id endpoint
-                method = Endpoint.method endpoint
-                path = Endpoint.path endpoint
-                mutates = Endpoint.mutates endpoint
-                receiptScope =
-                    Endpoint.receiptScope endpoint
-                    |> Option.map (function
-                        | ReceiptScope.Case -> "CASE"
-                        | ReceiptScope.Authority -> "AUTHORITY")
-            |})
-        |> JsonSerializer.Serialize
-
-    let private hostPolicies () =
-        HostFailures.all
-        |> List.map (fun reason ->
-            {|
-                code = HostFailures.code reason
-                status = HostFailures.status reason
-                diagnosticId = HostFailures.diagnosticId reason
-                executionPhase = HostFailures.phase reason |> Option.map DeliveryTokens.phase
+                id = Api.id endpoint
+                method = (Api.method endpoint).Method
+                path = Api.path endpoint
+                mutates = Api.mutates endpoint
             |})
         |> JsonSerializer.Serialize
 
@@ -77,8 +67,8 @@ module TypeScript =
             maximumResponseBytes = Limits.MaximumResponseBytes
             maximumRequestBytes = Limits.MaximumRequestBytes
             maximumInvocationBytes = Limits.MaximumInvocationBytes
-            maximumDepth = Strict.MaximumDepth
-            maximumSafeInteger = Strict.MaximumSafeInteger
+            maximumDepth = StrictJson.MaximumDepth
+            maximumSafeInteger = ClaimCore.Contract.JsonValue.MaximumInteger
         |}
         |> JsonSerializer.Serialize
 
@@ -125,55 +115,48 @@ module TypeScript =
     let private presentationConstants () =
         [
             "export const presentationLanguageOptions = "
-            + JsonSerializer.Serialize(ClaimCore.Catalog.LocalizationPolicy.languageOptions)
+            + JsonSerializer.Serialize(ClaimCore.Contract.LocalizationPolicy.languageOptions)
             + " as const;"
             "export const presentationDisplayOptions = "
-            + JsonSerializer.Serialize(ClaimCore.Catalog.LocalizationPolicy.displayOptions)
+            + JsonSerializer.Serialize(ClaimCore.Contract.LocalizationPolicy.displayOptions)
             + " as const;"
             "export const presentationPseudolanguage = "
-            + quote ClaimCore.Catalog.LocalizationPolicy.pseudolanguage
+            + quote ClaimCore.Contract.LocalizationPolicy.pseudolanguage
             + ";"
             "export const presentationLanguages = "
             + JsonSerializer.Serialize(
-                ClaimCore.Catalog.LocalizationPolicy.languages
-                @ [ ClaimCore.Catalog.LocalizationPolicy.pseudolanguage ]
+                ClaimCore.Contract.LocalizationPolicy.languages
+                @ [ ClaimCore.Contract.LocalizationPolicy.pseudolanguage ]
             )
             + " as const;"
             "export const presentationDisplayLocales = "
-            + JsonSerializer.Serialize(ClaimCore.Catalog.LocalizationPolicy.displayLocales)
+            + JsonSerializer.Serialize(ClaimCore.Contract.LocalizationPolicy.displayLocales)
             + " as const;"
             "export const presentationDefaults = { language: "
-            + quote ClaimCore.Catalog.LocalizationPolicy.defaultLanguage
+            + quote ClaimCore.Contract.LocalizationPolicy.defaultLanguage
             + ", displayLocale: "
-            + quote ClaimCore.Catalog.LocalizationPolicy.defaultDisplayLocale
+            + quote ClaimCore.Contract.LocalizationPolicy.defaultDisplayLocale
             + " } as const;"
         ]
 
     let source identity =
         let definitions =
-            OpenApi.definitions ()
+            ClaimCore.Contract.OpenApi.definitions
             |> Map.toList
             |> List.map (fun (name, schema) ->
                 "export type " + identifier name + " = " + value schema + ";")
 
         [
-            "/* Generated from ClaimCore.Wire codecs. Do not edit. */"
+            "/* Generated from ClaimCore.Contract registry codecs. Do not edit. */"
             yield! definitions
             metadataTypes ()
-            endpointMap "RequestByEndpoint" Admission.schema
-            endpointMap "ResponseByEndpoint" Replies.schema
+            endpointMap "RequestByEndpoint" false
+            endpointMap "ResponseByEndpoint" true
             "export type OutcomeByEndpoint = { readonly [E in keyof ResponseByEndpoint]: ResponseByEndpoint[E][\"outcome\"] };"
-            "export const correlationPolicy = "
-            + Encoding.UTF8.GetString(DeliveryTables.correlation ())
-            + " as const;"
-            "export const deliveryPolicy = "
-            + Encoding.UTF8.GetString(DeliveryTables.render ())
-            + " as const;"
             "export const endpoints = " + endpoints () + " as const;"
             "export type EndpointId = (typeof endpoints)[number][\"id\"];"
             yield! presentationConstants ()
             "export const consumerContractIdentity = " + quote identity + ";"
-            "export const hostFailurePolicies = " + hostPolicies () + " as const;"
             "export const strictByteProfile = " + profile () + " as const;"
             "export const limits = { maximumPageSize: "
             + string Limits.MaximumPageSize

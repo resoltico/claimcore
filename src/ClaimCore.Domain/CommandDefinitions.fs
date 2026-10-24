@@ -1,6 +1,6 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 /// Semantic operation descriptions, not widgets or client-owned transition rules.
 type CommandDefinition =
@@ -13,16 +13,12 @@ type CommandDefinition =
     }
 
 module CommandDefinitions =
-    let private registrationFields =
-        [
-            (InputField.Business BusinessField.IncidentDate)
-            (InputField.Business BusinessField.IncidentNotificationDate)
-            (InputField.Business BusinessField.IncidentCountry)
-            (InputField.Business BusinessField.ClaimantName)
-            (InputField.Business BusinessField.InsurerName)
-            (InputField.Business BusinessField.ClaimedAmount)
-            (InputField.Business BusinessField.ClaimedCurrency)
-        ]
+    let private groupFields group =
+        FieldTable.rows
+        |> List.filter (fun row -> row.Group = group)
+        |> List.map (fun row -> InputTarget.Field row.Field)
+
+    let private registrationFields = groupFields FieldGroup.Registration
 
     let private blank fieldName : FieldInputDefinition =
         {
@@ -35,8 +31,9 @@ module CommandDefinitions =
             FieldName = fieldName
             Prefill =
                 match fieldName with
-                | InputField.Business field -> PrefillSource.CurrentField field
-                | InputField.Reason -> PrefillSource.Blank
+                | InputTarget.Field field -> PrefillSource.CurrentField field
+                | InputTarget.Reason -> PrefillSource.Blank
+                | _ -> invalidArg "fieldName" "Expected a business or stewardship scalar."
         }
 
     let private fields values = CommandInputShape.Fields values
@@ -68,11 +65,7 @@ module CommandDefinitions =
                         CorrectionGroupAction.Replace
                         CorrectionGroupAction.Clear
                     ]
-                    [
-                        current (InputField.Business BusinessField.PaymentDecisionDate)
-                        current (InputField.Business BusinessField.PayableAmount)
-                        current (InputField.Business BusinessField.PayableCurrency)
-                    ]
+                    (groupFields FieldGroup.Decision |> List.map current)
                 correctionGroup
                     CorrectionGroup.Payment
                     "group.payment.label"
@@ -82,7 +75,7 @@ module CommandDefinitions =
                         CorrectionGroupAction.Replace
                         CorrectionGroupAction.Clear
                     ]
-                    [ current (InputField.Business BusinessField.PaymentDate) ]
+                    (groupFields FieldGroup.Payment |> List.map current)
             ]
 
     let private definition kind label meaning inputs =
@@ -121,12 +114,7 @@ module CommandDefinitions =
                 (CaseActKind.Business BusinessActKind.Decide)
                 "command.DECIDE.label"
                 "command.DECIDE.meaning"
-                (fields
-                    [
-                        current (InputField.Business BusinessField.PaymentDecisionDate)
-                        current (InputField.Business BusinessField.PayableAmount)
-                        current (InputField.Business BusinessField.PayableCurrency)
-                    ])
+                (fields (groupFields FieldGroup.Decision |> List.map current))
             definition
                 (CaseActKind.Business BusinessActKind.WithdrawDecision)
                 "command.WITHDRAW_DECISION.label"
@@ -136,7 +124,7 @@ module CommandDefinitions =
                 (CaseActKind.Business BusinessActKind.RecordPayment)
                 "command.RECORD_PAYMENT.label"
                 "command.RECORD_PAYMENT.meaning"
-                (fields [ blank (InputField.Business BusinessField.PaymentDate) ])
+                (groupFields FieldGroup.Payment |> List.map blank |> fields)
             definition
                 (CaseActKind.Business BusinessActKind.ClearPayment)
                 "command.CLEAR_PAYMENT.label"
@@ -160,12 +148,12 @@ module CommandDefinitions =
                 (CaseActKind.Stewardship StewardshipActKind.Void)
                 "command.VOID.label"
                 "command.VOID.meaning"
-                (fields [ blank InputField.Reason ])
+                (fields [ blank InputTarget.Reason ])
             definition
                 (CaseActKind.Stewardship StewardshipActKind.Reinstate)
                 "command.REINSTATE.label"
                 "command.REINSTATE.meaning"
-                (fields [ blank InputField.Reason ])
+                (fields [ blank InputTarget.Reason ])
             definition
                 (CaseActKind.Stewardship StewardshipActKind.Erase)
                 "command.ERASE.label"

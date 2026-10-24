@@ -1,6 +1,6 @@
 module ClaimCore.Tests.OperationAuthorityScopeTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System.Threading
 open System.Threading.Tasks
@@ -15,7 +15,12 @@ let private prepare fixture =
         let! admin = caseWorker fixture
 
         for number, reference in [ 11, "CASE-A"; 12, "CASE-B" ] do
-            let! outcome = admin.Execute(openRequest number reference, CancellationToken.None)
+            let! outcome =
+                admin.Execute(
+                    OperationInput.Case(openRequest number reference),
+                    CancellationToken.None
+                )
+
             accepted outcome |> ignore
 
         let principal =
@@ -23,8 +28,10 @@ let private prepare fixture =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.ExecuteAuthority(
-                authorityRequest (id 20) principal AuthorityAct.RegisterActor,
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 20) principal AdmittedAuthorityAct.RegisterActor
+                ),
                 CancellationToken.None
             )
 
@@ -44,14 +51,14 @@ let private existingCaseAuthority (_: MemoryLedgerStore.Store) fixture =
     task {
         let! principal = prepare fixture
 
-        let duplicate =
-            request 12 "CASE-A" 1L (BusinessCommand.AmendRegistration registration)
+        let duplicate = request 12 "CASE-A" 1L (CaseAct.AmendRegistration registration)
 
-        let! current = (core fixture principal).Execute(duplicate, CancellationToken.None)
+        let! current =
+            (core fixture principal).Execute(OperationInput.Case duplicate, CancellationToken.None)
 
         Expect.equal
-            current
-            (ExecuteOutcome.Rejected Rejection.IdempotencyConflict)
+            current.Outcome
+            (ExecuteResult.Rejected Refusal.IdempotencyConflict)
             "A used ID on readable CASE-B is a content conflict for a CASE-A request"
 
         let! read =
@@ -86,7 +93,7 @@ let private existingCaseAuthority (_: MemoryLedgerStore.Store) fixture =
         | CaseReviewDecision.Refuse reason ->
             Expect.equal
                 reason
-                Rejection.ResourceUnavailable
+                Refusal.ResourceUnavailable
                 "Loading only CASE-A grants changes the existing-operation privacy decision"
         | _ -> failtest "Expected the existing-operation scope to require CASE-B authority"
     }

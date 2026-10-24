@@ -31,20 +31,20 @@ const ReceiptView = ({
       <p>
         {p.text("ui.observedReceipt", {
           operationId: receipt.operationId,
-          command: p.actLabel(receipt.act),
+          command: p.actLabel(receipt.scope.act),
           actor: receipt.recordedBy,
         })}
       </p>
-      {receipt.scope === "AUTHORITY" ? (
+      {receipt.scope.kind === "AUTHORITY" ? (
         <p>
           {p.text("ui.authorityReceipt", {
-            act: p.actLabel(receipt.act),
-            actor: receipt.targetActorId,
+            act: p.actLabel(receipt.scope.act),
+            actor: receipt.scope.targetActorId,
           })}
         </p>
       ) : (
         <ReceiptFields
-          receipt={receipt}
+          scope={receipt.scope}
           fields={definition.descriptors.fields}
           context={p.text("ui.observedContext", { operationId: receipt.operationId })}
         />
@@ -68,7 +68,7 @@ export const OperationLookup = ({
   const p = usePresentation();
   const { operationId, setOperationId, receipt, message, loading, observe } =
     useOperationObservation(token, initialOperationId);
-  const invalid = message?.kind === "diagnostic" && message.diagnostic.id === "HOST_INPUTINVALID";
+  const invalid = message?.kind === "diagnostic" && message.diagnostic.code === "INPUT_INVALID";
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (invalid && !loading) {

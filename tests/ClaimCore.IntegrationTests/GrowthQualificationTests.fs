@@ -7,7 +7,7 @@ open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open Expecto
-open ClaimCore.Catalog
+open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Postgres
@@ -34,8 +34,13 @@ let private authority (actor: IActorClaimsCore) principals =
     task {
         for index, principal in principals |> List.indexed do
             let! registered =
-                actor.ExecuteAuthority(
-                    authorityRequest (id (100000 + index * 2)) principal AuthorityAct.RegisterActor,
+                actor.Execute(
+                    OperationInput.Authority(
+                        authorityRequest
+                            (id (100000 + index * 2))
+                            principal
+                            AdmittedAuthorityAct.RegisterActor
+                    ),
                     token
                 )
 
@@ -58,11 +63,13 @@ let private openCases (actor: IActorClaimsCore) count =
         for index in 0 .. count - 1 do
             let! result =
                 actor.Execute(
-                    request
-                        (1000 + index)
-                        ("synthetic-growth-" + string index)
-                        0L
-                        (BusinessCommand.Open registration),
+                    OperationInput.Case(
+                        request
+                            (1000 + index)
+                            ("synthetic-growth-" + string index)
+                            0L
+                            (CaseAct.Open registration)
+                    ),
                     token
                 )
 
@@ -78,17 +85,13 @@ let private writeLane (actor: IActorClaimsCore) workload lane =
             let target = index % workload.Cases
             let revision = revisions[target]
 
-            let command =
-                if revision % 2L = 1L then
-                    BusinessCommand.Close
-                else
-                    BusinessCommand.Reopen
+            let command = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
 
             let authored =
                 request (200000 + index) ("synthetic-growth-" + string target) revision command
 
             let watch = Stopwatch.StartNew()
-            let! result = actor.Execute(authored, token)
+            let! result = actor.Execute(OperationInput.Case authored, token)
             accepted result |> ignore
             durations.Add watch.Elapsed.TotalMilliseconds
             revisions[target] <- revision + 1L
@@ -144,7 +147,7 @@ let private timeout (database: PostgresFixture.Database) =
                 database.Fixture.Owner,
                 id 999999,
                 "synthetic-growth-timeout",
-                (fun _ -> LedgerDecision.Refuse Rejection.ResourceUnavailable),
+                (fun _ -> LedgerDecision.Refuse Refusal.ResourceUnavailable),
                 token
             )
 
@@ -231,7 +234,7 @@ let private measure workload (database: PostgresFixture.Database) =
             )
 
         match history with
-        | QueryOutcome.Succeeded page ->
+        | ReadReply.Succeeded page ->
             Expect.equal
                 page.Entries.Length
                 (min 50 (1 + workload.Writes / workload.Cases))

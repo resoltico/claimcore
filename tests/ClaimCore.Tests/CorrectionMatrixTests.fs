@@ -1,24 +1,24 @@
 module ClaimCore.Tests.CorrectionMatrixTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private decisionWith amount =
-    BusinessCommand.Decide { decision with PayableAmount = amount }
+    CaseAct.Decide { decision with PayableAmount = amount }
 
 let private states () =
     let zero = opened () |> apply (decisionWith "0") |> accepted
 
     [ opened (); decided (); zero; paid () ]
-    |> List.collect (fun claim -> [ claim; claim |> apply BusinessCommand.Close |> accepted ])
+    |> List.collect (fun claim -> [ claim; claim |> apply CaseAct.Close |> accepted ])
 
 let private registrationChoices =
     [
-        RegistrationCorrection.Keep, false
-        RegistrationCorrection.Replace
+        RegistrationGroup.Keep, false
+        RegistrationGroup.Replace
             { registration with
                 ClaimantName = "Synthetic matrix party"
             },
@@ -27,21 +27,21 @@ let private registrationChoices =
 
 let private decisionChoices =
     [
-        DecisionCorrection.Keep, "KEEP"
-        DecisionCorrection.Replace
+        DecisionGroup.Keep, "KEEP"
+        DecisionGroup.Replace
             { decision with
                 PayableAmount = "650.0000"
                 PayableCurrency = "USD"
             },
         "REPLACE"
-        DecisionCorrection.Clear, "CLEAR"
+        DecisionGroup.Clear, "CLEAR"
     ]
 
 let private paymentChoices =
     [
-        PaymentCorrection.Keep, "KEEP"
-        PaymentCorrection.Replace "2026-08-21", "REPLACE"
-        PaymentCorrection.Clear, "CLEAR"
+        PaymentGroup.Keep, "KEEP"
+        PaymentGroup.Replace { PaymentDate = "2026-08-21" }, "REPLACE"
+        PaymentGroup.Clear, "CLEAR"
     ]
 
 let private permitted (fields: CaseFields) registrationChanged decisionMode paymentMode =
@@ -97,7 +97,7 @@ let private checkChoice
     let snapshot = Case.snapshot before
 
     let command =
-        BusinessCommand.CorrectCase
+        CaseAct.CorrectCase
             {
                 Registration = registration
                 Decision = decision
@@ -142,24 +142,24 @@ let private zeroPaid =
         "[CC-DOM-001] explicit paid reaffirmation cannot retain a zero replacement decision"
         (fun () ->
             let command =
-                BusinessCommand.CorrectCase
+                CaseAct.CorrectCase
                     {
-                        Registration = RegistrationCorrection.Keep
-                        Decision = DecisionCorrection.Replace { decision with PayableAmount = "0" }
-                        Payment = PaymentCorrection.Replace "2026-08-20"
+                        Registration = RegistrationGroup.Keep
+                        Decision = DecisionGroup.Replace { decision with PayableAmount = "0" }
+                        Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
                     }
 
             Expect.equal
                 (paid () |> apply command)
-                (Error CaseRefusal.ZeroDecisionCannotBePaid)
+                (Error Refusal.ZeroDecisionCannotBePaid)
                 "No zero payment assertion"
 
             let cleared =
                 match command with
-                | BusinessCommand.CorrectCase value ->
-                    BusinessCommand.CorrectCase
+                | CaseAct.CorrectCase value ->
+                    CaseAct.CorrectCase
                         { value with
-                            Payment = PaymentCorrection.Clear
+                            Payment = PaymentGroup.Clear
                         }
                 | _ -> failtest "Synthetic correction shape"
 

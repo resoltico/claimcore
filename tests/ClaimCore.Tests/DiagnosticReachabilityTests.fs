@@ -1,6 +1,6 @@
 module ClaimCore.Tests.DiagnosticReachabilityTests
 
-open ClaimCore.Catalog
+open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -9,45 +9,78 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
-open ClaimCore.Hosting
 open ClaimCore.TestSupport.StoreContractTests
 open ClaimCore.Tests.ApplicationFixtures
 
 let private ct = CancellationToken.None
 
-let private decision: DecisionInput =
+let private decision: Decision =
     {
         PaymentDecisionDate = "2026-08-15"
         PayableAmount = "750.00"
         PayableCurrency = "EUR"
     }
 
-let private keep: CaseCorrection =
+let private keep: Correction =
     {
-        Registration = RegistrationCorrection.Keep
-        Decision = DecisionCorrection.Keep
-        Payment = PaymentCorrection.Keep
+        Registration = RegistrationGroup.Keep
+        Decision = DecisionGroup.Keep
+        Payment = PaymentGroup.Keep
     }
 
-let private business = CaseAct.Business
+let private correction value = (CaseAct.CorrectCase value)
 
-let private correction value =
-    business (BusinessCommand.CorrectCase value)
+let private payment = (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
 
-let private payment = business (BusinessCommand.RecordPayment "2026-08-20")
-let private decided = business (BusinessCommand.Decide decision)
-let private closed = business BusinessCommand.Close
-let private voided = CaseAct.Stewardship(StewardshipAct.Void "Synthetic reason")
+let private decided = (CaseAct.Decide decision)
+let private closed = CaseAct.Close
+let private voided = (CaseAct.Void "Synthetic reason")
+
+let private baseline =
+    lazy
+        (let path =
+            System.IO.Path.Combine(
+                ClaimCore.TestSupport.RepositoryRoot.find (),
+                "tests/fixtures/refusal-baseline.json"
+            )
+
+         use document = JsonDocument.Parse(System.IO.File.ReadAllBytes path)
+
+         document.RootElement.GetProperty("observations").EnumerateArray()
+         |> Seq.map (fun row ->
+             (row.GetProperty("code").GetString() |> nonNull,
+              row.GetProperty("target").GetString() |> Option.ofObj),
+             (row.GetProperty("action").GetString() |> nonNull))
+         |> Map.ofSeq)
+
+let private baselinePolicy code (reason: Refusal) =
+    match Map.tryFind (code, reason.Field) baseline.Value with
+    | Some action ->
+        Expect.equal (string reason.Action) action "Captured baseline action is preserved."
+    | None ->
+        Expect.contains
+            [ Some "principal.issuer"; Some "principal.subject" ]
+            reason.Field
+            "Only principal targets extend the captured baseline."
+
+        Expect.contains
+            [ "INPUT_TEXT_REQUIRED"; "INPUT_PRINCIPAL_FORMAT" ]
+            code
+            "Only principal admission extends the captured baseline."
+
+        Expect.equal
+            reason.Action
+            RecommendedAction.CorrectInput
+            "Principal admission is repairable input."
 
 let private diagnostic reason =
-    let identifier =
-        RejectionDiagnostics.describe reason |> RejectionDiagnostics.identifier
+    let identifier = (Refusals.row reason).Code
 
-    let reply = OutcomeMapping.caseGet (QueryOutcome.Rejected reason)
-    let encoded = ClaimCore.Wire.Replies.encode reply
+    let reply: ReadReply<CaseReadModel> = ReadReply.Rejected reason
+    let encoded = Codec.encode Api.caseGet.Output reply
 
     Expect.equal
-        (ClaimCore.Wire.Replies.decode ClaimCore.Wire.Endpoint.CaseGet encoded)
+        (Codec.decode Limits.MaximumResponseBytes Api.caseGet.Output encoded)
         (Ok reply)
         "Every request-produced refusal crosses the typed Wire boundary"
 
@@ -57,33 +90,33 @@ let private diagnostic reason =
         document.RootElement
             .GetProperty("outcome")
             .GetProperty("data")
-            .GetProperty("diagnostic")
-            .GetProperty("id")
+            .GetProperty("code")
             .GetString()
 
     Expect.equal
         token
-        (RejectionDiagnosticIds.token identifier)
+        (identifier)
         "The public diagnostic token agrees with the request-producing Application refusal"
 
+    baselinePolicy identifier reason
     identifier, reason.Field
 
-let private refused =
-    function
-    | ExecuteOutcome.Rejected reason -> diagnostic reason
+let private refused (reply: ExecuteReply) =
+    match reply.Outcome with
+    | ExecuteResult.Rejected reason -> diagnostic reason
     | _ -> failtest "The request must produce a public refusal."
 
 let private queryRefused =
     function
-    | QueryOutcome.Rejected reason -> diagnostic reason
+    | ReadReply.Rejected reason -> diagnostic reason
     | _ -> failtest "The query must produce a public refusal."
 
 let private execute actor pending =
-    (actor: IActorClaimsCore).Execute(pending, ct)
+    (actor: IActorClaimsCore).Execute(OperationInput.Case pending, ct)
 
 let private opening values =
     { openRequest 10 "REACH-1" with
-        Act = business (BusinessCommand.Open values)
+        Act = (CaseAct.Open values)
     }
 
 let private textRequests () =
@@ -162,21 +195,21 @@ let private progressRequests () =
             10
             "REACH-1"
             1L
-            (BusinessCommand.Decide
+            (CaseAct.Decide
                 { decision with
                     PaymentDecisionDate = "bad"
                 })
-        request 10 "REACH-1" 1L (BusinessCommand.Decide { decision with PayableAmount = "bad" })
+        request 10 "REACH-1" 1L (CaseAct.Decide { decision with PayableAmount = "bad" })
         request
             10
             "REACH-1"
             1L
-            (BusinessCommand.Decide
+            (CaseAct.Decide
                 { decision with
                     PayableCurrency = "bad"
                 })
-        request 10 "REACH-1" 1L (BusinessCommand.RecordPayment "bad")
-        actRequest 10 "REACH-1" 1L (CaseAct.Stewardship(StewardshipAct.Void ""))
+        request 10 "REACH-1" 1L (CaseAct.RecordPayment { PaymentDate = "bad" })
+        actRequest 10 "REACH-1" 1L ((CaseAct.Void ""))
     ]
 
 let private scalarRequests () =
@@ -201,39 +234,39 @@ let private scalarEvidence () =
 
 let private stateScenarios () =
     [
-        [], business (BusinessCommand.Open registration)
-        [], business BusinessCommand.Reopen
-        [ closed ], business BusinessCommand.Close
+        [], (CaseAct.Open registration)
+        [], CaseAct.Reopen
+        [ closed ], CaseAct.Close
         [ closed ], decided
-        [ decided ], business (BusinessCommand.AmendRegistration registration)
+        [ decided ], (CaseAct.AmendRegistration registration)
         [ decided ],
         correction
             { keep with
-                Registration = RegistrationCorrection.Replace registration
+                Registration = RegistrationGroup.Replace registration
             }
         [],
         correction
             { keep with
-                Decision = DecisionCorrection.Clear
+                Decision = DecisionGroup.Clear
             }
         [], payment
-        [], business BusinessCommand.ClearPayment
+        [], CaseAct.ClearPayment
         [ decided; payment ], payment
-        [ decided; payment ], business BusinessCommand.WithdrawDecision
-        [ business (BusinessCommand.Decide { decision with PayableAmount = "0" }) ], payment
+        [ decided; payment ], CaseAct.WithdrawDecision
+        [ (CaseAct.Decide { decision with PayableAmount = "0" }) ], payment
         [ voided ], closed
         [ voided ], voided
-        [], CaseAct.Stewardship(StewardshipAct.Reinstate "Synthetic reason")
-        [ CaseAct.Stewardship StewardshipAct.Erase ], closed
+        [], (CaseAct.Reinstate "Synthetic reason")
+        [ CaseAct.Erase ], closed
         [ decided; payment ],
         correction
             { keep with
-                Decision = DecisionCorrection.Clear
+                Decision = DecisionGroup.Clear
             }
         [ decided; payment ],
         correction
             { keep with
-                Decision = DecisionCorrection.Replace decision
+                Decision = DecisionGroup.Replace decision
             }
     ]
 
@@ -266,7 +299,7 @@ let private queryEvidence actor =
     task {
         let! limit = (actor: IActorClaimsCore).List({ AfterCursor = None; Limit = 0 }, ct)
         let! cursor = actor.List({ AfterCursor = Some "bad"; Limit = 1 }, ct)
-        let! missing = actor.Get("MISSING", ct)
+        let! missing = actor.Get({ CaseReference = "MISSING" }, ct)
         return [ queryRefused limit; queryRefused cursor; queryRefused missing ]
     }
 
@@ -277,12 +310,13 @@ let private authorityEvidence actor =
             |> Result.defaultWith failtest
 
         let send n target act =
-            (actor: IActorClaimsCore).ExecuteAuthority(authorityRequest (id n) target act, ct)
+            (actor: IActorClaimsCore)
+                .Execute(OperationInput.Authority(authorityRequest (id n) target act), ct)
 
-        let! registered = send 30 owner AuthorityAct.RegisterActor
-        let! unknown = send 31 service (AuthorityAct.SetEnabled false)
-        let! last = send 32 owner (AuthorityAct.SetEnabled false)
-        let! admitted = send 33 service AuthorityAct.RegisterActor
+        let! registered = send 30 owner AdmittedAuthorityAct.RegisterActor
+        let! unknown = send 31 service (AdmittedAuthorityAct.SetEnabled false)
+        let! last = send 32 owner (AdmittedAuthorityAct.SetEnabled false)
+        let! admitted = send 33 service AdmittedAuthorityAct.RegisterActor
         acceptedAuthority admitted
 
         let! human =
@@ -297,14 +331,19 @@ let private identityEvidence actor =
         let! opening = execute actor pending
         accepted opening |> ignore
         let! conflict = execute actor { pending with ExpectedRevision = 1L }
-        let! revision = execute actor (request 11 "REACH-1" 0L BusinessCommand.Close)
+        let! revision = execute actor (request 11 "REACH-1" 0L CaseAct.Close)
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "reader"
             |> Result.defaultWith failtest
 
         let! registered =
-            actor.ExecuteAuthority(authorityRequest (id 35) reader AuthorityAct.RegisterActor, ct)
+            actor.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 35) reader AdmittedAuthorityAct.RegisterActor
+                ),
+                ct
+            )
 
         acceptedAuthority registered
 
@@ -315,6 +354,36 @@ let private identityEvidence actor =
         return [ refused conflict; refused revision ], reader
     }
 
+let private principalEvidence (actor: IActorClaimsCore) =
+    task {
+        let evidence = ResizeArray<_>()
+
+        for index, (issuer, subject) in
+            List.indexed
+                [
+                    "", "valid"
+                    "https://issuer.example/", ""
+                    "invalid", "valid"
+                    "https://issuer.example/", String('x', 513)
+                ] do
+            let request: ClaimCore.Contract.AuthorityRequest =
+                {
+                    OperationId = id (60 + index)
+                    Target =
+                        {
+                            Kind = PrincipalKinds.Human
+                            Issuer = issuer
+                            Subject = subject
+                        }
+                    Act = ClaimCore.Contract.AuthorityAct.RegisterActor
+                }
+
+            let! outcome = actor.Execute(OperationInput.Authority request, ct)
+            evidence.Add(refused outcome)
+
+        return List.ofSeq evidence
+    }
+
 let private boundaryEvidence () =
     task {
         let store, fixture = fixture ()
@@ -322,11 +391,11 @@ let private boundaryEvidence () =
         let! actor = caseWorker fixture
         let! identity, reader = identityEvidence actor
 
-        let! denied =
-            execute (core fixture reader) (request 37 "REACH-1" 1L BusinessCommand.Close)
+        let! denied = execute (core fixture reader) (request 37 "REACH-1" 1L CaseAct.Close)
 
         let! queries = queryEvidence actor
         let! authority = authorityEvidence actor
+        let! principals = principalEvidence actor
         let original = store.Cases.Head.Snapshot
 
         store.ReplaceCaseSnapshot(
@@ -336,8 +405,7 @@ let private boundaryEvidence () =
             }
         )
 
-        let! revision =
-            execute actor (request 40 "REACH-1" Revision.Maximum BusinessCommand.Close)
+        let! revision = execute actor (request 40 "REACH-1" Revision.Maximum CaseAct.Close)
 
         store.ReplaceCaseSnapshot("REACH-1", original)
 
@@ -348,13 +416,14 @@ let private boundaryEvidence () =
                     EntryHash = Array.zeroCreate 32
                 }
 
-        let! ledger = execute actor (request 41 "REACH-1" 1L BusinessCommand.Close)
+        let! ledger = execute actor (request 41 "REACH-1" 1L CaseAct.Close)
 
         return
             identity
             @ [ refused denied; refused revision; refused ledger ]
             @ queries
             @ authority
+            @ principals
     }
 
 let private completeVocabulary () =
@@ -368,7 +437,20 @@ let private completeVocabulary () =
         let evidence = scalar @ List.ofArray states @ boundaries
         let identifiers = evidence |> List.map fst |> Set.ofList
 
-        let expected = RejectionDiagnosticIds.all |> List.map fst |> Set.ofList
+        let baselineCodes = baseline.Value.Keys |> Seq.map fst |> Set.ofSeq
+
+        Expect.equal
+            (Set.ofList Refusals.codes)
+            (Set.add "INPUT_PRINCIPAL_FORMAT" baselineCodes)
+            "The code table preserves every captured refusal with the adopted principal extension."
+
+        let produced = Set.ofList evidence
+
+        Expect.isEmpty
+            (Set.difference (baseline.Value.Keys |> Set.ofSeq) produced |> Set.toList)
+            "Every captured code and target still has a producing request."
+
+        let expected = Refusals.codes |> Set.ofList
 
         Expect.isEmpty
             (Set.difference expected identifiers |> Set.toList)
@@ -419,11 +501,11 @@ let private missingCasePrivacy () =
 
             Expect.equal
                 (refused outcome |> fst)
-                RejectionDiagnosticId.ResourceUnavailable
+                "ACCESS_RESOURCE_UNAVAILABLE"
                 "Missing case stays private"
 
         Expect.isFalse
-            (RejectionDiagnosticIds.all |> List.exists (snd >> (=) "CASE_NOT_FOUND"))
+            (Refusals.codes |> List.contains "CASE_NOT_FOUND")
             "Domain-only missing state has no public diagnostic"
     }
 

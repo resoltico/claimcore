@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../src/api/service";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { generatedResponse } from "./contract-corpus.fixtures";
+import { wireResponse } from "./contract-corpus.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
 import { definition, fields, response, runtime } from "./service-ui.fixtures";
 
@@ -17,7 +17,7 @@ const current: CurrentCase = {
 };
 
 const prepared = () =>
-  response("case.preview", "REVIEWED", {
+  response("operation.preview", "REVIEWED", {
     review: {
       before: current,
       after: {
@@ -50,7 +50,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   const fetch = vi.mocked(globalThis.fetch);
   fetch
     .mockImplementationOnce(previewForRequest(prepared()))
-    .mockResolvedValueOnce(generatedResponse("case.execute"));
+    .mockResolvedValueOnce(wireResponse("operation.execute"));
   const committed = vi.fn();
   render(
     <OperationEditor

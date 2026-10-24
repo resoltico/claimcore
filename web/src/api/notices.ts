@@ -1,5 +1,8 @@
-import type { Fault, HostFailure, Rejection } from "@contracts/client";
-export type Diagnostic = Fault["diagnostic"] | Rejection["diagnostic"] | HostFailure["diagnostic"];
+import type { Diagnostic, Fault, HostFailure } from "@contracts/client";
+export type DiagnosticNotice = {
+  readonly code: Diagnostic["code"] | Fault["code"] | HostFailure["code"];
+  readonly limits: Readonly<Record<string, number | string>>;
+};
 export type LocalNoticeReason =
   | "responseTimeout"
   | "unreachable"
@@ -12,7 +15,7 @@ export type LocalNoticeReason =
   | "outcomeUnknown";
 export type Notice =
   | { readonly kind: "local"; readonly reason: LocalNoticeReason }
-  | { readonly kind: "diagnostic"; readonly diagnostic: Diagnostic }
+  | { readonly kind: "diagnostic"; readonly diagnostic: DiagnosticNotice }
   | { readonly kind: "invalidHttp"; readonly status: number }
   | { readonly kind: "accepted"; readonly operationId: string };
 export const localNotice = (reason: LocalNoticeReason): Notice => ({ kind: "local", reason });
