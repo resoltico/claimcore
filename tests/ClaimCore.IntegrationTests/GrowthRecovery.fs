@@ -177,3 +177,195 @@ let run (database: PostgresFixture.Database) principals =
                 seconds = watch.Elapsed.TotalSeconds
             |}
     }
+
+let private acknowledge (actor: IActorClaimsCore) (reply: ExecuteReply) =
+    task {
+        acceptedAuthority reply
+
+        match reply.RecoveryId with
+        | None -> failtest "Setup execution must retain an acknowledgement identity"
+        | Some key ->
+            let! forgotten = actor.Forget({ RecoveryId = key }, token)
+            Expect.equal forgotten (ReadReply.Succeeded()) "Known setup result acknowledged"
+    }
+
+let private globalActors fixture =
+    task {
+        let! owner = bootstrap fixture
+
+        let! access =
+            grant owner (id 2300000) fixture.Owner Role.CaseHandler GrantTarget.Installation true
+
+        do! acknowledge owner access
+        let actors = ResizeArray<Guid>()
+
+        for index in 0..99 do
+            let principal =
+                PrincipalKey.service "https://issuer.example/" $"global-cap-{index}"
+                |> Result.defaultWith failtest
+
+            let actorId = id (2400000 + index)
+
+            let! registered =
+                owner.Execute(
+                    OperationInput.Authority(
+                        authorityRequest actorId principal AdmittedAuthorityAct.RegisterActor
+                    ),
+                    token
+                )
+
+            do! acknowledge owner registered
+
+            let! granted =
+                grant
+                    owner
+                    (id (2410000 + index))
+                    principal
+                    Role.CaseHandler
+                    GrantTarget.Installation
+                    true
+
+            do! acknowledge owner granted
+            actors.Add actorId
+
+        return owner, actors.ToArray()
+    }
+
+let private globalSeedRecord
+    (database: PostgresFixture.Database)
+    (actors: Guid array)
+    security
+    instant
+    index
+    =
+    let reference = $"GLOBAL-SEED-{index}"
+
+    let input =
+        OperationInput.Case(request (2500000 + index) reference 0L (CaseAct.Open registration))
+
+    let envelope = ExecutionEnvelope.Create input
+
+    let caseId =
+        ClaimCore.RecordFormat.CaseReferenceId.encode database.Fixture.InstallationId reference
+
+    let record =
+        RecoveryRows.metadata (Guid.NewGuid()) actors[index / 100] (Some caseId) None instant input
+
+    let protectedBody =
+        security.Protect
+            (RecoveryRows.purpose database.Fixture.InstallationId record)
+            envelope.Bytes
+
+    { record with
+        ProtectedBody = protectedBody
+    }
+
+let private seedGlobalRows (database: PostgresFixture.Database) (actors: Guid array) =
+    task {
+        let security = PostgresFixture.recoveryProtection().Value
+        security.Prepare()
+
+        return!
+            DatabaseSession.transaction
+                database.OwnerSource
+                System.Data.IsolationLevel.ReadCommitted
+                token
+                (fun connection transaction ->
+                    task {
+                        let! _, instant, _ = Transactions.head connection token
+                        let keys = ResizeArray<Guid>()
+
+                        for index in 0..9998 do
+                            let record = globalSeedRecord database actors security instant index
+                            let! _ = RecoveryRows.insert connection record token
+
+                            keys.Add record.Item.RecoveryId
+
+                        do! transaction.CommitAsync token
+                        return keys.ToArray()
+                    })
+    }
+
+let private globalContenders (owner: IActorClaimsCore) =
+    task {
+        let! replies =
+            Task.WhenAll
+                [|
+                    owner.Execute(
+                        OperationInput.Case(
+                            request 2600000 "GLOBAL-CONTENDER-A" 0L (CaseAct.Open registration)
+                        ),
+                        token
+                    )
+                    owner.Execute(
+                        OperationInput.Case(
+                            request 2600001 "GLOBAL-CONTENDER-B" 0L (CaseAct.Open registration)
+                        ),
+                        token
+                    )
+                |]
+
+        let accepted =
+            replies
+            |> Array.filter (fun reply ->
+                match reply.Outcome with
+                | ExecuteResult.Accepted _ -> true
+                | _ -> false)
+            |> Array.length
+
+        let refused =
+            replies
+            |> Array.filter (fun reply ->
+                reply.Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
+                && reply.RecoveryId.IsNone)
+            |> Array.length
+
+        Expect.equal
+            (accepted, refused)
+            (1, 1)
+            "The last global slot has exactly one winner while both contenders are below their actor cap"
+
+        let! excess =
+            owner.Execute(
+                OperationInput.Case(
+                    request 2600002 "GLOBAL-CONTENDER-C" 0L (CaseAct.Open registration)
+                ),
+                token
+            )
+
+        Expect.equal
+            excess.Outcome
+            (ExecuteResult.Failed CoreFault.StoreUnavailable)
+            "Global-full admission rejects an actor with only one retained request"
+    }
+
+/// Complement the full-path 10k fill with an independent last-global-slot rejecting control.
+let qualifyGlobalBound (database: PostgresFixture.Database) =
+    task {
+        let! owner, actors = globalActors database.Fixture
+        let! keys = seedGlobalRows database actors
+        let! before = head database
+        do! globalContenders owner
+        let! after = head database
+
+        Expect.equal
+            after
+            (before + 1L)
+            "Only the one admitted contender reaches business acceptance"
+
+        let! rows = count database
+        Expect.equal rows 10000L "The installation cap never overshoots"
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! retained =
+            DatabaseSession.rows
+                connection
+                "SELECT count(*) FROM claimcore.recovery_requests WHERE recovery_id=ANY($1)"
+                [| box keys |]
+                token
+
+        Expect.equal
+            (DatabaseSession.value<int64> 0 retained.Head)
+            9999L
+            "No live submitted request is silently evicted"
+    }

@@ -10,8 +10,17 @@ open ClaimCore.Contract
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreContractTests
 
-type private AfterRecoveryStage
-    (inner: ILedgerStore, after: unit -> System.Threading.Tasks.Task<unit>) =
+type private SubmissionInterleaving
+    (
+        inner: ILedgerStore,
+        after: unit -> System.Threading.Tasks.Task<unit>,
+        ?afterLoad: unit -> System.Threading.Tasks.Task<unit>,
+        ?beforeCaseDecision: unit -> unit
+    ) =
+    let afterLoad =
+        defaultArg afterLoad (fun () -> System.Threading.Tasks.Task.FromResult())
+
+    let beforeCaseDecision = defaultArg beforeCaseDecision ignore
     let mutable businessAttempts = 0
 
     let finish pending =
@@ -36,7 +45,17 @@ type private AfterRecoveryStage
             member _.Pending(actor, after, limit, ct) =
                 inner.Recovery.Pending(actor, after, limit, ct)
 
-            member _.Load(actor, request, ct) = inner.Recovery.Load(actor, request, ct)
+            member _.Load(actor, request, ct) =
+                task {
+                    let! result = inner.Recovery.Load(actor, request, ct)
+
+                    match result with
+                    | Ok(Some _) -> do! afterLoad ()
+                    | _ -> ()
+
+                    return result
+                }
+
             member _.Forget(actor, id, ct) = inner.Recovery.Forget(actor, id, ct)
             member _.Retained(actor, id, ct) = inner.Recovery.Retained(actor, id, ct)
         }
@@ -48,7 +67,17 @@ type private AfterRecoveryStage
 
         member _.WriteCase(principal, id, reference, decide, ct) =
             businessAttempts <- businessAttempts + 1
-            inner.WriteCase(principal, id, reference, decide, ct)
+
+            inner.WriteCase(
+                principal,
+                id,
+                reference,
+                (fun view ->
+                    let decision = decide view
+                    beforeCaseDecision ()
+                    decision),
+                ct
+            )
 
         member _.WriteAuthority(principal, id, target, reference, decide, ct) =
             businessAttempts <- businessAttempts + 1
@@ -312,7 +341,7 @@ let private revokeBetweenTransactions (database: PostgresFixture.Database) =
                 acceptedAuthority result
             }
 
-        let store = AfterRecoveryStage(database.Fixture.Store, revoke) :> ILedgerStore
+        let store = SubmissionInterleaving(database.Fixture.Store, revoke) :> ILedgerStore
 
         let caller =
             Core.create
@@ -1034,7 +1063,7 @@ let private acceptedReplayAfterKeyLoss (database: PostgresFixture.Database) =
 
 let private noAuthoritySubmission
     (database: PostgresFixture.Database)
-    (observed: AfterRecoveryStage)
+    (observed: SubmissionInterleaving)
     =
     task {
         Expect.equal
@@ -1066,7 +1095,7 @@ let private absentAuthorityTarget (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let observed =
-            AfterRecoveryStage(
+            SubmissionInterleaving(
                 database.Fixture.Store,
                 fun () -> System.Threading.Tasks.Task.FromResult()
             )
@@ -1176,11 +1205,512 @@ let private replayNeedsNoOperationalCommit (database: PostgresFixture.Database) 
             "No journal or ledger COMMIT is dispatched for read-only replay"
     }
 
+let private raceCase fixture reference =
+    task {
+        let! actor = caseWorker fixture
+
+        let! steward =
+            grant actor (id 2700000) fixture.Owner Role.DataSteward GrantTarget.Installation true
+
+        acceptedAuthority steward
+
+        let! opened =
+            actor.Execute(
+                OperationInput.Case(request 2700001 reference 0L (CaseAct.Open registration)),
+                token
+            )
+
+        accepted opened |> ignore
+        return actor
+    }
+
+let private probeCore (database: PostgresFixture.Database) (probe: SubmissionInterleaving) =
+    Core.create
+        database.Fixture.InstallationId
+        (probe :> ILedgerStore)
+        database.Fixture.Calendar
+        database.Fixture.Owner
+
+let private releaseAfterControl release (pending: System.Threading.Tasks.Task<'T>) control =
+    task {
+        let! failure =
+            task {
+                try
+                    do! control ()
+                    return None
+                with error ->
+                    return Some error
+            }
+
+        release ()
+        let! result = pending.WaitAsync(TimeSpan.FromSeconds 15.)
+        return result, failure
+    }
+
+let private erasedWithoutCopies (database: PostgresFixture.Database) reference =
+    task {
+        let! view =
+            database.Fixture.Store.ReadCase(database.Fixture.Owner, None, reference, token)
+
+        match view with
+        | Ok { Case = Some record } ->
+            Expect.equal record.Snapshot.View CaseView.Erased "The tombstone remains authoritative"
+        | _ -> failtest "Erased case missing"
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "SELECT count(*) FROM claimcore.recovery_requests WHERE case_reference=$1"
+                [| box reference |]
+                token
+
+        Expect.equal
+            (DatabaseSession.value<int64> 0 rows.Head)
+            0L
+            "No live recovery copy survived or was restored"
+    }
+
+let private waitForHead (database: PostgresFixture.Database) =
+    task {
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+        let watch = Diagnostics.Stopwatch.StartNew()
+        let mutable waiting = 0L
+
+        while waiting = 0L && watch.Elapsed < TimeSpan.FromSeconds 3. do
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    "SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE 'SELECT sequence,entry_hash,observed_at FROM claimcore.lock_ledger_head%'"
+                    [||]
+                    token
+
+            waiting <- DatabaseSession.value<int64> 0 rows.Head
+
+            if waiting = 0L then
+                do! System.Threading.Tasks.Task.Delay 10
+
+        Expect.isGreaterThan
+            waiting
+            0L
+            "The intended stage is actually waiting behind the erasure head lock"
+    }
+
+let private stageThenErase (database: PostgresFixture.Database) =
+    task {
+        let reference = "STAGE-BEFORE-ERASE"
+        let! actor = raceCase database.Fixture reference
+        let barrier = SubmissionStorage.Barrier(database.Fixture.Store, id 2700002)
+        let fixture = database.Fixture
+
+        let writer =
+            Core.create fixture.InstallationId barrier.Store fixture.Calendar fixture.Owner
+
+        let pending =
+            writer.Execute(
+                OperationInput.Case(
+                    request 2700002 reference 1L (CaseAct.AmendRegistration registration)
+                ),
+                token
+            )
+
+        let! outcome, failure =
+            releaseAfterControl barrier.Release pending (fun () ->
+                task {
+                    do! barrier.Staged.WaitAsync(TimeSpan.FromSeconds 5.)
+
+                    let! erased =
+                        actor.Execute(
+                            OperationInput.Case(request 2700003 reference 1L CaseAct.Erase),
+                            token
+                        )
+
+                    accepted erased |> ignore
+                })
+
+        failure |> Option.iter raise
+
+        Expect.equal
+            outcome.Outcome
+            (ExecuteResult.Rejected Refusal.CaseErased)
+            "A committed earlier stage cannot authorize acceptance after erasure"
+
+        Expect.isNone outcome.RecoveryId "Erasure removed the in-flight request's retained copy"
+        do! erasedWithoutCopies database reference
+    }
+
+let private caseAmend actor number reference revision =
+    (actor: IActorClaimsCore)
+        .Execute(
+            OperationInput.Case(
+                request number reference revision (CaseAct.AmendRegistration registration)
+            ),
+            token
+        )
+
+let private headPause (release: ManualResetEventSlim) =
+    let entered =
+        System.Threading.Tasks.TaskCompletionSource(
+            System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously
+        )
+
+    let pause () =
+        entered.TrySetResult() |> ignore
+
+        if not (release.Wait(TimeSpan.FromSeconds 10.)) then
+            failtest "Erasure release deadline"
+
+    entered.Task, pause
+
+let private loadPause () =
+    let ready =
+        System.Threading.Tasks.TaskCompletionSource(
+            System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously
+        )
+
+    let release =
+        System.Threading.Tasks.TaskCompletionSource(
+            System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously
+        )
+
+    let pause () =
+        task {
+            ready.TrySetResult() |> ignore
+            do! release.Task
+        }
+
+    ready.Task, (fun () -> release.TrySetResult() |> ignore), pause
+
+let private eraseThenStage (database: PostgresFixture.Database) =
+    task {
+        let reference = "ERASE-BEFORE-STAGE"
+        let! _ = raceCase database.Fixture reference
+
+        use release = new ManualResetEventSlim()
+        let entered, pause = headPause release
+
+        let eraserProbe =
+            SubmissionInterleaving(
+                database.Fixture.Store,
+                (fun () -> System.Threading.Tasks.Task.FromResult()),
+                beforeCaseDecision = pause
+            )
+
+        let writerProbe =
+            SubmissionInterleaving(
+                database.Fixture.Store,
+                fun () -> System.Threading.Tasks.Task.FromResult()
+            )
+
+        let erasing =
+            (probeCore database eraserProbe)
+                .Execute(OperationInput.Case(request 2700003 reference 1L CaseAct.Erase), token)
+
+        let mutable writing = None
+
+        let! erased, failure =
+            releaseAfterControl release.Set erasing (fun () ->
+                task {
+                    do! entered.WaitAsync(TimeSpan.FromSeconds 5.)
+
+                    writing <-
+                        Some(caseAmend (probeCore database writerProbe) 2700002 reference 1L)
+
+                    do! waitForHead database
+                })
+
+        failure |> Option.iter raise
+
+        let! outcome =
+            writing
+            |> Option.defaultWith (fun () -> failtest "Stage contender was never dispatched")
+
+        accepted erased |> ignore
+
+        Expect.equal
+            outcome.Outcome
+            (ExecuteResult.Rejected Refusal.CaseErased)
+            "The stage waiting for erasure sees the committed tombstone"
+
+        Expect.equal
+            writerProbe.BusinessAttempts
+            0
+            "Refused late staging never enters business acceptance"
+
+        do! erasedWithoutCopies database reference
+    }
+
+let private loadedRetryThenErase (database: PostgresFixture.Database) =
+    task {
+        let reference = "RETRY-BEFORE-ERASE"
+        let! actor = raceCase database.Fixture reference
+
+        let! submitted =
+            actor.Execute(
+                OperationInput.Case(
+                    request 2700002 reference 999L (CaseAct.AmendRegistration registration)
+                ),
+                token
+            )
+
+        let ready, release, pause = loadPause ()
+
+        let probe =
+            SubmissionInterleaving(
+                database.Fixture.Store,
+                (fun () -> System.Threading.Tasks.Task.FromResult()),
+                afterLoad = pause
+            )
+
+        let pending =
+            (probeCore database probe)
+                .Retry(
+                    {
+                        RecoveryId = submitted.RecoveryId.Value
+                        OperationId = submitted.OperationId
+                    },
+                    token
+                )
+
+        let! outcome, failure =
+            releaseAfterControl release pending (fun () ->
+                task {
+                    do! ready.WaitAsync(TimeSpan.FromSeconds 5.)
+
+                    let! erased =
+                        actor.Execute(
+                            OperationInput.Case(request 2700003 reference 1L CaseAct.Erase),
+                            token
+                        )
+
+                    accepted erased |> ignore
+                })
+
+        failure |> Option.iter raise
+
+        Expect.equal
+            outcome.Outcome
+            (ExecuteResult.Rejected Refusal.CaseErased)
+            "A decrypted in-flight retry cannot restore erased content"
+
+        Expect.equal probe.BusinessAttempts 0 "Retry must pass fresh staging before transaction B"
+        do! erasedWithoutCopies database reference
+    }
+
+let private recoveryHttp
+    (host: ClaimCore.WebTests.TestServerFixture.Host)
+    csrf
+    (endpoint: Endpoint<'Input, 'Output>)
+    input
+    =
+    task {
+        let! status, bytes =
+            host.Call(endpoint.Id, endpoint.Input.Write input |> WireWriter.bytes, csrf)
+
+        Expect.equal status 200 "Recovery HTTP outcome is typed"
+
+        let output =
+            StrictJson.read 100000 bytes
+            |> Result.bind (endpoint.Output.Read "$")
+            |> Result.defaultWith (fun _ ->
+                failtest "Published recovery reply codec rejected the response")
+
+        Expect.isFalse
+            (Encoding.UTF8.GetString(bytes).Contains "Superseded synthetic name")
+            "Historical claimant text never crosses this boundary"
+
+        return output
+    }
+
+let private recoveryHuman (database: PostgresFixture.Database) =
+    task {
+        let! admin = caseWorker database.Fixture
+
+        let principal =
+            PrincipalKey.human
+                ClaimCore.WebTests.TestServerFixture.oidc.Issuer.AbsoluteUri
+                "synthetic-human"
+            |> Result.defaultWith failtest
+
+        let! registered =
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 2800000) principal AdmittedAuthorityAct.RegisterActor
+                ),
+                token
+            )
+
+        acceptedAuthority registered
+
+        let! granted =
+            grant admin (id 2800001) principal Role.CaseRegistrar GrantTarget.Installation true
+
+        acceptedAuthority granted
+        return admin, principal
+    }
+
+let private supersededRecovery admin (host: ClaimCore.WebTests.TestServerFixture.Host) csrf =
+    task {
+        let original =
+            request
+                2800002
+                "RECOVERY-DISCLOSURE"
+                0L
+                (CaseAct.Open
+                    { registration with
+                        ClaimantName = "Superseded synthetic name"
+                    })
+        // The first accepted receipt may disclose the current assertion; later recovery must not.
+        let! status, bytes =
+            host.Call(
+                Api.operationExecute.Id,
+                Api.operationExecute.Input.Write(OperationInput.Case original)
+                |> WireWriter.bytes,
+                csrf
+            )
+
+        Expect.equal status 200 "Original browser submission"
+
+        let submitted =
+            StrictJson.read 100000 bytes
+            |> Result.bind (Api.operationExecute.Output.Read "$")
+            |> Result.defaultWith (fun _ -> failtest "Execute reply")
+
+        accepted submitted |> ignore
+
+        let! changed = caseAmend admin 2800003 original.CaseReference 1L
+
+        accepted changed |> ignore
+
+        let selected =
+            {
+                RecoveryId = submitted.RecoveryId.Value
+                OperationId = submitted.OperationId
+            }
+
+        let! replay = recoveryHttp host csrf Api.operationRetry selected
+
+        match replay.Outcome with
+        | ExecuteResult.AlreadyAccepted receipt ->
+            Expect.equal
+                (caseReceipt receipt).Snapshot
+                SnapshotDisclosure.Withheld
+                "Registrar retry withholds superseded receipt fields"
+        | _ -> failtest "Expected authorized exact replay"
+
+        return selected
+    }
+
+let private currentOnlyRecovery admin principal host csrf (selected: RecoveryRequest) =
+    task {
+        let! reader =
+            grant admin (id 2800004) principal Role.CaseReader GrantTarget.Installation true
+
+        acceptedAuthority reader
+
+        let! revoked =
+            grant admin (id 2800005) principal Role.CaseRegistrar GrantTarget.Installation false
+
+        acceptedAuthority revoked
+
+        let! listed =
+            recoveryHttp host csrf Api.operationPending { AfterCursor = None; Limit = 50 }
+
+        match listed with
+        | ReadReply.Succeeded page ->
+            let item =
+                page.Items |> List.find (fun item -> item.RecoveryId = selected.RecoveryId)
+
+            Expect.equal
+                item.Offers
+                [ RecoveryOffer.Forget ]
+                "Current-only reader cannot replay an old registration assertion"
+        | _ -> failtest "Current-only actor can inspect its metadata"
+
+        let! denied = recoveryHttp host csrf Api.operationRetry selected
+
+        Expect.equal
+            denied.Outcome
+            (ExecuteResult.Rejected Refusal.ResourceUnavailable)
+            "Current-only reader lacks fresh execution authority"
+    }
+
+let private disabledRecovery
+    (admin: IActorClaimsCore)
+    principal
+    host
+    csrf
+    (selected: RecoveryRequest)
+    =
+    task {
+        let! disabled =
+            admin.Execute(
+                OperationInput.Authority(
+                    authorityRequest (id 2800006) principal (AdmittedAuthorityAct.SetEnabled false)
+                ),
+                token
+            )
+
+        acceptedAuthority disabled
+
+        let! listed =
+            recoveryHttp host csrf Api.operationPending { AfterCursor = None; Limit = 50 }
+
+        Expect.equal
+            listed
+            (ReadReply.Rejected Refusal.ResourceUnavailable)
+            "Disabled authenticated caller receives no metadata"
+
+        let! denied = recoveryHttp host csrf Api.operationRetry selected
+
+        Expect.equal
+            denied.Outcome
+            (ExecuteResult.Rejected Refusal.ResourceUnavailable)
+            "Disabled actor cannot replay retained intent"
+    }
+
+let private recoveryDisclosure (database: PostgresFixture.Database) =
+    task {
+        let! admin, principal = recoveryHuman database
+
+        use host =
+            new ClaimCore.WebTests.TestServerFixture.Host(true, forActor = core database.Fixture)
+
+        let! status, _ = host.Login()
+        Expect.equal status 200 "Synthetic OIDC browser authenticated"
+        let! csrf = host.Token()
+        let! selected = supersededRecovery admin host csrf
+        do! currentOnlyRecovery admin principal host csrf selected
+        do! disabledRecovery admin principal host csrf selected
+        let! verified = Verification.verify database.OwnerSource None token
+
+        Expect.equal
+            (VerificationSupport.position verified).Sequence
+            10L
+            "Recovery reads and refused retries never append ledger entries"
+    }
+
 [<Tests>]
 let tests =
     testList
         "protected recovery at the real database boundary"
         [
+            testCaseAsync
+                "recovery enforces superseded disclosure current authority and disabled actors over HTTP"
+                (run recoveryDisclosure)
+            testCaseAsync
+                "stage commit before erasure cannot later accept or restore content"
+                (run stageThenErase)
+            testCaseAsync
+                "erasure commit before a waiting stage forbids a new copy"
+                (run eraseThenStage)
+            testCaseAsync
+                "erasure wins against an already loaded opaque retry"
+                (run loadedRetryThenErase)
+            testCaseAsync
+                "global cap rejects below-actor-cap contenders for the final slot"
+                (run GrowthRecovery.qualifyGlobalBound)
             testCaseAsync
                 "exact accepted replay dispatches no operational commit"
                 (run replayNeedsNoOperationalCommit)

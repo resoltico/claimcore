@@ -29,6 +29,13 @@ let private connectionString (database: PostgresFixture.Database) =
     settings.Password <- "synthetic-only"
     settings.ConnectionString
 
+let private configuredRuntime
+    (result: Result<ClaimCore.Web.Composition.IRuntime, ClaimCore.Application.RuntimeOpenFault>)
+    =
+    let runtime = result |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+    runtime.ConfigureRecoveryProtection(PostgresFixture.recoveryProtection().Value)
+    runtime
+
 let private call (runtime: ClaimCore.Web.Composition.IRuntime) principal action =
     task {
         let! result = runtime.WithActor(principal, action)
@@ -53,7 +60,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         let! first =
             ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
-        use first = first |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+        use first = configuredRuntime first
 
         let! page =
             call first database.Fixture.Owner (fun actor ->
@@ -78,8 +85,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         let! second =
             ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
-        use second =
-            second |> Result.defaultWith (fun _ -> failtest "Second runtime refused")
+        use second = configuredRuntime second
 
         let! continued =
             call second database.Fixture.Owner (fun actor ->
@@ -97,7 +103,7 @@ let private readinessCancellation database =
         let! opened =
             ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
 
-        use runtime = opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+        use runtime = configuredRuntime opened
         use! owner = database.OwnerSource.OpenConnectionAsync token
         use! transaction = owner.BeginTransactionAsync token
 
@@ -157,8 +163,7 @@ let tests =
                                 (connectionString database)
                                 token
 
-                        use runtime =
-                            opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+                        use runtime = configuredRuntime opened
 
                         Expect.isLessThan
                             started.Elapsed.TotalSeconds
@@ -196,8 +201,7 @@ let tests =
                                 (connectionString database)
                                 token
 
-                        use runtime =
-                            opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+                        use runtime = configuredRuntime opened
 
                         Expect.equal runtime.BusinessTimeZone "Etc/UTC" "Stored calendar"
 
@@ -313,8 +317,7 @@ let tests =
                                 (connectionString database)
                                 token
 
-                        use runtime =
-                            opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+                        use runtime = configuredRuntime opened
 
                         use! holder = database.OwnerSource.OpenConnectionAsync()
                         use! transaction = holder.BeginTransactionAsync()

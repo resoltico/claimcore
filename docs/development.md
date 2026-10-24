@@ -126,7 +126,9 @@ explicit same-case/revocation conflicts protect accepted-count evidence; normal 
 exercise turnover. All nine profiles are required once per qualified database; iteration selectors never satisfy the
 gate. Reports in ignored artifacts/verification/growth record exact revision/dirty state, counts, p50/p95/p99,
 throughput, journal/session latency, verifier memory/time and DB temporary work. Unmeasured head wait/hold metrics
-remain explicit. These measurements promise no production SLA or constant total-system memory.
+remain explicit. A separate comparison fixes history at 1,000 case entries plus three authority entries while varying
+case cardinality across 1/100/1,000; its verifier time and sampled memory are recorded in cardinality.json. These
+measurements promise no production SLA or constant total-system memory.
 Native-language/assistive-technology review remains human.
 
 Private-file ABI jobs require actual Linux x64/arm64 glibc and macOS x64/arm64 runs. The stat layouts (size/mode offset

@@ -42,7 +42,7 @@ let private head (fixture: PublishedFixture.Fixture) =
     Expect.equal result.ExitCode 0 "Owner reads the actual ledger head"
     result.StandardOutput
 
-let private pending (fixture: PublishedFixture.Fixture) =
+let private pendingWith (fixture: PublishedFixture.Fixture) environment =
     let items = ResizeArray<JsonElement>()
     let seen = Collections.Generic.HashSet<string>()
     let mutable cursor: string option = None
@@ -55,7 +55,7 @@ let private pending (fixture: PublishedFixture.Fixture) =
                |> Option.map (fun value -> [ "--cursor"; value ])
                |> Option.defaultValue [])
 
-        let page = verb fixture fixture.Environment arguments 0 |> require "SUCCEEDED"
+        let page = verb fixture environment arguments 0 |> require "SUCCEEDED"
 
         for item in page.GetProperty("items").EnumerateArray() do
             items.Add(item.Clone())
@@ -70,6 +70,8 @@ let private pending (fixture: PublishedFixture.Fixture) =
             cursor <- Some value
 
     List.ofSeq items
+
+let private pending (fixture: PublishedFixture.Fixture) = pendingWith fixture fixture.Environment
 
 let private selected fixture (submitted: Submitted) =
     let item =
@@ -219,13 +221,16 @@ let private armResponseLoss (fixture: PublishedFixture.Fixture) =
     |> FixtureFiles.text fixture.Directory "redirect-control.json"
     |> ignore
 
-let private originalAcceptance (fixture: PublishedFixture.Fixture) =
+let private originalReply (fixture: PublishedFixture.Fixture) =
     use evidence =
         JsonDocument.Parse(
             File.ReadAllBytes(Path.Combine(fixture.Directory, "redirect-evidence.json"))
         )
 
-    let reply = evidence.RootElement.GetProperty "reply"
+    evidence.RootElement.GetProperty("reply").Clone()
+
+let private originalAcceptance fixture =
+    let reply = originalReply fixture
 
     Expect.equal
         (reply.GetProperty("outcome").GetProperty("tag").GetString())
@@ -269,8 +274,196 @@ let private responseLoss (fixture: PublishedFixture.Fixture) =
         acknowledged fixture submitted
     }
 
+let private steward fixture =
+    interactiveEnvironment fixture "synthetic-steward" "valid"
+
+let private retainOtherActor (fixture: PublishedFixture.Fixture) opened =
+    let source = JsonNode.Parse(opened.Bytes: byte array) |> nonNull
+    let input = source["input"] |> nonNull
+    let operation = id ()
+    input["operationId"] <- JsonValue.Create operation
+    input["expectedRevision"] <- JsonValue.Create 1L
+    let act = input["act"] |> nonNull
+    act["kind"] <- JsonValue.Create "AMEND_REGISTRATION"
+    let values = act["values"] |> nonNull
+    values["claimantName"] <- JsonValue.Create "Synthetic unconfirmed correction"
+    let intercepted = fixture.ArmJournalReplyLoss()
+
+    run fixture fixture.Environment (Encoding.UTF8.GetBytes(source.ToJsonString())) 3
+    |> require "FAILED"
+    |> ignore
+
+    Expect.isTrue
+        (intercepted.Wait(TimeSpan.FromSeconds 5.))
+        "Other actor's protected case body was journaled without acceptance"
+
+    Expect.isTrue
+        (pending fixture
+         |> List.exists (fun item -> field "operationId" item = operation))
+        "The other actor retains a case recovery copy before erasure"
+
+let private eraseRequest fixture =
+    let opened = authored fixture
+    run fixture fixture.Environment opened.Bytes 0 |> require "ACCEPTED" |> ignore
+    retainOtherActor fixture opened
+    let operation = id ()
+
+    { opened with
+        OperationId = operation
+        Bytes =
+            frame
+                "operation.execute"
+                {|
+                    scope = "CASE"
+                    operationId = operation
+                    caseReference = opened.Reference
+                    expectedRevision = 1L
+                    act = {| kind = "ERASE" |}
+                |}
+    }
+
+let private stageErasure (fixture: PublishedFixture.Fixture) submitted =
+    let intercepted = fixture.ArmJournalReplyLoss()
+    run fixture (steward fixture) submitted.Bytes 3 |> require "FAILED" |> ignore
+
+    Expect.isTrue
+        (intercepted.Wait(TimeSpan.FromSeconds 5.))
+        "Erasure journal persisted before its confirmation was lost"
+
+    let row =
+        pendingWith fixture (steward fixture)
+        |> List.find (fun item -> field "operationId" item = submitted.OperationId)
+
+    Expect.equal (field "act" row) "ERASE" "Original erasure metadata retained"
+
+    Expect.equal
+        (row.GetProperty("expectedRevision").GetInt64())
+        1L
+        "Erasure retains its original expected revision"
+
+    field "recoveryId" row
+
+let private savedRetry submitted (result: ProcessRunner.Result) =
+    let reply = parse 4 result
+
+    Expect.equal
+        (field "operationId" reply)
+        submitted.OperationId
+        "Uncertainty retains the original erasure identity"
+
+    let lines =
+        UTF8Encoding(false, true).GetString(result.StandardError).TrimEnd('\n').Split('\n')
+
+    let saved = Encoding.UTF8.GetBytes lines[lines.Length - 1]
+
+    let canonical bytes =
+        ClaimCore.Contract.Frames.admit bytes
+        |> Result.defaultWith (fun _ -> failtest "Owned erasure frame must be admitted")
+        |> ClaimCore.Contract.Frames.encodeInvocation
+
+    Expect.isTrue
+        (saved = canonical submitted.Bytes)
+        "The actual stderr frame preserves exact frozen erasure input"
+
+    saved
+
+let private erasureGone fixture submitted =
+    let rows = pendingWith fixture (steward fixture)
+
+    Expect.isFalse
+        (rows
+         |> List.exists (fun item -> field "caseReference" item = submitted.Reference))
+        "Both actors case recovery copies, including erasure itself, are removed"
+
+    let tombstone =
+        human
+            fixture
+            "synthetic-steward"
+            "case.get"
+            {|
+                caseReference = submitted.Reference
+            |}
+            0
+        |> require "SUCCEEDED"
+
+    Expect.equal
+        (tombstone.GetProperty("state").GetProperty("tag").GetString())
+        "ERASED"
+        "Observed tombstone proves erasure, not frozen byte equality"
+
+    Expect.equal
+        (tombstone.GetProperty("revision").GetInt64())
+        2L
+        "Erasure appended exactly one revision"
+
+    let observed =
+        human
+            fixture
+            "synthetic-steward"
+            "operation.observe"
+            {|
+                operationId = submitted.OperationId
+            |}
+            0
+        |> require "SUCCEEDED"
+
+    Expect.equal
+        (observed.GetProperty("scope").GetProperty("snapshot").GetProperty("disclosure").GetString())
+        "ERASED"
+        "Observation exposes no erased payload"
+
+let private eraseResponseLoss (fixture: PublishedFixture.Fixture) =
+    task {
+        let submitted = eraseRequest fixture
+        let recoveryId = stageErasure fixture submitted
+        armResponseLoss fixture
+        let lost = invoke fixture (steward fixture) [ "call" ] submitted.Bytes 4
+        let saved = savedRetry submitted lost
+        let accepted = originalAcceptance fixture
+
+        Expect.equal
+            ((originalReply fixture).GetProperty("recoveryId").ValueKind)
+            JsonValueKind.Null
+            "Erasure returns no retained recovery locator"
+
+        Expect.equal
+            (field "act" (accepted.GetProperty "scope"))
+            "ERASE"
+            "Real backend accepted erasure before reply loss"
+
+        do! fixture.RestartWeb()
+        erasureGone fixture submitted
+        let before = head fixture
+        let unresolved = invoke fixture (steward fixture) [ "call"; "--retry" ] saved 4
+        savedRetry submitted unresolved |> ignore
+
+        let opaque =
+            human
+                fixture
+                "synthetic-steward"
+                "operation.retry"
+                {|
+                    recoveryId = recoveryId
+                    operationId = submitted.OperationId
+                |}
+                4
+
+        Expect.equal
+            (field "operationId" opaque)
+            submitted.OperationId
+            "Missing recovery cannot replace the original identity"
+
+        Expect.equal
+            (head fixture)
+            before
+            "Neither retry nor observation restores erased bytes or appends acceptance"
+
+        erasureGone fixture submitted
+    }
+
 let qualify fixture =
     task {
         do! journalLoss fixture
         do! responseLoss fixture
+        do! eraseResponseLoss fixture
     }

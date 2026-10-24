@@ -225,6 +225,48 @@ type Fixture() =
             do! awaitReady http origin replacement
         }
 
+    member _.WithAdditionalWeb(action: (unit -> unit) * (unit -> unit) -> Task<'Value>) =
+        task {
+            let additionalBackend = "https://localhost:" + string (FixtureFiles.port ())
+            let settings = Dictionary<string, string>()
+
+            for pair in webSettings do
+                settings[pair.Key] <- pair.Value
+
+            settings["CLAIMCORE_WEB_LISTEN_PORT"] <- string (Uri(additionalBackend).Port)
+
+            let additional =
+                new PublishedProcesses.Web(
+                    webBinary,
+                    settings,
+                    directory,
+                    logPrefix = "web-session-peer"
+                )
+
+            let primary () = proxy.RouteTo backend
+            let secondary () = proxy.RouteTo additionalBackend
+            let cleanup = [ primary; (additional :> IDisposable).Dispose ]
+
+            let! outcome =
+                task {
+                    try
+                        secondary ()
+                        do! awaitReady http origin additional
+                        let! result = action (primary, secondary)
+                        return Ok result
+                    with error ->
+                        return Error error
+                }
+
+            match outcome with
+            | Ok result ->
+                FixtureCleanup.finish cleanup
+                return result
+            | Error error ->
+                ClaimCore.TestSupport.FixtureDisposal.afterFailure error cleanup
+                return raise error
+        }
+
     member _.Administration arguments =
         ProcessRunner.dotnet 60_000 admin arguments adminEnvironment None
 
