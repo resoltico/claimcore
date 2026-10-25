@@ -161,6 +161,8 @@ lint() {
   dotnet tool restore
   dotnet fantomas --check src tests eng
   bash eng/Check-FSharpLint.sh
+  restore_node
+  npm --prefix web run boundaries:check
 }
 
 unit() {

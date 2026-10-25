@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["eslint", "react", "jsx-a11y", "oxc"],
+  "plugins": ["eslint", "react", "jsx-a11y", "oxc", "import"],
   "jsPlugins": [
     "./lint/claimcore-plugin.mjs",
     {
@@ -26,7 +26,41 @@
     "react/jsx-handler-names": "off",
     "react/jsx-max-depth": "off",
     "react/jsx-props-no-spreading": "off",
-    "react/react-in-jsx-scope": "off"
+    "react/react-in-jsx-scope": "off",
+    "import/no-cycle": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["**/api/transport", "**/api/transport.ts"],
+            "message": "Use the service facade (src/api/service.ts)."
+          }
+        ]
+      }
+    ],
+    "import/consistent-type-specifier-style": "off",
+    "import/default": "off",
+    "import/exports-last": "off",
+    "import/first": "off",
+    "import/group-exports": "off",
+    "import/max-dependencies": "off",
+    "import/namespace": "off",
+    "import/newline-after-import": "off",
+    "import/no-absolute-path": "off",
+    "import/no-anonymous-default-export": "off",
+    "import/no-duplicates": "off",
+    "import/no-empty-named-blocks": "off",
+    "import/no-mutable-exports": "off",
+    "import/no-named-as-default": "off",
+    "import/no-named-as-default-member": "off",
+    "import/no-named-default": "off",
+    "import/no-named-export": "off",
+    "import/no-namespace": "off",
+    "import/no-nodejs-modules": "off",
+    "import/no-self-import": "off",
+    "import/no-unassigned-import": "off",
+    "import/prefer-default-export": "off"
   },
   "overrides": [
     {
@@ -340,6 +374,111 @@
       "files": ["tests/**", "e2e/**", "scripts/**"],
       "rules": {
         "no-await-in-loop": "off"
+      }
+    },
+    {
+      "files": ["src/api/**", "src/hooks/**", "src/interaction/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/api/transport", "**/api/transport.ts"],
+                "message": "Use the service facade (src/api/service.ts)."
+              },
+              {
+                "group": ["**/views/**", "**/components/**", "**/presentation/**"],
+                "message": "Lower layers must not import presentation layers."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/api/service.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/views/**", "**/components/**", "**/presentation/**"],
+                "message": "Lower layers must not import presentation layers."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/protocol/**", "**/contracts/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "react",
+                  "react-*",
+                  "node:*",
+                  "**/views/**",
+                  "**/components/**",
+                  "**/presentation/**",
+                  "**/hooks/**",
+                  "**/interaction/**",
+                  "**/utils/**"
+                ],
+                "message": "Protocol modules are pure and import only protocol/contracts (type-only api/types allowed)."
+              },
+              {
+                "group": ["**/api/**"],
+                "allowTypeImports": true,
+                "message": "Protocol modules may import only types from api/."
+              }
+            ]
+          }
+        ],
+        "no-restricted-globals": [
+          "error",
+          "fetch",
+          "XMLHttpRequest",
+          "WebSocket",
+          "EventSource",
+          "setTimeout",
+          "setInterval",
+          "require",
+          "Intl",
+          "crypto",
+          "process",
+          "window",
+          "navigator",
+          "localStorage",
+          "sessionStorage",
+          "performance",
+          "Date"
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "Date",
+            "property": "now"
+          },
+          {
+            "object": "Math",
+            "property": "random"
+          },
+          {
+            "object": "globalThis",
+            "property": "fetch"
+          },
+          {
+            "object": "globalThis",
+            "property": "crypto"
+          }
+        ]
       }
     }
   ],

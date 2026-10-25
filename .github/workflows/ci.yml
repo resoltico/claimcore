@@ -63,7 +63,7 @@ jobs:
           PYTHON
 
   lint:
-    name: Native format, lint and workflow hygiene
+    name: Native format, lint, browser boundaries and workflow hygiene
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -71,8 +71,6 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-        with:
-          node: "false"
       - run: bash eng/verify.sh lint workflows
       - name: zizmor
         uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
