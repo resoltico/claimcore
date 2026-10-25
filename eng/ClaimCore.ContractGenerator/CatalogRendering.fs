@@ -67,7 +67,7 @@ module ContractCatalog =
                                 InputTargets.vocabulary
                                 InputTarget.Reason
                                 "meaning"
-                        Scalar = FieldDefinitions.scalar InputTarget.Reason
+                        Scalar = ScalarRule.Text(FieldDefinitions.text TextInput.Reason)
                     }
                 ]
             AuthorityTarget = definitions.AuthorityTarget

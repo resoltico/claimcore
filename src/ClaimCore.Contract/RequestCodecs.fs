@@ -108,6 +108,31 @@ module RequestCodecs =
                 unitVariant (CorrectionActions.token CorrectionGroupAction.Clear) PaymentGroup.Clear
             ]
 
+    /// The permitted selectors are the tags of the wire union, not a parallel mode list.
+    let correctionActions =
+        let actions (codec: Codec<'T>) =
+            let schema =
+                match codec.Schema with
+                | Schema.Ref name -> Map.find name codec.Definitions
+                | schema -> schema
+
+            match schema with
+            | Schema.OneOf(_, Some("mode", cases)) ->
+                cases
+                |> List.map (fun (token, _) ->
+                    CorrectionActions.all
+                    |> List.find (fun action -> CorrectionActions.token action = token))
+            | _ -> invalidOp "A correction input must be a tagged mode union."
+
+        let registration = actions registrationGroup
+        let decision = actions decisionGroup
+        let payment = actions paymentGroup
+
+        function
+        | CorrectionGroup.Registration -> registration
+        | CorrectionGroup.Decision -> decision
+        | CorrectionGroup.Payment -> payment
+
     let correction =
         (record (fun v0 v1 v2 ->
             {

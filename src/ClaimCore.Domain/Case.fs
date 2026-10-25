@@ -88,9 +88,7 @@ module private BusinessState =
                     match fields.PaymentDate with
                     | None -> Ok None
                     | Some value ->
-                        Validation.date (InputTarget.Field BusinessField.PaymentDate) value
-                        |> retained
-                        |> Result.map Some
+                        Validation.date DateInput.PaymentDate value |> retained |> Result.map Some
 
                 return! PaymentProgress.fromGroups (Some decision) paid |> retained
             }
@@ -253,10 +251,10 @@ module Case =
         | CaseAct.Void _, Disposition.Voided -> Error Refusal.AlreadyVoided
         | CaseAct.Reinstate _, Disposition.Active -> Error Refusal.NotVoided
         | CaseAct.Void reason, Disposition.Active ->
-            Validation.admission InputTarget.Reason reason
+            Validation.admission TextInput.Reason reason
             |> Result.map (fun () -> CaseState.Live(claim, Disposition.Voided))
         | CaseAct.Reinstate reason, Disposition.Voided ->
-            Validation.admission InputTarget.Reason reason
+            Validation.admission TextInput.Reason reason
             |> Result.map (fun () -> CaseState.Live(claim, Disposition.Active))
         | CaseAct.Erase, _ -> Ok CaseState.Erased
         | _ -> invalidArg (nameof act) "Expected a stewardship act."

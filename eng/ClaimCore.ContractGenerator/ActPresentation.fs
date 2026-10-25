@@ -42,7 +42,7 @@ module ActPresentation =
                 Name = group
                 LabelId = Vocabulary.messageKey CorrectionGroup.vocabulary group "label"
                 MeaningId = Vocabulary.messageKey CorrectionGroup.vocabulary group "meaning"
-                Actions = ActDefinitions.correctionActions group
+                Actions = ClaimCore.Contract.Protocol.RequestCodecs.correctionActions group
                 ReplaceFields = groupFields fields |> List.map current
             })
         |> ActInputShape.CorrectionGroups

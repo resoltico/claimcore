@@ -34,7 +34,7 @@
           "minimumCharacters": 1,
           "grammar": "[A-Z]{2}"
         },
-        "policy": null
+        "maximumCharacters": null
       },
       "allowsAbsence": false
     },
@@ -48,13 +48,7 @@
           "minimumCharacters": 1,
           "grammar": null
         },
-        "policy": {
-          "maximumCharacters": 200,
-          "requiresNonBlank": true,
-          "rejectsSurroundingWhitespace": true,
-          "rejectsControlCharacters": true,
-          "rejectsForbiddenInvisibleCharacters": true
-        }
+        "maximumCharacters": 200
       },
       "allowsAbsence": false
     },
@@ -68,13 +62,7 @@
           "minimumCharacters": 1,
           "grammar": null
         },
-        "policy": {
-          "maximumCharacters": 200,
-          "requiresNonBlank": true,
-          "rejectsSurroundingWhitespace": true,
-          "rejectsControlCharacters": true,
-          "rejectsForbiddenInvisibleCharacters": true
-        }
+        "maximumCharacters": 200
       },
       "allowsAbsence": false
     },
@@ -89,7 +77,7 @@
             "minimumCharacters": 1,
             "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?"
           },
-          "policy": null
+          "maximumCharacters": null
         },
         "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?",
         "maximumIntegerDigits": 18,
@@ -108,7 +96,7 @@
             "minimumCharacters": 1,
             "grammar": "[A-Z]{3}"
           },
-          "policy": null
+          "maximumCharacters": null
         },
         "grammar": "[A-Z]{3}",
         "exactCharacters": 3
@@ -125,7 +113,7 @@
           "minimumCharacters": 1,
           "grammar": "[!-~]{1,80}"
         },
-        "policy": null
+        "maximumCharacters": null
       },
       "allowsAbsence": false
     },
@@ -152,7 +140,7 @@
             "minimumCharacters": 1,
             "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?"
           },
-          "policy": null
+          "maximumCharacters": null
         },
         "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?",
         "maximumIntegerDigits": 18,
@@ -171,7 +159,7 @@
             "minimumCharacters": 1,
             "grammar": "[A-Z]{3}"
           },
-          "policy": null
+          "maximumCharacters": null
         },
         "grammar": "[A-Z]{3}",
         "exactCharacters": 3
@@ -524,13 +512,7 @@
           "minimumCharacters": 1,
           "grammar": null
         },
-        "policy": {
-          "maximumCharacters": 200,
-          "requiresNonBlank": true,
-          "rejectsSurroundingWhitespace": true,
-          "rejectsControlCharacters": true,
-          "rejectsForbiddenInvisibleCharacters": true
-        }
+        "maximumCharacters": 200
       }
     }
   ],

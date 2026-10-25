@@ -20,10 +20,7 @@ module internal Projections =
     let private amount index row =
         let text = required<string> index row
 
-        let grammar =
-            match FieldDefinitions.scalar (InputTarget.Field BusinessField.ClaimedAmount) with
-            | ScalarRule.Amount rule -> rule.Grammar
-            | _ -> invalidOp "Expected amount format."
+        let grammar = FieldDefinitions.amount.Grammar
 
         if
             not (

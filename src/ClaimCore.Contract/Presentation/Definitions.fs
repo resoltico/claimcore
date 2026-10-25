@@ -9,19 +9,10 @@ type TextFormatConstraints =
         Grammar: string option
     }
 
-type TextAdmissionPolicy =
-    {
-        MaximumCharacters: int
-        RequiresNonBlank: bool
-        RejectsSurroundingWhitespace: bool
-        RejectsControlCharacters: bool
-        RejectsForbiddenInvisibleCharacters: bool
-    }
-
 type ScalarTextConstraints =
     {
         Format: TextFormatConstraints
-        Policy: TextAdmissionPolicy option
+        MaximumCharacters: int option
     }
 
 /// Exact Gregorian calendar-date input rules.

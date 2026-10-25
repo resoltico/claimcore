@@ -25,7 +25,7 @@ module internal CaseCorrections =
         | PaymentGroup.Keep -> Ok ValidatedPaymentCorrection.Keep
         | PaymentGroup.Clear -> Ok ValidatedPaymentCorrection.Clear
         | PaymentGroup.Replace value ->
-            Validation.date (InputTarget.Field BusinessField.PaymentDate) value.PaymentDate
+            Validation.date DateInput.PaymentDate value.PaymentDate
             |> Result.map ValidatedPaymentCorrection.Replace
 
     let parse (correction: Correction) : Result<ValidatedCaseCorrection, Refusal> =
@@ -71,7 +71,7 @@ module internal CaseCorrections =
                 paymentChoice progress ValidatedPaymentCorrection.Clear |> Result.isOk
 
         if present then
-            ActDefinitions.correctionActions group
+            ClaimCore.Contract.Protocol.RequestCodecs.correctionActions group
         else
             [ CorrectionGroupAction.Keep ]
 

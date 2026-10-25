@@ -530,11 +530,7 @@ let private policyHints () =
         |> Seq.find (fun field -> field.GetProperty("name").GetString() = "claimantName")
 
     Expect.equal
-        (claimant
-            .GetProperty("scalar")
-            .GetProperty("policy")
-            .GetProperty("maximumCharacters")
-            .GetInt32())
+        (claimant.GetProperty("scalar").GetProperty("maximumCharacters").GetInt32())
         200
         "Current policy is a nonvalidating hint"
 

@@ -100,7 +100,7 @@ const hint = (preferences: Preferences, field: FieldDescriptor): string => {
   switch (s.kind) {
     case "TEXT":
       return translate(preferences, "ui.textHint", {
-        maximum: exactInteger(String(s.policy?.maximumCharacters ?? ""), preferences.displayLocale),
+        maximum: exactInteger(String(s.maximumCharacters ?? ""), preferences.displayLocale),
       });
     case "CALENDAR_DATE":
       return translate(preferences, "ui.dateHint");

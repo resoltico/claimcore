@@ -18,18 +18,7 @@ let private expectText name maximum =
         Expect.equal constraints.Format.MinimumCharacters 1 "Permanent nonempty text"
         Expect.isNone constraints.Format.Grammar "Business text has no admission grammar"
 
-        let policy =
-            constraints.Policy
-            |> Option.defaultWith (fun () -> failtest "Missing text admission policy")
-
-        Expect.equal policy.MaximumCharacters maximum "Policy character bound"
-        Expect.isTrue policy.RequiresNonBlank "Nonblank admission"
-        Expect.isTrue policy.RejectsSurroundingWhitespace "Surrounding whitespace admission"
-        Expect.isTrue policy.RejectsControlCharacters "Control character admission"
-
-        Expect.isTrue
-            policy.RejectsForbiddenInvisibleCharacters
-            "Explicit formatting character admission"
+        Expect.equal constraints.MaximumCharacters (Some maximum) "Text character bound"
     | _ -> failtest (BusinessField.token name + " must be a text scalar.")
 
 let private expectFields kind expected =
@@ -73,11 +62,15 @@ let private textAndDateRuleTests =
                         BusinessField.IncidentCountry, "[A-Z]{2}"
                         BusinessField.CaseReference, "[!-~]{1,80}"
                     ] do
-                    let constraints = scalar name |> ScalarRules.textConstraints
+                    let constraints =
+                        match scalar name with
+                        | ScalarRule.Text value -> value
+                        | _ -> failtest "Expected a text scalar"
+
                     Expect.equal constraints.Format.Grammar (Some expected) "Permanent syntax"
 
                     Expect.isNone
-                        constraints.Policy
+                        constraints.MaximumCharacters
                         "Identifiers do not have grandfatherable syntax")
             testCase "date catalog define exact Gregorian input range" (fun () ->
                 for name in
@@ -108,7 +101,7 @@ let private numericAndStatusRuleTests =
                             (Some rule.Grammar)
                             "Amount syntax is permanent"
 
-                        Expect.isNone rule.Text.Policy "No admission-only amount syntax"
+                        Expect.isNone rule.Text.MaximumCharacters "No admission-only amount syntax"
                         Expect.equal rule.Grammar "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?" "Grammar"
                         Expect.equal rule.MaximumIntegerDigits 18 "Whole-digit bound"
                         Expect.equal rule.MaximumFractionalDigits 4 "Fractional-digit bound"
@@ -122,7 +115,10 @@ let private numericAndStatusRuleTests =
                             (Some rule.Grammar)
                             "Currency syntax is permanent"
 
-                        Expect.isNone rule.Text.Policy "No admission-only currency syntax"
+                        Expect.isNone
+                            rule.Text.MaximumCharacters
+                            "No admission-only currency syntax"
+
                         Expect.equal rule.Grammar "[A-Z]{3}" "Grammar"
                         Expect.equal rule.ExactCharacters 3 "Exact length"
                     | _ -> failtest (BusinessField.token name + " must be a currency scalar."))

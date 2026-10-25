@@ -52,36 +52,15 @@ module CatalogCodecs =
         |> build
         |> named "Presentation.TextFormatConstraints"
 
-    let private textPolicy =
-        (record (fun v0 v1 v2 v3 v4 ->
-            {
-                TextAdmissionPolicy.MaximumCharacters = v0
-                RequiresNonBlank = v1
-                RejectsSurroundingWhitespace = v2
-                RejectsControlCharacters = v3
-                RejectsForbiddenInvisibleCharacters = v4
-            })
-        : Fields<TextAdmissionPolicy, _>)
-        |> field "maximumCharacters" _.MaximumCharacters (count)
-        |> field "requiresNonBlank" _.RequiresNonBlank (boolean)
-        |> field "rejectsSurroundingWhitespace" _.RejectsSurroundingWhitespace (boolean)
-        |> field "rejectsControlCharacters" _.RejectsControlCharacters (boolean)
-        |> field
-            "rejectsForbiddenInvisibleCharacters"
-            _.RejectsForbiddenInvisibleCharacters
-            (boolean)
-        |> build
-        |> named "Presentation.TextAdmissionPolicy"
-
     let private textConstraints =
         (record (fun v0 v1 ->
             {
                 ScalarTextConstraints.Format = v0
-                Policy = v1
+                MaximumCharacters = v1
             })
         : Fields<ScalarTextConstraints, _>)
         |> field "format" _.Format (textFormat)
-        |> field "policy" _.Policy (nullable textPolicy)
+        |> field "maximumCharacters" _.MaximumCharacters (nullable count)
 
     let private calendarDate =
         (record (fun v0 v1 v2 ->
