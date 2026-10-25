@@ -127,7 +127,6 @@ module FieldDefinitions =
     let forField field =
         all |> List.find (fun definition -> definition.Field = field)
 
-    /// Field order comes from the authoritative table; value access belongs to the view.
+    /// Field order comes from the authoritative table; typed readers belong to the same table.
     let values fields =
-        FieldTable.rows
-        |> List.map (fun row -> row.Field, CaseFields.value row.Field fields)
+        FieldTable.rows |> List.map (fun row -> row.Field, row.AcceptedValue fields)

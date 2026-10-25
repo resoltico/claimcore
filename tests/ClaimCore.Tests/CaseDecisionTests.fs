@@ -49,7 +49,7 @@ let private replay () =
         "Replay precedes current revision checks"
 
     match CaseDecisions.review installation calendar owner request laterView.Read with
-    | CaseReviewDecision.Replay accepted ->
+    | LedgerReviewDecision.Replay accepted ->
         Expect.equal accepted receipt "Preview observes exact acceptance"
     | _ -> failtest "Preview must find the accepted identity"
 
@@ -84,7 +84,7 @@ let private reviewAndTime () =
     let view = locked worker None None
 
     match CaseDecisions.review installation calendar owner request view.Read with
-    | CaseReviewDecision.Proposed(None, after) ->
+    | LedgerReviewDecision.Proposed(None, after) ->
         Expect.equal (Case.snapshot after).Revision 1L "Pure review proposes without append"
     | _ -> failtest "Expected a pure proposed state"
 

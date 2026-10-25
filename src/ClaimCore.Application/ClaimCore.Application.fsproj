@@ -12,6 +12,7 @@
     <Compile Include="LedgerStorePort.fs" />
     <Compile Include="Cursors.fs" />
     <Compile Include="LedgerEntries.fs" />
+    <Compile Include="LedgerEnvelope.fs" />
     <Compile Include="CaseDecisions.fs" />
     <Compile Include="AuthorityDecisions.fs" />
     <Compile Include="AuthorityReviews.fs" />

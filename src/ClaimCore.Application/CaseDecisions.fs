@@ -5,13 +5,6 @@ open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
-[<RequireQualifiedAccess; NoComparison>]
-type internal CaseReviewDecision =
-    | Proposed of before: ClaimCore.Domain.CaseRecord option * after: ClaimCore.Domain.CaseRecord
-    | Replay of OperationReceipt
-    | Refuse of Refusal
-    | Fail of CoreFault
-
 module internal CaseDecisions =
     let authorize principal actor capability (record: StoredCase option) =
         record
@@ -54,7 +47,7 @@ module internal CaseDecisions =
                 Error Refusal.ActNotPermitted
             | _ -> Error Refusal.ResourceUnavailable
 
-    let private admission installationId principal request (view: CaseReadView) =
+    let private admission installationId principal request bytes (view: CaseReadView) =
         match permission principal view.Actor request view.Case with
         | Error refusal -> IdentityDecision.Refuse refusal
         | Ok() ->
@@ -63,7 +56,7 @@ module internal CaseDecisions =
                 principal
                 view.Actor
                 request.OperationId
-                (Case.canonical request |> RequestRecord.encode)
+                bytes
                 view.ExistingOperation
 
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseReadView) =
@@ -73,97 +66,73 @@ module internal CaseDecisions =
             | Some record -> current installationId record |> Result.map Some
 
         match before with
-        | Error fault -> CaseReviewDecision.Fail fault
+        | Error fault -> LedgerReviewDecision.Fail fault
         | Ok before ->
             match Case.decide (calendar.DateAt view.ObservedAt) request before with
-            | Error refusal -> CaseReviewDecision.Refuse(refusal)
-            | Ok after -> CaseReviewDecision.Proposed(before, after)
+            | Error refusal -> LedgerReviewDecision.Refuse(refusal)
+            | Ok after -> LedgerReviewDecision.Proposed(before, after)
 
-    let review installationId calendar principal request (view: CaseReadView) =
-        match admission installationId principal request view with
-        | IdentityDecision.Refuse refusal -> CaseReviewDecision.Refuse refusal
-        | IdentityDecision.Fail fault -> CaseReviewDecision.Fail fault
-        | IdentityDecision.Replay entry ->
-            LedgerEntries.receipt principal view.Actor view.Case entry
-            |> Result.map CaseReviewDecision.Replay
-            |> Result.defaultWith CaseReviewDecision.Fail
-        | IdentityDecision.Fresh -> propose installationId calendar request view
-
-    let private append
+    let private project
         installationId
         (calendar: IBusinessCalendar)
-        principal
         (request: CaseRequest)
-        bytes
-        (view: CaseLockedView)
+        (view: CaseReadView)
         after
         =
         let snapshot = Case.snapshot after
 
         let id =
-            view.Read.Case
+            view.Case
             |> Option.map _.CaseId
             |> Option.defaultWith (fun () ->
                 CaseReferenceId.encode installationId snapshot.Reference)
 
-        let actor =
-            view.Read.Actor.Actor
-            |> Option.defaultWith (fun () ->
-                invalidArg (nameof view) "Authorized actor is missing.")
-
-        let scope =
-            StoredScope.Case(
-                id,
-                snapshot.Revision,
-                CaseActs.kind request.Act,
-                calendar.DateAt view.Read.ObservedAt
-            )
-
-        let entry =
-            LedgerEntries.create
-                installationId
-                view.Head
-                view.Read.ObservedAt
-                view.PayloadNonce
-                actor.ActorId
-                request.OperationId
-                scope
-                bytes
-                (ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot)
-
         let projection =
-            match snapshot.View, view.Read.Case with
+            match snapshot.View, view.Case with
             | CaseView.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision)
             | _, None -> CaseProjection.Insert(id, snapshot)
             | _ -> CaseProjection.Update(id, snapshot)
 
-        let current = Some { CaseId = id; Snapshot = snapshot }
+        {
+            ObservedAt = view.ObservedAt
+            ActorId = LedgerEnvelope.actorId view.Actor
+            Scope =
+                StoredScope.Case(
+                    id,
+                    snapshot.Revision,
+                    CaseActs.kind request.Act,
+                    calendar.DateAt view.ObservedAt
+                )
+            Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+            Current = Some { CaseId = id; Snapshot = snapshot }
+            Projection = projection
+        }
 
-        LedgerEntries.validate installationId (LedgerEntries.stored entry)
-        |> Result.bind (LedgerEntries.receipt principal view.Read.Actor current)
-        |> Result.map (fun receipt -> LedgerDecision.Append(entry, projection, receipt))
-        |> Result.defaultWith LedgerDecision.Fail
+    let private scope installationId calendar principal request =
+        {
+            Encode = fun () -> RequestRecord.encode request
+            Canonical = fun () -> Case.canonical request |> RequestRecord.encode
+            Admit = admission installationId principal request
+            Propose = propose installationId calendar request
+            Project = fun view (_, after) -> project installationId calendar request view after
+            Receipt =
+                fun (view: CaseReadView) current entry ->
+                    LedgerEntries.receipt
+                        principal
+                        view.Actor
+                        (current |> Option.orElse view.Case)
+                        entry
+        }
 
-    let execute installationId calendar principal request (view: CaseLockedView) =
-        let bytes = RequestRecord.encode request
+    let review installationId calendar principal request (view: CaseReadView) =
+        LedgerEnvelope.review (scope installationId calendar principal request) view
 
-        let read = view.Read
-
-        match admission installationId principal request read with
-        | IdentityDecision.Refuse refusal -> LedgerDecision.Refuse refusal
-        | IdentityDecision.Fail fault -> LedgerDecision.Fail fault
-        | IdentityDecision.Replay entry ->
-            LedgerEntries.receipt principal view.Read.Actor view.Read.Case entry
-            |> Result.map LedgerDecision.Replay
-            |> Result.defaultWith LedgerDecision.Fail
-        | IdentityDecision.Fresh when view.IsFenced ->
-            LedgerDecision.Refuse Refusal.OperationResolved
-        | IdentityDecision.Fresh when view.Head.Sequence = Revision.Maximum ->
-            LedgerDecision.Refuse Refusal.LedgerExhausted
-        | IdentityDecision.Fresh ->
-            match propose installationId calendar request read with
-            | CaseReviewDecision.Proposed(_, after) ->
-                append installationId calendar principal request bytes view after
-            | CaseReviewDecision.Refuse refusal -> LedgerDecision.Refuse refusal
-            | CaseReviewDecision.Fail fault -> LedgerDecision.Fail fault
-            | CaseReviewDecision.Replay receipt -> LedgerDecision.Replay receipt
+    let execute installationId calendar principal (request: CaseRequest) (view: CaseLockedView) =
+        LedgerEnvelope.execute
+            installationId
+            request.OperationId
+            (scope installationId calendar principal request)
+            view.Head
+            view.IsFenced
+            view.PayloadNonce
+            view.Read

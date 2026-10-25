@@ -329,7 +329,7 @@ module ResponseCodecs =
                 After = after
             })
         : Fields<FieldDiff, _>)
-        |> field "field" _.FieldName (enumeration BusinessField.all)
+        |> field "field" _.FieldName (enumeration (Vocabulary.entries FieldTable.vocabulary))
         |> field "before" _.Before (nullable nonempty)
         |> field "after" _.After (nullable nonempty)
         |> build

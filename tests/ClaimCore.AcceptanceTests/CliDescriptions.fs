@@ -76,11 +76,15 @@ let private selectedInputs fixture =
 
         let authority = description fixture language [ "authority"; "GRANT" ]
 
-        for item in [ "target"; "role"; "scope"; "active" ] do
+        for item in [ "target"; "role"; "scope" ] do
             Expect.stringContains
                 authority
                 ("fieldName: " + item + " — ")
                 "Common and act authority input labels survive"
+
+        Expect.isFalse
+            (authority.Contains("fieldName: active", System.StringComparison.Ordinal))
+            "Distinct grant/revoke acts have no boolean active input"
 
         endpointDescription fixture language
 

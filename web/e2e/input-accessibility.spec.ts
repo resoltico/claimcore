@@ -64,6 +64,13 @@ for (const language of ["en", "lv", "ar"] as const) {
       await page
         .getByRole("combobox", { name: ui(language, "ui.authorityAction"), exact: true })
         .selectOption(kind);
+      if (kind === "REVOKE") {
+        const dialog = page.getByRole("dialog", { name: ui(language, "ui.changeActTitle") });
+        await dialog
+          .getByRole("button", { name: ui(language, "ui.discardAndChange"), exact: true })
+          .click();
+        await expect(dialog).toHaveCount(0);
+      }
       await page.locator('[name="target.issuer"]').fill(source.issuer);
       await page.locator('[name="target.subject"]').fill(source.ownerSubject);
       await page.locator('[name="act.role"]').selectOption("CASE_READER");

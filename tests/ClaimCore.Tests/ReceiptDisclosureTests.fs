@@ -45,7 +45,7 @@ let private disclosure () =
     let view = locked registrar (Some superseded) (Some entry)
 
     match CaseDecisions.review installation calendar owner request view.Read with
-    | CaseReviewDecision.Replay value ->
+    | LedgerReviewDecision.Replay value ->
         Expect.equal
             (caseReceipt value).Snapshot
             SnapshotDisclosure.Withheld
@@ -96,7 +96,7 @@ let private foreignScope () =
     let read = (locked both (Some caseA) (Some entry)).Read
 
     match CaseDecisions.review installation calendar owner request read with
-    | CaseReviewDecision.Refuse Refusal.IdempotencyConflict -> ()
+    | LedgerReviewDecision.Refuse Refusal.IdempotencyConflict -> ()
     | _ -> failtest "Visible existing-operation scope reveals only conflict"
 
     let narrowed =
@@ -108,7 +108,7 @@ let private foreignScope () =
         }
 
     match CaseDecisions.review installation calendar owner request narrowed with
-    | CaseReviewDecision.Refuse Refusal.ResourceUnavailable -> ()
+    | LedgerReviewDecision.Refuse Refusal.ResourceUnavailable -> ()
     | _ -> failtest "Missing accepted-operation scope must retain privacy"
 
 let private roles role readable full () =

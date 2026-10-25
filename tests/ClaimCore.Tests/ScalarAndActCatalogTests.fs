@@ -19,7 +19,7 @@ let private expectText name maximum =
         Expect.isNone constraints.Format.Grammar "Business text has no admission grammar"
 
         Expect.equal constraints.MaximumCharacters (Some maximum) "Text character bound"
-    | _ -> failtest (BusinessField.token name + " must be a text scalar.")
+    | _ -> failtest (FieldTable.key name + " must be a text scalar.")
 
 let private expectFields kind expected =
     let definition = ActPresentation.forKind kind
@@ -85,7 +85,7 @@ let private textAndDateRuleTests =
                         Expect.equal rule.ExactFormat "yyyy-MM-dd" "Exact format"
                         Expect.equal rule.Minimum DateOnly.MinValue "Lower bound"
                         Expect.equal rule.Maximum DateOnly.MaxValue "Upper bound"
-                    | _ -> failtest (BusinessField.token name + " must be a calendar-date scalar."))
+                    | _ -> failtest (FieldTable.key name + " must be a calendar-date scalar."))
         ]
 
 let private numericAndStatusRuleTests =
@@ -105,7 +105,7 @@ let private numericAndStatusRuleTests =
                         Expect.equal rule.Grammar "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?" "Grammar"
                         Expect.equal rule.MaximumIntegerDigits 18 "Whole-digit bound"
                         Expect.equal rule.MaximumFractionalDigits 4 "Fractional-digit bound"
-                    | _ -> failtest (BusinessField.token name + " must be an amount scalar.")
+                    | _ -> failtest (FieldTable.key name + " must be an amount scalar.")
 
                 for name in [ BusinessField.ClaimedCurrency; BusinessField.PayableCurrency ] do
                     match scalar name with
@@ -121,7 +121,7 @@ let private numericAndStatusRuleTests =
 
                         Expect.equal rule.Grammar "[A-Z]{3}" "Grammar"
                         Expect.equal rule.ExactCharacters 3 "Exact length"
-                    | _ -> failtest (BusinessField.token name + " must be a currency scalar."))
+                    | _ -> failtest (FieldTable.key name + " must be a currency scalar."))
             testCase "status descriptor is the closed Domain status vocabulary" (fun () ->
                 match scalar BusinessField.Status with
                 | ScalarRule.CaseStatus rule ->

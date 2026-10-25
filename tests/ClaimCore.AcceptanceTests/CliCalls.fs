@@ -154,7 +154,6 @@ let private grantFrame target role =
                     kind = "GRANT"
                     role = role
                     scope = installation
-                    active = true
                 |}
         |}
 
@@ -168,10 +167,9 @@ let setGrant fixture target role active =
                 target = target
                 act =
                     {|
-                        kind = "GRANT"
+                        kind = if active then "GRANT" else "REVOKE"
                         role = role
                         scope = installation
-                        active = active
                     |}
             |}
 

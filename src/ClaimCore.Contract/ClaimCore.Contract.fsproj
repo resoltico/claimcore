@@ -4,10 +4,13 @@
     <Compile Include="BuildIdentity.fs" />
     <Compile Include="Vocabulary/Vocabulary.fs" />
     <Compile Include="Formats.fs" />
-    <Compile Include="Fields/FieldTable.fs" />
+    <Compile Include="Fields/FieldKinds.fs" />
     <Compile Include="Vocabulary/Corrections.fs" />
     <Compile Include="Vocabulary/CaseVocabulary.fs" />
     <Compile Include="Vocabulary/CaseTokens.fs" />
+    <Compile Include="Model/CaseInputs.fs" />
+    <Compile Include="Model/CaseFields.fs" />
+    <Compile Include="Fields/FieldTable.fs" />
     <Compile Include="Vocabulary/InputTargets.fs" />
     <Compile Include="Refusals/DiagnosticMetadata.fs" />
     <Compile Include="Refusals/Refusals.fs" />
@@ -30,8 +33,6 @@
     <Compile Include="Messages/Messages.fs" />
     <Compile Include="Messages/TextDisplay.fs" />
     <Compile Include="Api/Limits.fs" />
-    <Compile Include="Model/CaseInputs.fs" />
-    <Compile Include="Model/CaseFields.fs" />
     <Compile Include="Model/Advice.fs" />
     <Compile Include="Model/Receipts.fs" />
     <Compile Include="Model/History.fs" />

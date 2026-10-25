@@ -51,7 +51,7 @@ module ResponseScalars =
                 )
                 |> fst)
 
-    let businessField = BusinessField.all |> List.map snd |> tokens
+    let businessField = Vocabulary.tokens FieldTable.vocabulary |> tokens
 
     let capability = Capabilities.all |> List.map Capabilities.token |> tokens
 

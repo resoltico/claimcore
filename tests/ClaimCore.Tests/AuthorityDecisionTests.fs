@@ -147,7 +147,7 @@ let private reviewAndFences () =
     let view = authorityView worker AuthorityView.empty None
 
     match AuthorityDecisions.review installation owner request view.Read with
-    | AuthorityReviewDecision.Proposed(_, AuthorityProjection.Register _) -> ()
+    | LedgerReviewDecision.Proposed(_, AuthorityProjection.Register _) -> ()
     | _ -> failtest "Review must be a pure proposal"
 
     Expect.equal
@@ -181,7 +181,7 @@ let private reviewAndFences () =
 
     Expect.equal
         (AuthorityDecisions.review installation owner registered full.Read)
-        (AuthorityReviewDecision.Refuse Refusal.ActorAlreadyRegistered)
+        (LedgerReviewDecision.Refuse Refusal.ActorAlreadyRegistered)
         "Preview applies target rules without a head"
 
     Expect.equal

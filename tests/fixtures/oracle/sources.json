@@ -332,7 +332,7 @@
             "insurerName": "Synthetic insurer"
           }
         },
-        "caseReference": "R-1",
+        "caseReference": "r-1",
         "expectedRevision": 0,
         "format": 7,
         "operationId": "30000000-0000-4000-8000-000000000002",
@@ -351,7 +351,7 @@
             "insurerName": "Synthetic insurer"
           }
         },
-        "caseReference": "r-1",
+        "caseReference": "R-1",
         "expectedRevision": 0,
         "format": 7,
         "operationId": "30000000-0000-4000-8000-000000000002",
@@ -655,7 +655,7 @@
           "role": "CASE_READER",
           "scope": {
             "kind": "CASE",
-            "caseReference": "R-1"
+            "caseReference": "r-1"
           }
         }
       },
@@ -673,7 +673,7 @@
           "role": "CASE_READER",
           "scope": {
             "kind": "CASE",
-            "caseReference": "r-1"
+            "caseReference": "R-1"
           }
         }
       }
