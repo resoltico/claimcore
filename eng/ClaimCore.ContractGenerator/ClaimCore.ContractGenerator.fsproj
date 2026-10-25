@@ -3,12 +3,9 @@
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AuthoredMessages.fs" />
-    <Compile Include="ActPresentation.fs" />
-    <Compile Include="CatalogEntries.fs" />
     <Compile Include="CatalogRendering.fs" />
     <Compile Include="ClientValidation.fs" />
     <Compile Include="TypeScript.fs" />
-    <Compile Include="BindingValidation.fs" />
     <Compile Include="CatalogValidation.fs" />
     <Compile Include="Documents.fs" />
     <Compile Include="ArtifactPublication.fs" />

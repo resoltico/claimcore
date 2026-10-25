@@ -535,16 +535,26 @@ module CatalogCodecs =
         |> build
         |> named "Presentation.CatalogInput"
 
-    let private interaction =
-        record (fun scope kind inputs constants ->
+    let entry =
+        record (fun endpoint scope kind label meaning confirmation synopsis inputs constants ->
             {
-                CatalogEntry.Scope = scope
+                CatalogEntry.Endpoint = endpoint
+                Scope = scope
                 Kind = kind
+                LabelId = label
+                MeaningId = meaning
+                ConfirmationId = confirmation
+                Synopsis = synopsis
                 Inputs = inputs
                 Constants = constants
             })
+        |> field "endpoint" _.Endpoint text
         |> field "scope" _.Scope text
         |> field "kind" _.Kind text
+        |> field "labelId" _.LabelId text
+        |> field "meaningId" _.MeaningId text
+        |> field "confirmationId" _.ConfirmationId (nullable text)
+        |> field "synopsis" _.Synopsis text
         |> field "inputs" _.Inputs (many binding)
         |> field "constants" _.Constants (many assignment)
         |> build
@@ -581,7 +591,7 @@ module CatalogCodecs =
         |> field "faultDiagnostics" _.FaultDiagnostics (many diagnostic)
         |> field "roles" _.Roles (many roleDefinition)
         |> field "limits" _.Limits (limits)
-        |> field "entries" _.Entries (many interaction)
+        |> field "entries" _.Entries (many entry)
         |> field "productVersion" _.ProductVersion (text)
         |> build
         |> named "Presentation.CatalogDocument"

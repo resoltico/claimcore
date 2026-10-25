@@ -210,7 +210,7 @@
       "kind": "OPEN",
       "labelId": "act.OPEN.label",
       "meaningId": "act.OPEN.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.OPEN.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": [
@@ -249,7 +249,7 @@
       "kind": "AMEND_REGISTRATION",
       "labelId": "act.AMEND_REGISTRATION.label",
       "meaningId": "act.AMEND_REGISTRATION.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.AMEND_REGISTRATION.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": [
@@ -295,7 +295,7 @@
       "kind": "CORRECT",
       "labelId": "act.CORRECT.label",
       "meaningId": "act.CORRECT.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.CORRECT.confirmation",
       "inputs": {
         "kind": "CORRECTION_GROUPS",
         "groups": [
@@ -396,7 +396,7 @@
       "kind": "DECIDE",
       "labelId": "act.DECIDE.label",
       "meaningId": "act.DECIDE.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.DECIDE.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": [
@@ -422,7 +422,7 @@
       "kind": "WITHDRAW_DECISION",
       "labelId": "act.WITHDRAW_DECISION.label",
       "meaningId": "act.WITHDRAW_DECISION.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.WITHDRAW_DECISION.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": []
@@ -432,7 +432,7 @@
       "kind": "RECORD_PAYMENT",
       "labelId": "act.RECORD_PAYMENT.label",
       "meaningId": "act.RECORD_PAYMENT.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.RECORD_PAYMENT.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": [
@@ -447,7 +447,7 @@
       "kind": "CLEAR_PAYMENT",
       "labelId": "act.CLEAR_PAYMENT.label",
       "meaningId": "act.CLEAR_PAYMENT.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.CLEAR_PAYMENT.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": []
@@ -457,7 +457,7 @@
       "kind": "CLOSE",
       "labelId": "act.CLOSE.label",
       "meaningId": "act.CLOSE.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.CLOSE.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": []
@@ -467,7 +467,7 @@
       "kind": "REOPEN",
       "labelId": "act.REOPEN.label",
       "meaningId": "act.REOPEN.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.REOPEN.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": []
@@ -477,7 +477,7 @@
       "kind": "VOID",
       "labelId": "act.VOID.label",
       "meaningId": "act.VOID.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.VOID.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": [
@@ -492,7 +492,7 @@
       "kind": "REINSTATE",
       "labelId": "act.REINSTATE.label",
       "meaningId": "act.REINSTATE.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.REINSTATE.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": [
@@ -507,7 +507,7 @@
       "kind": "ERASE",
       "labelId": "act.ERASE.label",
       "meaningId": "act.ERASE.meaning",
-      "confirmationId": "ui.reviewConfirmation",
+      "confirmationId": "act.ERASE.confirmation",
       "inputs": {
         "kind": "FIELDS",
         "fields": []
@@ -517,8 +517,8 @@
   "inputFields": [
     {
       "name": "reason",
-      "labelId": "field.reason.label",
-      "meaningId": "field.reason.meaning",
+      "labelId": "input.reason.label",
+      "meaningId": "input.reason.meaning",
       "scalar": {
         "kind": "TEXT",
         "format": {
@@ -539,14 +539,14 @@
       "kind": "REGISTER",
       "labelId": "act.REGISTER.label",
       "meaningId": "act.REGISTER.meaning",
-      "confirmationId": "ui.confirmExactRequest",
+      "confirmationId": "act.REGISTER.confirmation",
       "inputs": []
     },
     {
       "kind": "GRANT",
       "labelId": "act.GRANT.label",
       "meaningId": "act.GRANT.meaning",
-      "confirmationId": "ui.confirmExactRequest",
+      "confirmationId": "act.GRANT.confirmation",
       "inputs": [
         {
           "fieldName": "role",
@@ -564,7 +564,7 @@
       "kind": "REVOKE",
       "labelId": "act.REVOKE.label",
       "meaningId": "act.REVOKE.meaning",
-      "confirmationId": "ui.confirmExactRequest",
+      "confirmationId": "act.REVOKE.confirmation",
       "inputs": [
         {
           "fieldName": "role",
@@ -582,14 +582,14 @@
       "kind": "ENABLE",
       "labelId": "act.ENABLE.label",
       "meaningId": "act.ENABLE.meaning",
-      "confirmationId": "ui.confirmExactRequest",
+      "confirmationId": "act.ENABLE.confirmation",
       "inputs": []
     },
     {
       "kind": "DISABLE",
       "labelId": "act.DISABLE.label",
       "meaningId": "act.DISABLE.meaning",
-      "confirmationId": "ui.confirmExactRequest",
+      "confirmationId": "act.DISABLE.confirmation",
       "inputs": []
     }
   ],
@@ -601,10 +601,6 @@
     {
       "name": "expectedRevision",
       "labelId": "input.expectedRevision.label"
-    },
-    {
-      "name": "act",
-      "labelId": "input.act.label"
     },
     {
       "name": "kind",
@@ -619,16 +615,40 @@
       "labelId": "input.subject.label"
     },
     {
-      "name": "target",
-      "labelId": "input.target.label"
-    },
-    {
       "name": "role",
       "labelId": "input.role.label"
     },
     {
       "name": "scope",
       "labelId": "input.scope.label"
+    },
+    {
+      "name": "target",
+      "labelId": "input.target.label"
+    },
+    {
+      "name": "act",
+      "labelId": "input.act.label"
+    },
+    {
+      "name": "actorId",
+      "labelId": "input.actorId.label"
+    },
+    {
+      "name": "cursor",
+      "labelId": "input.cursor.label"
+    },
+    {
+      "name": "limit",
+      "labelId": "input.limit.label"
+    },
+    {
+      "name": "full",
+      "labelId": "input.full.label"
+    },
+    {
+      "name": "reason",
+      "labelId": "input.reason.label"
     }
   ],
   "characterWarnings": {
@@ -946,8 +966,13 @@
   },
   "entries": [
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "OPEN",
+      "labelId": "act.OPEN.label",
+      "meaningId": "act.OPEN.meaning",
+      "confirmationId": "act.OPEN.confirmation",
+      "synopsis": "case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -960,7 +985,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -979,7 +1004,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -1144,22 +1169,27 @@
         },
         {
           "path": [
+            "expectedRevision"
+          ],
+          "value": 0
+        },
+        {
+          "path": [
             "act",
             "kind"
           ],
           "value": "OPEN"
-        },
-        {
-          "path": [
-            "expectedRevision"
-          ],
-          "value": 0
         }
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "AMEND_REGISTRATION",
+      "labelId": "act.AMEND_REGISTRATION.label",
+      "meaningId": "act.AMEND_REGISTRATION.meaning",
+      "confirmationId": "act.AMEND_REGISTRATION.confirmation",
+      "synopsis": "case amend-registration [--operation-id VALUE] CASE-REFERENCE --expected-revision N --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -1172,7 +1202,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -1191,7 +1221,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -1210,7 +1240,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -1383,8 +1413,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "CORRECT",
+      "labelId": "act.CORRECT.label",
+      "meaningId": "act.CORRECT.meaning",
+      "confirmationId": "act.CORRECT.confirmation",
+      "synopsis": "case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision N --registration keep|replace [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] --decision keep|replace|clear [--payment-decision-date VALUE] [--payable-amount VALUE] [--payable-currency VALUE] --payment keep|replace|clear [--payment-date VALUE]",
       "inputs": [
         {
           "identity": "operationId",
@@ -1397,7 +1432,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -1416,7 +1451,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -1435,7 +1470,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -1904,8 +1939,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "DECIDE",
+      "labelId": "act.DECIDE.label",
+      "meaningId": "act.DECIDE.meaning",
+      "confirmationId": "act.DECIDE.confirmation",
+      "synopsis": "case decide [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-decision-date VALUE --payable-amount VALUE --payable-currency VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -1918,7 +1958,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -1937,7 +1977,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -1956,7 +1996,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2045,8 +2085,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "WITHDRAW_DECISION",
+      "labelId": "act.WITHDRAW_DECISION.label",
+      "meaningId": "act.WITHDRAW_DECISION.meaning",
+      "confirmationId": "act.WITHDRAW_DECISION.confirmation",
+      "synopsis": "case withdraw-decision [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
       "inputs": [
         {
           "identity": "operationId",
@@ -2059,7 +2104,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -2078,7 +2123,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -2097,7 +2142,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2123,8 +2168,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "RECORD_PAYMENT",
+      "labelId": "act.RECORD_PAYMENT.label",
+      "meaningId": "act.RECORD_PAYMENT.meaning",
+      "confirmationId": "act.RECORD_PAYMENT.confirmation",
+      "synopsis": "case record-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-date VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2137,7 +2187,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -2156,7 +2206,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -2175,7 +2225,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2222,8 +2272,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "CLEAR_PAYMENT",
+      "labelId": "act.CLEAR_PAYMENT.label",
+      "meaningId": "act.CLEAR_PAYMENT.meaning",
+      "confirmationId": "act.CLEAR_PAYMENT.confirmation",
+      "synopsis": "case clear-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
       "inputs": [
         {
           "identity": "operationId",
@@ -2236,7 +2291,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -2255,7 +2310,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -2274,7 +2329,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2300,8 +2355,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "CLOSE",
+      "labelId": "act.CLOSE.label",
+      "meaningId": "act.CLOSE.meaning",
+      "confirmationId": "act.CLOSE.confirmation",
+      "synopsis": "case close [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
       "inputs": [
         {
           "identity": "operationId",
@@ -2314,7 +2374,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -2333,7 +2393,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -2352,7 +2412,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2378,8 +2438,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "REOPEN",
+      "labelId": "act.REOPEN.label",
+      "meaningId": "act.REOPEN.meaning",
+      "confirmationId": "act.REOPEN.confirmation",
+      "synopsis": "case reopen [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
       "inputs": [
         {
           "identity": "operationId",
@@ -2392,7 +2457,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -2411,7 +2476,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -2430,7 +2495,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2456,8 +2521,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "VOID",
+      "labelId": "act.VOID.label",
+      "meaningId": "act.VOID.meaning",
+      "confirmationId": "act.VOID.confirmation",
+      "synopsis": "case void [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2470,7 +2540,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -2489,7 +2559,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -2508,7 +2578,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2527,8 +2597,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "field.reason.label",
-          "meaningId": "field.reason.meaning",
+          "labelId": "input.reason.label",
+          "meaningId": "input.reason.meaning",
           "order": 3,
           "prefill": null,
           "diagnosticTargets": [
@@ -2554,8 +2624,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "REINSTATE",
+      "labelId": "act.REINSTATE.label",
+      "meaningId": "act.REINSTATE.meaning",
+      "confirmationId": "act.REINSTATE.confirmation",
+      "synopsis": "case reinstate [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2568,7 +2643,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -2587,7 +2662,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -2606,7 +2681,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2625,8 +2700,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "field.reason.label",
-          "meaningId": "field.reason.meaning",
+          "labelId": "input.reason.label",
+          "meaningId": "input.reason.meaning",
           "order": 3,
           "prefill": null,
           "diagnosticTargets": [
@@ -2652,8 +2727,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "CASE",
       "kind": "ERASE",
+      "labelId": "act.ERASE.label",
+      "meaningId": "act.ERASE.meaning",
+      "confirmationId": "act.ERASE.confirmation",
+      "synopsis": "case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
       "inputs": [
         {
           "identity": "operationId",
@@ -2666,7 +2746,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -2685,7 +2765,7 @@
           },
           "branches": [],
           "labelId": "field.caseReference.label",
-          "meaningId": null,
+          "meaningId": "field.caseReference.meaning",
           "order": 1,
           "prefill": "caseReference",
           "diagnosticTargets": [
@@ -2704,7 +2784,7 @@
           },
           "branches": [],
           "labelId": "input.expectedRevision.label",
-          "meaningId": null,
+          "meaningId": "input.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2730,8 +2810,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "AUTHORITY",
       "kind": "REGISTER",
+      "labelId": "act.REGISTER.label",
+      "meaningId": "act.REGISTER.meaning",
+      "confirmationId": "act.REGISTER.confirmation",
+      "synopsis": "authority register [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2744,7 +2829,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -2768,7 +2853,7 @@
           },
           "branches": [],
           "labelId": "input.kind.label",
-          "meaningId": null,
+          "meaningId": "input.kind.meaning",
           "order": 1,
           "prefill": null,
           "diagnosticTargets": [],
@@ -2786,7 +2871,7 @@
           },
           "branches": [],
           "labelId": "input.issuer.label",
-          "meaningId": null,
+          "meaningId": "input.issuer.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2806,7 +2891,7 @@
           },
           "branches": [],
           "labelId": "input.subject.label",
-          "meaningId": null,
+          "meaningId": "input.subject.meaning",
           "order": 3,
           "prefill": null,
           "diagnosticTargets": [
@@ -2832,8 +2917,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "AUTHORITY",
       "kind": "GRANT",
+      "labelId": "act.GRANT.label",
+      "meaningId": "act.GRANT.meaning",
+      "confirmationId": "act.GRANT.confirmation",
+      "synopsis": "authority grant [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]",
       "inputs": [
         {
           "identity": "operationId",
@@ -2846,7 +2936,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -2870,7 +2960,7 @@
           },
           "branches": [],
           "labelId": "input.kind.label",
-          "meaningId": null,
+          "meaningId": "input.kind.meaning",
           "order": 1,
           "prefill": null,
           "diagnosticTargets": [],
@@ -2888,7 +2978,7 @@
           },
           "branches": [],
           "labelId": "input.issuer.label",
-          "meaningId": null,
+          "meaningId": "input.issuer.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -2908,7 +2998,7 @@
           },
           "branches": [],
           "labelId": "input.subject.label",
-          "meaningId": null,
+          "meaningId": "input.subject.meaning",
           "order": 3,
           "prefill": null,
           "diagnosticTargets": [
@@ -2937,7 +3027,7 @@
           },
           "branches": [],
           "labelId": "input.role.label",
-          "meaningId": null,
+          "meaningId": "input.role.meaning",
           "order": 4,
           "prefill": null,
           "diagnosticTargets": [],
@@ -2960,7 +3050,7 @@
           },
           "branches": [],
           "labelId": "input.scope.label",
-          "meaningId": null,
+          "meaningId": "input.scope.meaning",
           "order": 5,
           "prefill": null,
           "diagnosticTargets": [],
@@ -3014,8 +3104,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "AUTHORITY",
       "kind": "REVOKE",
+      "labelId": "act.REVOKE.label",
+      "meaningId": "act.REVOKE.meaning",
+      "confirmationId": "act.REVOKE.confirmation",
+      "synopsis": "authority revoke [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]",
       "inputs": [
         {
           "identity": "operationId",
@@ -3028,7 +3123,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -3052,7 +3147,7 @@
           },
           "branches": [],
           "labelId": "input.kind.label",
-          "meaningId": null,
+          "meaningId": "input.kind.meaning",
           "order": 1,
           "prefill": null,
           "diagnosticTargets": [],
@@ -3070,7 +3165,7 @@
           },
           "branches": [],
           "labelId": "input.issuer.label",
-          "meaningId": null,
+          "meaningId": "input.issuer.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -3090,7 +3185,7 @@
           },
           "branches": [],
           "labelId": "input.subject.label",
-          "meaningId": null,
+          "meaningId": "input.subject.meaning",
           "order": 3,
           "prefill": null,
           "diagnosticTargets": [
@@ -3119,7 +3214,7 @@
           },
           "branches": [],
           "labelId": "input.role.label",
-          "meaningId": null,
+          "meaningId": "input.role.meaning",
           "order": 4,
           "prefill": null,
           "diagnosticTargets": [],
@@ -3142,7 +3237,7 @@
           },
           "branches": [],
           "labelId": "input.scope.label",
-          "meaningId": null,
+          "meaningId": "input.scope.meaning",
           "order": 5,
           "prefill": null,
           "diagnosticTargets": [],
@@ -3196,8 +3291,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "AUTHORITY",
       "kind": "ENABLE",
+      "labelId": "act.ENABLE.label",
+      "meaningId": "act.ENABLE.meaning",
+      "confirmationId": "act.ENABLE.confirmation",
+      "synopsis": "authority enable [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -3210,7 +3310,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -3234,7 +3334,7 @@
           },
           "branches": [],
           "labelId": "input.kind.label",
-          "meaningId": null,
+          "meaningId": "input.kind.meaning",
           "order": 1,
           "prefill": null,
           "diagnosticTargets": [],
@@ -3252,7 +3352,7 @@
           },
           "branches": [],
           "labelId": "input.issuer.label",
-          "meaningId": null,
+          "meaningId": "input.issuer.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -3272,7 +3372,7 @@
           },
           "branches": [],
           "labelId": "input.subject.label",
-          "meaningId": null,
+          "meaningId": "input.subject.meaning",
           "order": 3,
           "prefill": null,
           "diagnosticTargets": [
@@ -3298,8 +3398,13 @@
       ]
     },
     {
+      "endpoint": "operation.execute",
       "scope": "AUTHORITY",
       "kind": "DISABLE",
+      "labelId": "act.DISABLE.label",
+      "meaningId": "act.DISABLE.meaning",
+      "confirmationId": "act.DISABLE.confirmation",
+      "synopsis": "authority disable [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -3312,7 +3417,7 @@
           },
           "branches": [],
           "labelId": "input.operationId.label",
-          "meaningId": null,
+          "meaningId": "input.operationId.meaning",
           "order": 0,
           "prefill": null,
           "diagnosticTargets": [
@@ -3336,7 +3441,7 @@
           },
           "branches": [],
           "labelId": "input.kind.label",
-          "meaningId": null,
+          "meaningId": "input.kind.meaning",
           "order": 1,
           "prefill": null,
           "diagnosticTargets": [],
@@ -3354,7 +3459,7 @@
           },
           "branches": [],
           "labelId": "input.issuer.label",
-          "meaningId": null,
+          "meaningId": "input.issuer.meaning",
           "order": 2,
           "prefill": null,
           "diagnosticTargets": [
@@ -3374,7 +3479,7 @@
           },
           "branches": [],
           "labelId": "input.subject.label",
-          "meaningId": null,
+          "meaningId": "input.subject.meaning",
           "order": 3,
           "prefill": null,
           "diagnosticTargets": [
@@ -3398,6 +3503,351 @@
           "value": "DISABLE"
         }
       ]
+    },
+    {
+      "endpoint": "case.get",
+      "scope": "CASE",
+      "kind": "case.get",
+      "labelId": "cli.read.case.get.label",
+      "meaningId": "cli.read.case.get.meaning",
+      "confirmationId": null,
+      "synopsis": "case get CASE-REFERENCE",
+      "inputs": [
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 0,
+          "prefill": "caseReference",
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "case.list",
+      "scope": "CASE",
+      "kind": "case.list",
+      "labelId": "cli.read.case.list.label",
+      "meaningId": "cli.read.case.list.meaning",
+      "confirmationId": null,
+      "synopsis": "case list [--cursor VALUE] [--limit N]",
+      "inputs": [
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.cursor.label",
+          "meaningId": "input.cursor.meaning",
+          "order": 0,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.limit.label",
+          "meaningId": "input.limit.meaning",
+          "order": 1,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "case.history",
+      "scope": "CASE",
+      "kind": "case.history",
+      "labelId": "cli.read.case.history.label",
+      "meaningId": "cli.read.case.history.meaning",
+      "confirmationId": null,
+      "synopsis": "case history CASE-REFERENCE [--full] [--cursor VALUE] [--limit N]",
+      "inputs": [
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 0,
+          "prefill": "caseReference",
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "detail",
+          "field": null,
+          "path": [
+            "detail"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "SUMMARY",
+              "FULL"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.full.label",
+          "meaningId": "input.full.meaning",
+          "order": 1,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.cursor.label",
+          "meaningId": "input.cursor.meaning",
+          "order": 2,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.limit.label",
+          "meaningId": "input.limit.meaning",
+          "order": 3,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "operation.observe",
+      "scope": "OPERATION",
+      "kind": "operation.observe",
+      "labelId": "cli.read.operation.observe.label",
+      "meaningId": "cli.read.operation.observe.meaning",
+      "confirmationId": null,
+      "synopsis": "operation observe OPERATION-ID",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "operation.resolve",
+      "scope": "OPERATION",
+      "kind": "operation.resolve",
+      "labelId": "cli.read.operation.resolve.label",
+      "meaningId": "cli.read.operation.resolve.meaning",
+      "confirmationId": null,
+      "synopsis": "operation resolve OPERATION-ID",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "authority.list",
+      "scope": "AUTHORITY",
+      "kind": "authority.list",
+      "labelId": "cli.read.authority.list.label",
+      "meaningId": "cli.read.authority.list.meaning",
+      "confirmationId": null,
+      "synopsis": "authority list [--cursor VALUE] [--limit N]",
+      "inputs": [
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.cursor.label",
+          "meaningId": "input.cursor.meaning",
+          "order": 0,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.limit.label",
+          "meaningId": "input.limit.meaning",
+          "order": 1,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "authority.grants",
+      "scope": "AUTHORITY",
+      "kind": "authority.grants",
+      "labelId": "cli.read.authority.grants.label",
+      "meaningId": "cli.read.authority.grants.meaning",
+      "confirmationId": null,
+      "synopsis": "authority grants ACTOR-ID [--cursor VALUE] [--limit N]",
+      "inputs": [
+        {
+          "identity": "actorId",
+          "field": null,
+          "path": [
+            "actorId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.actorId.label",
+          "meaningId": "input.actorId.meaning",
+          "order": 0,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.cursor.label",
+          "meaningId": "input.cursor.meaning",
+          "order": 1,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.limit.label",
+          "meaningId": "input.limit.meaning",
+          "order": 2,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "context",
+      "scope": "CONTEXT",
+      "kind": "context",
+      "labelId": "cli.read.context.label",
+      "meaningId": "cli.read.context.meaning",
+      "confirmationId": null,
+      "synopsis": "context",
+      "inputs": [],
+      "constants": []
     }
   ],
   "productVersion": "0.11.0"

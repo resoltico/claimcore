@@ -168,6 +168,11 @@ type CatalogInput =
 
 type CatalogEntry =
     {
+        Endpoint: string
+        LabelId: string
+        MeaningId: string
+        ConfirmationId: string option
+        Synopsis: string
         Scope: string
         Kind: string
         Inputs: CatalogInput list

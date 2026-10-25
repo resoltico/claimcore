@@ -553,18 +553,10 @@ let private authorityFieldPresentation () =
         13
         "Protocol labels add no business fields"
 
-    let application =
-        AuthorityOperationDefinitions.target.Name
-        :: (AuthorityOperationDefinitions.all
-            |> List.collect (fun definition -> definition.Inputs |> List.map _.Name))
-
     Expect.equal
         (Set.ofList names)
-        (Set.ofList (
-            [ "operationId"; "expectedRevision"; "act"; "kind"; "issuer"; "subject" ]
-            @ application
-        ))
-        "Every owned technical input has presentation metadata"
+        (Vocabulary.tokens TechnicalInputs.vocabulary |> Set.ofList)
+        "Every catalog-owned technical input has presentation metadata"
 
     for field in fields do
         let name = field.GetProperty("name").GetString() |> nonNull

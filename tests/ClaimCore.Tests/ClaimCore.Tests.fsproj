@@ -61,7 +61,7 @@
     <Compile Include="PayloadBudgetTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="ContractArtifactTests.fs" />
-    <Compile Include="CatalogBindingTests.fs" />
+    <Compile Include="OperationCatalogTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
     <Compile Include="RemoteTlsTests.fs" />
     <Compile Include="TokenLifetimeTests.fs" />

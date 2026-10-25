@@ -327,11 +327,11 @@ module internal TextReply =
         | InputTarget.PaymentGroup ->
             Vocabulary.messageKey CorrectionGroup.vocabulary CorrectionGroup.Payment "label"
         | InputTarget.Reason ->
-            Vocabulary.messageKey InputTargets.vocabulary InputTarget.Reason "label"
+            OperationCatalog.inputMessage (CatalogInputName.Technical TechnicalInput.Reason) "label"
         | InputTarget.PrincipalIssuer -> (authorityFieldLabel "issuer")
         | InputTarget.PrincipalSubject -> (authorityFieldLabel "subject")
-        | InputTarget.Limit -> "cli.target.limit"
-        | InputTarget.Cursor -> "cli.target.cursor"
+        | InputTarget.Limit -> "input.limit.label"
+        | InputTarget.Cursor -> "input.cursor.label"
 
     let private diagnosticTarget language value =
         match JsonValue.tryMember "target" value with

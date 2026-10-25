@@ -20,7 +20,7 @@ module CatalogValidation =
             validate (FieldTable.labelId field.Field)
             validate (FieldTable.meaningId field.Field)
 
-        for command in ActPresentation.all do
+        for command in OperationCatalog.caseDefinitions do
             validate command.LabelId
             validate command.MeaningId
             validate command.ConfirmationId
@@ -32,9 +32,9 @@ module CatalogValidation =
                     validate group.LabelId
                     validate group.MeaningId
 
-        validate AuthorityOperationDefinitions.target.LabelId
+        validate OperationCatalog.authorityTarget.LabelId
 
-        for command in AuthorityOperationDefinitions.all do
+        for command in OperationCatalog.authorityDefinitions do
             validate command.LabelId
             validate command.MeaningId
             validate command.ConfirmationId
@@ -42,7 +42,11 @@ module CatalogValidation =
             for input in command.Inputs do
                 validate input.LabelId
 
-        for interaction in CatalogEntries.all do
+        for interaction in OperationCatalog.entries do
+            validate interaction.LabelId
+            validate interaction.MeaningId
+            Option.iter validate interaction.ConfirmationId
+
             for input in interaction.Inputs do
                 validate input.LabelId
                 Option.iter validate input.MeaningId

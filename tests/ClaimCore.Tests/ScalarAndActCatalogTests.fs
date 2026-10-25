@@ -22,7 +22,7 @@ let private expectText name maximum =
     | _ -> failtest (FieldTable.key name + " must be a text scalar.")
 
 let private expectFields kind expected =
-    let definition = ActPresentation.forKind kind
+    let definition = OperationCatalog.forCase kind
 
     match definition.Inputs with
     | ActInputShape.Fields inputs ->
@@ -184,7 +184,7 @@ let private correctionGroupDetails (groups: CorrectionGroupDefinition list) =
 let private commandInventoryTest =
     testCase "all twelve case act definitions are the sole command inventory" (fun () ->
         Expect.equal
-            (ActPresentation.all |> List.map (fun definition -> definition.Kind))
+            (OperationCatalog.caseDefinitions |> List.map (fun definition -> definition.Kind))
             CaseActKinds.all
             "Exact command order")
 
@@ -219,7 +219,7 @@ let private commandPrefillTest =
 let private correctionGroupMetadataTest =
     testCase "CORRECT describes required tagged groups and replacement fields" (fun () ->
         let definition =
-            ActPresentation.forKind (CaseActKind.Business BusinessActKind.Correct)
+            OperationCatalog.forCase (CaseActKind.Business BusinessActKind.Correct)
 
         match definition.Inputs with
         | ActInputShape.Fields _ -> failtest "CORRECT requires grouped inputs."
@@ -230,7 +230,7 @@ let private correctionGroupMetadataTest =
                 "Groups, actions, and replacement scalars are semantic metadata")
 
 let private authoredInputFields () =
-    ActPresentation.all
+    OperationCatalog.caseDefinitions
     |> List.collect (fun definition ->
         match definition.Inputs with
         | ActInputShape.Fields fields -> fields

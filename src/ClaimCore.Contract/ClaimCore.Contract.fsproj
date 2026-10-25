@@ -50,14 +50,15 @@
     <Compile Include="Codecs/ReceiptCodecs.fs" />
     <Compile Include="Codecs/ReplyCodecs.fs" />
     <Compile Include="ResolutionCodecs.fs" />
-    <Compile Include="Presentation/Definitions.fs" />
-    <Compile Include="Presentation/CatalogCodecs.fs" />
+    <Compile Include="Catalog/Metadata.fs" />
+    <Compile Include="Catalog/Codecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
     <Compile Include="Api/Correlation.fs" />
     <Compile Include="HostFailures.fs" />
     <Compile Include="Codecs/HostFailureCodecs.fs" />
     <Compile Include="Api/OpenApi.fs" />
     <Compile Include="Api/ContractIdentity.fs" />
+    <Compile Include="Catalog/OperationCatalog.fs" />
     <Compile Include="HttpsOrigins.fs" />
   </ItemGroup>
 </Project>

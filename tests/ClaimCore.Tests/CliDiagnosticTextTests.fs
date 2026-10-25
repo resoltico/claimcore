@@ -72,8 +72,8 @@ let private remainingTargets () =
         "input.expectedRevision.label"
         Violation.ExpectedRevisionRange
 
-    assertTarget InputTarget.Reason "field.reason.label" Violation.TextRequired
-    assertTarget InputTarget.Limit "cli.target.limit" (Violation.PageLimitRange 50)
+    assertTarget InputTarget.Reason "input.reason.label" Violation.TextRequired
+    assertTarget InputTarget.Limit "input.limit.label" (Violation.PageLimitRange 50)
 
     assertTarget
         (InputTarget.Field BusinessField.ClaimantName)
@@ -121,7 +121,7 @@ let tests =
                 "operation revision reason page and limit parameters retain their identity"
                 remainingTargets
             testCase "cursor uses a localized identity" (fun () ->
-                assertOptionalTarget Refusal.InvalidCursor (Some "cli.target.cursor"))
+                assertOptionalTarget Refusal.InvalidCursor (Some "input.cursor.label"))
             testCase "targetless refusal has no invented target" (fun () ->
                 assertOptionalTarget Refusal.ResourceUnavailable None)
         ]

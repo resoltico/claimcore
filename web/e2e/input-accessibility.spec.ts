@@ -37,22 +37,26 @@ for (const language of ["en", "lv", "ar"] as const) {
     await previewRefusal(page, issuer, "principal.issuer", "INPUT_PRINCIPAL_FORMAT");
     await expect(issuer).toHaveAccessibleName(inputMessage(language, "input.issuer.label"));
     await expect(issuer).toHaveAccessibleDescription(
-      inputMessage(language, "diagnostic.INPUT_PRINCIPAL_FORMAT"),
+      `${inputMessage(language, "input.issuer.meaning")} ${inputMessage(language, "diagnostic.INPUT_PRINCIPAL_FORMAT")}`,
     );
     await issuer.fill(source.issuer);
     await expect(issuer).not.toHaveAttribute("aria-invalid");
-    await expect(issuer).toHaveAccessibleDescription("");
+    await expect(issuer).toHaveAccessibleDescription(
+      inputMessage(language, "input.issuer.meaning"),
+    );
     await issuer.press("Tab");
     await expect(subject).toBeFocused();
     await subject.fill("");
     await previewRefusal(page, subject, "principal.subject", "INPUT_TEXT_REQUIRED");
     await expect(subject).toHaveAccessibleName(inputMessage(language, "input.subject.label"));
     await expect(subject).toHaveAccessibleDescription(
-      inputMessage(language, "diagnostic.INPUT_TEXT_REQUIRED"),
+      `${inputMessage(language, "input.subject.meaning")} ${inputMessage(language, "diagnostic.INPUT_TEXT_REQUIRED")}`,
     );
     await subject.fill(source.ownerSubject);
     await expect(subject).not.toHaveAttribute("aria-invalid");
-    await expect(subject).toHaveAccessibleDescription("");
+    await expect(subject).toHaveAccessibleDescription(
+      inputMessage(language, "input.subject.meaning"),
+    );
   });
   test(`case-scoped grant and revoke references retain shared hints and refusal focus in ${language}`, async ({
     page,

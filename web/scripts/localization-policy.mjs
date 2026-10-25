@@ -155,39 +155,25 @@ const assertDiagnosticShape = (message, args, id) => {
     throw new Error(`Diagnostic parameters differ: ${id}`);
   }
 };
-/** @param {import("./tooling-types.mjs").JsonRecord} operationCatalog */
-const authorityKeys = (operationCatalog) => {
-  /** @type {Array<{kind:string}>} */
-  const commands = operationCatalog["authorityActs"] ?? [];
-  /** @type {Array<{labelId:string}>} */
-  const fields = operationCatalog["authorityFields"] ?? [];
-  return [
-    ...fields.map((field) => field.labelId),
-    ...commands.flatMap((command) =>
-      ["label", "meaning"].map((part) => `act.${command.kind}.${part}`),
-    ),
-  ];
-};
 /** @param {Record<string, Message>} catalog @param {import("./tooling-types.mjs").JsonRecord} operationCatalog @param {Record<string, Record<string, unknown>>} requirements */
 export const validateCoverage = (catalog, operationCatalog, requirements) => {
   /** @type {string[]} */
   const keys = [];
-  for (const field of [...operationCatalog["fields"], ...(operationCatalog["inputFields"] ?? [])]) {
-    for (const s of ["label", "meaning"]) {
-      keys.push(`field.${field.name}.${s}`);
-    }
-  }
-  for (const c of operationCatalog["acts"]) {
-    for (const s of ["label", "meaning"]) {
-      keys.push(`act.${c.kind}.${s}`);
-    }
-    for (const g of c.inputs.groups ?? []) {
-      for (const s of ["label", "meaning"]) {
-        keys.push(`group.${g.name}.${s}`);
+  /** @param {unknown} value */
+  const collect = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(collect);
+    } else if (isRecord(value)) {
+      for (const [name, item] of Object.entries(value)) {
+        if (["labelId", "meaningId", "confirmationId"].includes(name) && typeof item === "string") {
+          keys.push(item);
+        } else {
+          collect(item);
+        }
       }
     }
-  }
-  keys.push(...authorityKeys(operationCatalog));
+  };
+  collect(operationCatalog);
   for (const [id, args] of Object.entries(requirements)) {
     const key = id;
     keys.push(key);

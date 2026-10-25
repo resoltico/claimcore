@@ -28,18 +28,19 @@ it.each(["en", "lv", "ar"] as const)(
     for (const field of ["issuer", "subject"] as const) {
       const name = catalogs[language][`input.${field}.label`];
       const input = screen.getByRole("textbox", { name });
-      expect(input).not.toHaveAccessibleDescription();
+      const meaning = catalogs[language][`input.${field}.meaning`];
+      expect(input).toHaveAccessibleDescription(meaning);
       view.rerender(<CatalogInputs {...props} errorPath={`target.${field}`} errorNotice={error} />);
       expect(input).toHaveAccessibleName(name);
       expect(input).toHaveAccessibleDescription(
-        catalogs[language]["diagnostic.INPUT_PRINCIPAL_FORMAT"],
+        `${meaning} ${catalogs[language]["diagnostic.INPUT_PRINCIPAL_FORMAT"]}`,
       );
       expect(input).toHaveAttribute("aria-invalid", "true");
       await user.click(screen.getByText(name, { exact: true, selector: "label" }));
       expect(input).toHaveFocus();
       view.rerender(<CatalogInputs {...props} errorPath={null} errorNotice={null} />);
       expect(input).toHaveAccessibleName(name);
-      expect(input).not.toHaveAccessibleDescription();
+      expect(input).toHaveAccessibleDescription(meaning);
       expect(input).not.toHaveAttribute("aria-invalid");
       expect(document.getElementById(`target.${field}-error`)).toBeNull();
     }

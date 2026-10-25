@@ -90,7 +90,7 @@ let private commandGroups () =
         |> List.map (fun row -> InputTarget.Field row.Field)
 
     let actual kind =
-        match (ActPresentation.forKind (CaseActKind.Business kind)).Inputs with
+        match (OperationCatalog.forCase (CaseActKind.Business kind)).Inputs with
         | ActInputShape.Fields fields -> fields |> List.map _.FieldName
         | _ -> failtest "Expected flat command fields"
 
@@ -107,7 +107,7 @@ let private commandGroups () =
             "Command fields follow their source group's order"
 
     let correction =
-        ActPresentation.forKind (CaseActKind.Business BusinessActKind.Correct)
+        OperationCatalog.forCase (CaseActKind.Business BusinessActKind.Correct)
 
     match correction.Inputs with
     | ActInputShape.CorrectionGroups groups ->

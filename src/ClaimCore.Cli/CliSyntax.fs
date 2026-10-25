@@ -127,6 +127,7 @@ module internal CliSyntax =
 
     let compile (metadata: CatalogDocument) =
         metadata.Entries
+        |> List.filter (fun entry -> entry.Endpoint = Api.operationExecute.Id)
         |> List.fold
             (fun state item ->
                 state
