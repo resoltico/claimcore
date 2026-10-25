@@ -64,7 +64,6 @@ module CliReply =
             Delivery = delivery
             Result = result
         }
-        |> Frames.retainUncertainty invocation
 
     let result invocation reply =
         if

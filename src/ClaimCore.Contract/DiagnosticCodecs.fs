@@ -54,12 +54,16 @@ module DiagnosticCodecs =
         function
         | Refusal.InvalidInput _ -> 1
         | Refusal.InvalidCursor -> 2
+        | Refusal.OperationResolved -> 3
         | _ -> 0
 
     let private target kind =
         match kind with
         | 1 -> enumeration InputTargets.all |> map Some Option.get
         | 2 -> constant "cursor" |> map (fun () -> Some InputTarget.Cursor) (fun _ -> ())
+        | 3 ->
+            constant "operationId"
+            |> map (fun () -> Some InputTarget.OperationId) (fun _ -> ())
         | _ -> nullValue |> map (fun () -> None) (fun _ -> ())
 
     let private revision present =
@@ -88,6 +92,7 @@ module DiagnosticCodecs =
                 (match reason with
                  | Refusal.InvalidInput(target, _) -> Some target
                  | Refusal.InvalidCursor -> Some InputTarget.Cursor
+                 | Refusal.OperationResolved -> Some InputTarget.OperationId
                  | _ -> None),
                 Refusals.actualRevision reason,
                 Refusals.parameters reason |> Map.ofList)

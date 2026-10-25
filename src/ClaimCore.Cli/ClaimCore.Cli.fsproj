@@ -3,6 +3,12 @@
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="CliCommands.fs" />
+    <Compile Include="Frames.fs" />
+    <Compile Include="Schemas.fs" />
+    <Compile Include="CliSyntax.fs" />
+    <Compile Include="Grammar.fs" />
+    <Compile Include="CliInvocation.fs" />
     <Compile Include="ClientFailures.fs" />
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="FrameReader.fs" />
@@ -23,7 +29,6 @@
     <Compile Include="RemoteServiceCall.fs" />
     <Compile Include="FrameDelivery.fs" />
     <Compile Include="StandardSinks.fs" />
-    <Compile Include="RecoverySelection.fs" />
     <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="TextReply.fs" />
     <Compile Include="Program.fs" />

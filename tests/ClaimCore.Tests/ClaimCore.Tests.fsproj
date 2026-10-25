@@ -9,6 +9,7 @@
     <Compile Include="PropertyHarness.fs" />
     <Compile Include="PropertyHarnessTests.fs" />
     <Compile Include="Fixtures.fs" />
+    <Compile Include="VocabularyTests.fs" />
     <Compile Include="WireCodecTests.fs" />
     <Compile Include="WireRequestTests.fs" />
     <Compile Include="OpenApiConformanceTests.fs" />
@@ -27,7 +28,7 @@
     <Compile Include="CorrectionMatrixTests.fs" />
     <Compile Include="DomainValidationTests.fs" />
     <Compile Include="AvailabilityTests.fs" />
-    <Compile Include="DomainDescriptorTests.fs" />
+    <Compile Include="ScalarAndCommandDescriptorTests.fs" />
     <Compile Include="FieldTableTests.fs" />
     <Compile Include="StewardshipTests.fs" />
     <Compile Include="CanonicalJsonTests.fs" />
@@ -39,21 +40,16 @@
     <Compile Include="LedgerEntryTests.fs" />
     <Compile Include="CaseReferenceIdTests.fs" />
     <Compile Include="PrivateFileTests.fs" />
-    <Compile Include="MemoryLedgerStore.fs" />
-    <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
-    <Compile Include="ApplicationFixtures.fs" />
+    <Compile Include="../StoreFixtures.fs" Link="StoreFixtures.fs" />
+    <Compile Include="DecisionFixtures.fs" />
+    <Compile Include="CoreBoundaryTests.fs" />
+    <Compile Include="QuerySelectionTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="AuthorizationPolicyTests.fs" />
-    <Compile Include="OperationAuthorityScopeTests.fs" />
     <Compile Include="CursorTests.fs" />
-    <Compile Include="ApplicationTests.fs" />
-    <Compile Include="RecoveryTests.fs" />
-    <Compile Include="RecoveryFaultTests.fs" />
-    <Compile Include="DiagnosticReachabilityTests.fs" />
-    <Compile Include="ProtocolMappingTests.fs" />
-    <Compile Include="AuthorityTests.fs" />
-    <Compile Include="DisclosureTests.fs" />
-    <Compile Include="PaginationTests.fs" />
+    <Compile Include="CaseDecisionTests.fs" />
+    <Compile Include="AuthorityDecisionTests.fs" />
+    <Compile Include="ReceiptDisclosureTests.fs" />
     <Compile Include="MessageTemplateTests.fs" />
     <Compile Include="LocalizationCatalogTests.fs" />
     <Compile Include="EndpointRegistryTests.fs" />
@@ -73,9 +69,6 @@
     <Compile Include="HistoryReplyTests.fs" />
     <Compile Include="CliTransportFixture.fs" />
     <Compile Include="CliTransportTests.fs" />
-    <Compile Include="CliRetryTests.fs" />
-    <Compile Include="CliRecoveryTests.fs" />
-    <Compile Include="CliRecoverySelectionTests.fs" />
     <Compile Include="CliSignalDeliveryTests.fs" />
     <Compile Include="ClientInteractionTests.fs" />
     <Compile Include="ClientAdmissionTests.fs" />
@@ -84,6 +77,7 @@
     <Compile Include="ConfigurationHelpTests.fs" />
     <Compile Include="CliDescriptionTests.fs" />
     <Compile Include="CliInvocationTests.fs" />
+    <Compile Include="CliSyntaxTests.fs" />
     <Compile Include="CliDiagnosticTextTests.fs" />
     <Compile Include="CliCharacterWarningTests.fs" />
     <Compile Include="InputDiagnosticTests.fs" />

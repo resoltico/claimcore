@@ -24,13 +24,16 @@ module RequestCodecs =
                 ClaimedCurrency = v6
             })
         : Fields<Registration, _>)
-        |> field "incidentDate" _.IncidentDate (text)
-        |> field "incidentNotificationDate" _.IncidentNotificationDate (text)
-        |> field "incidentCountry" _.IncidentCountry (text)
-        |> field "claimantName" _.ClaimantName (text)
-        |> field "insurerName" _.InsurerName (text)
-        |> field "claimedAmount" _.ClaimedAmount (text)
-        |> field "claimedCurrency" _.ClaimedCurrency (text)
+        |> field (FieldTable.key BusinessField.IncidentDate) _.IncidentDate (text)
+        |> field
+            (FieldTable.key BusinessField.IncidentNotificationDate)
+            _.IncidentNotificationDate
+            (text)
+        |> field (FieldTable.key BusinessField.IncidentCountry) _.IncidentCountry (text)
+        |> field (FieldTable.key BusinessField.ClaimantName) _.ClaimantName (text)
+        |> field (FieldTable.key BusinessField.InsurerName) _.InsurerName (text)
+        |> field (FieldTable.key BusinessField.ClaimedAmount) _.ClaimedAmount (text)
+        |> field (FieldTable.key BusinessField.ClaimedCurrency) _.ClaimedCurrency (text)
         |> build
         |> named "Registration"
 
@@ -42,15 +45,15 @@ module RequestCodecs =
                 PayableCurrency = v2
             })
         : Fields<Decision, _>)
-        |> field "paymentDecisionDate" _.PaymentDecisionDate (text)
-        |> field "payableAmount" _.PayableAmount (text)
-        |> field "payableCurrency" _.PayableCurrency (text)
+        |> field (FieldTable.key BusinessField.PaymentDecisionDate) _.PaymentDecisionDate (text)
+        |> field (FieldTable.key BusinessField.PayableAmount) _.PayableAmount (text)
+        |> field (FieldTable.key BusinessField.PayableCurrency) _.PayableCurrency (text)
         |> build
         |> named "Decision"
 
     let payment =
         (record (fun v0 -> { Payment.PaymentDate = v0 }): Fields<Payment, _>)
-        |> field "paymentDate" _.PaymentDate (text)
+        |> field (FieldTable.key BusinessField.PaymentDate) _.PaymentDate (text)
         |> build
         |> named "Payment"
 
@@ -203,7 +206,7 @@ module RequestCodecs =
             })
         : Fields<CaseRequest, _>)
         |> field "operationId" _.OperationId (uuid)
-        |> field "caseReference" _.CaseReference (text)
+        |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference (text)
         |> field "expectedRevision" _.ExpectedRevision (revision)
         |> field "act" _.Act (caseAct)
         |> build
@@ -235,7 +238,7 @@ module RequestCodecs =
                     (function
                     | GrantTarget.CaseReference value -> Some value
                     | _ -> None)
-                    (record id |> field "caseReference" id text)
+                    (record id |> field (FieldTable.key BusinessField.CaseReference) id text)
             ]
 
     let authorityActWith role =
@@ -329,7 +332,7 @@ module RequestCodecs =
 
     let caseGetRequest =
         (record (fun v0 -> { CaseGetRequest.CaseReference = v0 }): Fields<CaseGetRequest, _>)
-        |> field "caseReference" _.CaseReference (text)
+        |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference (text)
         |> build
         |> named "CaseGetRequest"
 
@@ -342,11 +345,8 @@ module RequestCodecs =
                 Limit = v3
             })
         : Fields<HistoryRequest, _>)
-        |> field "caseReference" _.CaseReference (text)
-        |> field
-            "detail"
-            _.Detail
-            (enumeration [ HistoryDetail.Summary, "SUMMARY"; HistoryDetail.Full, "FULL" ])
+        |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference (text)
+        |> field "detail" _.Detail (vocabulary HistoryDetails.vocabulary)
         |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
         |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize) |> map int int64)
         |> build

@@ -162,7 +162,6 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
     }
     return Promise.resolve(
       response("operation.execute", {
-        recoveryId: null,
         operationId: parsed.operationId,
         outcome: { tag: "ACCEPTED", data: caseReceipt(parsed) },
       }),
@@ -311,7 +310,6 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
     }
     return Promise.resolve(
       response("operation.execute", {
-        recoveryId: null,
         operationId: parsed.operationId,
         outcome: { tag: "ACCEPTED", data: authorityReceipt(parsed) },
       }),

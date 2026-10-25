@@ -201,7 +201,7 @@ module Codec =
         }
 
     [<Literal>]
-    let private InstantFormat = "yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'"
+    let private InstantFormat = Formats.InstantFormat
 
     /// RFC 3339 UTC with exactly six fractional digits, matching ledger precision.
     let instant: Codec<DateTimeOffset> =
@@ -263,6 +263,9 @@ module Codec =
             Schema = Schema.OneOf(cases |> List.map (snd >> Schema.Const), None)
             Definitions = Map.empty
         }
+
+    /// A finite vocabulary owns its spelling, ordering and complete union coverage.
+    let vocabulary values = enumeration (Vocabulary.entries values)
 
     let nullable (codec: Codec<'T>) : Codec<'T option> =
         {

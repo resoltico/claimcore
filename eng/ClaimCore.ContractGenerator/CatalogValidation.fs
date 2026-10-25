@@ -20,7 +20,7 @@ module CatalogValidation =
             validate (FieldTable.labelId field.Field)
             validate (FieldTable.meaningId field.Field)
 
-        for command in CommandDefinitions.all do
+        for command in CommandPresentation.all do
             validate command.LabelId
             validate command.MeaningId
             validate command.ConfirmationId

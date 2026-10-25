@@ -51,6 +51,14 @@ module internal Queries =
     let caseRecord installationId principal actor record =
         Advice.caseRecord installationId principal actor record
 
+    let caseResult installationId principal (view: CaseReadView) =
+        if not (CaseDecisions.authorize principal view.Actor Capability.ReadCase view.Case) then
+            unavailable
+        else
+            caseRecord installationId principal view.Actor (Option.get view.Case)
+            |> Result.map ReadReply.Succeeded
+            |> Result.defaultWith ReadReply.Failed
+
     let get
         (store: ILedgerStore)
         installationId
@@ -66,52 +74,41 @@ module internal Queries =
 
                 match read with
                 | Error error -> return failure error
-                | Ok view when
-                    not (CaseDecisions.authorize principal view.Actor Capability.ReadCase view.Case)
-                    ->
-                    return unavailable
-                | Ok view ->
-                    return
-                        caseRecord installationId principal view.Actor (Option.get view.Case)
-                        |> Result.map ReadReply.Succeeded
-                        |> Result.defaultWith ReadReply.Failed
+                | Ok view -> return caseResult installationId principal view
         }
 
-    let context
-        (store: ILedgerStore)
-        (calendar: IBusinessCalendar)
-        principal
-        ct
-        : Task<ReadReply<ActorContext>> =
+    let contextResult (calendar: IBusinessCalendar) principal (view: ActorReadView) =
+        match currentActor principal view.Actor with
+        | Error _ -> unavailable
+        | Ok _ ->
+            ReadReply.Succeeded
+                {
+                    Runtime =
+                        {
+                            ProductVersion = BuildIdentity.current.Version
+                            EffectiveBusinessDate = calendar.DateAt view.ObservedAt
+                            TimeZoneId = calendar.TimeZoneId
+                        }
+                    Views = Advice.views principal view.Actor
+                    Offers = Advice.installationOffers principal view.Actor
+                    Capabilities =
+                        Capabilities.all
+                        |> List.filter (fun capability ->
+                            ActorAuthorization.can
+                                principal
+                                view.Actor
+                                capability
+                                ResourceScope.Installation)
+                }
+
+    let context (store: ILedgerStore) calendar principal ct : Task<ReadReply<ActorContext>> =
         task {
             let! read = store.ReadActor(principal, ct)
 
-            match read with
-            | Error error -> return failure error
-            | Ok view ->
-                match currentActor principal view.Actor with
-                | Error _ -> return unavailable
-                | Ok _ ->
-                    return
-                        ReadReply.Succeeded
-                            {
-                                Runtime =
-                                    {
-                                        ProductVersion = BuildIdentity.current.Version
-                                        EffectiveBusinessDate = calendar.DateAt view.ObservedAt
-                                        TimeZoneId = calendar.TimeZoneId
-                                    }
-                                Views = Advice.views principal view.Actor
-                                Offers = Advice.installationOffers principal view.Actor
-                                Capabilities =
-                                    Capabilities.all
-                                    |> List.filter (fun capability ->
-                                        ActorAuthorization.can
-                                            principal
-                                            view.Actor
-                                            capability
-                                            ResourceScope.Installation)
-                            }
+            return
+                match read with
+                | Error error -> failure error
+                | Ok view -> contextResult calendar principal view
         }
 
     let private cursor decode token =
@@ -119,7 +116,7 @@ module internal Queries =
         | None -> Ok None
         | Some token -> decode token |> Result.map Some
 
-    let private selectCases principal (request: PageRequest) (view: ActorReadView) =
+    let selectCases principal (request: PageRequest) (view: ActorReadView) =
         currentActor principal view.Actor
         |> Result.bind (fun actor ->
             match ActorAuthorization.visibility principal actor with
@@ -198,7 +195,7 @@ module internal Queries =
                         |> Result.defaultWith ReadReply.Failed
         }
 
-    let private selectHistory principal (request: HistoryRequest) (view: HistoryReadView) =
+    let selectHistory principal (request: HistoryRequest) (view: HistoryReadView) =
         let capability =
             if request.Detail = HistoryDetail.Full then
                 Capability.ReadHistoryFull
@@ -314,7 +311,7 @@ module internal Queries =
                     | _ -> return unavailable
         }
 
-    let private selectActors principal (request: PageRequest) (view: ActorReadView) =
+    let selectActors principal (request: PageRequest) (view: ActorReadView) =
         if
             not (
                 ActorAuthorization.can
@@ -366,7 +363,7 @@ module internal Queries =
                         |> Result.defaultWith ReadReply.Failed
         }
 
-    let private selectGrants principal (request: GrantsRequest) (view: GrantReadView) =
+    let selectGrants principal (request: GrantsRequest) (view: GrantReadView) =
         if
             not (
                 ActorAuthorization.can

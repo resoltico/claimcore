@@ -46,11 +46,25 @@ const login = async (context, fingerprint) => {
   require(typeof owner.username === "string" &&
     typeof owner.password === "string", "Credentials missing");
   const page = await context.newPage();
+  // Redirect chains can bypass a homepage route. Block the separate application script request
+  // so React cannot race this API-session probe's own cookie/antiforgery capture.
+  let blockedScripts = 0;
+  await page.route(
+    (url) => url.origin === origin,
+    (route) => {
+      if (route.request().resourceType() === "script") {
+        blockedScripts += 1;
+        return route.abort();
+      }
+      return route.continue();
+    },
+  );
   await page.goto(`${origin}/auth/login`);
   await page.locator('input[name="username"]').fill(owner.username);
   await page.locator('input[name="password"]').fill(owner.password);
   await page.locator('input[type="submit"], button[type="submit"]').first().click();
   await page.waitForURL((url) => url.origin === origin && url.pathname === "/");
+  require(blockedScripts > 0, "Application bootstrap was not isolated");
   const current = await session(context, fingerprint);
   require(current.authenticated && typeof current.antiforgeryToken === "string", "Login refused");
   await protectedContext(context, fingerprint, current.antiforgeryToken);

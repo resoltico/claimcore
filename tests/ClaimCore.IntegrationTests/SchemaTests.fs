@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.SchemaTests
 
+open ClaimCore.TestSupport
+
 open System
 open System.IO
 open System.Text

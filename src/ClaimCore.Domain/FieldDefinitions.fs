@@ -41,45 +41,26 @@ module FieldDefinitions =
     let private calendarDate =
         ScalarRule.CalendarDate
             {
-                ExactFormat = "yyyy-MM-dd"
+                ExactFormat = Formats.CalendarDateFormat
                 Minimum = System.DateOnly.MinValue
                 Maximum = System.DateOnly.MaxValue
             }
 
     let private amount =
-        let maximumIntegerDigits = 18
-        let maximumFractionalDigits = 4
-
-        let integerTail =
-            (maximumIntegerDigits - 1).ToString(System.Globalization.CultureInfo.InvariantCulture)
-
-        let fractional =
-            maximumFractionalDigits.ToString(System.Globalization.CultureInfo.InvariantCulture)
-
-        let grammar =
-            "(0|[1-9][0-9]{0," + integerTail + "})(\\.[0-9]{1," + fractional + "})?"
-
         ScalarRule.Amount
             {
-                Text = token grammar
-                Grammar = grammar
-                MaximumIntegerDigits = maximumIntegerDigits
-                MaximumFractionalDigits = maximumFractionalDigits
+                Text = token Formats.amount
+                Grammar = Formats.amount
+                MaximumIntegerDigits = Formats.AmountIntegerDigits
+                MaximumFractionalDigits = Formats.AmountFractionalDigits
             }
 
     let private currency =
-        let exactCharacters = 3
-
-        let characters =
-            exactCharacters.ToString(System.Globalization.CultureInfo.InvariantCulture)
-
-        let grammar = "[A-Z]{" + characters + "}"
-
         ScalarRule.Currency
             {
-                Text = token grammar
-                Grammar = grammar
-                ExactCharacters = exactCharacters
+                Text = token Formats.currency
+                Grammar = Formats.currency
+                ExactCharacters = Formats.CurrencyCharacters
             }
 
     let private status = ScalarRule.CaseStatus { AllowedValues = CaseStatuses.all }
@@ -87,8 +68,8 @@ module FieldDefinitions =
     let private forScalar =
         function
         | ScalarKind.Date -> calendarDate
-        | ScalarKind.Country -> ScalarRule.Text(token "[A-Z]{2}")
-        | ScalarKind.Reference -> ScalarRule.Text(token "[!-~]{1,80}")
+        | ScalarKind.Country -> ScalarRule.Text(token Formats.country)
+        | ScalarKind.Reference -> ScalarRule.Text(token Formats.reference)
         | ScalarKind.Text -> ScalarRule.Text(text TextAdmission.MaximumCharacters)
         | ScalarKind.Amount -> amount
         | ScalarKind.Currency -> currency

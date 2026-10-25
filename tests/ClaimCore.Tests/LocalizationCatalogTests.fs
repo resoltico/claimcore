@@ -24,9 +24,8 @@ let private families =
         "cli"
     ]
 
-let private entries language family =
-    let bytes =
-        File.ReadAllBytes(Path.Combine(directory (), language + "." + family + ".json"))
+let private allEntries language =
+    let bytes = File.ReadAllBytes(Path.Combine(directory (), language + ".json"))
 
     match StrictJson.read bytes.Length bytes |> Fixtures.accepted with
     | JsonValue.Object entries ->
@@ -37,20 +36,20 @@ let private entries language family =
             | _ -> failtest "Authored catalog values must be ICU strings.")
     | _ -> failtest "Authored catalog root must be an object."
 
+let private entries language family =
+    allEntries language
+    |> List.filter (fun (key, _) -> key.StartsWith(family + ".", System.StringComparison.Ordinal))
+
 let private catalog language =
-    families
-    |> List.collect (entries language)
+    allEntries language
     |> Messages.catalog
     |> Fixtures.accepted
     |> Messages.templates
 
 let private inventory () =
     let expected =
-        [
-            for language in LocalizationPolicy.languages do
-                for family in families do
-                    language + "." + family + ".json"
-        ]
+        LocalizationPolicy.languages
+        |> List.map (fun language -> language + ".json")
         |> Set.ofList
 
     let actual =
@@ -58,20 +57,20 @@ let private inventory () =
         |> Seq.map Path.GetFileName
         |> Set.ofSeq
 
-    Expect.equal actual expected "Every language contains exactly the adopted message families."
+    Expect.equal actual expected "Exactly one catalog per supported language"
+    let english = allEntries "en" |> List.map fst |> Set.ofList
 
-    for family in families do
-        let english = entries "en" family |> List.map fst |> Set.ofList
+    for language in LocalizationPolicy.languages do
+        let localized = allEntries language |> List.map fst |> Set.ofList
+        Expect.equal localized english "Authored keys have exact language parity"
 
-        for language in LocalizationPolicy.languages do
-            let localized = entries language family |> List.map fst |> Set.ofList
-            Expect.equal localized english "Authored keys have exact language parity."
-
-            Expect.isTrue
-                (localized
-                 |> Set.forall (fun key ->
-                     key.StartsWith(family + ".", System.StringComparison.Ordinal)))
-                "Every key belongs to the file's family."
+        Expect.isTrue
+            (localized
+             |> Set.forall (fun key ->
+                 families
+                 |> List.exists (fun family ->
+                     key.StartsWith(family + ".", System.StringComparison.Ordinal))))
+            "Prefixes own the message family"
 
 let private interpolation () =
     let english = catalog "en"
@@ -154,21 +153,20 @@ let private cliArguments () =
 
 let private embeddedCatalogs () =
     for language in LocalizationPolicy.languages do
-        for family in families do
-            for key, source in entries language family do
-                let template = Template.parse source |> Fixtures.accepted
+        for key, source in allEntries language do
+            let template = Template.parse source |> Fixtures.accepted
 
-                let expected =
-                    Template.parts template
-                    |> List.map (function
-                        | TemplatePart.Literal text -> text
-                        | TemplatePart.Hole name -> "{" + name + "}")
-                    |> String.concat ""
+            let expected =
+                Template.parts template
+                |> List.map (function
+                    | TemplatePart.Literal text -> text
+                    | TemplatePart.Hole name -> "{" + name + "}")
+                |> String.concat ""
 
-                Expect.equal
-                    (ContractDiscovery.localized language key)
-                    expected
-                    "The shipped CLI embeds every authored message, including English."
+            Expect.equal
+                (ContractDiscovery.localized language key)
+                expected
+                "The shipped CLI embeds every authored message, including English."
 
         for topic in CliCommands.topics do
             let text = ContractDiscovery.helpTopic language topic
@@ -177,7 +175,8 @@ let private embeddedCatalogs () =
 
     let delivery = ContractDiscovery.helpTopic "en" "delivery"
     Expect.stringContains delivery "prepared request bytes" "Help describes the frozen body."
-    Expect.stringContains delivery "call --retry" "Prior uncertainty has an explicit retry path."
+    Expect.stringContains delivery "claimcore call" "Exact resending remains available."
+    Expect.stringContains delivery "claimcore operation resolve" "Final resolution is explicit."
 
     Expect.isFalse
         (delivery.Contains "original request bytes")
@@ -207,9 +206,7 @@ let private diagnosticDiscovery () =
         "Discovery contains the entire current public diagnostic vocabulary."
 
     for language in LocalizationPolicy.languages do
-        let bytes =
-            Discovery.describeText language Protocol.CliDescription.Diagnostics
-            |> Option.get
+        let bytes = Discovery.describeText language CliDescription.Diagnostics |> Option.get
 
         let text = System.Text.Encoding.UTF8.GetString bytes
 

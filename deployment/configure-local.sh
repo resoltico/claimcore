@@ -94,7 +94,7 @@ printf 'CLAIMCORE_UID=%s\nCLAIMCORE_GID=%s\n' "${claimcore_uid}" "${claimcore_gi
 mount_configuration="${configuration//\"/\"\"}"
 docker run --rm --name "${project}-permissions" --label claimcore.configuration="${project}" \
   --network none --read-only --mount "type=bind,\"source=${mount_configuration}\",target=/config" \
-  --user 0 --entrypoint /bin/sh postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722 \
+  --user 0 --entrypoint /bin/sh postgres:18.6@sha256:edb0c08dc33befd0262ab3b5cf1c4f3f8cfd8b09e88c05b45adee29d6761ddb6 \
   -c 'set -eu; chown -R 999:999 /config/postgres; chown -R 1000:1000 /config/identity'
 unset owner_password runtime_password web_secret service_secret owner_login
 printf 'Created fresh local configuration. Username: owner. Password: %s/owner-login.password\n' "${configuration}"

@@ -19,17 +19,12 @@ let private text name (item: JsonElement) =
 
 let private expectedLabel language (item: JsonElement) =
     let identity = text "labelId" item
-    let domain = identity.Split('.')[0]
     let root = ClaimCore.TestSupport.RepositoryRoot.find ()
 
     use document =
         JsonDocument.Parse(
             File.ReadAllBytes(
-                Path.Combine(
-                    root,
-                    "src/ClaimCore.Contract/Localization",
-                    language + "." + domain + ".json"
-                )
+                Path.Combine(root, "src/ClaimCore.Contract/Localization", language + ".json")
             )
         )
 

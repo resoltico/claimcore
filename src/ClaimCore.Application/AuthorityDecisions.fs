@@ -121,44 +121,6 @@ module internal AuthorityDecisions =
                 bytes
                 view.ExistingOperation
 
-    let stage
-        installationId
-        principal
-        (request: AdmittedAuthorityRequest)
-        (view: AuthorityReadView)
-        =
-        let bytes = AuthorityRequests.toRecord request |> AuthorityRecord.encode
-
-        match admission installationId principal request.OperationId bytes view with
-        | IdentityDecision.Refuse refusal ->
-            RecoveryAdmission.Terminal(ExecuteResult.Rejected refusal)
-        | IdentityDecision.Fail fault -> RecoveryAdmission.Terminal(ExecuteResult.Failed fault)
-        | IdentityDecision.Replay entry ->
-            LedgerEntries.receipt principal view.Actor None entry
-            |> Result.map ExecuteResult.AlreadyAccepted
-            |> Result.defaultWith ExecuteResult.Failed
-            |> RecoveryAdmission.Terminal
-        | IdentityDecision.Fresh when
-            request.Act <> AdmittedAuthorityAct.RegisterActor && view.Target.Actor.IsNone
-            ->
-            RecoveryAdmission.Terminal(ExecuteResult.Rejected Refusal.ActorUnknown)
-        | IdentityDecision.Fresh ->
-            match view.TargetCase with
-            | Some {
-                       Snapshot = { View = CaseView.Erased }
-                   } -> RecoveryAdmission.Terminal(ExecuteResult.Rejected Refusal.CaseErased)
-            | _ ->
-                let target =
-                    match request.Act with
-                    | AdmittedAuthorityAct.RegisterActor -> request.OperationId
-                    | _ -> view.Target.Actor.Value.ActorId
-
-                RecoveryAdmission.Ready(
-                    view.Actor.Actor.Value.ActorId,
-                    AuthorityRequests.targetCase request
-                    |> Option.map (CaseReferenceId.encode installationId),
-                    Some target
-                )
 
     let private propose installationId operationId target action view =
         match targets installationId target action view with
@@ -268,6 +230,8 @@ module internal AuthorityDecisions =
             |> Result.defaultWith LedgerDecision.Fail
         | IdentityDecision.Refuse reason -> LedgerDecision.Refuse reason
         | IdentityDecision.Fail fault -> LedgerDecision.Fail fault
+        | IdentityDecision.Fresh when view.IsFenced ->
+            LedgerDecision.Refuse Refusal.OperationResolved
         | IdentityDecision.Fresh when view.Head.Sequence = Revision.Maximum ->
             LedgerDecision.Refuse Refusal.LedgerExhausted
         | IdentityDecision.Fresh ->

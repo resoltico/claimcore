@@ -6,8 +6,11 @@
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="PrivateTestPaths.fs" />
     <Compile Include="ProbeHttpsFixture.fs" />
-    <Compile Include="../ClaimCore.Tests/MemoryLedgerStore.fs" Link="MemoryLedgerStore.fs" />
-    <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
+    <Compile Include="../StoreFixtures.fs" Link="StoreFixtures.fs" />
+    <Compile Include="../FixtureDisposal.fs" Link="FixtureDisposal.fs" />
+    <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
+    <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
+    <Compile Include="../PostgresFixture.fs" Link="PostgresFixture.fs" />
     <Compile Include="OidcCoreFixture.fs" />
     <Compile Include="FacadeStub.fs" />
     <Compile Include="TestServerFixture.fs" />
@@ -53,5 +56,7 @@
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" />
     <PackageReference Include="Testcontainers" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Npgsql" />
   </ItemGroup>
 </Project>

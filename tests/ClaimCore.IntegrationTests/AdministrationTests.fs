@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.AdministrationTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System

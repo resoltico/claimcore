@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.TransactionFailureTests
 
+open ClaimCore.TestSupport
+
 open System
 open System.IO
 open System.Threading
@@ -7,7 +9,7 @@ open Expecto
 open Npgsql
 open ClaimCore.Application
 open ClaimCore.Postgres
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
 let private classify error before during =
     Expect.equal (Transactions.failure false error) before "Before commit"

@@ -17,19 +17,6 @@ const DiscardButton = ({ model, onDiscard, hidden }: Discard) => {
   );
 };
 const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string, string]> => {
-  const recovered = model.recovery;
-  if (recovered !== null) {
-    return [
-      ["operationId", recovered.operationId],
-      ["act", recovered.act],
-      ...(recovered.caseReference === null
-        ? []
-        : [["caseReference", recovered.caseReference] as const]),
-      ...(recovered.expectedRevision === null
-        ? []
-        : [["expectedRevision", String(recovered.expectedRevision)] as const]),
-    ];
-  }
   const input = model.prepared?.input;
   if (input === undefined) {
     return [];
@@ -45,7 +32,7 @@ const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string,
       : []),
   ];
 };
-export const UnknownOperation = ({ model }: { model: OperationModel }) => {
+const UnknownOperation = ({ model }: { model: OperationModel }) => {
   const p = usePresentation();
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -53,7 +40,6 @@ export const UnknownOperation = ({ model }: { model: OperationModel }) => {
       heading.current?.focus();
     }
   }, [model.busy]);
-  const recovered = model.recovery;
   const metadata = pendingMetadata(model);
   const notice =
     model.notice?.kind === "local" && model.notice.reason === "outcomeUnknown"
@@ -74,20 +60,17 @@ export const UnknownOperation = ({ model }: { model: OperationModel }) => {
           </div>
         ))}
       </dl>
-      <p>
-        {p.text(recovered === null ? "ui.retryExactDescription" : "ui.recoveryRetryDescription")}
-      </p>
+      <p>{p.text("ui.retryExactDescription")}</p>
       {notice === null ? null : (
         <p>
           <NoticeView value={notice} />
         </p>
       )}
-      <button
-        type="button"
-        disabled={model.busy || (recovered !== null && !recovered.offers.includes("RETRY"))}
-        onClick={() => void model.execute()}
-      >
+      <button type="button" disabled={model.busy} onClick={() => void model.execute()}>
         {p.text("ui.retryExact")}
+      </button>
+      <button type="button" disabled={model.busy} onClick={model.resolve}>
+        {p.text("ui.checkOutcome")}
       </button>
     </section>
   );

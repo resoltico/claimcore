@@ -51,8 +51,8 @@ let private discovery output errors =
         Discovery.schema selection |> writeDiscovery output errors "en"
     | _ -> unsupported errors "en" CliUsageIssue.Invocation
 
-let private remote input output errors session retry =
-    use processor = new RemoteFrameProcessor(input, output, errors, retry)
+let private remote input output errors session =
+    use processor = new RemoteFrameProcessor(input, output, errors)
     let stop () = Environment.Exit(processor.Interrupt())
 
     let interrupt =
@@ -104,19 +104,19 @@ let private verb output errors arguments =
                 |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
 
             use rendered = new TextReplySink(output, prepared.Language, invocation)
-            remote input rendered errors false false
+            remote input rendered errors false
         else
-            remote input output errors false false
+            remote input output errors false
 
 let private dispatch output errors argv =
     try
         match CliInvocations.admit (Array.toList argv) with
-        | Ok(CliInvocation.Call retry) ->
+        | Ok CliInvocation.Call ->
             use input = Console.OpenStandardInput()
-            remote input output errors false retry
+            remote input output errors false
         | Ok CliInvocation.Session ->
             use input = Console.OpenStandardInput()
-            remote input output errors true false
+            remote input output errors true
         | Ok(CliInvocation.Verb arguments) -> verb output errors arguments
         | Ok invocation -> discovery output errors invocation
         | Error issue -> unsupported errors (CliInvocations.usageLanguage (Array.toList argv)) issue

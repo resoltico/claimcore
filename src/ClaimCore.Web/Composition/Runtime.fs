@@ -11,7 +11,6 @@ open ClaimCore.Application
 type internal IRuntime =
     inherit IDisposable
     abstract WithActor: PrincipalKey * (IActorClaimsCore -> Task<'Value>) -> Task<'Value option>
-    abstract ConfigureRecoveryProtection: RecoveryProtection -> unit
     abstract Sessions: ClaimCore.Postgres.ISessionStore
     abstract BusinessTimeZone: string
     abstract Ready: CancellationToken -> Task<bool>
@@ -68,8 +67,6 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
                 principal
                 action
 
-        member _.ConfigureRecoveryProtection value =
-            storage.ConfigureRecoveryProtection value
 
         member _.Sessions = sessions
 

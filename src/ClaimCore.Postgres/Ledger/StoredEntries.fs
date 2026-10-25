@@ -41,7 +41,7 @@ module internal StoredEntries =
             let revision = DatabaseSession.value<int64> 10 row
 
             let kind =
-                CaseActKinds.tryParse act
+                CaseActKinds.parse act
                 |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid case act."))
 
             let date = DatabaseSession.calendarDate 11 row

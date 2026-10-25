@@ -27,9 +27,14 @@ match fsi.CommandLineArgs[1] with
     let before = count ()
     let threads = System.Threading.ThreadPool.ThreadCount
 
+    let watch = System.Diagnostics.Stopwatch.StartNew()
+
     for _ in 1..1000 do
         if PrivateFile.read 1 fsi.CommandLineArgs[2] <> Error PrivateFileFailure.NotRegular then
             exit 3
+
+    if watch.Elapsed > TimeSpan.FromSeconds 3. then
+        exit 7
 
     if count () <> before then
         exit 4

@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.FieldTableTests
 
+open ClaimCore.TestSupport
+
 open System
 open System.Threading
 open Expecto

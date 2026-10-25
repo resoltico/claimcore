@@ -1,5 +1,7 @@
 module internal ClaimCore.IntegrationTests.SessionDrain
 
+open ClaimCore.TestSupport
+
 open System
 open System.Diagnostics
 open System.Threading

@@ -127,7 +127,7 @@ let private publish (fixture: PublishedFixture.Fixture) directory name =
     output
 
 let private changeLocaleText directory =
-    let path = Path.Combine(directory, "src/ClaimCore.Contract/Localization/en.ui.json")
+    let path = Path.Combine(directory, "src/ClaimCore.Contract/Localization/en.json")
     let locale = JsonNode.Parse(File.ReadAllBytes path) |> nonNull
     let original = (locale["ui.loading"] |> nonNull).GetValue<string>()
     locale["ui.loading"] <- JsonValue.Create(original + " synthetic locale control")

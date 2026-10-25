@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.StoreTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System.Threading
@@ -7,7 +9,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Postgres
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
 let private serviceCases (admin: IActorClaimsCore) principal =
     task {

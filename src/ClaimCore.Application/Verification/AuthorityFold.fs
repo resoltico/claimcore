@@ -117,7 +117,7 @@ module internal AuthorityFold =
         =
         result {
             let! role =
-                RoleTokens.tryParse role
+                RoleTokens.parse role
                 |> known (Some entry.Sequence) VerificationFinding.PayloadFormat
 
             do!

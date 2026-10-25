@@ -230,14 +230,13 @@ let private uncertainSession () =
     Expect.equal invoked 1 "Uncertainty ends the session at the replayable frame"
 
 let private describe arguments =
-    match ClaimCore.Contract.Protocol.CliInvocations.admit ("describe" :: arguments) with
-    | Ok(ClaimCore.Contract.Protocol.CliInvocation.Describe(selector, _, _)) ->
-        Discovery.describe selector
+    match ClaimCore.Cli.CliInvocations.admit ("describe" :: arguments) with
+    | Ok(ClaimCore.Cli.CliInvocation.Describe(selector, _, _)) -> Discovery.describe selector
     | _ -> None
 
 let private schema arguments =
-    match ClaimCore.Contract.Protocol.CliInvocations.admit ("schema" :: arguments) with
-    | Ok(ClaimCore.Contract.Protocol.CliInvocation.Schema selection) -> Discovery.schema selection
+    match ClaimCore.Cli.CliInvocations.admit ("schema" :: arguments) with
+    | Ok(ClaimCore.Cli.CliInvocation.Schema selection) -> Discovery.schema selection
     | _ -> None
 
 let private offlineDiscovery () =

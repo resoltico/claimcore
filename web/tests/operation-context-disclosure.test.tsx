@@ -47,7 +47,7 @@ it("requires an explicit warning before discarding a possibly accepted request",
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
-  await screen.findByRole("button", { name: "Retry the same operation" });
+  await screen.findByRole("button", { name: "Send again" });
   await user.click(screen.getByRole("button", { name: "Discard and leave" }));
   const dialog = screen.getByRole("dialog");
   expect(dialog).toHaveTextContent("does not cancel it");

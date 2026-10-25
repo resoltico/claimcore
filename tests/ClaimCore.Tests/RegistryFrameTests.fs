@@ -1,5 +1,7 @@
 module ClaimCore.Tests.RegistryFrameTests
 
+open ClaimCore.Cli
+
 open System
 open System.Text
 open Expecto
@@ -169,7 +171,7 @@ let private results () =
     let output =
         ReplyCodecs.execute.Write
             {
-                RecoveryId = None
+
                 ExecuteReply.OperationId = id
                 Outcome = ExecuteResult.Rejected Refusal.LastOwner
             }
@@ -208,7 +210,7 @@ let private exits () =
     let output =
         ReplyCodecs.execute.Write
             {
-                RecoveryId = None
+
                 ExecuteReply.OperationId = id
                 Outcome = ExecuteResult.OutcomeUnknown
             }
@@ -243,7 +245,7 @@ let private operationEcho () =
         let output =
             ReplyCodecs.execute.Write
                 {
-                    RecoveryId = None
+
                     ExecuteReply.OperationId = actual
                     Outcome = ExecuteResult.Rejected Refusal.LastOwner
                 }

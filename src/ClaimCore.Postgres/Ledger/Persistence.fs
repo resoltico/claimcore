@@ -62,13 +62,6 @@ module internal Persistence =
                     raise (RecordCorruptException "Case projection is absent.")
             | CaseProjection.Erase(id, revision) ->
                 let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "DELETE FROM claimcore.recovery_requests WHERE case_id=$1"
-                        [| box id |]
-                        token
-
-                let! _ =
                     DatabaseSession.rows
                         connection
                         "SELECT claimcore.erase_case_payload($1)"

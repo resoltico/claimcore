@@ -67,7 +67,7 @@ type Identity() =
     let runId = Guid.NewGuid().ToString "N"
 
     let image =
-        "quay.io/keycloak/keycloak:26.8.0@sha256:b0f60d489d51c5d113390bdf5461d4c06e6051be026c05549f2e1e10ec352bcc"
+        "quay.io/keycloak/keycloak:26.8.1-1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b"
 
     let container =
         ContainerBuilder(image)

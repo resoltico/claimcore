@@ -119,9 +119,7 @@ let private resourceInput endpoint =
 
 let input endpoint =
     match endpoint with
-    | "operation.retry" -> Api.operationRetry.Input.Write { RecoveryId = id; OperationId = id }
-    | "operation.forget" -> Api.operationForget.Input.Write { RecoveryId = id }
-    | "operation.pending" -> Api.operationPending.Input.Write { AfterCursor = None; Limit = 1 }
+    | "operation.resolve" -> Api.operationResolve.Input.Write { OperationId = id }
     | _ -> resourceInput endpoint
 
 let private reads codec data =
@@ -143,7 +141,7 @@ let private execute () =
     |> List.map (fun outcome ->
         Api.operationExecute.Output.Write
             {
-                RecoveryId = None
+
                 OperationId = id
                 Outcome = outcome
             })
@@ -220,8 +218,13 @@ let private resourceResponses endpoint =
 
 let responses endpoint =
     match endpoint with
-    | "operation.retry" -> execute ()
-    | "operation.pending" -> reads Api.operationPending.Output { Items = []; NextCursor = None }
-    | "operation.forget" -> reads Api.operationForget.Output ()
+    | "operation.resolve" ->
+        [
+            ResolveReply.Accepted receipt
+            ResolveReply.NotAccepted
+            ResolveReply.Rejected Refusal.ResourceUnavailable
+            ResolveReply.Failed CoreFault.StoreUnavailable
+        ]
+        |> List.map Api.operationResolve.Output.Write
     | _ -> resourceResponses endpoint
     |> List.map WireWriter.bytes

@@ -37,10 +37,7 @@ type IActorClaimsCore =
     abstract Context: CancellationToken -> Task<ReadReply<ActorContext>>
     abstract Preview: OperationInput * CancellationToken -> Task<PreviewReply>
     abstract Execute: OperationInput * CancellationToken -> Task<ExecuteReply>
-    abstract ExecuteEnvelope: ExecutionEnvelope * CancellationToken -> Task<ExecuteReply>
-    abstract Pending: PageRequest * CancellationToken -> Task<ReadReply<RecoveryPage>>
-    abstract Retry: RecoveryRequest * CancellationToken -> Task<ExecuteReply>
-    abstract Forget: ForgetRequest * CancellationToken -> Task<ReadReply<unit>>
+    abstract Resolve: ResolveRequest * CancellationToken -> Task<ResolveReply>
     abstract Get: CaseGetRequest * CancellationToken -> Task<ReadReply<CaseReadModel>>
     abstract List: PageRequest * CancellationToken -> Task<ReadReply<CaseSummaryPage>>
     abstract History: HistoryRequest * CancellationToken -> Task<ReadReply<HistoryResultPage>>

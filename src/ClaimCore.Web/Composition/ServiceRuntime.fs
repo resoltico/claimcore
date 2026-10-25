@@ -11,7 +11,6 @@ open ClaimCore.Application
 type IServiceRuntime =
     inherit IDisposable
     abstract WithActor: PrincipalKey * (IActorClaimsCore -> Task<'Value>) -> Task<'Value option>
-    abstract ConfigureRecoveryProtection: RecoveryProtection -> unit
     abstract Sessions: ClaimCore.Postgres.ISessionStore
     abstract Ready: CancellationToken -> Task<bool>
     abstract Shutdown: TimeSpan -> Task<unit>
@@ -28,8 +27,6 @@ module ServiceRuntime =
                             member _.WithActor(principal, action) =
                                 runtime.WithActor(principal, action)
 
-                            member _.ConfigureRecoveryProtection value =
-                                runtime.ConfigureRecoveryProtection value
 
                             member _.Sessions = runtime.Sessions
 

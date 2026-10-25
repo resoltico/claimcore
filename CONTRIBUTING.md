@@ -1,25 +1,23 @@
 # Contributing
 
-Read [Domain](docs/domain.md), [Architecture](docs/architecture.md) and
-[Development](docs/development.md) before changing behavior or verification.
+Start with the [domain guide](docs/domain.md), then the [architecture](docs/architecture.md) and
+[development workflow](docs/development.md). Read the behavior tests and owning code before changing a contract.
+Challenge consequential assumptions with direct observations and independent examples.
 
-Contract owns shared public models, typed codecs, the endpoint registry, vocabulary and source
-locale JSON. Domain/Application own decisions and authorization; RecordFormat owns versioned
-durable encodings. Postgres persists decisions and Web owns runtime composition/dispatch.
-CLI references Contract/HostSecurity; browser and CLI consume exact interaction bindings and generated executable validation, with typed
-descriptors and independently checked wire corpora. Coordinate service, clients and the three tracked generated
-artifacts; keep affected callers, lockfiles, tests and docs together. Challenge assumptions against
-current code, standards and independent tests before building around them. A design's adoption
-does not make a newly discovered defect correct; resolve it explicitly with evidence.
-Follow the [database compatibility policy](docs/architecture.md#durable-records) for schema changes.
-Tests use synthetic data and owned isolated fixtures; preserve existing installations and private
-state. Report executed commands separately from inspection, including failures and limits.
+Keep a change complete across its consumers. Contract owns public models, vocabulary, field identities and
+codecs; Domain/Application decide behavior and authorization; RecordFormat owns durable bytes. Postgres persists
+decisions, Web composes the service, and CLI owns command syntax. Regenerate the three tracked contracts through
+the generator and review their diffs. Update affected callers, SQL, lockfiles, tests, locales and documentation.
+Follow the [database compatibility policy](docs/architecture.md#durable-records).
 
-The owner reviews and merges changes. The required pull-request check is `Gate`; green CI is
-not owner approval. Contributors publish exact revisions and do not merge, approve, auto-merge,
-tag, release or change protections without explicit authorization. Version and published changelog
-entries are release-owned. Follow the engineering principles in [AGENTS.md](AGENTS.md).
+Use synthetic data and owned isolated fixtures. Preserve existing installations, private files and unrelated
+work. Run the required gate from an isolated clean checkout, report failures as well as successes, and distinguish
+partial checks from complete qualification. Growth qualification is separate and runs before releases or on demand.
+Follow the repository guidance in [AGENTS.md](AGENTS.md).
 
-Original code and contributions use [MPL-2.0](LICENSE). Redistributors of covered binaries
-or browser assets must provide corresponding covered source and tell recipients how to obtain
-it. Third-party licenses and notices remain distinct.
+The owner reviews and merges. Gate is the required pull-request check; passing it records execution evidence.
+Publishing changes does not authorize merge, approval, auto-merge, tagging, release or protection changes.
+Version and published changelog entries remain release-owned.
+
+Original code and contributions use [MPL-2.0](LICENSE). Covered binary/browser redistribution must provide
+corresponding covered source and tell recipients how to obtain it. Third-party licenses/notices remain distinct.

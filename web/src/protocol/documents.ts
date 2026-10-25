@@ -4,7 +4,8 @@ import type { SchemaDocument, SchemaNode } from "./schema";
 
 type Operation = {
   requestBody?: { content: { "application/json": { schema: SchemaNode } } };
-  responses: Record<string, { content: { "application/json": { schema: SchemaNode } } }>;
+  // This view consumes the typed service reply; host failures use separate generated checks.
+  responses: { "200": { content: { "application/json": { schema: SchemaNode } } } };
 };
 type ApiDocument = {
   paths: Record<string, Record<string, Operation>>;
@@ -29,7 +30,7 @@ const schemaTable: Record<string, SchemaPair> = Object.fromEntries(
             additionalProperties: false,
           },
         ),
-        response: scoped(operation.responses["200"]!.content["application/json"].schema),
+        response: scoped(operation.responses["200"].content["application/json"].schema),
       },
     ];
   }),

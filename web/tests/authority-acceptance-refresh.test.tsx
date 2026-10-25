@@ -197,7 +197,7 @@ it("context reload preserves an uncertain prepared authority request and exact r
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
   fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
-  await screen.findByRole("button", { name: "Retry the same operation" });
+  await screen.findByRole("button", { name: "Send again" });
   const [prepared] = execute.mock.calls[0]!;
   await finish(oldListing, {
     kind: "hostFailure",
@@ -211,9 +211,9 @@ it("context reload preserves an uncertain prepared authority request and exact r
   expect(execute.mock.calls[0]![0]).toBe(prepared);
   expect(screen.queryByText("synthetic-pending")).toBeNull();
   expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Retry the same operation" }));
+  fireEvent.click(screen.getByRole("button", { name: "Send again" }));
   await waitFor(() => {
-    expect(screen.queryByRole("button", { name: "Retry the same operation" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
   });
   expect(execute.mock.calls[1]![0]).toBe(prepared);
   expect(execute.mock.calls[1]![0].bytes).toBe(prepared.bytes);

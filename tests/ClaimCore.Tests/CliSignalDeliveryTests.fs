@@ -57,7 +57,8 @@ let private completeRecords (errors: MemoryStream) original =
 
     for line in lines do
         Expect.isTrue
-            ((Frames.admit (bytes line) |> Result.isOk)
+            (line.StartsWith("Outcome unresolved.", StringComparison.Ordinal)
+             || (Frames.admit (bytes line) |> Result.isOk)
              || (Frames.decode (bytes line) |> Result.isOk))
             "Every stderr record is complete even at the forced signal interleaving."
 

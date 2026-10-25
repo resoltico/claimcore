@@ -11,7 +11,7 @@ type Role =
     | Auditor
 
 module RoleTokens =
-    let definitions =
+    let vocabulary =
         [
             Role.Owner, "OWNER"
             Role.CaseReader, "CASE_READER"
@@ -21,11 +21,9 @@ module RoleTokens =
             Role.DataSteward, "DATA_STEWARD"
             Role.Auditor, "AUDITOR"
         ]
+        |> Vocabulary.define "token"
 
-    let all = definitions |> List.map fst
-
-    let token role =
-        definitions |> List.find (fst >> (=) role) |> snd
-
-    let tryParse value =
-        definitions |> List.tryFind (snd >> (=) value) |> Option.map fst
+    let definitions = Vocabulary.entries vocabulary
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary

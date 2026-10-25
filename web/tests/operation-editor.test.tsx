@@ -66,11 +66,11 @@ it.each(["lost", "unknown", "malformed"] as const)(
     const locked = vi.fn();
     render(editor({ onMutationLockChange: locked }));
     const user = await reviewAndConfirm();
-    expect(await screen.findByRole("button", { name: "Retry the same operation" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Send again" })).toBeVisible();
     expect(screen.getByRole("alert")).toHaveTextContent("unknown");
     expect(locked).toHaveBeenCalledWith(true);
     const before = vi.mocked(fetch).mock.calls[1]?.[1]?.body;
-    await user.click(screen.getByRole("button", { name: "Retry the same operation" }));
+    await user.click(screen.getByRole("button", { name: "Send again" }));
     await screen.findByRole("heading", { name: "Recorded change" });
     expect(vi.mocked(fetch).mock.calls[2]?.[1]?.body).toBe(before);
   },

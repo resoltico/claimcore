@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ContractTests
 
+open ClaimCore.Cli
+
 open ClaimCore.Contract
 
 open System
@@ -144,14 +146,14 @@ let private executeOutcomes () =
             ] do
             let reply: ExecuteReply =
                 {
-                    RecoveryId = None
+
                     OperationId = id
                     Outcome = outcome
                 }
 
             admitted Api.operationExecute.Output reply |> ignore
 
-            let frame: ClaimCore.Contract.FrameReply =
+            let frame: ClaimCore.Cli.FrameReply =
                 {
                     Endpoint = Some "operation.execute"
                     OperationId = Some id
@@ -164,12 +166,12 @@ let private executeOutcomes () =
                 }
 
             Expect.equal
-                (ClaimCore.Contract.Frames.decode (ClaimCore.Contract.Frames.encode frame))
+                (ClaimCore.Cli.Frames.decode (ClaimCore.Cli.Frames.encode frame))
                 (Ok frame)
                 "CLI frames share mutation outcomes"
 
             Expect.equal
-                (ClaimCore.Contract.Frames.exitCode frame)
+                (ClaimCore.Cli.Frames.exitCode frame)
                 exit
                 "Mutation scope preserves exit semantics"
 
@@ -335,22 +337,22 @@ let private rejectFrames () =
             "not-json"
         ] do
         Expect.isError
-            (ClaimCore.Contract.Frames.admit (bytes value))
+            (ClaimCore.Cli.Frames.admit (bytes value))
             "Malformed, duplicate and unknown members refuse"
 
-    Expect.isError (ClaimCore.Contract.Frames.admit [| 0xffuy |]) "UTF8 is strict"
+    Expect.isError (ClaimCore.Cli.Frames.admit [| 0xffuy |]) "UTF8 is strict"
 
     Expect.isError
-        (ClaimCore.Contract.Frames.admit (Array.create (Limits.MaximumInvocationBytes + 1) 32uy))
+        (ClaimCore.Cli.Frames.admit (Array.create (Limits.MaximumInvocationBytes + 1) 32uy))
         "Frames are bounded"
 
     let original = bytes "{ \"endpoint\": \"context\", \"input\": { } }"
-    let invocation = ClaimCore.Contract.Frames.admit original |> accepted
-    let copy = ClaimCore.Contract.Frames.inputBytes invocation
+    let invocation = ClaimCore.Cli.Frames.admit original |> accepted
+    let copy = ClaimCore.Cli.Frames.inputBytes invocation
     copy[0] <- 0uy
 
     Expect.equal
-        (ClaimCore.Contract.Frames.inputBytes invocation)
+        (ClaimCore.Cli.Frames.inputBytes invocation)
         (bytes "{}")
         "Stored prepared input bytes survive caller mutation"
 
@@ -381,7 +383,7 @@ let private integerLexemes () =
                 Codec.encode
                     Api.operationExecute.Output
                     {
-                        RecoveryId = None
+
                         OperationId = id
                         Outcome =
                             ExecuteResult.Accepted
@@ -591,8 +593,8 @@ let private decoderProperty =
                 false
 
         return
-            total ClaimCore.Contract.Frames.admit
-            && total ClaimCore.Contract.Frames.decode
+            total ClaimCore.Cli.Frames.admit
+            && total ClaimCore.Cli.Frames.decode
             && (Api.all
                 |> List.forall (fun endpoint ->
                     total (fun bytes ->

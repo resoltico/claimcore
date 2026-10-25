@@ -1,70 +1,58 @@
 # ClaimCore
 
-A claims case register for people and automation. Record claim facts, payment decisions and
-payment dates through a browser or human verbs and structured CLI. Both use one authenticated HTTPS service
-that validates changes and actor authorization. One PostgreSQL database holds accepted ledger
-entries and current projections.
+ClaimCore is a claims case register for people and automation. Record incident facts, payment decisions and
+payment dates in a browser or CLI. Both use the same authenticated HTTPS service and current actor permissions.
+One PostgreSQL database stores accepted operations and the current case records.
 
-[Get started](docs/getting-started.md) · [Documentation](docs/README.md) ·
-[Service and CLI](docs/api.md) · [Operations](docs/operations.md) ·
+[Start a local evaluation](docs/getting-started.md) · [Documentation](docs/README.md) ·
+[CLI examples](examples/README.md) · [Operations](docs/operations.md) ·
 [Releases](https://github.com/resoltico/claimcore/releases)
 
-## Case work
+## Work with cases
 
-The [business fields](docs/domain.md) cover incident and notification details,
-parties, amounts, reference, decision and payment dates, and status. Technical metadata stays
-outside that record. Register or amend a case; record or withdraw a decision; record or clear
-a payment date; close or reopen; correct facts atomically. Payment progress and open/closed
-status are independent. ClaimCore records assertions and transfers no money.
+Open or amend a case, record a decision or payment date, close or reopen it, and correct existing facts
+atomically. Payment progress and open/closed status are independent. These are recorded assertions;
+ClaimCore transfers no money. The [domain guide](docs/domain.md) explains the business record and corrections.
 
-A human data steward can void an entry error, reinstate a voided case, or erase a case.
-Erasure clears the case's live ledger payloads and business projections, retaining its
-reference, revision and ledger metadata. It cannot delete backups, WAL or copies elsewhere.
-Read the [erasure limits](docs/operations.md#erasure-limits).
+A human data steward can void an entry error, reinstate a voided case or erase its live payload history.
+Erasure retains the reference, revision and ledger metadata. Copies, WAL and backups require separate
+operator action; read the [erasure limits](docs/operations.md#erasure-limits).
 
-## Interfaces
+The browser offers English, Latvian and Arabic, right-to-left layout and separate display preferences.
+Business dates follow the installation's immutable IANA time zone. Case roles and scoped grants control
+work; an installation owner administers authority and needs separate grants for case work.
 
-| Application          | Responsibility                                                               |
-| -------------------- | ---------------------------------------------------------------------------- |
-| `ClaimCore.Web`      | HTTPS service, OIDC browser authentication and bearer API                    |
-| `ClaimCore.Cli`      | Human verbs and JSON frames over HTTPS, with PKCE or client credentials |
-| `ClaimCore.Database` | Separate owner-only initialization, provisioning and verification |
+## Use the service and CLI
 
-The browser offers English, Latvian and Arabic, right-to-left layout and independent display
-formats. The installation's immutable IANA business time zone governs business dates.
-Seven default-deny role presets and scoped grants control case work and administration.
-Typed core advice drives browser business, stewardship and authority forms. Both clients use one
-[OpenAPI contract](contracts/openapi.json), generated from typed core definitions, with strict byte admission and correlated delivery replies.
+| Application | Use |
+| --- | --- |
+| ClaimCore.Web | HTTPS service and browser, with OIDC sign-in and bearer API authentication |
+| ClaimCore.Cli | Human commands and structured JSON calls, using PKCE or client credentials |
+| ClaimCore.Database | Separate owner-only initialization, provisioning and verification |
 
-`claimcore case open ...`, `claimcore case get <reference>` and `claimcore authority grant ...`
-serve human callers; `--dry-run` prints the equivalent JSON frame without authentication.
-See [examples](examples/README.md). The nine-project [architecture](docs/architecture.md#cc-arch-001)
-keeps one pure Contract model/codec/registry, Domain/Application decisions and Web composition.
+Try `claimcore case open ... --dry-run` to inspect a request without signing in. Human commands and JSON
+frames share the [service contract](docs/api.md). Service, browser and CLI must be deployed together.
 
-Every mutation rechecks locked current state. Replaying a retained accepted request returns
-its original acceptance without another ledger entry. If delivery is uncertain, preserve the operation ID, expected
-revision and exact request bytes and retry that request. Submitted bodies are protected for seven days for explicit actor-bound recovery; reload lists metadata only.
-Known-result acknowledgement reclaims bounded journal capacity. Forget/expiry never prove non-acceptance.
+Every mutation checks current permissions, state and expected revision under the ledger lock. Resending the
+same retained accepted request returns its original acceptance without another entry. If delivery is
+uncertain, preserve the exact frame and operation ID. Resend it unchanged or use `claimcore operation resolve`
+for an accepted receipt or final non-acceptance. A browser reload keeps only the unresolved ID, scope and act;
+it retains no submitted body.
 
-## Run and verify
+## Evaluate, operate and contribute
 
-Follow [Getting started](docs/getting-started.md) for a fresh local Compose installation and
-signed-in browser. Private-file admission supports macOS x64/arm64 and glibc Linux x64/arm64; other ABIs refuse. This setup is an
-evaluation environment; operators own deployment, identity, TLS, backups and retention.
-Ledger verification detects inconsistency against trusted checkpoints; it does not provide
-independent freshness or protection from an administrator rewriting all evidence.
+[Getting started](docs/getting-started.md) creates a fresh synthetic Compose installation. Existing incompatible
+installations are refused untouched; preserve them with matching software. No conversion is supplied.
+Private configuration files support .NET-supported Unix platforms, including musl; Windows refuses them.
 
-Unsupported installations are refused untouched; no conversion is supplied. Preserve them
-with their matching software. See the [database boundary](docs/database.md).
+Operators own identity, TLS, deployment, backups and retention. Ledger verification detects inconsistency
+against trusted checkpoints; it cannot establish independent freshness or defeat an administrator rewriting
+all evidence. The supplied setup is for evaluation, with no production qualification or support SLA.
 
-[Development](docs/development.md) owns the complete gate: typed core and property tests,
-architecture rules with rejecting controls, real PostgreSQL and Web integration, frontend
-checks, published CLI scenarios and Chromium, Firefox and WebKit tests. PR and merge queue CI require complete qualification on Chromium, Firefox and WebKit. A green gate is
-execution evidence; the repository owner reviews and merges.
+[Development](docs/development.md) explains the required gate and separate growth qualification.
+[Architecture](docs/architecture.md#cc-arch-001) explains component ownership. Read
+[Contributing](CONTRIBUTING.md), [Support](SUPPORT.md) and [Security](SECURITY.md) before submitting work or reports.
+The owner reviews and merges changes; a green check records execution evidence.
 
-Read [Contributing](CONTRIBUTING.md), [Support](SUPPORT.md) and [Security](SECURITY.md).
-Report vulnerabilities privately and never include claimant data or credentials in public reports.
-
-Original code and documentation use the [Mozilla Public License 2.0](LICENSE).
-Third-party components retain their licenses and notices. See [CHANGELOG.md](CHANGELOG.md)
-for release outcomes.
+Original code and documentation use the [Mozilla Public License 2.0](LICENSE). Third-party components retain
+their licenses and notices. [CHANGELOG.md](CHANGELOG.md) records release changes.

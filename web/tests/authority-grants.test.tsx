@@ -204,7 +204,7 @@ it.each(["session", "access"])(
     render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
     await prepare();
     fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
-    await screen.findByRole("button", { name: "Retry the same operation" });
+    await screen.findByRole("button", { name: "Send again" });
     const original = execute.mock.calls[0]?.[0];
     fireEvent.click(screen.getAllByRole("button", { name: "View grants" })[0]!);
     await waitFor(() => {
@@ -213,7 +213,7 @@ it.each(["session", "access"])(
     expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
     expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
     expect(grant).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "Retry the same operation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send again" }));
     await waitFor(() => {
       expect(execute).toHaveBeenCalledTimes(2);
     });

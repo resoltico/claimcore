@@ -196,11 +196,6 @@ type Fixture() =
     member _.ArmCommitReplyLoss() =
         commitProxy
         |> Option.defaultWith (fun () -> invalidOp "The owned database proxy is not started.")
-        |> fun proxy -> proxy.Arm 2
-
-    member _.ArmJournalReplyLoss() =
-        commitProxy
-        |> Option.defaultWith (fun () -> invalidOp "The owned database proxy is not started.")
         |> fun proxy -> proxy.Arm 1
 
     member _.RestartWeb() =

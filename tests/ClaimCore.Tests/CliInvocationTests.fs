@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliInvocationTests
 
+open ClaimCore.Cli
+
 open System
 open System.Text
 open System.Text.Json.Nodes
@@ -35,12 +37,12 @@ let private aliases () =
 let private options () =
     Expect.equal
         (CliInvocations.admit [ "call"; "--retry" ])
-        (Ok(CliInvocation.Call true))
-        "Retry context is explicit and leaves the request frame unchanged."
+        (Error CliUsageIssue.Invocation)
+        "The retired retry flag is a usage error."
 
     Expect.equal
         (CliInvocations.admit [ "call" ])
-        (Ok(CliInvocation.Call false))
+        (Ok(CliInvocation.Call))
         "An ordinary call starts a fresh attempt."
 
     for args in
@@ -98,7 +100,7 @@ let private verbCoverage () =
     let verbs =
         commands
         |> Seq.map (fun item ->
-            (nonNull item)["kind"] |> nonNull |> _.GetValue<string>() |> Grammar.caseVerb)
+            (nonNull item)["kind"] |> nonNull |> _.GetValue<string>() |> CliSyntax.caseVerb)
         |> Seq.toList
 
     Expect.equal
@@ -125,20 +127,31 @@ let private verbCoverage () =
                 |> _.AsArray()
                 |> Seq.collect (fun field ->
                     let name = ((nonNull field)["fieldName"] |> nonNull).GetValue<string>()
-                    [ "--" + Grammar.kebab name; "synthetic" ])
+                    [ "--" + CliSyntax.kebab name; "synthetic" ])
                 |> Seq.toList
 
         let revision = if kind = "OPEN" then [] else [ "--expected-revision"; "1" ]
 
         let request =
-            prepared ([ "case"; Grammar.caseVerb kind; "SYNTHETIC" ] @ revision @ flags)
+            prepared ([ "case"; CliSyntax.caseVerb kind; "SYNTHETIC" ] @ revision @ flags)
 
         Expect.isOk (Frames.admit request.Bytes) "Every descriptor-derived case verb is admitted"
 
 
 let private authorityVerbCoverage () =
+    let definitions =
+        CliSyntax.compile (ContractDiscovery.definitions ()) |> Fixtures.accepted
+
     for kind in AuthorityKinds.all |> List.filter ((<>) AuthorityKind.ProvisionOwner) do
-        for verb in Grammar.authorityVerbs (AuthorityKinds.token kind) do
+        let syntax =
+            definitions
+            |> List.find (fun row ->
+                row.Definition.Scope = OperationScopes.Authority
+                && row.Definition.Kind = AuthorityKinds.token kind)
+
+        for alias in syntax.Invocations do
+            let verb = alias.Verb
+
             let role =
                 if List.contains verb [ "grant"; "revoke" ] then
                     [ "--role"; "CASE_READER" ]
@@ -215,8 +228,7 @@ let private nonLedgerVerbExamples =
         [ "case"; "list"; "--limit"; "5"; "--cursor"; "synthetic" ], "case.list"
         [ "case"; "history"; "SYNTHETIC"; "--full" ], "case.history"
         [ "operation"; "observe"; "10000000-0000-4000-8000-000000000001" ], "operation.observe"
-        [ "operation"; "pending" ], "operation.pending"
-        [ "operation"; "forget"; "10000000-0000-4000-8000-000000000001" ], "operation.forget"
+        [ "operation"; "resolve"; "10000000-0000-4000-8000-000000000001" ], "operation.resolve"
         [ "authority"; "list" ], "authority.list"
         [ "authority"; "grants"; "10000000-0000-4000-8000-000000000001" ], "authority.grants"
         [ "context" ], "context"
@@ -258,7 +270,7 @@ let private nonLedgerVerbs () =
             Expect.equal actual endpoint "A read or operational verb selects its registry endpoint"
 
             let expectedEffect =
-                if endpoint = "operation.forget" then
+                if endpoint = "operation.resolve" then
                     EndpointEffect.OperationalWrite
                 else
                     EndpointEffect.Read
@@ -298,37 +310,28 @@ let private nonLedgerCoverageControls () =
         (fun () -> assertNonLedgerVerbCoverage Api.all (List.head mapped :: mapped))
         "Duplicating a mapping fails uniqueness even when sets agree"
 
-let private opaqueRetryVerb () =
-    let recoveryId = "10000000-0000-4000-8000-000000000002"
+let private resolveVerb () =
     let operationId = "10000000-0000-4000-8000-000000000003"
-    let invocation = prepared [ "operation"; "retry"; recoveryId; operationId ]
+    let invocation = prepared [ "operation"; "resolve"; operationId ]
 
     let admitted =
         Frames.admit invocation.Bytes
-        |> Result.defaultWith (fun _ -> failtest "Retry frame")
+        |> Result.defaultWith (fun _ -> failtest "Resolve frame")
 
     Expect.equal
         (Api.id (Frames.endpoint admitted))
-        Api.operationRetry.Id
-        "Registry-selected recovery retry"
+        Api.operationResolve.Id
+        "Registry-selected resolve"
 
     Expect.equal
         (Api.effect (Frames.endpoint admitted))
-        EndpointEffect.LedgerExecution
-        "Retry may accept a previously unaccepted operation"
+        EndpointEffect.OperationalWrite
+        "Resolve writes a fence only"
 
     Expect.equal
         (Frames.input admitted)
-        (Api.operationRetry.Input.Write
-            {
-                RecoveryId = Guid.Parse recoveryId
-                OperationId = Guid.Parse operationId
-            })
-        "Caller supplies both frozen identifiers"
-
-    Expect.isTrue
-        (Frames.retryingUncertain admitted)
-        "Opaque retry intrinsically retains earlier uncertainty"
+        (Api.operationResolve.Input.Write { OperationId = Guid.Parse operationId })
+        "Caller supplies operation ID only"
 
 let private localizedReplyRendering () =
     let path =
@@ -372,7 +375,9 @@ let renderingTests =
         "CLI verb rendering"
         [
             testCase "every read and operational write has a registry-selected verb" nonLedgerVerbs
-            testCase "opaque retry keeps explicit identifiers and prior uncertainty" opaqueRetryVerb
+            testCase
+                "operation resolution keeps explicit identifiers and prior uncertainty"
+                resolveVerb
             testCase
                 "non-ledger coverage rejects added endpoints and missing or repeated mappings"
                 nonLedgerCoverageControls

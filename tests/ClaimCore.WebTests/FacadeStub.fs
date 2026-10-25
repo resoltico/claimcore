@@ -168,34 +168,12 @@ type Facade() =
                     return
                         {
                             OperationId = OperationInput.operationId input
-                            RecoveryId = None
                             Outcome = outcome
                         }
             }
 
-        member this.ExecuteEnvelope(envelope, token) =
-            (this :> IActorClaimsCore).Execute(envelope.Input, token)
-
-        member this.Pending(_, _) =
-            this.Invoke
-                "operation.pending"
-                (ReadReply.Succeeded
-                    {
-                        RecoveryPage.Items = []
-                        NextCursor = None
-                    })
-
-        member this.Retry(request, _) =
-            this.Invoke
-                "operation.retry"
-                {
-                    ExecuteReply.OperationId = request.OperationId
-                    RecoveryId = Some request.RecoveryId
-                    Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
-                }
-
-        member this.Forget(_, _) =
-            this.Invoke "operation.forget" (ReadReply.Succeeded())
+        member this.Resolve(_, _) =
+            this.Invoke "operation.resolve" ResolveReply.NotAccepted
 
         member this.Get(request, _) =
             let reference = request.CaseReference

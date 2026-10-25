@@ -81,7 +81,13 @@ module internal CaseProjectionLayout =
         | Some text ->
             match row.Kind with
             | ScalarKind.Date ->
-                box (DateOnly.ParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture))
+                box (
+                    DateOnly.ParseExact(
+                        text,
+                        Formats.CalendarDateFormat,
+                        CultureInfo.InvariantCulture
+                    )
+                )
             | ScalarKind.Amount -> box (Decimal.Parse(text, CultureInfo.InvariantCulture))
             | _ -> box text
 

@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.BaselineRefusalTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -30,10 +32,9 @@ let private dump (database: Testcontainers.PostgreSql.PostgreSqlContainer) =
         return result.Stdout |> Encoding.UTF8.GetBytes |> SHA256.HashData
     }
 
-let private install (source: NpgsqlDataSource) =
+let private install filename current (source: NpgsqlDataSource) =
     task {
-        let bytes =
-            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "0001_baseline.v0.11.0.sql"))
+        let bytes = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, filename))
 
         use! connection = source.OpenConnectionAsync()
         use! transaction = connection.BeginTransactionAsync()
@@ -51,7 +52,10 @@ let private install (source: NpgsqlDataSource) =
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.schema_migrations(version,name,script_sha256) VALUES (1,'baseline',$1)"
+                (if current then
+                     "INSERT INTO claimcore.baseline_identity(identifier,script_sha256) VALUES ('claimcore-foundation',$1)"
+                 else
+                     "INSERT INTO claimcore.schema_migrations(version,name,script_sha256) VALUES (1,'baseline',$1)")
                 [| box (SHA256.HashData bytes) |]
                 token
 
@@ -77,14 +81,14 @@ let private refuses action =
         Expect.isTrue refused "Published baseline bytes are refused by the baseline admission"
     }
 
-let private previousInstallation () =
+let private previousInstallation filename current =
     async {
         let database = PostgresFixture.empty ()
 
         try
             do! database.StartAsync() |> Async.AwaitTask
             use source = NpgsqlDataSource.Create(database.GetConnectionString())
-            do! install source |> Async.AwaitTask
+            do! install filename current source |> Async.AwaitTask
             let! before = dump database |> Async.AwaitTask
 
             do!
@@ -118,6 +122,13 @@ let private previousInstallation () =
 
 [<Tests>]
 let tests =
-    testCaseAsync
-        "[CC-DB-001] installation using the published 0.11.0 baseline is refused untouched"
-        (previousInstallation ())
+    testList
+        "prior installations refuse untouched"
+        [
+            testCaseAsync
+                "published 0.11.0 baseline"
+                (previousInstallation "0001_baseline.v0.11.0.sql" false)
+            testCaseAsync
+                "submitted-body baseline at a2f8359"
+                (previousInstallation "baseline-with-submission-storage.sql" true)
+        ]

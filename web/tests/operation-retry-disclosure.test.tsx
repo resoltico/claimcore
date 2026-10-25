@@ -74,7 +74,7 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
   expect(document.body).toHaveTextContent(reviewCanary);
   await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
-  await screen.findByRole("button", { name: "Retry the same operation" });
+  await screen.findByRole("button", { name: "Send again" });
   return user;
 };
 const expectPendingOnly = (locked: (locked: boolean) => void) => {
@@ -100,18 +100,18 @@ it.each(["access", "session"] as const)(
     const user = await beginUnknown(locked);
     const original = vi.mocked(fetch).mock.calls[1]?.[1]?.body;
     expect(draftAt(1).expectedRevision).toBe(1);
-    await user.click(screen.getByRole("button", { name: "Retry the same operation" }));
+    await user.click(screen.getByRole("button", { name: "Send again" }));
     expectPendingOnly(locked);
-    await user.click(screen.getByRole("button", { name: "Retry the same operation" }));
+    await user.click(screen.getByRole("button", { name: "Send again" }));
     expectPendingOnly(locked);
-    expect(screen.getByRole("button", { name: "Retry the same operation" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Send again" })).toBeDisabled();
     await act(async () => {
       pending.resolve(response("operation.execute", "OUTCOME_UNKNOWN", {}));
       await pending.promise;
     });
-    expect(screen.getByRole("button", { name: "Retry the same operation" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Send again" })).not.toBeDisabled();
     expectPendingOnly(locked);
-    await user.click(screen.getByRole("button", { name: "Retry the same operation" }));
+    await user.click(screen.getByRole("button", { name: "Send again" }));
     expect(await screen.findByRole("heading", { name: "Recorded change" })).toBeVisible();
     expect(
       screen.getByText("The recorded fields are withheld under your current access rights."),
@@ -119,7 +119,7 @@ it.each(["access", "session"] as const)(
     expect(document.body).not.toHaveTextContent(currentCanary);
     expect(document.body).not.toHaveTextContent(reviewCanary);
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Retry the same operation" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
     expect(locked).toHaveBeenLastCalledWith(false);
     expect(
       vi

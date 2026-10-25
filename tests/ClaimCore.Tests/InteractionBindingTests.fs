@@ -126,29 +126,16 @@ let private aliases () =
     let authority =
         InteractionDefinitions.all |> List.find (fun item -> item.Kind = "SET_ENABLED")
 
-    rejects
-        [
-            { authority with
-                Invocations =
-                    authority.Invocations |> List.map (fun alias -> { alias with Constants = [] })
-            }
-        ]
+    let invalidConstant =
+        {
+            Path = [ "act"; "enabled" ]
+            Value = BindingValue.Text "wrong"
+        }
 
     rejects
         [
             { authority with
-                Invocations =
-                    authority.Invocations
-                    |> List.map (fun alias ->
-                        { alias with
-                            Constants =
-                                [
-                                    {
-                                        Path = [ "act"; "enabled" ]
-                                        Value = BindingValue.Text "wrong"
-                                    }
-                                ]
-                        })
+                Constants = authority.Constants @ [ invalidConstant ]
             }
         ]
 
@@ -170,5 +157,7 @@ let tests =
             testCase
                 "case-scoped grant reference retains shared field and diagnostic semantics"
                 grantReference
-            testCase "ambiguous aliases refuse and descriptor codecs round trip" aliases
+            testCase
+                "duplicate definitions and invalid constants refuse and descriptors round trip"
+                aliases
         ]

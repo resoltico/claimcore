@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ClientAdmissionTests
 
+open ClaimCore.Cli
+
 open System
 open System.IO
 open System.Text
@@ -29,7 +31,7 @@ let private admits endpoint direction (bytes: byte array) =
         let prefix = Encoding.UTF8.GetBytes("{\"endpoint\":\"" + endpoint + "\",\"input\":")
 
         Array.concat [ prefix; bytes; Encoding.UTF8.GetBytes "}" ]
-        |> ClaimCore.Contract.Frames.admit
+        |> ClaimCore.Cli.Frames.admit
         |> Result.isOk
 
 let private independentByteCases () =

@@ -39,8 +39,8 @@ let private renamePackage replacement directory =
         let libraries = root["libraries"] |> nonNull |> _.AsObject()
 
         for entries in [ target; libraries ] do
-            let original = entries["FSharp.Core/10.1.401"] |> nonNull
-            entries.Remove "FSharp.Core/10.1.401" |> ignore
+            let original = entries["FSharp.Core/10.1.402"] |> nonNull
+            entries.Remove "FSharp.Core/10.1.402" |> ignore
             entries.Add(replacement, original))
 
 let private resource directory =
@@ -49,7 +49,7 @@ let private resource directory =
 
 let private omitResource directory =
     changedDeps directory (fun root ->
-        let library = (selected root)["FSharp.Core/10.1.401"] |> nonNull
+        let library = (selected root)["FSharp.Core/10.1.402"] |> nonNull
         let entries = library["resources"] |> nonNull |> _.AsObject()
         let first = entries |> Seq.head |> _.Key
         entries.Remove first |> ignore)
@@ -58,7 +58,7 @@ let private unreviewedAsset kind file directory =
     File.WriteAllBytes(Path.Combine(directory, file), [| 1uy |])
 
     changedDeps directory (fun root ->
-        let library = (selected root)["FSharp.Core/10.1.401"] |> nonNull
+        let library = (selected root)["FSharp.Core/10.1.402"] |> nonNull
         let mutable entries = Unchecked.defaultof<JsonNode | null>
 
         if not (library.AsObject().TryGetPropertyValue(kind, &entries)) then

@@ -1,5 +1,7 @@
 namespace ClaimCore.Postgres
 
+open ClaimCore.Contract
+
 open System
 open System.Globalization
 open System.Threading
@@ -81,18 +83,21 @@ module internal DatabaseSession =
         match
             DateOnly.TryParseExact(
                 text,
-                "yyyy-MM-dd 'AD'",
+                (Formats.CalendarDateFormat + " 'AD'"),
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.None
             )
         with
-        | true, parsed when parsed.ToString("yyyy-MM-dd 'AD'", CultureInfo.InvariantCulture) = text ->
+        | true, parsed when
+            parsed.ToString((Formats.CalendarDateFormat + " 'AD'"), CultureInfo.InvariantCulture) =
+                text
+            ->
             parsed
         | _ -> raise (RecordCorruptException "Invalid stored calendar date.")
 
     let recordedInstant index row =
         let text = value<string> index row
-        let format = "yyyy-MM-dd'T'HH:mm:ss.ffffff'Z' 'AD'"
+        let format = Formats.InstantFormat + " 'AD'"
 
         match
             DateTimeOffset.TryParseExact(

@@ -11,12 +11,8 @@ module internal ProtocolFieldPresentation =
         (commands: AuthorityOperationDefinition list)
         =
         [
-            yield "operationId", "authority.field.operationId.label"
-            yield "expectedRevision", "authority.field.expectedRevision.label"
-            yield "act", "authority.field.act.label"
-            yield "kind", "authority.field.kind.label"
-            yield "issuer", "authority.field.issuer.label"
-            yield "subject", "authority.field.subject.label"
+            for name in [ "operationId"; "expectedRevision"; "act"; "kind"; "issuer"; "subject" ] do
+                yield name, AuthorityOperationDefinitions.labelId name
             yield target.Name, target.LabelId
             for definition in commands do
                 for input in definition.Inputs do
@@ -51,7 +47,7 @@ module ContractDescriptors =
                         Scalar = field.Scalar
                         AllowsAbsence = (FieldTable.forField field.Field).Optional
                     })
-            Commands = CommandDefinitions.all
+            Commands = CommandPresentation.all
             AuthorityTarget = AuthorityOperationDefinitions.target
             AuthorityCommands = AuthorityOperationDefinitions.all
         }
@@ -64,8 +60,13 @@ module ContractDescriptors =
                 [
                     {
                         Name = InputTarget.Reason
-                        LabelId = "field.reason.label"
-                        MeaningId = "field.reason.meaning"
+                        LabelId =
+                            Vocabulary.messageKey InputTargets.vocabulary InputTarget.Reason "label"
+                        MeaningId =
+                            Vocabulary.messageKey
+                                InputTargets.vocabulary
+                                InputTarget.Reason
+                                "meaning"
                         Scalar = FieldDefinitions.scalar InputTarget.Reason
                     }
                 ]

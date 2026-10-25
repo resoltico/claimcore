@@ -72,7 +72,7 @@
     },
     {
       "id": "FSharp.Core",
-      "version": "10.1.401",
+      "version": "10.1.402",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt"
@@ -93,8 +93,8 @@
         "resources:zh-Hant/FSharp.Core.resources.dll",
         "runtime:FSharp.Core.dll"
       ],
-      "packageRevision": "e34a38d2ae1fc26406a317517196e55c68ff83ab",
-      "licenseRevision": "e34a38d2ae1fc26406a317517196e55c68ff83ab"
+      "packageRevision": "a8dd0577c5c13f43a2f57fe33b4ff11b90f6371e",
+      "licenseRevision": "a8dd0577c5c13f43a2f57fe33b4ff11b90f6371e"
     },
     {
       "id": "Microsoft.AspNetCore.Authentication.JwtBearer",

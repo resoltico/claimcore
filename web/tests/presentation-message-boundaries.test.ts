@@ -7,7 +7,7 @@ import {
 } from "@formatjs/icu-messageformat-parser";
 import { renderKey, renderIsolatedValue } from "../src/presentation/messages";
 import { pseudolocalize } from "../src/presentation/pseudolocalization.mjs";
-import english from "../../src/ClaimCore.Contract/Localization/en.field.json";
+import english from "../../src/ClaimCore.Contract/Localization/en.json";
 
 const literal = (value: string): LiteralElement => ({ type: TYPE.literal, value });
 

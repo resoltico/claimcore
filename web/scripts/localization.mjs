@@ -5,7 +5,7 @@ import { format, resolveConfig } from "prettier";
 import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
-  addDomain,
+  validatePrefixes,
   diagnosticRequirements,
   messageShape,
   readCatalog,
@@ -35,24 +35,16 @@ const domains = [
   "host",
   "cli",
 ];
-const expectedInputs = languages
-  .flatMap((language) => domains.map((domain) => `${language}.${domain}.json`))
-  .sort();
+const expectedInputs = languages.map((language) => `${language}.json`).sort();
 if (
   JSON.stringify((await readdir(input)).filter((f) => f.endsWith(".json")).sort()) !==
   JSON.stringify(expectedInputs)
 ) {
-  throw new Error("Unexpected or missing localization catalog domain.");
+  throw new Error("Unexpected or missing localization catalog language.");
 }
 for (const lang of languages) {
-  const catalog = {};
-  const files = (await readdir(input))
-    .filter((f) => f.startsWith(`${lang}.`) && f.endsWith(".json"))
-    .sort();
-  for (const file of files) {
-    const entries = readCatalog(await readFile(resolve(input, file), "utf8"));
-    addDomain(catalog, entries, file.slice(lang.length + 1, -5));
-  }
+  const catalog = readCatalog(await readFile(resolve(input, `${lang}.json`), "utf8"));
+  validatePrefixes(catalog, domains);
   catalogs[lang] = catalog;
 }
 const generated = resolve(root, "../contracts");
@@ -79,16 +71,8 @@ for (const [lang, catalog] of Object.entries(catalogs)) {
   }
 }
 expected["catalogs.ts"] = `${languages
-  .flatMap((language) =>
-    domains.map(
-      (domain) => `import ${language}_${domain} from "@locales/${language}.${domain}.json";`,
-    ),
-  )
-  .join("\n")}\nexport const catalogs = {${languages
-  .map(
-    (language) => `${language}: {${domains.map((domain) => `...${language}_${domain}`).join(",")}}`,
-  )
-  .join(",")}};\n`;
+  .map((language) => `import ${language} from "@locales/${language}.json";`)
+  .join("\n")}\nexport const catalogs = {${languages.join(",")}};\n`;
 expected["diagnostic-parameters.json"] = `${JSON.stringify(requirements, null, 2)}\n`;
 for (const domain of domains) {
   const entries = Object.entries(args).filter(([k]) => k.startsWith(`${domain}.`));

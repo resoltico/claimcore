@@ -1,18 +1,10 @@
 import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import enField from "@locales/en.field.json";
-import lvField from "@locales/lv.field.json";
-import arField from "@locales/ar.field.json";
-import enUi from "@locales/en.ui.json";
-import lvUi from "@locales/lv.ui.json";
-import arUi from "@locales/ar.ui.json";
-import enAuthority from "@locales/en.authority.json";
-import lvAuthority from "@locales/lv.authority.json";
-import arAuthority from "@locales/ar.authority.json";
-import enDiagnostic from "@locales/en.diagnostic.json";
-import lvDiagnostic from "@locales/lv.diagnostic.json";
-import arDiagnostic from "@locales/ar.diagnostic.json";
+import enField from "@locales/en.json";
+import lvField from "@locales/lv.json";
+import arField from "@locales/ar.json";
+
 import { service } from "../src/api/service";
 import { useOperation } from "../src/hooks/operation/useOperation";
 import { initialOperationValues, refusalPath } from "../src/interaction/operationForm";
@@ -25,25 +17,25 @@ const locales = [
     language: "en",
     label: "Handler's case reference",
     field: enField,
-    ui: enUi,
-    authority: enAuthority,
-    diagnostic: enDiagnostic,
+    ui: enField,
+    authority: enField,
+    diagnostic: enField,
   },
   {
     language: "lv",
     label: "Administratora lietas numurs",
     field: lvField,
-    ui: lvUi,
-    authority: lvAuthority,
-    diagnostic: lvDiagnostic,
+    ui: lvField,
+    authority: lvField,
+    diagnostic: lvField,
   },
   {
     language: "ar",
     label: "مرجع الملف لدى المعالج",
     field: arField,
-    ui: arUi,
-    authority: arAuthority,
-    diagnostic: arDiagnostic,
+    ui: arField,
+    authority: arField,
+    diagnostic: arField,
   },
 ] as const;
 type Locale = (typeof locales)[number];

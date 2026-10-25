@@ -27,6 +27,22 @@ let private evaluates (schema: JsonSchema) bytes =
     use value = JsonDocument.Parse(bytes: byte array)
     schema.Evaluate(value.RootElement, EvaluationOptions(RequireFormatValidation = true)).IsValid
 
+let private resolvedResponse (document: JsonNode) status (response: JsonNode) =
+    if status = "200" then
+        response
+    else
+        let pointer = response |> child "$ref" |> fun value -> value.GetValue<string>()
+        let prefix = "#/components/responses/"
+
+        Expect.isTrue
+            (pointer.StartsWith(prefix, System.StringComparison.Ordinal))
+            "The host response references a local component"
+
+        document
+        |> child "components"
+        |> child "responses"
+        |> child (pointer.Substring(prefix.Length))
+
 let private statuses () =
     let document = document ()
 
@@ -41,6 +57,7 @@ let private statuses () =
         let selected =
             responses
             |> child (string status)
+            |> resolvedResponse document (string status)
             |> child "content"
             |> child "application/json"
             |> child "schema"
@@ -106,18 +123,32 @@ let rec private prose path =
     | ClaimCore.Contract.JsonValue.Array values -> values |> List.collect (prose path)
     | _ -> []
 
+let private fixedDescriptions () =
+    let document = document ()
+
+    for path in (document |> child "paths").AsObject() do
+        for operation in (nonNull path.Value).AsObject() do
+            for entry in (nonNull operation.Value |> child "responses").AsObject() do
+                let response = resolvedResponse document entry.Key (nonNull entry.Value)
+
+                Expect.equal
+                    (response |> child "description" |> fun value -> value.GetValue<string>())
+                    ("HTTP " + entry.Key)
+                    "Description is the referenced HTTP status"
+
 let private responseLabels () =
     let descriptions = prose [] ClaimCore.Contract.OpenApi.document
     Expect.isNonEmpty descriptions "Required response labels are present."
 
     for path, value in descriptions do
-        match List.rev path with
-        | status :: "responses" :: _ ->
-            Expect.equal
-                value
-                (ClaimCore.Contract.JsonValue.String("HTTP " + status))
-                "Descriptions contain only their derived status label."
+        match List.rev path, value with
+        | _ :: "responses" :: _, ClaimCore.Contract.JsonValue.String text ->
+            Expect.isTrue
+                (System.Text.RegularExpressions.Regex.IsMatch(text, "^HTTP [1-5][0-9]{2}$"))
+                "Descriptions contain only a fixed status label"
         | _ -> failtest "Optional prose must not enter the structural document."
+
+    fixedDescriptions ()
 
     let document = document ()
 

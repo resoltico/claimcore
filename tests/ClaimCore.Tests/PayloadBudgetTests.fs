@@ -67,9 +67,9 @@ let private encodedHistory count disclosure =
             })
 
 let private fullHistoryBudget () =
-    let accepted = snapshot TextFormat.MaximumFreeTextBytes
+    let accepted = snapshot Formats.MaximumFreeTextBytes
     let bytes = encodedHistory 50 (SnapshotDisclosure.Disclosed accepted.View)
-    let perEntry = 2 * 6 * TextFormat.MaximumFreeTextBytes + 6 * 80 + 2048
+    let perEntry = 2 * 6 * Formats.MaximumFreeTextBytes + 6 * 80 + 2048
     let bound = 50 * perEntry + 1024
 
     Expect.isOk

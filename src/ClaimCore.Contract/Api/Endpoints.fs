@@ -10,11 +10,16 @@ type EndpointEffect =
     | LedgerExecution
 
 module EndpointEffects =
-    let token =
-        function
-        | EndpointEffect.Read -> "READ_ONLY"
-        | EndpointEffect.OperationalWrite -> "OPERATIONAL_WRITE"
-        | EndpointEffect.LedgerExecution -> "LEDGER_EXECUTION"
+    let vocabulary =
+        Vocabulary.define
+            "effect"
+            [
+                EndpointEffect.Read, "READ_ONLY"
+                EndpointEffect.OperationalWrite, "OPERATIONAL_WRITE"
+                EndpointEffect.LedgerExecution, "LEDGER_EXECUTION"
+            ]
+
+    let token = Vocabulary.token vocabulary
 
 [<NoEquality; NoComparison>]
 type Endpoint<'In, 'Out> =
@@ -51,14 +56,12 @@ module Api =
             (ReplyCodecs.readReply "SessionReply" ResponseCodecs.session)
 
     let logout =
-        { endpoint
-              "session.logout"
-              HttpMethod.Post
-              EndpointEffect.Read
-              RequestCodecs.empty
-              (ReplyCodecs.readReply "LogoutReply" Codec.nullValue) with
-            Effect = EndpointEffect.OperationalWrite
-        }
+        endpoint
+            "session.logout"
+            HttpMethod.Post
+            EndpointEffect.OperationalWrite
+            RequestCodecs.empty
+            (ReplyCodecs.readReply "LogoutReply" Codec.nullValue)
 
     let context =
         endpoint
@@ -110,31 +113,13 @@ module Api =
             RequestCodecs.operationInput
             ReplyCodecs.execute
 
-    let operationPending =
+    let operationResolve =
         endpoint
-            "operation.pending"
+            "operation.resolve"
             HttpMethod.Post
-            EndpointEffect.Read
-            RequestCodecs.pageRequest
-            (ReplyCodecs.readReply "RecoveryPageReply" RecoveryCodecs.page)
-
-    let operationRetry =
-        endpoint
-            "operation.retry"
-            HttpMethod.Post
-            EndpointEffect.LedgerExecution
-            RecoveryCodecs.retry
-            ReplyCodecs.execute
-
-    let operationForget =
-        { endpoint
-              "operation.forget"
-              HttpMethod.Post
-              EndpointEffect.Read
-              RecoveryCodecs.forget
-              (ReplyCodecs.readReply "ForgetReply" Codec.nullValue) with
-            Effect = EndpointEffect.OperationalWrite
-        }
+            EndpointEffect.OperationalWrite
+            ResolutionCodecs.request
+            ResolutionCodecs.reply
 
     let operationObserve =
         endpoint
@@ -175,9 +160,7 @@ module Api =
             boxed caseHistory
             boxed operationPreview
             boxed operationExecute
-            boxed operationPending
-            boxed operationRetry
-            boxed operationForget
+            boxed operationResolve
             boxed operationObserve
             boxed authorityList
             boxed authorityGrants

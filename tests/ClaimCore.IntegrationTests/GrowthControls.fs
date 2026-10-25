@@ -1,5 +1,7 @@
 module internal ClaimCore.IntegrationTests.GrowthControls
 
+open ClaimCore.TestSupport
+
 open System
 open System.Diagnostics
 open System.Threading
@@ -9,18 +11,9 @@ open ClaimCore.Application
 open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Postgres
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
 let private token = CancellationToken.None
-
-let private acknowledge (actor: IActorClaimsCore) (reply: ExecuteReply) =
-    task {
-        match reply.RecoveryId with
-        | Some key ->
-            let! result = actor.Forget({ RecoveryId = key }, token)
-            Expect.equal result (ReadReply.Succeeded()) "Control request acknowledged"
-        | None -> ()
-    }
 
 let private current (database: PostgresFixture.Database) reference =
     task {
@@ -99,8 +92,6 @@ let private sameCase database (actor: IActorClaimsCore) =
             (1, 1)
             "Same-revision contenders admit exactly one acceptance"
 
-        for reply in replies do
-            do! acknowledge actor reply
     }
 
 let private revocation (database: PostgresFixture.Database) owner principal =
@@ -147,14 +138,13 @@ let private revocation (database: PostgresFixture.Database) owner principal =
         | ExecuteResult.Rejected _ -> ()
         | _ -> failtest "Acceptance must reauthorize the waiting writer after revocation"
 
-        do! acknowledge revoker revoked
-        do! acknowledge writer written
+
 
         let! restored =
             grant owner (id 710012) principal Role.CaseHandler GrantTarget.Installation true
 
         acceptedAuthority restored
-        do! acknowledge owner restored
+
     }
 
 let private longCase database (actor: IActorClaimsCore) =
@@ -179,7 +169,7 @@ let private longCase database (actor: IActorClaimsCore) =
                 )
 
             accepted reply |> ignore
-            do! acknowledge actor reply
+
             revision <- revision + 1L
             closed <- not closed
 
@@ -210,7 +200,7 @@ let private erase (database: PostgresFixture.Database) (actor: IActorClaimsCore)
                 true
 
         acceptedAuthority granted
-        do! acknowledge actor granted
+
         let! snapshot = current database "synthetic-growth-999"
 
         let! erased =
@@ -235,7 +225,7 @@ let private erase (database: PostgresFixture.Database) (actor: IActorClaimsCore)
                 false
 
         acceptedAuthority revoked
-        do! acknowledge actor revoked
+
     }
 
 let run database actor principal =

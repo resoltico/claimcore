@@ -372,7 +372,7 @@ let private qualify () =
         PublishedAssets.qualify fixture
         CliDiscovery.qualify fixture
         setup fixture
-        do! CliRecovery.qualify fixture
+        do! CliResolution.qualify fixture
         CliNativeOutput.qualify fixture
         CliDelivery.qualify fixture
         CliDisclosure.qualify fixture

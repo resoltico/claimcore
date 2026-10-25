@@ -1,10 +1,16 @@
 # Engineering commands
 
-[Development](../docs/development.md) owns prerequisites, commands, verification stages, resource limits and evidence. Run `bash eng/verify.sh` from the repository root for the complete gate; named stages and `--fast` are partial runs.
+Run `bash eng/verify.sh` at the repository root for the required gate. Use `--fast` or named stages for
+iteration. Run `bash eng/verify.sh growth` separately before release or on demand. The
+[development guide](../docs/development.md) explains prerequisites, stage scopes and evidence.
 
-- [verify.sh](verify.sh) is the shared local and CI entry point. It checks prerequisites, shares restore/build work within one invocation and stops at failure.
-- [ClaimCore.ContractGenerator](ClaimCore.ContractGenerator/Program.fs) publishes the three tracked contracts. [Generation and freshness](../docs/development.md#generated-contracts-and-boundary-verification) explains invocation and independent boundary checks.
-- [Check-FSharpLint.sh](Check-FSharpLint.sh) checks F# sources and retains every lint failure.
-- [third-party-notices.json](licenses/third-party-notices.json) owns reviewed package and apphost notices. Application publication copies the reviewed common superset; acceptance checks the actual publish inventory for missing or unreviewed contributions.
+| Tool | Responsibility |
+| --- | --- |
+| [verify.sh](verify.sh) | Preflight, shared restore/build work, checks and bounded native report retention |
+| [ContractGenerator](ClaimCore.ContractGenerator/Program.fs) | The three tracked contracts; [generation instructions](../docs/development.md#generated-contracts-and-boundary-verification) |
+| [Check-FSharpLint.sh](Check-FSharpLint.sh) | F# rules, collecting failures across source roots |
+| [third-party-notices.json](licenses/third-party-notices.json) | Reviewed package/apphost notices; acceptance checks actual publication contents |
 
-Release publication is separate owner work under the [source-release workflow](../.github/workflows/release.yml). CI success is execution evidence, not owner approval.
+The [source release procedure](../docs/development.md#source-releases) explains the owner's inputs to the
+[release workflow](../.github/workflows/release.yml).
+CI success records executed checks, without granting release approval.

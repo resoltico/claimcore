@@ -55,7 +55,7 @@ it("uncertainty survives later definite failures and blocks edits while allowing
   expect(
     operationView(operationReducer(rejected, { type: "EXECUTE", identity: effect("execute") }))
       .phase,
-  ).toBe("SUBMITTING");
+  ).toBe("UNRESOLVED");
 });
 it("requires an exact review and consent and blocks edits while an attempt is pending", () => {
   expect(operationReducer(initial(), { type: "EXECUTE", identity: effect("execute") })).toEqual(

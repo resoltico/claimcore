@@ -8,8 +8,11 @@
     <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
+    <Compile Include="../StoreFixtures.fs" Link="StoreFixtures.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
-    <Compile Include="PostgresFixture.fs" />
+    <Compile Include="../PostgresFixture.fs" Link="PostgresFixture.fs" />
+    <Compile Include="VerificationSupport.fs" />
+    <Compile Include="ResolutionTests.fs" />
     <Compile Include="SessionDrain.fs" />
     <Compile Include="SessionCapRace.fs" />
     <Compile Include="SessionHosts.fs" />
@@ -18,13 +21,16 @@
     <Compile Include="FixtureDisposalTests.fs" />
     <Compile Include="PostgresReadinessTests.fs" />
     <Compile Include="StoreTests.fs" />
-    <Compile Include="VerificationSupport.fs" />
+    <Compile Include="ApplicationFixtures.fs" />
+    <Compile Include="PositionPaginationTests.fs" />
+    <Compile Include="ProtocolMappingTests.fs" />
+    <Compile Include="DiagnosticReachabilityTests.fs" />
+    <Compile Include="ReceiptContextTests.fs" />
     <Compile Include="VerificationTests.fs" />
     <Compile Include="SubmissionStorage.fs" />
     <Compile Include="GrowthProtection.fs" />
     <Compile Include="GrowthEnvironment.fs" />
     <Compile Include="GrowthControls.fs" />
-    <Compile Include="GrowthRecovery.fs" />
     <Compile Include="GrowthSessions.fs" />
     <Compile Include="GrowthQualificationTests.fs" />
     <Compile Include="CaseProjectionTests.fs" />
@@ -43,10 +49,10 @@
     <Compile Include="TransactionFailureTests.fs" />
     <Compile Include="CommitProxy.fs" />
     <Compile Include="CommitTests.fs" />
-    <Compile Include="RecoveryTests.fs" />
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />
     <Compile Include="AdministrationTests.fs" />
+    <None Include="../fixtures/baseline-with-submission-storage.sql" Link="baseline-with-submission-storage.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../fixtures/0001_baseline.v0.11.0.sql" Link="0001_baseline.v0.11.0.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="OwnerSchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />

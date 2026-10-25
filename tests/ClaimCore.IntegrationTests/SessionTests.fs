@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.SessionTests
 
+open ClaimCore.TestSupport
+
 open System
 open System.Threading
 open System.Threading.Tasks

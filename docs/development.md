@@ -1,15 +1,20 @@
 # Development
 
+Use this guide to build from a clean checkout, choose a verification scope and deliver a complete change.
+The required gate and opt-in growth qualification use the same commands locally and in CI.
+
 ## First checkout
 
 Use the SDK in [global.json](../global.json), Node/npm in [.node-version](../.node-version) and
 [web/package.json](../web/package.json), Bash, Python 3 for the independent durable oracle, and Docker for
-integration/acceptance/workflow checks. Runtime private-file ABIs and their real boundary controls are listed below.
+integration/acceptance/workflow checks. Install ShellCheck for workflow checks. Use supported Unix platforms for
+private-file inputs. The qualified native platforms and controls are listed below.
 Unix sink controls use sh, mkfifo, dd, stty, script and Linux prlimit.
 
 ```sh
 dotnet restore ClaimCore.slnx --locked-mode
 dotnet tool restore
+npm install --global --ignore-scripts "npm@$(node -p "require('./web/package.json').engines.npm")"
 npm --prefix web ci
 bash eng/verify.sh browsers
 bash eng/verify.sh
@@ -18,7 +23,7 @@ bash eng/verify.sh
 Ordinary .NET builds run neither npm nor generation. Frontend commands need no .NET/Python. Framework-dependent apphost
 publication is qualified; self-contained, trimmed and single-file modes remain unqualified. Preserve the entire publish
 directory and reviewed notices from [eng/licenses](../eng/licenses/third-party-notices.json). No C compiler or custom
-native library is required; HostSecurity binds the supported system library.
+native library is required; HostSecurity uses managed file APIs.
 
 ## Verification stages
 
@@ -31,15 +36,16 @@ gate. Named stages execute in order, stop at failure and share restore/build wor
 | unit | Build, unit/property and compiled architecture suites |
 | frontend | npm ci/audit, format/lint/types, browser unit completion, Knip/licenses/build/notices |
 | workflows | ShellCheck and pinned Docker Actionlint |
-| integration | Complete postgres then web suites |
-| postgres / web | Complete selected isolated suite with its project closure |
+| integration | Required postgres then web suites; growth is separate |
+| postgres / web | Required selected isolated suite with its project closure |
+| growth | Opt-in nine-profile contention and verifier qualification |
 | browsers | Locked Playwright engine/system dependency installation |
 | acceptance | Published service/CLI and real browser qualification |
 
 Native tests run Microsoft Testing Platform with automatic `[<Tests>]` discovery, evaluated Compile membership
 and nonempty-run enforcement. Every test project is assigned exactly once to a stage; missing/duplicate
-assignments fail before restore. No hand-kept minimum counts exist. Focused, filtered, pending, skipped or
-retried runs cannot satisfy verification. TRX and sanitized measurements are retained in unique ignored
+assignments fail before restore. No hand-kept minimum counts exist. Ad hoc focused, filtered, pending, skipped or
+retried runs cannot satisfy verification. The named postgres and growth stages select their disjoint scopes explicitly. TRX and sanitized measurements are retained in unique ignored
 `artifacts/verification/` directories, including failure evidence.
 
 Default acceptance runs all specifications on Chromium, Firefox and WebKit, sequentially stopping on first
@@ -51,7 +57,8 @@ Chromium's headless shell for CLI PKCE, including Firefox/WebKit jobs, and omits
 Fresh-login tests budget one admission window plus normal OIDC work. Their shared helper follows the actual
 browser challenge and recovers only from a validated login-admission refusal.
 
-CI runs independent lint/unit/frontend/PostgreSQL/Web jobs and requires every scheduled job in `Gate`. PR, merge queue,
+CI runs independent lint/unit/frontend/PostgreSQL/Web jobs and requires the scheduled required jobs in `Gate`.
+The native matrix is linux-x64, linux-musl-x64 and osx-arm64. Growth is available only through an explicit workflow dispatch input, outside Gate. PR, merge queue,
 main/tag and explicit dispatch use three isolated complete engines. Every scheduled engine must succeed in the aggregate
 Gate. The frontend runs in the pinned Node container without executable .NET. PostgreSQL majors/images come from
 [postgresql-baseline.json](../db/postgresql-baseline.json); each listed major needs actual qualification.
@@ -63,6 +70,10 @@ installations or prune unrelated containers/volumes.
 
 ## Disk use and retained evidence
 
+The verifier retains the newest ten completed managed `native.*` report directories. Active runs are protected
+until completion and may temporarily exceed the limit. Old unmanaged directories are untouched; review them
+separately before owner cleanup. This policy bounds new report retention, not total artifacts or cache use.
+
 NuGet/npm caches retain downloads keyed by lockfiles; locked restore/npm ci/audit still run. SDK-free frontend
 and acceptance share the same exact npm download key, without broad fallbacks. Build outputs, node_modules,
 assets and test results are not cached. Shared local caches may serve other repositories; do not clear them
@@ -72,18 +83,20 @@ universal maximum or enforced whole-run quota. Measure the selected concurrency 
 reclaim only proven owned resources. Properties/fuzzing generate bounded in-memory values, not per-case files
 or on-disk corpora.
 
-Managed test processes use bounded readers/timeouts and two-second teardown observation. Cleanup failures
-retain the original failure; detached/reparented descendants remain outside process-tree kill guarantees.
+A native run creates a unique report directory and protects it while active. If a process is killed before
+completion, review its active marker and evidence manually. The retention script does not guess whether that
+process is still alive. Managed test processes use bounded readers/timeouts and two-second teardown observation.
+Cleanup failures retain the original failure; detached/reparented descendants remain outside process-tree kill guarantees.
 Diagnostics exclude payloads, credentials and provider exception text.
 
 ## Changes
 
-Read the owner contract and behavior tests before editing. An endpoint belongs in the typed registry; fields belong in
-the field table, Domain admission and RecordFormat codec. Update affected consumers, SQL, tests, source locales and docs
-together. Before 1.0.0 baseline replacement may explicitly refuse older installations; the current build admits one
-exact source-bound baseline. There is no in-place upgrade or conversion; preserve existing installations with matching
-software. Production and tests retain function/lambda/member length 50 and complexity 12. Only inline named rule
-exceptions with reasons are allowed. File/module length is not a gate. Required deterministic properties run 200 cases
+Find the owning contract and read its behavior tests before editing. Keep endpoints in the typed registry and fields in
+the field table, Domain admission and Contract codecs. RecordFormat owns durable encodings. Update affected consumers,
+SQL, tests, source locales and docs together. The current build admits one exact source-bound baseline. There is no
+in-place upgrade or conversion; preserve incompatible installations with matching software. FSharpLint enforces
+complexity 12 in production and tests. Only inline named rule
+exceptions with reasons are allowed. Required deterministic properties run 200 cases
 with state sequences up to 20. Shrinking stops after 100 successful descent steps, retaining the failing replay token;
 this is not a bound on candidate count or wall time. Decoder fuzzing uses at most 4,096 random bytes plus fixed hostile
 cases, including a 12,008-byte escaped-control string. There is no mutation campaign or environment switch for a
@@ -120,26 +133,37 @@ runner results. Module lint checks follow transitive imports, aliases and JavaSc
 
 ## Synthetic growth qualification
 
-The required full-path profiles run 1k/10k/100k business operations with 1/4/16 writers, 1k cases, 100 actors/1k grants
-(setup entries counted separately), 500 sessions/32 session workers and 10k retained recovery rows. Disjoint lanes plus
-explicit same-case/revocation conflicts protect accepted-count evidence; normal submissions acknowledge known results to
-exercise turnover. All nine profiles are required once per qualified database; iteration selectors never satisfy the
-gate. Reports in ignored artifacts/verification/growth record exact revision/dirty state, counts, p50/p95/p99,
-throughput, journal/session latency, verifier memory/time and DB temporary work. Unmeasured head wait/hold metrics
+Run `bash eng/verify.sh growth` before a release and on demand. It is outside the required gate; the manual CI growth input runs the same stage. The full-path profiles run 1k/10k/100k business operations with 1/4/16 writers, 1k cases, 100 actors/1k grants
+(setup entries counted separately), 500 sessions/32 session workers. Disjoint lanes plus
+explicit same-case/revocation conflicts protect accepted-count evidence. All nine profiles are required for full growth qualification. `CLAIMCORE_GROWTH_PROFILE=writes:writers` selects one declared profile for iteration; its report explicitly marks incomplete qualification. Reports in ignored artifacts/verification/growth record exact revision/dirty state, counts, p50/p95/p99,
+throughput, session latency, verifier memory/time and DB temporary work. Unmeasured head wait/hold metrics
 remain explicit. A separate comparison fixes history at 1,000 case entries plus three authority entries while varying
 case cardinality across 1/100/1,000; its verifier time and sampled memory are recorded in cardinality.json. These
 measurements promise no production SLA or constant total-system memory.
 Native-language/assistive-technology review remains human.
 
-Private-file ABI jobs require actual Linux x64/arm64 glibc and macOS x64/arm64 runs. The stat layouts (size/mode offset
-and width/file-size offset) are glibc x64 144/24u32/48, glibc arm64 128/16u32/48, and both Darwin ABIs 144/4u16/96.
-Sources are glibc's [x86
-stat](https://github.com/bminor/glibc/blob/glibc-2.42/sysdeps/unix/sysv/linux/x86/bits/struct_stat.h), [generic
-stat](https://github.com/bminor/glibc/blob/glibc-2.42/sysdeps/unix/sysv/linux/bits/struct_stat.h),
-[flags](https://github.com/bminor/glibc/blob/glibc-2.42/sysdeps/unix/sysv/linux/bits/fcntl-linux.h), and target Apple
-SDK sys/stat.h, sys/cdefs.h and sys/fcntl.h. Darwin x64 uses fstat$INODE64; arm64 uses fstat. Linux requires the public
-glibc fstat symbol. Tests include fd0 ownership, same-fd substitution, nonregular handles, all forbidden mode bits,
-bounds/partial clearing and repeated refusals without abandoned workers.
+Private-file qualification exercises real objects on linux-x64, linux-musl-x64 and osx-arm64.
+The managed reader checks final link targets, pre-open lengths, handle permissions and exact bounded
+positional reads. FIFO refusals, descriptor-zero ownership, disposal, path substitution and failed-read
+buffer clearing are checked. The [private-input limits](operations.md#private-configuration) include
+the directory-writer/FIFO race; Windows refuses private inputs.
+
+## Source releases
+
+Public releases distribute tagged source archives through [GitHub Releases](https://github.com/resoltico/claimcore/releases).
+They contain no installable application packages. Build and publication instructions above apply to that source.
+
+Keep pending release notes in [CHANGELOG.md](../CHANGELOG.md), covering the complete delivered change since the
+preceding published normal release. Version, date and tag assignment belong to the owner's release step.
+The release commit must agree across [Directory.Build.props](../Directory.Build.props), the dated changelog
+heading and the annotated version tag. Complete the required verification and separate growth qualification
+for the release candidate before publishing.
+
+The [source release workflow](../.github/workflows/release.yml) runs only from main and accepts an existing
+annotated tag and its full expected commit SHA. It checks that the tagged commit belongs to main, its version
+matches the tag, and push CI for that tag succeeded. It extracts only that version's dated changelog section
+and publishes it as the release body. An Unreleased section, an unqualified tag or a branch CI result alone
+does not satisfy those checks.
 
 ## Verification records
 

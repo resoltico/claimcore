@@ -59,25 +59,6 @@ const authorityTarget = async (page: Page, issuer: string, subject: string) => {
   await page.locator('[name="target.issuer"]').fill(issuer);
   await page.locator('[name="target.subject"]').fill(subject);
 };
-const acknowledgeAuthority = async (page: Page, recoveryId: string | null) => {
-  const forgotten =
-    recoveryId === null
-      ? null
-      : page.waitForResponse(
-          (response) =>
-            response.url().endsWith("/api/operation.forget") &&
-            response.request().postData() === JSON.stringify({ recoveryId }),
-        );
-  await page.getByRole("button", { name: "Start another operation", exact: true }).click();
-  if (forgotten !== null) {
-    const response = await forgotten;
-    expect(response.status()).toBe(200);
-    const value: unknown = await response.json();
-    if (!isResponse("operation.forget", value) || value.outcome.tag !== "SUCCEEDED") {
-      throw new Error("Expected acknowledged authority result.");
-    }
-  }
-};
 const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") => {
   const previewed = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
@@ -108,7 +89,7 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
     await expect(
       page.getByRole("status").filter({ hasText: value.outcome.data.operationId }),
     ).toBeVisible();
-    await acknowledgeAuthority(page, value.recoveryId);
+    await page.getByRole("button", { name: "Start another operation", exact: true }).click();
   }
 };
 const selectAuthorityAct = async (page: Page, act: "SET_GRANT" | "SET_ENABLED") => {

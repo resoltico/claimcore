@@ -7,15 +7,16 @@ type CorrectionGroup =
     | Payment
 
 module CorrectionGroup =
-    let token =
-        function
-        | CorrectionGroup.Registration -> "registration"
-        | CorrectionGroup.Decision -> "decision"
-        | CorrectionGroup.Payment -> "payment"
+    let vocabulary =
+        Vocabulary.define
+            "group"
+            [
+                CorrectionGroup.Registration, "registration"
+                CorrectionGroup.Decision, "decision"
+                CorrectionGroup.Payment, "payment"
+            ]
 
-module TextFormat =
-    [<Literal>]
-    let MaximumFreeTextBytes = 1024
+    let token = Vocabulary.token vocabulary
 
 [<RequireQualifiedAccess>]
 type CorrectionGroupAction =
@@ -24,8 +25,14 @@ type CorrectionGroupAction =
     | Clear
 
 module CorrectionActions =
-    let token =
-        function
-        | CorrectionGroupAction.Keep -> "KEEP"
-        | CorrectionGroupAction.Replace -> "REPLACE"
-        | CorrectionGroupAction.Clear -> "CLEAR"
+    let vocabulary =
+        Vocabulary.define
+            "token"
+            [
+                CorrectionGroupAction.Keep, "KEEP"
+                CorrectionGroupAction.Replace, "REPLACE"
+                CorrectionGroupAction.Clear, "CLEAR"
+            ]
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary

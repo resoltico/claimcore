@@ -69,25 +69,7 @@ module internal ReadOperations =
         Transactions.read source token (fun connection ->
             task {
                 let! time = instant connection token
-                let! entry = StoredEntries.operation connection installationId id token
-
-                let! actor =
-                    Projections.actor connection principal (Projections.operationCases entry) token
-
-                let! record =
-                    match entry |> Option.map _.Scope with
-                    | Some(StoredScope.Case(id, _, _, _)) ->
-                        Projections.caseById connection id token
-                    | _ -> Task.FromResult None
-
-                return
-                    ({
-                        ObservedAt = time
-                        Actor = actor
-                        Entry = entry
-                        Case = record
-                    }
-                    : OperationReadView)
+                return! DecisionViews.operation connection installationId principal id time token
             })
 
     let list source principal readRoles select limit token =

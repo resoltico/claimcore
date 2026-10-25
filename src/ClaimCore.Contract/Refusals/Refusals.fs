@@ -44,6 +44,7 @@ type Refusal =
     | ZeroDecisionCannotBePaid
     | RevisionExhausted
     | LedgerExhausted
+    | OperationResolved
     | IdempotencyConflict
     | ResourceUnavailable
     | ActNotPermitted
@@ -158,6 +159,7 @@ module Refusals =
         | Refusal.RevisionExhausted -> policy "REVISION_EXHAUSTED" RecommendedAction.NoneRequired
         | Refusal.LedgerExhausted ->
             policy "LEDGER_SEQUENCE_EXHAUSTED" RecommendedAction.StopAndInvestigate
+        | Refusal.OperationResolved -> policy "OPERATION_RESOLVED" RecommendedAction.ReadCurrent
         | Refusal.IdempotencyConflict ->
             policy "OPERATION_CONTENT_CONFLICT" RecommendedAction.StopAndInvestigate
         | Refusal.InvalidCursor -> policy "QUERY_CURSOR_INVALID" RecommendedAction.ReadCurrent
@@ -172,6 +174,7 @@ module Refusals =
         function
         | Refusal.InvalidInput(target, _) -> Some(InputTargets.token target)
         | Refusal.InvalidCursor -> Some "cursor"
+        | Refusal.OperationResolved -> Some "operationId"
         | _ -> None
 
     let actualRevision =
@@ -264,6 +267,7 @@ module Refusals =
             Refusal.ZeroDecisionCannotBePaid
             Refusal.RevisionExhausted
             Refusal.LedgerExhausted
+            Refusal.OperationResolved
             Refusal.IdempotencyConflict
             Refusal.ResourceUnavailable
             Refusal.ActNotPermitted
@@ -311,14 +315,14 @@ module Refusals =
                 Parameters =
                     parameters reason
                     |> List.map (fun (name, _) ->
-                        DiagnosticArguments.tryParse name
+                        DiagnosticArguments.parse name
                         |> Option.get
                         |> DiagnosticArguments.definition)
             })
         |> List.distinctBy _.Id
 
 module RecommendedActions =
-    let all =
+    let vocabulary =
         [
             RecommendedAction.CorrectInput, "CORRECT_INPUT"
             RecommendedAction.ReadCurrent, "READ_CURRENT"
@@ -328,9 +332,10 @@ module RecommendedActions =
             RecommendedAction.StopAndInvestigate, "STOP_AND_INVESTIGATE"
             RecommendedAction.NoneRequired, "NONE_REQUIRED"
         ]
+        |> Vocabulary.define "action"
 
-    let token action =
-        all |> List.find (fst >> (=) action) |> snd
+    let all = Vocabulary.entries vocabulary
+    let token = Vocabulary.token vocabulary
 
 type Refusal with
     member this.Field = Refusals.field this

@@ -6,42 +6,33 @@ open System
 open System.Threading
 open ClaimCore.Application
 open ClaimCore.Domain
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
-/// The real Application facade ensures verified OAuth clients still need ClaimCore authority.
-type Fixture
-    (
-        store: ClaimCore.Tests.MemoryLedgerStore.Store,
-        fixture: ClaimCore.TestSupport.StoreContractTests.Fixture
-    ) =
-    member _.Actor principal = core fixture principal
-    member _.EntryCount = store.Entries.Length
+open ClaimCore.TestSupport
+open ClaimCore.Postgres
+
+/// Real PostgreSQL preserves the same Application authorization exercised through OIDC.
+type Fixture(database: PostgresFixture.Database) =
+    member _.Actor principal = core database.Fixture principal
+
+    member _.EntryCount =
+        use connection = database.OwnerSource.OpenConnection()
+
+        use command =
+            new Npgsql.NpgsqlCommand("SELECT sequence FROM claimcore.ledger_head", connection)
+
+        command.ExecuteScalar() :?> int64 |> int
 
     interface IDisposable with
-        member _.Dispose() = (store :> IDisposable).Dispose()
+        member _.Dispose() = database.Fixture.Dispose()
 
 let createFor issuer subject =
     task {
-        // Synthetic business time follows registration dates and has ledger microsecond precision.
-        let instant = DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero)
-        let store = new ClaimCore.Tests.MemoryLedgerStore.Store(instant)
+        let principal = PrincipalKey.human issuer subject |> Result.defaultWith invalidOp
+        let! database = PostgresFixture.createFor principal
+        let fixture = database.Fixture
 
         try
-            let fixture: ClaimCore.TestSupport.StoreContractTests.Fixture =
-                {
-                    Store = store :> ILedgerStore
-                    InstallationId = id 500
-                    Owner = PrincipalKey.human issuer subject |> Result.defaultWith invalidOp
-                    Calendar =
-                        { new IBusinessCalendar with
-                            member _.TimeZoneId = "Etc/UTC"
-
-                            member _.DateAt instant =
-                                DateOnly.FromDateTime instant.UtcDateTime
-                        }
-                    Dispose = ignore
-                }
-
             let! owner = caseWorker fixture
             let service = PrincipalKey.service issuer "service" |> Result.defaultWith invalidOp
 
@@ -67,9 +58,9 @@ let createFor issuer subject =
                 )
 
             accepted opened |> ignore
-            return new Fixture(store, fixture)
+            return new Fixture(database)
         with error ->
-            (store :> IDisposable).Dispose()
+            database.Fixture.Dispose()
             return raise error
     }
 

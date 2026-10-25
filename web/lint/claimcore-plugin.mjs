@@ -1,6 +1,6 @@
 // Boundary rules that no built-in oxlint rule expresses, run through oxlint's JavaScript plugin API.
 
-/** @param {import("oxlint/plugins-dev").Expression} source */
+/** @param {import("@oxlint/plugins").ESTree.Expression} source */
 function importedText(source) {
   if (source.type === "Literal" && typeof source.value === "string") {
     return source.value;
@@ -11,7 +11,7 @@ function importedText(source) {
   return null;
 }
 
-/** @type {import("oxlint/plugins-dev").Rule} */
+/** @type {import("@oxlint/plugins").Rule} */
 const noPresentationImport = {
   meta: {
     type: "problem",

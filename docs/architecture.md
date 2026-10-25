@@ -1,157 +1,123 @@
 # Architecture
 
-One HTTPS service fronts one PostgreSQL authority; CLI and browser hold no database credentials.
+A browser or CLI sends authenticated HTTPS requests to Web. Application decides what the actor may do;
+Postgres loads the authoritative view and persists the result. One database owns acceptance and current state.
 
 <a id="cc-arch-001"></a>
 
 ### CC-ARCH-001 — Component graph and compiled boundaries
 
-| Project | Responsibility and direct project dependencies |
-| --- | --- |
-| Contract | Pure vocabulary/models, typed interaction bindings/codecs, registry, fields, refusals/messages/CLI grammar; none |
-| Domain | Private validated case state, admission and transitions; Contract |
-| RecordFormat | Versioned durable records; Domain, Contract |
-| Application | Pure authorization, operation decisions, queries and verification folds; Domain, RecordFormat, Contract |
-| Postgres | Locked transactions, reads, projections and schema administration; Application, Domain, RecordFormat, Contract |
-| HostSecurity | Managed private-file admission and TLS purposes; none |
-| Web | HTTP authentication/admission and composition; Application, Postgres, Contract, HostSecurity |
-| CLI | Authenticated HTTPS client; Contract, HostSecurity |
-| Database | Owner administration; Application, Postgres, Contract, HostSecurity |
+| Project | Owns | Direct project dependencies |
+| --- | --- | --- |
+| Contract | Public models, vocabulary, formats, codecs, registry, fields and messages | None |
+| Domain | Validated case state, admission and transitions | Contract |
+| RecordFormat | Versioned durable encodings | Domain, Contract |
+| Application | Authorization, decisions, query selection and verification folds | Domain, RecordFormat, Contract |
+| Postgres | Transactions, reads, projections and schema administration | Application, Domain, RecordFormat, Contract |
+| HostSecurity | Managed private-file admission and TLS purposes | None |
+| Web | Authentication, HTTP admission, dispatch and composition | Application, Postgres, Contract, HostSecurity |
+| CLI | HTTPS client, command grammar and frames | Contract, HostSecurity |
+| Database | Owner administration | Application, Postgres, Contract, HostSecurity |
 
-Evaluated project references define the graph. Compiled guards reject I/O, clocks, environment, randomness and resource
-access in Contract/Domain/RecordFormat/Application; Postgres references outside Web/Database; server
-decision/persistence assemblies in the published CLI closure; and `JsonSerializer` in Contract/RecordFormat. Negative
-compiled fixtures exercise each guard. Web's `Composition/` dispatch binds registry endpoints to the actor core.
-Adapters render decisions. The generator derives OpenAPI and client types from Contract and descriptors from
-Domain/Application. Generated TypeScript admits drafts, requests and complete replies without runtime schema walking;
-exact interaction paths and tagged branches drive forms and CLI operands. All byte readers retain strict JSON; wire and
-canonical writers differ in member order. Domain retains private validated types; public request/reply types exist once.
+The [compiled architecture tests](../tests/ClaimCore.ArchitectureTests/) check the evaluated project graph
+and forbidden dependencies, including I/O, clocks and randomness in the four pure projects. Rejecting fixture
+assemblies exercise those guards. The published CLI closure cannot contain server decision or persistence
+assemblies. Pure code receives time, authority and state explicitly.
+
+The [generator](../eng/ClaimCore.ContractGenerator/) derives three tracked artifacts from Contract, Domain
+and Application. CLI owns its syntax. Browser forms use checked interaction bindings, presentation descriptors
+and current core advice. Neither adapter owns another business policy.
 
 #### Durable records
 
-RecordFormat owns byte grammars, admissible value sets and explicit format dispatch.
-[Versions](../src/ClaimCore.RecordFormat/Versions.fs) owns format numbers: case request 6, authority 3,
-snapshot 4, entry 2, case identity 2. Only current formats are admitted. Canonical JSON uses RFC 8785 UTF-16
-member ordering and integer spelling; authored string values are preserved without normalization. Wire JSON
-keeps declaration order with the same string rules. Permanent free-text bounds are 1,024 UTF-8 bytes inside a
-32,768-byte framed payload. The independent [Python oracle](../tests/fixtures/oracle/generate_vectors.py) pins
-durable bytes. The ledger hash covers metadata and a salted payload commitment, never the payload itself or an
-unsalted content digest. Erasure removes payload and nonce while preserving chain verification. The ledger is
-the sole acceptance record; projections are derived views written in its transaction. Before 1.0.0 a release
-may replace the baseline and refuse incompatible installations untouched. Only the shipped schema and formats
-are supported; keep incompatible installations with matching software. No conversion is supplied. From 1.0.0
-retain readers for every released format and ship forward migrations.
+[RecordFormat](../src/ClaimCore.RecordFormat/) owns byte encodings and explicit format dispatch;
+[Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns the supported format numbers.
+[Contract Formats.fs](../src/ClaimCore.Contract/Formats.fs) owns permanent scalar syntax and byte bounds.
+The independent [Python oracle](../tests/fixtures/oracle/generate_vectors.py) pins durable bytes.
+Canonical JSON orders members by RFC 8785 UTF-16 order and preserves authored string values. Wire JSON uses
+declaration order with the same string rules.
+
+Ledger hashes cover metadata and salted payload commitments. Erasure removes payload and nonce while leaving
+the chain verifiable. Projections are derived state committed with the ledger entry. Verification checks
+permanent history invariants without reapplying today's admission or capability policy.
+
+Only the shipped baseline and current formats are admitted. Incompatible installations are refused untouched.
+Initialize a separate fresh installation; no in-place upgrade, conversion or compatibility reader is supplied.
+Keep incompatible installations with matching software and follow the [restore procedure](operations.md#backups-and-restore)
+before reopening access to any restored data.
 
 <a id="cc-run-001"></a>
 
 ### CC-RUN-001 — Runtime admission and shutdown
 
-A runtime lease keeps admitted work alive. Shutdown closes admission, drains leases within its bound and closes the
-source once. Expiry reports the bound without disposing resources still leased or relabeling/cancelling admitted work.
-Ticket/recovery operations share that lease; the source closes once after all users drain. Readiness checks
-installation/schema access, never freshness or operator approval.
+Each admitted call holds a runtime lease. Shutdown closes admission and waits for leases within its bound.
+If the bound expires, admitted work retains the source until it drains; its result is preserved. Ticket
+operations share this lifetime, and the source closes once. Readiness checks installation/schema access,
+without establishing freshness or operator approval.
 
 <a id="cc-auth-001"></a>
 
 ### CC-AUTH-001 — Actor-bound authorization and disclosure
 
-[AuthorizationPolicy](../src/ClaimCore.Application/AuthorizationPolicy.fs) owns role/capability and
-act/capability tables. Grants default-deny at installation or case scope and are evaluated under the write
-lock or in the read snapshot. IdP membership and database roles confer no case authority. OWNER administers
-authority without granting case work. OWNER and DATA_STEWARD are human-only; at least one enabled human
-installation owner remains. Inaccessible and absent resources share a public refusal. Authorization precedes
-operation-identity replay/conflict disclosure. Current snapshots require ReadCase; superseded snapshots
-require ReadHistoryFull in the same locked/read context, including execute, preview replay, observation and
-history. Receipts disclose `DISCLOSED`, `WITHHELD` or `ERASED`; no post-commit authority read decides
-disclosure. Context, case advice and installation offers describe current rights and state, never commit
-authority. Correction advice fixes unauthorized groups at KEEP. Execution rechecks every requested group.
-Actor summaries exclude grants; selected-actor grant pages include their current target header. Caller
-installation authority is loaded independently from bounded target grants. Pagination uses canonical unpadded
-base64url JSON keysets bound to endpoint/resource, without a secret, identity/authority binding or expiry.
-Every page authorizes before decoding its cursor. Editing or sharing a cursor conveys no rights; successive
-pages are separate snapshots.
+[AuthorizationPolicy](../src/ClaimCore.Application/AuthorizationPolicy.fs) owns roles and capabilities.
+Grants default-deny at installation or case scope. IdP membership and database roles convey no case rights.
+OWNER administers authority; case work needs separate grants. OWNER and DATA_STEWARD are human-only, and at
+least one enabled human installation owner must remain.
+
+Authorization precedes operation replay/conflict disclosure. Absent and inaccessible resources share a
+refusal. Current snapshots require case read; superseded snapshots require full history. Receipts report
+`DISCLOSED`, `WITHHELD` or `ERASED`, using the same locked/read view that produced the result. No later
+post-commit read reshapes disclosure. Resolve has its own author-only receipt policy.
+
+Advice describes current state and rights. Execution rechecks them. Correction advice fixes unauthorized
+groups at KEEP. Actor summaries contain no grant inventory; bounded grant pages carry their target header.
+Pagination positions are canonical unpadded base64url JSON, bound to endpoint/resource. They have no expiry
+or authority. Each page authorizes before cursor decoding and reads a separate snapshot.
 
 <a id="cc-app-001"></a>
 
 ### CC-APP-001 — Rejection changes no accepted state
 
-Every accepted case/authority operation appends exactly one ledger entry and updates projections in one READ
-COMMITTED transaction. Rejection changes no accepted ledger or projection state; a submitted recovery copy may remain. Writers first call `claimcore.lock_ledger_head()`, then read
-authority, operation ID and case; nothing influencing the decision is read before that lock. The store loads,
-invokes one pure decision and persists it. The lock helper reads the database instant after locking in a
-separate statement, avoiding an instant captured before a waiting writer acquires the lock. That instant and
-the immutable installation IANA zone determine the business date; pure code reads no clock or host defaults.
-Lock, statement and idle-transaction timeouts bound serialization. Reads use REPEATABLE READ.
+A case or authority acceptance appends one entry and updates projections in one READ COMMITTED transaction.
+The writer first locks the ledger head, then reads everything influencing its decision. It invokes one pure
+decision and persists it. Rejection changes no accepted ledger or projection state.
+
+The database instant is captured after acquiring the lock. Together with the installation zone it supplies
+the business date. Lock, statement and idle-transaction timeouts bound serialization. Reads use REPEATABLE READ.
+See [Transactions](../src/ClaimCore.Postgres/Ledger/Transactions.fs) and the [store port](../src/ClaimCore.Application/LedgerStorePort.fs).
 
 <a id="cc-app-002"></a>
 
 ### CC-APP-002 — Exact replay and commit uncertainty
 
-An operation is its caller-chosen ID plus canonical request content. While content is retained, authorized
-exact replay returns original acceptance metadata with current snapshot disclosure; different content under a
-used ID refuses. Erased content cannot be replayed. `OUTCOME_UNKNOWN` means commit confirmation was lost.
-Preserve ID, expected revision and exact prepared bytes; never infer failed commit, mint a replacement ID or
-rebase an uncertain request. Only correlated exact acceptance/replay resolves prior uncertainty; later
-rejection, failure or NOT_STARTED cannot disprove an earlier commit. Observation identifies accepted metadata
-but cannot prove equality with pending content. Preview is advisory and appends nothing. Cancellation before
-commit maps to `FAILED CORE_STORE_UNAVAILABLE`; uncertain transport or cancellation after commit starts maps
-to `OUTCOME_UNKNOWN`. Confirmed PostgreSQL errors retain their known abort/integrity/schema/programmer
-classification regardless of the commit marker. Verification checks permanent history invariants, commitments,
-chain and projections without reapplying today's admission/capability rules. Detected stored violations are
-integrity faults; provider/I/O failures are availability faults and programming failures are
-`CORE_INTERNAL_ERROR`.
+Identity combines a caller-chosen operation ID with canonical request content. Authorized exact replay of
+retained content returns original acceptance metadata with current snapshot disclosure. Changed content
+under a used ID refuses. Erased content cannot be replayed.
 
-<a id="cc-app-003"></a>
+`OUTCOME_UNKNOWN` means confirmation was lost after commit could have started. Preserve the exact request,
+ID and revision. A later ordinary refusal, fault or NOT_STARTED response cannot disprove the earlier commit.
+Observation finds accepted metadata but cannot prove equality with submitted content.
 
-### CC-APP-003 — Submitted request recovery
+`operation.resolve` takes the head lock and returns the author's accepted receipt or installs a permanent
+actor/operation fence and returns `NOT_ACCEPTED`. Execute checks the fence after replay/conflict lookup and
+refuses `OPERATION_RESOLVED`. A foreign ID reveals no acceptance and cannot fence its author. Fences contain
+no payload and remain indefinitely. Preview is advisory and writes nothing.
 
-Every ordinary actor-core execution first admits its validated frozen wire envelope in a separate head-locked
-transaction. Current actor, target and operation permissions and accepted replay identity are checked there. A fresh
-authorized request stores protected raw bytes before the business transaction starts; preview and owner bootstrap do not
-journal. Only confirmed journal persistence permits the ordinary acceptance path, which acquires the head and
-independently reloads authority. Lost journal confirmation returns a store fault for this attempt without starting
-acceptance; prior client uncertainty remains sticky. Recovery rows never establish acceptance or trigger background
-execution.
-
-Reservation is temporary and scoped to actor/operation ID. Canonical-equal resubmission retains the first frozen body
-and original expiry; differing content refuses. Global accepted ledger identity remains controlling. Protection purposes
-bind installation, actor, recovery identity, operation, contract identity and technical metadata. Decrypted bytes must
-decode and agree with the protected metadata before use. Web attempts to warm its recovery key-ring provider at startup
-and preflights it before acquiring the head. Unavailable protection prevents fresh staging, but cannot veto an authorized
-exact accepted-ledger replay; an unreadable optional copy returns no acknowledgement locator. Such read-only decisions
-require no operational COMMIT. Genuine database faults retain their classifications. Purpose-specific protection shares that initialized provider. DataProtection
-may still refresh its internal key-ring cache during a protection call; this is not a guarantee that per-record
-protection performs no filesystem I/O. Key-ring rotation, availability and retention remain host operational
-responsibilities.
-
-Recovery lists only the current actor's currently authorized technical metadata and Application-owned offers. It exposes
-no historical request-body retrieval. Retry loads an owned protected envelope and executes it under current
-authorization; absent, expired and foreign identities share the unavailable refusal. Forget removes an owned row and
-returns indistinguishable idempotent success for foreign or absent IDs after the actor boundary. Forget does not cancel
-work already admitted and never proves non-acceptance.
-
-Recovery defaults in `ServiceLimits` are seven days from creation, 100 active rows per actor and 10,000 per
-installation. Head locking serializes cap admission. A full journal refuses new acceptance rather than silently evicting
-live uncertainty; expiry cleanup removes at most 100 rows per admission. Accepted ERASE atomically deletes every indexed
-recovery copy for that case, including its own request. Staging observes the tombstone under the same head lock and
-cannot recreate the content.
-
-Execute replies carry a nullable owned recovery ID; null does not prove that no row exists. Known results remain until explicit acknowledgement, forget, expiry
-or erasure. CLI may acknowledge only after complete known terminal output has been accepted and flushed by the OS;
-output failure, exit 4 and unresolved prior uncertainty prevent cleanup. Operational forget failure cannot alter a
-confirmed result or justify business retry. Expiry, absence, logout, forget and key loss never resolve earlier
-uncertainty. Key custodians must retain protection keys for retained operational state and align backup retention; the
-live-database erasure guarantee excludes backups, WAL and in-flight memory.
+Predispatch cancellation is definite failure. Lost commit confirmation remains unknown; confirmed server
+errors keep their established abort/integrity/schema classification. Provider failures are availability
+faults; programming failures are `CORE_INTERNAL_ERROR`. [Resolution](../src/ClaimCore.Application/Resolution.fs)
+and [Core](../src/ClaimCore.Application/Core.fs) own these decisions.
 
 <a id="cc-cat-001"></a>
 
 ### CC-CAT-001 — Consumer vocabulary and presentation ownership
 
-Contract owns tokens, public models, codecs, field identities and message keys. Domain owns
-admission/transitions; Application owns authorization. Authored en/lv/ar JSON under
-`src/ClaimCore.Contract/Localization/` is the sole message source. Hosts embed/import it; pure modules open no
-resources. CLI and browser render codes/parameters locally, never server prose. [API](api.md) owns wire shape,
-identity and artifacts. Structural descriptors retain message keys, scalar policy hints, field ordering and
-correction/authority metadata without duplicating transport paths. Forms and CLI operands consume checked exact bindings. Language
-and display-format preferences are independent. Contract also owns the bounded Unicode display-warning
-policy; generated descriptors carry its category and count limits to the browser.
+Contract owns ordered vocabulary, field identities, codecs and message keys. Domain owns admission and
+transitions; Application owns authorization. The three [source locale files](../src/ClaimCore.Contract/Localization/)
+are the sole message source. CLI and browser render codes/parameters locally. Language and display formats
+are separate preferences and never rewrite business strings.
+
+Presentation descriptors carry labels, order, scalar hints and correction metadata. Exact interaction bindings
+carry request paths and tagged branches. Contract's display-warning policy identifies suspicious Unicode
+without changing raw values. [Development](development.md#generated-contracts-and-boundary-verification)
+explains freshness and independent contract checks.
