@@ -62,6 +62,10 @@ module ContractDiscovery =
                 | "schema" -> [ "schema name"; "schema endpoint request|response" ]
                 | "version" -> [ "version [--json]" ]
                 | "help" -> [ "help [topic] [--language en|lv|ar]" ]
+                | "call"
+                | "session"
+                | "CLI_PROTOCOL_GUIDANCE" ->
+                    [ "schema invocation"; "schema response"; "help call"; "help session" ]
                 | "examples" ->
                     [ "describe case open"; "case get REF"; "schema operation.execute request" ]
                 | _ -> []
