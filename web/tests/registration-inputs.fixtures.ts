@@ -6,6 +6,9 @@ export const fillRegistrationInputs = (overrides: Readonly<Record<string, string
   const definition = productMetadata.descriptors.commands.find(
     (command) => command.kind === "OPEN",
   )!;
+  if (definition.inputs.kind !== "FIELDS") {
+    throw new Error("Registration requires scalar fields.");
+  }
   const authored = new Map(Object.entries({ ...caseFields, ...overrides }));
   const names = ["caseReference", ...definition.inputs.fields.map((input) => input.fieldName)];
   for (const name of names) {

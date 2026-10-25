@@ -4,7 +4,7 @@
 
 Use the SDK in [global.json](../global.json), Node/npm in [.node-version](../.node-version) and
 [web/package.json](../web/package.json), Bash, Python 3 for the independent durable oracle, and Docker for
-integration/acceptance/workflow checks. Runtime private-file support is macOS/Linux.
+integration/acceptance/workflow checks. Runtime private-file ABIs and their real boundary controls are listed below.
 Unix sink controls use sh, mkfifo, dd, stty, script and Linux prlimit.
 
 ```sh
@@ -15,10 +15,10 @@ bash eng/verify.sh browsers
 bash eng/verify.sh
 ```
 
-Ordinary .NET builds run neither npm nor generation. Frontend commands need no .NET/Python.
-Framework-dependent apphost publication is qualified; self-contained, trimmed and single-file modes remain
-unqualified. Preserve the entire publish directory and reviewed notices from
-[eng/licenses](../eng/licenses/third-party-notices.json). No C compiler or native library is required.
+Ordinary .NET builds run neither npm nor generation. Frontend commands need no .NET/Python. Framework-dependent apphost
+publication is qualified; self-contained, trimmed and single-file modes remain unqualified. Preserve the entire publish
+directory and reviewed notices from [eng/licenses](../eng/licenses/third-party-notices.json). No C compiler or custom
+native library is required; HostSecurity binds the supported system library.
 
 ## Verification stages
 
@@ -51,17 +51,15 @@ Chromium's headless shell for CLI PKCE, including Firefox/WebKit jobs, and omits
 Fresh-login tests budget one admission window plus normal OIDC work. Their shared helper follows the actual
 browser challenge and recovers only from a validated login-admission refusal.
 
-CI runs independent lint/unit/frontend/PostgreSQL/Web jobs and requires every scheduled job in `Gate`.
-PR/merge queue browser scope is Chromium smoke; main/tag and explicit full dispatch use three isolated
-complete engines. Green PR smoke does not establish full browser qualification. The frontend runs in the
-pinned Node container without executable .NET. PostgreSQL majors/images come from
+CI runs independent lint/unit/frontend/PostgreSQL/Web jobs and requires every scheduled job in `Gate`. PR, merge queue,
+main/tag and explicit dispatch use three isolated complete engines. Every scheduled engine must succeed in the aggregate
+Gate. The frontend runs in the pinned Node container without executable .NET. PostgreSQL majors/images come from
 [postgresql-baseline.json](../db/postgresql-baseline.json); each listed major needs actual qualification.
-`CLAIMCORE_TEST_POSTGRES_MAJOR` selects exactly one listed major; unset selects the first. Invalid selectors
-and Docker prerequisites fail before expensive work. PostgreSQL uses [runner
-settings](../eng/expecto.integration.runsettings) with at most two owned clusters concurrently; direct runs
-must retain those settings. Other suites use general settings. Successful fixtures clean their own resources.
-Failed fixtures retain private evidence; never target existing installations or prune unrelated
-containers/volumes.
+`CLAIMCORE_TEST_POSTGRES_MAJOR` selects exactly one listed major; unset selects the first. Invalid selectors and Docker
+prerequisites fail before expensive work. PostgreSQL uses [runner settings](../eng/expecto.integration.runsettings) with
+at most two owned clusters concurrently; direct runs must retain those settings. Other suites use general settings.
+Successful fixtures clean their own resources. Failed fixtures retain private evidence; never target existing
+installations or prune unrelated containers/volumes.
 
 ## Disk use and retained evidence
 
@@ -80,18 +78,16 @@ Diagnostics exclude payloads, credentials and provider exception text.
 
 ## Changes
 
-Read the owner contract and behavior tests before editing. An endpoint belongs in the typed registry; fields
-belong in the field table, Domain admission and RecordFormat codec. Update affected consumers, SQL, tests,
-source locales and docs together. Before 1.0.0 baseline replacement may explicitly refuse older installations;
-otherwise schema changes are numbered forward migrations. No compatibility layer or conversion is provided by
-this baseline. Do not edit shipped migrations outside that policy. Production and tests retain
-function/lambda/member length 50 and complexity 12. Only inline named rule exceptions with reasons are
-allowed. File/module length is not a gate. Required deterministic properties run 200 cases with state
-sequences up to 20. Shrinking stops after 100 successful descent steps, retaining the failing replay token;
-this is not a bound on candidate count or wall time. Decoder fuzzing uses at most 4,096 random bytes plus
-fixed hostile cases, including a 12,008-byte escaped-control string. There is no mutation campaign or
-environment switch for a longer/bypassed run. Negative controls must demonstrate that guards reject broken
-properties.
+Read the owner contract and behavior tests before editing. An endpoint belongs in the typed registry; fields belong in
+the field table, Domain admission and RecordFormat codec. Update affected consumers, SQL, tests, source locales and docs
+together. Before 1.0.0 baseline replacement may explicitly refuse older installations; the current build admits one
+exact source-bound baseline. There is no in-place upgrade or conversion; preserve existing installations with matching
+software. Production and tests retain function/lambda/member length 50 and complexity 12. Only inline named rule
+exceptions with reasons are allowed. File/module length is not a gate. Required deterministic properties run 200 cases
+with state sequences up to 20. Shrinking stops after 100 successful descent steps, retaining the failing replay token;
+this is not a bound on candidate count or wall time. Decoder fuzzing uses at most 4,096 random bytes plus fixed hostile
+cases, including a 12,008-byte escaped-control string. There is no mutation campaign or environment switch for a
+longer/bypassed run. Negative controls must demonstrate that guards reject broken properties.
 
 ## Dependency pins
 
@@ -113,7 +109,7 @@ and descriptors.json. `--check` compares exact inventory and bytes without repai
 extra files fail. Review generated diffs with their typed producer. The generator references
 Contract/Domain/Application and builds independently from CLI. Consumer identity hashes canonical OpenAPI
 only; editing source locale text preserves it, changing structural enums changes it. CLI embeds descriptors
-and source locale JSON; the browser imports source catalogs and generated TypeScript, and interprets OpenAPI.
+and source locale JSON; the browser imports source catalogs and generated TypeScript admission and interaction bindings; OpenAPI supplies read-only summaries.
 Web commands never run .NET. Node validates the restricted ICU subset, key/argument parity and Unicode safety.
 Pure Contract template checks share independent accept/reject vectors with the reference parser. No generated
 catalog copies are tracked. Independent hand-authored wire examples and JSON Schema/OpenAPI parsers check
@@ -124,13 +120,26 @@ runner results. Module lint checks follow transitive imports, aliases and JavaSc
 
 ## Synthetic growth qualification
 
-The PostgreSQL suite measures 64/256/1,024 synthetic writes, varied case/actor/grant counts and one versus
-four writers in disposable containers. Reports under ignored artifacts/verification/growth retain latency,
-throughput, heap and cumulative process peak working set. These are environment measurements, not asymptotic
-bounds or production sizing. Verification streams rows but retains folded state/identities. Ticket-store
-qualification measures bounded local session workloads; published acceptance separately covers real HTTPS
-sessions and browsers. Native-language, assistive-technology and terminal bidi quality still require human
-review.
+The required full-path profiles run 1k/10k/100k business operations with 1/4/16 writers, 1k cases, 100 actors/1k grants
+(setup entries counted separately), 500 sessions/32 session workers and 10k retained recovery rows. Disjoint lanes plus
+explicit same-case/revocation conflicts protect accepted-count evidence; normal submissions acknowledge known results to
+exercise turnover. All nine profiles are required once per qualified database; iteration selectors never satisfy the
+gate. Reports in ignored artifacts/verification/growth record exact revision/dirty state, counts, p50/p95/p99,
+throughput, journal/session latency, verifier memory/time and DB temporary work. Unmeasured head wait/hold metrics
+remain explicit. A separate comparison fixes history at 1,000 case entries plus three authority entries while varying
+case cardinality across 1/100/1,000; its verifier time and sampled memory are recorded in cardinality.json. These
+measurements promise no production SLA or constant total-system memory.
+Native-language/assistive-technology review remains human.
+
+Private-file ABI jobs require actual Linux x64/arm64 glibc and macOS x64/arm64 runs. The stat layouts (size/mode offset
+and width/file-size offset) are glibc x64 144/24u32/48, glibc arm64 128/16u32/48, and both Darwin ABIs 144/4u16/96.
+Sources are glibc's [x86
+stat](https://github.com/bminor/glibc/blob/glibc-2.42/sysdeps/unix/sysv/linux/x86/bits/struct_stat.h), [generic
+stat](https://github.com/bminor/glibc/blob/glibc-2.42/sysdeps/unix/sysv/linux/bits/struct_stat.h),
+[flags](https://github.com/bminor/glibc/blob/glibc-2.42/sysdeps/unix/sysv/linux/bits/fcntl-linux.h), and target Apple
+SDK sys/stat.h, sys/cdefs.h and sys/fcntl.h. Darwin x64 uses fstat$INODE64; arm64 uses fstat. Linux requires the public
+glibc fstat symbol. Tests include fd0 ownership, same-fd substitution, nonregular handles, all forbidden mode bits,
+bounds/partial clearing and repeated refusals without abandoned workers.
 
 ## Verification records
 

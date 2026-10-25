@@ -74,9 +74,11 @@ let private catalogueRoutes () =
 
             Expect.isOk (Codec.decode 100000 Api.session.Output bootstrap) "Bootstrap schema"
 
-            for endpoint in
+            let endpoints =
                 Api.all
-                |> List.filter (fun e -> (Api.id e) <> "session" && (Api.id e) <> "session.logout") do
+                |> List.filter (fun e -> (Api.id e) <> "session" && (Api.id e) <> "session.logout")
+
+            for endpoint in endpoints do
                 let! status, response = host.Call((Api.id endpoint), body (Api.id endpoint), token)
 
                 Expect.equal status 200 (Api.id endpoint)
@@ -87,7 +89,11 @@ let private catalogueRoutes () =
 
                 actorTarget (Api.id endpoint) response
 
-            Expect.equal host.Facade.Calls.Length 9 "Every core endpoint exactly once"
+            Expect.equal
+                (host.Facade.Calls |> List.sort)
+                (endpoints |> List.map Api.id |> List.sort)
+                "Every core endpoint exactly once"
+
             let! status, response = host.Call("session.logout", body "session.logout", token)
             Expect.equal status 200 "Logout"
 
@@ -476,7 +482,7 @@ let tests =
             testCase
                 "business scalar formats reject through real Application after HTTP dispatch"
                 businessFormatRefusals
-            testCase "all eleven endpoints use the registry and typed facade" catalogueRoutes
+            testCase "all registered endpoints use the registry and typed facade" catalogueRoutes
             testCase "authority preview reaches the shared core without recording" authorityPreview
             testCase "core completion precedes response encoding failure" completionFailure
             testCase

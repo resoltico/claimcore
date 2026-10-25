@@ -34,6 +34,7 @@ let private savedRetry () =
 
         Api.operationExecute.Output.Write
             {
+                RecoveryId = None
                 OperationId = CliReplyFixtures.id
                 Outcome = ExecuteResult.OutcomeUnknown
             }
@@ -77,6 +78,7 @@ let private lostThenRefused () =
 
         Api.operationExecute.Output.Write
             {
+                RecoveryId = None
                 OperationId = CliReplyFixtures.id
                 Outcome = ExecuteResult.AlreadyAccepted CliReplyFixtures.receipt
             }

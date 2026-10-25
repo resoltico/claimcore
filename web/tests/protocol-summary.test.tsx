@@ -6,7 +6,7 @@ import { render, screen } from "./presentation-test-support";
 import { ProtocolSummary } from "../src/components/ProtocolSummary";
 import { PageStatus } from "../src/components/PageStatus";
 import { selectedSchema } from "../src/protocol/forms";
-import { wireSchemas } from "../src/protocol/client";
+import { wireSchemas } from "../src/protocol/documents";
 import type { SchemaDocument } from "../src/protocol/schema";
 it("localizes generated enum tokens while preserving identical authored principal strings", () => {
   const document = wireSchemas["operation.execute"].request;

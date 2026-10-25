@@ -14,7 +14,7 @@ module internal LedgerVerification =
             Head: LedgerHead
             Cases: Map<Guid, CaseHistory>
             Actors: Map<Guid, ActorAuthority>
-            Operations: Set<Guid>
+            EarliestDuplicate: int64 option
             ExpectedSeen: bool
         }
 
@@ -76,7 +76,7 @@ module internal LedgerVerification =
                 require
                     at
                     VerificationFinding.PayloadFormat
-                    (not (Set.contains entry.OperationId state.Operations))
+                    (state.EarliestDuplicate <> Some sequence)
 
             let! cases, actors = histories installationId state entry payload
 
@@ -94,12 +94,12 @@ module internal LedgerVerification =
                         }
                     Cases = cases
                     Actors = actors
-                    Operations = Set.add entry.OperationId state.Operations
+                    EarliestDuplicate = state.EarliestDuplicate
                     ExpectedSeen = state.ExpectedSeen || seen
                 }
         }
 
-    let initial (expected: ExpectedPosition option) =
+    let initial (expected: ExpectedPosition option) earliestDuplicate =
         let head: LedgerHead =
             {
                 Sequence = 0L
@@ -110,7 +110,7 @@ module internal LedgerVerification =
             Head = head
             Cases = Map.empty
             Actors = Map.empty
-            Operations = Set.empty
+            EarliestDuplicate = earliestDuplicate
             ExpectedSeen =
                 expected
                 |> Option.exists (fun position ->

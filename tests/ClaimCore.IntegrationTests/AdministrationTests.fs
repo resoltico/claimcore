@@ -32,15 +32,7 @@ let private discovery binary connection principal =
                 (help.GetProperty("commands").EnumerateArray()
                  |> Seq.map (fun item -> item.GetString() |> nonNull)
                  |> Seq.toList)
-                [
-                    "initialize"
-                    "migrate"
-                    "provision-owner"
-                    "verify"
-                    "head"
-                    "help"
-                    "version"
-                ]
+                [ "initialize"; "provision-owner"; "verify"; "head"; "help"; "version" ]
                 "Exact command set"
 
             let! _ =
@@ -53,7 +45,7 @@ let private discovery binary connection principal =
 let private initialize binary connection principal =
     task {
         let! missing = invoke binary connection principal [ "migrate" ] 2
-        Expect.equal (tag missing) "REFUSED" "Migrate requires history"
+        Expect.equal (tag missing) "REFUSED" "Removed command refuses"
         let! _ = invoke binary connection principal [ "head" ] 2
         let! _ = invoke binary connection principal [ "verify" ] 2
         let! _ = invoke binary connection principal [ "initialize"; "UTC" ] 2
@@ -66,10 +58,7 @@ let private initialize binary connection principal =
             "Initialize same zone repeats exactly"
 
         let! _ = invoke binary connection principal [ "initialize"; "Europe/Riga" ] 2
-
-        for _ in 1..2 do
-            let! _ = invoke binary connection principal [ "migrate" ] 0
-            ()
+        return ()
     }
 
 let private provision binary connection principal =

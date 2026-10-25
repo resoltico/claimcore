@@ -1,14 +1,5 @@
 import { requireUniqueJsonMembers } from "./jsonMemberNames";
-export const isRepresentable = (content: string): boolean =>
-  Array.from(content).every((character) => {
-    const scalar = character.codePointAt(0)!;
-    return (
-      scalar !== 0 &&
-      !(scalar >= 0xd800 && scalar <= 0xdfff) &&
-      !(scalar >= 0xfdd0 && scalar <= 0xfdef) &&
-      (scalar & 0xffff) < 0xfffe
-    );
-  });
+import { isRepresentable } from "@contracts/client";
 
 export const strictJsonBytes = (bytes: Uint8Array): unknown => {
   const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);

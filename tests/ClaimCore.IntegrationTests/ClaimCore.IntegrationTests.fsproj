@@ -10,12 +10,22 @@
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
     <Compile Include="PostgresFixture.fs" />
+    <Compile Include="SessionDrain.fs" />
+    <Compile Include="SessionCapRace.fs" />
+    <Compile Include="SessionHosts.fs" />
+    <Compile Include="SessionTests.fs" />
     <Compile Include="FieldTableTests.fs" />
     <Compile Include="FixtureDisposalTests.fs" />
     <Compile Include="PostgresReadinessTests.fs" />
     <Compile Include="StoreTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="VerificationTests.fs" />
+    <Compile Include="SubmissionStorage.fs" />
+    <Compile Include="GrowthProtection.fs" />
+    <Compile Include="GrowthEnvironment.fs" />
+    <Compile Include="GrowthControls.fs" />
+    <Compile Include="GrowthRecovery.fs" />
+    <Compile Include="GrowthSessions.fs" />
     <Compile Include="GrowthQualificationTests.fs" />
     <Compile Include="CaseProjectionTests.fs" />
     <Compile Include="SchemaTests.fs" />
@@ -33,6 +43,7 @@
     <Compile Include="TransactionFailureTests.fs" />
     <Compile Include="CommitProxy.fs" />
     <Compile Include="CommitTests.fs" />
+    <Compile Include="RecoveryTests.fs" />
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />
     <Compile Include="AdministrationTests.fs" />

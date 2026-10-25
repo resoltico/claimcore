@@ -10,14 +10,26 @@ open Npgsql
 /// The admitted runtime owns storage lifetime without exposing provider types.
 type IRuntime =
     inherit IDisposable
+    abstract ConfigureRecoveryProtection: RecoveryProtection -> unit
+    abstract Sessions: ISessionStore
     abstract Installation: Installation
     abstract Ready: CancellationToken -> System.Threading.Tasks.Task<bool>
 
 type private RuntimeResource(source: NpgsqlDataSource, installation: Installation) =
+    let mutable protection: RecoveryProtection option = None
+
     member _.Store =
-        LedgerStore(source, installation.InstallationId, Transactions.timeouts) :> ILedgerStore
+        LedgerStore(
+            source,
+            installation.InstallationId,
+            Transactions.timeouts,
+            fun () -> protection
+        )
+        :> ILedgerStore
 
     interface IRuntime with
+        member _.ConfigureRecoveryProtection value = protection <- Some value
+        member _.Sessions = SessionStore(source) :> ISessionStore
         member _.Installation = installation
 
         member _.Ready token =
@@ -26,8 +38,8 @@ type private RuntimeResource(source: NpgsqlDataSource, installation: Installatio
                     return!
                         DatabaseSession.read source token (fun connection ->
                             task {
-                                let! count = Migrations.history connection Migrations.scripts token
-                                return count = Migrations.scripts.Length
+                                let! _ = Baseline.require connection token
+                                return true
                             })
                 with _ ->
                     return false
@@ -54,6 +66,8 @@ module Runtime =
                     Error(
                         match error with
                         | AdmissionRefusal fault -> fault
+                        | :? InstallationConfigurationException ->
+                            RuntimeOpenFault.InstallationInvalid
                         | :? OperationCanceledException -> RuntimeOpenFault.Cancelled
                         | :? PostgresException as error when
                             error.SqlState.StartsWith("42", StringComparison.Ordinal)
@@ -83,10 +97,7 @@ module internal LedgerAdministration =
         DatabaseSession.read source cancellationToken (fun connection ->
             task {
                 ServerSupport.require connection.PostgreSqlVersion
-                let! count = Migrations.history connection Migrations.scripts cancellationToken
-
-                if count <> Migrations.scripts.Length then
-                    invalidOp "Unsupported schema version."
+                let! _ = Baseline.require connection cancellationToken
 
                 let! rows =
                     DatabaseSession.rows
@@ -125,13 +136,7 @@ module internal LedgerAdministration =
                     task {
                         ServerSupport.require connection.PostgreSqlVersion
 
-                        let! count =
-                            Migrations.history connection Migrations.scripts cancellationToken
-
-                        if count <> Migrations.scripts.Length then
-                            invalidOp "Unsupported schema version."
-
-                        return! Migrations.installation connection cancellationToken
+                        return! Baseline.require connection cancellationToken
                     })
 
             let store =
@@ -178,9 +183,6 @@ type Administration(connectionString: string) =
 
     member _.Initialize(timeZone, cancellationToken) =
         SchemaAdministration.initialize source timeZone cancellationToken
-
-    member _.Migrate(cancellationToken) =
-        SchemaAdministration.migrate source cancellationToken
 
     member _.Verify(expected, cancellationToken) =
         LedgerAdministration.verify source expected cancellationToken

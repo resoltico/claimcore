@@ -14,7 +14,7 @@ export const resolveSchema = (document: SchemaDocument, node: SchemaNode): Schem
   }
   return node;
 };
-export const schemaConstant = (document: SchemaDocument, node: SchemaNode): unknown => {
+const schemaConstant = (document: SchemaDocument, node: SchemaNode): unknown => {
   const resolved = resolveSchema(document, node);
   if (Object.hasOwn(resolved, "const")) {
     return resolved.const;
@@ -56,30 +56,4 @@ export const selectedSchema = (
         selected,
     ) ?? resolved.oneOf[0]!,
   );
-};
-export const formValue = (
-  document: SchemaDocument,
-  node: SchemaNode,
-  path: string,
-  values: FormValues,
-): unknown => {
-  const schema = selectedSchema(document, node, path, values);
-  if (Object.hasOwn(schema, "const")) {
-    return schema.const;
-  }
-  if (schema.type === "object") {
-    return Object.fromEntries(
-      Object.entries(schema.properties ?? {}).map(([name, child]) => [
-        name,
-        formValue(document, child, path ? `${path}.${name}` : name, values),
-      ]),
-    );
-  }
-  if (schema.type === "boolean") {
-    return values[path] === true;
-  }
-  if (schema.type === "integer") {
-    return Number(values[path] ?? 0);
-  }
-  return values[path] ?? schema.enum?.[0] ?? "";
 };

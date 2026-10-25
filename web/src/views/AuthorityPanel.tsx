@@ -194,7 +194,6 @@ export const AuthorityPanel = ({ token, onLockChange }: AuthorityPanelProps) => 
   );
   const onRecorded = (receipt: OperationReceipt) => {
     setRecorded({ token, id: receipt.operationId });
-    actions.current?.reset();
     invalidate(true);
   };
   const model = useOperation({

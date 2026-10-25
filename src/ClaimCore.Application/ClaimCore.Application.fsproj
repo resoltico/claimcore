@@ -18,6 +18,7 @@
     <Compile Include="AuthorityReviews.fs" />
     <Compile Include="Advice.fs" />
     <Compile Include="Queries.fs" />
+    <Compile Include="Recovery.fs" />
     <Compile Include="Core.fs" />
     <Compile Include="Verification/VerificationTypes.fs" />
     <Compile Include="Verification/AuthorityFold.fs" />

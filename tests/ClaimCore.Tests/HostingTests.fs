@@ -40,7 +40,7 @@ let tests =
                 gate.Stop().GetAwaiter().GetResult()
                 Expect.equal closes 1 "Source closes once")
             testCaseAsync
-                "bound expiry closes the source once without releasing or cancelling admitted work"
+                "bound expiry returns while admitted work retains the source until drain"
                 (async {
                     let mutable closes = 0
                     let gate = AdmissionGate(fun () -> closes <- closes + 1)
@@ -50,7 +50,12 @@ let tests =
 
                     let! outcome = gate.Shutdown(TimeSpan.Zero) |> Async.AwaitTask
                     Expect.equal outcome ShutdownOutcome.BoundExpired "Bound is effective"
-                    Expect.equal closes 1 "Source closes at bound"
+                    Expect.equal closes 0 "Active leases retain the source after the waiting bound"
+
+                    Expect.isFalse
+                        (gate.Stop().IsCompleted)
+                        "Drain remains pending while admitted work is active"
+
                     Expect.isNone (gate.Acquire()) "Admission stays closed"
                     lease.Dispose()
                     let! drained = gate.Shutdown(TimeSpan.FromSeconds 1.) |> Async.AwaitTask

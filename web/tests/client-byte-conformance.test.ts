@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { expect, it } from "vitest";
 import { decodeResponse, isRequest } from "../src/protocol/client";
 import type { EndpointId } from "@contracts/client";
-import { admitBytes, validateSchema } from "../src/protocol/schema";
+import { admitBytes } from "../src/protocol/schema";
 
 type ByteCase = {
   id: string;
@@ -54,10 +54,9 @@ it("keeps principal wire admission separate from authoritative server identity p
   }
 });
 
-it("UUID format without a length consumes exactly one canonical nonempty UUID", () => {
-  const schema = { type: "string", format: "uuid" };
+it("generated UUID admission consumes exactly one canonical nonempty UUID", () => {
   const uuid = "10000000-0000-4000-8000-00000000000a";
-  expect(validateSchema(schema, uuid)).toBe(true);
+  expect(isRequest("operation.observe", { operationId: uuid })).toBe(true);
   for (const value of [
     `${uuid}\n`,
     `${uuid}\r\n`,
@@ -66,6 +65,6 @@ it("UUID format without a length consumes exactly one canonical nonempty UUID", 
     uuid.toUpperCase(),
     "00000000-0000-0000-0000-000000000000",
   ]) {
-    expect(validateSchema(schema, value), value).toBe(false);
+    expect(isRequest("operation.observe", { operationId: value }), value).toBe(false);
   }
 });

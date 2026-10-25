@@ -35,6 +35,32 @@ let private replay (database: PostgresFixture.Database) (actor: IActorClaimsCore
         else
             accepted replay |> ignore
 
+        let recoveryId =
+            replay.RecoveryId
+            |> Option.defaultWith (fun () ->
+                failtest "Exact execute replay must retain its matching owned recovery locator")
+
+        let! forgotten = actor.Forget({ RecoveryId = recoveryId }, token)
+
+        Expect.equal
+            forgotten
+            (ReadReply.Succeeded())
+            "Known replay output can acknowledge its journal"
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "SELECT count(*) FROM claimcore.recovery_requests WHERE recovery_id=$1"
+                [| box recoveryId |]
+                token
+
+        Expect.equal
+            (DatabaseSession.value<int64> 0 rows.Head)
+            0L
+            "Known exact replay turnover does not retain resolved rows"
+
         let! head = Verification.verify database.OwnerSource None token
 
         Expect.equal
@@ -45,7 +71,13 @@ let private replay (database: PostgresFixture.Database) (actor: IActorClaimsCore
 
 let private proxyCore (database: PostgresFixture.Database) source =
     let store =
-        LedgerStore(source, database.Fixture.InstallationId, Transactions.timeouts) :> ILedgerStore
+        LedgerStore(
+            source,
+            database.Fixture.InstallationId,
+            Transactions.timeouts,
+            PostgresFixture.recoveryProtection
+        )
+        :> ILedgerStore
 
     let actor =
         Core.create
@@ -135,7 +167,8 @@ let tests =
                                     nonNull settings.Host,
                                     settings.Port,
                                     drop,
-                                    terminate = terminate database
+                                    terminate = terminate database,
+                                    commitNumber = 2
                                 )
 
                             settings.Password <- "synthetic-only"
@@ -143,7 +176,8 @@ let tests =
                             settings.Port <- proxy.Port
                             settings.SslMode <- SslMode.Disable
                             settings.GssEncryptionMode <- GssEncryptionMode.Disable
-                            settings.Pooling <- false
+                            settings.Pooling <- true
+                            settings.MaxPoolSize <- 1
                             use source = NpgsqlDataSource.Create settings.ConnectionString
 
                             let throughProxy = proxyCore database source

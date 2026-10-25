@@ -4,11 +4,12 @@ open System
 open System.IO
 open System.Diagnostics
 open System.Text
-open System.Threading
-open System.Threading.Tasks
+open System.Net.Sockets
+open System.Runtime.InteropServices
 open System.Security.Cryptography
 open Expecto
 open ClaimCore.HostSecurity
+open ClaimCore.TestSupport
 
 let private file mode (content: byte array) action =
     let directory = Directory.CreateTempSubdirectory("claimcore-private-file-")
@@ -31,29 +32,13 @@ let private fifo mode =
     Expect.equal child.ExitCode 0 "Owned FIFO created"
     File.SetUnixFileMode(path, mode)
 
-    let reader =
-        Task.Factory.StartNew(
-            (fun () -> PrivateFile.read 1 path),
-            CancellationToken.None,
-            TaskCreationOptions.LongRunning,
-            TaskScheduler.Default
-        )
-
     try
-        let expected =
-            if mode.HasFlag UnixFileMode.OtherRead then
-                PrivateFileFailure.TooPermissive
-            else
-                PrivateFileFailure.NotRegular
-
-        // The watchdog detects a missing timeout; it is not a scheduling-latency guarantee.
-        let result = reader.WaitAsync(TimeSpan.FromSeconds 10.).GetAwaiter().GetResult()
-        Expect.equal result (Error expected) "FIFO refuses before any writer opens"
+        for _ in 1..100 do
+            Expect.equal
+                (PrivateFile.read 1 path)
+                (Error PrivateFileFailure.NotRegular)
+                "FIFO refuses without a writer or abandoned worker"
     finally
-        // A duplex handle releases pending opens without waiting for a peer.
-        // Observing the caller does not establish completion of its abandoned open worker.
-        use release = File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite)
-        reader.WaitAsync(TimeSpan.FromSeconds 10.).GetAwaiter().GetResult() |> ignore
         directory.Delete(true)
 
 let private pathControls () =
@@ -81,60 +66,204 @@ let private pathControls () =
         File.Move(path, unicode)
         Expect.equal (PrivateFile.read 1 unicode) (Ok [| 42uy |]) "Exact Unicode path")
 
-type private GrowingLengthStream(path) =
-    inherit FileStream(path, FileMode.Open, FileAccess.Read)
-    let mutable reads = 0L
-
-    override _.Length =
-        reads <- reads + 1L
-        reads
-
 let private handles () =
+    let abi = UnixPrivateFile.platform () |> Option.get
+
+    let openHandle path =
+        UnixPrivateFile.openRead abi (Encoding.UTF8.GetBytes(path + "\000"))
+
     file UnixFileMode.UserRead [| 42uy |] (fun path ->
         for maximum, expected in [ 1, Ok [| 42uy |]; 0, Error PrivateFileFailure.TooLarge ] do
-            let handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read)
-            Expect.equal (PrivateFile.readHandle maximum handle) expected "Same handle read"
+            let handle = openHandle path
+            Expect.equal (PrivateFile.readHandle maximum abi handle) expected "Same handle read"
             Expect.isTrue handle.IsClosed "Owning handle closed on success and refusal"
 
-        let handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read)
+        let handle = openHandle path
         File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.OtherRead)
 
         Expect.equal
-            (PrivateFile.readHandle 1 handle)
+            (PrivateFile.readHandle 1 abi handle)
             (Error PrivateFileFailure.TooPermissive)
             "Handle mode is checked independently of path admission"
 
         Expect.isTrue handle.IsClosed "Mode refusal disposes the handle")
 
-    file UnixFileMode.UserRead [| 42uy; 43uy |] (fun path ->
-        use growing = new GrowingLengthStream(path)
+    file UnixFileMode.UserRead [| 42uy |] (fun path ->
+        let handle = openHandle path
+        File.Move(path, path + "-original")
+        File.WriteAllBytes(path, [| 43uy |])
+        File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.OtherRead)
 
         Expect.equal
-            (PrivateFile.readOpened 1 growing)
+            (PrivateFile.readHandle 1 abi handle)
             (Ok [| 42uy |])
-            "Growth between length reads cannot bypass the admitted byte cap")
+            "Replacement path never substitutes the admitted descriptor")
 
 let private failedRead () =
     use truncated = new MemoryStream([| 42uy |])
     let destination = Array.create 2 99uy
 
     Expect.throwsT<EndOfStreamException>
-        (fun () -> PrivateFile.readBytes truncated destination |> ignore)
+        (fun () ->
+            PrivateFile.readBytes
+                (fun buffer -> truncated.ReadExactly(buffer, 0, buffer.Length))
+                destination
+            |> ignore)
         "A partial read fails rather than returning a shortened input"
 
     Expect.equal destination [| 0uy; 0uy |] "A failed read clears partial content and unused bytes"
 
+let private probe mode path =
+    let start =
+        ProcessStartInfo("dotnet", RedirectStandardOutput = true, RedirectStandardError = true)
+
+    let script =
+        Path.Combine(RepositoryRoot.find (), "tests/ClaimCore.Tests/PrivateFileProbe.fsx")
+
+    [
+        "fsi"
+        "--reference:" + typeof<PrivateFileFailure>.Assembly.Location
+        "--exec"
+        script
+        mode
+        path
+    ]
+    |> List.iter start.ArgumentList.Add
+
+    use child = Process.Start start |> nonNull
+
+    if not (child.WaitForExit 30000) then
+        child.Kill(true)
+        failtest "Private-file subprocess exceeded its watchdog"
+
+    Expect.equal child.ExitCode 0 "Isolated native ownership and resource controls"
+
+let private descriptorZero () =
+    file UnixFileMode.UserRead [| 42uy |] (probe "zero")
+
+[<DllImport("libc", EntryPoint = "fcntl")>]
+extern int private descriptorFlags(SafeHandle handle, int command)
+
+[<DllImport("libc", EntryPoint = "lseek", SetLastError = true)>]
+extern int64 private seekDescriptor(SafeHandle handle, int64 offset, int origin)
+
+let private openFlags () =
+    file UnixFileMode.UserRead [| 42uy |] (fun path ->
+        let abi = UnixPrivateFile.platform () |> Option.get
+        use handle = UnixPrivateFile.openRead abi (Encoding.UTF8.GetBytes(path + "\000"))
+        let flags = descriptorFlags (handle, 3)
+        let nonblocking = if OperatingSystem.IsMacOS() then 4 else 0x800
+        Expect.equal (flags &&& nonblocking) nonblocking "Open does not wait for a FIFO peer"
+        Expect.equal (flags &&& 3) 0 "Descriptor is read-only"
+        Expect.equal (descriptorFlags (handle, 1) &&& 1) 1 "Descriptor closes across exec")
+
+let private interruptedCalls () =
+    let mutable calls = 0
+
+    let result =
+        UnixPrivateFile.interrupted (fun () ->
+            calls <- calls + 1
+            Marshal.SetLastPInvokeError(if calls < 3 then 4 else 0)
+            if calls < 3 then -1 else 42)
+
+    Expect.equal (result, calls) (42, 3) "EINTR retries before success"
+    Marshal.SetLastPInvokeError 5
+    Expect.equal (UnixPrivateFile.interrupted (fun () -> -1)) -1 "Other errors are preserved"
+
+let private socket () =
+    let directory = Directory.CreateTempSubdirectory("claimcore-private-socket-")
+
+    try
+        let path = Path.Combine(directory.FullName, "socket")
+
+        use listener =
+            new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)
+
+        listener.Bind(UnixDomainSocketEndPoint(path))
+        File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+
+        Expect.equal
+            (PrivateFile.read 1 path)
+            (Error PrivateFileFailure.Unreadable)
+            "Socket cannot open as a file"
+    finally
+        directory.Delete(true)
+
+let private device () =
+    let abi = UnixPrivateFile.platform () |> Option.get
+    use handle = UnixPrivateFile.openRead abi (Encoding.UTF8.GetBytes("/dev/null\000"))
+    Expect.equal (seekDescriptor (handle, 0L, 0)) 0L "Read-only seekable system device control"
+    let mode, _ = UnixPrivateFile.metadata abi handle
+
+    Expect.equal
+        (mode &&& 0xF000)
+        0x2000
+        "Existing device classified read-only without changing permissions"
+
+    Expect.equal
+        (PrivateFile.read 0 "/dev/null")
+        (Error PrivateFileFailure.NotRegular)
+        "Character device refuses"
+
+let private platformIdentity () =
+    let actual =
+        match UnixPrivateFile.platform () with
+        | Some UnixPrivateFile.GlibcIntel -> "linux-x64"
+        | Some UnixPrivateFile.GlibcArm -> "linux-arm64"
+        | Some UnixPrivateFile.DarwinIntel -> "osx-x64"
+        | Some UnixPrivateFile.DarwinArm -> "osx-arm64"
+        | None -> failtest "Private-file test platform has no admitted ABI"
+
+    match Environment.GetEnvironmentVariable "CLAIMCORE_PRIVATE_FILE_RID" with
+    | null -> ()
+    | expected -> Expect.equal actual expected "Qualification uses the scheduled native ABI"
+
+let private concurrentGrowth () =
+    file (UnixFileMode.UserRead ||| UnixFileMode.UserWrite) [| 42uy |] (fun path ->
+        let writer =
+            System.Threading.Tasks.Task.Run(fun () ->
+                for length in 0..200 do
+                    File.WriteAllBytes(path, Array.create length 42uy))
+
+        for _ in 1..200 do
+            match PrivateFile.read 1 path with
+            | Ok bytes ->
+                Expect.isLessThanOrEqual bytes.Length 1 "Concurrent growth cannot exceed the cap"
+            | Error PrivateFileFailure.TooLarge
+            | Error PrivateFileFailure.Unreadable -> ()
+            | Error _ -> failtest "Owned regular file unexpectedly refused its type or mode"
+
+        writer.GetAwaiter().GetResult())
+
 [<Tests>]
 let tests =
     testList
-        "managed private files"
+        "Unix private files"
         [
+            testCase "scheduled platform ABI is exercised" platformIdentity
             testCase "partial read failure clears the complete buffer" failedRead
             testCase "path admission" pathControls
+            testCase "concurrent file growth stays bounded" concurrentGrowth
+            testCase "descriptor zero is owned and closed" descriptorZero
+            testCase "native descriptor flags" openFlags
+            testCase "interrupted syscalls retry" interruptedCalls
+            testCase "repeated refusals retain no descriptors or workers" (fun () ->
+                let directory = Directory.CreateTempSubdirectory("claimcore-private-refusals-")
+
+                try
+                    probe "refusals" directory.FullName
+                finally
+                    directory.Delete())
+            testCase "Unix sockets refuse" socket
+            testCase "existing device classification is read-only" device
             testCase "same-handle admission and disposal" handles
             for mode in
                 [
                     UnixFileMode.UserRead
+                    UnixFileMode.UserRead ||| UnixFileMode.UserExecute
+                    UnixFileMode.UserRead ||| UnixFileMode.SetUser
+                    UnixFileMode.UserRead ||| UnixFileMode.SetGroup
+                    UnixFileMode.UserRead ||| UnixFileMode.StickyBit
                     UnixFileMode.UserRead ||| UnixFileMode.UserWrite
                     UnixFileMode.UserRead ||| UnixFileMode.GroupRead
                     UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.GroupRead
@@ -212,7 +341,7 @@ let tests =
                     directory.Delete())
             testCase "private FIFO refuses before a writer opens" (fun () ->
                 fifo (UnixFileMode.UserRead ||| UnixFileMode.UserWrite))
-            testCase "public FIFO refuses before open" (fun () ->
+            testCase "public FIFO refuses as nonregular" (fun () ->
                 fifo (
                     UnixFileMode.UserRead
                     ||| UnixFileMode.UserWrite

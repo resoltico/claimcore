@@ -225,7 +225,16 @@ let private scalarEvidence () =
         let! actor = caseWorker fixture
         let results = ResizeArray<_>()
 
-        for pending in scalarRequests () do
+        for index, request in scalarRequests () |> List.indexed do
+            // Distinct witnesses reserve distinct operation identities, including known business refusals.
+            let pending =
+                if request.OperationId = Guid.Empty then
+                    request
+                else
+                    { request with
+                        OperationId = id (100 + index)
+                    }
+
             let! outcome = execute actor pending
             results.Add(refused outcome)
 
@@ -448,7 +457,9 @@ let private completeVocabulary () =
 
         Expect.isEmpty
             (Set.difference (baseline.Value.Keys |> Set.ofSeq) produced |> Set.toList)
-            "Every captured code and target still has a producing request."
+            (sprintf
+                "Captured code/target witnesses missing: %A"
+                (Set.difference (baseline.Value.Keys |> Set.ofSeq) produced))
 
         let expected = Refusals.codes |> Set.ofList
 

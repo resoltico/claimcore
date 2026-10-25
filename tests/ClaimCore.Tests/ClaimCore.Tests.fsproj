@@ -47,6 +47,8 @@
     <Compile Include="OperationAuthorityScopeTests.fs" />
     <Compile Include="CursorTests.fs" />
     <Compile Include="ApplicationTests.fs" />
+    <Compile Include="RecoveryTests.fs" />
+    <Compile Include="RecoveryFaultTests.fs" />
     <Compile Include="DiagnosticReachabilityTests.fs" />
     <Compile Include="ProtocolMappingTests.fs" />
     <Compile Include="AuthorityTests.fs" />
@@ -63,6 +65,7 @@
     <Compile Include="PayloadBudgetTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="ContractArtifactTests.fs" />
+    <Compile Include="InteractionBindingTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
     <Compile Include="RemoteTlsTests.fs" />
     <Compile Include="TokenLifetimeTests.fs" />
@@ -71,6 +74,8 @@
     <Compile Include="CliTransportFixture.fs" />
     <Compile Include="CliTransportTests.fs" />
     <Compile Include="CliRetryTests.fs" />
+    <Compile Include="CliRecoveryTests.fs" />
+    <Compile Include="CliRecoverySelectionTests.fs" />
     <Compile Include="CliSignalDeliveryTests.fs" />
     <Compile Include="ClientInteractionTests.fs" />
     <Compile Include="ClientAdmissionTests.fs" />

@@ -17,6 +17,15 @@ let private page =
     | ReadReply.Succeeded p -> p
     | _ -> failtest "Expected grant page"
 
+let private acknowledge (actor: IActorClaimsCore) (reply: ExecuteReply) =
+    task {
+        match reply.RecoveryId with
+        | None -> ()
+        | Some key ->
+            let! forgotten = actor.Forget({ RecoveryId = key }, CancellationToken.None)
+            Expect.equal forgotten (ReadReply.Succeeded()) "Known fixture execution acknowledged"
+    }
+
 let private seedCases (admin: IActorClaimsCore) target =
     task {
         for n in 1..52 do
@@ -29,6 +38,7 @@ let private seedCases (admin: IActorClaimsCore) target =
                 )
 
             accepted opened |> ignore
+            do! acknowledge admin opened
 
             let! added =
                 grant
@@ -40,6 +50,7 @@ let private seedCases (admin: IActorClaimsCore) target =
                     true
 
             acceptedAuthority added
+            do! acknowledge admin added
 
     }
 
@@ -91,6 +102,7 @@ let private prepare (database: PostgresFixture.Database) =
         for n, role in [ 600, Role.CaseReader; 601, Role.CaseHandler; 602, Role.PaymentRecorder ] do
             let! added = grant admin (id n) target role GrantTarget.Installation true
             acceptedAuthority added
+            do! acknowledge admin added
 
         let! actors = admin.ListActors({ AfterCursor = None; Limit = 50 }, token)
 

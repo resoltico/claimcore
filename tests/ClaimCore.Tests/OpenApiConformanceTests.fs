@@ -24,7 +24,11 @@ let private parser () =
         (nonNull result.Diagnostic).Errors
         "Independent OpenAPI parser admits the complete document"
 
-    Expect.equal (nonNull result.Document).Paths.Count 11 "All registry operations are present"
+    Expect.equal
+        ((nonNull result.Document).Paths.Keys |> Set.ofSeq)
+        (Api.all |> List.map Api.path |> Set.ofList)
+        "Exactly the current registry paths are present"
+
     let broken = OpenApiDocument.Parse("{\"openapi\":\"3.1.0\",\"paths\":{}}", "json")
 
     Expect.isNonEmpty
@@ -99,12 +103,14 @@ let private corpus response filename () =
 
             endpoints <- Set.add (Api.id endpoint) endpoints
 
-    let expected = if response then 11 else 10
+    let expected =
+        Api.all
+        |> List.filter (fun endpoint ->
+            response || Api.method endpoint = System.Net.Http.HttpMethod.Post)
+        |> List.map Api.id
+        |> Set.ofList
 
-    Expect.equal
-        endpoints.Count
-        expected
-        "Corpus covers each endpoint with a request body or response"
+    Expect.equal endpoints expected "Corpus covers each endpoint with a request body or response"
 
 let private validatorControls () =
     let constrained =

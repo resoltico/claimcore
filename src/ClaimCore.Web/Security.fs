@@ -1,209 +1,155 @@
 namespace ClaimCore.Web
 
 open System
-open System.Collections.Generic
+open System.IO
+open System.Security.Cryptography
+open System.Threading
 open System.Threading.Tasks
+open ClaimCore.Postgres
 open Microsoft.AspNetCore.Authentication
 open Microsoft.AspNetCore.Authentication.Cookies
+open Microsoft.AspNetCore.DataProtection
+open Microsoft.AspNetCore.Http
 
-[<NoEquality; NoComparison>]
-type private TicketEntry =
-    {
-        Node: LinkedListNode<string>
-        Ticket: AuthenticationTicket
-        AbsoluteExpiry: DateTimeOffset
-        AbsoluteLifetime: TimeSpan
-        Started: int64
-        LastActivity: int64
-        LastActivityInstant: DateTimeOffset
-        InactiveAtStart: TimeSpan
-    }
-
-/// The browser cookie contains only a protected random lookup key. The ticket and its identity
-/// remain server-side and expire at the earlier of idle and absolute deadlines.
+/// Cookies contain only a protected random lookup key; PostgreSQL owns ticket deadlines.
 [<Sealed>]
 type internal OidcTicketStore
     (
         idle: TimeSpan,
         absolute: TimeSpan,
-        ?timeProvider: TimeProvider,
-        ?persistence: TicketPersistence
+        storage: ISessionStore,
+        protection: IDataProtectionProvider,
+        diagnose: string -> unit
     ) =
-    do
-        if idle <= TimeSpan.Zero || absolute < idle then
-            invalidArg (nameof idle) "OIDC session lifetimes must be positive and ordered."
+    let protector = protection.CreateProtector("ClaimCore.Web.DatabaseSessionTicket.1")
 
-    let clock = defaultArg timeProvider TimeProvider.System
-    let gate = obj ()
-    let tickets = Dictionary<string, TicketEntry>(StringComparer.Ordinal)
+    let protect ticket =
+        let clear = TicketSerializer.Default.Serialize ticket
 
-    let nodes = LinkedList<string>()
-    let mutable cursor: LinkedListNode<string> option = None
+        try
+            if clear.Length > 524288 then
+                invalidOp "The OIDC session ticket is too large."
 
-    let expired instant timestamp (entry: TicketEntry) =
-        let age = clock.GetElapsedTime(entry.Started, timestamp)
+            protector.Protect clear
+        finally
+            CryptographicOperations.ZeroMemory clear
 
-        let inactive =
-            entry.InactiveAtStart + clock.GetElapsedTime(entry.LastActivity, timestamp)
+    // The persisted envelope has its own purpose. Random row keys never contain identity data.
+    let decode bytes =
+        let clear = protector.Unprotect bytes
 
-        entry.LastActivityInstant > instant
-        || entry.AbsoluteExpiry <= instant
-        || age < TimeSpan.Zero
-        || inactive < TimeSpan.Zero
-        || age >= entry.AbsoluteLifetime
-        || inactive >= idle
+        try
+            if clear.Length > 524288 then
+                raise (InvalidDataException "Invalid session ticket.")
 
-    let remove key =
-        match tickets.TryGetValue key with
-        | false, _ -> ()
-        | true, entry ->
-            if cursor = Some entry.Node then
-                cursor <- entry.Node.Next |> Option.ofObj
+            TicketSerializer.Default.Deserialize clear |> Option.ofObj
+        finally
+            CryptographicOperations.ZeroMemory clear
 
-            persistence |> Option.iter (fun storage -> storage.Remove key)
-            nodes.Remove entry.Node
-            tickets.Remove key |> ignore
+    let report code =
+        try
+            diagnose code
+        with
+        | :? IOException
+        | :? ObjectDisposedException -> ()
 
-            if cursor.IsNone then
-                cursor <- nodes.First |> Option.ofObj
+    let unavailable () = report "OIDC_SESSION_UNAVAILABLE"
+    let unreadable () = report "OIDC_SESSION_UNREADABLE"
 
-    let persist key entry =
-        persistence
-        |> Option.iter (fun storage ->
-            storage.Write(key, entry.Ticket, entry.AbsoluteExpiry, entry.LastActivityInstant))
+    let store ticket token =
+        task {
+            // Protect before creation so no cookie can escape without a committed ticket.
+            let payload = protect ticket
+            let expiry = ticket.Properties.ExpiresUtc |> Option.ofNullable
 
-    do
-        persistence
-        |> Option.iter (fun storage ->
-            let instant, timestamp = clock.GetUtcNow(), clock.GetTimestamp()
+            try
+                return! storage.Create(payload, expiry, idle, absolute, token)
+            with _ ->
+                unavailable ()
+                return raise (InvalidOperationException "OIDC session storage unavailable.")
+        }
 
-            for key, ticket, expiry, activity in storage.Load() do
-                if activity <= instant && expiry > instant && instant - activity < idle then
-                    tickets.Add(
-                        key,
-                        {
-                            Node = nodes.AddLast key
-                            Ticket = ticket
-                            AbsoluteExpiry = expiry
-                            AbsoluteLifetime = min absolute (expiry - instant)
-                            Started = timestamp
-                            LastActivity = timestamp
-                            LastActivityInstant = activity
-                            InactiveAtStart = instant - activity
-                        }
-                    )
-                else
-                    storage.Remove key
+    let renew key ticket token =
+        task {
+            try
+                do! storage.Renew(key, protect ticket, token)
+            with _ ->
+                unavailable ()
+                return raise (InvalidOperationException "OIDC session storage unavailable.")
+        }
 
-            cursor <- nodes.First |> Option.ofObj)
+    let retrieve key token : Task<AuthenticationTicket | null> =
+        task {
+            try
+                let! stored = storage.Retrieve(key, token)
 
-    let sweep quota excluded instant timestamp =
-        let count = min quota nodes.Count
+                match stored with
+                | None -> return null
+                | Some bytes ->
+                    try
+                        match decode bytes with
+                        | Some ticket -> return (ticket: AuthenticationTicket | null)
+                        | None ->
+                            do! storage.Remove(key, token)
+                            unreadable ()
+                            return null
+                    with
+                    | :? CryptographicException
+                    | :? InvalidDataException
+                    | :? EndOfStreamException
+                    | :? FormatException
+                    | :? OverflowException
+                    | :? ArgumentException ->
+                        do! storage.Remove(key, token)
+                        unreadable ()
+                        return null
+            with _ ->
+                unavailable ()
+                return null
+        }
 
-        for _ in 1..count do
-            match cursor with
-            | None -> ()
-            | Some node ->
-                cursor <-
-                    node.Next
-                    |> Option.ofObj
-                    |> Option.orElseWith (fun () -> nodes.First |> Option.ofObj)
+    let remove key token =
+        task {
+            try
+                do! storage.Remove(key, token)
+            with _ ->
+                unavailable ()
+                return raise (InvalidOperationException "OIDC session storage unavailable.")
+        }
 
-                if Some node.Value <> excluded && expired instant timestamp tickets[node.Value] then
-                    remove node.Value
+    let withContext (context: HttpContext) token action =
+        task {
+            use linked =
+                CancellationTokenSource.CreateLinkedTokenSource(token, context.RequestAborted)
 
-    let lookup key instant timestamp =
-        match tickets.TryGetValue key with
-        | true, entry when expired instant timestamp entry ->
-            remove key
-            None
-        | true, entry -> Some entry
-        | _ -> None
+            return! action linked.Token
+        }
 
     interface ITicketStore with
-        member _.StoreAsync(ticket) =
-            let key = Guid.NewGuid().ToString("N")
+        member _.StoreAsync(ticket) = store ticket CancellationToken.None
+        member _.StoreAsync(ticket, token) = store ticket token
 
-            lock gate (fun () ->
-                let instant = clock.GetUtcNow()
-                let timestamp = clock.GetTimestamp()
-                let expiry = ticket.Properties.ExpiresUtc
-                let maximum = instant.Add(absolute)
+        member _.StoreAsync(ticket, context, token) =
+            withContext context token (store ticket)
 
-                let absoluteExpiry =
-                    if expiry.HasValue then
-                        min maximum expiry.Value
-                    else
-                        maximum
+        member _.RetrieveAsync(key) = retrieve key CancellationToken.None
+        member _.RetrieveAsync(key, token) = retrieve key token
 
-                if tickets.Count >= 10000 then
-                    sweep nodes.Count None instant timestamp
-
-                if tickets.Count >= 10000 then
-                    invalidOp "The OIDC session store is full."
-
-                persistence
-                |> Option.iter (fun storage -> storage.Write(key, ticket, absoluteExpiry, instant))
-
-                tickets.Add(
-                    key,
-                    {
-                        Node = nodes.AddLast(key)
-                        Ticket = ticket
-                        AbsoluteExpiry = absoluteExpiry
-                        AbsoluteLifetime = absoluteExpiry - instant
-                        Started = timestamp
-                        LastActivity = timestamp
-                        LastActivityInstant = instant
-                        InactiveAtStart = TimeSpan.Zero
-                    }
-                )
-
-
-                if cursor.IsNone then
-                    cursor <- nodes.First |> Option.ofObj)
-
-            Task.FromResult(key)
+        member _.RetrieveAsync(key, context, token) =
+            withContext context token (retrieve key)
 
         member _.RenewAsync(key, ticket) =
-            lock gate (fun () ->
-                let instant, timestamp = clock.GetUtcNow(), clock.GetTimestamp()
-                let entry = lookup key instant timestamp
-                sweep 32 (Some key) instant timestamp
+            renew key ticket CancellationToken.None :> Task
 
-                match entry with
-                | Some value ->
-                    let renewed = { value with Ticket = ticket }
-                    persist key renewed
-                    tickets[key] <- renewed
-                | None -> ())
+        member _.RenewAsync(key, ticket, token) = renew key ticket token :> Task
 
-            Task.CompletedTask
-
-        member _.RetrieveAsync(key) =
-            let ticket =
-                lock gate (fun () ->
-                    let timestamp = clock.GetTimestamp()
-                    let instant = clock.GetUtcNow()
-                    let found = lookup key instant timestamp
-                    sweep 32 (Some key) instant timestamp
-
-                    match found with
-                    | Some entry ->
-                        let touched =
-                            { entry with
-                                LastActivity = timestamp
-                                LastActivityInstant = instant
-                                InactiveAtStart = TimeSpan.Zero
-                            }
-
-                        persist key touched
-                        tickets[key] <- touched
-                        touched.Ticket
-                    | None -> Unchecked.defaultof<AuthenticationTicket>)
-
-            Task.FromResult(ticket)
+        member _.RenewAsync(key, ticket, context, token) =
+            withContext context token (renew key ticket) :> Task
 
         member _.RemoveAsync(key) =
-            lock gate (fun () -> remove key)
-            Task.CompletedTask
+            remove key CancellationToken.None :> Task
+
+        member _.RemoveAsync(key, token) = remove key token :> Task
+
+        member _.RemoveAsync(key, context, token) =
+            withContext context token (remove key) :> Task

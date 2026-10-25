@@ -130,8 +130,17 @@ type Proxy
 
     let application = builder.Build()
     let control = RedirectControl.Control(directory)
-    do application.Run(RequestDelegate(fun context -> relay http backend control context))
+    let routing = obj ()
+    let mutable selectedBackend = backend
+
+    let selected () =
+        lock routing (fun () -> selectedBackend)
+
+    do application.Run(RequestDelegate(fun context -> relay http (selected ()) control context))
     member _.Start() = application.StartAsync()
+    // Fixture routing changes only new requests; dispatched requests retain their chosen host.
+    member _.RouteTo(backend: string) =
+        lock routing (fun () -> selectedBackend <- backend)
 
     interface IAsyncDisposable with
         member _.DisposeAsync() = application.DisposeAsync()

@@ -63,7 +63,7 @@ module Frames =
     let retryingUncertain (invocation: Invocation) = invocation.RetryingUncertain
 
     let retry invocation =
-        if not (Api.mutates (endpoint invocation)) then
+        if not (Api.executesLedger (endpoint invocation)) then
             invalidArg (nameof invocation) "An uncertain retry requires a mutation."
 
         { invocation with
@@ -100,7 +100,8 @@ module Frames =
                                         Target = endpoint
                                         Input = input
                                         Bytes = prepared
-                                        RetryingUncertain = false
+                                        RetryingUncertain =
+                                            Api.id endpoint = Api.operationRetry.Id
                                     })
                 | Error problem, _ -> Error problem
                 | _ -> error "$.input" "missing input")
@@ -270,7 +271,7 @@ module Frames =
             frame
 
     let private mutation frame =
-        frame.Endpoint |> Option.bind Api.tryFind |> Option.exists Api.mutates
+        frame.Endpoint |> Option.bind Api.tryFind |> Option.exists Api.executesLedger
 
     let exitCode frame =
         if frame.Delivery = DeliveryState.Uncertain && mutation frame then

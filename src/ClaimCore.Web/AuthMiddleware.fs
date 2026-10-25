@@ -54,7 +54,7 @@ module AuthMiddleware =
 
         Task.CompletedTask
 
-    let private cookie idle absolute (options: CookieAuthenticationOptions) =
+    let private cookie absolute (options: CookieAuthenticationOptions) =
         options.Cookie.Name <- "__Host-ClaimCoreSession"
         options.Cookie.HttpOnly <- true
         options.Cookie.IsEssential <- true
@@ -63,7 +63,6 @@ module AuthMiddleware =
         options.Cookie.Path <- "/"
         options.SlidingExpiration <- false
         options.ExpireTimeSpan <- absolute
-        options.SessionStore <- OidcTicketStore(idle, absolute)
 
         options.Events.OnRedirectToLogin <-
             Func<RedirectContext<CookieAuthenticationOptions>, Task>(fun context ->
@@ -163,7 +162,6 @@ module AuthMiddleware =
         (syntheticRoot: X509Certificate2 option)
         idTokenSink
         (configuration: OidcConfiguration)
-        idle
         absolute
         (services: IServiceCollection)
         =
@@ -171,23 +169,22 @@ module AuthMiddleware =
             .AddAuthentication(fun options ->
                 options.DefaultScheme <- CookieAuthenticationDefaults.AuthenticationScheme
                 options.DefaultChallengeScheme <- OpenIdConnectDefaults.AuthenticationScheme)
-            .AddCookie(cookie idle absolute)
+            .AddCookie(cookie absolute)
             .AddOpenIdConnect(oidc syntheticRoot idTokenSink configuration)
             .AddJwtBearer(BearerScheme, bearer syntheticRoot configuration)
         |> ignore
 
-    let configure (configuration: OidcConfiguration) idle absolute (services: IServiceCollection) =
+    let configure (configuration: OidcConfiguration) absolute (services: IServiceCollection) =
         if configuration.Issuer.Scheme <> Uri.UriSchemeHttps then
             invalidArg (nameof configuration) "Production OIDC requires HTTPS."
 
-        configureWith None None configuration idle absolute services
+        configureWith None None configuration absolute services
 
     /// Internal-only synthetic fixture seam. Production configuration never calls this path.
     let internal configureSyntheticLoopback
         (configuration: OidcConfiguration)
         (root: X509Certificate2)
         idTokenSink
-        idle
         absolute
         (services: IServiceCollection)
         =
@@ -197,4 +194,4 @@ module AuthMiddleware =
         then
             invalidArg (nameof configuration) "Synthetic OIDC requires loopback HTTPS."
 
-        configureWith (Some root) (Some idTokenSink) configuration idle absolute services
+        configureWith (Some root) (Some idTokenSink) configuration absolute services

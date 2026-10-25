@@ -165,5 +165,16 @@
   "ui.pagePartial": "Šajā redzamajā tvērumā ir vēl rezultāti.",
   "ui.pageEnd": "Rezultātu beigas šajā redzamajā tvērumā.",
   "ui.noAccessibleHistory": "Nav atgrieztu pieejamu vēstures ierakstu.",
-  "ui.discardUnknownDescription": "Operācija, iespējams, jau ir pieņemta. Atmetot tiks zaudēts šis precīzais pieprasījums, bet operācija netiks atcelta. Turpiniet tikai tad, ja piekrītat zaudēt iespēju atkārtot pieprasījumu no šīs lapas."
+  "ui.discardUnknownDescription": "Operācija, iespējams, jau ir pieņemta. Atmetot tiks zaudēts šis precīzais pieprasījums, bet operācija netiks atcelta. Turpiniet tikai tad, ja piekrītat zaudēt iespēju atkārtot pieprasījumu no šīs lapas.",
+  "ui.startAnotherOperation": "Sākt citu darbību",
+  "ui.recoveryRetryDescription": "Atkārtots mēģinājums var pieņemt šo iesniegto pieprasījumu tagad. Tā iznākums nav zināms; atlasīšana to neizpilda. Atkārtojiet tikai tad, ja vēlaties to pašu darbību.",
+  "ui.submittedRequests": "Iesniegtie pieprasījumi",
+  "ui.submittedDescription": "Šie ir iesniegtie pieprasījumi, nevis pieņemšanas pierādījums. Tiek parādīti tikai pašlaik atļautie tehniskie metadati.",
+  "ui.listSubmitted": "Parādīt iesniegtos pieprasījumus",
+  "ui.selectSubmitted": "Atlasīt iesniegto pieprasījumu",
+  "ui.forgetSubmitted": "Aizmirst iesniegto pieprasījumu",
+  "ui.forgetSubmittedDescription": "Aizmiršana dzēš jūsu atkopšanas kopiju. Tā neatceļ darbību un nepierāda, ka tā nav pieņemta. Varat zaudēt iespēju atkārtot sākotnējo pieprasījumu.",
+  "ui.recoveryAcknowledge": "Apstiprināt iznākumu un atgriezties pie pieprasījumiem",
+  "ui.recoveryExpires": "Atkopšana pieejama līdz: {expiresAt}",
+  "ui.moreSubmitted": "Vairāk iesniegto pieprasījumu"
 }

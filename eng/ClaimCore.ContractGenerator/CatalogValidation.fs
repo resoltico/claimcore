@@ -6,15 +6,14 @@ open ClaimCore.Application
 
 /// Structural identity checks happen before publication; Node additionally validates ICU and arguments.
 module CatalogValidation =
-    let private authoredEnglish () =
-        AuthoredMessages.templates "en" |> Map.keys |> Set.ofSeq
+    let private authored language =
+        AuthoredMessages.templates language |> Map.keys |> Set.ofSeq
 
     let validateIdentity known identity =
         if not (Set.contains identity known) then
             invalidOp "Unknown core presentation identity."
 
-    let validate () =
-        let known = authoredEnglish ()
+    let private definitions known =
         let validate = validateIdentity known
 
         for field in FieldDefinitions.all do
@@ -42,3 +41,12 @@ module CatalogValidation =
 
             for input in command.Inputs do
                 validate input.LabelId
+
+        for interaction in InteractionDefinitions.all do
+            for input in interaction.Inputs do
+                validate input.LabelId
+                Option.iter validate input.MeaningId
+
+    let validate () =
+        for language in LocalizationPolicy.languages do
+            definitions (authored language)

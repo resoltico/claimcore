@@ -135,7 +135,7 @@ preserves the original identity and bytes; see [API](api.md).
 
 Execution rechecks expected revision against locked state. Retained exact replay returns original acceptance
 metadata without another entry/revision, with [current disclosure](architecture.md#cc-auth-001). [Erased
-requests](#cc-life-001) cannot replay; reused IDs with different content refuse. Rejection records nothing.
+requests](#cc-life-001) cannot replay; reused IDs with different content refuse. Rejection changes no accepted ledger or projection state; a submitted recovery copy may remain.
 
 Expected revisions are integers from 0 through M = 9007199254740991; accepted revisions and ledger sequences
 are 1 through M. M − 1 may advance to M; M is terminal for new acts. Global head exhaustion is checked before

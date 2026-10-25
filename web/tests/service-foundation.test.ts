@@ -1,8 +1,7 @@
 import { caseOffers } from "./case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../src/api/service";
-import { initialOperationValues, operationDocument } from "../src/interaction/operationForm";
-import { formValue } from "../src/protocol/forms";
+import { initialOperationValues, assembleOperation } from "../src/interaction/operationForm";
 import { fields, definition } from "./service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "./contract-corpus.fixtures";
@@ -29,7 +28,7 @@ describe("core command metadata", () => {
       current,
       "10000000-0000-4000-8000-000000000001",
     );
-    expect(formValue(operationDocument, operationDocument, "", close)).toEqual({
+    expect(assembleOperation(close)).toEqual({
       scope: "CASE",
       operationId: "10000000-0000-4000-8000-000000000001",
       caseReference: fields.caseReference,

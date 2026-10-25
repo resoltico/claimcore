@@ -1,26 +1,34 @@
-import type { OperationState } from "../src/interaction/operationState";
+import type { OperationState, EffectIdentity } from "../src/interaction/operationState";
 import { operationReducer } from "../src/interaction/operationState";
 import { valuesFor, preparedFor } from "./operation-form.fixtures";
 import { review } from "./service-foundation.fixtures";
 export { firstId, secondId } from "./operation-form.fixtures";
+export const effect = (id = "preview"): EffectIdentity => ({
+  id,
+  token: "token",
+  target: "CASE:CASE-SERIALIZATION",
+});
 export const initial = (): OperationState => ({
   target: "CASE:CASE-SERIALIZATION",
+  context: { token: "token", target: "CASE:CASE-SERIALIZATION" },
   disclosureToken: "token",
   disclosureRefused: false,
-  phase: "EDITING",
   values: valuesFor(),
   baseline: valuesFor(),
-  prepared: null,
-  priorUncertain: false,
-  review: null,
-  receipt: null,
+  generation: 0,
+  operation: { tag: "EDITING", exposed: null },
+  effects: [],
   notice: null,
   fieldError: null,
-  confirmed: false,
   pendingDiscard: null,
 });
 export const begin = (state = initial()) =>
-  operationReducer(state, { type: "PREVIEW", prepared: preparedFor() });
+  operationReducer(state, {
+    type: "PREVIEW",
+    prepared: preparedFor(),
+    identity: effect(),
+    generation: state.generation,
+  });
 export const refused = (state = begin()) =>
   operationReducer(state, {
     type: "REFUSE",
@@ -30,7 +38,7 @@ export const refused = (state = begin()) =>
     disclosure: false,
   });
 export const reviewed = () =>
-  operationReducer(operationReducer(begin(), { type: "REVIEW", review, token: "token" }), {
+  operationReducer(operationReducer(begin(), { type: "REVIEW", review, identity: effect() }), {
     type: "CONFIRM",
     value: true,
   });

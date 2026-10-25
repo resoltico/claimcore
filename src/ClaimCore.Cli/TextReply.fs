@@ -339,6 +339,43 @@ module internal TextReply =
 
         message :: line language "cli.text.code" code :: action
 
+    let private recoveryLines language value =
+        let rows =
+            memberValue "items" value
+            |> items
+            |> List.collect (fun item ->
+                let act = get "act" item
+
+                let prefix =
+                    if get "scope" item = "CASE" then
+                        "command."
+                    else
+                        "authority."
+
+                let target =
+                    if get "scope" item = "CASE" then
+                        get "caseReference" item
+                    else
+                        get "targetActorId" item
+
+                [
+                    label language (prefix + act + ".label") + "  " + target
+                    line language "cli.text.recoveryId" (get "recoveryId" item)
+                    line language "authority.field.operationId.label" (get "operationId" item)
+                    line language "cli.text.createdAt" (get "createdAt" item)
+                    line language "cli.text.expiresAt" (get "expiresAt" item)
+                    line
+                        language
+                        "cli.text.offers"
+                        (memberValue "offers" item
+                         |> items
+                         |> List.map (fun offer ->
+                             label language ("cli.text.offer." + scalar offer))
+                         |> String.concat ", ")
+                ])
+
+        label language "cli.text.recoveryNotice" :: rows @ nextLines language value
+
     let private successful language endpoint value =
         match endpoint with
         | Some "case.get" -> caseLines language value
@@ -346,6 +383,8 @@ module internal TextReply =
         | Some "case.list"
         | Some "authority.list"
         | Some "authority.grants" -> pageLines language value
+        | Some "operation.pending" -> recoveryLines language value
+        | Some "operation.forget" -> [ label language "cli.text.forgotten" ]
         | Some "operation.observe" -> receiptLines language "ACCEPTED" value
         | _ ->
             match value with

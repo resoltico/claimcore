@@ -1,4 +1,4 @@
--- Runtime schema scenarios for db/migrations/0001_baseline.sql. Executed by SchemaTests.
+-- Runtime schema scenarios for db/baseline.sql. Executed by SchemaTests.
 -- Each pg_temp.expect call runs one statement in a subtransaction and requires its SQLSTATE.
 -- Plain statements must succeed. The script prints one PASS line per expectation.
 \set ON_ERROR_STOP 1

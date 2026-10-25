@@ -1,4 +1,4 @@
-import type { RequestByEndpoint, endpoints } from "@contracts/client";
+import { strictByteProfile, type RequestByEndpoint, type endpoints } from "@contracts/client";
 import { buildRequest, requestIssue } from "./client";
 export class ProtocolInputError extends Error {
   readonly path: ReadonlyArray<string>;
@@ -8,7 +8,7 @@ export class ProtocolInputError extends Error {
   }
 }
 const preparedIdentity = Symbol("prepared request");
-type AcceptingEndpoint = Extract<(typeof endpoints)[number], { mutates: true }>["id"];
+type AcceptingEndpoint = Extract<(typeof endpoints)[number], { effect: "LEDGER_EXECUTION" }>["id"];
 export type PreparedRequest<K extends AcceptingEndpoint> = {
   readonly endpoint: K;
   readonly input: RequestByEndpoint[K];
@@ -34,10 +34,14 @@ export const prepareRequest = <K extends AcceptingEndpoint>(
   }
   const detached = structuredClone(assembled);
   freeze(detached);
+  const bytes = JSON.stringify(detached);
+  if (new TextEncoder().encode(bytes).length > strictByteProfile.maximumRequestBytes) {
+    throw new ProtocolInputError([]);
+  }
   return Object.freeze({
     endpoint,
     input: detached,
-    bytes: JSON.stringify(detached),
+    bytes,
     [preparedIdentity]: true as const,
   });
 };

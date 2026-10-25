@@ -89,6 +89,18 @@ for stage in "${stages[@]}"; do
   esac
 done
 
+# Iteration growth selection cannot qualify a complete PostgreSQL stage.
+for stage in "${stages[@]}"; do
+  case "${stage}" in
+    integration | postgres)
+      if [[ -n "${CLAIMCORE_GROWTH_PROFILE+x}" ]]; then
+        echo "Complete verification requires the unselected full growth profile; unset CLAIMCORE_GROWTH_PROFILE." >&2
+        exit 64
+      fi ;;
+    *) : ;;
+  esac
+done
+
 # Check the daemon once before any restore, build or browser download. Each fixture still
 # validates its pinned images and owns its isolated resources.
 for stage in "${stages[@]}"; do
@@ -199,7 +211,7 @@ postgres() {
   local project
   for project in "${postgres_projects[@]}"; do
     build_native "${project}"
-    tests "${project}" Release 20m eng/expecto.integration.runsettings
+    tests "${project}" Release 110m eng/expecto.integration.runsettings
   done
 }
 

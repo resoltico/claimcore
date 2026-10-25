@@ -57,7 +57,8 @@ let publish root directory name =
 
     Path.Combine(output, name + ".dll")
 
-type Web(binary, environment, directory) =
+type Web(binary, environment, directory, ?logPrefix: string) =
+    let logPrefix = defaultArg logPrefix "web"
     let value = start "dotnet" [ binary ] environment
     let child = Process.Start value |> nonNull
     let deadline = new CancellationTokenSource(TimeSpan.FromMinutes(30.))
@@ -78,10 +79,16 @@ type Web(binary, environment, directory) =
 
                 child.WaitForExit()
 
-                FixtureFiles.write directory "web.stdout" (output.GetAwaiter().GetResult())
+                FixtureFiles.write
+                    directory
+                    (logPrefix + ".stdout")
+                    (output.GetAwaiter().GetResult())
                 |> ignore
 
-                FixtureFiles.write directory "web.stderr" (errors.GetAwaiter().GetResult())
+                FixtureFiles.write
+                    directory
+                    (logPrefix + ".stderr")
+                    (errors.GetAwaiter().GetResult())
                 |> ignore
             finally
                 deadline.Dispose()

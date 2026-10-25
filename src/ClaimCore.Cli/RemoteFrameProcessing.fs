@@ -29,8 +29,32 @@ type private RemoteSessionHolder() =
             session |> Option.iter (fun value -> (value :> IDisposable).Dispose())
             session <- None
 
+module internal RecoveryAcknowledgement =
+    let frame (reply: CliReply) =
+        match Frames.decode reply.Bytes with
+        | Ok {
+                 Delivery = DeliveryState.Delivered
+                 Result = FrameResult.Reply body
+                 Endpoint = Some endpoint
+             } when endpoint = Api.operationExecute.Id || endpoint = Api.operationRetry.Id ->
+            match Api.operationExecute.Output.Read "$" body with
+            | Ok {
+                     RecoveryId = Some id
+                     Outcome = (ExecuteResult.Accepted _ | ExecuteResult.AlreadyAccepted _ | ExecuteResult.Rejected _)
+                 } ->
+                JsonValue.Object
+                    [
+                        "endpoint", JsonValue.String Api.operationForget.Id
+                        "input", Api.operationForget.Input.Write { RecoveryId = id }
+                    ]
+                |> WireWriter.bytes
+                |> Frames.admit
+                |> Result.toOption
+            | _ -> None
+        | _ -> None
+
 module private FrameInvocation =
-    let invoke (holder: RemoteSessionHolder) frame beforeSend (cancelled: CancellationToken) =
+    let private send (holder: RemoteSessionHolder) frame beforeSend (cancelled: CancellationToken) =
         task {
             if cancelled.IsCancellationRequested then
                 return CliReply.local ClientFailure.Cancelled
@@ -63,9 +87,47 @@ module private FrameInvocation =
                                 cancelled
         }
 
+    let invoke (holder: RemoteSessionHolder) frame beforeSend (cancelled: CancellationToken) =
+        task {
+            if Api.id (Frames.endpoint frame) <> Api.operationRetry.Id then
+                return! send holder frame beforeSend cancelled
+            else
+                match holder.Acquire() with
+                | Error failure -> return CliReply.local failure
+                | Ok access ->
+                    use deadline = HttpRequestDeadline.link access.Client cancelled
+                    return! RecoverySelection.invoke (send holder) frame beforeSend deadline.Token
+        }
+
+    let acknowledge holder frame (stopped: CancellationToken) =
+        task {
+            use bound = CancellationTokenSource.CreateLinkedTokenSource(stopped)
+            bound.CancelAfter(TimeSpan.FromSeconds 5.)
+            let! _ = invoke holder frame ignore bound.Token
+            return ()
+        }
+
 type RemoteFrameProcessor
-    private (input: Stream, output: Stream, errors: Stream, invoke, owned: IDisposable, retry) =
+    private
+    (
+        input: Stream,
+        output: Stream,
+        errors: Stream,
+        invoke,
+        owned: IDisposable,
+        retry,
+        acknowledge: Invocation -> CancellationToken -> Task<unit>
+    ) =
     let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
+
+    let acknowledgeReply reply stopped =
+        match RecoveryAcknowledgement.frame reply with
+        | None -> ()
+        | Some frame ->
+            try
+                acknowledge frame stopped |> fun pending -> pending.GetAwaiter().GetResult()
+            with _ ->
+                ()
 
     let interpret frame stopped =
         match frame with
@@ -74,7 +136,7 @@ type RemoteFrameProcessor
         | InputFrame.Bytes bytes ->
             match Frames.admit bytes with
             | Error _ -> Some(CliReply.protocol CliFailure.InvalidFrame)
-            | Ok frame when retry && not (Api.mutates (Frames.endpoint frame)) ->
+            | Ok frame when retry && not (Api.executesLedger (Frames.endpoint frame)) ->
                 Some(CliReply.protocol CliFailure.InvalidFrame)
             | Ok admitted ->
                 let frame = if retry then Frames.retry admitted else admitted
@@ -102,12 +164,13 @@ type RemoteFrameProcessor
             errors,
             FrameInvocation.invoke holder,
             holder,
-            retry
+            retry,
+            FrameInvocation.acknowledge holder
         )
 
     new(input, output, errors) = new RemoteFrameProcessor(input, output, errors, false)
 
-    static member internal ForTest(input, output, errors, invoke, ?retry) =
+    static member internal ForTest(input, output, errors, invoke, ?retry, ?acknowledge) =
         new RemoteFrameProcessor(
             input,
             output,
@@ -116,7 +179,8 @@ type RemoteFrameProcessor
             { new IDisposable with
                 member _.Dispose() = ()
             },
-            defaultArg retry false
+            defaultArg retry false,
+            defaultArg acknowledge (fun _ _ -> Task.FromResult())
         )
 
     member _.Interrupt() = delivery.Interrupt()
@@ -129,6 +193,9 @@ type RemoteFrameProcessor
             | None -> 0
             | Some reply ->
                 delivery.Write reply
+
+                acknowledgeReply reply stopped
+
                 reply.ExitCode
         with error ->
             delivery.Failure error
@@ -146,6 +213,9 @@ type RemoteFrameProcessor
                 | None -> running <- false
                 | Some reply ->
                     delivery.Write reply
+
+                    acknowledgeReply reply stopped
+
                     exitCode <- reply.ExitCode
 
                     if reply.ExitCode = 4 || reply.ExitCode = 130 then

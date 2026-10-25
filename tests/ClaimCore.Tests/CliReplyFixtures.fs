@@ -89,7 +89,7 @@ let review =
                 }
         }
 
-let input endpoint =
+let private resourceInput endpoint =
     match endpoint with
     | "session"
     | "session.logout"
@@ -117,6 +117,13 @@ let input endpoint =
             }
     | _ -> invalidArg (nameof endpoint) "No synthetic request for this endpoint."
 
+let input endpoint =
+    match endpoint with
+    | "operation.retry" -> Api.operationRetry.Input.Write { RecoveryId = id; OperationId = id }
+    | "operation.forget" -> Api.operationForget.Input.Write { RecoveryId = id }
+    | "operation.pending" -> Api.operationPending.Input.Write { AfterCursor = None; Limit = 1 }
+    | _ -> resourceInput endpoint
+
 let private reads codec data =
     [
         ReadReply.Succeeded data
@@ -134,7 +141,12 @@ let private execute () =
         ExecuteResult.OutcomeUnknown
     ]
     |> List.map (fun outcome ->
-        Api.operationExecute.Output.Write { OperationId = id; Outcome = outcome })
+        Api.operationExecute.Output.Write
+            {
+                RecoveryId = None
+                OperationId = id
+                Outcome = outcome
+            })
 
 let private preview () =
     [
@@ -171,7 +183,7 @@ let private grants =
         NextCursor = None
     }
 
-let responses endpoint =
+let private resourceResponses endpoint =
     match endpoint with
     | "session" ->
         reads
@@ -205,4 +217,11 @@ let responses endpoint =
     | "authority.list" -> reads Api.authorityList.Output { Items = []; NextCursor = None }
     | "authority.grants" -> reads Api.authorityGrants.Output grants
     | _ -> invalidArg (nameof endpoint) "No synthetic response for this endpoint."
+
+let responses endpoint =
+    match endpoint with
+    | "operation.retry" -> execute ()
+    | "operation.pending" -> reads Api.operationPending.Output { Items = []; NextCursor = None }
+    | "operation.forget" -> reads Api.operationForget.Output ()
+    | _ -> resourceResponses endpoint
     |> List.map WireWriter.bytes

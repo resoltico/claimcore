@@ -1,348 +1,244 @@
 module ClaimCore.WebTests.SessionKeyTests
 
-open ClaimCore.Contract
-
 open System
 open System.IO
-open System.Net
-open System.Net.Http
 open System.Security.Claims
+open System.Threading
 open System.Threading.Tasks
 open Expecto
-open Microsoft.AspNetCore.Antiforgery
+open ClaimCore.Postgres
+open ClaimCore.Web
 open Microsoft.AspNetCore.Authentication
 open Microsoft.AspNetCore.Authentication.Cookies
-open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.DataProtection
-open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
-open Microsoft.AspNetCore.TestHost
-open Microsoft.Extensions.DependencyInjection
-open Microsoft.Extensions.Logging
-open ClaimCore.Web
 
-let private issue (context: HttpContext) =
+let private ticket () =
+    AuthenticationTicket(
+        ClaimsPrincipal(ClaimsIdentity([ Claim("sub", "synthetic") ], "oidc")),
+        "Cookies"
+    )
+
+let private adapter storage provider =
+    OidcTicketStore(TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., storage, provider, ignore)
+    :> ITicketStore
+
+let private awaited () =
     task {
-        let identity =
-            ClaimsIdentity([ Claim(ClaimTypes.NameIdentifier, "synthetic-owner") ], "Cookies")
+        let pending =
+            TaskCompletionSource<byte array option>(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            )
 
-        context.User <- ClaimsPrincipal identity
-        do! context.SignInAsync("Cookies", context.User)
-        let antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>()
-        let tokens = antiforgery.GetAndStoreTokens context
-        do! context.Response.WriteAsync(tokens.RequestToken |> nonNull)
-    }
-    :> Task
-
-let private check (context: HttpContext) =
-    task {
-        if not (context.User.Identity |> nonNull).IsAuthenticated then
-            context.Response.StatusCode <- 401
-        else
-            let antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>()
-
-            try
-                do! antiforgery.ValidateRequestAsync context
-                context.Response.StatusCode <- 204
-            with :? AntiforgeryValidationException ->
-                context.Response.StatusCode <- 400
-    }
-    :> Task
-
-let private host directory =
-    task {
-        let builder = WebApplication.CreateBuilder()
-        builder.Logging.ClearProviders() |> ignore
-        builder.WebHost.UseTestServer() |> ignore
-
-        SessionKeys.configure
-            (SessionKeys.admit directory)
-            (TimeSpan.FromMinutes 30.)
-            builder.Services
-
-        AuthMiddleware.configure
-            {
-                Issuer = Uri "https://issuer.example.test/realms/claimcore"
-                TrustRoot = None
-                ClientId = "claimcore-web"
-                ClientSecret = "synthetic-secret"
-                ApiAudience = "claimcore-api"
-                CliClientId = "claimcore-cli"
+        let storage =
+            { new ISessionStore with
+                member _.Create(_, _, _, _, _) = Task.FromResult "synthetic-key"
+                member _.Retrieve(_, _) = pending.Task
+                member _.Renew(_, _, _) = Task.FromResult()
+                member _.Remove(_, _) = Task.FromResult()
             }
-            (TimeSpan.FromMinutes 30.)
-            (TimeSpan.FromHours 8.)
-            builder.Services
 
-        builder.Services.AddAntiforgery(fun options ->
-            options.HeaderName <- "X-ClaimCore-Antiforgery")
-        |> ignore
-
-        let app = builder.Build()
-        app.UseAuthentication() |> ignore
-        app.MapGet("/issue", Func<HttpContext, Task>(issue)) |> ignore
-        app.MapPost("/check", Func<HttpContext, Task>(check)) |> ignore
-
-        app.MapPost(
-            "/logout",
-            Func<HttpContext, Task>(fun context -> context.SignOutAsync("Cookies"))
-        )
-        |> ignore
-
-        do! app.StartAsync()
-        return app
+        let store = adapter storage (EphemeralDataProtectionProvider())
+        let retrieval = store.RetrieveAsync "synthetic-key"
+        Expect.isFalse retrieval.IsCompleted "Retrieval awaits actual storage completion"
+        pending.SetResult None
+        let! found = retrieval
+        Expect.isNull found "Missing session refuses authentication"
     }
 
-let private verify directory cookies token expected =
+let private protectionFailures () =
     task {
-        use! app = host directory
-        use client = app.GetTestClient()
-        client.BaseAddress <- Uri "https://localhost"
-        use request = new HttpRequestMessage(HttpMethod.Post, "/check")
-        request.Headers.Add("Cookie", (cookies: string))
-        request.Headers.Add("X-ClaimCore-Antiforgery", (token: string))
-        use! response = client.SendAsync request
+        let mutable payload = [||]
+        let mutable removed = false
 
-        Expect.equal
-            response.StatusCode
-            expected
-            "Cookie and antiforgery survive only their persisted key ring"
-    }
+        let storage =
+            { new ISessionStore with
+                member _.Create(bytes, _, _, _, _) =
+                    payload <- bytes
+                    Task.FromResult "synthetic-key"
 
-let private logout directory cookies =
-    task {
-        use! resumed = host directory
-        use client = resumed.GetTestClient()
-        client.BaseAddress <- Uri "https://localhost"
-        use request = new HttpRequestMessage(HttpMethod.Post, "/logout")
-        request.Headers.Add("Cookie", (cookies: string))
-        use! response = client.SendAsync request
-        Expect.equal response.StatusCode HttpStatusCode.OK "Production logout succeeds."
-        do! resumed.StopAsync()
-    }
+                member _.Retrieve(_, _) = Task.FromResult(Some payload)
+                member _.Renew(_, _, _) = Task.FromResult()
 
-let private restart () =
-    task {
-        let directory = Directory.CreateTempSubdirectory("claimcore-session-keys-")
+                member _.Remove(_, _) =
+                    removed <- true
+                    Task.FromResult()
+            }
 
-        try
-            let shared =
-                Directory.CreateDirectory(Path.Combine(directory.FullName, "shared")).FullName
+        let diagnostics = ResizeArray<string>()
 
-            let sibling =
-                Directory.CreateDirectory(Path.Combine(directory.FullName, "sibling")).FullName
-
-            use! app = host shared
-            use client = app.GetTestClient()
-            client.BaseAddress <- Uri "https://localhost"
-            use! response = client.GetAsync "/issue"
-            let! token = response.Content.ReadAsStringAsync()
-
-            let cookies =
-                response.Headers.GetValues("Set-Cookie")
-                |> Seq.map (fun value -> value.Split(';')[0])
-                |> String.concat "; "
-
-            do! app.StopAsync()
-            do! verify shared cookies token HttpStatusCode.NoContent
-            do! verify sibling cookies token HttpStatusCode.Unauthorized
-            do! logout shared cookies
-            do! verify shared cookies token HttpStatusCode.Unauthorized
-        finally
-            directory.Delete(true)
-    }
-
-type private SessionClock() =
-    inherit TimeProvider()
-    let mutable instant = DateTimeOffset(2026, 10, 19, 12, 0, 0, TimeSpan.Zero)
-    let mutable timestamp = 0L
-    override _.GetUtcNow() = instant
-    override _.GetTimestamp() = timestamp
-    override _.TimestampFrequency = TimeSpan.TicksPerSecond
-
-    member _.Advance duration =
-        instant <- instant.Add duration
-        timestamp <- timestamp + duration.Ticks
-
-    member _.Rollback() = instant <- instant.AddMinutes(-1.)
-
-let private persistedExpiry scenario =
-    let directory = Directory.CreateTempSubdirectory("claimcore-session-expiry-")
-
-    try
-        let protection = DataProtectionProvider.Create directory
-        let clock = SessionClock()
-        let storage = TicketPersistence(directory, protection)
-
-        let create () =
+        let first =
             OidcTicketStore(
                 TimeSpan.FromMinutes 30.,
                 TimeSpan.FromHours 8.,
-                timeProvider = clock,
-                persistence = storage
+                storage,
+                EphemeralDataProtectionProvider(),
+                diagnostics.Add
             )
             :> ITicketStore
 
-        let ticket =
-            AuthenticationTicket(
-                ClaimsPrincipal(ClaimsIdentity("synthetic")),
-                AuthenticationProperties(),
-                "Cookies"
+        let! key = first.StoreAsync(ticket ())
+        let! recovered = first.RetrieveAsync key
+        Expect.isNotNull recovered "Protected ticket round trips"
+
+        let second =
+            OidcTicketStore(
+                TimeSpan.FromMinutes 30.,
+                TimeSpan.FromHours 8.,
+                storage,
+                EphemeralDataProtectionProvider(),
+                diagnostics.Add
             )
+            :> ITicketStore
 
-        let original = create ()
-        let key = original.StoreAsync(ticket).Result
+        let! lost = second.RetrieveAsync key
+        Expect.isNull lost "Key loss fails closed"
+        Expect.isTrue removed "Unprotectable row is invalidated"
 
-        match scenario with
-        | "idle" -> clock.Advance(TimeSpan.FromMinutes 31.)
-        | "absolute" ->
-            for _ in 1..23 do
-                clock.Advance(TimeSpan.FromMinutes 20.)
-                original.RetrieveAsync(key).Result |> ignore
-
-            clock.Advance(TimeSpan.FromMinutes 20.)
-        | _ -> clock.Rollback()
-
-        Expect.isNull
-            (create().RetrieveAsync(key).Result)
-            "Restart never extends a session deadline or accepts backwards time."
-    finally
-        directory.Delete true
-
-let private protectedFiles () =
-    let directory = Directory.CreateTempSubdirectory("claimcore-session-files-")
-
-    try
-        let protection = DataProtectionProvider.Create directory
-        let storage = TicketPersistence(directory, protection)
-
-        let ticket =
-            AuthenticationTicket(
-                ClaimsPrincipal(
-                    ClaimsIdentity([ Claim("sub", "synthetic-private-identity") ], "synthetic")
-                ),
-                AuthenticationProperties(),
-                "Cookies"
-            )
-
-        let key = String.replicate 32 "a"
-        storage.Write(key, ticket, DateTimeOffset.UtcNow.AddHours 1., DateTimeOffset.UtcNow)
-        let file = Path.Combine(directory.FullName, "sessions", key + ".ticket")
-
-        Expect.equal
-            (File.GetUnixFileMode file)
-            (UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
-            "Ticket is private."
-
-        Expect.isFalse
-            (File.ReadAllText(file).Contains "synthetic-private-identity")
-            "Identity is encrypted at rest."
-
-        let renamed =
-            Path.Combine(directory.FullName, "sessions", String.replicate 32 "b" + ".ticket")
-
-        File.Move(file, renamed)
-        Expect.isEmpty (storage.Load()) "A ticket cannot be rebound to another lookup key."
-        storage.Write(key, ticket, DateTimeOffset.UtcNow.AddHours 1., DateTimeOffset.UtcNow)
-        File.WriteAllBytes(file, [| 0uy; 1uy; 2uy |])
-        Expect.isEmpty (storage.Load()) "Corrupted ciphertext refuses authentication."
-    finally
-        directory.Delete true
-
-let private sessionTraffic count (store: ITicketStore) =
-    task {
-        let ticket =
-            AuthenticationTicket(
-                ClaimsPrincipal(ClaimsIdentity("synthetic")),
-                AuthenticationProperties(),
-                "Cookies"
-            )
-
-        let! keys = [| for _ in 1..count -> store.StoreAsync ticket |] |> Task.WhenAll
-
-        let read key =
-            task {
-                let watch = Diagnostics.Stopwatch.StartNew()
-                let! found = store.RetrieveAsync key
-                Expect.isNotNull found "Live session survives durable activity update"
-                return watch.Elapsed.TotalMilliseconds
-            }
-
-        let! times =
-            [| for key in keys -> Task.Factory.StartNew(fun () -> read key).Unwrap() |]
-            |> Task.WhenAll
-
-        Array.sortInPlace times
-
-        return
-            {|
-                sessions = count
-                p50Milliseconds = times[count / 2]
-                maximumMilliseconds = Array.last times
-            |}
+        Expect.sequenceEqual
+            diagnostics
+            [ "OIDC_SESSION_UNREADABLE" ]
+            "Malformed protected data has a safe distinct diagnostic"
     }
 
-let private sessionLoad () =
+let private keyContinuity () =
     task {
-        let directory = Directory.CreateTempSubdirectory("claimcore-session-latency-")
+        let path = PrivateTestPaths.newPrivateDirectory "claimcore-key-continuity-"
 
         try
-            let protection = DataProtectionProvider.Create directory
-            let persistence = TicketPersistence(directory, protection)
+            let mutable payload = [||]
 
-            let store =
-                OidcTicketStore(
-                    TimeSpan.FromMinutes 30.,
-                    TimeSpan.FromHours 8.,
-                    persistence = persistence
-                )
-                :> ITicketStore
+            let storage =
+                { new ISessionStore with
+                    member _.Create(bytes, _, _, _, _) =
+                        payload <- bytes
+                        Task.FromResult "synthetic-key"
 
-            let results = ResizeArray<_>()
+                    member _.Retrieve(_, _) = Task.FromResult(Some payload)
+                    member _.Renew(_, _, _) = Task.FromResult()
+                    member _.Remove(_, _) = Task.FromResult()
+                }
 
-            for count in [ 1; 8; 24 ] do
-                let! result = sessionTraffic count store
-                results.Add result
-
-            let output =
-                Path.Combine(
-                    ClaimCore.TestSupport.RepositoryRoot.find (),
-                    "artifacts/verification/sessions"
-                )
-
-            Directory.CreateDirectory output |> ignore
-
-            File.WriteAllBytes(
-                Path.Combine(output, Guid.NewGuid().ToString("N") + ".json"),
-                System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
-                    {|
-                        storage = "local-temporary-directory"
-                        platform = System.Runtime.InteropServices.RuntimeInformation.OSDescription
-                        results = results
-                    |}
-            )
+            let first = adapter storage (DataProtectionProvider.Create(DirectoryInfo path))
+            let! key = first.StoreAsync(ticket ())
+            let restarted = adapter storage (DataProtectionProvider.Create(DirectoryInfo path))
+            let! found = restarted.RetrieveAsync key
+            Expect.isNotNull found "A fresh provider with the same key ring decrypts the session"
         finally
-            directory.Delete true
+            Directory.Delete(path, true)
     }
+
+let private storageFailure () =
+    task {
+        let storage =
+            { new ISessionStore with
+                member _.Create(_, _, _, _, _) =
+                    Task.FromException<string>(IOException "Synthetic database failure")
+
+                member _.Retrieve(_, _) =
+                    Task.FromException<byte array option>(IOException "Synthetic database failure")
+
+                member _.Renew(_, _, _) =
+                    Task.FromException<unit>(IOException "Synthetic database failure")
+
+                member _.Remove(_, _) =
+                    Task.FromException<unit>(IOException "Synthetic database failure")
+            }
+
+        let diagnostics = ResizeArray<string>()
+
+        let store =
+            OidcTicketStore(
+                TimeSpan.FromMinutes 30.,
+                TimeSpan.FromHours 8.,
+                storage,
+                EphemeralDataProtectionProvider(),
+                diagnostics.Add
+            )
+            :> ITicketStore
+
+        let! found = store.RetrieveAsync "synthetic"
+        Expect.isNull found "Database I/O failure authenticates nobody"
+
+        Expect.sequenceEqual
+            diagnostics
+            [ "OIDC_SESSION_UNAVAILABLE" ]
+            "Database failure has a safe distinct diagnostic"
+    }
+
+let private requestAbort () =
+    task {
+        let mutable observed = CancellationToken.None
+
+        let storage =
+            { new ISessionStore with
+                member _.Create(_, _, _, _, _) = Task.FromResult "synthetic"
+
+                member _.Retrieve(_, token) =
+                    task {
+                        observed <- token
+                        do! Task.Delay(Timeout.Infinite, token)
+                        return None
+                    }
+
+                member _.Renew(_, _, _) = Task.FromResult()
+                member _.Remove(_, _) = Task.FromResult()
+            }
+
+        let store = adapter storage (EphemeralDataProtectionProvider())
+        use aborted = new CancellationTokenSource()
+        let context = DefaultHttpContext()
+        context.RequestAborted <- aborted.Token
+        let waiting = store.RetrieveAsync("synthetic", context, CancellationToken.None)
+        Expect.isFalse waiting.IsCompleted "An active request awaits the actual storage operation"
+        aborted.Cancel()
+        let! found = waiting
+        Expect.isNull found "Request abort fails authentication closed"
+
+        Expect.isTrue
+            observed.IsCancellationRequested
+            "The session port receives the context's cancellation"
+    }
+
+let private keyDirectory () =
+    let path = PrivateTestPaths.newPrivateDirectory "claimcore-key-policy-"
+
+    try
+        SessionKeys.admit path |> ignore
+
+        File.SetUnixFileMode(
+            path,
+            UnixFileMode.UserRead
+            ||| UnixFileMode.UserWrite
+            ||| UnixFileMode.UserExecute
+            ||| UnixFileMode.GroupRead
+        )
+
+        Expect.throws
+            (fun () -> SessionKeys.admit path |> ignore)
+            "Group-readable key directories refuse"
+    finally
+        Directory.Delete(path, true)
 
 [<Tests>]
 let tests =
     testList
-        "persisted browser sessions"
+        "Database session adapter"
         [
             testCaseAsync
-                "durable ticket activity latency at one eight and twenty four sessions"
-                (async { do! sessionLoad () |> Async.AwaitTask })
-            testTask
-                "[CC-WEB-001] production session and antiforgery survive restart, isolate sibling rings and retain logout" {
-                do! restart ()
-            }
-            testCase "[CC-WEB-001] persisted sessions keep idle expiry" (fun () ->
-                persistedExpiry "idle")
-            testCase "[CC-WEB-001] persisted sessions keep absolute expiry" (fun () ->
-                persistedExpiry "absolute")
-            testCase "[CC-WEB-001] persisted sessions refuse backwards time" (fun () ->
-                persistedExpiry "rollback")
-            testCase
-                "[CC-WEB-001] persisted tickets are private, encrypted and lookup-bound"
-                protectedFiles
+                "[CC-WEB-001] session retrieval awaits storage"
+                (async { do! awaited () |> Async.AwaitTask })
+            testCaseAsync
+                "[CC-WEB-001] key loss invalidates protected tickets"
+                (async { do! protectionFailures () |> Async.AwaitTask })
+            testCaseAsync
+                "[CC-WEB-001] key ring survives restart"
+                (async { do! keyContinuity () |> Async.AwaitTask })
+            testCaseAsync
+                "[CC-WEB-001] database failure fails closed"
+                (async { do! storageFailure () |> Async.AwaitTask })
+            testCaseAsync
+                "[CC-WEB-001] request abort reaches session storage"
+                (async { do! requestAbort () |> Async.AwaitTask })
+            testCase "[CC-WEB-001] key directory is owner-only" keyDirectory
         ]

@@ -85,10 +85,7 @@ let private remote input output errors session retry =
         registrations |> List.iter _.Dispose()
 
 let private verb output errors arguments =
-    let descriptors =
-        ContractDiscovery.descriptors ()
-        |> StrictJson.read Limits.MaximumResponseBytes
-        |> Result.defaultWith (fun _ -> invalidOp "Invalid embedded descriptors.")
+    let descriptors = ContractDiscovery.descriptorValue ()
 
     match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) descriptors arguments with
     | Error() ->

@@ -3,12 +3,25 @@ namespace ClaimCore.Contract
 open System.Net.Http
 open ClaimCore.Contract.Protocol
 
+[<RequireQualifiedAccess>]
+type EndpointEffect =
+    | Read
+    | OperationalWrite
+    | LedgerExecution
+
+module EndpointEffects =
+    let token =
+        function
+        | EndpointEffect.Read -> "READ_ONLY"
+        | EndpointEffect.OperationalWrite -> "OPERATIONAL_WRITE"
+        | EndpointEffect.LedgerExecution -> "LEDGER_EXECUTION"
+
 [<NoEquality; NoComparison>]
 type Endpoint<'In, 'Out> =
     {
         Id: string
         Method: HttpMethod
-        Mutates: bool
+        Effect: EndpointEffect
         Input: Codec<'In>
         Output: Codec<'Out>
     }
@@ -20,11 +33,11 @@ type AnyEndpoint =
     abstract Accept<'Result> : IEndpointVisitor<'Result> -> 'Result
 
 module Api =
-    let private endpoint id method mutates input output =
+    let private endpoint id method effect input output =
         {
             Id = id
             Method = method
-            Mutates = mutates
+            Effect = effect
             Input = input
             Output = output
         }
@@ -33,23 +46,25 @@ module Api =
         endpoint
             "session"
             HttpMethod.Get
-            false
+            EndpointEffect.Read
             RequestCodecs.empty
             (ReplyCodecs.readReply "SessionReply" ResponseCodecs.session)
 
     let logout =
-        endpoint
-            "session.logout"
-            HttpMethod.Post
-            false
-            RequestCodecs.empty
-            (ReplyCodecs.readReply "LogoutReply" Codec.nullValue)
+        { endpoint
+              "session.logout"
+              HttpMethod.Post
+              EndpointEffect.Read
+              RequestCodecs.empty
+              (ReplyCodecs.readReply "LogoutReply" Codec.nullValue) with
+            Effect = EndpointEffect.OperationalWrite
+        }
 
     let context =
         endpoint
             "context"
             HttpMethod.Post
-            false
+            EndpointEffect.Read
             RequestCodecs.empty
             (ReplyCodecs.readReply "ContextReply" ResponseCodecs.actorContext)
 
@@ -57,7 +72,7 @@ module Api =
         endpoint
             "case.get"
             HttpMethod.Post
-            false
+            EndpointEffect.Read
             RequestCodecs.caseGetRequest
             (ReplyCodecs.readReply "CaseReadReply" ResponseCodecs.caseView)
 
@@ -65,7 +80,7 @@ module Api =
         endpoint
             "case.list"
             HttpMethod.Post
-            false
+            EndpointEffect.Read
             RequestCodecs.pageRequest
             (ReplyCodecs.readReply "CasePageReply" ResponseCodecs.casesPage)
 
@@ -73,7 +88,7 @@ module Api =
         endpoint
             "case.history"
             HttpMethod.Post
-            false
+            EndpointEffect.Read
             RequestCodecs.historyRequest
             (ReplyCodecs.readReply
                 "HistoryReply"
@@ -83,7 +98,7 @@ module Api =
         endpoint
             "operation.preview"
             HttpMethod.Post
-            false
+            EndpointEffect.Read
             RequestCodecs.operationInput
             ReplyCodecs.preview
 
@@ -91,15 +106,41 @@ module Api =
         endpoint
             "operation.execute"
             HttpMethod.Post
-            true
+            EndpointEffect.LedgerExecution
             RequestCodecs.operationInput
             ReplyCodecs.execute
+
+    let operationPending =
+        endpoint
+            "operation.pending"
+            HttpMethod.Post
+            EndpointEffect.Read
+            RequestCodecs.pageRequest
+            (ReplyCodecs.readReply "RecoveryPageReply" RecoveryCodecs.page)
+
+    let operationRetry =
+        endpoint
+            "operation.retry"
+            HttpMethod.Post
+            EndpointEffect.LedgerExecution
+            RecoveryCodecs.retry
+            ReplyCodecs.execute
+
+    let operationForget =
+        { endpoint
+              "operation.forget"
+              HttpMethod.Post
+              EndpointEffect.Read
+              RecoveryCodecs.forget
+              (ReplyCodecs.readReply "ForgetReply" Codec.nullValue) with
+            Effect = EndpointEffect.OperationalWrite
+        }
 
     let operationObserve =
         endpoint
             "operation.observe"
             HttpMethod.Post
-            false
+            EndpointEffect.Read
             RequestCodecs.observeRequest
             (ReplyCodecs.readReply "ObservationReply" ReceiptCodecs.receipt)
 
@@ -107,7 +148,7 @@ module Api =
         endpoint
             "authority.list"
             HttpMethod.Post
-            false
+            EndpointEffect.Read
             RequestCodecs.pageRequest
             (ReplyCodecs.readReply "ActorsReply" ResponseCodecs.actorsPage)
 
@@ -115,7 +156,7 @@ module Api =
         endpoint
             "authority.grants"
             HttpMethod.Post
-            false
+            EndpointEffect.Read
             RequestCodecs.grantsRequest
             (ReplyCodecs.readReply "GrantsReply" ResponseCodecs.grantsPage)
 
@@ -134,6 +175,9 @@ module Api =
             boxed caseHistory
             boxed operationPreview
             boxed operationExecute
+            boxed operationPending
+            boxed operationRetry
+            boxed operationForget
             boxed operationObserve
             boxed authorityList
             boxed authorityGrants
@@ -153,11 +197,14 @@ module Api =
                 member _.Visit value = value.Method
             }
 
-    let mutates (endpoint: AnyEndpoint) =
+    let effect (endpoint: AnyEndpoint) =
         endpoint.Accept
-            { new IEndpointVisitor<bool> with
-                member _.Visit value = value.Mutates
+            { new IEndpointVisitor<EndpointEffect> with
+                member _.Visit value = value.Effect
             }
+
+    let executesLedger endpoint =
+        effect endpoint = EndpointEffect.LedgerExecution
 
     let tryFind name =
         all |> List.tryFind (fun endpoint -> id endpoint = name)

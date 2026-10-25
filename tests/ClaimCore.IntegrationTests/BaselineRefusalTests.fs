@@ -45,13 +45,15 @@ let private install (source: NpgsqlDataSource) =
                 [||]
                 token
 
-        let previous =
-            { Migrations.scripts.Head with
-                Sql = Encoding.UTF8.GetString bytes
-                Digest = SHA256.HashData bytes
-            }
+        let! _ =
+            DatabaseSession.execute connection (Encoding.UTF8.GetString bytes) [||] token
 
-        do! Migrations.apply connection previous token
+        let! _ =
+            DatabaseSession.execute
+                connection
+                "INSERT INTO claimcore.schema_migrations(version,name,script_sha256) VALUES (1,'baseline',$1)"
+                [| box (SHA256.HashData bytes) |]
+                token
 
         let! _ =
             DatabaseSession.execute
@@ -72,7 +74,7 @@ let private refuses action =
         with :? InvalidOperationException ->
             refused <- true
 
-        Expect.isTrue refused "Published baseline bytes are refused by the history check"
+        Expect.isTrue refused "Published baseline bytes are refused by the baseline admission"
     }
 
 let private previousInstallation () =
@@ -87,11 +89,7 @@ let private previousInstallation () =
 
             do!
                 refuses (fun () ->
-                    task { let! _ = Migrations.initialize source "Etc/UTC" token in return () })
-                |> Async.AwaitTask
-
-            do!
-                refuses (fun () -> Migrations.migrateWith source Migrations.scripts token)
+                    task { let! _ = Baseline.initialize source "Etc/UTC" token in return () })
                 |> Async.AwaitTask
 
             let settings = NpgsqlConnectionStringBuilder(database.GetConnectionString())

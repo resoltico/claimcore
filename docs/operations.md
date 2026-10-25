@@ -8,10 +8,11 @@ assertions; ClaimCore transfers no money.
 
 ## Erasure limits
 
-ERASE clears payload and payload_nonce on every ledger entry of the case, removes business projections, and
-retains reference, revision and ledger metadata. It cannot reach old row versions, WAL, replicas, logs,
-exports or backups. Retained references may still identify a person. Operators own retention, physical
-disposal and privacy decisions outside this live-database act. VOID preserves all history and is not erasure.
+ERASE clears payload and payload_nonce on every ledger entry of the case, removes business projections and all
+case-targeted recovery bodies (including authority intents and the erasure itself), and retains reference, revision and
+ledger metadata. It cannot reach old row versions, WAL, replicas, logs, exports or backups. Retained references may
+still identify a person. Operators own retention, physical disposal and privacy decisions outside this live-database
+act. VOID preserves all history and is not erasure.
 
 Authority history, issuer/subject, executor/target attribution, actor identities and grants are never erased.
 
@@ -37,26 +38,39 @@ disabled. Put the API audience in access tokens only, never ID tokens. `azp`/`cl
 not establish the grant type; operators must maintain these flow restrictions. [Web
 admission](web.md#cc-web-001) owns token classification and technical checks.
 
-Browser session protection keys and encrypted server-side session tickets persist in the required key-ring
-directory. Tickets live in its private `sessions` subdirectory and survive a Web restart with their original
-idle and absolute deadlines. Logout deletes the ticket. A backward clock step that predates the last persisted
-activity refuses that session. The cookie contains only a protected random lookup key; identity and tokens are
-not stored in browser storage. Protect the whole directory, including tickets, and do not share it between
-concurrently running Web processes: multiple-instance session coordination is not qualified. Treat the key
-directory as a secret outside database backups; Linux key XML is unencrypted. Preserve, back up and rotate
-this directory separately from database backups, with the same care as the client secret. Pagination follows
-the [API contract](api.md). The browser retains no pending request across reload. Preserve exact uncertain
-requests through the caller’s process; never replace their ID.
+Protected authentication tickets now live in PostgreSQL; cookies contain only protected random lookup keys. Two Web
+instances with the same admitted database and key ring can share sessions. Logout deletes a row; renewal only updates an
+existing live row, so it cannot resurrect logout. Already admitted work may finish. DB UTC idle/absolute deadlines and
+observed backward-step refusal replace process-monotonic elapsed time: arbitrary clock corrections have no real-elapsed
+guarantee. Each row retains its original idle duration and absolute deadline across renewal/restart; changed deployment
+settings affect new sessions only. Row lookups are asynchronous and independent of the ledger head and creation-cap
+lock. This shared-clock qualification does not qualify arbitrary load balancing, key distribution or multi-host
+deployments.
+
+Protect the key-ring directory with owner-only directory access (0700), preserve admitted key files and retain keys for
+every live ticket, seven-day recovery row and protected backup. Local Linux key XML is unencrypted. Back up the database
+and key ring together under controlled custody; neither substitutes for the other. Corrupt/unprotectable sessions
+invalidate safely with `OIDC_SESSION_UNREADABLE`; storage failures close authentication with `OIDC_SESSION_UNAVAILABLE`.
+These diagnostics contain no provider, credential or payload.
+
+Submitted case/authority bodies are protected operational recovery state, separate from accepted history. Pending lists
+expose only the current actor's currently authorized technical metadata and offers. Explicit retry may accept work that
+never committed; no login/reload/background worker executes it. Absence, expiry, forget, logout or later failure cannot
+establish non-acceptance. Acknowledge known results explicitly to reclaim journal capacity; forget neither cancels an
+admitted attempt nor changes accepted history. Recovery ends at expiry, erasure, key loss/retirement, deliberate forget
+or rollback; copies/WAL remain outside live erasure. Keep exact uncertain CLI frames privately; browser/CLI storage
+contains no submitted payload.
 
 ## Private configuration
 
-Private inputs are absolute paths with valid UTF-8 and no NUL, supported on Linux and macOS. Symbolic links
-are followed, including Kubernetes secret-volume links. Path mode is checked before opening. The caller
-applies a two-second timeout to the read-only open worker; a timed-out open refuses as not regular. The worker
-may finish later, in which case its handle is disposed. The opened handle must be seekable and satisfy the
-same mode policy: no other-user access and no group write or execute. Group read is allowed, including `0640`
-and `0440`. Its length must fit the caller's bound, all bytes come from that admitted handle, and the caller
-clears buffers. Directories, missing or oversized files and malformed paths refuse. There is no native code.
+Private inputs are absolute valid UTF-8 paths without NUL. Symlinks follow their targets, including secret volume links.
+Narrow system-library interop opens read-only with nonblocking and close-on-exec flags, then checks regular-file type
+and mode on that same descriptor: no other access or group write/execute; group read (0640/0440) remains allowed.
+Bounded bytes come only from that handle and callers clear buffers. Directories, devices, FIFOs, sockets,
+missing/oversized files and malformed paths refuse. Supported ABIs are little-endian Linux x64/arm64 with glibc exporting public `fstat`, and
+macOS x64/arm64; musl/other ABIs refuse before use. No custom native binary or C compiler is required. Nonblocking
+avoids FIFO peer waits; arbitrary filesystem calls have no hard deadline. Admission freezes neither contents nor
+permissions and leaves no abandoned open worker.
 
 Ownership and ACLs are not inspected. Filesystem mode semantics, the file owner and the host administrator
 remain trusted; admission does not freeze concurrent changes to contents or permissions. Preserve all notices
@@ -82,9 +96,9 @@ production assurance. Keep older installations with matching software; no conver
 
 ## Serialized writes and verification growth
 
-Accepted writes intentionally serialize on one ledger head. Verification streams rows but retains operation
-identities and folded case/actor/grant state; its memory grows with accepted history and projection
-cardinality. A streaming reader does not imply constant-memory verification. [Synthetic
-reports](development.md#synthetic-growth-qualification) qualify bounded isolated workloads, not
-memory/asymptotic bounds or production capacity. Timeout/cancellation guards remain enforced. More writers do
-not remove serialization or promise throughput; qualify actual workloads/storage.
+Accepted writes intentionally serialize on one ledger head. Verification streams rows and retains folded
+case/actor/grant state. A same-snapshot SQL prepass finds the earliest duplicate operation ID, with database
+sorting/spill costs. Application memory still grows with folded resource cardinality; streaming does not imply constant
+total-system memory. [Synthetic reports](development.md#synthetic-growth-qualification) qualify bounded isolated
+workloads, not memory/asymptotic bounds or production capacity. Timeout/cancellation guards remain enforced. More
+writers do not remove serialization or promise throughput; qualify actual workloads/storage.

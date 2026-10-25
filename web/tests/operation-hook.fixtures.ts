@@ -22,6 +22,7 @@ export const rejected = (conflict: boolean): ApiResult<ServiceResponse<"operatio
   kind: "outcome",
   status: 200,
   value: {
+    recoveryId: null,
     operationId: "10000000-0000-4000-8000-000000000001",
     outcome: {
       tag: "REJECTED",

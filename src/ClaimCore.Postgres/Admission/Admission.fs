@@ -47,39 +47,6 @@ module internal Admission =
                 raise (AdmissionRefusal RuntimeOpenFault.UnsafeRole)
         }
 
-    let private validateInstallation (id, zone) =
-        try
-            Migrations.zone zone |> ignore
-
-            if id = Guid.Empty then
-                raise (AdmissionRefusal RuntimeOpenFault.InstallationInvalid)
-
-            {
-                InstallationId = id
-                BusinessTimeZone = zone
-            }
-        with :? ArgumentException ->
-            raise (AdmissionRefusal RuntimeOpenFault.InstallationInvalid)
-
-    let private installation connection token =
-        task {
-            let! rows =
-                DatabaseSession.rows
-                    connection
-                    "SELECT installation_id,business_time_zone FROM claimcore.installation"
-                    [||]
-                    token
-
-            match rows with
-            | [ row ] ->
-                return
-                    validateInstallation (
-                        DatabaseSession.value<Guid> 0 row,
-                        DatabaseSession.value<string> 1 row
-                    )
-            | _ -> return raise (AdmissionRefusal RuntimeOpenFault.InstallationInvalid)
-        }
-
     let private head connection token =
         task {
             let! rows =
@@ -115,13 +82,13 @@ module internal Admission =
                         serverVersion connection.PostgreSqlVersion
 
                         do! role connection token
-                        let! count = Migrations.history connection Migrations.scripts token
-
-                        if count <> Migrations.scripts.Length then
-                            raise (AdmissionRefusal RuntimeOpenFault.SchemaMismatch)
-
-                        let! installation = installation connection token
+                        let! id, zone = Baseline.require connection token
                         do! head connection token
-                        return installation
+
+                        return
+                            {
+                                InstallationId = id
+                                BusinessTimeZone = zone
+                            }
                     })
         }

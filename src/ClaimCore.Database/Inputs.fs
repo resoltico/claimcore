@@ -13,7 +13,6 @@ open ClaimCore.HostSecurity
 
 type Command =
     | Initialize of string
-    | Migrate
     | ProvisionOwner
     | Verify of ExpectedPosition option
     | Head
@@ -53,7 +52,6 @@ module Inputs =
         | [ "help" ] -> Some Help
         | [ "version" ] -> Some Version
         | [ "initialize"; zone ] -> Some(Initialize zone)
-        | [ "migrate" ] -> Some Migrate
         | [ "provision-owner" ] -> Some ProvisionOwner
         | [ "verify" ] -> Some(Verify None)
         | [ "verify"; "--expect"; position ] -> expected position |> Option.map (Some >> Verify)

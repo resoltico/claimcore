@@ -11,6 +11,8 @@ open ClaimCore.Application
 type internal IRuntime =
     inherit IDisposable
     abstract WithActor: PrincipalKey * (IActorClaimsCore -> Task<'Value>) -> Task<'Value option>
+    abstract ConfigureRecoveryProtection: RecoveryProtection -> unit
+    abstract Sessions: ClaimCore.Postgres.ISessionStore
     abstract BusinessTimeZone: string
     abstract Ready: CancellationToken -> Task<bool>
     abstract Shutdown: TimeSpan -> Task<ShutdownOutcome>
@@ -29,6 +31,30 @@ module internal ActorAccess =
 type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBusinessCalendar) =
     let gate = AdmissionGate(fun () -> storage.Dispose())
 
+    let sessionAction action =
+        task {
+            match gate.Acquire() with
+            | None -> return invalidOp "Runtime admission is closed."
+            | Some lease ->
+                use _lease = lease
+                return! action storage.Sessions
+        }
+
+    let sessions =
+        { new ClaimCore.Postgres.ISessionStore with
+            member _.Create(payload, expiry, idle, absolute, token) =
+                sessionAction (fun store -> store.Create(payload, expiry, idle, absolute, token))
+
+            member _.Retrieve(key, token) =
+                sessionAction (fun store -> store.Retrieve(key, token))
+
+            member _.Renew(key, payload, token) =
+                sessionAction (fun store -> store.Renew(key, payload, token))
+
+            member _.Remove(key, token) =
+                sessionAction (fun store -> store.Remove(key, token))
+        }
+
     interface IRuntime with
         member _.WithActor(principal, action) =
             ActorAccess.run
@@ -41,6 +67,11 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
                         actor)
                 principal
                 action
+
+        member _.ConfigureRecoveryProtection value =
+            storage.ConfigureRecoveryProtection value
+
+        member _.Sessions = sessions
 
         member _.BusinessTimeZone = calendar.TimeZoneId
 

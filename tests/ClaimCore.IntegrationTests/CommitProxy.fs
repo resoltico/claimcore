@@ -64,7 +64,8 @@ let private errorState (bytes: byte array) =
     |> Option.map (fun field -> field.Substring 1)
 
 /// A protocol relay drops a real connection at the commit boundary; no store result is mocked.
-type internal Proxy(host: string, port: int, drop: Drop, ?terminate: int -> Task<unit>) =
+type internal Proxy
+    (host: string, port: int, drop: Drop, ?terminate: int -> Task<unit>, ?commitNumber: int) =
     let listener = new TcpListener(IPAddress.Loopback, 0)
     let cancellation = new CancellationTokenSource()
 
@@ -72,6 +73,9 @@ type internal Proxy(host: string, port: int, drop: Drop, ?terminate: int -> Task
         TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
 
     let mutable fatalSqlState: string option = None
+    let commitNumber = defaultArg commitNumber 1
+    let mutable submittedCommits = 0
+    let mutable completedCommits = 0
 
     let relayBackend (clientStream: NetworkStream) (serverStream: NetworkStream) close =
         task {
@@ -84,7 +88,12 @@ type internal Proxy(host: string, port: int, drop: Drop, ?terminate: int -> Task
                 if bytes[0] = byte 'K' then
                     backendId <- BinaryPrimitives.ReadInt32BigEndian(ReadOnlySpan(bytes, 5, 4))
 
-                let committed = committed bytes
+                let isCommit = committed bytes
+
+                if isCommit then
+                    completedCommits <- completedCommits + 1
+
+                let committed = isCommit && completedCommits = commitNumber
 
                 if committed && drop = Drop.AfterCommitFatal then
                     awaitFatal <- true
@@ -127,7 +136,14 @@ type internal Proxy(host: string, port: int, drop: Drop, ?terminate: int -> Task
                     while not cancellation.IsCancellationRequested do
                         let! bytes = packet clientStream cancellation.Token
 
-                        if query bytes && drop = Drop.BeforeCommit then
+                        if query bytes then
+                            submittedCommits <- submittedCommits + 1
+
+                        if
+                            query bytes
+                            && submittedCommits = commitNumber
+                            && drop = Drop.BeforeCommit
+                        then
                             intercepted.TrySetResult() |> ignore
                             close ()
                         else

@@ -43,7 +43,14 @@ let private resultExits () =
 
             Expect.equal
                 reply.ExitCode
-                (Map.tryFind tag expected |> Option.defaultValue 0)
+                (if
+                     Api.id endpoint = Api.operationRetry.Id
+                     && tag <> "ACCEPTED"
+                     && tag <> "ALREADY_ACCEPTED"
+                 then
+                     4
+                 else
+                     Map.tryFind tag expected |> Option.defaultValue 0)
                 ("Outcome selects exit for " + (Api.id endpoint) + " " + tag)
 
             Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
@@ -91,7 +98,10 @@ let private requestBytes () =
                             (HostFailureCodecs.encode HostFailureReason.BeforeDispatchFailed)
                 })
 
-        Expect.equal (send handler invocation).ExitCode 3 "Definite admission refusal"
+        Expect.equal
+            (send handler invocation).ExitCode
+            (if Api.id endpoint = Api.operationRetry.Id then 4 else 3)
+            "Admission refusal cannot resolve intrinsic recovery uncertainty"
 
 let private failurePhases () =
     for endpoint in Api.all do
@@ -106,9 +116,10 @@ let private failurePhases () =
 
             let expected =
                 if
-                    (Api.mutates endpoint)
-                    && ClaimCore.Contract.Protocol.HostFailures.phase reason
-                       <> Some ExecutionPhase.NotStarted
+                    Api.id endpoint = Api.operationRetry.Id
+                    || ((Api.executesLedger endpoint)
+                        && ClaimCore.Contract.Protocol.HostFailures.phase reason
+                           <> Some ExecutionPhase.NotStarted)
                 then
                     4
                 else
@@ -131,7 +142,11 @@ let private invalidReplies () =
             use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
             let invocation = frame endpoint
 
-            let expected = if (frameEndpoint invocation |> Api.mutates) then 4 else 2
+            let expected =
+                if (frameEndpoint invocation |> Api.executesLedger) then
+                    4
+                else
+                    2
 
             Expect.equal
                 (send handler invocation).ExitCode
@@ -146,7 +161,7 @@ let private invalidReplies () =
 
         Expect.equal
             (send wrongStatus (frame endpoint)).ExitCode
-            (if (frame endpoint |> frameEndpoint |> Api.mutates) then
+            (if (frame endpoint |> frameEndpoint |> Api.executesLedger) then
                  4
              else
                  2)
@@ -154,7 +169,7 @@ let private invalidReplies () =
 
 let private successfulBody endpoint invocation =
     let tag =
-        if (frameEndpoint invocation |> Api.mutates) then
+        if (frameEndpoint invocation |> Api.executesLedger) then
             "ACCEPTED"
         else
             "SUCCEEDED"
@@ -202,7 +217,11 @@ let private mixedMediaRefusals () =
     for endpoint in [ "case.get"; "operation.execute" ] do
         let invocation = frame endpoint
 
-        let expected = if (frameEndpoint invocation |> Api.mutates) then 4 else 2
+        let expected =
+            if (frameEndpoint invocation |> Api.executesLedger) then
+                4
+            else
+                2
 
         for media in [ Some "Application/JSON"; Some "text/plain"; None ] do
             for status, body in
@@ -232,7 +251,11 @@ let private absentJsonMedia () =
         let invocation = frame endpoint
         let body = successfulBody endpoint invocation
 
-        let expected = if (frameEndpoint invocation |> Api.mutates) then 4 else 2
+        let expected =
+            if (frameEndpoint invocation |> Api.executesLedger) then
+                4
+            else
+                2
 
         for media in [ Some "text/plain"; None ] do
             use handler =
@@ -325,7 +348,7 @@ let private localExits () =
 let private responseBounds () =
     for endpoint in [ "case.get"; "operation.execute" ] do
         let invocation = frame endpoint
-        let mutates = (frameEndpoint invocation |> Api.mutates)
+        let executesLedger = (frameEndpoint invocation |> Api.executesLedger)
 
         use oversize =
             new Handler(fun _ ->
@@ -337,7 +360,7 @@ let private responseBounds () =
 
         Expect.equal
             (send oversize invocation).ExitCode
-            (if mutates then 4 else 3)
+            (if executesLedger then 4 else 3)
             "Response buffering is bounded"
 
         use media =
@@ -352,7 +375,7 @@ let private responseBounds () =
 
         Expect.equal
             (send media invocation).ExitCode
-            (if mutates then 4 else 2)
+            (if executesLedger then 4 else 2)
             "Wrong media type cannot settle a mutation"
 
 let private dispatchGuards () =
@@ -502,7 +525,7 @@ let private frameResponseBounds () =
 
             Expect.equal
                 reply.ExitCode
-                (if Api.mutates selected then 4 else 2)
+                (if Api.executesLedger selected then 4 else 2)
                 "An unencodable response cannot settle a mutation."
 
             Expect.isLessThanOrEqual

@@ -20,7 +20,6 @@ let main arguments =
                 let mutates =
                     match command with
                     | Initialize _
-                    | Migrate
                     | ProvisionOwner -> true
                     | _ -> false
 

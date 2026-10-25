@@ -54,7 +54,7 @@ module internal ApiRoutes =
                 | Error _ ->
                     return Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
                 | Ok value ->
-                    match Dispatch.prepare endpoint value with
+                    match Dispatch.prepareRaw endpoint value bytes with
                     | Error _ ->
                         return
                             Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
@@ -85,7 +85,7 @@ module internal ApiRoutes =
                         RouteSupport.markDispatched context
 
                         let cancellation =
-                            if Api.mutates endpoint then
+                            if Api.effect endpoint <> EndpointEffect.Read then
                                 System.Threading.CancellationToken.None
                             else
                                 context.RequestAborted

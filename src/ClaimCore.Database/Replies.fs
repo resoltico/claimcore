@@ -77,15 +77,7 @@ module Replies =
                         diverged = 5
                     |}
                 commands =
-                    [|
-                        "initialize"
-                        "migrate"
-                        "provision-owner"
-                        "verify"
-                        "head"
-                        "help"
-                        "version"
-                    |]
+                    [| "initialize"; "provision-owner"; "verify"; "head"; "help"; "version" |]
             |},
         0
 
