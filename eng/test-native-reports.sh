@@ -6,9 +6,10 @@ fixture="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-reports.XXXXXXXX")"
 trap 'rm -rf -- "${fixture}"' EXIT
 root="${fixture}/reports"
 mkdir -p "${root}" "${fixture}/outside"
-for n in {01..15}; do
-  mkdir "${root}/native.test${n}"
-  touch -t "2020010100${n}" "${root}/native.test${n}/.claimcore-native-complete"
+for n in {1..15}; do
+  index="$(printf '%02d' "${n}")"
+  mkdir "${root}/native.test${index}"
+  touch -t "2020010100${index}" "${root}/native.test${index}/.claimcore-native-complete"
 done
 mkdir "${root}/native.unmanaged" "${root}/native.active"
 touch "${root}/native.active/.claimcore-native-active" "${root}/native.active/.claimcore-native-complete"
@@ -16,9 +17,10 @@ touch "${fixture}/outside/.claimcore-native-complete"
 ln -s "${fixture}/outside" "${root}/native.link"
 prune_native_reports "${root}"
 retained_count=0
-for n in {01..15}; do
-  if [[ -d "${root}/native.test${n}" ]]; then retained_count=$((retained_count + 1)); fi
-  if [[ $((10#${n})) -le 5 ]]; then test ! -e "${root}/native.test${n}"; else test -d "${root}/native.test${n}"; fi
+for n in {1..15}; do
+  index="$(printf '%02d' "${n}")"
+  if [[ -d "${root}/native.test${index}" ]]; then retained_count=$((retained_count + 1)); fi
+  if [[ ${n} -le 5 ]]; then test ! -e "${root}/native.test${index}"; else test -d "${root}/native.test${index}"; fi
 done
 test "${retained_count}" -eq 10
 test -d "${root}/native.unmanaged"
