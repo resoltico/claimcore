@@ -1,5 +1,6 @@
-module internal ClaimCore.Tests.ApplicationFixtures
+module internal ClaimCore.IntegrationTests.ApplicationFixtures
 
+open ClaimCore.TestSupport
 open ClaimCore.Contract
 
 open System
@@ -7,7 +8,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
 let instant = DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
 let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
@@ -23,25 +24,17 @@ let calendar =
     }
 
 let fixture () =
-    let store = new MemoryLedgerStore.Store(instant)
-
-    let value: Fixture =
-        {
-            Store = store :> ILedgerStore
-            InstallationId = installation
-            Owner = owner
-            Calendar = calendar
-            Dispose = fun () -> (store :> IDisposable).Dispose()
-        }
-
-    store, value
+    task {
+        let! database = PostgresFixture.createFor owner
+        return database, database.Fixture
+    }
 
 let run action =
     async {
-        let store, value = fixture ()
+        let! database, value = fixture () |> Async.AwaitTask
 
         try
-            do! action store value |> Async.AwaitTask
+            do! action database value |> Async.AwaitTask
         finally
             value.Dispose()
     }

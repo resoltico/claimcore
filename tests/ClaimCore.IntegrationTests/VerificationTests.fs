@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.VerificationTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -8,7 +10,7 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.RecordFormat
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private livePayload (value: LedgerRow) =

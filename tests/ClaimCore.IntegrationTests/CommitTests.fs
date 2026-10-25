@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.CommitTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -8,7 +10,7 @@ open Expecto
 open Npgsql
 open ClaimCore.Application
 open ClaimCore.Postgres
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
 let private run action =
     async {
@@ -124,6 +126,51 @@ let private lostResolution drop (database: PostgresFixture.Database) =
         Expect.equal (VerificationSupport.position head).Sequence 3L "Resolution never appends"
     }
 
+let private lostAuthority drop landed (database: PostgresFixture.Database) =
+    task {
+        let! actor = caseWorker database.Fixture
+
+        let settings =
+            NpgsqlConnectionStringBuilder(database.RuntimeSource.ConnectionString)
+
+        use proxy =
+            new CommitProxy.Proxy(
+                nonNull settings.Host,
+                settings.Port,
+                drop,
+                terminate = terminate database
+            )
+
+        settings.Password <- "synthetic-only"
+        settings.Host <- "127.0.0.1"
+        settings.Port <- proxy.Port
+        settings.SslMode <- SslMode.Disable
+        settings.GssEncryptionMode <- GssEncryptionMode.Disable
+        use source = NpgsqlDataSource.Create(settings.ConnectionString)
+
+        let target =
+            PrincipalKey.human "https://issuer.example/" "authority-commit"
+            |> Result.defaultWith failtest
+
+        let request = authorityRequest (id 145) target AdmittedAuthorityAct.RegisterActor
+
+        let! unknown =
+            (proxyCore database source).Execute(OperationInput.Authority request, token)
+
+        Expect.equal unknown.Outcome ExecuteResult.OutcomeUnknown "Authority commit loss is unknown"
+        let! repeated = actor.Execute(OperationInput.Authority request, token)
+
+        Expect.isTrue
+            (match repeated.Outcome, landed with
+             | ExecuteResult.AlreadyAccepted _, true
+             | ExecuteResult.Accepted _, false -> true
+             | _ -> false)
+            "Exact authority replay reconciles both commit outcomes"
+
+        let! head = Verification.verify database.OwnerSource None token
+        Expect.equal (VerificationSupport.position head).Sequence 4L "One authority acceptance"
+    }
+
 let private repeatedInitialization (database: PostgresFixture.Database) =
     task {
         let! id = SchemaAdministration.initialize database.OwnerSource "Etc/UTC" token
@@ -215,6 +262,9 @@ let tests =
 
                             do! replay database actor operation landed
                         }))
+            for drop, landed in
+                [ CommitProxy.Drop.BeforeCommit, false; CommitProxy.Drop.AfterCommit, true ] do
+                testCaseAsync ($"authority replay after {drop}") (run (lostAuthority drop landed))
             for drop in
                 [
                     CommitProxy.Drop.BeforeCommit

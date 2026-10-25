@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.HostingTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -8,7 +10,7 @@ open Expecto
 open Npgsql
 open ClaimCore.Web.Composition
 open ClaimCore.Postgres
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
 let private token = CancellationToken.None
 

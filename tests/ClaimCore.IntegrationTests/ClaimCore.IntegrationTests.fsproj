@@ -8,8 +8,9 @@
     <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
     <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
     <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
+    <Compile Include="../StoreFixtures.fs" Link="StoreFixtures.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
-    <Compile Include="PostgresFixture.fs" />
+    <Compile Include="../PostgresFixture.fs" Link="PostgresFixture.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="ResolutionTests.fs" />
     <Compile Include="SessionDrain.fs" />
@@ -20,6 +21,11 @@
     <Compile Include="FixtureDisposalTests.fs" />
     <Compile Include="PostgresReadinessTests.fs" />
     <Compile Include="StoreTests.fs" />
+    <Compile Include="ApplicationFixtures.fs" />
+    <Compile Include="PositionPaginationTests.fs" />
+    <Compile Include="ProtocolMappingTests.fs" />
+    <Compile Include="DiagnosticReachabilityTests.fs" />
+    <Compile Include="ReceiptContextTests.fs" />
     <Compile Include="VerificationTests.fs" />
     <Compile Include="SubmissionStorage.fs" />
     <Compile Include="GrowthProtection.fs" />

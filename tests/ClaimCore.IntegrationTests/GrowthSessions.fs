@@ -1,5 +1,7 @@
 module internal ClaimCore.IntegrationTests.GrowthSessions
 
+open ClaimCore.TestSupport
+
 open System
 open System.Diagnostics
 open System.Security.Claims

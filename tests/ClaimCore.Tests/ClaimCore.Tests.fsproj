@@ -40,19 +40,16 @@
     <Compile Include="LedgerEntryTests.fs" />
     <Compile Include="CaseReferenceIdTests.fs" />
     <Compile Include="PrivateFileTests.fs" />
-    <Compile Include="MemoryLedgerStore.fs" />
-    <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
-    <Compile Include="ApplicationFixtures.fs" />
+    <Compile Include="../StoreFixtures.fs" Link="StoreFixtures.fs" />
+    <Compile Include="DecisionFixtures.fs" />
+    <Compile Include="CoreBoundaryTests.fs" />
+    <Compile Include="QuerySelectionTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="AuthorizationPolicyTests.fs" />
-    <Compile Include="OperationAuthorityScopeTests.fs" />
     <Compile Include="CursorTests.fs" />
-    <Compile Include="ApplicationTests.fs" />
-    <Compile Include="DiagnosticReachabilityTests.fs" />
-    <Compile Include="ProtocolMappingTests.fs" />
-    <Compile Include="AuthorityTests.fs" />
-    <Compile Include="DisclosureTests.fs" />
-    <Compile Include="PaginationTests.fs" />
+    <Compile Include="CaseDecisionTests.fs" />
+    <Compile Include="AuthorityDecisionTests.fs" />
+    <Compile Include="ReceiptDisclosureTests.fs" />
     <Compile Include="MessageTemplateTests.fs" />
     <Compile Include="LocalizationCatalogTests.fs" />
     <Compile Include="EndpointRegistryTests.fs" />

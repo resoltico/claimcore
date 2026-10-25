@@ -1,5 +1,7 @@
 module internal ClaimCore.IntegrationTests.GrowthProtection
 
+open ClaimCore.TestSupport
+
 open System
 open System.IO
 open ClaimCore.Application

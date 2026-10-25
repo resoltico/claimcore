@@ -1,4 +1,4 @@
-module ClaimCore.IntegrationTests.PostgresFixture
+module ClaimCore.TestSupport.PostgresFixture
 
 open ClaimCore.Contract
 
@@ -9,7 +9,7 @@ open Npgsql
 open Testcontainers.PostgreSql
 open ClaimCore.Application
 open ClaimCore.Postgres
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
 
 type private SetupStage =
@@ -82,6 +82,7 @@ let private admittedDatabase
     ownerSource
     runtime
     installationId
+    owner
     =
     let dispose () =
         disposalSteps container sources |> ClaimCore.TestSupport.FixtureDisposal.finish
@@ -102,7 +103,7 @@ let private admittedDatabase
         Fixture = fixture
     }
 
-let internal create () =
+let internal createFor owner =
     task {
         let container = container ()
         let mutable sources: NpgsqlDataSource list = []
@@ -142,7 +143,7 @@ let internal create () =
             if admitted.InstallationId <> installationId then
                 invalidOp "Admission changed identity."
 
-            return admittedDatabase container sources ownerSource runtime installationId
+            return admittedDatabase container sources ownerSource runtime installationId owner
         with error ->
             // A broken diagnostic sink must not bypass owned cleanup or replace setup failure.
             try
@@ -160,6 +161,8 @@ let internal create () =
 
             return Unchecked.defaultof<Database>
     }
+
+let internal create () = createFor owner
 
 let internal fixture () =
     task { let! database = create () in return database.Fixture }

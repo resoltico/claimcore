@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.ResolutionTests
 
+open ClaimCore.TestSupport
+
 open System
 open System.Diagnostics
 open System.Threading
@@ -8,7 +10,7 @@ open Expecto
 open ClaimCore.Application
 open ClaimCore.Contract
 open ClaimCore.Postgres
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
 let private token = CancellationToken.None
 

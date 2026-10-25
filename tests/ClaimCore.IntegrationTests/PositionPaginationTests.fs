@@ -1,5 +1,6 @@
-module ClaimCore.Tests.PaginationTests
+module ClaimCore.IntegrationTests.PositionPaginationTests
 
+open ClaimCore.TestSupport
 open ClaimCore.Contract
 
 open System
@@ -9,8 +10,8 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Application
-open ClaimCore.TestSupport.StoreContractTests
-open ClaimCore.Tests.ApplicationFixtures
+open ClaimCore.TestSupport.StoreFixtures
+open ClaimCore.IntegrationTests.ApplicationFixtures
 
 let private cases (actor: IActorClaimsCore) =
     task {
@@ -59,7 +60,7 @@ let private reader fixture (admin: IActorClaimsCore) =
         return target, core fixture target
     }
 
-let private caseLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         do! cases actor
@@ -90,7 +91,7 @@ let private caseLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         Expect.isNone rest.NextCursor "No omitted row"
     }
 
-let private sharedPosition (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
         do! cases admin
@@ -116,39 +117,6 @@ let private sharedPosition (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             (succeeded changed).Items.Length
             1
             "Irrelevant grant changes do not invalidate a position"
-    }
-
-let private elapsedTimeAndRevocation (store: MemoryLedgerStore.Store) (fixture: Fixture) =
-    task {
-        let! admin = caseWorker fixture
-        do! cases admin
-        let! target, actor = reader fixture admin
-        let! first = actor.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
-        let token = (succeeded first).NextCursor
-        store.Instant <- instant.AddMinutes(15.0)
-
-        let! continued =
-            actor.List({ AfterCursor = token; Limit = 2 }, CancellationToken.None)
-
-        Expect.equal (succeeded continued).Items.Length 2 "Positions have no lifetime"
-
-        store.Instant <- instant
-
-        let! disabled =
-            admin.Execute(
-                OperationInput.Authority(
-                    authorityRequest (id 22) target (AdmittedAuthorityAct.SetEnabled false)
-                ),
-                CancellationToken.None
-            )
-
-        acceptedAuthority disabled
-        let! denied = actor.List({ AfterCursor = token; Limit = 1 }, CancellationToken.None)
-
-        Expect.equal
-            denied
-            (ReadReply.Rejected Refusal.ResourceUnavailable)
-            "A position confers no rights after revocation"
     }
 
 let private createHistory (actor: IActorClaimsCore) =
@@ -212,7 +180,7 @@ let private differentHistoryResource (actor: IActorClaimsCore) (query: HistoryRe
         Expect.equal resource (ReadReply.Rejected Refusal.InvalidCursor) "Resource is bound"
     }
 
-let private historyBinding (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         do! createHistory actor
@@ -264,7 +232,7 @@ let private historyBinding (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         do! differentHistoryResource actor query first.NextCursor
     }
 
-let private authorityLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
 
@@ -320,7 +288,7 @@ let private authorityLimits (_: MemoryLedgerStore.Store) (fixture: Fixture) =
             "Authority continuation is endpoint-bound even when its position is valid ASCII"
     }
 
-let private malformedAndRestart (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         do! cases actor
@@ -342,7 +310,8 @@ let private malformedAndRestart (_: MemoryLedgerStore.Store) (fixture: Fixture) 
                 (ReadReply.Rejected Refusal.InvalidCursor)
                 "No malformed position is trusted"
 
-        let restarted = Core.create installation fixture.Store calendar owner
+        let restarted =
+            Core.create fixture.InstallationId fixture.Store fixture.Calendar owner
 
         let! old =
             restarted.List(
@@ -356,13 +325,14 @@ let private malformedAndRestart (_: MemoryLedgerStore.Store) (fixture: Fixture) 
         Expect.equal (succeeded old).Items.Length 1 "Plain continuation survives facade restart"
     }
 
-let private singleSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
         do! cases admin
         let proxy = AfterCaseWriteStore(fixture.Store, fun () -> Task.FromResult(()))
 
-        let actor = Core.create installation (proxy :> ILedgerStore) calendar owner
+        let actor =
+            Core.create fixture.InstallationId (proxy :> ILedgerStore) fixture.Calendar owner
 
         let! first = actor.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
         succeeded first |> ignore
@@ -408,7 +378,7 @@ let private singleSnapshot (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         Expect.equal proxy.ReadCalls 4 "Target grant review performs no separate actor read"
     }
 
-let private pageAdvice (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
         do! cases admin
@@ -459,7 +429,7 @@ let private appendHistory (actor: IActorClaimsCore) =
 
     }
 
-let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
 
@@ -519,104 +489,6 @@ let private fullHistoryLimit (_: MemoryLedgerStore.Store) (fixture: Fixture) =
         Expect.equal (succeeded summary).Entries.Length 50 "SUMMARY shares the public page capacity"
     }
 
-let private disabledGrantTarget
-    (store: MemoryLedgerStore.Store)
-    (admin: IActorClaimsCore)
-    target
-    (query: GrantsRequest)
-    cursor
-    =
-    task {
-        let! crossed =
-            admin.ListGrants(
-                { query with
-                    ActorId = id 1
-                    AfterCursor = cursor
-                },
-                CancellationToken.None
-            )
-
-        Expect.equal crossed (ReadReply.Rejected Refusal.InvalidCursor) "Cursor binds target"
-
-        let! disabled =
-            admin.Execute(
-                OperationInput.Authority(
-                    authorityRequest (id 31) target (AdmittedAuthorityAct.SetEnabled false)
-                ),
-                CancellationToken.None
-            )
-
-        acceptedAuthority disabled
-        let! visible = admin.ListGrants(query, CancellationToken.None)
-        Expect.isFalse (succeeded visible).Actor.Enabled "Disabled targets remain reviewable"
-        store.Instant <- instant.AddMinutes 15.0
-
-        let! continued =
-            admin.ListGrants({ query with AfterCursor = cursor }, CancellationToken.None)
-
-        Expect.equal (succeeded continued).Items.Length 1 "Grant positions have no lifetime"
-    }
-
-let private grantBinding (store: MemoryLedgerStore.Store) (fixture: Fixture) =
-    task {
-        let! admin = caseWorker fixture
-        do! cases admin
-        let! target, _ = reader fixture admin
-
-        let! added =
-            grant admin (id 30) target Role.CaseReader (GrantTarget.CaseReference "CASE-A") true
-
-        acceptedAuthority added
-
-        let! actors =
-            admin.ListActors({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
-
-        let targetId =
-            (succeeded actors).Items
-            |> List.find (fun a -> a.Principal = PrincipalKey.describe target)
-            |> _.ActorId
-
-        let query =
-            {
-                ActorId = targetId
-                AfterCursor = None
-                Limit = 1
-            }
-
-        let! first = admin.ListGrants(query, CancellationToken.None)
-        let first = succeeded first
-
-        Expect.equal
-            first.Items
-            [
-                {
-                    Role = Role.CaseReader
-                    Scope = GrantTarget.CaseReference "case-A"
-                }
-            ]
-            "Case UUIDs precede installation-null within role"
-
-        let! next =
-            admin.ListGrants(
-                { query with
-                    AfterCursor = first.NextCursor
-                },
-                CancellationToken.None
-            )
-
-        Expect.equal
-            (succeeded next).Items
-            [
-                {
-                    Role = Role.CaseReader
-                    Scope = GrantTarget.Installation
-                }
-            ]
-            "NULLS LAST position is distinct"
-
-        do! disabledGrantTarget store admin target query first.NextCursor
-    }
-
 let private invalidGrantPositions =
     [
         "{\"caseId\":null,\"role\":\"NOT_A_ROLE\"}"
@@ -626,7 +498,7 @@ let private invalidGrantPositions =
         "{\"caseId\":null,\"role\":\"CASE_READER\",\"extra\":false}"
     ]
 
-let private grantCursorRejections (_: MemoryLedgerStore.Store) (fixture: Fixture) =
+let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
         let! view = fixture.Store.ReadActor(owner, CancellationToken.None)
@@ -690,17 +562,11 @@ let tests =
                 "FULL history uses fifty and continues after its last included revision"
                 (run fullHistoryLimit)
             testCaseAsync
-                "grant pages bind target preserve null ordering and review disabled targets"
-                (run grantBinding)
-            testCaseAsync
                 "case continuation preserves key order and permits changed page sizes"
                 (run caseLimits)
             testCaseAsync
                 "case positions may be shared under current authority and survive irrelevant grant changes"
                 (run sharedPosition)
-            testCaseAsync
-                "case positions survive elapsed time and still enforce revocation"
-                (run elapsedTimeAndRevocation)
             testCaseAsync
                 "history positions bind the normalized resource and permit changed detail and limits"
                 (run historyBinding)

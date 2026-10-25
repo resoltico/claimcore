@@ -1,6 +1,6 @@
-module ClaimCore.Tests.DiagnosticReachabilityTests
+module ClaimCore.IntegrationTests.DiagnosticReachabilityTests
 
-open ClaimCore.ContractGeneration
+open ClaimCore.TestSupport
 
 open ClaimCore.Contract
 
@@ -11,8 +11,8 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
-open ClaimCore.TestSupport.StoreContractTests
-open ClaimCore.Tests.ApplicationFixtures
+open ClaimCore.TestSupport.StoreFixtures
+open ClaimCore.IntegrationTests.ApplicationFixtures
 
 let private ct = CancellationToken.None
 
@@ -229,8 +229,13 @@ let private scalarRequests () =
 
 let private scalarEvidence () =
     task {
-        let store, fixture = fixture ()
-        use _owned = store
+        let! _, fixture = fixture ()
+
+        use _owned =
+            { new System.IDisposable with
+                member _.Dispose() = fixture.Dispose()
+            }
+
         let! actor = caseWorker fixture
         let results = ResizeArray<_>()
 
@@ -290,8 +295,13 @@ let private stateScenarios () =
 
 let private stateEvidence (setup, final) =
     task {
-        let store, fixture = fixture ()
-        use _owned = store
+        let! _, fixture = fixture ()
+
+        use _owned =
+            { new System.IDisposable with
+                member _.Dispose() = fixture.Dispose()
+            }
+
         let! actor = caseWorker fixture
 
         let! granted =
@@ -404,8 +414,13 @@ let private principalEvidence (actor: IActorClaimsCore) =
 
 let private boundaryEvidence () =
     task {
-        let store, fixture = fixture ()
-        use _owned = store
+        let! _, fixture = fixture ()
+
+        use _owned =
+            { new System.IDisposable with
+                member _.Dispose() = fixture.Dispose()
+            }
+
         let! actor = caseWorker fixture
         let! identity, reader = identityEvidence actor
 
@@ -417,31 +432,64 @@ let private boundaryEvidence () =
         let! resolved = actor.Resolve({ OperationId = id 42 }, ct)
         Expect.equal resolved ResolveReply.NotAccepted "Resolve installs a fence"
         let! fenced = execute actor (request 42 "REACH-1" 1L CaseAct.Close)
-        let original = store.Cases.Head.Snapshot
+        let! loaded = fixture.Store.ReadCase(fixture.Owner, None, "REACH-1", ct)
 
-        store.ReplaceCaseSnapshot(
-            "REACH-1",
-            { original with
-                Revision = Revision.Maximum
+        let read =
+            loaded |> Result.defaultWith (fun _ -> failtest "Read locked-view fixture")
+
+        let current = read.Case |> Option.get
+
+        let revisionView: CaseLockedView =
+            {
+                Head =
+                    {
+                        Sequence = 10L
+                        EntryHash = Array.zeroCreate 32
+                    }
+                PayloadNonce = Array.create 32 1uy
+                IsFenced = false
+                Read =
+                    { read with
+                        Case =
+                            Some
+                                { current with
+                                    Snapshot =
+                                        { current.Snapshot with
+                                            Revision = Revision.Maximum
+                                        }
+                                }
+                    }
             }
-        )
 
-        let! revision = execute actor (request 40 "REACH-1" Revision.Maximum CaseAct.Close)
+        let decisionEvidence request view =
+            match
+                CaseDecisions.execute
+                    fixture.InstallationId
+                    fixture.Calendar
+                    fixture.Owner
+                    request
+                    view
+            with
+            | LedgerDecision.Refuse reason -> reason
+            | _ -> failtest "Expected boundary refusal"
 
-        store.ReplaceCaseSnapshot("REACH-1", original)
+        let revision =
+            decisionEvidence (request 40 "REACH-1" Revision.Maximum CaseAct.Close) revisionView
 
-        store.HeadOverride <-
-            Some
-                {
-                    Sequence = Revision.Maximum
-                    EntryHash = Array.zeroCreate 32
+        let ledger =
+            decisionEvidence
+                (request 41 "REACH-1" 1L CaseAct.Close)
+                { revisionView with
+                    Read = read
+                    Head =
+                        { revisionView.Head with
+                            Sequence = Revision.Maximum
+                        }
                 }
-
-        let! ledger = execute actor (request 41 "REACH-1" 1L CaseAct.Close)
 
         return
             identity
-            @ [ refused denied; refused revision; refused ledger; refused fenced ]
+            @ [ refused denied; diagnostic revision; diagnostic ledger; refused fenced ]
             @ queries
             @ authority
             @ principals
@@ -500,8 +548,13 @@ let private completeVocabulary () =
 
 let private missingCasePrivacy () =
     async {
-        let store, fixture = fixture ()
-        use _owned = store
+        let! _, fixture = fixture () |> Async.AwaitTask
+
+        use _owned =
+            { new System.IDisposable with
+                member _.Dispose() = fixture.Dispose()
+            }
+
         let! actor = caseWorker fixture |> Async.AwaitTask
 
         let acts =
@@ -513,8 +566,7 @@ let private missingCasePrivacy () =
         let kinds = acts |> List.map CaseActs.kind |> Set.ofList
 
         let expected =
-            CommandPresentation.all
-            |> List.map _.Kind
+            CaseActKinds.all
             |> List.filter (fun kind -> kind <> CaseActKind.Business BusinessActKind.Open)
             |> Set.ofList
 

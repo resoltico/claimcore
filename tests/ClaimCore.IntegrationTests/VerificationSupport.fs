@@ -1,5 +1,7 @@
 module internal ClaimCore.IntegrationTests.VerificationSupport
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -10,7 +12,7 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.RecordFormat
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
 let token = CancellationToken.None
 

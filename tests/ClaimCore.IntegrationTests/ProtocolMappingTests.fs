@@ -1,4 +1,4 @@
-module ClaimCore.Tests.ProtocolMappingTests
+module ClaimCore.IntegrationTests.ProtocolMappingTests
 
 open System
 open System.IO
@@ -12,8 +12,8 @@ open ClaimCore.Web.Composition
 open ClaimCore.Contract
 open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
-open ClaimCore.TestSupport.StoreContractTests
-open ClaimCore.Tests.ApplicationFixtures
+open ClaimCore.TestSupport.StoreFixtures
+open ClaimCore.IntegrationTests.ApplicationFixtures
 
 let private admitted result =
     result
@@ -57,8 +57,13 @@ let private applicationExamples () =
 
 let private mappedExamples () =
     async {
-        let store, fixture = fixture ()
-        use _owned = store
+        let! _, fixture = fixture () |> Async.AwaitTask
+
+        use _owned =
+            { new System.IDisposable with
+                member _.Dispose() = fixture.Dispose()
+            }
+
         let! _ = caseWorker fixture |> Async.AwaitTask
         let actor = core fixture owner
 
@@ -74,8 +79,13 @@ let private mappedExamples () =
 
 let private cancellationPolicy () =
     async {
-        let store, fixture = fixture ()
-        use _owned = store
+        let! _, fixture = fixture () |> Async.AwaitTask
+
+        use _owned =
+            { new System.IDisposable with
+                member _.Dispose() = fixture.Dispose()
+            }
+
         let! _ = caseWorker fixture |> Async.AwaitTask
         let actor = core fixture owner
         let input = OperationInput.Case(openRequest 91 "MAPPING-001")

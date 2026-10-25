@@ -1,5 +1,7 @@
 module internal ClaimCore.IntegrationTests.GrowthControls
 
+open ClaimCore.TestSupport
+
 open System
 open System.Diagnostics
 open System.Threading
@@ -9,7 +11,7 @@ open ClaimCore.Application
 open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Postgres
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 
 let private token = CancellationToken.None
 

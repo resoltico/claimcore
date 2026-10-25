@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.AcceptedHistoryFixtures
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -8,7 +10,7 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.Postgres
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private snapshot reference claimant : CaseSnapshot =
@@ -274,7 +276,7 @@ let private revokedFullHistory
 
         Expect.equal
             original.OperationId
-            (ClaimCore.TestSupport.StoreContractTests.id 10)
+            (ClaimCore.TestSupport.StoreFixtures.id 10)
             "Original OPEN acceptance"
 
         Expect.isSome first.NextCursor "Retain the genuine first FULL continuation"
@@ -282,7 +284,7 @@ let private revokedFullHistory
         let! removed =
             grant
                 actor
-                (ClaimCore.TestSupport.StoreContractTests.id 200)
+                (ClaimCore.TestSupport.StoreFixtures.id 200)
                 database.Fixture.Owner
                 Role.CaseHandler
                 GrantTarget.Installation

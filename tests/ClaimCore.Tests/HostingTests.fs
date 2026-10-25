@@ -3,25 +3,10 @@ module ClaimCore.Tests.HostingTests
 open ClaimCore.Contract
 
 open System
-open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Web.Composition
-open ClaimCore.TestSupport.StoreContractTests
-
-let private calendar = BusinessCalendar.resolve "Etc/UTC"
-
-let private fixture (store: MemoryLedgerStore.Store) : Fixture =
-    {
-        Store = store :> ILedgerStore
-        InstallationId = id 500
-        Owner =
-            PrincipalKey.human "https://issuer.example/" "owner"
-            |> Result.defaultWith failtest
-        Calendar = calendar
-        Dispose = ignore
-    }
 
 [<Tests>]
 let tests =
@@ -65,15 +50,15 @@ let tests =
             testCaseAsync
                 "shutdown preserves an admitted accepted result"
                 (async {
-                    use store =
-                        new MemoryLedgerStore.Store(
-                            DateTimeOffset(2026, 10, 13, 12, 0, 0, TimeSpan.Zero)
-                        )
+                    let _, _, _, receipt = DecisionFixtures.created 490 "LIFETIME"
 
-                    let fixture = fixture store
-                    let! core = caseWorker fixture |> Async.AwaitTask
+                    let expected: ExecuteReply =
+                        {
+                            OperationId = receipt.OperationId
+                            Outcome = ExecuteResult.Accepted receipt
+                        }
+
                     let gate = AdmissionGate(ignore)
-
                     let mutable factoryCalls = 0
 
                     let call action =
@@ -81,54 +66,27 @@ let tests =
                             gate
                             (fun _ ->
                                 factoryCalls <- factoryCalls + 1
-                                core)
-                            fixture.Owner
+                                ())
+                            DecisionFixtures.owner
                             action
 
-                    let entered =
-                        TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
-
-                    use finish = new ManualResetEventSlim(false)
-
-                    store.AfterCommit <-
-                        fun () ->
-                            entered.TrySetResult() |> ignore
-
-                            if not (finish.Wait(TimeSpan.FromSeconds 3.)) then
-                                failtest "Release missing"
-
-                    let running =
-                        Task.Run<ExecuteReply option>(
-                            Func<Task<ExecuteReply option>>(fun () ->
-                                call (fun actor ->
-                                    actor.Execute(
-                                        OperationInput.Case(
-                                            request
-                                                10
-                                                "synthetic-lifetime"
-                                                0L
-                                                (ClaimCore.Contract.CaseAct.Open registration)
-                                        ),
-                                        CancellationToken.None
-                                    )))
+                    let finish =
+                        TaskCompletionSource<ExecuteReply>(
+                            TaskCreationOptions.RunContinuationsAsynchronously
                         )
 
-                    do! entered.Task |> Async.AwaitTask
+                    let running = call (fun () -> finish.Task)
                     let stopping = gate.Shutdown(TimeSpan.FromSeconds 2.)
 
-                    let! refused =
-                        call (fun actor -> actor.Context CancellationToken.None) |> Async.AwaitTask
+                    let! refused = call (fun () -> Task.FromResult()) |> Async.AwaitTask
 
                     Expect.isNone refused "New calls never acquire an actor"
                     Expect.equal factoryCalls 1 "Closed admission never invokes the actor factory"
 
-                    finish.Set()
+                    finish.SetResult expected
                     let! outcome = running |> Async.AwaitTask
 
-                    accepted (
-                        outcome |> Option.defaultWith (fun () -> failtest "Admitted result lost")
-                    )
-                    |> ignore
+                    Expect.equal outcome (Some expected) "Admitted acceptance survives shutdown"
 
                     let! shutdown = stopping |> Async.AwaitTask
                     Expect.equal shutdown ShutdownOutcome.Drained "Admitted work drained"

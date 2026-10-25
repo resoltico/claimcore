@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.PaginationTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -9,7 +11,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Postgres
-open ClaimCore.TestSupport.StoreContractTests
+open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private query after limit : PageRequest = { AfterCursor = after; Limit = limit }
