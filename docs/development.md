@@ -32,7 +32,7 @@ gate. Named stages execute in order, stop at failure and share restore/build wor
 
 | Stage | Checks |
 | --- | --- |
-| lint | Fantomas and FSharpLint |
+| lint | Fantomas, FSharpLint and the 11 maintained browser boundary controls |
 | unit | Build, unit/property and compiled architecture suites |
 | frontend | npm ci/audit, format/lint/types, browser unit completion, Knip/licenses/build/notices |
 | workflows | ShellCheck and pinned Docker Actionlint |
@@ -117,19 +117,29 @@ the frontend graph; install with npm ci.
 dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts
 ```
 
-The generator stages/validates an owned directory before replacement and emits exactly openapi.json, client.ts
-and catalog.json. `--check` compares exact inventory and bytes without repairing them; missing, stale or
-extra files fail. Review generated diffs with their typed producer. The generator references
-Contract/Domain/Application and builds independently from CLI. Consumer identity hashes canonical OpenAPI
-only; editing source locale text preserves it, changing structural enums changes it. CLI embeds catalog
-and source locale JSON; the browser imports source catalogs and generated TypeScript admission and interaction bindings; OpenAPI supplies read-only summaries.
-Web commands never run .NET. Node validates the restricted ICU subset, key/argument parity and Unicode safety.
-Pure Contract template checks share independent accept/reject vectors with the reference parser. No generated
-catalog copies are tracked. Independent hand-authored wire examples and JSON Schema/OpenAPI parsers check
-admission; the Python oracle pins durable bytes. Never regenerate independent oracles from product
-implementations. Compiled architecture controls and published CLI closure checks enforce the component
-boundaries. Vitest's reporter refuses focused, skipped, todo, interrupted, retried and empty runs using actual
-runner results. Module lint checks follow transitive imports, aliases and JavaScript helpers.
+The generator publishes four files in `contracts/`: `openapi.json`, `client.ts`, `catalog.json` and
+`messages.ts`. From the checkout root, normal `--output contracts` generation also writes
+[docs/cli.md](cli.md). Default `--check` checks all five outputs without repairing them. Custom output
+directories retain the contract-file inventory only and never write a sibling documentation directory.
+Missing, stale or extra contract files fail. Review generated diffs alongside their typed producer.
+
+Contract owns operation bodies. One walk derives paths, conditional branches, flags, synopses and bindings;
+the generator adds Domain scalar rules and Application capabilities. CLI reads the typed catalog directly
+and embeds source locales. The browser consumes the generated catalog, TypeScript admission and message
+contract. Its generic assembler handles reads and mutations and follows generated grouped-view prefill paths.
+
+The generator validates the Contract Template grammar, language key/argument parity, presentation references
+and diagnostic producers once. The browser formatter preserves that grammar, isolates RTL arguments and
+pseudolocalizes literal text only. Web commands run neither generation nor .NET. Frozen F# renderings and
+independent quoting vectors check both clients; negative controls reject a missing Latvian key, an extra
+Arabic argument and unsupported ICU syntax.
+
+OpenAPI supplies read-only protocol summaries. Consumer identity hashes canonical OpenAPI only; changing
+source prose preserves it. Independent wire examples and JSON Schema/OpenAPI parsers check admission;
+the Python oracle pins durable bytes. Never compute independent expectations with the product under test.
+Compiled architecture controls and published CLI closure checks enforce component boundaries. Maintained
+oxlint rules enforce browser imports, cycles and protocol effect restrictions; their 11 injected violations
+run in the lint stage. Full type-aware application lint remains a separate frontend check.
 
 ## Synthetic growth qualification
 

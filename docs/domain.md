@@ -3,6 +3,9 @@
 ClaimCore records the handler's assertions about a claim. It records facts, decisions and payment dates;
 it does not adjudicate coverage or transfer money.
 
+Use [getting started](getting-started.md) to try the register, or the [generated CLI reference](cli.md) to
+look up an act. The sections below explain the business meaning and the limits of correction and erasure.
+
 ## Business record
 
 <a id="cc-dom-001"></a>
@@ -14,9 +17,11 @@ claimant, responsible insurer, claimed amount/currency, case reference, decision
 payment date and open/closed status. Technical IDs, revisions, timestamps and advice stay outside this record.
 The [field table](../src/ClaimCore.Contract/Fields/FieldTable.fs) owns JSON keys and labels.
 
-Opening supplies the seven registration values and top-level reference. Decision and payment fields begin as
-null; status begins OPENED. Views contain every business key. A null means unrecorded, with no invented zero
-or date. Claimant may identify a person or organization; insurer records the handler's assertion.
+Opening supplies the seven registration values and top-level reference. Decision and payment groups begin as
+null; status begins OPENED. The view places the seven registration members in `registration`, the three
+decision members in `decision`, and the payment date in `payment`. A recorded group contains all its members;
+null means the whole group is unrecorded, with no invented zero or date. Claimant may identify a person or
+organization; insurer records the handler's assertion.
 
 The immutable reference uses printable non-space ASCII, within the [reference format](../src/ClaimCore.Contract/Formats.fs).
 Resource lookup folds ASCII letter case within an installation; accepted snapshots retain the initial spelling.
@@ -31,7 +36,7 @@ There are no policy, coverage, reserve, banking, address, notes or attachment fi
 ### CC-DOM-002 — Core-owned command availability and revalidation
 
 A case may be OPENED or CLOSED independently of its payment progress. Payment does not close a case; closing
-needs no decision or payment. Use `claimcore describe acts` for current inputs and correction choices.
+needs no decision or payment. Use `claimcore describe` for current inputs and correction choices.
 
 - OPEN creates revision one with expected revision zero. AMEND_REGISTRATION replaces registration on an open,
   undecided case.

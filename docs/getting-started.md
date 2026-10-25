@@ -20,14 +20,20 @@ terminals if you select another location:
 claimcore_source="$HOME/claimcore-first-run"
 git clone https://github.com/resoltico/claimcore.git "$claimcore_source"
 cd "$claimcore_source"
-dotnet restore src/ClaimCore.Cli --locked-mode
-dotnet build src/ClaimCore.Cli --configuration Release --no-restore
+dotnet restore ClaimCore.slnx --locked-mode
+dotnet build ClaimCore.slnx --configuration Release --no-restore
 npm install --global --ignore-scripts "npm@$(node -p "require('./web/package.json').engines.npm")"
 npm --prefix web ci
 ```
 
+The build output lists the directory containing `claimcore.dll`. Run the `claimcore` apphost beside it,
+or add that directory to `PATH`. The commands below assume it is on `PATH`.
+
 Before signing in, explore offline `help configuration`, `help call` and `help delivery`.
-`describe acts OPEN --format text` shows inputs, and `case open ... --dry-run` prints a request without credentials.
+`describe case open` shows inputs, and `case open ... --dry-run` prints a request without credentials.
+
+The [CLI reference](cli.md) lists every supported verb and flag. Dry-run checks protocol shape and byte
+limits; the service still checks domain rules, authority and current revision.
 
 ## Start a fresh installation
 
@@ -112,8 +118,8 @@ tokens remain process-local.
 List the fresh installation's sole owner and use its human issuer/subject to grant case work:
 
 ```sh
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- authority list
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- authority grant \
+claimcore authority list
+claimcore authority grant \
   --kind HUMAN --issuer "$CLAIMCORE_OIDC_ISSUER" --subject '<owner subject from listing>' \
   --role CASE_HANDLER --preview
 ```

@@ -1,374 +1,129 @@
 # Changelog
 
-Notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Concise change records are kept here. Published GitHub release notes retain the detailed historical
+compatibility, security and operating instructions. Current behavior is described in the [guides](docs/README.md).
 
 ## [Unreleased]
 
-### Security
-
-- The build and verification runtime moves to Node 26.12.1, including the October DNS, TLS and decompression security fixes. See the [Node security advisory](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases).
-- The local evaluation identity provider uses Keycloak 26.8.1-1, incorporating upstream authentication, identity-brokering and administration security fixes. See the [Keycloak release notes](https://www.keycloak.org/2026/10/keycloak-2681-released).
-
-### Changed
-
-- **Breaking for installations:** initialize a separate fresh installation. Installations created through 0.11.0 are refused untouched; preserve them with matching software. No conversion, migration from that baseline or compatibility layer is supplied. Database administration admits one exact baseline and removes `migrate`; competing initializers serialize before namespace detection. Case-request format is 6 and authority format is 3; snapshot 4, ledger-entry 2 and case-identity 2 remain unchanged. See [database compatibility](docs/architecture.md#durable-records).
-- **Breaking for API and CLI consumers:** deploy service, CLI and browser together. `operation.preview` replaces `case.preview`; `operation.execute` replaces `case.execute` and `authority.execute`, with `scope: CASE|AUTHORITY` selecting the input. HTTP replies use shared outcome envelopes without an `endpoint` member, receipts nest case or authority details under `scope`, and diagnostic consumers use the unified refusal vocabulary. Update stored call frames and regenerate clients from the matching [API contract](docs/api.md).
-- **For uncertain CLI mutations:** exit 4 prints the exact prepared frame last on stderr. Resend unchanged with `claimcore call` or obtain a final answer with `claimcore operation resolve OPERATION_ID`. Resolve exits 0 for acceptance, 2 for non-acceptance/refusal and 3 for failure. See [delivery](docs/api.md#cc-cli-003).
-- **Breaking for generated-contract consumers:** consumer identity is SHA-256 of canonical OpenAPI; locale/help/presentation-only changes leave it unchanged. The generator publishes exactly `openapi.json`, `client.ts` and `descriptors.json`; generated manifests, identity files, bindings, policy/vector/corpus files, standalone frame schemas and locale/help copies are removed. Consumers use the three artifacts and authored Contract source catalogs; offline `schema invocation` and `schema response` expose CLI frame schemas. Regenerate and review outputs with their typed producer; see [generation](docs/development.md#generated-contracts-and-boundary-verification).
-- **Breaking for .NET integrations:** `ClaimCore.Contract` owns the shared public models, typed codecs, endpoint registry, field table and source JSON localization. The Catalog, Wire and Hosting projects and their public interfaces are removed; Web owns runtime composition. Rebuild integrations against the [component boundaries](docs/architecture.md#cc-arch-001).
-- **Breaking for session operators:** protected tickets move from local files to PostgreSQL with asynchronous row operations, update-only renewal and shared-database/key-ring coordination. Database UTC deadlines and observed-backward-step refusal replace process-monotonic elapsed enforcement; arbitrary clock corrections have no real-elapsed guarantee. Existing row deadlines remain fixed across restart/configuration changes. Protect the key-ring directory with mode 0700 and retain database backups and protection keys together; preserve older installations and files with matching software. See [session operations](docs/operations.md#access-review-and-sessions).
-- **Private-input platforms and timing:** managed file admission supports .NET-supported Unix platforms, including musl; Windows private inputs refuse. Final symlink targets and nonzero bounded lengths are checked before opening, then permissions, length and exact reads are checked on the handle. The previous two-second open-wait limit is removed: a directory writer can substitute a FIFO before open and block startup. Ownership, ACLs and concurrent content/permission changes remain trusted limits. See [private configuration](docs/operations.md#private-configuration).
-
-### Added
-
-- `operation.resolve` returns the author's accepted receipt or final `NOT_ACCEPTED`, backed by a permanent actor/operation fence. `OPERATION_RESOLVED` prevents delayed acceptance under a fenced ID. An author without current read access receives a WITHHELD snapshot; `operation.observe` remains a read whose absence is not final. Fences retain technical IDs indefinitely and contain no submitted business payload.
-- Human case, authority and read verbs compose CLI-owned syntax with the shared semantic registry and support English, Latvian and Arabic text and structured `--format json`. Mutation verbs offer `--preview`; `--dry-run` prints the exact call frame offline. Diagnostics identify and focus the affected input, with localized notices associated with its control; case fields, both preview sides and full history show bounded Unicode code-point warnings without rewriting accepted text or JSON. Use `help verbs` and the [walkthrough](examples/README.md) for exact invocations. Latvian/Arabic wording and assistive-technology behavior still require human review.
-- Authority preview evaluates current authorization and last-owner constraints without recording an operation. Browser case and authority forms use exact interaction bindings, generated executable admission, shared input meanings/hints, before/after review and explicit consent; execution always rechecks locked state. A pure operation-state engine fences stale completions and preserves uncertainty. The browser offers Send again and Check outcome while unresolved; reload retains only operation ID, scope and act and offers Check outcome. See [browser behavior](docs/web.md).
-
-### Fixed
-
-- Opening an absent case with a positive expected revision returns the revision-conflict rejection, including actual revision zero, instead of an HTTP 500 response-encoding failure. Preview and execution append no accepted operation for this rejection.
-
-### Internal
-
-- Updated compatible frontend, .NET validation and Markdown packages, FSharp.Core, Fantomas, npm and workflow-security tooling. Source and lockfile pins, identity-provider test fixtures and FSharp.Core redistribution notices follow the selected versions; the application remains on .NET 10. PostgreSQL 18.6 and .NET 10 SDK/runtime container digests are refreshed to current publisher builds.
-- CLI syntax and frames belong to CLI; Contract retains semantic descriptors and codecs. Ordered vocabulary combinators, the business-field table and permanent scalar formats centralize shared definitions. OpenAPI host failures use shared response components. Source messages are consolidated into one file per language.
-- PostgreSQL is the sole ledger store implementation. Direct pure-decision tests replace the memory store; pagination, ordering, replay and OIDC integration use PostgreSQL.
-- Required verification excludes growth. Run `bash eng/verify.sh growth` before release and on demand, or select the dispatch-only CI growth job. Native CI qualifies linux-x64, linux-musl-x64 and osx-arm64. Complexity 12 remains enforced; line-count rules are removed. Verification retains the newest ten completed managed native reports while preserving active and older unmanaged directories.
-- Ledger verification uses a same-snapshot SQL duplicate prepass instead of retaining every operation ID. Per-row finding precedence and resource-history folds remain; database sorting may spill and total memory is not constant.
-- PR and merge queue CI require every specification on Chromium, Firefox and WebKit, with every scheduled job required by `Gate`.
-- Native stage assignment, evaluated source/discovery checks and same-run browser completion reports replace fixed test-count floors. CI uses logs/check status rather than uploaded qualification-summary artifacts; local TRX and private failure evidence remain available. [Verification](docs/development.md#verification-stages) still refuses focused, skipped, retried and incomplete runs.
-- Deterministic properties retain 200 cases and state sequences up to 20; failure minimization stops after 100 successful shrink steps while retaining the failing replay token. This bounds successful descent, not candidate count or wall time. Dependency-download caches are shared by exact lockfile keys, and browser installation omits unused full Chromium while retaining its headless shell for CLI authentication.
+- **Breaking installation baseline:** initialize a separate installation; earlier schema baselines are refused untouched. Preserve them with matching software. [Compatibility](docs/architecture.md#durable-records) describes the posture.
+- **Breaking wire contracts:** deploy matching service, CLI and browser. Shared operation preview/execution uses CASE or AUTHORITY scope; case views group registration, decision and payment facts while history diffs remain per field.
+- Operation identity compares amount values and ASCII-folded references. Free text remains exact, and ledger requests retain authored values. Public snapshots keep their canonical representation.
+- Acts and CLI verbs use consistent names, including CORRECT, REGISTER, GRANT, REVOKE, ENABLE and DISABLE; grant/revoke and enable/disable have distinct request shapes.
+- Contract owns the typed operation catalog. It derives CLI syntax, browser bindings and the checked [CLI reference](docs/cli.md); generated contract and message types come from the same sources.
+- Executables are `claimcore`, `claimcore-server` and `claimcore-database`. Human verbs have localized specific usage errors, preview, and byte-bounded offline preparation.
+- One Template grammar serves CLI and browser messages. Typed arguments, frozen renderer vectors, bidi isolation and literal-only pseudolocalization replace the browser ICU runtime.
+- Case and authority decisions share ledger sequencing, while scope-specific admission, policy and projections remain explicit.
+- `operation.resolve` returns the author’s receipt or permanently fences an unaccepted ID. Exit 4 retains the exact retry frame; ordinary failure does not resolve prior uncertainty.
+- Protected sessions use PostgreSQL deadlines and shared key-ring custody. Clock, restart and deployment limits remain explicit in the [operations guide](docs/operations.md#access-review-and-sessions).
+- Managed Unix private-file admission supports secret-volume links and group read. Windows, ownership/ACL and open-race limits are documented in [private configuration](docs/operations.md#private-configuration).
+- Input guidance and bounded Unicode warnings preserve authored text. Automated accessibility checks complement the human review still needed for translations and assistive technology.
+- Pinned runtime/provider security updates, maintained browser boundary rules and independent negative controls strengthen build and verification inputs.
 
 ## [0.11.0] - 2026-10-21
 
-### Security
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.11.0).
 
-- Pinned .NET/ASP.NET runtime images include the 10.0.13 security fixes.
-- Managed private-input admission permits group read and follows secret-volume symbolic links. Path and handle modes forbid other-user access and group write/execute; the caller stops waiting for an open after two seconds, disposing its handle if the worker finishes later. The worker itself has no hard completion bound. Ownership and ACLs are no longer inspected. See [private inputs](docs/operations.md#private-configuration).
-- Web requires `CLAIMCORE_WEB_KEY_RING_DIRECTORY`, an existing protected absolute directory. Data-protection keys and encrypted private server-side session tickets persist across restarts with their original deadlines and logout revocation. Use one Web process per ticket directory; concurrent sharing is not qualified. Protect this secret outside database backups; Linux key XML is unencrypted. The read-only Compose Web host supplies bounded ephemeral `/tmp` for framework key staging.
-
-### Changed
-
-- **Breaking for diagnostic consumers:** CLI local/protocol frames require closed diagnostic objects; known configuration failures identify an allowlisted setting and cause. Authored principal failures use typed field/cause guidance in the existing HTTP 400 host codec. Rebuild and deploy matching service, CLI, browser and generated artifacts together; no database migration or compatibility period is supplied.
-- CLI adds offline task help in English, Latvian and Arabic, exact help aliases and explicit `describe --format text`. Selected text descriptions retain input references, correction choices and endpoint schema routes. Returned protocol and configuration diagnostic IDs resolve through core-authored offline help/discovery, including canonical service-root/issuer forms, private-file criteria and existing bounds. JSON discovery defaults, call/session framing and delivery exits retain their meanings. Language options apply only to human output.
-- **Breaking for integrators:** service, CLI and browser admit one complete consumer-contract identity over OpenAPI, descriptors, request bindings, localization and delivery/correlation policy. Deploy matching service, CLI, browser and generated artifacts together; session discovery exposes `contractIdentity`, and presentation changes require matching clients. Runtime identity excludes QA vectors/corpus/evolution fixtures and build-only package metadata; exact freshness checks still cover every generated artifact. Instants use six fractional digits and UTC `Z`; JSON escapes only quotes, backslashes and C0 controls. Preview and `OUTCOME_UNKNOWN` payloads omit `requestSha256`, including CLI replies.
-- **Breaking for malformed business input:** invalid business strings now reach Application/Domain and return typed `REJECTED`, field guidance, HTTP 200 and CLI exit 2. Structural or technical identity errors remain host refusals. The public vocabulary removes unreachable input/stored-state diagnostics, including the privacy-hidden `CASE_NOT_FOUND`; unexpected programming failures use `CORE_INTERNAL_ERROR` with `STOP_AND_INVESTIGATE`.
-- **Breaking for advice consumers:** `context.views` advertises allowed navigation. Installation offers contain OPEN or an authority act; case records expose `advice.acts` and `advice.history`, with correction choices only on CORRECT_CASE. Case `state.availableActs`, endpoint-named offers and `historyDetails` are removed.
-- **Breaking for read consumers:** SUMMARY and FULL history pages allow up to 50 entries; responses are bounded to 4 MiB. Plain canonical pagination keysets survive restarts and have no expiry or authority binding. Every page independently authorizes before decoding its cursor; sharing a cursor grants no access.
-- **Breaking for installations:** the replaced baseline refuses installations created by software through 0.10.0 untouched. Preserve them with their matching software; no conversion is supplied. Case request format 5 and snapshot format 4 add the permanent free-text and payload bounds in [durable records](docs/architecture.md#durable-records).
-- CLI discovery, PKCE/state processing and token requests use Duende.IdentityModel and Duende.IdentityModel.OidcClient with default discovery policy, explicit local trust roots and access-token-only consumption. Provider-advertised pushed authorization requests are supported. The loopback adapter and conservative process-local token reuse remain ClaimCore-owned.
-- **For source builds and redistribution:** SDK 10.0.402 is required; managed builds no longer require a C compiler or platform SDK. Publication-mode refusal guards are removed, but only framework-dependent publication with an apphost is qualified. Preserve the complete publish directory and reviewed notices; self-contained, trimmed and single-file publications remain unqualified.
-- **For verification contributors:** native verification requires Python 3 with its standard library for retained qualification summaries and CLI Unix descriptor controls. Ordinary .NET builds do not invoke Python or npm; frontend-only commands require Node, without .NET or Python.
-
-### Removed
-
-- Native private-file code and the native test process supervisor. Managed process cleanup observes teardown failures; detached or reparented descendants remain outside its guarantee.
-- HMAC cursor envelopes and runtime cursor secrets, generated F# client catalogues, generated request builders and the synthetic contract extension. The real command catalogue supplies rendering/submission coverage.
-
-### Fixed
-
-- CLI native pipe-output failure now preserves uncertain mutation exit 4 and typed stderr fallback where writable. Both broken outputs still leave exit 4, and sessions stop before later frames. Regular-file append/shared-offset behavior is preserved. Success establishes OS acceptance of complete writes, not downstream consumption; see [delivery limits](docs/api.md#cc-cli-003).
-- Readiness permits at most two simultaneous probes, refuses saturation without database work and propagates request/shutdown/deadline cancellation through provider cleanup. Liveness remains independent; two seconds is a cancellation deadline, not a hard completion guarantee.
-- Browser context/current reads recover through explicit retry. Keyboard transitions focus destinations, authority technical errors support draft-preserving explicit editing with renewed consent, and unknown delivery remains primary with retained support identities. List messages describe visible scope and actual continuation; amount guidance explains redundant leading-zero refusal.
-- Local evaluation and test identity containers have explicit memory budgets, so each JVM no longer sizes its heap from the whole Docker host.
-- CLI loopback authentication releases unused TCP connections so a browser's valid callback can proceed within the existing overall deadline; partial or malformed requests refuse. OAuth state and PKCE validation remain library-owned.
-- Local Compose waits for identity-provider readiness before starting Web, avoiding early OIDC startup refusal while the provider is still initializing. The management health listener is confined to container loopback; public identity traffic remains HTTPS.
-- Checkout and local configuration paths retain dollar signs, quotes, backslashes, spaces, commas and colons through Compose interpolation, bind mounts and the printed Bash start command. Carriage returns and line feeds are refused before creating configuration inputs.
-
-### Internal
-
-- Growth qualification retains each completed numeric workload atomically, including prior results after interruption. CI retains only schema-checked, source/run-bound summaries through a constructed upload inventory; private raw evidence remains excluded.
-- Domain fields, correction groups, business/stewardship acts and Application advice use closed types. Retained snapshot failures have a separate record-violation type; durable codecs expose versioned records only.
-- Authority loads installation and requested case roles, plus the accepted operation’s case scope when identity privacy requires a second case. Case listing uses an assigned-grant semi-join rather than loading every case grant. Authorization remains Application-owned and is rechecked in the same locked/read context.
-- Pure Application folds own ledger, authority, erasure, projection and checkpoint verification. Postgres streams typed rows from one read snapshot; findings, precedence and operator exit codes remain unchanged.
-- Core Catalog owns shared vocabulary, authored terminology/translations and presentation; thin clients consume generated input bindings, messages and delivery/correlation policy. Generation checks every required codec member and variant. Independent byte-corpus, OpenAPI parser and identity-scenario controls cover conformance and correlation completeness; committed Python oracles bind durable-format, delivery and correlation fixtures, and generated vectors bind browser policies to F#.
+- .NET runtime security updates, managed private-input admission, and persistent protected Web sessions with explicit key-ring custody.
+- Closed diagnostics and targeted malformed-business-input rejections; current navigation/advice and bounded history/grant pages.
+- Coupled consumer-contract identity and a fresh database baseline; earlier installations remain preserved with matching software.
+- Duende OAuth/OIDC clients, offline localized CLI help, and strict loopback callback handling.
+- Conservative CLI output-loss handling, bounded readiness and explicit browser recovery preserve delivery uncertainty.
+- Managed build/process controls replace native components; framework-dependent publication retains reviewed redistribution notices.
+- Owned Compose readiness, private path handling and identity memory budgets improve evaluation setup.
+- Closed domain types, pure verification folds, independent contract/record checks and retained numeric growth evidence strengthen verification.
 
 ## [0.10.0] - 2026-10-17
 
-### Security
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.10.0).
 
-- Owner-private inputs require effective-UID ownership, regular-file type, owner-read permission and restricted mode/ACL access on supported macOS/Linux filesystems. Reads use the admitted descriptor even if its pathname is replaced; embedded NUL and malformed Unicode paths refuse before native marshalling. Previously readable files that violate these rules must be corrected before use. Missing or incompatible native assets refuse with installation guidance. See [private-input admission](docs/database.md#cc-db-002).
-
-### Changed
-
-- **Breaking for clients and native host integrations:** deploy matching service, CLI, browser assets and generated artifacts for the twelve-endpoint contract and Hosting’s protocol-only facade. Case preview/execute and authority execute envelopes echo operation IDs; CLI frames expose per-attempt `attemptKnowledge`, `resolutionEvidence` and host status/phase. Automation callers must retain exact uncertain requests and accumulated knowledge across processes: only correlated exact replay/acceptance or content-exclusion evidence resolves uncertainty; operation observation metadata does not prove content equality. See [API](docs/api.md).
-- **Breaking for read consumers:** `case.list` includes same-snapshot installation offers, `authority.list` returns actor summaries without embedded grants, and `authority.grants` pages a selected actor’s grants under current installation authority. FULL history pages contain at most 10 entries and SUMMARY pages at most 50; follow non-null continuations even after short pages. Invalid cursors support local reload without implying global access loss. Database schema, durable formats and accepted historical text are unchanged. Rebuild matching generated consumers and update pagination handling.
-- Browser forms expose core-defined business, stewardship and authority work through generated builders and complete byte decoders. Stewardship review shows the exact reason, before/after record state and erasure limits. Access refusals clear and revalidate disclosed data while preserving exact uncertain requests; advice failures provide an explicit retry. Grant review restores keyboard focus, and authority controls fit narrow panels. Latvian/Arabic additions remain machine-drafted and require native review.
-- Descriptor text-policy metadata uses `rejectsForbiddenInvisibleCharacters` in place of `rejectsFormattingCharacters`, describing the selected forbidden code points while preserving permitted joining and variation characters. Update descriptor consumers with the matching generated contract.
-- Principal wire-syntax validation is separate from authoritative identity admission in Hosting. Semantic issuer and kind-specific identity failures are evaluated after authentication and return `INPUT_INVALID` / HTTP 400 / `NOT_STARTED` (CLI exit 3); wire decoding does not promise identity admission.
-- **For source builds and redistribution:** building or publishing applications, and building tests that consume native components, requires the supported C17 compiler/SDK in [Development](docs/development.md). Preserve the complete framework-dependent publish directory, including the matching HostSecurity native library, reviewed notices and apphost provenance. Cross-RID, self-contained, trimmed and single-file publication are refused. Frontend-only commands require neither .NET nor the native compiler.
-
-### Fixed
-
-- CLI OAuth bearer token types and parsed JSON media types accept protocol-defined casing variants while token bytes, JSON member names, identifiers, status binding and response correlation remain exact.
-- Ledger verification rejects duplicate case-projection identities even when the row count matches reconstructed history, reporting `CASE_PROJECTION`.
-- Browser preference saves persist a versioned record containing only language and display-format preferences, excluding unrelated supplied properties.
-
-### Internal
-
-- ClientProtocol separates generic admission, correlation and delivery policy from server semantics. Generated catalogues/builders/complete decoders, evaluated project and facade checks, exact artifact inventory and transitive frontend import checks enforce the component boundaries; published CLI output excludes server semantic assemblies.
-- PostgreSQL verification overlaps at most two isolated database-backed cases, uses 250 ms readiness polling and starts independently of lint/unit jobs. Separate `postgres` and `web` stages build only their selected project closures; dependency-download caches retain locked installs and audits. PR browser qualification is eleven-case Chromium smoke; complete Chromium, Firefox and WebKit qualification remains separate, with every scheduled suite required by `Gate`.
-- Test processes retain a native session/group anchor through ordinary descendant teardown, preserve bounded output and original failures, and report incomplete cleanup. Fixture teardown attempts all owned resources and retains cleanup failures; private layout-report storage failures preserve the `LAYOUT` category. Browser unit completion refuses focused, skipped, pending and retried runs. Empty verification stages and mixed `--fast` invocations refuse before tools or Docker.
+- Owner-private file admission checks ownership, modes and ACLs on the qualified platforms.
+- A coupled twelve-endpoint client/host contract separates principal syntax from authoritative identity admission.
+- Case listing and bounded actor/grant views authorize independently and preserve snapshot scope.
+- Generated browser authoring and complete decoders cover business, stewardship and authority work; preferences retain only their declared fields.
+- PostgreSQL verification, project closures and bounded fixture/process cleanup gain dedicated controls; native publication prerequisites are documented in the release notes.
 
 ## [0.9.0] - 2026-10-15
 
-### Security
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.9.0).
 
-- Accepted-operation responses disclose superseded case snapshots only with full-history authority; current snapshots require case-read authority. Execution, exact replay, preview, observation and history apply disclosure in the same locked or read snapshot. `WITHHELD` and `ERASED` are distinct, so ordinary case readers cannot use an older receipt to obtain a superseded snapshot.
-
-### Changed
-
-- **Breaking for installations:** one PostgreSQL authority and accepted ledger replace the primary/witness pair. Installations created by 0.8.0 and earlier are refused untouched; retain them with their matching software, keys and copies, and initialize a separate installation. No migration or history conversion from those installations is supplied. Ledger hashes and retained sequence/hash checkpoints detect inconsistency or rollback against trusted evidence; they do not establish independent freshness or protection from a hostile database owner. See [Operations](docs/operations.md).
-- **Breaking for clients and native integrations:** Web, CLI and browser use one eleven-endpoint contract and fingerprint; rebuild and deploy matching artifacts. `case.preview`/`case.execute` carry a tagged business or stewardship `act`, `authority.execute`/`authority.list` handle actor administration, and `operation.observe` covers both operation scopes. Authority acceptance uses `ACCEPTED`/`ALREADY_ACCEPTED`. The unified actor-bound Application facade and opaque Domain case record replace the previous native interfaces. Use the [service and CLI contract](docs/api.md) when updating consumers.
-- **Breaking durable formats:** RecordFormat owns RFC 8785 canonical JSON and explicit readers for request 4, snapshot 3, authority 2, case identity 2 and ledger entry 2. Expected revisions are integers through 9007199254740991; accepted revisions and sequences are positive, with that maximum terminal. Monetary values retain exact decimal text. Before 1.0.0, releases may explicitly refuse older installations untouched; the promise to keep reading released formats and supply migrations begins with 1.0.0.
-- **Case authoring and access:** references are 1–80 printable non-space ASCII characters, with case-insensitive resource identity and original accepted spelling. Countries are syntax-only uppercase ASCII alpha-2 codes; use `ZZ` for unknown or international. Seven default-deny role presets replace five roles: handling and decisions use `CASE_HANDLER`, while recording payments also needs `PAYMENT_RECORDER`. OWNER and DATA_STEWARD grants are human-only, at least one enabled human installation owner must remain, and owners and installation auditors can review actors and grants. See [Domain](docs/domain.md) and [Architecture](docs/architecture.md).
-- Service principals are identified by the admitted non-CLI OAuth client ID and require separate ClaimCore registration and grants; duplicate or conflicting identity claims and ID tokens used as API bearer tokens are refused. Operators must restrict SERVICE clients to confidential client-credentials flows, keep the human CLI client public PKCE with service accounts disabled, and put the API audience in access tokens only. Client-ID claims alone do not prove the grant type.
-- Permanent text, date and state format rules govern stored records, schemas and SQL; current admission policy applies only to newly asserted values, so accepted values remain readable and may be reaffirmed. New names and VOID/REINSTATE reasons share a 1–200-Unicode-scalar profile; the reason limit decreases from 500. The profile rejects specified invisible/directional characters while permitting orthographic joiners and variation selectors; consult [Domain](docs/domain.md#scalars) when updating validation. Country hints, display warnings and localization never rewrite authored business values. Latvian and Arabic translations remain machine-drafted and need native review.
-- Preview is advisory; execution revalidates authoritative state under the ledger lock and appends one entry together with its projections. While request content remains retained, exact authorized replay returns the original acceptance metadata with the snapshot disclosure permitted to the caller; rejection records nothing. `OUTCOME_UNKNOWN` means lost commit confirmation: retain the same operation ID, expected revision and exact request bytes. The browser holds a pending exact request only while its page remains alive; no pending-request or recovery bundle is stored by the service. Clients reject redirects and malformed required response data. Authenticated pagination binds authority, query and database time, expires after 15 minutes and is invalidated by runtime restart.
-- Stewardship acts `VOID`, `REINSTATE` and `ERASE` belong to the case record and accepted ledger. Erasure clears the case's complete live business-payload history while retaining its reference, revision and ledger metadata; old row versions, WAL, replicas, logs, exports and backups remain outside its reach. Owner administration provides `initialize`, `migrate`, `provision-owner`, `head` and `verify`; `DIVERGED` reports a stable finding and optional sequence and exits 5, while I/O errors remain `FAILED`. PostgreSQL support enforces the declared major/minimum minor, initially 18.6 within major 18. Runtime private-file support remains macOS/Linux only.
-- **For source builds and contract contributors:** ordinary .NET builds no longer run npm or compile a native private-file shim. Build frontend assets with `npm --prefix web ci` and `npm --prefix web run build` before publishing Web; Docker builds use separate Node and .NET stages. Frontend commands consume tracked contracts without .NET. Regenerate cross-toolchain artifacts with `dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts` and review them with the F# producer instead of using the former npm contract-generation/lock commands.
-- **For verification contributors:** named `eng/verify.sh` stages use Microsoft Testing Platform discovery on Linux and macOS, compiled boundary controls, bounded deterministic properties and real PostgreSQL/published-client tests. PR and merge-queue browser checks are explicitly partial nine-case Chromium smoke; main/tag pushes and explicit full dispatch run complete isolated Chromium, Firefox and WebKit suites with zero retries. Failed local engine/lint stages stop subsequent work, successful gate stages reuse setup and frontend assets, and unchanged localization outputs retain their timestamps. Windows verification is no longer provided; runtime private-file support remains macOS/Linux. Python/uv, PowerShell and a C compiler are no longer local verification prerequisites; hosted workflow input derivation still uses Python. See [Development](docs/development.md).
-
-### Removed
-
-- Product-managed witness settlement, recovery import/export, backup/restore and copy-custody workflows, writer handoff, multi-party approvals and data-readiness activation tooling. Operators own PostgreSQL backups, independent checkpoints, restoration, retention and deployment qualification; the local Compose setup remains evaluation-only.
-- Standalone mutation/fuzz campaigns, coverage-floor gates, full-history/artifact secret-scanning gates and publication-input/SBOM/deployment-evidence machinery. Browser consumed-shape guards replace generated AJV validators, and Stylelint's CSS semantic checks and advisory override are removed; formatting is not equivalent assurance. Dependency audits, redistribution notices/licenses, native discovery and rejecting boundary controls remain, but green CI is not production qualification or owner approval.
+- One PostgreSQL authority and accepted ledger replace the primary/witness model; incompatible installations are refused untouched.
+- A coupled eleven-endpoint contract and versioned RFC 8785 records define case work and exact bounded wire values.
+- Current authority controls snapshot disclosure; preview remains advisory and execution rechecks state under the ledger lock.
+- Case references retain accepted spelling, service principals need explicit registration/grants, and historical accepted values remain readable.
+- VOID, REINSTATE and ERASE become accepted case acts, with live erasure limits stated explicitly.
+- Build and verification stages are simplified; product-managed witness, copy-custody and backup/restore orchestration are removed.
 
 ## [0.8.0] - 2026-10-08
 
-### Security
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.8.0).
 
-- The build-only `http-cache-semantics` dependency is patched and its advisory exception is retired; reverting to affected versions fails dependency auditing. The development-only `braces` exception remains limited to its reviewed finding until 2026-11-03; unknown and production findings still fail verification.
-
-### Fixed
-
-- Supplied public HTTPS-root admission failures now report `CLI_PRIVATE_SOURCE_INVALID`; malformed or unsuitable roots report `CLI_CONFIGURATION_INVALID`. CLI-v4 framing is unchanged.
-- Docker build contexts exclude the reviewed private/generated file classes at root and nested admitted locations while preserving required producer inputs and the two credential-free npm policies.
-- Native private-file shims use the selected SDK intermediate root and configuration/RID pivots; custom artifacts roots no longer leave native output in the checkout's default root.
-- Browser drafts compare exact authored text with the opened draft. Untouched prefilled amendments leave directly; changes to empty strings, references and hidden correction replacements require a deliberate discard when changing action or leaving. Delivery phases accurately disable authoring controls. Accepted results show the receipt and Return path, retaining separate Recovery guidance when witness settlement is unconfirmed.
-- Web keeps language and display-format changes independent during rapid preference events. Clipboard feedback follows the exact attempted value and label; delayed completion cannot claim success for a changed value. List, detail, history, review, receipt, recovery and lookup displays isolate exact business values and warn about hidden or directional characters without changing their content, including clipboard fallback.
-- Witness, recovery and full-audit runtime paths await database I/O and honor cancellation before dispatch. A caller cancelling after an append can commit still receives completion or exact uncertainty; retries retain the original operation identity and bytes.
-- Generic JSON Schema `date-time` validation requires an explicit RFC 3339 date, time and offset before .NET representability checks. Activation-approval recovery requires its canonical round-trip timestamp spelling. The service's stricter canonical UTC timestamp schema is unchanged.
-- Generated .NET redistribution notices retain each package's own copyright and supplied license/NOTICE files, including NSec's embedded BSD/ISC notices. The former generic MIT attribution and incomplete notice collection are replaced. Regenerate application publish outputs before redistribution; published source releases and their licenses remain unchanged.
-
-### Changed
-
-- **Breaking for database operators:** the witness baseline now uses composite request types and new function signatures. The v0.7.0 witness baseline is refused untouched; there is no in-place migration or history conversion. Preserve the old primary/witness pair, keys, backups and recovery artifacts with matching software, and initialize a separate fresh pair. The primary baseline checksum and identity are unchanged; this does not make an old pair compatible. See [Fresh installation boundary](docs/database.md#fresh-installation-boundary).
-- **For Web integrations:** Web-v3 startup diagnostics recognize additional configuration-setting tokens, changing the Web wire fingerprint. Regenerate strict diagnostic clients and contracts, and rebuild and deploy matching Web assets and host. CLI-v4 framing and case-work endpoint shapes are unchanged.
-- Windows coordinated verification and native script checks require PowerShell 7 or later in its standard machine MSI location. Install it before running these checks; older engines and redirected module sources are refused.
-- Coordinated local verification uses fresh private Gitless source snapshots and unique `artifacts/runs/<UUID>` evidence instead of clearing shared results. Standalone coordinated suite, stage, publication and browser/CLI commands create or join a validated run context. Reviewable source, reports, coverage and manifests are retained. Wrapper-owned publications are removed after their consumers and exact resource cleanup finish; snapshots that executed jobs remain private until child/resource ownership is established. Failures and interruptions retain useful private reproduction material. Existing historical artifacts, installations, recovery state and volumes are not swept.
-- Application publication manifests use format 2 and bind each managed assembly's compiled producing-input digest to the bounded source, contract, database, frontend and toolchain inputs. Compilation refuses stale restored dependency graphs; publication refuses stale `--no-build` outputs and mixed source inputs. Run locked restore and rebuild retained binaries before publishing. Native private-file shims compile at publication. Deployment evidence uses format 2 and records the producing-input digest separately from source revision and byte identity. Unsupported earlier manifests/evidence are refused without conversion; hashes do not establish producer authentication or review.
-- Shared field and command terminology addresses case handlers, including “Responsible insurer” and explicit registration, decision and payment correction actions. Refusal explanations distinguish ordinary editing from supported factual correction of decided, paid and closed cases. Lookup, navigation and copy captions use the generated business labels. Support contract identities and contextual field help are available through expandable details; authoring syntax stays beside inputs. Domain descriptors and typed native diagnostic templates supply default English browser text; Latvian and Arabic retain the same meanings. Ordinary screens use Case history, Available actions and Recorded change. Review closing explicitly keeps the server request for Recovery; resolve/dismiss confirmations explain possible recording, permanent future-authority revocation and the limits of earlier attempt knowledge. Canonical copy controls explain their fixed date/number spelling. Canonical inputs, copied business values, operation identities, the semantic core fingerprint and canonical record/request formats are unchanged. Ordinary language controls offer English, Latvian and Arabic; the layout pseudolocale remains available through diagnostic preference seeding.
-- Newly created local browser certificates omit the Docker-only database revocation URL; PostgreSQL leaves retain it. Existing certificates and trust stores are untouched. Operators must explicitly replace affected browser leaves and establish trust in the owner-verified public CA for both Web and identity-provider origins; see [browser trust setup](docs/service.md#trust-the-public-local-ca).
-- Source builds, including Docker image builds, require Node 26.10.0; npm remains 11.19.1. Frontend, engineering and Python tooling dependencies, including uv 0.12.23, are refreshed to their current stable releases. The synthetic OIDC provider uses Keycloak 26.8.0 with an explicit custom API audience, and published-process coverage uses Coverlet console 10.1.0, matching the native testing-platform collector. Before upgrading an existing local Keycloak realm, change its CLI and service API audience mappers to Included Custom Audience; startup import does not update a persisted realm.
-- Web can explicitly configure a public HTTPS origin and separate listener address/port. Native defaults remain loopback; TLS identity, exact Host/origin, OIDC and actor grants remain required. The unsupported single-primary development Compose layout is removed; existing volumes are not migrated or deleted.
-- **Breaking for native integrations:** witness `Store` operations and subject-page callbacks are asynchronous and require explicit cancellation tokens. Native integrations must await them; `Runtime.DataUseReadiness` also returns an awaited live observation. Case-work endpoint shapes and stored canonical formats are unchanged.
-- **Breaking for native integrations:** lifecycle transition functions are internal to Domain's reviewed Application/test consumers. Native integrations that called them directly must use the actor-bound core instead; lifecycle inspection remains public.
-
-### Added
-
-- macOS local CLI setup documents a private physical operator directory beneath a qualifying `/Users/Shared` parent when a home ancestor has an extended ACL. Private admission remains fail-closed. The setup sequence retrieves the existing owner binding and uses explicit installation-scoped case/recovery grants with exact event-ID recovery; it does not automatically grant access or establish personal browser trust.
-- Docker operating model with separate Web and owner-administration images, persistent synthetic local dependencies, strict private-input ownership, HTTPS liveness/readiness probes and managed stop/restart. See [Service operation](docs/service.md). Local deployment does not establish independent real-data qualification.
-- Fixed runtime witness cause/stage counters and bounded stderr notices identify transport, authority, schema, integrity and pending-evidence failures without provider details or claimant identifiers. Failed or overdue scheduled audits emit a fixed quarantine signal; these diagnostics do not prove non-commit, repair evidence or qualify source-preview readiness. See [operator guidance](docs/operations.md).
-
-### Internal
-
-- Coordinated command logs retain at most 16 MiB plus a bounded count marker; excess output causes an otherwise successful stage to fail. Published CLI acceptance retains sanitized browser reports even when the browser fails before CLI tests begin; raw private logs remain excluded from uploads.
-- Application publication shares one locked Release build group for the three products and acceptance prerequisites, and isolated quality checks can run concurrently with other qualification work. Required inventories, coverage floors and failure visibility are preserved. Witnessed capacity qualification uses a separate complete-replay workload deadline and joins cancelled audits and admitted actor work before fixture cleanup.
-- Quality gates bind prefixed lint rules and exact exception scopes/counts, reject blanket compiler/type-check bypasses, and cover every repository-source Python file, frontend lint plugins, native Bash/PowerShell syntax and SQL functions. Python checks exclude generated fixture copies during concurrent verification. Global ShellCheck suppressions were removed; producer failures and failed backup/catalog evidence remain visible. Verification scratch on macOS refuses extended ACLs even when mode bits appear private.
-- Required quality verification scans complete reachable Git history separately from current working source, with merge-only additions, forced text diffs and replacement masking covered by synthetic controls. Shallow, grafted, partial, missing or changing history is refused. Artifact scanner acquisition identifies a fixed failure phase without provider details; suite jobs acquire the checksum-verified scanner before building and still verify it before evidence scanning. Scanned and admitted failure diagnostics can upload from failed jobs without making Gate pass; source changes do not activate native repository settings.
-- Frontend CI allows 60 minutes for the complete single-worker mutation gate on hosted runners. Mutation case deadlines, all seven targets, the 92% floor and rejection of timeout or incomplete results remain unchanged.
-- Default presentation compilation preserves admitted apostrophe/brace interactions through typed literal/hole parts rather than ICU string escaping. Regenerate contracts and assets together. Deployment qualification uses cache-isolated, populated primary/witness CRL experiments and a disabled-enforcement source control, with current-attempt schema-checked evidence. Local selection includes the actual deployment build and trust inputs.
-- Compiled architecture checks reject cryptographic randomness, version-7 identity minting and elapsed/local-clock reads in the value-computing core. Calendar and non-owner selectors include every classified product component; the contract-test map now names the graph, internals and public-surface checks alongside their compiled negative controls. Inspection reports omit false generic edges not corroborated by CLR assembly references.
+- Dependency auditing retires the patched build-tool advisory exception and refreshes pinned runtimes and providers.
+- Docker contexts exclude private/generated material, while publication retains package-specific redistribution notices.
+- Witness schema and asynchronous native interfaces change; matching deployments and fresh compatible baselines are required.
+- Exact draft comparison, independent preference changes and delayed-result handling preserve authored browser state.
+- Database and audit work honor cancellation; timestamp validation, runtime diagnostics and bounded evidence handling are tightened.
+- Operating guidance covers public origins, separate listeners, private macOS paths and complete deployment qualification.
 
 ## [0.7.0] - 2026-10-04
 
-### Security
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.7.0).
 
-- Backup and independent-host qualification compare raw Ed25519 keys for signing-role separation. One key under different PEM encodings can no longer supply separate COPY_ATTESTOR/CHECKPOINT, promotion, observer or aggregate roles. Native verification applies the same rule. Previously accepted evidence with aliased keys is now refused; provision genuinely distinct keys and renew the affected signed evidence. Exact topology file-hash pins and signed formats are unchanged.
-- Remote PostgreSQL owner/runtime/witness connections and system-trust HTTPS clients now check certificate revocation during TLS handshakes. Remote issuers and database CAs must publish reachable revocation evidence; missing or unknown status can prevent opening. Web OIDC discovery, token and signing-key backchannels no longer follow redirects. Existing TLS connections and cached issuer keys are not retroactively revoked; stop affected hosts and sessions during compromise response.
-- Loopback private HTTPS roots must be current public-only signing CAs, and presented leaves must carry server-authentication purpose. Replace leaf-as-root or wrong-purpose synthetic certificates. Witness, suppression, recovery-export and managed-copy commitment custody refuse ambiguous duplicate members, zero material or repeated rotation material as applicable. Preserve historical keys and evidence for exact audit; changing an ID or deleting old material does not repair a compromised or unreadable history.
-- The frontend dependency gate now keeps a clean production audit and limits two known, development-only advisory exceptions to exact `braces` and `http-cache-semantics` findings until 2026-11-03. These tooling dependencies remain vulnerable; review upstream fixes before that date. Unknown or production findings still fail verification.
-
-### Changed
-
-- **License change for redistributors and contributors:** original ClaimCore work and incoming contributions now use MPL-2.0 with file-level copyleft. Redistributors of covered binaries or browser assets must provide corresponding MPL-covered source and tell recipients how to obtain it. Qualified outputs carry the project license and source guidance; project SBOM declarations identify MPL-2.0 while third-party licenses and notices remain distinct. Previously published v0.1.0–v0.6.0 retain Apache-2.0 terms. See [distribution guidance](docs/releasing.md#licensing-and-source-distribution).
-
-### Fixed
-
-- Browser warnings now identify every Unicode control, format, line-separator and paragraph-separator character without rewriting accepted text. Business input and historical snapshots retain their existing Unicode rules.
-- Web asset manifests use unambiguous, ordinal path/hash records and cover nested manifest-named files; publication verification refuses empty inventories. Rebuild retained Web assets with `npm --prefix web run assets:produce` before publishing. These hashes establish artifact identity, not producer authentication or review quality.
-- Oversized CLI session frames now emit `FRAME_TOO_LARGE` and terminate with exit 2 at the first byte beyond the 131,072-byte limit, without draining an unbounded line. Automation must restart the session before further work. Earlier responses and uncertain operation identities retain their outcomes.
-- Private-file operations refuse malformed Unicode paths before native marshalling can redirect them to replacement-character filenames. Valid Unicode paths remain supported. A metadata failure after lock acquisition releases the kernel lock immediately instead of retaining it until garbage collection.
-- Linux ARM64 private-file admission now uses native platform flags and file metadata, fixing refusal of legitimate private files and host state. Deploy the complete matching host/native-shim publish tree; the previous shim ABI is refused. Ownership, no-follow, ACL and inode protections remain enforced.
-- Repeating initial-owner provisioning with the original private principal reads the original witnessed receipt without creating another actor or restoring later revoked authority. A different principal or missing primary history still refuses. Database-free help now exposes the separate `prune-witness-payload` owner command.
-- **For backup operators:** capture configuration now requires the installation's nonzero raw 32-byte commitment key and canonical non-nil key IDs, matching downstream custody readers. Replace oversized, zero or noncanonical inputs before capture; supported configurations and signed formats are unchanged.
-- SIGINT during backup FINISH or OBSERVE preserves `CAPTURE_UNCONFIRMED` and reports the original lease ID for `reconcile-backup-capture`; success also includes that ID. Output failure after observed sealing retains known `CAPTURED_UNVERIFIED` and receipt/lease IDs on stderr with a nonzero exit. Checkpoint signing and exact replay acknowledge only after durable ledger-directory synchronization, verify saved signatures, and retain historical signatures after their new-signing window without renewing their time. Failed aggregate output keeps partial evidence for inspection. See [Interrupted owner procedures](docs/database.md#interrupted-owner-procedures).
-- Lifecycle/tombstone approvals and holds use current primary database time after authority/resource locking, so pre-lock timestamps cannot authorize delayed decisions. Signer approvals, managed-copy retention and list-cursor windows use the same primary clock; case-list validation and issuance share one observation. Exact witnessed approval readback remains available after expiry without renewing authority. Database UTC and independent verifier clocks still require synchronization; timestamps do not replace witness/revision ordering.
-- Browser sessions enforce elapsed idle and absolute limits alongside their original UTC deadline; wall-clock rollback and renewal cannot extend those limits or revive expired keys. CLI token validity starts at token HTTPS dispatch rather than response parsing; delivery cannot add lifetime. Reuse retains the thirty-second safety margin, while fresh shorter-lived tokens remain usable once. Replies delivered after their actual lifetime refuse before service dispatch. Credential expiry does not settle prior uncertain operations.
-- Host admission/input refusals, including HTTP 429 `WEB_BUSY`, consistently declare `NOT_STARTED`, avoiding unnecessary browser mutation uncertainty for refused admission. Older null-phase bodies are rejected, so deploy matching host and client artifacts. CLI host failures for reads now exit 3, while completed recovery exports with invalid attachment metadata exit 4 and require exact custody evidence reconciliation. Refusal of a new request does not settle an earlier uncertain operation.
-- Browser and CLI preserve `RECOVER_EXACT` guidance in recovery refusals, including dismissal after submission started. Such CLI refusals now exit 4 instead of 2; scripts must preserve the exact operation identity for reconciliation. Revocation and attempt-limit explanations preserve earlier uncertainty and require exact evidence review before new work. Browser cancellation notices distinguish admission and attempt boundaries without settling prior attempts.
-- Failed runtime and Web startup release acquired pools, cursor custody, witness resources and certificates. Readiness precedes audit-worker startup, and the Web application is owned through route setup and shutdown. Cleanup retains bounded failure knowledge without changing admitted outcomes.
-- CLI SIGINT exits while blocked on process streams. Possible mutation dispatch or incomplete mutation output now exits 4, including sessions that previously could exit 130 after an uncertain mutation. Scripts must preserve the submitted identity and reconcile exact service evidence; interruption may leave no complete response frame. Pre-dispatch interruption exits 130 and cannot later dispatch work.
-- Backup-control frame deadlines cover the entire frame and observe capture cancellation, preventing trickled bytes from extending a held lease beyond its budget. Interrupted post-FINISH delivery still requires exact evidence reconciliation.
-- Long full audits leave one configured interval after completion before the next audit starts. Shutdown closes admission and requests audit cancellation before draining actor work; cleanup joins audit callbacks without cancelling admitted mutations or releasing their pools early.
-- Browser Return to case opens the accepted case, including a newly registered case, and rereads current state. Editing keeps navigation and logout unavailable until the explicit Back or return action, preserving draft context.
-- Uncertain browser submissions and non-reviewable preparations open Recovery with the exact operation ID and digest, clearing the editor's private state. Inspection works independently of pending-list membership; Operations retains the same ID for receipt observation. Recovery mutations lock navigation/logout during dispatch and invalidate stale inspected actions afterward.
-- Late browser session snapshots, operation observations and recovery reads cannot replace newer state or reopen closed details. Browser response waits expire after twenty seconds without aborting dispatched mutations or treating timeout as failure to commit. Core `RECOVER_EXACT` faults remain uncertain in browser and CLI classification, including nested prepare and failed-before-attempt faults; affected CLI results now exit 4 instead of 3. Scripts must handle that uncertainty and preserve the exact operation identity. Known browser acceptance with unconfirmed settlement also directs Recovery.
-
-### Performance
-
-- Case-scoped listing uses granted case IDs instead of scanning every inaccessible case, while retaining ordered installation-wide pages and current authority, disposition and privacy checks. Existing indexes and the fresh storage baseline are unchanged.
-
-### Internal
-
-- Repository settings plans refuse ambiguous or malformed release protections before writes instead of selecting a duplicate timer or treating invalid reviewer identities as configured. Valid stronger reviewer, wait and self-review settings remain preserved. Declared owner policy is explicitly separate from live native activation.
-- CLI test fixtures clear ambient service credentials and configuration before applying synthetic settings, preventing local operator configuration from selecting their service.
-- Test qualification refuses duplicate executed names that conceal missing tests, overlapping incomplete partitions, and contradictory or misplaced TRX records. The shared report reader rejects malformed XML declarations promptly and retains prototype-named attributes for strict validation. Test counts alone remain insufficient evidence of execution or assertion quality.
-- Required backup qualification executes the operator configuration, capture-interruption, checkpoint-replay and independent-signature controls. Backup Python and shell changes now select the PostgreSQL job in local CI, so tool-only changes reach their qualification tests.
-- Verification checks transitions against an independent fixture model and golden vectors against typed meaning as well as bytes. Negative controls detect defective outcomes and omitted correction groups; canonical properties cover every correction shape, literal tags and operation identity. Snapshot/recovery fuzzing reaches authenticated decoding with valid seeds and matching keys; decoder totality remains separate from real storage qualification.
-- Required suite runs reject diagnostic property rechecks before restore or report creation, preventing exact test counts from masking unexecuted properties. Use the native test executable directly for diagnostic replay; those results cannot establish complete verification.
-- HTTP overload qualification now exercises production limiter registration and detects an extra admitted request; configured limits, queue order and refusal responses are unchanged.
-- Web endpoint metadata owns its response schema directly; generated TypeScript response modules derive family membership from endpoint namespaces and reject duplicates or unknown families. Web JSON registration shares its admission setup while retaining explicit typed handlers and separate raw recovery handling. Adding an endpoint no longer requires matching a second response inventory and a presentation-only identifier list; generated contract bytes and mutation-safety classification remain unchanged.
-- Restore evidence keeps intermediate reports, independently qualified handoff readiness and writer activation distinct. Independent qualification uses one host-role inventory per language and the single source-pinned root. Public signed formats, readiness/refusal results and safety checks are unchanged. See [Copy custody and restore](docs/operations.md#managed-copy-custody-and-restore).
-- Standalone architecture inspection includes its required Witness assembly; missing inputs still fail closed.
-- Documentation checks refuse pages unreachable from the documentation map, and suite rerun errors identify the refused path and suggest a fresh evidence directory.
-- Release preparation requires a complete extended property/fuzz run on the exact candidate.
-- Synthetic physical restores wait for Docker port publication as well as PostgreSQL readiness within their existing budget and retain bounded private startup diagnostics before cleanup on failure. PostgreSQL fence, retention and activation tests observe server blocking and time instead of host-clock estimates. Signed-health race fixtures use one database instant for related observations; future-evidence and exact-expiry controls remain explicit.
+- Original work and incoming contributions move to MPL-2.0; covered redistribution requires corresponding source information.
+- TLS revocation, public-only trust roots, private-file Unicode handling and platform admission receive security hardening.
+- Raw Ed25519 key comparison enforces signing-role separation; backup and lifecycle approval controls bind current authority and time.
+- Session deadlines and conservative CLI cancellation/output handling preserve unresolved mutation outcomes.
+- Browser recovery and stale-read handling preserve the intended case, current disclosure and authored values.
+- Bounded frames, typed admission phases and Unicode warnings make input/delivery behavior explicit.
+- Independent oracles, complete report discovery and owned restore/overload controls strengthen qualification; detailed historical advisory exceptions remain in the published notes.
 
 ## [0.6.0] - 2026-10-02
 
-### Added
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.6.0).
 
-- A separately credentialed PostgreSQL witness records ordered acceptance, attempts, grants, lifecycle transitions and owner authority. Receipts, current reads, history and exact replays require settled witness evidence; an unconfirmed primary commit remains uncertain until exact reconciliation. `verify-data` replays the current primary/witness pair and quarantines missing or divergent history. Operators must provision and retain the witness, key ring, writer capability and auditor credential; a same-machine pair proves neither independent-host survival nor backup freshness. See [Security and operations](docs/operations.md#independent-witness-authority).
-- Case lifecycle workflows distinguish data-entry-error voiding, witnessed reinstatement and holds, with separate actor and owner roles. Voiding a case with a current or historical payment assertion requires two distinct witnessed steward approvals; it preserves accepted history and does not reverse an external payment. See [Disposition and privacy transitions](docs/domain.md#cc-life-001).
-- Staged privacy erasure fences ordinary access when requested. Live purge, witness-payload pruning, known-copy deletion and the suppression horizon require separate evidence and approvals. Pseudonymous suppression evidence remains data; unknown or unmanaged copies cannot be certified erased. See [Disposition and privacy transitions](docs/domain.md#cc-life-001).
-- Owner administration tracks signed managed and adopted external copies, retention, holds and independently approved per-copy deletion. `VERIFIED_DELETED` establishes checked absence of one known copy, not whole-case erasure. Operators must account for every known custodian and location before later privacy certification. See [Managed-copy custody](docs/operations.md#managed-copy-custody-and-restore).
-- Synthetic qualification supports owner-held encrypted primary/witness BASE captures, WAL and checkpoint custody, physical per-copy verification, isolated restored-pair reports and fenced writer-handoff evidence. The generic checkout does not activate real-data certification or independent-host writer handoff. `CAPTURED_UNVERIFIED`, one `RETAINED` copy or a local restore drill does not authorize promotion, prove independent custody or provide automatic failover. See [Backup and restore evidence](docs/operations.md#cc-backup-001).
-- Two distinct, pre-authorized human owners can sign terminal installation-loss retirement when acknowledged history cannot be reconstructed. The first witness ticket fences old case work and recovery; exact primary/witness settlement retains known operation-denial commitments or an unknown-set whole-installation fence. Retirement neither restores missing cases nor permits a same-lineage degraded successor. Retain surviving evidence and treat any new installation as unrelated. See [Installation-loss retirement](docs/database.md#administration-results-and-delivery).
-
-### Changed
-
-- **Breaking for administrators:** the checksum-bound primary baseline refuses v0.5.0 primary namespaces without modifying them, and the separate witness requires fresh initialization. There is no in-place upgrade, adoption or recovery-format conversion. Preserve old databases, volumes, backups and evidence with matching software; use a separate installation for synthetic evaluation. The generic checkout lacks a reviewed publication root and cannot activate `REAL_DATA` through configuration alone. See [Fresh installation boundary](docs/database.md#cc-db-001).
-- **Breaking for clients and operators:** CLI-v4 and Web-v3 use one authenticated HTTPS case-work service with individual OIDC identities and explicit actor grants. Direct CLI database case work and the shared bootstrap credential are removed. Configure issuer/client identities, service TLS and grants, regenerate integrations from the current contracts, and deploy matching Web assets. CLI discovery, token acquisition and service calls enforce 20-second deadlines through response-body completion; a dispatched mutation timeout still requires exact operation reconciliation. Service JSON responses allow 16 MiB for full histories and owner reviews; request frames and recovery artifacts remain limited to 128 KiB. See [Web admission](docs/web.md#cc-web-001) and [CLI protocol](docs/cli.md).
-- **Breaking for native integrations:** `IActorClaimsCore`, obtained through `Runtime.ForActor`, replaces the public unbound `IClaimsCore` facade. Use its authorized asynchronous `Definition` and typed case, recovery and management members. Case pagination replaces `AfterReference`/`NextAfterReference` with opaque `AfterCursor`/`NextCursor` values. See [Public boundary](docs/architecture.md#public-boundary).
-- **Breaking for recovery integrations:** transfer uses encrypted, authenticated, installation-bound recovery artifact v3. v0.5.0 format-2 envelopes and raw canonical-record imports are refused. Preserve old artifacts with v0.5.0 software; after uncertain delivery, retain the exact operation ID and request bytes rather than constructing a replacement. See [Recovery identity](docs/cli.md#cc-rec-001).
-- Contributor verification uses Node-only orchestration instead of PowerShell and requires the locked engineering npm graph (`npm --prefix eng ci`) alongside Web dependencies. Generated contract artifacts are no longer tracked: `config/contracts.lock.json` records their digests, verified by `npm --prefix web run contract:generate`. Downloaded tools, including `uv` for Python checks, are checksum-pinned in `config/tools.json`; local PostgreSQL uses the official digest-pinned image instead of the custom image pipeline. See [Development](docs/development.md#first-checkout).
-
-### Fixed
-
-- Registration amendments and unpaid decision replacements can reaffirm unchanged accepted dates after the installation clock moves backwards. Each newly asserted date is still checked independently against the installation's business date, and chronology remains enforced. See [Domain scalars](docs/domain.md#scalars).
-
-### Performance
-
-- Runtime and witness connection admission avoid repeating catalog projection and privilege checks on every checkout. Session settings, roles, the baseline marker and witness identity are still read each time. Catalog-derived checks rerun when the catalog change token differs and at least once a minute; a changed catalog remains subject to refusal. See [Runtime admission](docs/database.md#cc-db-002).
-
-### Security
-
-- Actor grants are default-deny and rechecked for reads, mutations, management and recovery, including claimant disclosure after mutation settlement. Lost disclosure authority does not undo a committed operation. An owner role alone grants no claimant access; service principals cannot receive human owner or steward privileges. Missing, inaccessible, voided and erasure-fenced resources share a non-disclosing public refusal. Case-list continuations expire after 15 minutes and bind the principal, grant revision and query. See [Actor authority](docs/architecture.md#cc-auth-001).
-- Runtime opening and bounded scheduled full audits hold primary/witness barriers and refuse weakened or missing business/history constraints, divergent witness authority, and pending activation, handoff or terminal-loss fences. Audit failure or a missed deadline closes actor access. Shutdown closes admission before draining work and attempts every owned cleanup even when an earlier cleanup fails. A jointly stale pair can still pass: owner promotion requires separately retained freshness, WAL, recovered-data and writer-fence evidence. Real-data readiness also requires a reviewed independent publication root. See [Data and recovery](docs/operations.md#data-and-recovery).
-- Durable revocation ends future unaccepted operation authority without rewriting earlier attempt uncertainty. Active case and erasure holds, unsettled attempts and retained exports prevent technical preparation pruning; a hold's review date does not release it. See [Recovery](docs/cli.md#canonical-request-identity-and-recovery) and [Preparation retention](docs/database.md#preparation-retention).
-- Primary runtime/schema-owner and witness writer/auditor/schema-owner connections refuse non-loopback PostgreSQL targets unless `SSL Mode=VerifyFull` authenticates the server certificate and hostname; GSS encryption fallback is disabled. Update every affected private connection file before opening a remote primary or witness. Loopback development connections remain available without TLS.
-- The Web host refuses expired, wrong-hostname and non-server certificates at startup. Replace unsuitable PFX files with an owner-private certificate containing a `localhost` DNS subject alternative name and server-authentication usage. Browser trust remains a separate operator step.
-
-### Internal
-
-- Repository checks use strict linter settings and one reviewed exception registry: ruff, mypy and uv for Python; oxlint on TypeScript 7 for Web and engineering code; shellcheck and shfmt for shell; and actionlint, zizmor and repository policy for workflows. Runner images are pinned; dependency updates are grouped with a cooldown.
-- Verification derives expected tests from `tests/inventory/*.txt`, uses `node eng/ci/suites/suite.mjs` locally and in CI, and checks reports within each job. `[CC-…]` tokens identify contracts in test names. Cross-job evidence reconciliation, stage manifests, hash-attested contract reviews, the assurance matrix, test lineage and baseline, the dependency-health workflow and the bespoke dependency checker are removed.
-- CI and local verification share concurrent PostgreSQL-backed suites; six isolated integration partitions merge into one exact report. Frontend builds/publication proceed independently of frontend gates, while source and frontend gates run through `node eng/ci/run-stages.mjs`. `node eng/ci/run-local.mjs` runs host-sized CI jobs, cheapest first and scoped to changed files.
-- Expanded component, generated-contract, source-review, test-inventory and targeted Web operation-reducer mutation checks for the service and evidence boundaries. Local synthetic qualifications and green checks are not independent-host or production certification.
-- Coverage includes exactly the production assemblies in the component manifest, including the published CLI exercised by acceptance tests, and excludes repository tooling. Reported rates and independently counted executable lines and branches must meet existing floors. Child-process checks bound captured output and blocked input; HTTP regressions cover responses stalled after headers.
+- A separately credentialed PostgreSQL witness records acceptance, attempts, grants, lifecycle transitions and owner authority.
+- Actor-bound authorization, void/reinstatement holds and staged privacy erasure govern case work.
+- Signed copy custody, encrypted captures, isolated restore qualification and two-owner terminal retirement support the then-current operating model.
+- Fresh schema and client/native contracts replace earlier baselines and unbound facades; recovery artifacts become authenticated and installation-bound.
+- Authority, clock and TLS checks cover runtime opening, delayed work and audits.
+- Contributor tooling, compiled boundaries, source/publication evidence and strict report qualification are expanded.
 
 ## [0.5.0] - 2026-09-23
 
-### Added
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.5.0).
 
-- The local Web interface supports English, Latvian and Arabic, right-to-left layout, and independent `en-GB`, `lv-LV` and `ar-EG` display formats. Language and format changes preserve drafts, prepared reviews, consent and recovery identities. Displayed dates and amounts are localized; authored values, canonical copies and recovery files remain exact. Expanded English is a layout-test pseudolocale. See [Browser presentation](docs/web.md#browser-presentation).
-
-### Changed
-
-- **Breaking for database administrators:** `ClaimCore.Database initialize <canonical-IANA-ID>` atomically creates a checksum-bound schema, installation identity and immutable business time zone; `verify` checks without changing them. The runtime refuses 0.4.0 and other unsupported schemas without modifying them. Keep existing databases and backups with matching older software and initialize a separate database: 0.5.0 cannot upgrade or import their case history. See [Database](docs/database.md#fresh-installation-boundary).
-- **Breaking for recovery operators and integrations:** requests use canonical command-record format 3 and recovery envelopes use format 2. Uncertain retries must retain the exact operation ID and request bytes. Terminal technical preparations with an unsettled identified attempt are excluded from pruning, even after a later accepted retry. See [Recovery](docs/cli.md#canonical-request-identity-and-recovery).
-- **Breaking for CLI, Web and native consumers:** rejections, core faults, recovery refusals, CLI failures, HTTP host failures and database administration results expose closed diagnostic identities and exact parameters. CLI adapter failures use `localFailure`; host failures include correlated HTTP status and execution phase. Old failure payloads and native failure records are unsupported. Regenerate clients for CLI-v3/Web-v2 and deploy the matching Web bundle and host. See [Diagnostics](docs/diagnostics.md).
-- The semantic fingerprint includes scalar constraints and rule revision, excludes presentation wording, and uses length-framed encoding.
-- Source builds now require direct project references for every dependency. Forks or tools that previously reached PostgreSQL administration or Npgsql through a case-work host must declare an allowed direct dependency or remove that usage. See [Architecture](docs/architecture.md#direct-compilation-boundaries).
-
-### Removed
-
-- `ClaimCore.Database migrate` and `set-business-zone`, the ordered in-place upgrade path, and import support for historical canonical records and recovery envelopes are removed. There is no compatibility alias or automatic conversion; keep old recovery material with matching earlier software.
-
-### Fixed
-
-- CLI delivery failures and malformed later frames no longer reuse a prior operation's recovery context or append a second stdout result. Lost writes or flushes preserve the current exact operation context and report uncertainty when work may have started; inspect that identity before retrying. See [CLI](docs/cli.md#local-failures-and-core-outcomes).
-- Database administration preserves confirmed work and unknown commit status across cleanup or result-delivery errors. Exit 4 requires inspection and reconciliation rather than assuming rollback. See [Database](docs/database.md#administration-results-and-delivery).
-- HTTP input failures select status 400 or 413 from typed causes rather than English wording. Protocol, startup and administration diagnostics use bounded, known locations and causes without echoing unknown arguments, private paths or provider messages.
-- Correction validation focuses the rejected field in its tagged group, and an unreadable recovery import reports a local failure instead of leaving the import busy.
-
-### Internal
-
-- CI checks one producer per evidence stage, complete current-attempt results and coverage, workflow policy and bounded failure summaries. Scheduled dependency-freshness checks are separate from required vulnerability, deprecation, signature and license checks. See [CI governance](docs/ci-governance.md).
-- A read-only owner-review report inventories changed paths and current-revision CI; an opt-in settings plan describes owner-only PR updates. Merging the source neither activates the GitHub ruleset nor establishes independent human approval. See [Owner review](docs/owner-review.md).
-- Removed previous frontend and NuGet test-dependency holds after qualification.
+- English, Latvian and Arabic browser text, RTL layout and independent display formats preserve drafts and prepared work.
+- Initialization binds one schema, installation identity and immutable business time zone; earlier migration and historical import paths are removed.
+- Versioned canonical requests, recovery envelopes and closed diagnostic identities require matching clients and exact uncertain retries.
+- Explicit project dependencies and scalar-aware identity strengthen contributor and integration boundaries.
+- CLI/database delivery handling, typed HTTP failures and targeted correction guidance preserve known outcomes through failures.
 
 ## [0.4.0] - 2026-09-21
 
-### Added
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.4.0).
 
-- Installation-calendar guidance explains that ClaimCore uses the host's time-zone database, not a bundled copy. Hosts sharing an installation should use the same operating-system time-zone data and be updated together: changed daylight-saving rules can alter the business date of operations within a transition. Stored data, configuration and case-work behaviour are unchanged. See [Security and operations](docs/operations.md#the-installation-calendar).
-
-### Changed
-
-- Source builds require Node 26.9.0 instead of 26.8.2; npm is unchanged. Install the version in [`.node-version`](.node-version) before following the first-run path or running frontend commands.
-- Published CLI trees and their .NET SBOMs now include `ClaimCore.CliProtocol.dll` and `ClaimCore.Hosting.dll`; Web trees include `ClaimCore.Hosting.dll`. The Database tree, case work, CLI-v3/Web-v2 contracts and fingerprints are unchanged from 0.3.0. Update publish-tree or SBOM inventories to account for the additional assemblies.
-
-### Fixed
-
-- `ClaimCore.Database set-business-zone` refuses platform-native time-zone identifiers on every host. Windows identifiers such as `W. Europe Standard Time` could previously be stored on Windows but could not be resolved by the macOS and Linux case-work hosts. The stored value must be an IANA identifier, as documented; installations configured on a supported host are unaffected.
-
-### Internal
-
-- Required boundary-decoding qualification covers strict JSON, CLI framing, canonical requests and snapshots, recovery envelopes, and history/recovery cursors with arbitrary bytes, mutated encodings, adversarial JSON and invalid UTF-8. It requires typed refusals rather than escaping exceptions on Linux, macOS and Windows, with larger scheduled runs. This qualification found no defect in those boundaries.
-- [`config/architecture.json`](https://github.com/resoltico/claimcore/blob/5b15553172396ad6a7cbd04c1c79179cc3a8bd5e/config/architecture.json) declares the component architecture and generates its documentation table. Compiled checks enforce exact project, package and shared-framework edges, reject permitted but unused edges, review `InternalsVisibleTo` grants, and confine time-zone resolution to installation-calendar components.
-- `ClaimCore.Hosting` owns PostgreSQL runtime composition; `ClaimCore.CliProtocol` owns CLI-v3 framing and dispatch; `ClaimCore.Cli` remains the process entry point. `ClaimCore.Contracts` renders database-free CLI discovery. Emitted bytes and published contracts are unchanged.
-- Canonical request identity is derived directly from the request rather than a recovery view, and recovery-cursor identity writes are checked. Both paths were correct in 0.3.0; this is preventive hardening, not a fix to released behaviour.
-- Removed frontend npm `engine-strict`, which prevented the dependency updater from resolving the graph. Workflows and dependency-currency checks still require the exact toolchain and audited, signature-verified locked graph; the lock file now agrees with the manifest's Node 26.9.0 requirement.
-- A shared workflow action verifies pinned .NET and Node versions. Policy checks reject independently selected toolchains, persisted checkout credentials and actions lacking reviewed commit pins.
-- Release notes published to GitHub no longer repeat the version heading that GitHub already supplies as the release title and date.
+- Installation-calendar guidance requires consistent host time-zone data and canonical IANA identifiers.
+- Compiled component boundaries and strict decoding/property controls cover protocol and recovery surfaces.
+- Hosting and CLI protocol responsibilities are separated, and pinned toolchains/publication trees are documented.
+- Canonical identity and workflow policy receive preventive hardening; GitHub release notes avoid duplicate headings.
 
 ## [0.3.0] - 2026-09-20
 
-### Added
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.3.0).
 
-- Added one-step factual correction for existing decided, paid, and closed cases, allowing complete registration, decision, and payment facts to be corrected together while preserving the thirteen-field register, case reference, status, and prior history.
-- Added safer recovery for unfinished work: an operator can close an unaccepted operation permanently, review pending work separately from terminal evidence, and inspect long attempt histories in bounded pages.
-- Added an installation-wide business time zone chosen by the database owner, so the CLI and Web use the same business date regardless of the computer or process that is running them.
-
-### Changed
-
-- Updated the CLI and Web request contracts for case correction and recovery. Clients must use the generated contract that matches this source revision; pre-1.0 wire compatibility is not retained.
-- Recovery now distinguishes accepted, pending, and revoked authority from what is known about individual attempts, providing clearer next steps after an interrupted submission.
-
-### Fixed
-
-- Editing a request after it has been sent now creates a new operation identity when its authored content changes, preventing a changed request from being retried under the earlier identity.
-- A delayed worker now respects a durable operator revocation even when an earlier submission attempt had already started, so it cannot later change the case.
+- One-step factual correction covers registration, decision and payment facts while retaining the thirteen-field register.
+- An installation-wide business time zone and safer bounded recovery clarify unfinished work.
+- Coupled client contracts, fresh identities after editing and durable revocation prevent stale work from changing a case.
 
 ## [0.2.0] - 2026-09-14
 
-### Added
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.2.0).
 
-- Added backup-restore guidance explaining that an older backup can omit later accepted operations and must be reconciled with independent records before case work resumes.
-
-### Changed
-
-- If you retry preparation of a command that was already accepted, the CLI and Web now return only its receipt, without the earlier recovery details. Integrations that read those details must use the current contract.
-
-### Fixed
-
-- Retrying an accepted operation now returns its original receipt even after temporary recovery data has been cleaned up, without repeating the action or changing the case.
-- A rejected retry or recovery command that conflicts with an existing operation ID no longer includes that operation's receipt or private recovery details.
+- Backup/restore guidance requires reconciliation of accepted work newer than a restored checkpoint.
+- Replaying accepted work returns the original receipt without prior recovery details.
+- Conflicting retries preserve private receipt/recovery information and do not repeat the accepted act.
 
 ## [0.1.0] - 2026-09-13
+
+[Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.1.0).
 
 - First release.

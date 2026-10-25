@@ -141,5 +141,6 @@ module CatalogValidation =
 
         catalogs
 
-    let validate () =
-        AuthoredMessages.all () |> validateCatalogs
+    let private admitted = lazy (AuthoredMessages.all () |> validateCatalogs)
+
+    let validate () = admitted.Value

@@ -20,6 +20,15 @@ let private freshness () =
         Path.Combine(ClaimCore.TestSupport.RepositoryRoot.find (), "contracts")
 
     let artifacts = ContractArtifacts.all ()
+
+    let reference =
+        Path.Combine(ClaimCore.TestSupport.RepositoryRoot.find (), "docs/cli.md")
+
+    Expect.equal
+        (File.ReadAllBytes reference)
+        (CliDocumentation.source ())
+        "The CLI reference is generated from the same catalog"
+
     Expect.isNonEmpty artifacts "The complete produced inventory is delivered"
 
     Expect.isTrue
@@ -138,6 +147,28 @@ let private producedNames () =
     finally
         directory.Delete true
 
+let private customOutput () =
+    let directory = Directory.CreateTempSubdirectory("claimcore-contract-output-")
+
+    try
+        let output = Path.Combine(directory.FullName, "custom-contracts")
+
+        Expect.equal
+            (ClaimCore.ContractGenerator.Program.main [| "--output"; output |])
+            0
+            "Custom contract output publishes"
+
+        Expect.equal
+            (ClaimCore.ContractGenerator.Program.main [| "--output"; output; "--check" |])
+            0
+            "Custom output checks independently"
+
+        Expect.isFalse
+            (Directory.Exists(Path.Combine(directory.FullName, "docs")))
+            "Custom output cannot write a sibling documentation directory"
+    finally
+        directory.Delete true
+
 [<Tests>]
 let tests =
     testList
@@ -147,6 +178,7 @@ let tests =
                 "publication replaces owned outputs and preserves unexpected content"
                 safePublication
             testCase "produced names are unique and stay within the output" producedNames
+            testCase "custom output stays within the selected contract directory" customOutput
             testCase "tracked exact inventory and bytes equal generation" freshness
             testCase "freshness rejects missing extra and stale bytes" controls
             testCase "canonical OpenAPI identity binds runtime and browser" fingerprint

@@ -1,8 +1,9 @@
 # Service and CLI
 
 Use a matching service, browser and CLI. [OpenAPI](../contracts/openapi.json) defines the wire shape and delivery
-effect of each operation. `claimcore describe endpoints` and `claimcore schema ENDPOINT request|response`
-show the current registry without credentials.
+effect of each operation. Use the [generated CLI reference](cli.md) for verbs and choices.
+`claimcore describe case open` describes one operation offline; `claimcore describe --format json` returns
+the catalog entries, and `claimcore schema ENDPOINT request|response` shows a wire schema without credentials.
 
 ## HTTPS requests and replies
 
@@ -40,8 +41,11 @@ NOT_STARTED says only that this attempt did not dispatch. STARTED_UNCONFIRMED or
 rejection of an earlier attempt. Accepted values follow permanent formats, independently of current admission.
 
 Contract identity is SHA-256 of canonical derived OpenAPI. It identifies wire structure; locale and help-only
-changes leave it unchanged. The three tracked artifacts are [openapi.json](../contracts/openapi.json),
-[client.ts](../contracts/client.ts) and [catalog.json](../contracts/catalog.json).
+changes leave it unchanged. The tracked contract artifacts are [openapi.json](../contracts/openapi.json),
+[client.ts](../contracts/client.ts), [catalog.json](../contracts/catalog.json) and
+[messages.ts](../contracts/messages.ts). The same generator
+also owns [the CLI reference](cli.md). Catalog bodies define operations once; paths, branches, flags and
+synopses are derived from them.
 [Development](development.md#generated-contracts-and-boundary-verification) explains regeneration and checks.
 
 Pagination independently authorizes each page. Follow non-null nextCursor even after a short page; null ends
@@ -52,7 +56,8 @@ rows, and complete replies are bounded to 4 MiB. [Disclosure](architecture.md#cc
 
 ### CC-CLI-001 — Authenticated frames and exact delivery
 
-`claimcore` denotes the published CLI. For source builds use `dotnet run --project src/ClaimCore.Cli --`.
+`claimcore` denotes the published CLI apphost. A solution build prints the directory containing
+`claimcore.dll`; run its matching `claimcore` apphost or add that directory to `PATH`.
 Start with offline `help`, `help verbs`, `help configuration`, `help call` and `help delivery`.
 
 ```sh
@@ -62,7 +67,7 @@ claimcore case open DEMO-0001 --incident-date 2026-09-01 --incident-notification
 claimcore case get DEMO-0001
 claimcore authority list
 claimcore operation resolve 10000000-0000-4000-8000-000000000001
-claimcore describe acts OPEN --format text
+claimcore describe case open
 ```
 
 A new mutation mints one UUID unless `--operation-id` is explicit. Case acts after opening require

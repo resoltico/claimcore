@@ -26,9 +26,9 @@ work; an installation owner administers authority and needs separate grants for 
 
 | Application | Use |
 | --- | --- |
-| ClaimCore.Web | HTTPS service and browser, with OIDC sign-in and bearer API authentication |
-| ClaimCore.Cli | Human commands and structured JSON calls, using PKCE or client credentials |
-| ClaimCore.Database | Separate owner-only initialization, provisioning and verification |
+| claimcore-server | HTTPS service and browser, with OIDC sign-in and bearer API authentication |
+| claimcore | Human commands and structured JSON calls, using PKCE or client credentials |
+| claimcore-database | Separate owner-only initialization, provisioning and verification |
 
 Try `claimcore case open ... --dry-run` to inspect a request without signing in. Human commands and JSON
 frames share the [service contract](docs/api.md). Service, browser and CLI must be deployed together.
@@ -56,3 +56,5 @@ The owner reviews and merges changes; a green check records execution evidence.
 
 Original code and documentation use the [Mozilla Public License 2.0](LICENSE). Third-party components retain
 their licenses and notices. [CHANGELOG.md](CHANGELOG.md) records release changes.
+
+See the [generated CLI reference](docs/cli.md) for verbs, inputs and choices.
