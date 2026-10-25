@@ -112,11 +112,11 @@ tests() { # <project> [configuration] [timeout] [settings]
   report_directory="$(mktemp -d "${report_root}/native.XXXXXXXX")"
   touch "${report_directory}/.claimcore-native-active"
   local result=0
-  local selection=()
-  if [[ -n "${5:-}" ]]; then selection=(--filter "$5"); fi
-  CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" dotnet test --project "$1" --configuration "${2:-Release}" --no-build --no-restore \
-    --zero-tests-policy=strict --timeout="${3:-30m}" "${selection[@]}" \
-    --report-trx --report-trx-filename="${report_directory}/results.trx" \
+  local test_command=(dotnet test --project "$1" --configuration "${2:-Release}" --no-build --no-restore
+    --zero-tests-policy=strict --timeout="${3:-30m}"
+    --report-trx --report-trx-filename="${report_directory}/results.trx")
+  if [[ -n "${5:-}" ]]; then test_command+=(--filter "$5"); fi
+  CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" "${test_command[@]}" \
     -- --settings="${PWD}/${4:-eng/expecto.runsettings}" || result=$?
   rm "${report_directory}/.claimcore-native-active"
   touch "${report_directory}/.claimcore-native-complete"

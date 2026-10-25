@@ -6,6 +6,7 @@ fixture="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-reports.XXXXXXXX")"
 trap 'rm -rf -- "${fixture}"' EXIT
 root="${fixture}/reports"
 mkdir -p "${root}" "${fixture}/outside"
+prune_native_reports "${root}"
 for n in {1..15}; do
   index="$(printf '%02d' "${n}")"
   mkdir "${root}/native.test${index}"
