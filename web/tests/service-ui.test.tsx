@@ -84,7 +84,7 @@ const acceptsOperation = async (): Promise<void> => {
       token="token"
       definition={definition}
       current={current}
-      initialCommand="CLOSE"
+      initialAct="CLOSE"
       onClose={vi.fn()}
       onCommitted={committed}
       onMutationLockChange={vi.fn()}

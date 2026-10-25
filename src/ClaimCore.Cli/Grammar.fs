@@ -17,6 +17,7 @@ type UsageError =
     | NotApplicable of string * string
     | DuplicateOption of string
     | MissingValue of string
+    | RequestTooLarge of int
 
 type PreparedVerb =
     {
@@ -429,10 +430,14 @@ module Grammar =
                         JsonValue.Object [ "endpoint", JsonValue.String endpoint; "input", input ]
                         |> WireWriter.bytes
 
-                    Ok
+                    // The endpoint codec has admitted the body; frame admission also enforces byte limits.
+                    Frames.admit bytes
+                    |> Result.mapError (fun _ ->
+                        [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
+                    |> Result.map (fun _ ->
                         {
                             Bytes = bytes
                             DryRun = options.ContainsKey "--dry-run"
                             Text = format = "text"
                             Language = language
-                        }
+                        })

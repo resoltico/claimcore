@@ -228,7 +228,7 @@
   "ui.authority": "Pilnvaras",
   "ui.authorityAction": "Pilnvaru darbība",
   "ui.authorityReceipt": "Pilnvaru darbība {act} identitātei {actor}.",
-  "ui.availableCommands": "Pieejamās darbības",
+  "ui.availableActs": "Pieejamās darbības",
   "ui.backToActors": "Atpakaļ pie dalībniekiem",
   "ui.backToCase": "Atpakaļ uz lietu",
   "ui.backToCases": "Atpakaļ uz lietām",
@@ -245,7 +245,7 @@
   "ui.checkOutcome": "Pārbaudīt iznākumu",
   "ui.close": "Aizvērt apskati",
   "ui.act": "Darbība ar lietu",
-  "ui.commandDescription": "{label}: {meaning}",
+  "ui.actDescription": "{label}: {meaning}",
   "ui.confirmExactRequest": "Apstiprinu šo precīzo pieprasījumu.",
   "ui.copied": "Nokopēts: {label}.",
   "ui.copy": "Kopēt: {label}",
@@ -470,5 +470,6 @@
   "cli.family.describe": "Aprakstīt kataloga ierakstus.",
   "cli.family.schema": "Lasīt protokola shēmas.",
   "cli.family.help": "Lasīt palīdzības tēmas.",
-  "cli.delivery.unresolved": "Iznākums nav zināms. Atkārtojiet precīzo pieprasījumu ar {retryCommand} vai pārbaudiet galīgo iznākumu ar {resolveCommand}."
+  "cli.delivery.unresolved": "Iznākums nav zināms. Atkārtojiet precīzo pieprasījumu ar {retryCommand} vai pārbaudiet galīgo iznākumu ar {resolveCommand}.",
+  "cli.usage.requestTooLarge": "Sagatavotais pieprasījums nedrīkst pārsniegt {maximumBytes} UTF-8 baitus."
 }

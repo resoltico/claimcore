@@ -21,7 +21,7 @@ type CaseDetailProps = {
   onAct: (current: CurrentCase, act: ActKind) => void;
 };
 
-const AvailableCommands = ({
+const AvailableActs = ({
   current,
   onAct,
 }: {
@@ -32,7 +32,7 @@ const AvailableCommands = ({
   const p = usePresentation();
   return (
     <section aria-labelledby="acts-title">
-      <h2 id="acts-title">{p.text("ui.availableCommands")}</h2>
+      <h2 id="acts-title">{p.text("ui.availableActs")}</h2>
       <div className="actions">
         {current.advice.acts
           .map((offer) => offer.act)
@@ -43,7 +43,7 @@ const AvailableCommands = ({
               onPress={() => {
                 onAct(act);
               }}
-              aria-label={p.text("ui.commandDescription", {
+              aria-label={p.text("ui.actDescription", {
                 label: p.actLabel(act),
                 meaning: p.actMeaning(act),
               })}
@@ -88,7 +88,7 @@ const CurrentPresentation = ({
         fields={definition.fields}
         context={p.text("ui.currentCase")}
       />
-      <AvailableCommands
+      <AvailableActs
         current={current}
         definition={definition}
         onAct={(act) => {

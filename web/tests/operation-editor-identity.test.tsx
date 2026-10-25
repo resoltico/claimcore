@@ -23,12 +23,12 @@ const sentDraft = (call: number): SentDraft => {
   return JSON.parse(body) as SentDraft;
 };
 
-const editor = (current: CurrentCase | null, initialCommand: "OPEN" | "CLOSE" | "CORRECT") => (
+const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "CORRECT") => (
   <OperationEditor
     token="synthetic-token"
     definition={definition}
     current={current}
-    initialCommand={initialCommand}
+    initialAct={initialAct}
     onClose={vi.fn()}
     onCommitted={vi.fn()}
     onMutationLockChange={vi.fn()}

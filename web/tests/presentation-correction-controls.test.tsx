@@ -33,7 +33,7 @@ it.each(["en", "lv", "ar"])(
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Synthetic lost response")));
     render(
       editor({
-        initialCommand: "CORRECT",
+        initialAct: "CORRECT",
         current: paidCase,
       }),
     );
@@ -92,7 +92,7 @@ it("associates payment acknowledgement with the generated mode control [CC-DOM-0
       ),
     ),
   );
-  render(editor({ initialCommand: "CORRECT", current: paidCase }));
+  render(editor({ initialAct: "CORRECT", current: paidCase }));
   const payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
   await user.selectOptions(
     document.querySelector<HTMLSelectElement>("#correction-decision-mode")!,

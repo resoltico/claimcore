@@ -9,7 +9,7 @@ export const OperationEditor = (props: OperationEditorProps) => {
   const p = usePresentation();
   const model = useOperation({
     scope: "CASE",
-    kind: props.initialCommand,
+    kind: props.initialAct,
     current: props.current,
     token: props.token,
     onLockChange: props.onMutationLockChange,
@@ -27,7 +27,7 @@ export const OperationEditor = (props: OperationEditorProps) => {
       />
     );
   }
-  const offered = props.current?.advice.acts.map((offer) => offer.act) ?? [props.initialCommand];
+  const offered = props.current?.advice.acts.map((offer) => offer.act) ?? [props.initialAct];
   return (
     <section aria-labelledby="operation-title" className="operation-editor">
       <h2 id="operation-title">{p.actLabel(String(model.values["act.kind"]))}</h2>

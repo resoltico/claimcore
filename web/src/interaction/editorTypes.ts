@@ -4,7 +4,7 @@ export type OperationEditorProps = {
   token: string;
   definition: ProductMetadata;
   current: CurrentCase | null;
-  initialCommand: ActKind;
+  initialAct: ActKind;
   onClose: () => void;
   onCommitted: (receipt: CaseReceipt) => void;
   onMutationLockChange: (locked: boolean) => void;

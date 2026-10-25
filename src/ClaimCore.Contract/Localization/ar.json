@@ -228,7 +228,7 @@
   "ui.authority": "الصلاحيات",
   "ui.authorityAction": "إجراء الصلاحيات",
   "ui.authorityReceipt": "إجراء الصلاحيات {act} للجهة {actor}.",
-  "ui.availableCommands": "الإجراءات المتاحة",
+  "ui.availableActs": "الإجراءات المتاحة",
   "ui.backToActors": "العودة إلى الفاعلين",
   "ui.backToCase": "العودة إلى الملف",
   "ui.backToCases": "العودة إلى الملفات",
@@ -245,7 +245,7 @@
   "ui.checkOutcome": "التحقّق من النتيجة",
   "ui.close": "إغلاق الفحص",
   "ui.act": "إجراء الملف",
-  "ui.commandDescription": "{label}: {meaning}",
+  "ui.actDescription": "{label}: {meaning}",
   "ui.confirmExactRequest": "أؤكد هذا الطلب الدقيق.",
   "ui.copied": "تم نسخ {label}.",
   "ui.copy": "نسخ {label}",
@@ -470,5 +470,6 @@
   "cli.family.describe": "وصف إدخالات الكتالوج.",
   "cli.family.schema": "قراءة مخططات البروتوكول.",
   "cli.family.help": "قراءة مواضيع المساعدة.",
-  "cli.delivery.unresolved": "النتيجة غير محسومة. أعد الطلب نفسه باستخدام {retryCommand} أو تحقق من نتيجته النهائية باستخدام {resolveCommand}."
+  "cli.delivery.unresolved": "النتيجة غير محسومة. أعد الطلب نفسه باستخدام {retryCommand} أو تحقق من نتيجته النهائية باستخدام {resolveCommand}.",
+  "cli.usage.requestTooLarge": "يجب ألا يتجاوز الطلب المجهز {maximumBytes} بايت بترميز UTF-8."
 }

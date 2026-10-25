@@ -28,7 +28,7 @@ const open = (command: "AMEND_REGISTRATION" | "CORRECT" = "AMEND_REGISTRATION") 
       token="synthetic"
       definition={definition}
       current={current}
-      initialCommand={command}
+      initialAct={command}
       onClose={close}
       onCommitted={vi.fn()}
       onMutationLockChange={vi.fn()}

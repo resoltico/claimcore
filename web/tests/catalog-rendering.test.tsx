@@ -210,7 +210,7 @@ it.each(acts)(
         token="token"
         definition={productMetadata}
         current={command.kind === "OPEN" ? null : currentFor(command.kind)}
-        initialCommand={command.kind}
+        initialAct={command.kind}
         onClose={vi.fn()}
         onCommitted={vi.fn()}
         onMutationLockChange={vi.fn()}

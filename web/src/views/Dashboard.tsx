@@ -141,7 +141,7 @@ const DashboardContent = (props: ContentProps) => {
         {...workflow}
         definition={definition}
         current={operation.current}
-        initialCommand={operation.act}
+        initialAct={operation.act}
         onClose={() => {
           props.setOperation(null);
         }}

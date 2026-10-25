@@ -38,7 +38,7 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
   vi.mocked(globalThis.fetch)
     .mockImplementationOnce(() => Promise.resolve(previewReply()))
     .mockResolvedValueOnce(wireResponse("operation.execute"));
-  render(editor({ current, initialCommand: "CLOSE", onCommitted: committed }));
+  render(editor({ current, initialAct: "CLOSE", onCommitted: committed }));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
@@ -61,7 +61,7 @@ it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
     vi.mocked(globalThis.fetch)
       .mockReturnValueOnce(preparing.promise)
       .mockReturnValueOnce(submitting.promise);
-    render(editor({ current, initialCommand: command }));
+    render(editor({ current, initialAct: command }));
     if (command === "CORRECT") {
       await user.selectOptions(
         document.querySelector<HTMLSelectElement>("#correction-registration-mode")!,

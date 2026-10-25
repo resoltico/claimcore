@@ -115,7 +115,7 @@ module internal TextReply =
         @ [
             line
                 language
-                "ui.availableCommands"
+                "ui.availableActs"
                 (advice |> List.map (get "act" >> OperationCatalog.kebab) |> String.concat ", ")
         ]
 
@@ -123,11 +123,7 @@ module internal TextReply =
         let scope = memberValue "scope" value
         let token = get "act" scope
 
-        let verb =
-            if get "kind" scope = "CASE" then
-                OperationCatalog.kebab token
-            else
-                OperationCatalog.kebab token
+        let verb = OperationCatalog.kebab token
 
         let target =
             if get "kind" scope = "CASE" then

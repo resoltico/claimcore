@@ -228,7 +228,7 @@
   "ui.authority": "Authority",
   "ui.authorityAction": "Authority action",
   "ui.authorityReceipt": "Authority act {act} for actor {actor}.",
-  "ui.availableCommands": "Available actions",
+  "ui.availableActs": "Available actions",
   "ui.backToActors": "Back to actors",
   "ui.backToCase": "Back to case",
   "ui.backToCases": "Back to cases",
@@ -245,7 +245,7 @@
   "ui.checkOutcome": "Check outcome",
   "ui.close": "Close inspection",
   "ui.act": "Case action",
-  "ui.commandDescription": "{label}: {meaning}",
+  "ui.actDescription": "{label}: {meaning}",
   "ui.confirmExactRequest": "I confirm this exact request.",
   "ui.copied": "{label} copied.",
   "ui.copy": "Copy {label}",
@@ -470,5 +470,6 @@
   "cli.family.describe": "Describe catalog entries.",
   "cli.family.schema": "Read protocol schemas.",
   "cli.family.help": "Read help topics.",
-  "cli.delivery.unresolved": "Outcome unresolved. Retry the exact request with {retryCommand}, or check its final outcome with {resolveCommand}."
+  "cli.delivery.unresolved": "Outcome unresolved. Retry the exact request with {retryCommand}, or check its final outcome with {resolveCommand}.",
+  "cli.usage.requestTooLarge": "The prepared request must not exceed {maximumBytes} UTF-8 bytes."
 }

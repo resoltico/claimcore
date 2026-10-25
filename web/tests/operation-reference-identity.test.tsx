@@ -57,7 +57,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
       token="token"
       definition={definition}
       current={current}
-      initialCommand="CLOSE"
+      initialAct="CLOSE"
       onClose={vi.fn()}
       onCommitted={committed}
       onMutationLockChange={vi.fn()}

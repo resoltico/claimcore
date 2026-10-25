@@ -64,7 +64,7 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
     editor({
       onMutationLockChange,
       current: disclosedCurrent,
-      initialCommand: "AMEND_REGISTRATION",
+      initialAct: "AMEND_REGISTRATION",
     }),
   );
   const claimant = screen.getByLabelText("Claimant name", { exact: true });

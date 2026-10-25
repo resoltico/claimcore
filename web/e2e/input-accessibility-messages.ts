@@ -1,16 +1,11 @@
-import enAuthority from "../../src/ClaimCore.Contract/Localization/en.json" with { type: "json" };
+import rendered from "../../tests/fixtures/rendered-messages.json" with { type: "json" };
+import type { catalogs, MessageKey } from "../../contracts/messages";
 
-import lvAuthority from "../../src/ClaimCore.Contract/Localization/lv.json" with { type: "json" };
-
-import arAuthority from "../../src/ClaimCore.Contract/Localization/ar.json" with { type: "json" };
-
-const messages = {
-  en: { ...enAuthority },
-  lv: { ...lvAuthority },
-  ar: { ...arAuthority },
+// Expected labels come from frozen F# renderings, independent of the browser formatter.
+export const inputMessage = (language: keyof typeof catalogs, key: MessageKey): string => {
+  const row = rendered.find((entry) => entry.language === language && entry.key === key);
+  if (row === undefined || Object.keys(row.arguments).length !== 0) {
+    throw new Error("An argument-free frozen message is required.");
+  }
+  return row.expected;
 };
-
-export const inputMessage = (
-  language: keyof typeof messages,
-  key: keyof typeof messages.en,
-): string => messages[language][key];

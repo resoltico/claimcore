@@ -30,7 +30,7 @@ test("updates visible detail and expanded history immediately with independent f
     ).toBeVisible();
     await expect(page.getByText(ui(language, "ui.historyHint"), { exact: true })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: ui(language, "ui.availableCommands"), exact: true }),
+      page.getByRole("heading", { name: ui(language, "ui.availableActs"), exact: true }),
     ).toBeVisible();
     await expect(history).toHaveAttribute("open", "");
     expect(await history.evaluate((element, prior) => element === prior, original)).toBe(true);

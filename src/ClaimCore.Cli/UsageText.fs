@@ -7,13 +7,17 @@ module UsageText =
     let private message language key values =
         MessageCatalogs.render language ("cli.usage." + key) (Map.ofList values)
 
+    // Unrelated arbitrary input is not echoed as a command.
+    let private suggestedCommandText command suggestions =
+        if List.isEmpty suggestions then "" else command
+
     let private line language =
         function
         | UsageError.UnknownCommand(command, suggestions) ->
             message
                 language
                 "unknownCommand"
-                [ "command", if suggestions.IsEmpty then "" else command ]
+                [ "command", suggestedCommandText command suggestions ]
         | UsageError.UnknownOption(flag, suggestion) ->
             message language "unknownOption" [ "flag", flag ]
             + (suggestion
@@ -37,6 +41,8 @@ module UsageText =
             message language "notApplicable" [ "flag", flag; "because", because ]
         | UsageError.DuplicateOption flag -> message language "duplicateOption" [ "flag", flag ]
         | UsageError.MissingValue flag -> message language "missingValue" [ "flag", flag ]
+        | UsageError.RequestTooLarge maximum ->
+            message language "requestTooLarge" [ "maximumBytes", string maximum ]
 
     let render language arguments errors =
         let matched =

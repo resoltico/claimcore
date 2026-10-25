@@ -39,7 +39,26 @@ let private golden () =
         )
 
     let rows = document.RootElement.EnumerateArray() |> Seq.toArray
-    Expect.equal rows.Length (472 * 3) "Every authored message is frozen in every real language"
+
+    let expected =
+        AuthoredMessages.all ()
+        |> Map.toList
+        |> List.collect (fun (language, entries) ->
+            entries |> List.map (fun (key, _) -> language, key))
+        |> Set.ofList
+
+    let actual =
+        rows
+        |> Array.map (fun row ->
+            (row.GetProperty("language").GetString() |> nonNull),
+            (row.GetProperty("key").GetString() |> nonNull))
+
+    Expect.equal
+        (Set.ofArray actual)
+        expected
+        "Every authored message is frozen in every real language"
+
+    Expect.equal actual.Length expected.Count "Every rendering occurs exactly once"
 
     for row in rows do
         let language = row.GetProperty("language").GetString() |> nonNull

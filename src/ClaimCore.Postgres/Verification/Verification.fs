@@ -56,13 +56,13 @@ module internal Verification =
             let! duplicate = earliestDuplicate connection token
             let mutable state = Ok(LedgerVerification.initial expected duplicate)
 
-            use command =
-                DatabaseSession.command
+            use statement =
+                DatabaseSession.statement
                     connection
                     ($"SELECT {StoredEntries.columns} FROM claimcore.ledger ORDER BY sequence")
                     [||]
 
-            use! reader = command.ExecuteReaderAsync(token)
+            use! reader = statement.ExecuteReaderAsync(token)
             let mutable reading = true
 
             while reading && Result.isOk state do
