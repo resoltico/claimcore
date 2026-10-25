@@ -1,5 +1,7 @@
 module ClaimCore.Tests.InputDiagnosticTests
 
+open ClaimCore.Cli
+
 open System
 open System.Text
 open System.Text.Json.Nodes
@@ -28,7 +30,7 @@ let private principal () =
 let private localDiagnostics () =
     for setting, _ in InputDiagnostics.settings do
         for issue, _ in InputDiagnostics.configurationIssues do
-            let frame: ClaimCore.Contract.FrameReply =
+            let frame: ClaimCore.Cli.FrameReply =
                 {
                     Endpoint = None
                     OperationId = None
@@ -36,17 +38,14 @@ let private localDiagnostics () =
                     Result = FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue))
                 }
 
-            let bytes = ClaimCore.Contract.Frames.encode frame
+            let bytes = ClaimCore.Cli.Frames.encode frame
 
             Expect.equal
-                (ClaimCore.Contract.Frames.decode bytes)
+                (ClaimCore.Cli.Frames.decode bytes)
                 (Ok frame)
                 "Closed configuration facts survive framing"
 
-            Expect.equal
-                (ClaimCore.Contract.Frames.exitCode frame)
-                3
-                "Definite pre-dispatch failure"
+            Expect.equal (ClaimCore.Cli.Frames.exitCode frame) 3 "Definite pre-dispatch failure"
 
 [<Tests>]
 let tests =

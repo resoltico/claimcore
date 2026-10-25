@@ -151,28 +151,16 @@ module BindingValidation =
                     constant item.Value (at selected [] item.Path Api.operationExecute.Input.Schema)
                 )
             then
-                invalidOp "An invocation constant does not match its declared member."
-
-    let private validateInvocation
-        (interaction: InteractionDefinition)
-        (alias: InvocationDefinition)
-        =
-        let constants = interaction.Constants @ alias.Constants
-        let selected = assignmentMap constants
-        validateConstants selected constants
-
-        for input in interaction.Inputs do
-            let present = constants @ input.WhenPresent |> assignmentMap
-            validateConstants present input.WhenPresent
-
-            if
-                input.Argument.IsNone
-                && input.Source <> InputSource.OperationIdentity
-                && not (Map.containsKey (key input.Path) selected)
-            then
-                invalidOp "An invocation omits a required authored or technical operand."
+                invalidOp "An interaction constant does not match its declared member."
 
     let validate (interactions: InteractionDefinition list) =
+        let identifiers =
+            interactions
+            |> List.map (fun interaction -> interaction.Scope, interaction.Kind)
+
+        if Set.count (Set.ofList identifiers) <> identifiers.Length then
+            invalidOp "Duplicate interaction definition."
+
         let knownFields = FieldTable.rows |> List.map _.Field |> Set.ofList
 
         for interaction in interactions do
@@ -181,10 +169,8 @@ module BindingValidation =
             if Set.count (Set.ofList identities) <> identities.Length then
                 invalidOp "Duplicate interaction identity."
 
-            let arguments = interaction.Inputs |> List.choose _.Argument
-
-            if Set.count (Set.ofList arguments) <> arguments.Length then
-                invalidOp "Ambiguous client input argument."
+            let selected = assignmentMap interaction.Constants
+            validateConstants selected interaction.Constants
 
             for input in interaction.Inputs do
                 match input.Source with
@@ -215,15 +201,6 @@ module BindingValidation =
                 then
                     invalidOp "An interaction prefill field is absent."
 
-            interaction.Invocations |> List.iter (validateInvocation interaction)
 
             leaves [] [] Api.operationExecute.Input.Schema
             |> List.iter (covered interaction)
-
-        let aliases =
-            interactions
-            |> List.collect (fun interaction ->
-                interaction.Invocations |> List.map (fun alias -> interaction.Scope, alias.Verb))
-
-        if Set.count (Set.ofList aliases) <> aliases.Length then
-            invalidOp "Ambiguous client invocation alias."

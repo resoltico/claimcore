@@ -1,5 +1,7 @@
 module ClaimCore.Tests.FrameSchemaTests
 
+open ClaimCore.Cli
+
 open System.IO
 open System.Text.Json
 open System.Text.Json.Nodes

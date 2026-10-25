@@ -1,5 +1,7 @@
 module ClaimCore.AcceptanceTests.CliSetupTests
 
+open ClaimCore.Cli
+
 open ClaimCore.Contract
 
 open System.Text

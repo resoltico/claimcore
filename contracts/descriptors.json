@@ -965,12 +965,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -989,12 +984,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.incidentDate",
@@ -1015,12 +1005,7 @@
           "diagnosticTargets": [
             "incidentDate"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "incident-date"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.incidentNotificationDate",
@@ -1041,12 +1026,7 @@
           "diagnosticTargets": [
             "incidentNotificationDate"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "incident-notification-date"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.incidentCountry",
@@ -1067,12 +1047,7 @@
           "diagnosticTargets": [
             "incidentCountry"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "incident-country"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.claimantName",
@@ -1093,12 +1068,7 @@
           "diagnosticTargets": [
             "claimantName"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "claimant-name"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.insurerName",
@@ -1119,12 +1089,7 @@
           "diagnosticTargets": [
             "insurerName"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "insurer-name"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.claimedAmount",
@@ -1145,12 +1110,7 @@
           "diagnosticTargets": [
             "claimedAmount"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "claimed-amount"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.claimedCurrency",
@@ -1171,12 +1131,7 @@
           "diagnosticTargets": [
             "claimedCurrency"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "claimed-currency"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -1198,12 +1153,6 @@
             "expectedRevision"
           ],
           "value": 0
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "open",
-          "constants": []
         }
       ]
     },
@@ -1228,12 +1177,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -1252,12 +1196,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -1276,12 +1215,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         },
         {
           "identity": "act.values.incidentDate",
@@ -1302,12 +1236,7 @@
           "diagnosticTargets": [
             "incidentDate"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "incident-date"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.incidentNotificationDate",
@@ -1328,12 +1257,7 @@
           "diagnosticTargets": [
             "incidentNotificationDate"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "incident-notification-date"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.incidentCountry",
@@ -1354,12 +1278,7 @@
           "diagnosticTargets": [
             "incidentCountry"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "incident-country"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.claimantName",
@@ -1380,12 +1299,7 @@
           "diagnosticTargets": [
             "claimantName"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "claimant-name"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.insurerName",
@@ -1406,12 +1320,7 @@
           "diagnosticTargets": [
             "insurerName"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "insurer-name"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.claimedAmount",
@@ -1432,12 +1341,7 @@
           "diagnosticTargets": [
             "claimedAmount"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "claimed-amount"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.claimedCurrency",
@@ -1458,12 +1362,7 @@
           "diagnosticTargets": [
             "claimedCurrency"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "claimed-currency"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -1479,12 +1378,6 @@
             "kind"
           ],
           "value": "AMEND_REGISTRATION"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "amend-registration",
-          "constants": []
         }
       ]
     },
@@ -1509,12 +1402,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -1533,12 +1421,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -1557,12 +1440,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         },
         {
           "identity": "act.groups.registration.mode",
@@ -1588,12 +1466,7 @@
           "diagnosticTargets": [
             "registration"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "registration"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.registration.values.incidentDate",
@@ -1626,12 +1499,7 @@
           "diagnosticTargets": [
             "incidentDate"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "incident-date"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.registration.values.incidentNotificationDate",
@@ -1664,12 +1532,7 @@
           "diagnosticTargets": [
             "incidentNotificationDate"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "incident-notification-date"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.registration.values.incidentCountry",
@@ -1702,12 +1565,7 @@
           "diagnosticTargets": [
             "incidentCountry"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "incident-country"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.registration.values.claimantName",
@@ -1740,12 +1598,7 @@
           "diagnosticTargets": [
             "claimantName"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "claimant-name"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.registration.values.insurerName",
@@ -1778,12 +1631,7 @@
           "diagnosticTargets": [
             "insurerName"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "insurer-name"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.registration.values.claimedAmount",
@@ -1816,12 +1664,7 @@
           "diagnosticTargets": [
             "claimedAmount"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "claimed-amount"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.registration.values.claimedCurrency",
@@ -1854,12 +1697,7 @@
           "diagnosticTargets": [
             "claimedCurrency"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "claimed-currency"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.decision.mode",
@@ -1886,12 +1724,7 @@
           "diagnosticTargets": [
             "decision"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "decision"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.decision.values.paymentDecisionDate",
@@ -1924,12 +1757,7 @@
           "diagnosticTargets": [
             "paymentDecisionDate"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "payment-decision-date"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.decision.values.payableAmount",
@@ -1962,12 +1790,7 @@
           "diagnosticTargets": [
             "payableAmount"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "payable-amount"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.decision.values.payableCurrency",
@@ -2000,12 +1823,7 @@
           "diagnosticTargets": [
             "payableCurrency"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "payable-currency"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.payment.mode",
@@ -2032,12 +1850,7 @@
           "diagnosticTargets": [
             "payment"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "payment"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.groups.payment.values.paymentDate",
@@ -2070,12 +1883,7 @@
           "diagnosticTargets": [
             "paymentDate"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "payment-date"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -2091,12 +1899,6 @@
             "kind"
           ],
           "value": "CORRECT_CASE"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "correct",
-          "constants": []
         }
       ]
     },
@@ -2121,12 +1923,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -2145,12 +1942,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -2169,12 +1961,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         },
         {
           "identity": "act.values.paymentDecisionDate",
@@ -2195,12 +1982,7 @@
           "diagnosticTargets": [
             "paymentDecisionDate"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "payment-decision-date"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.payableAmount",
@@ -2221,12 +2003,7 @@
           "diagnosticTargets": [
             "payableAmount"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "payable-amount"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.values.payableCurrency",
@@ -2247,12 +2024,7 @@
           "diagnosticTargets": [
             "payableCurrency"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "payable-currency"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -2268,12 +2040,6 @@
             "kind"
           ],
           "value": "DECIDE"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "decide",
-          "constants": []
         }
       ]
     },
@@ -2298,12 +2064,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -2322,12 +2083,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -2346,12 +2102,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         }
       ],
       "constants": [
@@ -2367,12 +2118,6 @@
             "kind"
           ],
           "value": "WITHDRAW_DECISION"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "withdraw-decision",
-          "constants": []
         }
       ]
     },
@@ -2397,12 +2142,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -2421,12 +2161,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -2445,12 +2180,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         },
         {
           "identity": "act.values.paymentDate",
@@ -2471,12 +2201,7 @@
           "diagnosticTargets": [
             "paymentDate"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "payment-date"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -2492,12 +2217,6 @@
             "kind"
           ],
           "value": "RECORD_PAYMENT"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "record-payment",
-          "constants": []
         }
       ]
     },
@@ -2522,12 +2241,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -2546,12 +2260,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -2570,12 +2279,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         }
       ],
       "constants": [
@@ -2591,12 +2295,6 @@
             "kind"
           ],
           "value": "CLEAR_PAYMENT"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "clear-payment",
-          "constants": []
         }
       ]
     },
@@ -2621,12 +2319,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -2645,12 +2338,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -2669,12 +2357,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         }
       ],
       "constants": [
@@ -2690,12 +2373,6 @@
             "kind"
           ],
           "value": "CLOSE"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "close",
-          "constants": []
         }
       ]
     },
@@ -2720,12 +2397,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -2744,12 +2416,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -2768,12 +2435,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         }
       ],
       "constants": [
@@ -2789,12 +2451,6 @@
             "kind"
           ],
           "value": "REOPEN"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "reopen",
-          "constants": []
         }
       ]
     },
@@ -2819,12 +2475,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -2843,12 +2494,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -2867,12 +2513,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         },
         {
           "identity": "act.reason",
@@ -2892,12 +2533,7 @@
           "diagnosticTargets": [
             "reason"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "reason"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -2913,12 +2549,6 @@
             "kind"
           ],
           "value": "VOID"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "void",
-          "constants": []
         }
       ]
     },
@@ -2943,12 +2573,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -2967,12 +2592,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -2991,12 +2611,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         },
         {
           "identity": "act.reason",
@@ -3016,12 +2631,7 @@
           "diagnosticTargets": [
             "reason"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "reason"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -3037,12 +2647,6 @@
             "kind"
           ],
           "value": "REINSTATE"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "reinstate",
-          "constants": []
         }
       ]
     },
@@ -3067,12 +2671,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "caseReference",
@@ -3091,12 +2690,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "POSITIONAL",
-            "index": 0
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "expectedRevision",
@@ -3115,12 +2709,7 @@
           "diagnosticTargets": [
             "expectedRevision"
           ],
-          "source": "EXPECTED_REVISION",
-          "argument": {
-            "kind": "FLAG",
-            "name": "expected-revision"
-          },
-          "whenPresent": []
+          "source": "EXPECTED_REVISION"
         }
       ],
       "constants": [
@@ -3136,12 +2725,6 @@
             "kind"
           ],
           "value": "ERASE"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "erase",
-          "constants": []
         }
       ]
     },
@@ -3166,12 +2749,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "target.kind",
@@ -3193,12 +2771,7 @@
           "order": 1,
           "prefill": null,
           "diagnosticTargets": [],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "kind"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "target.issuer",
@@ -3218,12 +2791,7 @@
           "diagnosticTargets": [
             "principal.issuer"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "issuer"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "target.subject",
@@ -3243,12 +2811,7 @@
           "diagnosticTargets": [
             "principal.subject"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "subject"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -3264,12 +2827,6 @@
             "kind"
           ],
           "value": "REGISTER_ACTOR"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "register",
-          "constants": []
         }
       ]
     },
@@ -3294,12 +2851,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "target.kind",
@@ -3321,12 +2873,7 @@
           "order": 1,
           "prefill": null,
           "diagnosticTargets": [],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "kind"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "target.issuer",
@@ -3346,12 +2893,7 @@
           "diagnosticTargets": [
             "principal.issuer"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "issuer"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "target.subject",
@@ -3371,12 +2913,7 @@
           "diagnosticTargets": [
             "principal.subject"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "subject"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.role",
@@ -3403,12 +2940,7 @@
           "order": 4,
           "prefill": null,
           "diagnosticTargets": [],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "role"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.scope.kind",
@@ -3431,9 +2963,7 @@
           "order": 5,
           "prefill": null,
           "diagnosticTargets": [],
-          "source": "AUTHORED",
-          "argument": null,
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.scope.caseReference",
@@ -3463,21 +2993,7 @@
           "diagnosticTargets": [
             "caseReference"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "case"
-          },
-          "whenPresent": [
-            {
-              "path": [
-                "act",
-                "scope",
-                "kind"
-              ],
-              "value": "CASE"
-            }
-          ]
+          "source": "AUTHORED"
         },
         {
           "identity": "act.active",
@@ -3495,9 +3011,7 @@
           "order": 7,
           "prefill": null,
           "diagnosticTargets": [],
-          "source": "AUTHORED",
-          "argument": null,
-          "whenPresent": []
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -3513,48 +3027,6 @@
             "kind"
           ],
           "value": "SET_GRANT"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "grant",
-          "constants": [
-            {
-              "path": [
-                "act",
-                "active"
-              ],
-              "value": true
-            },
-            {
-              "path": [
-                "act",
-                "scope",
-                "kind"
-              ],
-              "value": "INSTALLATION"
-            }
-          ]
-        },
-        {
-          "verb": "revoke",
-          "constants": [
-            {
-              "path": [
-                "act",
-                "active"
-              ],
-              "value": false
-            },
-            {
-              "path": [
-                "act",
-                "scope",
-                "kind"
-              ],
-              "value": "INSTALLATION"
-            }
-          ]
         }
       ]
     },
@@ -3579,12 +3051,7 @@
           "diagnosticTargets": [
             "operationId"
           ],
-          "source": "OPERATION_IDENTITY",
-          "argument": {
-            "kind": "FLAG",
-            "name": "operation-id"
-          },
-          "whenPresent": []
+          "source": "OPERATION_IDENTITY"
         },
         {
           "identity": "target.kind",
@@ -3606,12 +3073,7 @@
           "order": 1,
           "prefill": null,
           "diagnosticTargets": [],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "kind"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "target.issuer",
@@ -3631,12 +3093,7 @@
           "diagnosticTargets": [
             "principal.issuer"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "issuer"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "target.subject",
@@ -3656,12 +3113,7 @@
           "diagnosticTargets": [
             "principal.subject"
           ],
-          "source": "AUTHORED",
-          "argument": {
-            "kind": "FLAG",
-            "name": "subject"
-          },
-          "whenPresent": []
+          "source": "AUTHORED"
         },
         {
           "identity": "act.enabled",
@@ -3679,9 +3131,7 @@
           "order": 4,
           "prefill": null,
           "diagnosticTargets": [],
-          "source": "AUTHORED",
-          "argument": null,
-          "whenPresent": []
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -3697,32 +3147,6 @@
             "kind"
           ],
           "value": "SET_ENABLED"
-        }
-      ],
-      "invocations": [
-        {
-          "verb": "enable",
-          "constants": [
-            {
-              "path": [
-                "act",
-                "enabled"
-              ],
-              "value": true
-            }
-          ]
-        },
-        {
-          "verb": "disable",
-          "constants": [
-            {
-              "path": [
-                "act",
-                "enabled"
-              ],
-              "value": false
-            }
-          ]
         }
       ]
     }

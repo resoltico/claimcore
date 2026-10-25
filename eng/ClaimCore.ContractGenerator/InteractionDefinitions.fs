@@ -12,9 +12,8 @@ module InteractionDefinitions =
         assignment path (BindingValue.Text value)
 
     let private condition path value : BindingCondition = { Path = path; Value = value }
-    let private flag name = Some(InvocationArgument.Flag name)
 
-    let private input path kind label argument : InteractionInput =
+    let private input path kind label : InteractionInput =
         {
             Identity = String.concat "." path
             Field = None
@@ -27,16 +26,13 @@ module InteractionDefinitions =
             Prefill = None
             DiagnosticTargets = []
             Source = InputSource.Authored
-            Argument = argument
-            WhenPresent = []
         }
 
     let private identity =
         { input
               [ "operationId" ]
               BindingKind.Text
-              (AuthorityOperationDefinitions.labelId "operationId")
-              (flag "operation-id") with
+              (AuthorityOperationDefinitions.labelId "operationId") with
             Source = InputSource.OperationIdentity
             DiagnosticTargets = [ "operationId" ]
         }
@@ -45,21 +41,19 @@ module InteractionDefinitions =
         { input
               [ "expectedRevision" ]
               BindingKind.Integer
-              (AuthorityOperationDefinitions.labelId "expectedRevision")
-              (flag "expected-revision") with
+              (AuthorityOperationDefinitions.labelId "expectedRevision") with
             Source = InputSource.ExpectedRevision
             DiagnosticTargets = [ "expectedRevision" ]
         }
 
     let private reference =
         { input
-              [ "caseReference" ]
+              [ (FieldTable.key BusinessField.CaseReference) ]
               BindingKind.Text
-              (FieldTable.labelId BusinessField.CaseReference)
-              (Some(InvocationArgument.Positional 0)) with
+              (FieldTable.labelId BusinessField.CaseReference) with
             Field = Some(InputTarget.Field BusinessField.CaseReference)
             Prefill = Some BusinessField.CaseReference
-            DiagnosticTargets = [ "caseReference" ]
+            DiagnosticTargets = [ (FieldTable.key BusinessField.CaseReference) ]
         }
 
     let private scalar prefix branches (field: FieldInputDefinition) =
@@ -73,7 +67,7 @@ module InteractionDefinitions =
                 Vocabulary.messageKey InputTargets.vocabulary InputTarget.Reason "meaning"
             | _ -> invalidOp "An authored scalar needs a semantic presentation."
 
-        { input (prefix @ [ token ]) BindingKind.Text label (flag (Grammar.kebab token)) with
+        { input (prefix @ [ token ]) BindingKind.Text label with
             Field = Some field.FieldName
             Branches = branches
             MeaningId = Some meaning
@@ -92,8 +86,7 @@ module InteractionDefinitions =
             { input
                   path
                   (BindingKind.Group(List.map CorrectionActions.token group.Actions))
-                  group.LabelId
-                  (flag name) with
+                  group.LabelId with
                 MeaningId = Some group.MeaningId
                 DiagnosticTargets = [ name ]
             }
@@ -137,13 +130,7 @@ module InteractionDefinitions =
                        [ assignment [ "expectedRevision" ] (BindingValue.Integer 0L) ]
                    else
                        [])
-            Invocations =
-                [
-                    {
-                        Verb = Grammar.caseVerb kind
-                        Constants = []
-                    }
-                ]
+
         }
 
     let private target =
@@ -152,19 +139,16 @@ module InteractionDefinitions =
                 [ "target"; "kind" ]
                 (BindingKind.Choice(PrincipalKinds.all))
                 (AuthorityOperationDefinitions.labelId "kind")
-                (flag "kind")
             { input
                   [ "target"; "issuer" ]
                   BindingKind.Text
-                  (AuthorityOperationDefinitions.labelId "issuer")
-                  (flag "issuer") with
+                  (AuthorityOperationDefinitions.labelId "issuer") with
                 DiagnosticTargets = [ "principal.issuer" ]
             }
             { input
                   [ "target"; "subject" ]
                   BindingKind.Text
-                  (AuthorityOperationDefinitions.labelId "subject")
-                  (flag "subject") with
+                  (AuthorityOperationDefinitions.labelId "subject") with
                 DiagnosticTargets = [ "principal.subject" ]
             }
         ]
@@ -178,43 +162,25 @@ module InteractionDefinitions =
                     [ "act"; "role" ]
                     (BindingKind.Choice(List.map RoleTokens.token RoleTokens.all))
                     field.LabelId
-                    (flag "role")
             ]
         | AuthorityInputPrimitive.Boolean ->
-            [ input [ "act"; field.Name ] BindingKind.Boolean field.LabelId None ]
+            [ input [ "act"; field.Name ] BindingKind.Boolean field.LabelId ]
         | AuthorityInputPrimitive.Scope ->
             [
                 input
                     [ "act"; "scope"; "kind" ]
                     (BindingKind.Group [ "INSTALLATION"; "CASE" ])
                     field.LabelId
-                    None
                 { input
-                      [ "act"; "scope"; "caseReference" ]
+                      [ "act"; "scope"; (FieldTable.key BusinessField.CaseReference) ]
                       BindingKind.Text
-                      (FieldTable.labelId BusinessField.CaseReference)
-                      (flag "case") with
+                      (FieldTable.labelId BusinessField.CaseReference) with
                     Field = Some(InputTarget.Field BusinessField.CaseReference)
                     MeaningId = Some(FieldTable.meaningId BusinessField.CaseReference)
-                    DiagnosticTargets = [ "caseReference" ]
+                    DiagnosticTargets = [ (FieldTable.key BusinessField.CaseReference) ]
                     Branches = [ condition [ "act"; "scope"; "kind" ] "CASE" ]
-                    WhenPresent = [ text [ "act"; "scope"; "kind" ] "CASE" ]
                 }
             ]
-
-    let private authorityAlias kind verb : InvocationDefinition =
-        let constants =
-            match kind with
-            | AuthorityKind.SetEnabled ->
-                [ assignment [ "act"; "enabled" ] (BindingValue.Boolean(verb = "enable")) ]
-            | AuthorityKind.SetGrant ->
-                [
-                    assignment [ "act"; "active" ] (BindingValue.Boolean(verb = "grant"))
-                    text [ "act"; "scope"; "kind" ] "INSTALLATION"
-                ]
-            | _ -> []
-
-        { Verb = verb; Constants = constants }
 
     let private authorityDefinition
         (command: AuthorityOperationDefinition)
@@ -226,7 +192,6 @@ module InteractionDefinitions =
             Kind = kind
             Inputs = ordered (identity :: target @ List.collect authorityInput command.Inputs)
             Constants = [ text [ "scope" ] OperationScopes.Authority; text [ "act"; "kind" ] kind ]
-            Invocations = Grammar.authorityVerbs kind |> List.map (authorityAlias command.Kind)
         }
 
     let all =

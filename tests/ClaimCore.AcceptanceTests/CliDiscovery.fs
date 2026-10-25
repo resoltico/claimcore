@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliDiscovery
 
+open ClaimCore.Cli
+
 open System.Collections.Generic
 open System.Text
 open System.Text.Json

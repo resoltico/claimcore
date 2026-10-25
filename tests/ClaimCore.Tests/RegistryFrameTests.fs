@@ -1,5 +1,7 @@
 module ClaimCore.Tests.RegistryFrameTests
 
+open ClaimCore.Cli
+
 open System
 open System.Text
 open Expecto

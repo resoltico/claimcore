@@ -155,11 +155,6 @@ type BindingKind =
     | Group of string list
 
 [<RequireQualifiedAccess>]
-type InvocationArgument =
-    | Flag of string
-    | Positional of int
-
-[<RequireQualifiedAccess>]
 type InputSource =
     | Authored
     | OperationIdentity
@@ -178,14 +173,6 @@ type InteractionInput =
         Prefill: BusinessField option
         DiagnosticTargets: string list
         Source: InputSource
-        Argument: InvocationArgument option
-        WhenPresent: BindingAssignment list
-    }
-
-type InvocationDefinition =
-    {
-        Verb: string
-        Constants: BindingAssignment list
     }
 
 type InteractionDefinition =
@@ -194,7 +181,6 @@ type InteractionDefinition =
         Kind: string
         Inputs: InteractionInput list
         Constants: BindingAssignment list
-        Invocations: InvocationDefinition list
     }
 
 /// Static consumer metadata is encoded from this model, not inferred from an example JSON value.

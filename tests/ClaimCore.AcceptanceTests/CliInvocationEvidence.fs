@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliInvocationEvidence
 
+open ClaimCore.Cli
+
 open System.IO
 open System.Text
 open ClaimCore.TestSupport

@@ -101,7 +101,7 @@ module internal TextReply =
             line
                 language
                 "ui.availableCommands"
-                (advice |> List.map (get "act" >> Grammar.caseVerb) |> String.concat ", ")
+                (advice |> List.map (get "act" >> CliSyntax.caseVerb) |> String.concat ", ")
         ]
 
     let private receiptLines language tag value =
@@ -110,9 +110,9 @@ module internal TextReply =
 
         let verb =
             if get "kind" scope = "CASE" then
-                Grammar.caseVerb token
+                CliSyntax.caseVerb token
             else
-                Grammar.kebab token
+                CliSyntax.kebab token
 
         let target =
             if get "kind" scope = "CASE" then
@@ -159,7 +159,7 @@ module internal TextReply =
                 let summary =
                     [
                         get "revision" scope
-                        get "act" scope |> Grammar.caseVerb
+                        get "act" scope |> CliSyntax.caseVerb
                         get "recordedAt" change
                         get "operationId" change
                     ]
@@ -247,7 +247,7 @@ module internal TextReply =
                 else
                     "revoke"
             | "REGISTER_ACTOR" -> "register"
-            | _ -> Grammar.caseVerb token
+            | _ -> CliSyntax.caseVerb token
 
         let target =
             if get "scope" review = "AUTHORITY" then

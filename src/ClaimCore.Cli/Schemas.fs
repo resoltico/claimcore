@@ -1,4 +1,7 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Cli
+
+open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 /// Offline frame schemas derive endpoint payloads from the same registry as admission.
 module CliSchemas =

@@ -40,7 +40,10 @@ module ContractDiscovery =
 
     let helpTopic language topic =
         if topic = "verbs" then
-            let grammar = descriptorValue () |> Grammar.description
+            let grammar =
+                descriptorValue ()
+                |> Grammar.description
+                |> Result.defaultWith (fun () -> invalidOp "Invalid embedded CLI syntax.")
 
             MessageCatalogs.render language "cli.help.verbs" (Map.ofList [ "grammar", grammar ])
         else

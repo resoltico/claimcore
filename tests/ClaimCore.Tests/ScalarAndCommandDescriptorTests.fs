@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ScalarAndCommandDescriptorTests
 
+open ClaimCore.Cli
+
 open ClaimCore.ContractGeneration
 
 open ClaimCore.Contract

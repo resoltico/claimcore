@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliInvocationTests
 
+open ClaimCore.Cli
+
 open System
 open System.Text
 open System.Text.Json.Nodes
@@ -98,7 +100,7 @@ let private verbCoverage () =
     let verbs =
         commands
         |> Seq.map (fun item ->
-            (nonNull item)["kind"] |> nonNull |> _.GetValue<string>() |> Grammar.caseVerb)
+            (nonNull item)["kind"] |> nonNull |> _.GetValue<string>() |> CliSyntax.caseVerb)
         |> Seq.toList
 
     Expect.equal
@@ -125,20 +127,31 @@ let private verbCoverage () =
                 |> _.AsArray()
                 |> Seq.collect (fun field ->
                     let name = ((nonNull field)["fieldName"] |> nonNull).GetValue<string>()
-                    [ "--" + Grammar.kebab name; "synthetic" ])
+                    [ "--" + CliSyntax.kebab name; "synthetic" ])
                 |> Seq.toList
 
         let revision = if kind = "OPEN" then [] else [ "--expected-revision"; "1" ]
 
         let request =
-            prepared ([ "case"; Grammar.caseVerb kind; "SYNTHETIC" ] @ revision @ flags)
+            prepared ([ "case"; CliSyntax.caseVerb kind; "SYNTHETIC" ] @ revision @ flags)
 
         Expect.isOk (Frames.admit request.Bytes) "Every descriptor-derived case verb is admitted"
 
 
 let private authorityVerbCoverage () =
+    let definitions =
+        CliSyntax.compile (ContractDiscovery.definitions ()) |> Fixtures.accepted
+
     for kind in AuthorityKinds.all |> List.filter ((<>) AuthorityKind.ProvisionOwner) do
-        for verb in Grammar.authorityVerbs (AuthorityKinds.token kind) do
+        let syntax =
+            definitions
+            |> List.find (fun row ->
+                row.Definition.Scope = OperationScopes.Authority
+                && row.Definition.Kind = AuthorityKinds.token kind)
+
+        for alias in syntax.Invocations do
+            let verb = alias.Verb
+
             let role =
                 if List.contains verb [ "grant"; "revoke" ] then
                     [ "--role"; "CASE_READER" ]

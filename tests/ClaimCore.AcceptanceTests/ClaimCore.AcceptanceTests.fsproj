@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />

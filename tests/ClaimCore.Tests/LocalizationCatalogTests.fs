@@ -208,9 +208,7 @@ let private diagnosticDiscovery () =
         "Discovery contains the entire current public diagnostic vocabulary."
 
     for language in LocalizationPolicy.languages do
-        let bytes =
-            Discovery.describeText language Protocol.CliDescription.Diagnostics
-            |> Option.get
+        let bytes = Discovery.describeText language CliDescription.Diagnostics |> Option.get
 
         let text = System.Text.Encoding.UTF8.GetString bytes
 

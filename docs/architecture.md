@@ -8,14 +8,14 @@ One HTTPS service fronts one PostgreSQL authority; CLI and browser hold no datab
 
 | Project | Responsibility and direct project dependencies |
 | --- | --- |
-| Contract | Pure vocabulary/models, typed interaction bindings/codecs, registry, fields, refusals/messages/CLI grammar; none |
+| Contract | Pure vocabulary/models, typed interaction bindings/codecs, registry, fields, refusals/messages; none |
 | Domain | Private validated case state, admission and transitions; Contract |
 | RecordFormat | Versioned durable records; Domain, Contract |
 | Application | Pure authorization, operation decisions, queries and verification folds; Domain, RecordFormat, Contract |
 | Postgres | Locked transactions, reads, projections and schema administration; Application, Domain, RecordFormat, Contract |
 | HostSecurity | Managed private-file admission and TLS purposes; none |
 | Web | HTTP authentication/admission and composition; Application, Postgres, Contract, HostSecurity |
-| CLI | Authenticated HTTPS client; Contract, HostSecurity |
+| CLI | Authenticated HTTPS client, command-line grammar and frames; Contract, HostSecurity |
 | Database | Owner administration; Application, Postgres, Contract, HostSecurity |
 
 Evaluated project references define the graph. Compiled guards reject I/O, clocks, environment, randomness and resource

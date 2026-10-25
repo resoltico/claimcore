@@ -21,7 +21,6 @@
     <Compile Include="Vocabulary/DeliveryVocabulary.fs" />
     <Compile Include="Vocabulary/InputDiagnostics.fs" />
     <Compile Include="Vocabulary/ProtocolFailures.fs" />
-    <Compile Include="Vocabulary/CliCommands.fs" />
     <Compile Include="Json/JsonValue.fs" />
     <Compile Include="Json/StrictJson.fs" />
     <Compile Include="Json/Writers.fs" />
@@ -59,9 +58,5 @@
     <Compile Include="Api/OpenApi.fs" />
     <Compile Include="Api/ContractIdentity.fs" />
     <Compile Include="HttpsOrigins.fs" />
-    <Compile Include="Cli/Frames.fs" />
-    <Compile Include="Cli/Schemas.fs" />
-    <Compile Include="Cli/Grammar.fs" />
-    <Compile Include="CliInvocation.fs" />
   </ItemGroup>
 </Project>

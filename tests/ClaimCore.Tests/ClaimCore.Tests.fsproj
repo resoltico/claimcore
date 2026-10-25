@@ -80,6 +80,7 @@
     <Compile Include="ConfigurationHelpTests.fs" />
     <Compile Include="CliDescriptionTests.fs" />
     <Compile Include="CliInvocationTests.fs" />
+    <Compile Include="CliSyntaxTests.fs" />
     <Compile Include="CliDiagnosticTextTests.fs" />
     <Compile Include="CliCharacterWarningTests.fs" />
     <Compile Include="InputDiagnosticTests.fs" />

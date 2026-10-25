@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliNativeOutput
 
+open ClaimCore.Cli
+
 open System
 open System.Collections.Generic
 open System.Diagnostics

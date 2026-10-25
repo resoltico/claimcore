@@ -1,5 +1,7 @@
 module ClaimCore.Tests.WireResponseTests
 
+open ClaimCore.Cli
+
 open ClaimCore.Contract
 
 open System
@@ -109,14 +111,14 @@ let private malformed () =
 
 let private frames () =
     let raw = """{"endpoint":"case.list","input":{ "limit" : 1 }}"""
-    let frame = ClaimCore.Contract.Frames.admit (bytes raw) |> accepted
+    let frame = ClaimCore.Cli.Frames.admit (bytes raw) |> accepted
 
     Expect.equal
-        (ClaimCore.Contract.Frames.inputBytes frame)
+        (ClaimCore.Cli.Frames.inputBytes frame)
         (bytes """{"limit":1}""")
         "The admitted body is compacted once before freezing."
 
-    let reply: ClaimCore.Contract.FrameReply =
+    let reply: ClaimCore.Cli.FrameReply =
         {
             Endpoint = Some "session.logout"
             OperationId = None
@@ -126,7 +128,7 @@ let private frames () =
 
     let roundTrip value =
         Expect.equal
-            (ClaimCore.Contract.Frames.decode (ClaimCore.Contract.Frames.encode value))
+            (ClaimCore.Cli.Frames.decode (ClaimCore.Cli.Frames.encode value))
             (Ok value)
             "CLI result frames round trip."
 
@@ -145,7 +147,7 @@ let private frames () =
         }
 
     roundTrip local
-    Expect.equal (ClaimCore.Contract.Frames.exitCode local) 130 "Cancellation exit code"
+    Expect.equal (ClaimCore.Cli.Frames.exitCode local) 130 "Cancellation exit code"
 
 let private checkDiscriminators (root: JsonElement) =
     let schemas = root.GetProperty("components").GetProperty "schemas"

@@ -508,27 +508,6 @@ module DescriptorCodecs =
                     (record id |> field "options" id (many text))
             ]
 
-    let private argument =
-        tagged
-            "Presentation.InvocationArgument"
-            "kind"
-            [
-                variant
-                    "FLAG"
-                    InvocationArgument.Flag
-                    (function
-                    | InvocationArgument.Flag value -> Some value
-                    | _ -> None)
-                    (record id |> field "name" id text)
-                variant
-                    "POSITIONAL"
-                    InvocationArgument.Positional
-                    (function
-                    | InvocationArgument.Positional value -> Some value
-                    | _ -> None)
-                    (record id |> field "index" id count)
-            ]
-
     let private inputSource =
         Vocabulary.define
             "inputSource"
@@ -540,36 +519,20 @@ module DescriptorCodecs =
         |> vocabulary
 
     let private binding =
-        record
-            (fun
-                identity
-                field
-                path
-                kind
-                branches
-                label
-                meaning
-                order
-                prefill
-                targets
-                source
-                argument
-                present ->
-                {
-                    InteractionInput.Identity = identity
-                    Field = field
-                    Path = path
-                    Kind = kind
-                    Branches = branches
-                    LabelId = label
-                    MeaningId = meaning
-                    Order = order
-                    Prefill = prefill
-                    DiagnosticTargets = targets
-                    Source = source
-                    Argument = argument
-                    WhenPresent = present
-                })
+        record (fun identity field path kind branches label meaning order prefill targets source ->
+            {
+                InteractionInput.Identity = identity
+                Field = field
+                Path = path
+                Kind = kind
+                Branches = branches
+                LabelId = label
+                MeaningId = meaning
+                Order = order
+                Prefill = prefill
+                DiagnosticTargets = targets
+                Source = source
+            })
         |> field "identity" _.Identity text
         |> field "field" _.Field (nullable inputTarget)
         |> field "path" _.Path (many text)
@@ -581,35 +544,21 @@ module DescriptorCodecs =
         |> field "prefill" _.Prefill (nullable fieldName)
         |> field "diagnosticTargets" _.DiagnosticTargets (many text)
         |> field "source" _.Source inputSource
-        |> field "argument" _.Argument (nullable argument)
-        |> field "whenPresent" _.WhenPresent (many assignment)
         |> build
         |> named "Presentation.InteractionInput"
 
-    let private invocation =
-        record (fun verb constants ->
-            {
-                InvocationDefinition.Verb = verb
-                Constants = constants
-            })
-        |> field "verb" _.Verb text
-        |> field "constants" _.Constants (many assignment)
-        |> build
-
     let private interaction =
-        record (fun scope kind inputs constants invocations ->
+        record (fun scope kind inputs constants ->
             {
                 InteractionDefinition.Scope = scope
                 Kind = kind
                 Inputs = inputs
                 Constants = constants
-                Invocations = invocations
             })
         |> field "scope" _.Scope text
         |> field "kind" _.Kind text
         |> field "inputs" _.Inputs (many binding)
         |> field "constants" _.Constants (many assignment)
-        |> field "invocations" _.Invocations (many invocation)
         |> build
         |> named "Presentation.InteractionDefinition"
 

@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliCalls
 
+open ClaimCore.Cli
+
 open System
 open System.Collections.Generic
 open System.IO
@@ -34,17 +36,17 @@ let parse code (result: ProcessRunner.Result) =
         let retry = Encoding.UTF8.GetBytes lines[lines.Length - 1]
 
         Expect.isOk
-            (ClaimCore.Contract.Frames.admit retry)
+            (ClaimCore.Cli.Frames.admit retry)
             "The last stderr line is an exact retry frame"
     else
         Expect.equal result.StandardError.Length 0 "No private diagnostics"
 
     let admitted =
-        ClaimCore.Contract.Frames.decode result.StandardOutput
+        ClaimCore.Cli.Frames.decode result.StandardOutput
         |> Result.defaultWith (fun _ ->
             failtest "Published CLI output is an admitted closed reply frame")
 
-    Expect.equal (ClaimCore.Contract.Frames.exitCode admitted) code "Frame and process exits agree"
+    Expect.equal (ClaimCore.Cli.Frames.exitCode admitted) code "Frame and process exits agree"
     use document = JsonDocument.Parse(ReadOnlyMemory result.StandardOutput)
     let reply = document.RootElement.Clone()
     deliveryFields code reply
@@ -213,11 +215,11 @@ let internal requireAcceptedReplies expected (result: ProcessRunner.Result) =
 
     for line in lines[.. lines.Length - 2] do
         let admitted =
-            ClaimCore.Contract.Frames.decode (Encoding.UTF8.GetBytes line)
+            ClaimCore.Cli.Frames.decode (Encoding.UTF8.GetBytes line)
             |> Result.defaultWith (fun _ ->
                 failtest "Setup output is an admitted closed reply frame")
 
-        Expect.equal (ClaimCore.Contract.Frames.exitCode admitted) 0 "Setup frame exit"
+        Expect.equal (ClaimCore.Cli.Frames.exitCode admitted) 0 "Setup frame exit"
         use document = JsonDocument.Parse(line)
         let reply = document.RootElement
         let receipt = reply |> require "ACCEPTED"
