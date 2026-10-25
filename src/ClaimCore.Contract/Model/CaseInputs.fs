@@ -50,7 +50,7 @@ type Correction =
 type CaseAct =
     | Open of Registration
     | AmendRegistration of Registration
-    | CorrectCase of Correction
+    | Correct of Correction
     | Decide of Decision
     | WithdrawDecision
     | RecordPayment of Payment
@@ -68,3 +68,21 @@ type CaseRequest =
         ExpectedRevision: int64
         Act: CaseAct
     }
+
+module CaseActs =
+    let kind =
+        function
+        | CaseAct.Open _ -> CaseActKind.Business BusinessActKind.Open
+        | CaseAct.AmendRegistration _ -> CaseActKind.Business BusinessActKind.AmendRegistration
+        | CaseAct.Correct _ -> CaseActKind.Business BusinessActKind.Correct
+        | CaseAct.Decide _ -> CaseActKind.Business BusinessActKind.Decide
+        | CaseAct.WithdrawDecision -> CaseActKind.Business BusinessActKind.WithdrawDecision
+        | CaseAct.RecordPayment _ -> CaseActKind.Business BusinessActKind.RecordPayment
+        | CaseAct.ClearPayment -> CaseActKind.Business BusinessActKind.ClearPayment
+        | CaseAct.Close -> CaseActKind.Business BusinessActKind.Close
+        | CaseAct.Reopen -> CaseActKind.Business BusinessActKind.Reopen
+        | CaseAct.Void _ -> CaseActKind.Stewardship StewardshipActKind.Void
+        | CaseAct.Reinstate _ -> CaseActKind.Stewardship StewardshipActKind.Reinstate
+        | CaseAct.Erase -> CaseActKind.Stewardship StewardshipActKind.Erase
+
+    let name act = kind act |> CaseActKinds.token

@@ -24,7 +24,7 @@ let private scope (vector: JsonElement) =
         LedgerScope.Authority
             {
                 TargetActorId = Guid.Parse(text vector "subjectId")
-                Act = AuthorityKind.SetGrant
+                Act = AuthorityKind.Grant
             }
     else
         LedgerScope.Case
@@ -164,7 +164,7 @@ let private allMetadataFields () =
                         LedgerScope.Authority
                             {
                                 TargetActorId = otherId
-                                Act = AuthorityKind.SetGrant
+                                Act = AuthorityKind.Grant
                             }
                 }
             ]
@@ -232,7 +232,7 @@ let tests =
                     [
                         (CaseActKind.Business BusinessActKind.Open)
                         (CaseActKind.Business BusinessActKind.AmendRegistration)
-                        (CaseActKind.Business BusinessActKind.CorrectCase)
+                        (CaseActKind.Business BusinessActKind.Correct)
                         (CaseActKind.Business BusinessActKind.Decide)
                         (CaseActKind.Business BusinessActKind.WithdrawDecision)
                         (CaseActKind.Business BusinessActKind.RecordPayment)
@@ -255,9 +255,11 @@ let tests =
                     for kind, expected in
                         [
                             AuthorityKind.ProvisionOwner, 32uy
-                            AuthorityKind.RegisterActor, 33uy
-                            AuthorityKind.SetGrant, 34uy
-                            AuthorityKind.SetEnabled, 35uy
+                            AuthorityKind.Register, 33uy
+                            AuthorityKind.Grant, 34uy
+                            AuthorityKind.Revoke, 35uy
+                            AuthorityKind.Enable, 36uy
+                            AuthorityKind.Disable, 37uy
                         ] do
                         let scope =
                             {
@@ -294,7 +296,7 @@ let tests =
                                 LedgerScope.Authority
                                     {
                                         TargetActorId = Guid.Empty
-                                        Act = AuthorityKind.SetGrant
+                                        Act = AuthorityKind.Grant
                                     }
                         }
 
@@ -466,7 +468,7 @@ let tests =
                                         LedgerScope.Authority
                                             {
                                                 TargetActorId = entry.ActorId
-                                                Act = AuthorityKind.SetGrant
+                                                Act = AuthorityKind.Grant
                                             }
                                 }
 

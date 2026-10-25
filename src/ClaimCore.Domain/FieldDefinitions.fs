@@ -2,7 +2,7 @@ namespace ClaimCore.Domain
 
 open ClaimCore.Contract
 
-/// Describes an existing business field; descriptors are not additional claim entries.
+/// Describes an existing business field; catalog are not additional claim entries.
 type FieldDefinition =
     {
         Field: BusinessField

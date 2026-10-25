@@ -4,7 +4,7 @@ open System
 open System.Text.Json
 
 /// A mechanical projection of generated metadata; no command names or admission rules live here.
-module DescriptorText =
+module CatalogText =
     let private text (value: JsonElement) = value.GetString() |> nonNull
 
     let private localized language (value: JsonElement) (name: string) =

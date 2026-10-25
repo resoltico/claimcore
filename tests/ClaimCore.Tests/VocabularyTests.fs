@@ -78,4 +78,21 @@ let tests =
                                 [ CaseActKind.Business BusinessActKind.Open, "OPEN" ]
                             |> ignore)
                         "Missing stewardship variant")
+            testCase "one act vocabulary covers disjoint case and authority tokens" (fun () ->
+                let tokens = Vocabulary.tokens ActKinds.vocabulary
+
+                Expect.equal
+                    (List.length tokens)
+                    18
+                    "Twelve case and six authority acts, including owner provisioning"
+
+                Expect.equal (List.distinct tokens) tokens "Scopes have no ambiguous act spelling"
+
+                Expect.equal
+                    (Vocabulary.messageKey
+                        ActKinds.vocabulary
+                        (ActKind.Authority AuthorityKind.Revoke)
+                        "label")
+                    "act.REVOKE.label"
+                    "Shared act message family")
         ]

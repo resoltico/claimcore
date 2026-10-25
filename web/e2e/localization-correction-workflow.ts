@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { CaseFields, CommandDraft, CaseReceipt } from "../src/api/types";
+import type { CaseFields, OperationDraft, CaseReceipt } from "../src/api/types";
 import { expect, type Page } from "@playwright/test";
 import { startCommand } from "./case-workflow";
 import { browserRequest, sessionToken } from "./session-helpers";
@@ -14,7 +14,7 @@ export type Modes = Readonly<{
   payment: "KEEP" | "REPLACE" | "CLEAR";
 }>;
 type SeedStep = Readonly<{
-  act: CommandDraft["act"];
+  act: OperationDraft["act"];
   fields: CaseFields;
 }>;
 
@@ -70,7 +70,7 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
 const acceptSetup = async (
   page: Page,
   token: string,
-  request: CommandDraft,
+  request: OperationDraft,
   fields: CaseFields,
 ): Promise<CaseReceipt> => {
   const endpoint = endpoints.find((item) => item.id === "operation.execute");

@@ -1,4 +1,4 @@
-module ClaimCore.Tests.ScalarAndCommandDescriptorTests
+module ClaimCore.Tests.ScalarAndActCatalogTests
 
 open ClaimCore.Cli
 
@@ -33,15 +33,15 @@ let private expectText name maximum =
     | _ -> failtest (BusinessField.token name + " must be a text scalar.")
 
 let private expectFields kind expected =
-    let definition = CommandPresentation.forKind kind
+    let definition = ActPresentation.forKind kind
 
     match definition.Inputs with
-    | CommandInputShape.Fields inputs ->
+    | ActInputShape.Fields inputs ->
         Expect.equal
             (inputs |> List.map (fun input -> input.FieldName, input.Prefill))
             expected
             "Ordered semantic inputs"
-    | CommandInputShape.CorrectionGroups _ -> failtest "Expected an ordered scalar input shape."
+    | ActInputShape.CorrectionGroups _ -> failtest "Expected an ordered scalar input shape."
 
 let private blank fieldName =
     InputTarget.Field fieldName, PrefillSource.Blank
@@ -62,9 +62,9 @@ let private registrationFields =
 
 let private textAndDateRuleTests =
     testList
-        "text and date scalar descriptors"
+        "text and date scalar catalog"
         [
-            testCase "text descriptors own every text validation constraint" (fun () ->
+            testCase "text catalog own every text validation constraint" (fun () ->
                 expectText BusinessField.ClaimantName 200
                 expectText BusinessField.InsurerName 200
 
@@ -79,7 +79,7 @@ let private textAndDateRuleTests =
                     Expect.isNone
                         constraints.Policy
                         "Identifiers do not have grandfatherable syntax")
-            testCase "date descriptors define exact Gregorian input range" (fun () ->
+            testCase "date catalog define exact Gregorian input range" (fun () ->
                 for name in
                     [
                         BusinessField.IncidentDate
@@ -97,9 +97,9 @@ let private textAndDateRuleTests =
 
 let private numericAndStatusRuleTests =
     testList
-        "numeric and status scalar descriptors"
+        "numeric and status scalar catalog"
         [
-            testCase "amount and currency descriptors own the existing exact grammars" (fun () ->
+            testCase "amount and currency catalog own the existing exact grammars" (fun () ->
                 for name in [ BusinessField.ClaimedAmount; BusinessField.PayableAmount ] do
                     match scalar name with
                     | ScalarRule.Amount rule ->
@@ -188,7 +188,7 @@ let private correctionGroupDetails (groups: CorrectionGroupDefinition list) =
 let private commandInventoryTest =
     testCase "all twelve case act definitions are the sole command inventory" (fun () ->
         Expect.equal
-            (CommandPresentation.all |> List.map (fun definition -> definition.Kind))
+            (ActPresentation.all |> List.map (fun definition -> definition.Kind))
             CaseActKinds.all
             "Exact command order")
 
@@ -221,29 +221,29 @@ let private commandPrefillTest =
         expectFields (CaseActKind.Business BusinessActKind.Reopen) [])
 
 let private correctionGroupMetadataTest =
-    testCase "CORRECT_CASE describes required tagged groups and replacement fields" (fun () ->
+    testCase "CORRECT describes required tagged groups and replacement fields" (fun () ->
         let definition =
-            CommandPresentation.forKind (CaseActKind.Business BusinessActKind.CorrectCase)
+            ActPresentation.forKind (CaseActKind.Business BusinessActKind.Correct)
 
         match definition.Inputs with
-        | CommandInputShape.Fields _ -> failtest "CORRECT_CASE requires grouped inputs."
-        | CommandInputShape.CorrectionGroups groups ->
+        | ActInputShape.Fields _ -> failtest "CORRECT requires grouped inputs."
+        | ActInputShape.CorrectionGroups groups ->
             Expect.equal
                 (correctionGroupDetails groups)
                 expectedCorrectionGroups
                 "Groups, actions, and replacement scalars are semantic metadata")
 
 let private authoredInputFields () =
-    CommandPresentation.all
+    ActPresentation.all
     |> List.collect (fun definition ->
         match definition.Inputs with
-        | CommandInputShape.Fields fields -> fields
-        | CommandInputShape.CorrectionGroups groups ->
+        | ActInputShape.Fields fields -> fields
+        | ActInputShape.CorrectionGroups groups ->
             groups |> List.collect (fun group -> group.ReplaceFields))
     |> List.map (fun input -> input.FieldName)
     |> Set.ofList
 
-let private derivedFieldsAreNotCommandInputsTest =
+let private derivedFieldsAreNotActInputsTest =
     testCase "case reference and derived status are never command inputs" (fun () ->
         let inputs = authoredInputFields ()
 
@@ -262,13 +262,13 @@ let private commandInputTests =
             commandInventoryTest
             commandPrefillTest
             correctionGroupMetadataTest
-            derivedFieldsAreNotCommandInputsTest
+            derivedFieldsAreNotActInputsTest
         ]
 
 [<Tests>]
 let tests =
     testList
-        "Domain semantic descriptors"
+        "Domain semantic catalog"
         [
             textAndDateRuleTests
             numericAndStatusRuleTests

@@ -50,7 +50,7 @@
     <Compile Include="Codecs/ReplyCodecs.fs" />
     <Compile Include="ResolutionCodecs.fs" />
     <Compile Include="Presentation/Definitions.fs" />
-    <Compile Include="Presentation/DescriptorCodecs.fs" />
+    <Compile Include="Presentation/CatalogCodecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
     <Compile Include="Api/Correlation.fs" />
     <Compile Include="HostFailures.fs" />

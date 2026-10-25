@@ -94,7 +94,7 @@ let private malformed () =
     let ordinary =
         """{"act":"CLOSE","expectedRevision":1,"correction":{"registration":[],"decision":[],"payment":[]}}"""
 
-    let missing = """{"act":"CORRECT_CASE","expectedRevision":1}"""
+    let missing = """{"act":"CORRECT","expectedRevision":1}"""
 
     for raw in [ ordinary; missing ] do
         Expect.isError

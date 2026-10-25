@@ -91,7 +91,7 @@ module internal Persistence =
     let authority connection projection token =
         task {
             match projection with
-            | AuthorityProjection.RegisterActor(id, principal) ->
+            | AuthorityProjection.Register(id, principal) ->
                 let! _ = register connection id principal token
                 return ()
             | AuthorityProjection.ProvisionOwner(id, principal) ->

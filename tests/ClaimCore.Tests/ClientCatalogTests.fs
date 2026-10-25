@@ -1,4 +1,4 @@
-module ClaimCore.Tests.ClientInteractionTests
+module ClaimCore.Tests.ClientCatalogTests
 
 open Expecto
 open ClaimCore.Contract

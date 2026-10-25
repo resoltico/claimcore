@@ -56,9 +56,9 @@ let private replacement () =
 
     match request with
     | OperationInput.Case {
-                              Act = CaseAct.CorrectCase {
-                                                            Registration = RegistrationGroup.Replace value
-                                                        }
+                              Act = CaseAct.Correct {
+                                                        Registration = RegistrationGroup.Replace value
+                                                    }
                           } ->
         Expect.equal value.ClaimedAmount "1.0000" "Authored amount spelling is preserved"
 
@@ -87,7 +87,6 @@ let private invalidAliasConstants () =
 
     for constants in
         [
-            []
             [
                 {
                     Path = [ "act"; "enabled" ]
@@ -98,7 +97,7 @@ let private invalidAliasConstants () =
         let changed =
             definitions
             |> List.map (fun row ->
-                if row.Definition.Kind = "SET_ENABLED" then
+                if row.Definition.Kind = "ENABLE" then
                     { row with
                         Invocations =
                             row.Invocations
@@ -109,7 +108,7 @@ let private invalidAliasConstants () =
 
         Expect.isError
             (Grammar.prepareWith (fun () -> operationId) metadata changed arguments)
-            "A missing or wrongly typed implicit operand cannot be sent"
+            "A retired boolean operand cannot be sent"
 
 [<Tests>]
 let tests =
@@ -117,9 +116,7 @@ let tests =
         "CLI owned syntax"
         [
             testCase "correction selectors precede required replacement operands" replacement
-            testCase
-                "implicit alias operands remain required and type checked"
-                invalidAliasConstants
+            testCase "retired boolean operands are refused" invalidAliasConstants
             testCase "a dotted unknown verb cannot alias a known verb" (fun () ->
                 Expect.isError
                     (prepare ([ "case"; "open.extra"; "SYNTHETIC"; "--dry-run" ] @ registration))

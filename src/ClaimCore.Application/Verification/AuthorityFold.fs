@@ -156,19 +156,24 @@ module internal AuthorityFold =
         =
         match request.Act with
         | RecordedAuthorityAct.ProvisionOwner -> register actors entry id principal true
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.RegisterActor) ->
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Register) ->
             register actors entry id principal false
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetEnabled enabled) ->
+        | RecordedAuthorityAct.Operation SharedAuthorityAct.Enable ->
             target actors entry id principal
-            |> Result.map (fun actor -> Map.add id { actor with Enabled = enabled } actors)
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetGrant {
-                                                                         Role = role
-                                                                         Scope = scope
-                                                                         Active = active
-                                                                     }) ->
+            |> Result.map (fun actor -> Map.add id { actor with Enabled = true } actors)
+        | RecordedAuthorityAct.Operation SharedAuthorityAct.Disable ->
+            target actors entry id principal
+            |> Result.map (fun actor -> Map.add id { actor with Enabled = false } actors)
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant value)
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke value) ->
+            let active =
+                match request.Act with
+                | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant _) -> true
+                | _ -> false
+
             target actors entry id principal
             |> Result.bind (fun actor ->
-                grant installationId caseExists entry actor role scope active
+                grant installationId caseExists entry actor value.Role value.Scope active
                 |> Result.map (fun actor -> Map.add id actor actors))
 
     let apply

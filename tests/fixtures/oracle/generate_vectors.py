@@ -5,7 +5,7 @@ derives RFC 8785 canonical bytes, case-reference identities (UUIDv8), framed led
 salted commitments, the 183-byte entry preimage and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 6 --snapshot 4 --authority 3
+  python3 -I generate_vectors.py --request 7 --snapshot 4 --authority 4
 
 Writes JSON to standard output.
 """
@@ -20,12 +20,12 @@ import uuid
 SAFE = 9007199254740991
 SHORT = {0x08: "\\b", 0x09: "\\t", 0x0A: "\\n", 0x0C: "\\f", 0x0D: "\\r"}
 ACT_CODES = {
-    "OPEN": 1, "AMEND_REGISTRATION": 2, "CORRECT_CASE": 3, "DECIDE": 4, "WITHDRAW_DECISION": 5,
+    "OPEN": 1, "AMEND_REGISTRATION": 2, "CORRECT": 3, "DECIDE": 4, "WITHDRAW_DECISION": 5,
     "RECORD_PAYMENT": 6, "CLEAR_PAYMENT": 7, "CLOSE": 8, "REOPEN": 9, "VOID": 10,
-    "REINSTATE": 11, "ERASE": 12, "PROVISION_OWNER": 32, "REGISTER_ACTOR": 33, "SET_GRANT": 34,
-    "SET_ENABLED": 35,
+    "REINSTATE": 11, "ERASE": 12, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
+    "ENABLE": 36, "DISABLE": 37,
 }
-ENTRY_TAG = b"claimcore/ledger-entry/2\n"
+ENTRY_TAG = b"claimcore/ledger-entry/3\n"
 REFERENCE_TAG = b"claimcore/case-reference-id/2\n"
 
 
@@ -161,7 +161,7 @@ def ledger(sources, requests, snapshot, authority):
             "entryHash": entry_hash.hex(),
         })
         previous = entry_hash
-    return {"entryFormat": 2, "tag": ENTRY_TAG.decode("ascii"), "preimageBytes": 183,
+    return {"entryFormat": 3, "tag": ENTRY_TAG.decode("ascii"), "preimageBytes": 183,
             "actCodes": ACT_CODES, "vectors": vectors}
 
 

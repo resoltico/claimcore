@@ -204,11 +204,11 @@
       "allowsAbsence": false
     }
   ],
-  "commands": [
+  "acts": [
     {
       "kind": "OPEN",
-      "labelId": "command.OPEN.label",
-      "meaningId": "command.OPEN.meaning",
+      "labelId": "act.OPEN.label",
+      "meaningId": "act.OPEN.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -246,8 +246,8 @@
     },
     {
       "kind": "AMEND_REGISTRATION",
-      "labelId": "command.AMEND_REGISTRATION.label",
-      "meaningId": "command.AMEND_REGISTRATION.meaning",
+      "labelId": "act.AMEND_REGISTRATION.label",
+      "meaningId": "act.AMEND_REGISTRATION.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -291,9 +291,9 @@
       }
     },
     {
-      "kind": "CORRECT_CASE",
-      "labelId": "command.CORRECT_CASE.label",
-      "meaningId": "command.CORRECT_CASE.meaning",
+      "kind": "CORRECT",
+      "labelId": "act.CORRECT.label",
+      "meaningId": "act.CORRECT.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "CORRECTION_GROUPS",
@@ -393,8 +393,8 @@
     },
     {
       "kind": "DECIDE",
-      "labelId": "command.DECIDE.label",
-      "meaningId": "command.DECIDE.meaning",
+      "labelId": "act.DECIDE.label",
+      "meaningId": "act.DECIDE.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -419,8 +419,8 @@
     },
     {
       "kind": "WITHDRAW_DECISION",
-      "labelId": "command.WITHDRAW_DECISION.label",
-      "meaningId": "command.WITHDRAW_DECISION.meaning",
+      "labelId": "act.WITHDRAW_DECISION.label",
+      "meaningId": "act.WITHDRAW_DECISION.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -429,8 +429,8 @@
     },
     {
       "kind": "RECORD_PAYMENT",
-      "labelId": "command.RECORD_PAYMENT.label",
-      "meaningId": "command.RECORD_PAYMENT.meaning",
+      "labelId": "act.RECORD_PAYMENT.label",
+      "meaningId": "act.RECORD_PAYMENT.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -444,8 +444,8 @@
     },
     {
       "kind": "CLEAR_PAYMENT",
-      "labelId": "command.CLEAR_PAYMENT.label",
-      "meaningId": "command.CLEAR_PAYMENT.meaning",
+      "labelId": "act.CLEAR_PAYMENT.label",
+      "meaningId": "act.CLEAR_PAYMENT.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -454,8 +454,8 @@
     },
     {
       "kind": "CLOSE",
-      "labelId": "command.CLOSE.label",
-      "meaningId": "command.CLOSE.meaning",
+      "labelId": "act.CLOSE.label",
+      "meaningId": "act.CLOSE.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -464,8 +464,8 @@
     },
     {
       "kind": "REOPEN",
-      "labelId": "command.REOPEN.label",
-      "meaningId": "command.REOPEN.meaning",
+      "labelId": "act.REOPEN.label",
+      "meaningId": "act.REOPEN.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -474,8 +474,8 @@
     },
     {
       "kind": "VOID",
-      "labelId": "command.VOID.label",
-      "meaningId": "command.VOID.meaning",
+      "labelId": "act.VOID.label",
+      "meaningId": "act.VOID.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -489,8 +489,8 @@
     },
     {
       "kind": "REINSTATE",
-      "labelId": "command.REINSTATE.label",
-      "meaningId": "command.REINSTATE.meaning",
+      "labelId": "act.REINSTATE.label",
+      "meaningId": "act.REINSTATE.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -504,8 +504,8 @@
     },
     {
       "kind": "ERASE",
-      "labelId": "command.ERASE.label",
-      "meaningId": "command.ERASE.meaning",
+      "labelId": "act.ERASE.label",
+      "meaningId": "act.ERASE.meaning",
       "confirmationId": "ui.reviewConfirmation",
       "inputs": {
         "kind": "FIELDS",
@@ -536,98 +536,104 @@
   ],
   "authorityTarget": {
     "fieldName": "target",
-    "labelId": "authority.field.target.label",
+    "labelId": "input.target.label",
     "primitive": "PRINCIPAL"
   },
-  "authorityCommands": [
+  "authorityActs": [
     {
-      "kind": "REGISTER_ACTOR",
-      "labelId": "authority.REGISTER_ACTOR.label",
-      "meaningId": "authority.REGISTER_ACTOR.meaning",
+      "kind": "REGISTER",
+      "labelId": "act.REGISTER.label",
+      "meaningId": "act.REGISTER.meaning",
       "confirmationId": "ui.confirmExactRequest",
       "inputs": []
     },
     {
-      "kind": "SET_GRANT",
-      "labelId": "authority.SET_GRANT.label",
-      "meaningId": "authority.SET_GRANT.meaning",
+      "kind": "GRANT",
+      "labelId": "act.GRANT.label",
+      "meaningId": "act.GRANT.meaning",
       "confirmationId": "ui.confirmExactRequest",
       "inputs": [
         {
           "fieldName": "role",
-          "labelId": "authority.field.role.label",
+          "labelId": "input.role.label",
           "primitive": "ROLE"
         },
         {
           "fieldName": "scope",
-          "labelId": "authority.field.scope.label",
+          "labelId": "input.scope.label",
           "primitive": "SCOPE"
-        },
-        {
-          "fieldName": "active",
-          "labelId": "authority.field.active.label",
-          "primitive": "BOOLEAN"
         }
       ]
     },
     {
-      "kind": "SET_ENABLED",
-      "labelId": "authority.SET_ENABLED.label",
-      "meaningId": "authority.SET_ENABLED.meaning",
+      "kind": "REVOKE",
+      "labelId": "act.REVOKE.label",
+      "meaningId": "act.REVOKE.meaning",
       "confirmationId": "ui.confirmExactRequest",
       "inputs": [
         {
-          "fieldName": "enabled",
-          "labelId": "authority.field.enabled.label",
-          "primitive": "BOOLEAN"
+          "fieldName": "role",
+          "labelId": "input.role.label",
+          "primitive": "ROLE"
+        },
+        {
+          "fieldName": "scope",
+          "labelId": "input.scope.label",
+          "primitive": "SCOPE"
         }
       ]
+    },
+    {
+      "kind": "ENABLE",
+      "labelId": "act.ENABLE.label",
+      "meaningId": "act.ENABLE.meaning",
+      "confirmationId": "ui.confirmExactRequest",
+      "inputs": []
+    },
+    {
+      "kind": "DISABLE",
+      "labelId": "act.DISABLE.label",
+      "meaningId": "act.DISABLE.meaning",
+      "confirmationId": "ui.confirmExactRequest",
+      "inputs": []
     }
   ],
   "authorityFields": [
     {
       "name": "operationId",
-      "labelId": "authority.field.operationId.label"
+      "labelId": "input.operationId.label"
     },
     {
       "name": "expectedRevision",
-      "labelId": "authority.field.expectedRevision.label"
+      "labelId": "input.expectedRevision.label"
     },
     {
       "name": "act",
-      "labelId": "authority.field.act.label"
+      "labelId": "input.act.label"
     },
     {
       "name": "kind",
-      "labelId": "authority.field.kind.label"
+      "labelId": "input.kind.label"
     },
     {
       "name": "issuer",
-      "labelId": "authority.field.issuer.label"
+      "labelId": "input.issuer.label"
     },
     {
       "name": "subject",
-      "labelId": "authority.field.subject.label"
+      "labelId": "input.subject.label"
     },
     {
       "name": "target",
-      "labelId": "authority.field.target.label"
+      "labelId": "input.target.label"
     },
     {
       "name": "role",
-      "labelId": "authority.field.role.label"
+      "labelId": "input.role.label"
     },
     {
       "name": "scope",
-      "labelId": "authority.field.scope.label"
-    },
-    {
-      "name": "active",
-      "labelId": "authority.field.active.label"
-    },
-    {
-      "name": "enabled",
-      "labelId": "authority.field.enabled.label"
+      "labelId": "input.scope.label"
     }
   ],
   "characterWarnings": {
@@ -943,7 +949,7 @@
     "maximumPageSize": 50,
     "requestByteLimit": 65536
   },
-  "interactions": [
+  "entries": [
     {
       "scope": "CASE",
       "kind": "OPEN",
@@ -958,7 +964,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -1170,7 +1176,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -1208,7 +1214,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -1383,7 +1389,7 @@
     },
     {
       "scope": "CASE",
-      "kind": "CORRECT_CASE",
+      "kind": "CORRECT",
       "inputs": [
         {
           "identity": "operationId",
@@ -1395,7 +1401,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -1433,7 +1439,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -1898,7 +1904,7 @@
             "act",
             "kind"
           ],
-          "value": "CORRECT_CASE"
+          "value": "CORRECT"
         }
       ]
     },
@@ -1916,7 +1922,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -1954,7 +1960,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2057,7 +2063,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -2095,7 +2101,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2135,7 +2141,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -2173,7 +2179,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2234,7 +2240,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -2272,7 +2278,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2312,7 +2318,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -2350,7 +2356,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2390,7 +2396,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -2428,7 +2434,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2468,7 +2474,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -2506,7 +2512,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2566,7 +2572,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -2604,7 +2610,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2664,7 +2670,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -2702,7 +2708,7 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "authority.field.expectedRevision.label",
+          "labelId": "input.expectedRevision.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2730,7 +2736,7 @@
     },
     {
       "scope": "AUTHORITY",
-      "kind": "REGISTER_ACTOR",
+      "kind": "REGISTER",
       "inputs": [
         {
           "identity": "operationId",
@@ -2742,7 +2748,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -2766,7 +2772,7 @@
             ]
           },
           "branches": [],
-          "labelId": "authority.field.kind.label",
+          "labelId": "input.kind.label",
           "meaningId": null,
           "order": 1,
           "prefill": null,
@@ -2784,7 +2790,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.issuer.label",
+          "labelId": "input.issuer.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2804,7 +2810,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.subject.label",
+          "labelId": "input.subject.label",
           "meaningId": null,
           "order": 3,
           "prefill": null,
@@ -2826,13 +2832,13 @@
             "act",
             "kind"
           ],
-          "value": "REGISTER_ACTOR"
+          "value": "REGISTER"
         }
       ]
     },
     {
       "scope": "AUTHORITY",
-      "kind": "SET_GRANT",
+      "kind": "GRANT",
       "inputs": [
         {
           "identity": "operationId",
@@ -2844,7 +2850,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -2868,7 +2874,7 @@
             ]
           },
           "branches": [],
-          "labelId": "authority.field.kind.label",
+          "labelId": "input.kind.label",
           "meaningId": null,
           "order": 1,
           "prefill": null,
@@ -2886,7 +2892,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.issuer.label",
+          "labelId": "input.issuer.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -2906,7 +2912,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.subject.label",
+          "labelId": "input.subject.label",
           "meaningId": null,
           "order": 3,
           "prefill": null,
@@ -2935,7 +2941,7 @@
             ]
           },
           "branches": [],
-          "labelId": "authority.field.role.label",
+          "labelId": "input.role.label",
           "meaningId": null,
           "order": 4,
           "prefill": null,
@@ -2958,7 +2964,7 @@
             ]
           },
           "branches": [],
-          "labelId": "authority.field.scope.label",
+          "labelId": "input.scope.label",
           "meaningId": null,
           "order": 5,
           "prefill": null,
@@ -2994,24 +3000,6 @@
             "caseReference"
           ],
           "source": "AUTHORED"
-        },
-        {
-          "identity": "act.active",
-          "field": null,
-          "path": [
-            "act",
-            "active"
-          ],
-          "kind": {
-            "kind": "BOOLEAN"
-          },
-          "branches": [],
-          "labelId": "authority.field.active.label",
-          "meaningId": null,
-          "order": 7,
-          "prefill": null,
-          "diagnosticTargets": [],
-          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -3026,13 +3014,13 @@
             "act",
             "kind"
           ],
-          "value": "SET_GRANT"
+          "value": "GRANT"
         }
       ]
     },
     {
       "scope": "AUTHORITY",
-      "kind": "SET_ENABLED",
+      "kind": "REVOKE",
       "inputs": [
         {
           "identity": "operationId",
@@ -3044,7 +3032,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.operationId.label",
+          "labelId": "input.operationId.label",
           "meaningId": null,
           "order": 0,
           "prefill": null,
@@ -3068,7 +3056,7 @@
             ]
           },
           "branches": [],
-          "labelId": "authority.field.kind.label",
+          "labelId": "input.kind.label",
           "meaningId": null,
           "order": 1,
           "prefill": null,
@@ -3086,7 +3074,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.issuer.label",
+          "labelId": "input.issuer.label",
           "meaningId": null,
           "order": 2,
           "prefill": null,
@@ -3106,7 +3094,7 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "authority.field.subject.label",
+          "labelId": "input.subject.label",
           "meaningId": null,
           "order": 3,
           "prefill": null,
@@ -3116,21 +3104,83 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.enabled",
+          "identity": "act.role",
           "field": null,
           "path": [
             "act",
-            "enabled"
+            "role"
           ],
           "kind": {
-            "kind": "BOOLEAN"
+            "kind": "CHOICE",
+            "options": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
           },
           "branches": [],
-          "labelId": "authority.field.enabled.label",
+          "labelId": "input.role.label",
           "meaningId": null,
           "order": 4,
           "prefill": null,
           "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.scope.kind",
+          "field": null,
+          "path": [
+            "act",
+            "scope",
+            "kind"
+          ],
+          "kind": {
+            "kind": "GROUP",
+            "options": [
+              "INSTALLATION",
+              "CASE"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.scope.label",
+          "meaningId": null,
+          "order": 5,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.scope.caseReference",
+          "field": "caseReference",
+          "path": [
+            "act",
+            "scope",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "scope",
+                "kind"
+              ],
+              "value": "CASE"
+            }
+          ],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 6,
+          "prefill": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
           "source": "AUTHORED"
         }
       ],
@@ -3146,7 +3196,211 @@
             "act",
             "kind"
           ],
-          "value": "SET_ENABLED"
+          "value": "REVOKE"
+        }
+      ]
+    },
+    {
+      "scope": "AUTHORITY",
+      "kind": "ENABLE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": null,
+          "order": 0,
+          "prefill": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.kind",
+          "field": null,
+          "path": [
+            "target",
+            "kind"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.kind.label",
+          "meaningId": null,
+          "order": 1,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.issuer",
+          "field": null,
+          "path": [
+            "target",
+            "issuer"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.issuer.label",
+          "meaningId": null,
+          "order": 2,
+          "prefill": null,
+          "diagnosticTargets": [
+            "principal.issuer"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.subject",
+          "field": null,
+          "path": [
+            "target",
+            "subject"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.subject.label",
+          "meaningId": null,
+          "order": 3,
+          "prefill": null,
+          "diagnosticTargets": [
+            "principal.subject"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "AUTHORITY"
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "ENABLE"
+        }
+      ]
+    },
+    {
+      "scope": "AUTHORITY",
+      "kind": "DISABLE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": null,
+          "order": 0,
+          "prefill": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.kind",
+          "field": null,
+          "path": [
+            "target",
+            "kind"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.kind.label",
+          "meaningId": null,
+          "order": 1,
+          "prefill": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.issuer",
+          "field": null,
+          "path": [
+            "target",
+            "issuer"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.issuer.label",
+          "meaningId": null,
+          "order": 2,
+          "prefill": null,
+          "diagnosticTargets": [
+            "principal.issuer"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.subject",
+          "field": null,
+          "path": [
+            "target",
+            "subject"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.subject.label",
+          "meaningId": null,
+          "order": 3,
+          "prefill": null,
+          "diagnosticTargets": [
+            "principal.subject"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "AUTHORITY"
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "DISABLE"
         }
       ]
     }

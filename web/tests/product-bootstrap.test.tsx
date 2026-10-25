@@ -17,11 +17,11 @@ it("admits matching public session metadata without protected definition access 
   expect(globalThis.fetch).toHaveBeenCalledOnce();
   expect(vi.mocked(globalThis.fetch).mock.calls[0]?.[0]).toBe("/api/session");
   expect(Object.keys(productMetadata).sort()).toEqual([
+    "catalog",
     "contractIdentity",
-    "descriptors",
     "productVersion",
   ]);
-  expect(productMetadata.descriptors.fields).toHaveLength(13);
+  expect(productMetadata.catalog.fields).toHaveLength(13);
   expect(productMetadata.productVersion).not.toBe("");
 });
 

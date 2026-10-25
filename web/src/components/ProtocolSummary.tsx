@@ -35,10 +35,10 @@ const entries = (
       : [{ name, value: child, node }];
   });
 const isCorrectionGroup = (name: string): boolean =>
-  productMetadata.descriptors.commands.some(
-    (command) =>
-      command.inputs.kind === "CORRECTION_GROUPS" &&
-      command.inputs.groups.some((group) => group.name === name),
+  productMetadata.catalog.acts.some(
+    (act) =>
+      act.inputs.kind === "CORRECTION_GROUPS" &&
+      act.inputs.groups.some((group) => group.name === name),
   );
 const entryLabel = (name: string, p: ReturnType<typeof usePresentation>): string => {
   if (isCorrectionGroup(name)) {

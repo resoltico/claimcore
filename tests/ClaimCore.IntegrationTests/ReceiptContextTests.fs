@@ -20,7 +20,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! registered =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 3) principal AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 3) principal AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )

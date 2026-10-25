@@ -20,14 +20,14 @@ module CatalogValidation =
             validate (FieldTable.labelId field.Field)
             validate (FieldTable.meaningId field.Field)
 
-        for command in CommandPresentation.all do
+        for command in ActPresentation.all do
             validate command.LabelId
             validate command.MeaningId
             validate command.ConfirmationId
 
             match command.Inputs with
-            | CommandInputShape.Fields _ -> ()
-            | CommandInputShape.CorrectionGroups groups ->
+            | ActInputShape.Fields _ -> ()
+            | ActInputShape.CorrectionGroups groups ->
                 for group in groups do
                     validate group.LabelId
                     validate group.MeaningId
@@ -42,7 +42,7 @@ module CatalogValidation =
             for input in command.Inputs do
                 validate input.LabelId
 
-        for interaction in InteractionDefinitions.all do
+        for interaction in CatalogEntries.all do
             for input in interaction.Inputs do
                 validate input.LabelId
                 Option.iter validate input.MeaningId

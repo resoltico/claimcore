@@ -85,9 +85,9 @@ let private remote input output errors session =
         registrations |> List.iter _.Dispose()
 
 let private verb output errors arguments =
-    let descriptors = ContractDiscovery.descriptorValue ()
+    let catalog = ContractDiscovery.descriptorValue ()
 
-    match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) descriptors arguments with
+    match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) catalog arguments with
     | Error() ->
         let language = CliInvocations.usageLanguage arguments
         writeText errors (ContractDiscovery.helpTopic language "verbs" + "\n")

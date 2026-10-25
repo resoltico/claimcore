@@ -22,9 +22,11 @@ type RuntimeOpenFault =
 
 [<RequireQualifiedAccess>]
 type AdmittedAuthorityAct =
-    | RegisterActor
-    | SetGrant of role: Role * scope: GrantTarget * active: bool
-    | SetEnabled of enabled: bool
+    | Register
+    | Grant of role: Role * scope: GrantTarget
+    | Revoke of role: Role * scope: GrantTarget
+    | Enable
+    | Disable
 
 type AdmittedAuthorityRequest =
     {

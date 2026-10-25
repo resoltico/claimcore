@@ -17,7 +17,7 @@ it.each([
   const view = render(
     <ReceiptFields
       scope={{ ...source.data.scope, snapshot: { disclosure: tag } }}
-      fields={definition.descriptors.fields}
+      fields={definition.catalog.fields}
       context="Synthetic receipt"
     />,
   );

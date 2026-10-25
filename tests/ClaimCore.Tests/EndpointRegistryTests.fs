@@ -101,7 +101,7 @@ let private receipt =
             ReceiptScope.Authority
                 {
                     TargetActorId = id
-                    Act = AuthorityKind.RegisterActor
+                    Act = AuthorityKind.Register
                 }
     }
 

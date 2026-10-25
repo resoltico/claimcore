@@ -133,13 +133,13 @@ let qualify (fixture: PublishedFixture.Fixture) =
         Expect.equal result.ExitCode 0 "Human summary is offline"
         let text = Encoding.UTF8.GetString result.StandardOutput
 
-        for identity in [ "caseReference"; "OPEN"; "REGISTER_ACTOR" ] do
+        for identity in [ "caseReference"; "OPEN"; "REGISTER" ] do
             Expect.stringContains
                 text
                 identity
                 "Human summary includes exact generated capability and field identities"
 
-    for command in CliCommands.commands do
+    for command in CliCommands.acts do
         for alias in [ "--help"; "-h" ] do
             let result = invoke [ command; alias ] None
             Expect.equal result.ExitCode 0 "Alias never opens stdin/config/network"

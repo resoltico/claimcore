@@ -9,7 +9,7 @@ no database access. [Browser and host](../docs/web.md) explains review, consent 
 - [api/transport.ts](src/api/transport.ts) owns networking; [api/service.ts](src/api/service.ts) is the validated service facade.
 - [protocol/schema.ts](src/protocol/schema.ts) admits bounded strict JSON before the generated executable request/response checks. Protocol modules remain independent from views and presentation.
 - [interaction/operationForm.ts](src/interaction/operationForm.ts) assembles exact member paths, tagged branches and diagnostic focus from typed interaction bindings; [hooks/operation/useOperation.ts](src/hooks/operation/useOperation.ts) retains the exact prepared request, consent and prior uncertainty for CASE and AUTHORITY.
-- [views](src/views/) render context-authorized navigation, cases/history, operation review/observation and authority work. Domain/Application own validation, available commands and outcome meaning.
+- [views](src/views/) render context-authorized navigation, cases/history, operation review/observation and authority work. Domain/Application own validation, available acts and outcome meaning.
 - [presentation](src/presentation/) renders authored [source catalogs](../src/ClaimCore.Contract/Localization/) in English, Latvian and Arabic. Language and display formats never rewrite business values. Latvian and Arabic text needs native review. Language/display preferences persist in browser storage. While unresolved, sessionStorage holds only the operation ID, scope and act; reload offers Check outcome without retained request bytes.
 
 ## Build locally

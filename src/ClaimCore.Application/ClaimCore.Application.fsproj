@@ -5,7 +5,6 @@
     <Compile Include="ActorIdentity.fs" />
     <Compile Include="AuthorizationTypes.fs" />
     <Compile Include="AuthorizationPolicy.fs" />
-    <Compile Include="AuthorityRecordKinds.fs" />
     <Compile Include="CoreModels.fs" />
     <Compile Include="AuthorityOperationDefinitions.fs" />
     <Compile Include="ServiceLimits.fs" />

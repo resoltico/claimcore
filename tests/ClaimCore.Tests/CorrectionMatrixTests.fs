@@ -97,7 +97,7 @@ let private checkChoice
     let snapshot = Case.snapshot before
 
     let command =
-        CaseAct.CorrectCase
+        CaseAct.Correct
             {
                 Registration = registration
                 Decision = decision
@@ -142,7 +142,7 @@ let private zeroPaid =
         "[CC-DOM-001] explicit paid reaffirmation cannot retain a zero replacement decision"
         (fun () ->
             let command =
-                CaseAct.CorrectCase
+                CaseAct.Correct
                     {
                         Registration = RegistrationGroup.Keep
                         Decision = DecisionGroup.Replace { decision with PayableAmount = "0" }
@@ -156,8 +156,8 @@ let private zeroPaid =
 
             let cleared =
                 match command with
-                | CaseAct.CorrectCase value ->
-                    CaseAct.CorrectCase
+                | CaseAct.Correct value ->
+                    CaseAct.Correct
                         { value with
                             Payment = PaymentGroup.Clear
                         }

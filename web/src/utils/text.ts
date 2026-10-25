@@ -1,6 +1,6 @@
 import { productMetadata } from "../protocol/productMetadata";
 
-const policy = productMetadata.descriptors.characterWarnings;
+const policy = productMetadata.catalog.characterWarnings;
 const suspiciousCategory = new RegExp(
   `[${policy.categories.map((category) => `\\p{${category}}`).join("")}]`,
   "u",

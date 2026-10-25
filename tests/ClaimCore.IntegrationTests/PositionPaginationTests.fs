@@ -46,7 +46,7 @@ let private reader fixture (admin: IActorClaimsCore) =
         let! registered =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 20) target AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 20) target AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )
@@ -153,7 +153,7 @@ let private registerActors (actor: IActorClaimsCore) =
             let! registered =
                 actor.Execute(
                     OperationInput.Authority(
-                        authorityRequest (id n) target AdmittedAuthorityAct.RegisterActor
+                        authorityRequest (id n) target AdmittedAuthorityAct.Register
                     ),
                     CancellationToken.None
                 )
@@ -410,7 +410,7 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.contains
             offers
-            (InstallationOffer.AuthorityAct AuthorityKind.SetGrant)
+            (InstallationOffer.AuthorityAct AuthorityKind.Grant)
             "Authority act advice is owned by core"
     }
 

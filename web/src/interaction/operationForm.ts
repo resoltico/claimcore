@@ -3,13 +3,13 @@ import { wireSchemas } from "../protocol/documents";
 import { buildRequest, isObject } from "../protocol/client";
 import type { FormValues } from "../protocol/forms";
 import type { CurrentCase } from "../api/types";
-import type { Descriptors } from "@contracts/client";
+import type { CatalogDocument } from "@contracts/client";
 
 // Read-only protocol summaries retain their structural document.
 export const operationDocument = wireSchemas["operation.execute"].request;
-export type InteractionInput = Descriptors["interactions"][number]["inputs"][number];
-const interactionFor = (values: FormValues): Descriptors["interactions"][number] => {
-  const definition = productMetadata.descriptors.interactions.find(
+export type CatalogInput = CatalogDocument["entries"][number]["inputs"][number];
+const interactionFor = (values: FormValues): CatalogDocument["entries"][number] => {
+  const definition = productMetadata.catalog.entries.find(
     (item) => item.scope === values["scope"] && item.kind === values["act.kind"],
   );
   if (definition === undefined) {
@@ -17,8 +17,8 @@ const interactionFor = (values: FormValues): Descriptors["interactions"][number]
   }
   return definition;
 };
-export const bindingPath = (input: InteractionInput): string => input.path.join(".");
-const applicableInput = (input: InteractionInput, values: FormValues): boolean =>
+export const bindingPath = (input: CatalogInput): string => input.path.join(".");
+const applicableInput = (input: CatalogInput, values: FormValues): boolean =>
   input.branches.every((branch) => values[branch.path.join(".")] === branch.value);
 const fieldValue = (current: CurrentCase | null, field: string | null): string => {
   if (current === null || field === null) {
@@ -30,7 +30,7 @@ const fieldValue = (current: CurrentCase | null, field: string | null): string =
   const value = Object.entries(current.state.fields).find(([name]) => name === field)?.[1];
   return typeof value === "string" ? value : "";
 };
-const initialValue = (input: InteractionInput, current: CurrentCase | null, id: string) => {
+const initialValue = (input: CatalogInput, current: CurrentCase | null, id: string) => {
   if (input.source === "OPERATION_IDENTITY") {
     return id;
   }

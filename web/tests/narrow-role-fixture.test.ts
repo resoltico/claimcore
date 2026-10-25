@@ -44,17 +44,15 @@ it("restores only the confirmed baseline grant when narrow setup fails [CC-AUTH-
   await restore();
   const bodies = vi.mocked(applyAuthority).mock.calls.map((call) => call[1].act);
   expect(bodies).toMatchObject([
-    { role: "DATA_STEWARD", active: false },
+    { role: "DATA_STEWARD", kind: "REVOKE" },
     {
       role: "CASE_READER",
-      active: true,
+      kind: "GRANT",
       scope: { kind: "CASE", caseReference: fixture.reference },
     },
-    { role: "DATA_STEWARD", active: true },
+    { role: "DATA_STEWARD", kind: "GRANT" },
   ]);
-  expect(
-    bodies.some((body) => body.kind === "SET_GRANT" && body.role === "CASE_READER" && !body.active),
-  ).toBe(false);
+  expect(bodies.some((body) => body.kind === "REVOKE" && body.role === "CASE_READER")).toBe(false);
 });
 
 it("does not invent rollback after the first authority action is unconfirmed [CC-AUTH-001]", async () => {

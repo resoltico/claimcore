@@ -32,7 +32,7 @@ const ReceiptView = ({
       <p>
         {p.text("ui.observedReceipt", {
           operationId: receipt.operationId,
-          command: p.actLabel(receipt.scope.act),
+          act: p.actLabel(receipt.scope.act),
           actor: receipt.recordedBy,
         })}
       </p>
@@ -46,7 +46,7 @@ const ReceiptView = ({
       ) : (
         <ReceiptFields
           scope={receipt.scope}
-          fields={definition.descriptors.fields}
+          fields={definition.catalog.fields}
           context={p.text("ui.observedContext", { operationId: receipt.operationId })}
         />
       )}

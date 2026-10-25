@@ -26,7 +26,7 @@ module internal AuthorityReviews =
 
         let before, after =
             match projection with
-            | AuthorityProjection.RegisterActor _ -> before, { before with Enabled = true }
+            | AuthorityProjection.Register _ -> before, { before with Enabled = true }
             | AuthorityProjection.ProvisionOwner _ ->
                 before,
                 {

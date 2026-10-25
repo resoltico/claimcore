@@ -8,13 +8,13 @@ open ClaimCore.Application
 module internal ProtocolFieldPresentation =
     let authorityFields
         (target: AuthorityInputDefinition)
-        (commands: AuthorityOperationDefinition list)
+        (acts: AuthorityOperationDefinition list)
         =
         [
             for name in [ "operationId"; "expectedRevision"; "act"; "kind"; "issuer"; "subject" ] do
                 yield name, AuthorityOperationDefinitions.labelId name
             yield target.Name, target.LabelId
-            for definition in commands do
+            for definition in acts do
                 for input in definition.Inputs do
                     yield input.Name, input.LabelId
         ]
@@ -28,13 +28,13 @@ module internal ProtocolFieldPresentation =
 type PresentationDefinitions =
     {
         Fields: FieldPresentationDefinition list
-        Commands: CommandDefinition list
+        Acts: ActDefinition list
         AuthorityTarget: AuthorityInputDefinition
-        AuthorityCommands: AuthorityOperationDefinition list
+        AuthorityActs: AuthorityOperationDefinition list
     }
 
 /// Domain and Application own metadata values; Contract owns their public encoding.
-module ContractDescriptors =
+module ContractCatalog =
     let defaults =
         {
             Fields =
@@ -47,15 +47,15 @@ module ContractDescriptors =
                         Scalar = field.Scalar
                         AllowsAbsence = (FieldTable.forField field.Field).Optional
                     })
-            Commands = CommandPresentation.all
+            Acts = ActPresentation.all
             AuthorityTarget = AuthorityOperationDefinitions.target
-            AuthorityCommands = AuthorityOperationDefinitions.all
+            AuthorityActs = AuthorityOperationDefinitions.all
         }
 
-    let valueFrom definitions : PresentationDescriptors =
+    let valueFrom definitions : CatalogDocument =
         {
             Fields = definitions.Fields
-            Commands = definitions.Commands
+            Acts = definitions.Acts
             InputFields =
                 [
                     {
@@ -71,11 +71,11 @@ module ContractDescriptors =
                     }
                 ]
             AuthorityTarget = definitions.AuthorityTarget
-            AuthorityCommands = definitions.AuthorityCommands
+            AuthorityActs = definitions.AuthorityActs
             AuthorityFields =
                 ProtocolFieldPresentation.authorityFields
                     definitions.AuthorityTarget
-                    definitions.AuthorityCommands
+                    definitions.AuthorityActs
                 |> List.map (fun (name, label) -> { Name = name; LabelId = label })
             CharacterWarnings =
                 {
@@ -98,13 +98,13 @@ module ContractDescriptors =
                     MaximumPageSize = ServiceLimits.MaximumPageSize
                     RequestByteLimit = ServiceLimits.RequestByteLimit
                 }
-            Interactions = InteractionDefinitions.all
+            Entries = CatalogEntries.all
             ProductVersion = BuildIdentity.current.Version
         }
 
     let renderFrom definitions =
         valueFrom definitions
-        |> DescriptorCodecs.codec.Write
+        |> CatalogCodecs.codec.Write
         |> WireWriter.indentedBytes
         |> fun bytes -> Array.append bytes [| byte '\n' |]
 

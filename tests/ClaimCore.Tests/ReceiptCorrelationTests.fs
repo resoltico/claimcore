@@ -61,7 +61,7 @@ let private contradictions () =
                 ReceiptScope.Authority
                     {
                         TargetActorId = other
-                        Act = AuthorityKind.SetEnabled
+                        Act = AuthorityKind.Enable
                     }
             )
             receipt (

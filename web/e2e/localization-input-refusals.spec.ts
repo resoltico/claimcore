@@ -27,7 +27,7 @@ const forgedCorrection = async (page: Page, reference: string) => {
       caseReference: reference,
       expectedRevision: 2,
       act: {
-        kind: "CORRECT_CASE",
+        kind: "CORRECT",
         groups: {
           registration: { mode: "KEEP" },
           decision: { mode: "CLEAR" },

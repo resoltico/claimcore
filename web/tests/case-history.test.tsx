@@ -34,7 +34,7 @@ it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY a
     <CaseHistory
       token="token"
       caseReference="CASE-1"
-      fields={definition.descriptors.fields}
+      fields={definition.catalog.fields}
       modes={["SUMMARY", "FULL"]}
     />,
   );
@@ -83,7 +83,7 @@ it("recovers a refused continuation with a fresh no-cursor request without repor
     <CaseHistory
       token="token"
       caseReference="CASE-1"
-      fields={definition.descriptors.fields}
+      fields={definition.catalog.fields}
       onDisclosureRefused={refused}
     />,
   );

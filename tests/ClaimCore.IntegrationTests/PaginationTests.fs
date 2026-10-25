@@ -46,7 +46,7 @@ let private setup (database: PostgresFixture.Database) =
         let! registered =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 3) principal AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 3) principal AdmittedAuthorityAct.Register
                 ),
                 token
             )

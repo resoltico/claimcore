@@ -16,7 +16,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
         scope: "AUTHORITY",
         operationId: randomUUID(),
         target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
-        act: { kind: "SET_GRANT", role, scope: { kind: "INSTALLATION" }, active },
+        act: { kind: active ? "GRANT" : "REVOKE", role, scope: { kind: "INSTALLATION" } },
       });
       changed.push(role);
     }
@@ -27,7 +27,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
           scope: "AUTHORITY",
           operationId: randomUUID(),
           target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
-          act: { kind: "SET_GRANT", role, scope: { kind: "INSTALLATION" }, active: true },
+          act: { kind: "GRANT", role, scope: { kind: "INSTALLATION" } },
         });
       }
     }
@@ -66,7 +66,7 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
       scope: "AUTHORITY",
       operationId: randomUUID(),
       target: fixture.principal,
-      act: { kind: "SET_ENABLED", enabled },
+      act: { kind: enabled ? "ENABLE" : "DISABLE" },
     });
   let disabledConfirmed = false;
   try {

@@ -16,18 +16,15 @@ type GrantTarget =
     | Installation
     | CaseReference of string
 
-type GrantChange =
-    {
-        Role: string
-        Scope: GrantTarget
-        Active: bool
-    }
+type GrantChange = { Role: string; Scope: GrantTarget }
 
 [<RequireQualifiedAccess>]
 type AuthorityAct =
-    | RegisterActor
-    | SetGrant of GrantChange
-    | SetEnabled of bool
+    | Register
+    | Grant of GrantChange
+    | Revoke of GrantChange
+    | Enable
+    | Disable
 
 type AuthorityRequest =
     {

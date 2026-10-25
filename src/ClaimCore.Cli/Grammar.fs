@@ -135,7 +135,7 @@ module Grammar =
                 })
             target
 
-    let private findInteraction (definitions: CliInteraction list) family verb =
+    let private findInteraction (definitions: CliOperation list) family verb =
         let scope =
             match family with
             | "case" -> Some OperationScopes.Case
@@ -191,7 +191,7 @@ module Grammar =
             return! bindInputs newId operands options selected inputs
         }
 
-    let private page (metadata: PresentationDescriptors) options =
+    let private page (metadata: CatalogDocument) options =
         result {
             let cursor =
                 take "cursor" options
@@ -300,10 +300,9 @@ module Grammar =
                 }
         }
 
-    let prepare newId descriptors arguments =
+    let prepare newId catalog arguments =
         result {
-            let! metadata =
-                DescriptorCodecs.codec.Read "$" descriptors |> Result.mapError (fun _ -> ())
+            let! metadata = CatalogCodecs.codec.Read "$" catalog |> Result.mapError (fun _ -> ())
 
             let! definitions = CliSyntax.compile metadata
             return! prepareWith newId metadata definitions arguments
@@ -332,8 +331,7 @@ module Grammar =
 
     let description value =
         result {
-            let! metadata =
-                DescriptorCodecs.codec.Read "$" value |> Result.mapError (fun _ -> ())
+            let! metadata = CatalogCodecs.codec.Read "$" value |> Result.mapError (fun _ -> ())
 
             let! definitions = CliSyntax.compile metadata
 

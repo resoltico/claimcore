@@ -244,9 +244,9 @@ let private offlineDiscovery () =
         [
             [ "summary" ]
             [ "fields" ]
-            [ "commands" ]
+            [ "acts" ]
             [ "authority" ]
-            [ "authority"; "REGISTER_ACTOR" ]
+            [ "authority"; "REGISTER" ]
             [ "endpoints" ]
             [ "diagnostics" ]
         ] do

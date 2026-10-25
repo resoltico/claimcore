@@ -16,7 +16,7 @@ let private serviceCases (admin: IActorClaimsCore) principal =
         let! registered =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 400) principal AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 400) principal AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )

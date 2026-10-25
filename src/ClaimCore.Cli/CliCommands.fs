@@ -38,4 +38,4 @@ module CliCommands =
 
     let aliases = [ "--help"; "-h" ]
 
-    let commands = [ "help"; "version"; "describe"; "schema"; "call"; "session" ]
+    let acts = [ "help"; "version"; "describe"; "schema"; "call"; "session" ]

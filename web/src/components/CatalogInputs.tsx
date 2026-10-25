@@ -4,12 +4,12 @@ import type { Notice } from "../api/notices";
 import { NoticeView } from "../presentation/Message";
 import { renderKey } from "../presentation/messages";
 import { usePresentation } from "../presentation/context";
-import { DescriptorField } from "./DescriptorField";
+import { CatalogField } from "./CatalogField";
 import { productMetadata } from "../protocol/productMetadata";
 import {
   bindingPath,
   visibleOperationInputs,
-  type InteractionInput,
+  type CatalogInput,
 } from "../interaction/operationForm";
 
 type Props = {
@@ -20,7 +20,7 @@ type Props = {
   errorNotice: Notice | null;
   onChange: (path: string, value: string | boolean) => void;
 };
-const permittedOptions = (input: InteractionInput, props: Props): ReadonlyArray<string> => {
+const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<string> => {
   if (input.kind.kind !== "CHOICE" && input.kind.kind !== "GROUP") {
     return [];
   }
@@ -35,16 +35,16 @@ const permittedOptions = (input: InteractionInput, props: Props): ReadonlyArray<
     ? input.kind.options
     : input.kind.options.filter((mode) => group.some((value) => value === mode));
 };
-const inputError = (input: InteractionInput, props: Props) =>
+const inputError = (input: CatalogInput, props: Props) =>
   props.errorPath === bindingPath(input) ? props.errorNotice : null;
-const descriptionIds = (input: InteractionInput, error: Notice | null) =>
+const descriptionIds = (input: CatalogInput, error: Notice | null) =>
   [
     input.meaningId === null ? null : `${input.identity}-meaning`,
     error === null ? null : `${input.identity}-error`,
   ]
     .filter((id) => id !== null)
     .join(" ") || undefined;
-const InputDescription = ({ input, error }: { input: InteractionInput; error: Notice | null }) => {
+const InputDescription = ({ input, error }: { input: CatalogInput; error: Notice | null }) => {
   const p = usePresentation();
   return (
     <>
@@ -59,7 +59,7 @@ const InputDescription = ({ input, error }: { input: InteractionInput; error: No
     </>
   );
 };
-const ChoiceInput = ({ input, ...props }: Props & { input: InteractionInput }) => {
+const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const p = usePresentation();
   const path = bindingPath(input);
   const group = input.kind.kind === "GROUP";
@@ -95,17 +95,16 @@ const ChoiceInput = ({ input, ...props }: Props & { input: InteractionInput }) =
     </fieldset>
   );
 };
-const ScalarInput = ({ input, ...props }: Props & { input: InteractionInput }) => {
+const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const p = usePresentation();
   const path = bindingPath(input);
   const error = inputError(input, props);
-  const field = [
-    ...productMetadata.descriptors.fields,
-    ...productMetadata.descriptors.inputFields,
-  ].find((item) => item.name === input.field);
+  const field = [...productMetadata.catalog.fields, ...productMetadata.catalog.inputFields].find(
+    (item) => item.name === input.field,
+  );
   if (field !== undefined) {
     return (
-      <DescriptorField
+      <CatalogField
         field={field}
         inputName={path}
         value={String(props.values[path] ?? "")}
@@ -138,7 +137,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: InteractionInput }) =
     </div>
   );
 };
-const BindingInput = ({ input, ...props }: Props & { input: InteractionInput }) => {
+const BindingInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const p = usePresentation();
   const path = bindingPath(input);
   const error = inputError(input, props);
@@ -170,7 +169,7 @@ const BindingInput = ({ input, ...props }: Props & { input: InteractionInput }) 
     <ScalarInput {...props} input={input} />
   );
 };
-export const InteractionInputs = (props: Props) => (
+export const CatalogInputs = (props: Props) => (
   <>
     {visibleOperationInputs(props.values, props.current).map((input) => (
       <BindingInput key={input.identity} input={input} {...props} />

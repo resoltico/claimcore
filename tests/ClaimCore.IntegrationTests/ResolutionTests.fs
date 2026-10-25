@@ -155,7 +155,7 @@ let private foreign (database: PostgresFixture.Database) =
         let! registered =
             actor.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 120) principal AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 120) principal AdmittedAuthorityAct.Register
                 ),
                 token
             )
@@ -205,7 +205,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
         let! registered =
             actor.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 120) principal AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 120) principal AdmittedAuthorityAct.Register
                 ),
                 token
             )
@@ -216,7 +216,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
         let! disabled =
             actor.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 123) principal (AdmittedAuthorityAct.SetEnabled false)
+                    authorityRequest (id 123) principal (AdmittedAuthorityAct.Disable)
                 ),
                 token
             )
@@ -253,7 +253,7 @@ let private authorityFence (database: PostgresFixture.Database) =
         let! rejected =
             actor.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 130) target AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 130) target AdmittedAuthorityAct.Register
                 ),
                 token
             )
@@ -266,7 +266,7 @@ let private authorityFence (database: PostgresFixture.Database) =
         let! created =
             actor.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 131) target AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 131) target AdmittedAuthorityAct.Register
                 ),
                 token
             )

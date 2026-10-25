@@ -71,7 +71,7 @@ module LedgerEntry =
             [
                 (CaseActKind.Business BusinessActKind.Open), 1uy
                 (CaseActKind.Business BusinessActKind.AmendRegistration), 2uy
-                (CaseActKind.Business BusinessActKind.CorrectCase), 3uy
+                (CaseActKind.Business BusinessActKind.Correct), 3uy
                 (CaseActKind.Business BusinessActKind.Decide), 4uy
                 (CaseActKind.Business BusinessActKind.WithdrawDecision), 5uy
                 (CaseActKind.Business BusinessActKind.RecordPayment), 6uy
@@ -88,9 +88,11 @@ module LedgerEntry =
     let private authorityCode =
         function
         | AuthorityKind.ProvisionOwner -> 32uy
-        | AuthorityKind.RegisterActor -> 33uy
-        | AuthorityKind.SetGrant -> 34uy
-        | AuthorityKind.SetEnabled -> 35uy
+        | AuthorityKind.Register -> 33uy
+        | AuthorityKind.Grant -> 34uy
+        | AuthorityKind.Revoke -> 35uy
+        | AuthorityKind.Enable -> 36uy
+        | AuthorityKind.Disable -> 37uy
 
     let encodePayload (payload: LedgerPayload) =
         Array.concat
@@ -181,7 +183,7 @@ module LedgerEntry =
 
         Array.concat
             [
-                Encoding.ASCII.GetBytes "claimcore/ledger-entry/2\n"
+                Encoding.ASCII.GetBytes "claimcore/ledger-entry/3\n"
                 metadata.InstallationId.ToByteArray(bigEndian = true)
                 u64 (uint64 metadata.Sequence)
                 metadata.PreviousHash

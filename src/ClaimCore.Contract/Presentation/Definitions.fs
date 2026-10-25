@@ -61,7 +61,7 @@ type ScalarRule =
     | Currency of CurrencyScalarRule
     | CaseStatus of CaseStatusScalarRule
 
-/// A command form may begin blank or reuse a current business-field value as a suggestion.
+/// A act form may begin blank or reuse a current business-field value as a suggestion.
 [<RequireQualifiedAccess>]
 type PrefillSource =
     | Blank
@@ -87,22 +87,22 @@ type CorrectionGroupDefinition =
         ReplaceFields: FieldInputDefinition list
     }
 
-/// Commands either collect one ordered scalar object or explicitly collect required correction
+/// Acts either collect one ordered scalar object or explicitly collect required correction
 /// groups. This is the semantic source for every adapter; it avoids optional flat correction fields.
 [<RequireQualifiedAccess>]
-type CommandInputShape =
+type ActInputShape =
     | Fields of FieldInputDefinition list
     | CorrectionGroups of CorrectionGroupDefinition list
 
 
 /// Semantic operation descriptions, not widgets or client-owned transition rules.
-type CommandDefinition =
+type ActDefinition =
     {
         Kind: CaseActKind
         LabelId: string
         MeaningId: string
         ConfirmationId: string
-        Inputs: CommandInputShape
+        Inputs: ActInputShape
     }
 
 
@@ -160,7 +160,7 @@ type InputSource =
     | OperationIdentity
     | ExpectedRevision
 
-type InteractionInput =
+type CatalogInput =
     {
         Identity: string
         Field: InputTarget option
@@ -175,11 +175,11 @@ type InteractionInput =
         Source: InputSource
     }
 
-type InteractionDefinition =
+type CatalogEntry =
     {
         Scope: string
         Kind: string
-        Inputs: InteractionInput list
+        Inputs: CatalogInput list
         Constants: BindingAssignment list
     }
 
@@ -222,13 +222,13 @@ type PresentationLimits =
         RequestByteLimit: int
     }
 
-type PresentationDescriptors =
+type CatalogDocument =
     {
         Fields: FieldPresentationDefinition list
-        Commands: CommandDefinition list
+        Acts: ActDefinition list
         InputFields: InputPresentationDefinition list
         AuthorityTarget: AuthorityInputDefinition
-        AuthorityCommands: AuthorityOperationDefinition list
+        AuthorityActs: AuthorityOperationDefinition list
         AuthorityFields: ProtocolFieldDefinition list
         CharacterWarnings: CharacterWarningDefinition
         Statuses: CaseStatus list
@@ -236,6 +236,6 @@ type PresentationDescriptors =
         FaultDiagnostics: DiagnosticDefinition list
         Roles: RoleDefinition list
         Limits: PresentationLimits
-        Interactions: InteractionDefinition list
+        Entries: CatalogEntry list
         ProductVersion: string
     }

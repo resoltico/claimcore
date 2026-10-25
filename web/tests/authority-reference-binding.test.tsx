@@ -40,21 +40,16 @@ const locales = [
 ] as const;
 type Locale = (typeof locales)[number];
 const noLockChange = () => undefined;
-const AuthorityForm = () => {
+const AuthorityForm = ({ kind }: { kind: "GRANT" | "REVOKE" }) => {
   const model = useOperation({
     scope: "AUTHORITY",
-    kind: "SET_GRANT",
+    kind,
     current: null,
     token: "synthetic-token",
     onLockChange: noLockChange,
   });
   return (
-    <OperationForm
-      model={model}
-      current={null}
-      offered={["SET_GRANT"]}
-      onCommand={() => undefined}
-    />
+    <OperationForm model={model} current={null} offered={[kind]} onCommand={() => undefined} />
   );
 };
 const rejectedPreview = () =>
@@ -77,32 +72,21 @@ const rejectedPreview = () =>
       },
     }),
   );
-const authorCaseGrant = async (
-  user: ReturnType<typeof userEvent.setup>,
-  locale: Locale,
-  active: boolean,
-) => {
+const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale: Locale) => {
   await user.type(
-    screen.getByRole("textbox", { name: locale.authority["authority.field.issuer.label"] }),
+    screen.getByRole("textbox", { name: locale.authority["input.issuer.label"] }),
     "https://synthetic.example/",
   );
   await user.type(
-    screen.getByRole("textbox", { name: locale.authority["authority.field.subject.label"] }),
+    screen.getByRole("textbox", { name: locale.authority["input.subject.label"] }),
     "synthetic-target",
   );
   await user.selectOptions(
-    within(
-      screen.getByRole("group", { name: locale.authority["authority.field.scope.label"] }),
-    ).getByRole("combobox"),
+    within(screen.getByRole("group", { name: locale.authority["input.scope.label"] })).getByRole(
+      "combobox",
+    ),
     "CASE",
   );
-  const activeControl = screen.getByRole("checkbox", {
-    name: locale.authority["authority.field.active.label"],
-  });
-  if (active) {
-    await user.click(activeControl);
-  }
-  expect(activeControl).toHaveProperty("checked", active);
   const reference = screen.getByRole("textbox", { name: locale.label });
   await user.type(reference, "bad reference");
   return reference;
@@ -143,8 +127,7 @@ it.each(
       JSON.stringify({ version: 1, language: locale.language, displayLocale: "en-GB" }),
     );
     const values = {
-      ...initialOperationValues("AUTHORITY", "SET_GRANT", null),
-      "act.active": active,
+      ...initialOperationValues("AUTHORITY", active ? "GRANT" : "REVOKE", null),
     };
     expect(
       refusalPath("caseReference", { ...values, "act.scope.kind": "INSTALLATION" }),
@@ -152,9 +135,9 @@ it.each(
     expect(refusalPath("caseReference", { ...values, "act.scope.kind": "CASE" })).toBe(
       "act.scope.caseReference",
     );
-    render(<AuthorityForm />);
+    render(<AuthorityForm kind={active ? "GRANT" : "REVOKE"} />);
     expect(screen.queryByRole("textbox", { name: locale.label })).toBeNull();
-    const reference = await authorCaseGrant(user, locale, active);
+    const reference = await authorCaseGrant(user, locale);
     expect(reference).toHaveAttribute("name", "act.scope.caseReference");
     expectReferenceDescription(reference, locale, false);
     await user.click(screen.getByRole("button", { name: locale.ui["ui.previewOperation"] }));
@@ -166,8 +149,7 @@ it.each(
       scope: "AUTHORITY",
       target: { issuer: "https://synthetic.example/", subject: "synthetic-target" },
       act: {
-        kind: "SET_GRANT",
-        active,
+        kind: active ? "GRANT" : "REVOKE",
         scope: { kind: "CASE", caseReference: "bad reference" },
       },
     });

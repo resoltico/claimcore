@@ -59,23 +59,17 @@ let private dates () =
         assertTarget (InputTarget.Field field) identity Violation.CalendarDateRequired
 
 let private principalAndPayment () =
-    assertTarget
-        InputTarget.PrincipalIssuer
-        "authority.field.issuer.label"
-        Violation.PrincipalFormat
+    assertTarget InputTarget.PrincipalIssuer "input.issuer.label" Violation.PrincipalFormat
 
-    assertTarget InputTarget.PrincipalSubject "authority.field.subject.label" Violation.TextRequired
+    assertTarget InputTarget.PrincipalSubject "input.subject.label" Violation.TextRequired
     assertTarget InputTarget.PaymentGroup "group.payment.label" Violation.PaymentClearRequired
 
 let private remainingTargets () =
-    assertTarget
-        InputTarget.OperationId
-        "authority.field.operationId.label"
-        Violation.OperationIdRequired
+    assertTarget InputTarget.OperationId "input.operationId.label" Violation.OperationIdRequired
 
     assertTarget
         InputTarget.ExpectedRevision
-        "authority.field.expectedRevision.label"
+        "input.expectedRevision.label"
         Violation.ExpectedRevisionRange
 
     assertTarget InputTarget.Reason "field.reason.label" Violation.TextRequired

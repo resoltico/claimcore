@@ -11,7 +11,7 @@ const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
-    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"]),
+    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
     history: ["SUMMARY", "FULL"],
   },
 
@@ -52,7 +52,7 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
   expect(committed).toHaveBeenCalledOnce();
 });
 
-it.each(["AMEND_REGISTRATION", "CORRECT_CASE"] as const)(
+it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
   "reflects reducer editability during preparation, review, submission and uncertainty for %s",
   async (command) => {
     const user = userEvent.setup();
@@ -62,7 +62,7 @@ it.each(["AMEND_REGISTRATION", "CORRECT_CASE"] as const)(
       .mockReturnValueOnce(preparing.promise)
       .mockReturnValueOnce(submitting.promise);
     render(editor({ current, initialCommand: command }));
-    if (command === "CORRECT_CASE") {
+    if (command === "CORRECT") {
       await user.selectOptions(
         document.querySelector<HTMLSelectElement>("#correction-registration-mode")!,
         "REPLACE",

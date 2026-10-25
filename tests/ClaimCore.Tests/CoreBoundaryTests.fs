@@ -49,7 +49,7 @@ type private PortProbe(write: CancellationToken -> Task<Result<LedgerWriteResult
 let private inputs () =
     [
         OperationInput.Case(opening 470 "BOUNDARY")
-        OperationInput.Authority(authorityRequest (id 471) other AdmittedAuthorityAct.RegisterActor)
+        OperationInput.Authority(authorityRequest (id 471) other AdmittedAuthorityAct.Register)
     ]
 
 let private malformed () =
@@ -67,7 +67,7 @@ let private malformed () =
                     actRequest 471 "BOUNDARY" 1L (CaseAct.Void Unchecked.defaultof<string>)
                 )
                 OperationInput.Authority(
-                    authorityRequest Guid.Empty other AdmittedAuthorityAct.RegisterActor
+                    authorityRequest Guid.Empty other AdmittedAuthorityAct.Register
                 )
             ]
 

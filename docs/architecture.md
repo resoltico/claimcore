@@ -25,7 +25,7 @@ assemblies exercise those guards. The published CLI closure cannot contain serve
 assemblies. Pure code receives time, authority and state explicitly.
 
 The [generator](../eng/ClaimCore.ContractGenerator/) derives three tracked artifacts from Contract, Domain
-and Application. CLI owns its syntax. Browser forms use checked interaction bindings, presentation descriptors
+and Application. CLI owns its syntax. Browser forms use checked interaction bindings, presentation catalog
 and current core advice. Neither adapter owns another business policy.
 
 #### Durable records
@@ -117,7 +117,7 @@ transitions; Application owns authorization. The three [source locale files](../
 are the sole message source. CLI and browser render codes/parameters locally. Language and display formats
 are separate preferences and never rewrite business strings.
 
-Presentation descriptors carry labels, order, scalar hints and correction metadata. Exact interaction bindings
+The presentation catalog carries labels, order, scalar hints and correction metadata. Exact interaction bindings
 carry request paths and tagged branches. Contract's display-warning policy identifies suspicious Unicode
 without changing raw values. [Development](development.md#generated-contracts-and-boundary-verification)
 explains freshness and independent contract checks.

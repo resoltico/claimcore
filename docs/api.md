@@ -41,7 +41,7 @@ rejection of an earlier attempt. Accepted values follow permanent formats, indep
 
 Contract identity is SHA-256 of canonical derived OpenAPI. It identifies wire structure; locale and help-only
 changes leave it unchanged. The three tracked artifacts are [openapi.json](../contracts/openapi.json),
-[client.ts](../contracts/client.ts) and [descriptors.json](../contracts/descriptors.json).
+[client.ts](../contracts/client.ts) and [catalog.json](../contracts/catalog.json).
 [Development](development.md#generated-contracts-and-boundary-verification) explains regeneration and checks.
 
 Pagination independently authorizes each page. Follow non-null nextCursor even after a short page; null ends
@@ -62,7 +62,7 @@ claimcore case open DEMO-0001 --incident-date 2026-09-01 --incident-notification
 claimcore case get DEMO-0001
 claimcore authority list
 claimcore operation resolve 10000000-0000-4000-8000-000000000001
-claimcore describe commands OPEN --format text
+claimcore describe acts OPEN --format text
 ```
 
 A new mutation mints one UUID unless `--operation-id` is explicit. Case acts after opening require

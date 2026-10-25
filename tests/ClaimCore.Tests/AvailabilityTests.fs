@@ -13,7 +13,7 @@ let private candidates =
     [
         CaseAct.Open registration
         CaseAct.AmendRegistration registration
-        CaseAct.CorrectCase
+        CaseAct.Correct
             {
                 Registration =
                     RegistrationGroup.Replace
@@ -42,9 +42,9 @@ let private stateActions =
             [
                 (opened (), [ "AMEND_REGISTRATION"; "DECIDE"; "CLOSE" ])
                 (decided (),
-                 [ "CORRECT_CASE"; "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ])
-                (paid (), [ "CORRECT_CASE"; "CLEAR_PAYMENT"; "CLOSE" ])
-                (zero, [ "CORRECT_CASE"; "DECIDE"; "WITHDRAW_DECISION"; "CLOSE" ])
+                 [ "CORRECT"; "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ])
+                (paid (), [ "CORRECT"; "CLEAR_PAYMENT"; "CLOSE" ])
+                (zero, [ "CORRECT"; "DECIDE"; "WITHDRAW_DECISION"; "CLOSE" ])
             ]
 
         for (state, expected) in cases do
@@ -61,14 +61,14 @@ let private stateActions =
 
                 Expect.equal
                     (Result.isOk result)
-                    (Set.contains (BusinessCommands.name command) actions)
+                    (Set.contains (CaseActs.name command) actions)
                     "No separately invented UI state machine")
 
             let closed = apply CaseAct.Close state |> accepted
 
             Expect.equal
                 (availableActs closed)
-                [ "CORRECT_CASE"; "REOPEN"; "VOID"; "ERASE" ]
+                [ "CORRECT"; "REOPEN"; "VOID"; "ERASE" ]
                 "Closed cases can correct facts or reopen")
 
 let private edgeActions =

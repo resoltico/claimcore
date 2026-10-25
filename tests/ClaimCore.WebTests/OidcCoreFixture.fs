@@ -39,7 +39,7 @@ let createFor issuer subject =
             let! registered =
                 owner.Execute(
                     OperationInput.Authority(
-                        authorityRequest (id 20) service AdmittedAuthorityAct.RegisterActor
+                        authorityRequest (id 20) service AdmittedAuthorityAct.Register
                     ),
                     CancellationToken.None
                 )

@@ -3,9 +3,7 @@ import { productMetadata } from "../src/protocol/productMetadata";
 import { caseFields } from "./service-foundation.fixtures";
 /** Supplies wire-valid authored registration; individual tests override current business admission. */
 export const fillRegistrationInputs = (overrides: Readonly<Record<string, string>> = {}): void => {
-  const definition = productMetadata.descriptors.commands.find(
-    (command) => command.kind === "OPEN",
-  )!;
+  const definition = productMetadata.catalog.acts.find((command) => command.kind === "OPEN")!;
   if (definition.inputs.kind !== "FIELDS") {
     throw new Error("Registration requires scalar fields.");
   }

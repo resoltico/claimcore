@@ -38,11 +38,11 @@ module internal Advice =
 
     let private actOffer principal actor resource accepted revision kind =
         match kind with
-        | CaseActKind.Business BusinessActKind.CorrectCase ->
+        | CaseActKind.Business BusinessActKind.Correct ->
             let choices = correctionChoices principal actor resource accepted
 
             if usable choices then
-                Some(CaseActOffer.CorrectCase(revision, choices))
+                Some(CaseActOffer.Correct(revision, choices))
             else
                 None
         | _ -> Some(CaseActOffer.Act(kind, revision))

@@ -1,8 +1,9 @@
 namespace ClaimCore.Domain
 
 open System
+open ClaimCore.Contract
 
-/// Parsed command inputs. The original public request retains authored text for replay identity.
+/// Parsed act inputs. The original public request retains authored text for replay identity.
 [<RequireQualifiedAccess>]
 type internal ValidatedRegistrationCorrection =
     | Keep
@@ -28,13 +29,26 @@ type internal ValidatedCaseCorrection =
     }
 
 [<RequireQualifiedAccess>]
-type internal ValidatedCommand =
+type internal ValidatedAct =
     | Open of Validation.Facts
     | AmendRegistration of Validation.Facts
-    | CorrectCase of ValidatedCaseCorrection
+    | Correct of ValidatedCaseCorrection
     | Decide of Validation.Decision
     | WithdrawDecision
     | RecordPayment of DateOnly
     | ClearPayment
     | Close
     | Reopen
+
+module internal ValidatedActs =
+    let kind =
+        function
+        | ValidatedAct.Open _ -> BusinessActKind.Open
+        | ValidatedAct.AmendRegistration _ -> BusinessActKind.AmendRegistration
+        | ValidatedAct.Correct _ -> BusinessActKind.Correct
+        | ValidatedAct.Decide _ -> BusinessActKind.Decide
+        | ValidatedAct.WithdrawDecision -> BusinessActKind.WithdrawDecision
+        | ValidatedAct.RecordPayment _ -> BusinessActKind.RecordPayment
+        | ValidatedAct.ClearPayment -> BusinessActKind.ClearPayment
+        | ValidatedAct.Close -> BusinessActKind.Close
+        | ValidatedAct.Reopen -> BusinessActKind.Reopen

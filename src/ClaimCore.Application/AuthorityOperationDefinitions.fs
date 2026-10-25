@@ -3,7 +3,7 @@ namespace ClaimCore.Application
 open ClaimCore.Contract
 
 module AuthorityOperationDefinitions =
-    let labelId name = "authority.field." + name + ".label"
+    let labelId name = "input." + name + ".label"
 
     let private input name primitive : AuthorityInputDefinition =
         {
@@ -16,45 +16,25 @@ module AuthorityOperationDefinitions =
 
     let all =
         [
+            AuthorityKind.Register
+            AuthorityKind.Grant
+            AuthorityKind.Revoke
+            AuthorityKind.Enable
+            AuthorityKind.Disable
+        ]
+        |> List.map (fun kind ->
             {
-                Kind = AuthorityKind.RegisterActor
-                LabelId =
-                    Vocabulary.messageKey
-                        AuthorityKinds.vocabulary
-                        AuthorityKind.RegisterActor
-                        "label"
-                MeaningId =
-                    Vocabulary.messageKey
-                        AuthorityKinds.vocabulary
-                        AuthorityKind.RegisterActor
-                        "meaning"
-                ConfirmationId = "ui.confirmExactRequest"
-                Inputs = []
-            }
-            {
-                Kind = AuthorityKind.SetGrant
-                LabelId =
-                    Vocabulary.messageKey AuthorityKinds.vocabulary AuthorityKind.SetGrant "label"
-                MeaningId =
-                    Vocabulary.messageKey AuthorityKinds.vocabulary AuthorityKind.SetGrant "meaning"
+                Kind = kind
+                LabelId = Vocabulary.messageKey AuthorityKinds.vocabulary kind "label"
+                MeaningId = Vocabulary.messageKey AuthorityKinds.vocabulary kind "meaning"
                 ConfirmationId = "ui.confirmExactRequest"
                 Inputs =
-                    [
-                        input "role" AuthorityInputPrimitive.Role
-                        input "scope" AuthorityInputPrimitive.Scope
-                        input "active" AuthorityInputPrimitive.Boolean
-                    ]
-            }
-            {
-                Kind = AuthorityKind.SetEnabled
-                LabelId =
-                    Vocabulary.messageKey AuthorityKinds.vocabulary AuthorityKind.SetEnabled "label"
-                MeaningId =
-                    Vocabulary.messageKey
-                        AuthorityKinds.vocabulary
-                        AuthorityKind.SetEnabled
-                        "meaning"
-                ConfirmationId = "ui.confirmExactRequest"
-                Inputs = [ input "enabled" AuthorityInputPrimitive.Boolean ]
-            }
-        ]
+                    match kind with
+                    | AuthorityKind.Grant
+                    | AuthorityKind.Revoke ->
+                        [
+                            input "role" AuthorityInputPrimitive.Role
+                            input "scope" AuthorityInputPrimitive.Scope
+                        ]
+                    | _ -> []
+            })

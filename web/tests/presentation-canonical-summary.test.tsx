@@ -26,7 +26,7 @@ it.each(["en", "lv", "ar"])(
           claimantName: "A\u0308 العربية\u200D",
         }}
         revision={9007199254740991}
-        fields={definition.descriptors.fields}
+        fields={definition.catalog.fields}
         context="synthetic"
       />,
     );

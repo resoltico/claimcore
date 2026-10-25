@@ -16,14 +16,14 @@ type internal CliVerb =
 
 type internal CliInput =
     {
-        Binding: InteractionInput
+        Binding: CatalogInput
         Argument: InvocationArgument option
         WhenPresent: BindingAssignment list
     }
 
-type internal CliInteraction =
+type internal CliOperation =
     {
-        Definition: InteractionDefinition
+        Definition: CatalogEntry
         Inputs: CliInput list
         Invocations: CliVerb list
     }
@@ -33,8 +33,7 @@ module internal CliSyntax =
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
 
-    let caseVerb token =
-        if token = "CORRECT_CASE" then "correct" else kebab token
+    let caseVerb token = kebab token
 
     let private reference = FieldTable.key BusinessField.CaseReference
     let private caseScope = [ "act"; "scope"; reference ]
@@ -45,13 +44,7 @@ module internal CliSyntax =
             Value = BindingValue.Text value
         }
 
-    let private boolean path value =
-        {
-            Path = path
-            Value = BindingValue.Boolean value
-        }
-
-    let private argument scope (input: InteractionInput) =
+    let private argument scope (input: CatalogInput) =
         match input.Path with
         | path when scope = OperationScopes.Case && path = [ reference ] ->
             Some(InvocationArgument.Positional 0)
@@ -73,35 +66,24 @@ module internal CliSyntax =
         }
 
     let private authority kind =
-        let verb name constants = { Verb = name; Constants = constants }
-
-        match kind with
-        | "REGISTER_ACTOR" -> Some [ verb "register" [] ]
-        | "SET_ENABLED" ->
+        match AuthorityKinds.parse kind with
+        | Some AuthorityKind.ProvisionOwner
+        | None -> None
+        | Some value ->
             Some
                 [
-                    verb "enable" [ boolean [ "act"; "enabled" ] true ]
-                    verb "disable" [ boolean [ "act"; "enabled" ] false ]
+                    {
+                        Verb = kebab kind
+                        Constants =
+                            match value with
+                            | AuthorityKind.Grant
+                            | AuthorityKind.Revoke ->
+                                [ text [ "act"; "scope"; "kind" ] "INSTALLATION" ]
+                            | _ -> []
+                    }
                 ]
-        | "SET_GRANT" ->
-            Some
-                [
-                    verb
-                        "grant"
-                        [
-                            boolean [ "act"; "active" ] true
-                            text [ "act"; "scope"; "kind" ] "INSTALLATION"
-                        ]
-                    verb
-                        "revoke"
-                        [
-                            boolean [ "act"; "active" ] false
-                            text [ "act"; "scope"; "kind" ] "INSTALLATION"
-                        ]
-                ]
-        | _ -> None
 
-    let private interaction (definition: InteractionDefinition) =
+    let private interaction (definition: CatalogEntry) =
         let invocations =
             if
                 definition.Scope = OperationScopes.Case
@@ -125,7 +107,7 @@ module internal CliSyntax =
                     Invocations = aliases
                 }
 
-    let private validate (definitions: CliInteraction list) =
+    let private validate (definitions: CliOperation list) =
         let aliases =
             definitions
             |> List.collect (fun row ->
@@ -143,8 +125,8 @@ module internal CliSyntax =
         else
             Ok definitions
 
-    let compile (metadata: PresentationDescriptors) =
-        metadata.Interactions
+    let compile (metadata: CatalogDocument) =
+        metadata.Entries
         |> List.fold
             (fun state item ->
                 state

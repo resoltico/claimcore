@@ -20,7 +20,7 @@ const detail = (token = "token", reloadSignal = 0) => (
     token={token}
     caseReference={fields.caseReference}
     reloadSignal={reloadSignal}
-    definition={definition.descriptors}
+    definition={definition.catalog}
     onBack={vi.fn()}
     onCommand={vi.fn()}
   />

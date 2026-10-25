@@ -19,8 +19,11 @@ const locales = resolve(repository, "src/ClaimCore.Contract/Localization");
 const contracts = resolve(repository, "contracts");
 /** @param {string} path */
 const json = (path) => JSON.parse(readFileSync(path, "utf8"));
-const descriptors = json(resolve(contracts, "descriptors.json"));
-const requirements = diagnosticRequirements(descriptors, json(resolve(contracts, "openapi.json")));
+const operationCatalog = json(resolve(contracts, "catalog.json"));
+const requirements = diagnosticRequirements(
+  operationCatalog,
+  json(resolve(contracts, "openapi.json")),
+);
 /** @param {string} language */
 const catalog = (language) =>
   readCatalog(readFileSync(resolve(locales, `${language}.json`), "utf8"));
@@ -31,11 +34,11 @@ test("every authored language covers current metadata and public message familie
   assert.ok(Object.hasOwn(requirements, "host.CONTRACT_MISMATCH"));
   for (const language of ["en", "lv", "ar"]) {
     validateCatalog(english, catalog(language), language);
-    validateCoverage(catalog(language), descriptors, requirements);
+    validateCoverage(catalog(language), operationCatalog, requirements);
   }
   validateTokens(
     english,
-    renderedTokens(descriptors, readFileSync(resolve(contracts, "client.ts"), "utf8")),
+    renderedTokens(operationCatalog, readFileSync(resolve(contracts, "client.ts"), "utf8")),
   );
 });
 
@@ -101,19 +104,30 @@ test("pseudolocalization preserves source ASTs and argument structure", () => {
 test("metadata omissions, obsolete keys, wrong arguments and token drift fail", () => {
   const english = catalog("en");
   const missing = { ...english };
-  delete missing[`field.${descriptors.fields[0].name}.label`];
-  assert.throws(() => validateCoverage(missing, descriptors, requirements));
+  delete missing[`field.${operationCatalog.fields[0].name}.label`];
+  assert.throws(() => validateCoverage(missing, operationCatalog, requirements));
   assert.throws(() =>
-    validateCoverage({ ...english, "diagnostic.OBSOLETE": "obsolete" }, descriptors, requirements),
+    validateCoverage(
+      { ...english, "diagnostic.OBSOLETE": "obsolete" },
+      operationCatalog,
+      requirements,
+    ),
   );
   const diagnosticKey = Object.keys(requirements).find(
     (key) => Object.keys(requirements[key] ?? {}).length > 0,
   );
   assert.ok(diagnosticKey);
   assert.throws(() =>
-    validateCoverage({ ...english, [diagnosticKey]: "lost arguments" }, descriptors, requirements),
+    validateCoverage(
+      { ...english, [diagnosticKey]: "lost arguments" },
+      operationCatalog,
+      requirements,
+    ),
   );
-  const tokens = renderedTokens(descriptors, readFileSync(resolve(contracts, "client.ts"), "utf8"));
+  const tokens = renderedTokens(
+    operationCatalog,
+    readFileSync(resolve(contracts, "client.ts"), "utf8"),
+  );
   assert.throws(() => validateTokens({ ...english, "token.UNREVIEWED": "unknown" }, tokens));
   const missingScope = { ...english };
   delete missingScope["token.INSTALLATION"];

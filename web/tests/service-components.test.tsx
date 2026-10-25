@@ -5,7 +5,7 @@ import { expect, it, vi } from "vitest";
 import { isEndpointId } from "../src/protocol/client";
 import { CopyValue } from "../src/components/CopyValue";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
-import { DescriptorField } from "../src/components/DescriptorField";
+import { CatalogField } from "../src/components/CatalogField";
 import { TextInput } from "../src/components/TextInput";
 import { hasSuspiciousCharacters, suspiciousCodePoints } from "../src/utils/text";
 import { definition, fields } from "./service-ui.fixtures";
@@ -36,8 +36,8 @@ it("associates optional field errors and supports password text input", () => {
         type="password"
         error="Required"
       />
-      <DescriptorField
-        field={definition.descriptors.fields[0]!}
+      <CatalogField
+        field={definition.catalog.fields[0]!}
         value="CASE-1"
         error={localNotice("unreachable")}
         onChange={onChange}
@@ -79,7 +79,7 @@ it("renders absent and suspicious accepted values without changing the recorded 
     <CaseFieldsView
       values={{ ...fields, caseReference: "A\u202E", paymentDate: null }}
       revision={1}
-      fields={definition.descriptors.fields}
+      fields={definition.catalog.fields}
       context="synthetic current case"
     />,
   );
@@ -94,13 +94,13 @@ it("gives simultaneous current and historical case fields distinct heading IDs",
       <CaseFieldsView
         values={snapshot.fields}
         revision={snapshot.revision}
-        fields={definition.descriptors.fields}
+        fields={definition.catalog.fields}
         context="first snapshot"
       />
       <CaseFieldsView
         values={snapshot.fields}
         revision={snapshot.revision}
-        fields={definition.descriptors.fields}
+        fields={definition.catalog.fields}
         context="second snapshot"
       />
     </>,

@@ -11,7 +11,7 @@ export const current: CurrentCase = {
   caseReference: "CASE-SERIALIZATION",
   revision: 4,
   advice: {
-    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"]),
+    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
     history: ["SUMMARY", "FULL"],
   },
   state: { tag: "LIVE", disposition: "ACTIVE", fields: caseFields },

@@ -73,17 +73,17 @@ const renderedFamilies = (types, result) => {
 
 // These are the generated type families actually rendered by this interface, not a parallel
 // business-state registry. Changes in their literal vocabulary require corresponding catalogs.
-/** @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {string} types */
-export const renderedTokens = (descriptors, types) => {
+/** @param {import("./tooling-types.mjs").JsonRecord} operationCatalog @param {string} types */
+export const renderedTokens = (operationCatalog, types) => {
   const result = new Set();
-  for (const field of descriptors["fields"]) {
+  for (const field of operationCatalog["fields"]) {
     if (field.scalar.kind === "CASE_STATUS") {
       for (const value of field.scalar.allowedValues) {
         result.add(value);
       }
     }
   }
-  for (const command of descriptors["commands"]) {
+  for (const command of operationCatalog["acts"]) {
     for (const group of command.inputs.groups ?? []) {
       for (const action of group.actions) {
         result.add(action);
@@ -91,7 +91,7 @@ export const renderedTokens = (descriptors, types) => {
     }
   }
   renderedFamilies(types, result);
-  for (const entry of descriptors["roles"]) {
+  for (const entry of operationCatalog["roles"]) {
     result.add(entry.role);
   }
   result.add("ERASED");

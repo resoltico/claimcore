@@ -62,7 +62,7 @@ it("invalidates the pending current read synchronously on a second history refus
       token="token"
       caseReference={fields.caseReference}
       reloadSignal={0}
-      definition={definition.descriptors}
+      definition={definition.catalog}
       onBack={vi.fn()}
       onCommand={vi.fn()}
     />,

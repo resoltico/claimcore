@@ -5,7 +5,7 @@ no case work. The browser uses same-origin secure cookies and antiforgery; it ho
 
 ## Review and record a change
 
-Forms take their fields and tagged branches from checked interaction bindings, labels from descriptors and
+Forms take their fields and tagged branches from checked interaction bindings, labels from catalog and
 permitted work from core advice. Review shows a proposal; confirmation sends a frozen request with its exact
 operation ID and expected revision. Execution rechecks current authority and state.
 

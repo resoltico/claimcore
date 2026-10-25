@@ -39,7 +39,11 @@
             "timeZone": "x",
             "offers": [],
             "capabilities": [],
-            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ]
           }
         }
       },
@@ -968,15 +972,23 @@
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "REGISTER_ACTOR"
+                "act": "REGISTER"
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "SET_ENABLED"
+                "act": "ENABLE"
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "SET_GRANT"
+                "act": "GRANT"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "REVOKE"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "DISABLE"
               }
             ],
             "capabilities": [
@@ -991,7 +1003,11 @@
               "MANAGE_AUTHORITY",
               "READ_AUTHORITY"
             ],
-            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ]
           }
         }
       }
@@ -1020,12 +1036,23 @@
                   "expectedRevision": 1
                 },
                 {
-                  "act": "CORRECT_CASE",
+                  "act": "CORRECT",
                   "expectedRevision": 1,
                   "correction": {
-                    "registration": ["KEEP", "REPLACE"],
-                    "decision": ["KEEP", "REPLACE", "CLEAR"],
-                    "payment": ["KEEP", "REPLACE", "CLEAR"]
+                    "registration": [
+                      "KEEP",
+                      "REPLACE"
+                    ],
+                    "decision": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ],
+                    "payment": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ]
                   }
                 },
                 {
@@ -1065,7 +1092,10 @@
                   "expectedRevision": 1
                 }
               ],
-              "history": ["SUMMARY", "FULL"]
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ]
             }
           }
         }
@@ -1095,12 +1125,23 @@
                   "expectedRevision": 1
                 },
                 {
-                  "act": "CORRECT_CASE",
+                  "act": "CORRECT",
                   "expectedRevision": 1,
                   "correction": {
-                    "registration": ["KEEP", "REPLACE"],
-                    "decision": ["KEEP", "REPLACE", "CLEAR"],
-                    "payment": ["KEEP", "REPLACE", "CLEAR"]
+                    "registration": [
+                      "KEEP",
+                      "REPLACE"
+                    ],
+                    "decision": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ],
+                    "payment": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ]
                   }
                 },
                 {
@@ -1140,7 +1181,10 @@
                   "expectedRevision": 1
                 }
               ],
-              "history": ["SUMMARY", "FULL"]
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ]
             }
           }
         }
@@ -1183,15 +1227,23 @@
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "REGISTER_ACTOR"
+                "act": "REGISTER"
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "SET_ENABLED"
+                "act": "ENABLE"
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "SET_GRANT"
+                "act": "GRANT"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "REVOKE"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "DISABLE"
               }
             ]
           }
@@ -2750,7 +2802,7 @@
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
-              "act": "CORRECT_CASE",
+              "act": "CORRECT",
               "snapshot": {
                 "disclosure": "WITHHELD"
               }

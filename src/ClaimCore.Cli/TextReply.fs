@@ -234,20 +234,7 @@ module internal TextReply =
         let act = memberValue "act" input
         let token = get "kind" act
 
-        let verb =
-            match token with
-            | "SET_ENABLED" ->
-                if memberValue "enabled" act = JsonValue.Boolean true then
-                    "enable"
-                else
-                    "disable"
-            | "SET_GRANT" ->
-                if memberValue "active" act = JsonValue.Boolean true then
-                    "grant"
-                else
-                    "revoke"
-            | "REGISTER_ACTOR" -> "register"
-            | _ -> CliSyntax.caseVerb token
+        let verb = CliSyntax.kebab token
 
         let target =
             if get "scope" review = "AUTHORITY" then
@@ -271,7 +258,7 @@ module internal TextReply =
             |> String.concat "; "
 
         [
-            (authorityFieldLabel "enabled"), get "enabled" before, get "enabled" after
+            "ui.enabled", get "enabled" before, get "enabled" after
             "cli.text.grants", grants before, grants after
         ]
         |> List.choose (fun (key, previous, next) ->

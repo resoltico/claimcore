@@ -99,11 +99,10 @@ let private authority () =
         Expect.equal
             request.Act
             (RecordedAuthorityAct.Operation(
-                ClaimCore.Contract.AuthorityAct.SetGrant
+                ClaimCore.Contract.AuthorityAct.Grant
                     {
                         Role = "CASE_HANDLER"
                         Scope = GrantTarget.CaseReference "Demo-0001"
-                        Active = true
                     }
             ))
             "Independent grant meaning"
@@ -142,14 +141,14 @@ let private formats () =
                 RecordVersions.LedgerEntry
                 RecordVersions.CaseReferenceIdentity
             ]
-            [ 6; 3; 4; 2; 2 ]
+            [ 7; 4; 4; 3; 2 ]
             "Each retained grammar has its adopted format number"
 
         for format in [ "0"; "1"; "99"; "5"; "6.0"; "6e0"; "\"6\"" ] do
             Expect.isError
                 (RequestRecord.decode
                     65536
-                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":6", "\"format\":" + format))))
+                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":7", "\"format\":" + format))))
                 "Unknown or noninteger format refuses"
 
         Expect.isError
@@ -161,7 +160,7 @@ let private formats () =
         Expect.isError
             (AuthorityRecord.decode
                 65536
-                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":3", "\"format\":1"))))
+                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":4", "\"format\":1"))))
             "No old authority reinterpretation")
 
 let private operationIdentity () =

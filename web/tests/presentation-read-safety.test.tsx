@@ -108,7 +108,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
       token="token"
       caseReference={value}
       reloadSignal={0}
-      definition={definition.descriptors}
+      definition={definition.catalog}
       onBack={vi.fn()}
       onCommand={vi.fn()}
     />,
@@ -135,7 +135,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   if (missing) {
     expect(view.container.querySelector(".case-fields, .history-list li")).toBeNull();
     expect(view.container).not.toHaveTextContent(fields.claimantName);
-    expect(view.container.querySelector("#commands-title")).toBeNull();
+    expect(view.container.querySelector("#acts-title")).toBeNull();
   } else {
     assertSafe(view.container.querySelector(".case-fields")!, value, points);
     assertSafe(view.container.querySelector(".history-list li")!, value, points);
@@ -171,7 +171,7 @@ it.each(languages)(
     const writeText = vi.fn().mockRejectedValue(new Error("unavailable"));
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
     const { value, points } = values[0]!;
-    const field = definition.descriptors.fields.find((item) => item.name === "claimantName")!;
+    const field = definition.catalog.fields.find((item) => item.name === "claimantName")!;
     const view = render(
       <>
         <BusinessValue value={value} field={field} context="ui.after" />

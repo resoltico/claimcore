@@ -9,7 +9,7 @@ open ClaimCore.Contract
 type CliDescription =
     | Summary
     | Fields of string option
-    | Commands of string option
+    | Acts of string option
     | Authority of string option
     | Endpoints of string option
     | Diagnostics
@@ -66,7 +66,7 @@ module CliInvocations =
     let private descriptions =
         [
             "fields", CliDescription.Fields
-            "commands", CliDescription.Commands
+            "acts", CliDescription.Acts
             "authority", CliDescription.Authority
         ]
 
@@ -111,8 +111,7 @@ module CliInvocations =
                     )))
 
     let private alias command flag =
-        List.contains command CliCommands.commands
-        && List.contains flag CliCommands.aliases
+        List.contains command CliCommands.acts && List.contains flag CliCommands.aliases
 
     let private admitVersion =
         function

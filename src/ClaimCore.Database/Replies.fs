@@ -76,8 +76,7 @@ module Replies =
                         outcomeUnknown = 4
                         diverged = 5
                     |}
-                commands =
-                    [| "initialize"; "provision-owner"; "verify"; "head"; "help"; "version" |]
+                acts = [| "initialize"; "provision-owner"; "verify"; "head"; "help"; "version" |]
             |},
         0
 

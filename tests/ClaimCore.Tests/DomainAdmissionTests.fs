@@ -56,7 +56,7 @@ let private payload =
                         Violation.CalendarDateRequired
                     )
                 ))
-                "Same admission ordering for parsed commands")
+                "Same admission ordering for parsed acts")
 
 [<Tests>]
 let tests = testList "domain accepted-state admission" [ snapshots; payload ]

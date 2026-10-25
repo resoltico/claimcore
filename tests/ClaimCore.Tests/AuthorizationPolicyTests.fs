@@ -251,7 +251,7 @@ let private corrections () =
         let correction =
             replacementCorrection registrationChanged decisionChanged paymentChanged
 
-        let act = (CaseAct.CorrectCase correction)
+        let act = (CaseAct.Correct correction)
 
         Expect.equal
             (ActorAuthorization.requiredCapabilities act)
@@ -277,7 +277,7 @@ let private corrections () =
             }
 
         Expect.equal
-            (ActorAuthorization.requiredCapabilities ((CaseAct.CorrectCase cleared)))
+            (ActorAuthorization.requiredCapabilities ((CaseAct.Correct cleared)))
             expected
             "CLEAR selects the same capability"
 
@@ -293,7 +293,7 @@ let private reaffirmations () =
             ]
 
     let paymentReaffirmation =
-        (CaseAct.CorrectCase
+        (CaseAct.Correct
             {
                 Registration = RegistrationGroup.Keep
                 Decision = DecisionGroup.Keep
@@ -309,7 +309,7 @@ let private reaffirmations () =
         "An unchanged payment assertion still requires payment authority"
 
     let keep =
-        (CaseAct.CorrectCase
+        (CaseAct.Correct
             {
                 Registration = RegistrationGroup.Keep
                 Decision = DecisionGroup.Keep
@@ -352,7 +352,7 @@ let private scopedAdvice () =
         let expected, correction =
             advice.Advice.Acts
             |> List.pick (function
-                | CaseActOffer.CorrectCase(expected, choices) -> Some(expected, choices)
+                | CaseActOffer.Correct(expected, choices) -> Some(expected, choices)
                 | _ -> None)
 
         Expect.equal expected snapshot.Revision "Revision bound in snapshot"
@@ -420,7 +420,7 @@ let private noUsableCorrectionOffer () =
     Expect.isFalse
         (advice.Advice.Acts
          |> List.exists (function
-             | CaseActOffer.CorrectCase _ -> true
+             | CaseActOffer.Correct _ -> true
              | _ -> false))
         "An all-KEEP form is never offered"
 

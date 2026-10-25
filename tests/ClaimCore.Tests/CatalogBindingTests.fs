@@ -1,12 +1,12 @@
-module ClaimCore.Tests.InteractionBindingTests
+module ClaimCore.Tests.CatalogBindingTests
 
 open Expecto
 open ClaimCore.Contract
 open ClaimCore.ContractGeneration
 
 let private alter transform =
-    let first = List.head InteractionDefinitions.all
-    transform first :: List.tail InteractionDefinitions.all
+    let first = List.head CatalogEntries.all
+    transform first :: List.tail CatalogEntries.all
 
 let private rejects values =
     Expect.throws
@@ -14,7 +14,7 @@ let private rejects values =
         "Invalid interaction bindings refuse before emission"
 
 let private pathAndCoverage () =
-    BindingValidation.validate InteractionDefinitions.all
+    BindingValidation.validate CatalogEntries.all
 
     alter (fun interaction ->
         { interaction with
@@ -51,8 +51,7 @@ let private pathAndCoverage () =
     |> rejects
 
 let private exactBranches () =
-    let correction =
-        InteractionDefinitions.all |> List.find (fun item -> item.Kind = "CORRECT_CASE")
+    let correction = CatalogEntries.all |> List.find (fun item -> item.Kind = "CORRECT")
 
     let decision =
         correction.Inputs
@@ -77,7 +76,7 @@ let private exactBranches () =
     rejects [ wrong ]
 
     let authority =
-        InteractionDefinitions.all |> List.find (fun item -> item.Scope = "AUTHORITY")
+        CatalogEntries.all |> List.find (fun item -> item.Scope = "AUTHORITY")
 
     let issuer =
         authority.Inputs
@@ -89,8 +88,7 @@ let private exactBranches () =
         "Diagnostic identity binds the declared principal member"
 
 let private grantReference () =
-    let grant =
-        InteractionDefinitions.all |> List.find (fun item -> item.Kind = "SET_GRANT")
+    let grant = CatalogEntries.all |> List.find (fun item -> item.Kind = "GRANT")
 
     let reference =
         grant.Inputs
@@ -120,11 +118,10 @@ let private grantReference () =
         "Installation grants do not expose a case input"
 
 let private aliases () =
-    let first = List.head InteractionDefinitions.all
+    let first = List.head CatalogEntries.all
     rejects [ first; first ]
 
-    let authority =
-        InteractionDefinitions.all |> List.find (fun item -> item.Kind = "SET_ENABLED")
+    let authority = CatalogEntries.all |> List.find (fun item -> item.Kind = "ENABLE")
 
     let invalidConstant =
         {
@@ -139,11 +136,11 @@ let private aliases () =
             }
         ]
 
-    let roundtrip = ContractDescriptors.valueFrom ContractDescriptors.defaults
+    let roundtrip = ContractCatalog.valueFrom ContractCatalog.defaults
 
     Expect.equal
-        (Codec.encode DescriptorCodecs.codec roundtrip
-         |> Codec.decode 4194304 DescriptorCodecs.codec)
+        (Codec.encode CatalogCodecs.codec roundtrip
+         |> Codec.decode 4194304 CatalogCodecs.codec)
         (Ok roundtrip)
         "Typed descriptor read/write preserves all binding identities"
 
@@ -158,6 +155,6 @@ let tests =
                 "case-scoped grant reference retains shared field and diagnostic semantics"
                 grantReference
             testCase
-                "duplicate definitions and invalid constants refuse and descriptors round trip"
+                "duplicate definitions and invalid constants refuse and catalog round trip"
                 aliases
         ]

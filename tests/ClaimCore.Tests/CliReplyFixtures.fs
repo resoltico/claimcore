@@ -28,7 +28,7 @@ let authorityRequest =
                 Issuer = "https://issuer.example/"
                 Subject = "synthetic"
             }
-        Act = AuthorityAct.RegisterActor
+        Act = AuthorityAct.Register
     }
 
 let snapshot =

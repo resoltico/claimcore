@@ -31,7 +31,7 @@ let private discovery binary connection principal =
                 invoke binary (connection + ".absent") (principal + ".absent") [ "help" ] 0
 
             Expect.equal
-                (help.GetProperty("commands").EnumerateArray()
+                (help.GetProperty("acts").EnumerateArray()
                  |> Seq.map (fun item -> item.GetString() |> nonNull)
                  |> Seq.toList)
                 [ "initialize"; "provision-owner"; "verify"; "head"; "help"; "version" ]
@@ -381,6 +381,6 @@ let tests =
                 "argument and delivery guards reject without weakening commit knowledge"
                 inputAndDeliveryGuards
             testCaseAsync
-                "[CC-DB-001][CC-DB-002] all commands succeed refuse and repeat on a fresh owned installation"
+                "[CC-DB-001][CC-DB-002] all acts succeed refuse and repeat on a fresh owned installation"
                 (publishedCommands ())
         ]

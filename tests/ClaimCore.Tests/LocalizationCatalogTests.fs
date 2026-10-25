@@ -12,9 +12,10 @@ let private directory () =
 let private families =
     [
         "field"
-        "command"
+        "act"
         "group"
         "authority"
+        "input"
         "diagnostic"
         "fault"
         "host"

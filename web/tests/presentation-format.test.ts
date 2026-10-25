@@ -60,7 +60,7 @@ it("formats Gregorian date-only values without shifting days or truncating early
 });
 
 it("formats only read-only scalar displays and leaves technical text and currency invariant", () => {
-  const { fields } = definition.descriptors;
+  const { fields } = definition.catalog;
   const field = (name: string) => fields.find((item) => item.name === name)!;
   expect(displayField("12.5000", field("claimedAmount"), "lv-LV")).toBe("12,5000");
   expect(displayField("2026-09-22", field("incidentDate"), "en-GB")).toBe("22/09/2026");
@@ -88,7 +88,7 @@ it("uses stable metadata identity rather than supplied English labels as catalog
   expect(p.integer("42")).toBe("42");
   expect(p.amount("42.0000")).toBe("42.0000");
   expect(p.date("2026-09-22")).toBe("22/09/2026");
-  for (const field of definition.descriptors.fields) {
+  for (const field of definition.catalog.fields) {
     expect(p.hint(field)).not.toBe("");
   }
 });

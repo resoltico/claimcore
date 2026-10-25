@@ -8,7 +8,7 @@ import type { FieldDescriptor } from "../api/service";
 import type { Notice } from "../api/notices";
 import { usePresentation } from "../presentation/context";
 
-type DescriptorFieldProps = {
+type CatalogFieldProps = {
   field: FieldDescriptor;
   value: string;
   inputName?: string;
@@ -16,14 +16,14 @@ type DescriptorFieldProps = {
   disabled?: boolean;
   onChange: (value: string) => void;
 };
-export const DescriptorField = ({
+export const CatalogField = ({
   field,
   value,
   inputName,
   error,
   disabled = false,
   onChange,
-}: DescriptorFieldProps) => {
+}: CatalogFieldProps) => {
   const p = usePresentation();
   return (
     <TextField

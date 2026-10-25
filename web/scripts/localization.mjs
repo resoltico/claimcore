@@ -27,9 +27,10 @@ const domains = [
   "notice",
   "token",
   "field",
-  "command",
+  "act",
   "group",
   "authority",
+  "input",
   "diagnostic",
   "fault",
   "host",
@@ -48,15 +49,15 @@ for (const lang of languages) {
   catalogs[lang] = catalog;
 }
 const generated = resolve(root, "../contracts");
-const descriptors = JSON.parse(await readFile(resolve(generated, "descriptors.json"), "utf8"));
+const operationCatalog = JSON.parse(await readFile(resolve(generated, "catalog.json"), "utf8"));
 const host = JSON.parse(await readFile(resolve(generated, "openapi.json"), "utf8"));
 for (const lang of languages) {
   validateCatalog(catalogs["en"] ?? {}, catalogs[lang] ?? {}, lang);
 }
-const requirements = diagnosticRequirements(descriptors, host);
-validateCoverage(catalogs["en"] ?? {}, descriptors, requirements);
+const requirements = diagnosticRequirements(operationCatalog, host);
+validateCoverage(catalogs["en"] ?? {}, operationCatalog, requirements);
 const types = await readFile(resolve(generated, "client.ts"), "utf8");
-validateTokens(catalogs["en"] ?? {}, renderedTokens(descriptors, types));
+validateTokens(catalogs["en"] ?? {}, renderedTokens(operationCatalog, types));
 await mkdir(output, { recursive: true });
 /** @type {Record<string, string>} */
 const expected = {};
@@ -91,7 +92,7 @@ for (const domain of domains) {
       )
       .join("\n")}\n};\n`;
 }
-expected["correction-targets.json"] = `${JSON.stringify(correctionTargets(descriptors))}\n`;
+expected["correction-targets.json"] = `${JSON.stringify(correctionTargets(operationCatalog))}\n`;
 expected["arguments.json"] = `${JSON.stringify(args)}\n`;
 const prettierOptions = await resolveConfig(resolve(root, "package.json"));
 for (const [file, raw] of Object.entries(expected)) {

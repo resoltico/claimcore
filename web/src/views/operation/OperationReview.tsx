@@ -28,17 +28,13 @@ const ReviewValues = ({ review }: { review: CaseReview }) => {
             <dd>
               <BusinessValue
                 value={change.before}
-                field={productMetadata.descriptors.fields.find(
-                  (field) => field.name === change.field,
-                )!}
+                field={productMetadata.catalog.fields.find((field) => field.name === change.field)!}
                 context="ui.before"
               />
               <span aria-hidden="true"> → </span>
               <BusinessValue
                 value={change.after}
-                field={productMetadata.descriptors.fields.find(
-                  (field) => field.name === change.field,
-                )!}
+                field={productMetadata.catalog.fields.find((field) => field.name === change.field)!}
                 context="ui.after"
               />
             </dd>
@@ -63,7 +59,7 @@ const AuthorityValues = ({ review }: { review: Extract<Review, { scope: "AUTHORI
         <section key={label}>
           <h4>{p.text(label, { value: p.text("ui.actor") })}</h4>
           <dl>
-            <dt>{p.fieldLabel("enabled")}</dt>
+            <dt>{p.text("ui.enabled")}</dt>
             <dd>{p.text(state.enabled ? "ui.yes" : "ui.no")}</dd>
           </dl>
           <h5>{p.text("ui.actorGrants")}</h5>
@@ -82,7 +78,7 @@ const ReviewConfirmation = ({
   confirmationId,
 }: {
   model: ReviewModel;
-  confirmationId: (typeof productMetadata.descriptors.commands)[number]["confirmationId"];
+  confirmationId: (typeof productMetadata.catalog.acts)[number]["confirmationId"];
 }) => {
   const p = usePresentation();
   return (
@@ -117,10 +113,10 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
   const { input } = model.prepared;
   const schema = selectedSchema(operationDocument, operationDocument, "", { scope: input.scope });
   const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "scope"));
-  const command =
+  const act =
     input.scope === "CASE"
-      ? productMetadata.descriptors.commands.find((item) => item.kind === input.act.kind)!
-      : productMetadata.descriptors.authorityCommands.find((item) => item.kind === input.act.kind)!;
+      ? productMetadata.catalog.acts.find((item) => item.kind === input.act.kind)!
+      : productMetadata.catalog.authorityActs.find((item) => item.kind === input.act.kind)!;
   return (
     <AccessibleModal
       title={p.text("ui.reviewTitle")}
@@ -147,7 +143,7 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
         ) : (
           <AuthorityValues review={model.review} />
         )}
-        <ReviewConfirmation model={model} confirmationId={command.confirmationId} />
+        <ReviewConfirmation model={model} confirmationId={act.confirmationId} />
       </>
     </AccessibleModal>
   );

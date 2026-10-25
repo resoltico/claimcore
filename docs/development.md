@@ -118,10 +118,10 @@ dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts
 ```
 
 The generator stages/validates an owned directory before replacement and emits exactly openapi.json, client.ts
-and descriptors.json. `--check` compares exact inventory and bytes without repairing them; missing, stale or
+and catalog.json. `--check` compares exact inventory and bytes without repairing them; missing, stale or
 extra files fail. Review generated diffs with their typed producer. The generator references
 Contract/Domain/Application and builds independently from CLI. Consumer identity hashes canonical OpenAPI
-only; editing source locale text preserves it, changing structural enums changes it. CLI embeds descriptors
+only; editing source locale text preserves it, changing structural enums changes it. CLI embeds catalog
 and source locale JSON; the browser imports source catalogs and generated TypeScript admission and interaction bindings; OpenAPI supplies read-only summaries.
 Web commands never run .NET. Node validates the restricted ICU subset, key/argument parity and Unicode safety.
 Pure Contract template checks share independent accept/reject vectors with the reference parser. No generated

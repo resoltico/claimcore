@@ -17,10 +17,11 @@ export type {
 } from "@contracts/client";
 export type HistoryEntry = HistoryEntries[number];
 export type { OperationReceipt } from "@contracts/client";
-export type Descriptors = typeof productMetadata.descriptors;
+export type CatalogDocument = typeof productMetadata.catalog;
 export type ProductMetadata = typeof productMetadata;
-export type FieldDescriptor = Descriptors["fields"][number] | Descriptors["inputFields"][number];
-export type CommandDraft = Extract<RequestByEndpoint["operation.execute"], { scope: "CASE" }>;
+export type FieldDescriptor =
+  CatalogDocument["fields"][number] | CatalogDocument["inputFields"][number];
+export type OperationDraft = Extract<RequestByEndpoint["operation.execute"], { scope: "CASE" }>;
 export type ServiceResponse<K extends keyof ResponseByEndpoint> = ResponseByEndpoint[K];
 export type EndpointOutcome = ResponseByEndpoint[keyof ResponseByEndpoint];
 type Success<K extends keyof ResponseByEndpoint> = Extract<

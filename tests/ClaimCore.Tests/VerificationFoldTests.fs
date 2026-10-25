@@ -197,17 +197,14 @@ let private authorityChecks =
         fun () ->
             let entry =
                 { entry with
-                    Scope = StoredScope.Authority(id, AuthorityKind.RegisterActor)
+                    Scope = StoredScope.Authority(id, AuthorityKind.Register)
                 }
 
             let request: AuthorityRequestRecord =
                 {
                     OperationId = id
                     Target = PrincipalKey.describe human
-                    Act =
-                        RecordedAuthorityAct.Operation(
-                            ClaimCore.Contract.AuthorityAct.RegisterActor
-                        )
+                    Act = RecordedAuthorityAct.Operation(ClaimCore.Contract.AuthorityAct.Register)
                 }
 
             AuthorityFold.apply

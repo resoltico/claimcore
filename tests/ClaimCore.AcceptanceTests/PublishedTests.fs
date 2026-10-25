@@ -109,7 +109,7 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         |> require "SUCCEEDED"
 
     let view = current
-    Expect.equal (view.GetProperty("revision").GetInt64()) 6L "Six commands"
+    Expect.equal (view.GetProperty("revision").GetInt64()) 6L "Six acts"
 
     Expect.equal
         (view.GetProperty("state").GetProperty("fields").GetProperty("status").GetString())

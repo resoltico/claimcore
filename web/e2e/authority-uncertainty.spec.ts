@@ -16,7 +16,7 @@ const ownerGrant = async (page: Page, active: boolean) => {
     scope: "AUTHORITY",
     operationId: randomUUID(),
     target: { kind: "HUMAN", issuer: source.issuer, subject: source.stewardSubject },
-    act: { kind: "SET_GRANT", role: "OWNER", scope: { kind: "INSTALLATION" }, active },
+    act: { kind: active ? "GRANT" : "REVOKE", role: "OWNER", scope: { kind: "INSTALLATION" } },
   });
 };
 const prepareRegistration = async (page: Page, issuer: string, subject: string) => {

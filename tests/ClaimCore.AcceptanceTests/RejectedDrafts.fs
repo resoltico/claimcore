@@ -90,7 +90,7 @@ let private principalRefusals fixture =
                             issuer = issuer
                             subject = subject
                         |}
-                    act = {| kind = "REGISTER_ACTOR" |}
+                    act = {| kind = "REGISTER" |}
                 |}
                 2
 

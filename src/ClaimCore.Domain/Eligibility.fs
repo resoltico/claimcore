@@ -69,7 +69,7 @@ module internal Eligibility =
         | BusinessActKind.Reopen -> Error Refusal.AlreadyOpened
         | BusinessActKind.Close -> Ok()
         | BusinessActKind.AmendRegistration -> amendment progress
-        | BusinessActKind.CorrectCase -> correction progress
+        | BusinessActKind.Correct -> correction progress
         | BusinessActKind.Decide -> decision progress
         | BusinessActKind.WithdrawDecision -> withdrawal progress
         | BusinessActKind.RecordPayment -> payment progress
@@ -80,6 +80,6 @@ module internal Eligibility =
         | CaseStatus.Closed, BusinessActKind.Open -> Error Refusal.CaseAlreadyExists
         | CaseStatus.Closed, BusinessActKind.Reopen -> Ok()
         | CaseStatus.Closed, BusinessActKind.Close -> Error Refusal.AlreadyClosed
-        | CaseStatus.Closed, BusinessActKind.CorrectCase -> Ok()
+        | CaseStatus.Closed, BusinessActKind.Correct -> Ok()
         | CaseStatus.Closed, _ -> Error Refusal.CaseClosed
         | CaseStatus.Opened, _ -> opened kind progress

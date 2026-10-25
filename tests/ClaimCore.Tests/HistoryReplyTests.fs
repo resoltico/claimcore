@@ -84,7 +84,7 @@ let private refused () =
     let schema = validator ()
 
     let authority =
-        "{\"kind\":\"AUTHORITY\",\"targetActorId\":\"10000000-0000-4000-8000-000000000001\",\"act\":\"REGISTER_ACTOR\"}"
+        "{\"kind\":\"AUTHORITY\",\"targetActorId\":\"10000000-0000-4000-8000-000000000001\",\"act\":\"REGISTER\"}"
 
     let old =
         """{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001","scope":"CASE","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"tag":"WITHHELD"}}"""

@@ -27,7 +27,7 @@ npm --prefix web ci
 ```
 
 Before signing in, explore offline `help configuration`, `help call` and `help delivery`.
-`describe commands OPEN --format text` shows inputs, and `case open ... --dry-run` prints a request without credentials.
+`describe acts OPEN --format text` shows inputs, and `case open ... --dry-run` prints a request without credentials.
 
 ## Start a fresh installation
 
@@ -78,7 +78,7 @@ it after the walkthrough.
 
 Open `https://localhost:7443`. Choose sign in. The generated identity provider is
 `https://identity.localhost:7444/realms/claimcore`. Sign in as `owner`; obtain its password locally from
-`owner-login.password` in your configuration directory. Do not copy credentials into terminal commands, logs
+`owner-login.password` in your configuration directory. Do not copy credentials into terminal acts, logs
 or public reports. After authentication, installation context selects the views that current grants allow. An
 owner can administer authority; owner status alone grants no case viewing or editing. Cases become available
 after a case role is granted.
@@ -141,7 +141,7 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 ```
 
 This removes this project's containers and network, retaining its two named PostgreSQL and identity volumes.
-Preserve its configuration and volumes if you intend to start it again. Never use host-wide prune commands to
+Preserve its configuration and volumes if you intend to start it again. Never use host-wide prune acts to
 clean up an installation. To discard a wholly disposable installation, explicitly remove only its own volumes
 after confirming their project labels.
 

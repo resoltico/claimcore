@@ -23,21 +23,21 @@ Resource lookup folds ASCII letter case within an installation; accepted snapsho
 Operation identity preserves authored spelling, so recasing a request under a used operation ID conflicts.
 There are no policy, coverage, reserve, banking, address, notes or attachment fields.
 
-## State and commands
+## State and acts
 
 <a id="cc-dom-002"></a>
 
 ### CC-DOM-002 — Core-owned command availability and revalidation
 
 A case may be OPENED or CLOSED independently of its payment progress. Payment does not close a case; closing
-needs no decision or payment. Use `claimcore describe commands` for current inputs and correction choices.
+needs no decision or payment. Use `claimcore describe acts` for current inputs and correction choices.
 
 - OPEN creates revision one with expected revision zero. AMEND_REGISTRATION replaces registration on an open,
   undecided case.
 - DECIDE and WITHDRAW_DECISION record or remove an unpaid decision. RECORD_PAYMENT and CLEAR_PAYMENT record
   or remove its payment date. Clearing recorded facts does not reverse a real transfer.
 - CLOSE and REOPEN change status. Ordinary editing of a closed case requires reopening.
-- CORRECT_CASE changes existing facts atomically while preserving reference and status, including on a closed case.
+- CORRECT changes existing facts atomically while preserving reference and status, including on a closed case.
 
 Before ordinary registration editing, clear payment and withdraw the decision. A correction instead supplies
 all three tagged groups. Registration may KEEP or REPLACE all registration values. Decision and payment may

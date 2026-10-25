@@ -3,7 +3,7 @@ namespace ClaimCore.ContractGeneration
 open ClaimCore.Contract
 open ClaimCore.Domain
 
-module CommandPresentation =
+module ActPresentation =
     let private groupFields group =
         FieldTable.rows
         |> List.filter (fun row -> row.Group = group)
@@ -27,7 +27,7 @@ module CommandPresentation =
                 | _ -> invalidArg "fieldName" "Expected a business or stewardship scalar."
         }
 
-    let private fields values = CommandInputShape.Fields values
+    let private fields values = ActInputShape.Fields values
 
     let private correctionGroups =
         Vocabulary.all CorrectionGroup.vocabulary
@@ -42,12 +42,12 @@ module CommandPresentation =
                 Name = group
                 LabelId = Vocabulary.messageKey CorrectionGroup.vocabulary group "label"
                 MeaningId = Vocabulary.messageKey CorrectionGroup.vocabulary group "meaning"
-                Actions = CommandDefinitions.correctionActions group
+                Actions = ActDefinitions.correctionActions group
                 ReplaceFields = groupFields fields |> List.map current
             })
-        |> CommandInputShape.CorrectionGroups
+        |> ActInputShape.CorrectionGroups
 
-    let private definition kind inputs : CommandDefinition =
+    let private definition kind inputs : ActDefinition =
         {
             Kind = kind
             LabelId = Vocabulary.messageKey CaseActKinds.vocabulary kind "label"
@@ -67,7 +67,7 @@ module CommandPresentation =
         ]
 
     let private correctionDefinition =
-        definition (CaseActKind.Business BusinessActKind.CorrectCase) correctionGroups
+        definition (CaseActKind.Business BusinessActKind.Correct) correctionGroups
 
     let private paymentAndStatusDefinitions =
         [

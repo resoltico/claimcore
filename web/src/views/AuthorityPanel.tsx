@@ -74,14 +74,14 @@ const AuthorityWorkspace = ({
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const context = useAuthorityContext(token, disclosure);
   const { refused } = disclosure;
-  const offered = productMetadata.descriptors.authorityCommands
+  const offered = productMetadata.catalog.authorityActs
     .filter(
-      (command) =>
+      (act) =>
         context.value?.offers.some(
-          (offer) => offer.kind === "AUTHORITY_ACT" && offer.act === command.kind,
+          (offer) => offer.kind === "AUTHORITY_ACT" && offer.act === act.kind,
         ) === true,
     )
-    .map((command) => command.kind);
+    .map((act) => act.kind);
   return (
     <>
       <OperationPanel model={model} current={null} offered={offered} />
@@ -199,7 +199,7 @@ export const AuthorityPanel = ({ token, onLockChange }: AuthorityPanelProps) => 
   };
   const model = useOperation({
     scope: "AUTHORITY",
-    kind: productMetadata.descriptors.authorityCommands[0]!.kind,
+    kind: productMetadata.catalog.authorityActs[0]!.kind,
     current: null,
     token,
     onLockChange,

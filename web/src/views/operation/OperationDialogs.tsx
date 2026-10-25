@@ -37,7 +37,7 @@ export const AcceptedOperation = ({
       <p>{p.text("ui.operationAccepted", { operationId: receipt.operationId })}</p>
       <ReceiptFields
         scope={receipt.scope}
-        fields={definition.descriptors.fields}
+        fields={definition.catalog.fields}
         context={p.text("ui.acceptedContext", { operationId: receipt.operationId })}
       />
       <Button

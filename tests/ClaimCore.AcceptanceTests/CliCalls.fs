@@ -151,7 +151,7 @@ let private grantFrame target role =
             target = target
             act =
                 {|
-                    kind = "SET_GRANT"
+                    kind = "GRANT"
                     role = role
                     scope = installation
                     active = true
@@ -168,7 +168,7 @@ let setGrant fixture target role active =
                 target = target
                 act =
                     {|
-                        kind = "SET_GRANT"
+                        kind = "GRANT"
                         role = role
                         scope = installation
                         active = active
@@ -198,7 +198,7 @@ let private setupFrames fixture =
                     scope = "AUTHORITY"
                     operationId = id ()
                     target = target
-                    act = {| kind = "REGISTER_ACTOR" |}
+                    act = {| kind = "REGISTER" |}
                 |}
             :: (roles |> List.map (grantFrame target)))
 

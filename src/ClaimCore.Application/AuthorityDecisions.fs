@@ -66,18 +66,23 @@ module internal AuthorityDecisions =
         | AuthorityAction.ProvisionOwner, None when view.ActorCount = 0 ->
             Ok(operationId, AuthorityProjection.ProvisionOwner(operationId, target))
         | AuthorityAction.ProvisionOwner, _
-        | AuthorityAction.User AdmittedAuthorityAct.RegisterActor, Some _ ->
+        | AuthorityAction.User AdmittedAuthorityAct.Register, Some _ ->
             Error Refusal.ActorAlreadyRegistered
-        | AuthorityAction.User AdmittedAuthorityAct.RegisterActor, None ->
-            Ok(operationId, AuthorityProjection.RegisterActor(operationId, target))
+        | AuthorityAction.User AdmittedAuthorityAct.Register, None ->
+            Ok(operationId, AuthorityProjection.Register(operationId, target))
         | _, None -> Error Refusal.ActorUnknown
-        | AuthorityAction.User(AdmittedAuthorityAct.SetEnabled enabled), Some actor ->
-            if not enabled && owner view.Target && view.EnabledHumanOwners <= 1 then
-                Error Refusal.LastOwner
-            else
-                Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, enabled))
-        | AuthorityAction.User(AdmittedAuthorityAct.SetGrant(role, scope, active)), Some _ ->
-            grantProjection role scope active view.Target view
+        | AuthorityAction.User AdmittedAuthorityAct.Disable, Some _ when
+            owner view.Target && view.EnabledHumanOwners <= 1
+            ->
+            Error Refusal.LastOwner
+        | AuthorityAction.User AdmittedAuthorityAct.Enable, Some actor ->
+            Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, true))
+        | AuthorityAction.User AdmittedAuthorityAct.Disable, Some actor ->
+            Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, false))
+        | AuthorityAction.User(AdmittedAuthorityAct.Grant(role, scope)), Some _ ->
+            grantProjection role scope true view.Target view
+        | AuthorityAction.User(AdmittedAuthorityAct.Revoke(role, scope)), Some _ ->
+            grantProjection role scope false view.Target view
 
     let private targets installationId target action (view: AuthorityReadView) =
         if
@@ -87,9 +92,10 @@ module internal AuthorityDecisions =
             Error CoreFault.StoreIntegrityError
         else
             match action, view.TargetCase with
-            | AuthorityAction.User(AdmittedAuthorityAct.SetGrant(_,
-                                                                 GrantTarget.CaseReference reference,
-                                                                 _)),
+            | AuthorityAction.User(AdmittedAuthorityAct.Grant(_, GrantTarget.CaseReference reference)),
+              Some record
+            | AuthorityAction.User(AdmittedAuthorityAct.Revoke(_,
+                                                               GrantTarget.CaseReference reference)),
               Some record ->
                 CaseDecisions.current installationId record
                 |> Result.bind (fun _ ->

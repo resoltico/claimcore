@@ -5,7 +5,7 @@ open ClaimCore.Domain
 open ClaimCore.Application
 
 /// Explicit bindings are joined to semantic definitions here, never guessed by a client.
-module InteractionDefinitions =
+module CatalogEntries =
     let private assignment path value : BindingAssignment = { Path = path; Value = value }
 
     let private text path value =
@@ -13,7 +13,7 @@ module InteractionDefinitions =
 
     let private condition path value : BindingCondition = { Path = path; Value = value }
 
-    let private input path kind label : InteractionInput =
+    let private input path kind label : CatalogInput =
         {
             Identity = String.concat "." path
             Field = None
@@ -96,10 +96,10 @@ module InteractionDefinitions =
             (scalar [ "act"; "groups"; name; "values" ] [ condition path "REPLACE" ])
             group.ReplaceFields
 
-    let private caseInputs (command: CommandDefinition) =
+    let private caseInputs (command: ActDefinition) =
         match command.Inputs with
-        | CommandInputShape.CorrectionGroups groups -> List.collect group groups
-        | CommandInputShape.Fields fields ->
+        | ActInputShape.CorrectionGroups groups -> List.collect group groups
+        | ActInputShape.Fields fields ->
             let prefix =
                 match command.Kind with
                 | CaseActKind.Stewardship StewardshipActKind.Void
@@ -111,7 +111,7 @@ module InteractionDefinitions =
     let private ordered values =
         List.mapi (fun index value -> { value with Order = index }) values
 
-    let private caseDefinition (command: CommandDefinition) : InteractionDefinition =
+    let private caseDefinition (command: ActDefinition) : CatalogEntry =
         let kind = CaseActKinds.token command.Kind
         let isOpen = command.Kind = CaseActKind.Business BusinessActKind.Open
 
@@ -182,9 +182,7 @@ module InteractionDefinitions =
                 }
             ]
 
-    let private authorityDefinition
-        (command: AuthorityOperationDefinition)
-        : InteractionDefinition =
+    let private authorityDefinition (command: AuthorityOperationDefinition) : CatalogEntry =
         let kind = AuthorityKinds.token command.Kind
 
         {
@@ -195,5 +193,5 @@ module InteractionDefinitions =
         }
 
     let all =
-        List.map caseDefinition CommandPresentation.all
+        List.map caseDefinition ActPresentation.all
         @ List.map authorityDefinition AuthorityOperationDefinitions.all

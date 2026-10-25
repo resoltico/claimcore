@@ -11,7 +11,7 @@ type CaseStatus =
 type BusinessActKind =
     | Open
     | AmendRegistration
-    | CorrectCase
+    | Correct
     | Decide
     | WithdrawDecision
     | RecordPayment

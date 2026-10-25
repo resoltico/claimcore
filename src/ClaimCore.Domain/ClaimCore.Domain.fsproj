@@ -5,14 +5,13 @@
     <Compile Include="UnicodeText.fs" />
     <Compile Include="TextAdmission.fs" />
     <Compile Include="CaseModel.fs" />
-    <Compile Include="Vocabulary.fs" />
-    <Compile Include="Descriptors.fs" />
+    <Compile Include="CatalogDocument.fs" />
     <Compile Include="FieldDefinitions.fs" />
-    <Compile Include="CommandDefinitions.fs" />
+    <Compile Include="ActDefinitions.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="CaseReference.fs" />
     <Compile Include="Eligibility.fs" />
-    <Compile Include="ValidatedCommands.fs" />
+    <Compile Include="ValidatedActs.fs" />
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />
     <Compile Include="RequestValidation.fs" />

@@ -58,7 +58,7 @@ const reads = (offered = true) => {
         tag: "SUCCEEDED",
         data: {
           ...context.outcome.data,
-          offers: installationOffers(["REGISTER_ACTOR"]),
+          offers: installationOffers(["REGISTER"]),
           views: offered ? ["AUTHORITY"] : [],
         },
       },
@@ -243,8 +243,7 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
             operationId: prepared.input.operationId,
             scope: {
               ...receipt.outcome.data.scope,
-              act:
-                prepared.input.scope === "AUTHORITY" ? prepared.input.act.kind : "REGISTER_ACTOR",
+              act: prepared.input.scope === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
             },
           },
         },

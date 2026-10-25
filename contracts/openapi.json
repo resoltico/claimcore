@@ -1768,7 +1768,7 @@
               "$ref": "#/components/schemas/InstallationOffer"
             },
             "minItems": 0,
-            "maxItems": 4
+            "maxItems": 6
           }
         },
         "required": [
@@ -1918,58 +1918,62 @@
       "AuthorityAct": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/AuthorityAct.REGISTER_ACTOR"
+            "$ref": "#/components/schemas/AuthorityAct.REGISTER"
           },
           {
-            "$ref": "#/components/schemas/AuthorityAct.SET_GRANT"
+            "$ref": "#/components/schemas/AuthorityAct.GRANT"
           },
           {
-            "$ref": "#/components/schemas/AuthorityAct.SET_ENABLED"
+            "$ref": "#/components/schemas/AuthorityAct.REVOKE"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityAct.ENABLE"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityAct.DISABLE"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "REGISTER_ACTOR": "#/components/schemas/AuthorityAct.REGISTER_ACTOR",
-            "SET_GRANT": "#/components/schemas/AuthorityAct.SET_GRANT",
-            "SET_ENABLED": "#/components/schemas/AuthorityAct.SET_ENABLED"
+            "REGISTER": "#/components/schemas/AuthorityAct.REGISTER",
+            "GRANT": "#/components/schemas/AuthorityAct.GRANT",
+            "REVOKE": "#/components/schemas/AuthorityAct.REVOKE",
+            "ENABLE": "#/components/schemas/AuthorityAct.ENABLE",
+            "DISABLE": "#/components/schemas/AuthorityAct.DISABLE"
           }
         }
       },
-      "AuthorityAct.REGISTER_ACTOR": {
+      "AuthorityAct.DISABLE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "REGISTER_ACTOR"
+            "const": "DISABLE"
           }
         },
         "required": [
           "kind"
         ]
       },
-      "AuthorityAct.SET_ENABLED": {
+      "AuthorityAct.ENABLE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "SET_ENABLED"
-          },
-          "enabled": {
-            "type": "boolean"
+            "const": "ENABLE"
           }
         },
         "required": [
-          "kind",
-          "enabled"
+          "kind"
         ]
       },
-      "AuthorityAct.SET_GRANT": {
+      "AuthorityAct.GRANT": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "SET_GRANT"
+            "const": "GRANT"
           },
           "role": {
             "oneOf": [
@@ -1998,16 +2002,66 @@
           },
           "scope": {
             "$ref": "#/components/schemas/Scope"
-          },
-          "active": {
-            "type": "boolean"
           }
         },
         "required": [
           "kind",
           "role",
-          "scope",
-          "active"
+          "scope"
+        ]
+      },
+      "AuthorityAct.REGISTER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REGISTER"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "AuthorityAct.REVOKE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REVOKE"
+          },
+          "role": {
+            "oneOf": [
+              {
+                "const": "OWNER"
+              },
+              {
+                "const": "CASE_READER"
+              },
+              {
+                "const": "CASE_REGISTRAR"
+              },
+              {
+                "const": "CASE_HANDLER"
+              },
+              {
+                "const": "PAYMENT_RECORDER"
+              },
+              {
+                "const": "DATA_STEWARD"
+              },
+              {
+                "const": "AUDITOR"
+              }
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "required": [
+          "kind",
+          "role",
+          "scope"
         ]
       },
       "AuthorityGrant": {
@@ -2113,7 +2167,7 @@
             "$ref": "#/components/schemas/CaseAct.AMEND_REGISTRATION"
           },
           {
-            "$ref": "#/components/schemas/CaseAct.CORRECT_CASE"
+            "$ref": "#/components/schemas/CaseAct.CORRECT"
           },
           {
             "$ref": "#/components/schemas/CaseAct.DECIDE"
@@ -2148,7 +2202,7 @@
           "mapping": {
             "OPEN": "#/components/schemas/CaseAct.OPEN",
             "AMEND_REGISTRATION": "#/components/schemas/CaseAct.AMEND_REGISTRATION",
-            "CORRECT_CASE": "#/components/schemas/CaseAct.CORRECT_CASE",
+            "CORRECT": "#/components/schemas/CaseAct.CORRECT",
             "DECIDE": "#/components/schemas/CaseAct.DECIDE",
             "WITHDRAW_DECISION": "#/components/schemas/CaseAct.WITHDRAW_DECISION",
             "RECORD_PAYMENT": "#/components/schemas/CaseAct.RECORD_PAYMENT",
@@ -2201,12 +2255,12 @@
           "kind"
         ]
       },
-      "CaseAct.CORRECT_CASE": {
+      "CaseAct.CORRECT": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "CORRECT_CASE"
+            "const": "CORRECT"
           },
           "groups": {
             "$ref": "#/components/schemas/Correction"
@@ -2356,7 +2410,7 @@
             "VOID": "#/components/schemas/OrdinaryCaseActOffer",
             "REINSTATE": "#/components/schemas/OrdinaryCaseActOffer",
             "ERASE": "#/components/schemas/OrdinaryCaseActOffer",
-            "CORRECT_CASE": "#/components/schemas/CorrectionCaseActOffer"
+            "CORRECT": "#/components/schemas/CorrectionCaseActOffer"
           }
         }
       },
@@ -2780,7 +2834,7 @@
                 "const": "AMEND_REGISTRATION"
               },
               {
-                "const": "CORRECT_CASE"
+                "const": "CORRECT"
               },
               {
                 "const": "DECIDE"
@@ -3096,7 +3150,7 @@
               "$ref": "#/components/schemas/InstallationOffer"
             },
             "minItems": 0,
-            "maxItems": 4
+            "maxItems": 6
           }
         },
         "required": [
@@ -3133,7 +3187,7 @@
                 "const": "AMEND_REGISTRATION"
               },
               {
-                "const": "CORRECT_CASE"
+                "const": "CORRECT"
               },
               {
                 "const": "DECIDE"
@@ -3358,7 +3412,7 @@
           "act": {
             "oneOf": [
               {
-                "const": "CORRECT_CASE"
+                "const": "CORRECT"
               }
             ]
           },
@@ -5117,13 +5171,19 @@
           "act": {
             "oneOf": [
               {
-                "const": "REGISTER_ACTOR"
+                "const": "REGISTER"
               },
               {
-                "const": "SET_GRANT"
+                "const": "GRANT"
               },
               {
-                "const": "SET_ENABLED"
+                "const": "REVOKE"
+              },
+              {
+                "const": "ENABLE"
+              },
+              {
+                "const": "DISABLE"
               }
             ]
           }
@@ -5860,13 +5920,19 @@
                 "const": "PROVISION_OWNER"
               },
               {
-                "const": "REGISTER_ACTOR"
+                "const": "REGISTER"
               },
               {
-                "const": "SET_GRANT"
+                "const": "GRANT"
               },
               {
-                "const": "SET_ENABLED"
+                "const": "REVOKE"
+              },
+              {
+                "const": "ENABLE"
+              },
+              {
+                "const": "DISABLE"
               }
             ]
           }
@@ -5904,7 +5970,7 @@
                 "const": "AMEND_REGISTRATION"
               },
               {
-                "const": "CORRECT_CASE"
+                "const": "CORRECT"
               },
               {
                 "const": "DECIDE"

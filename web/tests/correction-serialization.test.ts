@@ -10,7 +10,7 @@ for (const status of ["OPENED", "CLOSED"] as const) {
         const values = {
           ...initialOperationValues(
             "CASE",
-            "CORRECT_CASE",
+            "CORRECT",
             {
               ...current,
               state: { ...current.state, fields: { ...current.state.fields, status } },

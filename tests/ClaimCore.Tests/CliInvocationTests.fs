@@ -11,7 +11,7 @@ open ClaimCore.Contract.Protocol
 open ClaimCore.Application
 
 let private aliases () =
-    for command in CliCommands.commands do
+    for command in CliCommands.acts do
         for alias in [ "--help"; "-h" ] do
             Expect.equal
                 (CliInvocations.admit [ command; alias ])
@@ -54,16 +54,15 @@ let private options () =
             [ "help"; "secret-canary" ]
             [ "describe"; "secret-canary" ]
             [ "describe"; "summary"; "extra" ]
-            [ "describe"; "commands"; "OPEN"; "extra" ]
+            [ "describe"; "acts"; "OPEN"; "extra" ]
             [ "schema"; "context"; "extra" ]
             [ "describe"; "--format"; "text"; "--format"; "text" ]
         ] do
         Expect.isError (CliInvocations.admit args) "Unsupported combinations refuse atomically"
 
     Expect.equal
-        (CliInvocations.admit
-            [ "describe"; "commands"; "OPEN"; "--format"; "text"; "--language"; "ar" ])
-        (Ok(CliInvocation.Describe(CliDescription.Commands(Some "OPEN"), true, "ar")))
+        (CliInvocations.admit [ "describe"; "acts"; "OPEN"; "--format"; "text"; "--language"; "ar" ])
+        (Ok(CliInvocation.Describe(CliDescription.Acts(Some "OPEN"), true, "ar")))
         "Explicit human format"
 
     Expect.isOk
@@ -79,26 +78,25 @@ let tests =
             testCase "strict human versus machine option combinations" options
         ]
 
-let private grammarDescriptors () =
-    ClaimCore.Cli.ContractDiscovery.descriptors ()
+let private grammarCatalogDocument () =
+    ClaimCore.Cli.ContractDiscovery.catalog ()
     |> StrictJson.read Limits.MaximumResponseBytes
-    |> Result.defaultWith (fun _ -> failtest "Embedded descriptors are valid")
+    |> Result.defaultWith (fun _ -> failtest "Embedded catalog are valid")
 
 let private prepared arguments =
     Grammar.prepare
         (fun () -> "10000000-0000-4000-8000-000000000001")
-        (grammarDescriptors ())
+        (grammarCatalogDocument ())
         arguments
     |> Result.defaultWith (fun _ -> failtest "Derived verb prepares a request")
 
 let private verbCoverage () =
-    let descriptors =
-        JsonNode.Parse(ClaimCore.Cli.ContractDiscovery.descriptors ()) |> nonNull
+    let catalog = JsonNode.Parse(ClaimCore.Cli.ContractDiscovery.catalog ()) |> nonNull
 
-    let commands = descriptors["commands"] |> nonNull |> _.AsArray()
+    let acts = catalog["acts"] |> nonNull |> _.AsArray()
 
     let verbs =
-        commands
+        acts
         |> Seq.map (fun item ->
             (nonNull item)["kind"] |> nonNull |> _.GetValue<string>() |> CliSyntax.caseVerb)
         |> Seq.toList
@@ -108,7 +106,7 @@ let private verbCoverage () =
         CaseActKinds.all.Length
         "Exactly one derived verb for each case act"
 
-    for command in commands do
+    for command in acts do
         let command = nonNull command
         let kind = command["kind"] |> nonNull |> _.GetValue<string>()
         let inputs = command["inputs"] |> nonNull
@@ -179,7 +177,7 @@ let private verbPreparation () =
     let args = [ "case"; "close"; "SYNTHETIC"; "--expected-revision"; "1" ]
     let actual = prepared (args @ [ "--dry-run" ])
     Expect.isTrue actual.DryRun "Dry run is an offline preparation"
-    Expect.isTrue actual.Text "Human commands default to text"
+    Expect.isTrue actual.Text "Human acts default to text"
 
     let frame =
         Frames.admit actual.Bytes |> Result.defaultWith (fun _ -> failtest "Frame")
@@ -208,7 +206,7 @@ let private verbPreparation () =
         Expect.isError
             (Grammar.prepare
                 (fun () -> Guid.NewGuid().ToString("D"))
-                (grammarDescriptors ())
+                (grammarCatalogDocument ())
                 rejected)
             "Malformed verbs refuse atomically"
 

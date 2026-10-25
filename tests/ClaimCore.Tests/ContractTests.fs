@@ -49,7 +49,7 @@ let private authority =
             ClaimCore.Contract.ReceiptScope.Authority
                 {
                     TargetActorId = id
-                    Act = AuthorityKind.RegisterActor
+                    Act = AuthorityKind.Register
                 }
     }
 
@@ -467,7 +467,7 @@ let private authorityWire kind issuer subject =
                     issuer = issuer
                     subject = subject
                 |}
-            act = {| kind = "REGISTER_ACTOR" |}
+            act = {| kind = "REGISTER" |}
         |}
 
 let private principalAdmission () =
@@ -523,10 +523,10 @@ let private artifact name =
     )
 
 let private policyHints () =
-    use descriptors = artifact "descriptors.json"
+    use catalog = artifact "catalog.json"
 
     let claimant =
-        descriptors.RootElement.GetProperty("fields").EnumerateArray()
+        catalog.RootElement.GetProperty("fields").EnumerateArray()
         |> Seq.find (fun field -> field.GetProperty("name").GetString() = "claimantName")
 
     Expect.equal
@@ -539,7 +539,7 @@ let private policyHints () =
         "Current policy is a nonvalidating hint"
 
 let private authorityFieldPresentation () =
-    use document = artifact "descriptors.json"
+    use document = artifact "catalog.json"
     let root = document.RootElement
     let fields = root.GetProperty("authorityFields").EnumerateArray() |> Seq.toList
 
@@ -570,11 +570,11 @@ let private authorityFieldPresentation () =
     for field in fields do
         let name = field.GetProperty("name").GetString() |> nonNull
         let labelId = field.GetProperty("labelId").GetString() |> nonNull
-        Expect.equal labelId ("authority.field." + name + ".label") "Stable message identifier"
+        Expect.equal labelId ("input." + name + ".label") "Stable message identifier"
 
         Expect.isFalse
             (field.TryGetProperty "label" |> fst)
-            "Descriptors carry keys, not authored prose."
+            "CatalogDocument carry keys, not authored prose."
 
 let private decoderProperty =
     let seed =

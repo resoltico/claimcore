@@ -32,7 +32,7 @@ const context = (): ApiResult<ServiceResponse<"context">> => {
         ...value.outcome,
         data: {
           ...value.outcome.data,
-          offers: installationOffers(["REGISTER_ACTOR", "SET_GRANT", "SET_ENABLED"]),
+          offers: installationOffers(["REGISTER", "GRANT", "DISABLE"]),
         },
       },
     },
@@ -73,7 +73,7 @@ const selectEnabled = async () => {
     ).toHaveLength(3);
   });
   fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
-    target: { value: "SET_ENABLED" },
+    target: { value: "DISABLE" },
   });
 };
 it.each(["context", "listing"] as const)(
@@ -96,7 +96,7 @@ it.each(["context", "listing"] as const)(
     fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
     fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
     const [prepared] = execute.mock.calls[0]!;
-    expect(prepared.input.act).toEqual({ kind: "SET_ENABLED", enabled: false });
+    expect(prepared.input.act).toEqual({ kind: "DISABLE" });
     await finish(execution, acceptance(prepared));
     expect(screen.queryByRole("button", { name: "Record changes" })).toBeNull();
     if (first === "listing") {
@@ -106,14 +106,14 @@ it.each(["context", "listing"] as const)(
     await finish(contextRead, context());
     fireEvent.click(screen.getByRole("button", { name: "Start another operation" }));
     fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
-      target: { value: "SET_GRANT" },
+      target: { value: "GRANT" },
     });
     await author("synthetic-next");
     if (first === "context") {
       await finish(listingRead, listing());
     }
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByLabelText("Authority action", { exact: true })).toHaveValue("SET_GRANT");
+    expect(screen.getByLabelText("Authority action", { exact: true })).toHaveValue("GRANT");
     expect(document.querySelector('[name="target.subject"]')).toHaveValue("synthetic-next");
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     expect(await screen.findByRole("heading", { name: "Review changes" })).toBeVisible();

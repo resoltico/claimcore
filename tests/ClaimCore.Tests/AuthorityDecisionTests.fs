@@ -21,8 +21,8 @@ let private lastOwner () =
 
     for act in
         [
-            AdmittedAuthorityAct.SetEnabled false
-            AdmittedAuthorityAct.SetGrant(Role.Owner, GrantTarget.Installation, false)
+            AdmittedAuthorityAct.Disable
+            AdmittedAuthorityAct.Revoke(Role.Owner, GrantTarget.Installation)
         ] do
         let request = admitted 100 owner act
 
@@ -36,10 +36,7 @@ let private humanOnly () =
 
     for role in [ Role.Owner; Role.DataSteward ] do
         let request =
-            admitted
-                101
-                service
-                (AdmittedAuthorityAct.SetGrant(role, GrantTarget.Installation, true))
+            admitted 101 service (AdmittedAuthorityAct.Grant(role, GrantTarget.Installation))
 
         Expect.equal
             (AuthorityDecisions.execute
@@ -68,12 +65,12 @@ let private humanOnly () =
         "Bootstrap also requires a human"
 
 let private replay () =
-    let request = admitted 103 other AdmittedAuthorityAct.RegisterActor
+    let request = admitted 103 other AdmittedAuthorityAct.Register
     let view = authorityView worker AuthorityView.empty None
 
     let entry, receipt =
         match AuthorityDecisions.execute installation owner request view with
-        | LedgerDecision.Append(entry, AuthorityProjection.RegisterActor(target, principal), receipt) ->
+        | LedgerDecision.Append(entry, AuthorityProjection.Register(target, principal), receipt) ->
             Expect.equal target request.OperationId "Registration owns the target identity"
             Expect.equal principal other "Exact authored principal"
             entry, receipt
@@ -89,7 +86,7 @@ let private replay () =
 
     let changed =
         { request with
-            Act = AdmittedAuthorityAct.SetEnabled false
+            Act = AdmittedAuthorityAct.Disable
         }
 
     Expect.equal
@@ -146,11 +143,11 @@ let private provision () =
         "Bootstrap exact replay is idempotent"
 
 let private reviewAndFences () =
-    let request = admitted 105 other AdmittedAuthorityAct.RegisterActor
+    let request = admitted 105 other AdmittedAuthorityAct.Register
     let view = authorityView worker AuthorityView.empty None
 
     match AuthorityDecisions.review installation owner request view.Read with
-    | AuthorityReviewDecision.Proposed(_, AuthorityProjection.RegisterActor _) -> ()
+    | AuthorityReviewDecision.Proposed(_, AuthorityProjection.Register _) -> ()
     | _ -> failtest "Review must be a pure proposal"
 
     Expect.equal
@@ -172,7 +169,7 @@ let private reviewAndFences () =
         (LedgerDecision.Refuse Refusal.LedgerExhausted)
         "Capacity refuses fresh work"
 
-    let registered = admitted 106 owner AdmittedAuthorityAct.RegisterActor
+    let registered = admitted 106 owner AdmittedAuthorityAct.Register
 
     let full =
         { authorityView worker worker None with

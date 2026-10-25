@@ -38,13 +38,13 @@ module Discovery =
             |> Option.map (fun item -> Encoding.UTF8.GetBytes(item.GetRawText()))
 
     let describe selection =
-        let descriptors = ContractDiscovery.descriptors ()
+        let catalog = ContractDiscovery.catalog ()
 
         match selection with
-        | CliDescription.Summary -> Some descriptors
-        | CliDescription.Fields name -> select descriptors "fields" "name" name
-        | CliDescription.Commands kind -> select descriptors "commands" "kind" kind
-        | CliDescription.Authority kind -> select descriptors "authorityCommands" "kind" kind
+        | CliDescription.Summary -> Some catalog
+        | CliDescription.Fields name -> select catalog "fields" "name" name
+        | CliDescription.Acts kind -> select catalog "acts" "kind" kind
+        | CliDescription.Authority kind -> select catalog "authorityActs" "kind" kind
         | CliDescription.Endpoints None -> Some(ContractDiscovery.catalogue ())
         | CliDescription.Endpoints(Some endpoint) ->
             select (ContractDiscovery.catalogue ()) "endpoints" "id" (Some endpoint)
@@ -58,7 +58,7 @@ module Discovery =
     let private summary language =
         [
             CliDescription.Fields None
-            CliDescription.Commands None
+            CliDescription.Acts None
             CliDescription.Authority None
         ]
         |> List.collect (fun selection ->
@@ -89,7 +89,7 @@ module Discovery =
             use document = JsonDocument.Parse(System.ReadOnlyMemory<byte> bytes)
 
             use definitions =
-                JsonDocument.Parse(System.ReadOnlyMemory<byte>(ContractDiscovery.descriptors ()))
+                JsonDocument.Parse(System.ReadOnlyMemory<byte>(ContractDiscovery.catalog ()))
 
             let routes =
                 match selection with
@@ -108,7 +108,7 @@ module Discovery =
             let target =
                 match selection with
                 | CliDescription.Authority _ ->
-                    DescriptorText.render
+                    CatalogText.render
                         language
                         definitions.RootElement
                         (definitions.RootElement.GetProperty "authorityTarget")
@@ -124,7 +124,7 @@ module Discovery =
                     describeMessages language document.RootElement + "\n"
                 else
                     target
-                    + DescriptorText.render language definitions.RootElement document.RootElement
+                    + CatalogText.render language definitions.RootElement document.RootElement
                     + "\n"
                     + routes
                     + "\n"

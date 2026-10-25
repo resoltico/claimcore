@@ -142,7 +142,7 @@ let private vocabulary () =
         Expect.equal
             (CaseActs.kind (action))
             expected
-            "Stewardship remains distinct from business commands"
+            "Stewardship remains distinct from business acts"
 
 [<Tests>]
 let tests =

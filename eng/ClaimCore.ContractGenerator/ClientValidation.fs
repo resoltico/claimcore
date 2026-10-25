@@ -174,7 +174,7 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
             Map.fold
                 (fun state name value -> Map.add name value state)
                 OpenApi.definitions
-                DescriptorCodecs.codec.Definitions
+                CatalogCodecs.codec.Definitions
 
         let roots =
             Api.all
@@ -186,7 +186,7 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
                     })
 
         let reachable =
-            SchemaJson.reachable definitions (DescriptorCodecs.codec.Schema :: roots)
+            SchemaJson.reachable definitions (CatalogCodecs.codec.Schema :: roots)
 
         let functions =
             reachable
@@ -213,6 +213,6 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
             "export const isRequest = <E extends EndpointId>(endpoint:E,value:unknown):value is RequestByEndpoint[E] => requestIssue(endpoint,value) === null;"
             "export const isResponse = <E extends EndpointId>(endpoint:E,value:unknown):value is ResponseByEndpoint[E] => responseChecks[endpoint](value,false,[]) === null;"
             "export const buildRequest = <E extends EndpointId>(endpoint:E,value:unknown):RequestByEndpoint[E] => { const matches = (candidate:unknown):candidate is RequestByEndpoint[E] => requestChecks[endpoint](candidate,true,[]) === null; if (!matches(value)) { throw new Error(\"Invalid endpoint draft structure.\"); } return value; };"
-            "export const isDescriptors = (value:unknown):value is Descriptors => check_Presentation_PresentationDescriptors(value,false,[]) === null;"
+            "export const isCatalogDocument = (value:unknown):value is CatalogDocument => check_Presentation_CatalogDocument(value,false,[]) === null;"
         ]
         |> String.concat "\n"

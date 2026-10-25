@@ -71,7 +71,7 @@ module internal CaseCorrections =
                 paymentChoice progress ValidatedPaymentCorrection.Clear |> Result.isOk
 
         if present then
-            CommandDefinitions.correctionActions group
+            ActDefinitions.correctionActions group
         else
             [ CorrectionGroupAction.Keep ]
 

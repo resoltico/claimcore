@@ -61,7 +61,7 @@ let private commandsGenerator =
                         PaymentGroup.Clear
                     ]
                     |> List.map (fun payment ->
-                        CaseAct.CorrectCase
+                        CaseAct.Correct
                             {
                                 Registration = registration
                                 Decision = decision
@@ -87,10 +87,10 @@ let private requestsGenerator =
         let! operationId = Gen.guid
         let! reference = Gen.string (Range.constant 1 20) Gen.alphaNum
         let! version = Gen.int64 (Range.constant 0L 1_000_000L)
-        let! commands = commandsGenerator
+        let! acts = commandsGenerator
 
         return
-            commands
+            acts
             |> List.map (fun command ->
                 {
                     OperationId =
@@ -108,7 +108,7 @@ let private limit = 65536
 
 let private correctionModesMatch (request: CaseRequest) (encoded: byte array) =
     match request.Act with
-    | (CaseAct.CorrectCase correction) ->
+    | (CaseAct.Correct correction) ->
         let registration =
             match correction.Registration with
             | RegistrationGroup.Keep -> "KEEP"

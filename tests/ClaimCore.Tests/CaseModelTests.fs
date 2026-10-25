@@ -69,8 +69,8 @@ let private acts =
             { registration with
                 ClaimantName = "Changed Party"
             })
-        (CaseActKind.Business BusinessActKind.CorrectCase),
-        (CaseAct.CorrectCase
+        (CaseActKind.Business BusinessActKind.Correct),
+        (CaseAct.Correct
             {
                 Registration =
                     RegistrationGroup.Replace
@@ -112,7 +112,7 @@ let private stateExpectations =
         "open decided",
         Some(live CaseStatus.Opened true false),
         [
-            "CORRECT_CASE"
+            "CORRECT"
             "DECIDE"
             "WITHDRAW_DECISION"
             "RECORD_PAYMENT"
@@ -122,16 +122,16 @@ let private stateExpectations =
         ]
         "open paid",
         Some(live CaseStatus.Opened true true),
-        [ "CORRECT_CASE"; "CLEAR_PAYMENT"; "CLOSE"; "VOID"; "ERASE" ]
+        [ "CORRECT"; "CLEAR_PAYMENT"; "CLOSE"; "VOID"; "ERASE" ]
         "closed undecided",
         Some(live CaseStatus.Closed false false),
-        [ "CORRECT_CASE"; "REOPEN"; "VOID"; "ERASE" ]
+        [ "CORRECT"; "REOPEN"; "VOID"; "ERASE" ]
         "closed decided",
         Some(live CaseStatus.Closed true false),
-        [ "CORRECT_CASE"; "REOPEN"; "VOID"; "ERASE" ]
+        [ "CORRECT"; "REOPEN"; "VOID"; "ERASE" ]
         "closed paid",
         Some(live CaseStatus.Closed true true),
-        [ "CORRECT_CASE"; "REOPEN"; "VOID"; "ERASE" ]
+        [ "CORRECT"; "REOPEN"; "VOID"; "ERASE" ]
     ]
 
 let private matrix =
@@ -157,7 +157,7 @@ let private matrix =
                     "Independent advertisement expectation")
 
 let private allKeep =
-    (CaseAct.CorrectCase
+    (CaseAct.Correct
         {
             Registration = RegistrationGroup.Keep
             Decision = DecisionGroup.Keep

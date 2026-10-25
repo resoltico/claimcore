@@ -26,17 +26,17 @@ module ContractDiscovery =
     let localized language identity =
         MessageCatalogs.template language identity
 
-    let descriptors () = resource "descriptors.json"
+    let catalog () = resource "catalog.json"
 
     let private admittedDefinitions =
         lazy
-            (Codec.decode Limits.MaximumResponseBytes DescriptorCodecs.codec (descriptors ())
-             |> Result.defaultWith (fun _ -> invalidOp "Invalid embedded descriptors."))
+            (Codec.decode Limits.MaximumResponseBytes CatalogCodecs.codec (catalog ())
+             |> Result.defaultWith (fun _ -> invalidOp "Invalid embedded catalog."))
 
     let definitions () = admittedDefinitions.Value
 
     let descriptorValue () =
-        definitions () |> DescriptorCodecs.codec.Write
+        definitions () |> CatalogCodecs.codec.Write
 
     let helpTopic language topic =
         if topic = "verbs" then

@@ -1,278 +1,276 @@
 {
- "jcs": [
-  {
-   "name": "RFC 8785 3.2.3 property sorting",
-   "value": {
-    "\r": "Carriage Return",
-    "1": "One",
-    "": "Control",
-    "ö": "Latin Small Letter O With Diaeresis",
-    "€": "Euro Sign",
-    "😀": "Emoji: Grinning Face",
-    "דּ": "Hebrew Letter Dalet With Dagesh"
-   }
-  },
-  {
-   "name": "RFC 8785 3.2.2.2 string escaping",
-   "value": {
-    "string": "€$\u000f\nA'B\"\\\\\"/"
-   }
-  },
-  {
-   "name": "non-ASCII and HTML-sensitive text stays literal",
-   "value": {
-    "a": "Rīga مطالبة 😀",
-    "b": "A<B>&'+`"
-   }
-  },
-  {
-   "name": "C0 controls use short or lowercase escapes",
-   "value": {
-    "v": "\u0000\u0007\b\t\n\u000b\f\r\u001f"
-   }
-  },
-  {
-   "name": "largest safe integer",
-   "value": {
-    "n": 9007199254740991
-   }
-  }
- ],
- "jcsRefusals": [
-  "integer 9007199254740992",
-  "fraction 1.5",
-  "exponent 1e3",
-  "lone surrogate \\ud800"
- ],
- "caseRequests": [
-  {
-   "name": "OPEN with Latvian and Arabic business text",
-   "value": {
-    "act": {
-     "kind": "OPEN",
-     "values": {
-      "claimantName": "Rīgas Tulkojumu Birojs SIA",
-      "claimedAmount": "1000.00",
-      "claimedCurrency": "EUR",
-      "incidentCountry": "LV",
-      "incidentDate": "2026-08-01",
-      "incidentNotificationDate": "2026-08-03",
-      "insurerName": "شركة التأمين المثال"
-     }
-    },
-    "caseReference": "Demo-0001",
-    "expectedRevision": 0,
-    "format": 6,
-    "operationId": "10000000-0000-4000-8000-000000000001",
-    "scope": "CASE"
-   }
-  },
-  {
-   "name": "CORRECT_CASE with all three group modes",
-   "value": {
-    "act": {
-     "groups": {
-      "decision": {
-       "mode": "REPLACE",
-       "values": {
-        "payableAmount": "750.5",
-        "payableCurrency": "EUR",
-        "paymentDecisionDate": "2026-08-15"
-       }
-      },
-      "payment": {
-       "mode": "CLEAR"
-      },
-      "registration": {
-       "mode": "KEEP"
+  "jcs": [
+    {
+      "name": "RFC 8785 3.2.3 property sorting",
+      "value": {
+        "\r": "Carriage Return",
+        "1": "One",
+        "": "Control",
+        "ö": "Latin Small Letter O With Diaeresis",
+        "€": "Euro Sign",
+        "😀": "Emoji: Grinning Face",
+        "דּ": "Hebrew Letter Dalet With Dagesh"
       }
-     },
-     "kind": "CORRECT_CASE"
     },
-    "caseReference": "Demo-0001",
-    "expectedRevision": 5,
-    "format": 6,
-    "operationId": "10000000-0000-4000-8000-000000000006",
-    "scope": "CASE"
-   }
-  },
-  {
-   "name": "VOID with quotation mark and backslash in the reason",
-   "value": {
-    "act": {
-     "kind": "VOID",
-     "reason": "Entered for \"Demo\\0002\" by mistake"
+    {
+      "name": "RFC 8785 3.2.2.2 string escaping",
+      "value": {
+        "string": "€$\u000f\nA'B\"\\\\\"/"
+      }
     },
-    "caseReference": "Demo-0001",
-    "expectedRevision": 6,
-    "format": 6,
-    "operationId": "10000000-0000-4000-8000-000000000007",
-    "scope": "CASE"
-   }
-  },
-  {
-   "name": "ERASE at the largest revision that still admits a successor",
-   "value": {
-    "act": {
-     "kind": "ERASE"
+    {
+      "name": "non-ASCII and HTML-sensitive text stays literal",
+      "value": {
+        "a": "Rīga مطالبة 😀",
+        "b": "A<B>&'+`"
+      }
     },
-    "caseReference": "Demo-0001",
-    "expectedRevision": 9007199254740990,
-    "format": 6,
-    "operationId": "10000000-0000-4000-8000-000000000009",
-    "scope": "CASE"
-   }
-  }
- ],
- "snapshot": {
-  "name": "ACTIVE OPENED snapshot at revision 1",
-  "value": {
-   "disposition": "ACTIVE",
-   "fields": {
-    "caseReference": "Demo-0001",
-    "claimantName": "Rīgas Tulkojumu Birojs SIA",
-    "claimedAmount": "1000",
-    "claimedCurrency": "EUR",
-    "incidentCountry": "LV",
-    "incidentDate": "2026-08-01",
-    "incidentNotificationDate": "2026-08-03",
-    "insurerName": "شركة التأمين المثال",
-    "payableAmount": null,
-    "payableCurrency": null,
-    "paymentDate": null,
-    "paymentDecisionDate": null,
-    "status": "OPENED"
-   },
-   "format": 4,
-   "revision": 1
-  }
- },
- "authorityRecord": {
-  "name": "SET_GRANT CASE_HANDLER on one case",
-  "value": {
-   "act": {
-    "active": true,
-    "kind": "SET_GRANT",
-    "role": "CASE_HANDLER",
-    "scope": {
-     "caseReference": "Demo-0001",
-     "kind": "CASE"
+    {
+      "name": "C0 controls use short or lowercase escapes",
+      "value": {
+        "v": "\u0000\u0007\b\t\n\u000b\f\r\u001f"
+      }
+    },
+    {
+      "name": "largest safe integer",
+      "value": {
+        "n": 9007199254740991
+      }
     }
-   },
-   "format": 3,
-   "operationId": "20000000-0000-4000-8000-000000000002",
-   "target": {
-    "issuer": "https://issuer.example/",
-    "kind": "HUMAN",
-    "subject": "handler-1"
-   },
-   "scope": "AUTHORITY"
-  }
- },
- "caseReferenceIds": {
-  "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
-  "accepted": [
-   "Demo-0001",
-   "DEMO-0001",
-   "demo-0001",
-   "CL/2026/0042#a"
   ],
-  "refused": [
-   "DEMO 1",
-   "LIETA-Ā1",
-   "",
-   "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  ]
- },
- "ledgerEntries": [
-  {
-   "name": "case OPEN at genesis",
-   "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
-   "sequence": 1,
-   "scope": "CASE",
-   "act": "OPEN",
-   "operationId": "10000000-0000-4000-8000-000000000001",
-   "actorId": "a0000000-0000-4000-8000-000000000001",
-   "recordedAt": "2026-08-03T09:15:27.123456+00:00",
-   "caseRevision": 1,
-   "businessDate": "2026-08-03",
-   "payloadNonce": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
-  },
-  {
-   "name": "authority SET_GRANT linked to the first",
-   "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
-   "sequence": 2,
-   "scope": "AUTHORITY",
-   "act": "SET_GRANT",
-   "operationId": "20000000-0000-4000-8000-000000000002",
-   "actorId": "a0000000-0000-4000-8000-000000000001",
-   "recordedAt": "2026-08-03T09:15:28.000001+00:00",
-   "caseRevision": null,
-   "businessDate": null,
-   "payloadNonce": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
-   "subjectId": "b0000000-0000-4000-8000-000000000002"
-  }
- ],
- "ledgerPayloads": {
-  "case": {
-   "request": {
-    "act": {
-     "kind": "OPEN",
-     "values": {
-      "claimantName": "Rīgas Tulkojumu Birojs SIA",
-      "claimedAmount": "1000.00",
-      "claimedCurrency": "EUR",
-      "incidentCountry": "LV",
-      "incidentDate": "2026-08-01",
-      "incidentNotificationDate": "2026-08-03",
-      "insurerName": "شركة التأمين المثال"
-     }
+  "jcsRefusals": [
+    "integer 9007199254740992",
+    "fraction 1.5",
+    "exponent 1e3",
+    "lone surrogate \\ud800"
+  ],
+  "caseRequests": [
+    {
+      "name": "OPEN with Latvian and Arabic business text",
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 7,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "scope": "CASE"
+      }
     },
-    "caseReference": "Demo-0001",
-    "expectedRevision": 0,
-    "format": 5,
-    "operationId": "10000000-0000-4000-8000-000000000001"
-   },
-   "snapshot": {
-    "disposition": "ACTIVE",
-    "fields": {
-     "caseReference": "Demo-0001",
-     "claimantName": "Rīgas Tulkojumu Birojs SIA",
-     "claimedAmount": "1000",
-     "claimedCurrency": "EUR",
-     "incidentCountry": "LV",
-     "incidentDate": "2026-08-01",
-     "incidentNotificationDate": "2026-08-03",
-     "insurerName": "شركة التأمين المثال",
-     "payableAmount": null,
-     "payableCurrency": null,
-     "paymentDate": null,
-     "paymentDecisionDate": null,
-     "status": "OPENED"
+    {
+      "name": "CORRECT with all three group modes",
+      "value": {
+        "act": {
+          "groups": {
+            "decision": {
+              "mode": "REPLACE",
+              "values": {
+                "payableAmount": "750.5",
+                "payableCurrency": "EUR",
+                "paymentDecisionDate": "2026-08-15"
+              }
+            },
+            "payment": {
+              "mode": "CLEAR"
+            },
+            "registration": {
+              "mode": "KEEP"
+            }
+          },
+          "kind": "CORRECT"
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 5,
+        "format": 7,
+        "operationId": "10000000-0000-4000-8000-000000000006",
+        "scope": "CASE"
+      }
     },
-    "format": 4,
-    "revision": 1
-   }
-  },
-  "authority": {
-   "request": {
-    "act": {
-     "active": true,
-     "kind": "SET_GRANT",
-     "role": "CASE_HANDLER",
-     "scope": {
-      "caseReference": "Demo-0001",
-      "kind": "CASE"
-     }
+    {
+      "name": "VOID with quotation mark and backslash in the reason",
+      "value": {
+        "act": {
+          "kind": "VOID",
+          "reason": "Entered for \"Demo\\0002\" by mistake"
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 6,
+        "format": 7,
+        "operationId": "10000000-0000-4000-8000-000000000007",
+        "scope": "CASE"
+      }
     },
-    "format": 2,
-    "operationId": "20000000-0000-4000-8000-000000000002",
-    "target": {
-     "issuer": "https://issuer.example/",
-     "kind": "HUMAN",
-     "subject": "handler-1"
+    {
+      "name": "ERASE at the largest revision that still admits a successor",
+      "value": {
+        "act": {
+          "kind": "ERASE"
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 9007199254740990,
+        "format": 7,
+        "operationId": "10000000-0000-4000-8000-000000000009",
+        "scope": "CASE"
+      }
     }
-   }
+  ],
+  "snapshot": {
+    "name": "ACTIVE OPENED snapshot at revision 1",
+    "value": {
+      "disposition": "ACTIVE",
+      "fields": {
+        "caseReference": "Demo-0001",
+        "claimantName": "Rīgas Tulkojumu Birojs SIA",
+        "claimedAmount": "1000",
+        "claimedCurrency": "EUR",
+        "incidentCountry": "LV",
+        "incidentDate": "2026-08-01",
+        "incidentNotificationDate": "2026-08-03",
+        "insurerName": "شركة التأمين المثال",
+        "payableAmount": null,
+        "payableCurrency": null,
+        "paymentDate": null,
+        "paymentDecisionDate": null,
+        "status": "OPENED"
+      },
+      "format": 4,
+      "revision": 1
+    }
+  },
+  "authorityRecord": {
+    "name": "GRANT CASE_HANDLER on one case",
+    "value": {
+      "act": {
+        "kind": "GRANT",
+        "role": "CASE_HANDLER",
+        "scope": {
+          "caseReference": "Demo-0001",
+          "kind": "CASE"
+        }
+      },
+      "format": 4,
+      "operationId": "20000000-0000-4000-8000-000000000002",
+      "target": {
+        "issuer": "https://issuer.example/",
+        "kind": "HUMAN",
+        "subject": "handler-1"
+      },
+      "scope": "AUTHORITY"
+    }
+  },
+  "caseReferenceIds": {
+    "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+    "accepted": [
+      "Demo-0001",
+      "DEMO-0001",
+      "demo-0001",
+      "CL/2026/0042#a"
+    ],
+    "refused": [
+      "DEMO 1",
+      "LIETA-Ā1",
+      "",
+      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    ]
+  },
+  "ledgerEntries": [
+    {
+      "name": "case OPEN at genesis",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 1,
+      "scope": "CASE",
+      "act": "OPEN",
+      "operationId": "10000000-0000-4000-8000-000000000001",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:27.123456+00:00",
+      "caseRevision": 1,
+      "businessDate": "2026-08-03",
+      "payloadNonce": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+    },
+    {
+      "name": "authority GRANT linked to the first",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 2,
+      "scope": "AUTHORITY",
+      "act": "GRANT",
+      "operationId": "20000000-0000-4000-8000-000000000002",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:28.000001+00:00",
+      "caseRevision": null,
+      "businessDate": null,
+      "payloadNonce": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+      "subjectId": "b0000000-0000-4000-8000-000000000002"
+    }
+  ],
+  "ledgerPayloads": {
+    "case": {
+      "request": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 5,
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      },
+      "snapshot": {
+        "disposition": "ACTIVE",
+        "fields": {
+          "caseReference": "Demo-0001",
+          "claimantName": "Rīgas Tulkojumu Birojs SIA",
+          "claimedAmount": "1000",
+          "claimedCurrency": "EUR",
+          "incidentCountry": "LV",
+          "incidentDate": "2026-08-01",
+          "incidentNotificationDate": "2026-08-03",
+          "insurerName": "شركة التأمين المثال",
+          "payableAmount": null,
+          "payableCurrency": null,
+          "paymentDate": null,
+          "paymentDecisionDate": null,
+          "status": "OPENED"
+        },
+        "format": 4,
+        "revision": 1
+      }
+    },
+    "authority": {
+      "request": {
+        "act": {
+          "kind": "GRANT",
+          "role": "CASE_HANDLER",
+          "scope": {
+            "caseReference": "Demo-0001",
+            "kind": "CASE"
+          }
+        },
+        "format": 2,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "issuer": "https://issuer.example/",
+          "kind": "HUMAN",
+          "subject": "handler-1"
+        }
+      }
+    }
   }
- }
 }

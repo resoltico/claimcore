@@ -35,9 +35,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await issuer.fill("http://invalid.example/");
     await subject.fill(source.ownerSubject);
     await previewRefusal(page, issuer, "principal.issuer", "INPUT_PRINCIPAL_FORMAT");
-    await expect(issuer).toHaveAccessibleName(
-      inputMessage(language, "authority.field.issuer.label"),
-    );
+    await expect(issuer).toHaveAccessibleName(inputMessage(language, "input.issuer.label"));
     await expect(issuer).toHaveAccessibleDescription(
       inputMessage(language, "diagnostic.INPUT_PRINCIPAL_FORMAT"),
     );
@@ -48,9 +46,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await expect(subject).toBeFocused();
     await subject.fill("");
     await previewRefusal(page, subject, "principal.subject", "INPUT_TEXT_REQUIRED");
-    await expect(subject).toHaveAccessibleName(
-      inputMessage(language, "authority.field.subject.label"),
-    );
+    await expect(subject).toHaveAccessibleName(inputMessage(language, "input.subject.label"));
     await expect(subject).toHaveAccessibleDescription(
       inputMessage(language, "diagnostic.INPUT_TEXT_REQUIRED"),
     );
@@ -62,18 +58,16 @@ for (const language of ["en", "lv", "ar"] as const) {
     page,
   }) => {
     await openAuthority(page, language);
-    await page
-      .getByRole("combobox", { name: ui(language, "ui.authorityAction"), exact: true })
-      .selectOption("SET_GRANT");
     const source = await syntheticPrincipals();
-    await page.locator('[name="target.issuer"]').fill(source.issuer);
-    await page.locator('[name="target.subject"]').fill(source.ownerSubject);
-    await page.locator('[name="act.role"]').selectOption("CASE_READER");
-    await page.locator('[name="act.scope.kind"]').selectOption("CASE");
     const reference = page.locator('[name="act.scope.caseReference"]');
-    const active = page.locator('[name="act.active"]');
-    for (const grant of [true, false]) {
-      await active.setChecked(grant);
+    for (const kind of ["GRANT", "REVOKE"]) {
+      await page
+        .getByRole("combobox", { name: ui(language, "ui.authorityAction"), exact: true })
+        .selectOption(kind);
+      await page.locator('[name="target.issuer"]').fill(source.issuer);
+      await page.locator('[name="target.subject"]').fill(source.ownerSubject);
+      await page.locator('[name="act.role"]').selectOption("CASE_READER");
+      await page.locator('[name="act.scope.kind"]').selectOption("CASE");
       await reference.fill("");
       await previewRefusal(page, reference, "caseReference", "INPUT_TEXT_REQUIRED");
       await expect(reference).toHaveAccessibleName(

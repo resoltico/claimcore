@@ -5,7 +5,7 @@ open System.Globalization
 open ClaimCore.Contract.Protocol
 
 /// The descriptor schema and its reader/writer share one typed codec.
-module DescriptorCodecs =
+module CatalogCodecs =
     open Codec
 
     let private count = integer 0L (int64 Int32.MaxValue) |> map int int64
@@ -248,42 +248,42 @@ module DescriptorCodecs =
 
     let private inputs =
         tagged
-            "Presentation.CommandInputs"
+            "Presentation.ActInputs"
             "kind"
             [
                 variant
                     "FIELDS"
-                    CommandInputShape.Fields
+                    ActInputShape.Fields
                     (function
-                    | CommandInputShape.Fields value -> Some value
+                    | ActInputShape.Fields value -> Some value
                     | _ -> None)
                     (record id |> field "fields" id (many input))
                 variant
                     "CORRECTION_GROUPS"
-                    CommandInputShape.CorrectionGroups
+                    ActInputShape.CorrectionGroups
                     (function
-                    | CommandInputShape.CorrectionGroups value -> Some value
+                    | ActInputShape.CorrectionGroups value -> Some value
                     | _ -> None)
                     (record id |> field "groups" id (many group))
             ]
 
-    let private command =
+    let private act =
         (record (fun v0 v1 v2 v3 v4 ->
             {
-                CommandDefinition.Kind = v0
+                ActDefinition.Kind = v0
                 LabelId = v1
                 MeaningId = v2
                 ConfirmationId = v3
                 Inputs = v4
             })
-        : Fields<CommandDefinition, _>)
+        : Fields<ActDefinition, _>)
         |> field "kind" _.Kind (caseKind)
         |> field "labelId" _.LabelId (text)
         |> field "meaningId" _.MeaningId (text)
         |> field "confirmationId" _.ConfirmationId (text)
         |> field "inputs" _.Inputs (inputs)
         |> build
-        |> named "Presentation.CommandDefinition"
+        |> named "Presentation.ActDefinition"
 
     let private primitive =
         Vocabulary.define
@@ -521,7 +521,7 @@ module DescriptorCodecs =
     let private binding =
         record (fun identity field path kind branches label meaning order prefill targets source ->
             {
-                InteractionInput.Identity = identity
+                CatalogInput.Identity = identity
                 Field = field
                 Path = path
                 Kind = kind
@@ -545,12 +545,12 @@ module DescriptorCodecs =
         |> field "diagnosticTargets" _.DiagnosticTargets (many text)
         |> field "source" _.Source inputSource
         |> build
-        |> named "Presentation.InteractionInput"
+        |> named "Presentation.CatalogInput"
 
     let private interaction =
         record (fun scope kind inputs constants ->
             {
-                InteractionDefinition.Scope = scope
+                CatalogEntry.Scope = scope
                 Kind = kind
                 Inputs = inputs
                 Constants = constants
@@ -560,16 +560,16 @@ module DescriptorCodecs =
         |> field "inputs" _.Inputs (many binding)
         |> field "constants" _.Constants (many assignment)
         |> build
-        |> named "Presentation.InteractionDefinition"
+        |> named "Presentation.CatalogEntry"
 
     let codec =
         (record (fun v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 ->
             {
-                PresentationDescriptors.Fields = v0
-                Commands = v1
+                CatalogDocument.Fields = v0
+                Acts = v1
                 InputFields = v2
                 AuthorityTarget = v3
-                AuthorityCommands = v4
+                AuthorityActs = v4
                 AuthorityFields = v5
                 CharacterWarnings = v6
                 Statuses = v7
@@ -577,15 +577,15 @@ module DescriptorCodecs =
                 FaultDiagnostics = v9
                 Roles = v10
                 Limits = v11
-                Interactions = v12
+                Entries = v12
                 ProductVersion = v13
             })
-        : Fields<PresentationDescriptors, _>)
+        : Fields<CatalogDocument, _>)
         |> field "fields" _.Fields (many businessField)
-        |> field "commands" _.Commands (many command)
+        |> field "acts" _.Acts (many act)
         |> field "inputFields" _.InputFields (many inputField)
         |> field "authorityTarget" _.AuthorityTarget (authorityInput)
-        |> field "authorityCommands" _.AuthorityCommands (many authorityCommand)
+        |> field "authorityActs" _.AuthorityActs (many authorityCommand)
         |> field "authorityFields" _.AuthorityFields (many protocolField)
         |> field "characterWarnings" _.CharacterWarnings (warnings)
         |> field "statuses" _.Statuses (many caseStatus)
@@ -593,7 +593,7 @@ module DescriptorCodecs =
         |> field "faultDiagnostics" _.FaultDiagnostics (many diagnostic)
         |> field "roles" _.Roles (many roleDefinition)
         |> field "limits" _.Limits (limits)
-        |> field "interactions" _.Interactions (many interaction)
+        |> field "entries" _.Entries (many interaction)
         |> field "productVersion" _.ProductVersion (text)
         |> build
-        |> named "Presentation.PresentationDescriptors"
+        |> named "Presentation.CatalogDocument"

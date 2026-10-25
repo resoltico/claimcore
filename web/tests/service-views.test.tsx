@@ -115,7 +115,7 @@ it("shows current fields, server command labels, full expandable history and ret
       token="token"
       caseReference="CASE-1"
       reloadSignal={0}
-      definition={definition.descriptors}
+      definition={definition.catalog}
       onBack={back}
       onCommand={command}
     />,

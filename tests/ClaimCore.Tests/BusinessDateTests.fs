@@ -118,7 +118,7 @@ let private closedCorrectionRetainsDates =
             let before = paid () |> apply CaseAct.Close |> accepted
 
             let command =
-                CaseAct.CorrectCase
+                CaseAct.Correct
                     {
                         Registration =
                             RegistrationGroup.Replace
@@ -145,7 +145,7 @@ let private correctionIncidentIsBounded =
         "[CC-DOM-002] a correction cannot hide a new future incident behind accepted dates"
         (fun () ->
             let command =
-                CaseAct.CorrectCase
+                CaseAct.Correct
                     {
                         Registration =
                             RegistrationGroup.Replace
@@ -165,7 +165,7 @@ let private spellingDoesNotRevise =
         "[CC-DOM-002] equivalent amount spelling remains a correction no-op after rollback"
         (fun () ->
             let command =
-                CaseAct.CorrectCase
+                CaseAct.Correct
                     {
                         Registration = RegistrationGroup.Keep
                         Decision = DecisionGroup.Replace decision

@@ -109,7 +109,16 @@ let internal bootstrap fixture =
 let internal grant (actor: IActorClaimsCore) operationId target role scope active =
     actor.Execute(
         OperationInput.Authority(
-            authorityRequest operationId target (AdmittedAuthorityAct.SetGrant(role, scope, active))
+            authorityRequest
+                operationId
+                target
+                ((if active then
+                      AdmittedAuthorityAct.Grant
+                  else
+                      AdmittedAuthorityAct.Revoke) (
+                    role,
+                    scope
+                ))
         ),
         CancellationToken.None
     )

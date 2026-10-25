@@ -139,10 +139,10 @@ module RequestCodecs =
                 | _ -> None)
                 (record id |> field "values" id registration)
             variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
-                CaseAct.CorrectCase
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct))
+                CaseAct.Correct
                 (function
-                | CaseAct.CorrectCase value -> Some value
+                | CaseAct.Correct value -> Some value
                 | _ -> None)
                 (record id |> field "groups" id correction)
             variant
@@ -242,36 +242,37 @@ module RequestCodecs =
             ]
 
     let authorityActWith role =
+        let grant =
+            (record (fun role scope ->
+                {
+                    GrantChange.Role = role
+                    Scope = scope
+                })
+            : Fields<GrantChange, _>)
+            |> field "role" _.Role role
+            |> field "scope" _.Scope scope
+
         tagged
             "AuthorityAct"
             "kind"
             [
-                unitVariant
-                    (AuthorityKinds.token AuthorityKind.RegisterActor)
-                    AuthorityAct.RegisterActor
+                unitVariant (AuthorityKinds.token AuthorityKind.Register) AuthorityAct.Register
                 variant
-                    (AuthorityKinds.token AuthorityKind.SetGrant)
-                    AuthorityAct.SetGrant
+                    (AuthorityKinds.token AuthorityKind.Grant)
+                    AuthorityAct.Grant
                     (function
-                    | AuthorityAct.SetGrant value -> Some value
+                    | AuthorityAct.Grant value -> Some value
                     | _ -> None)
-                    ((record (fun role scope active ->
-                        {
-                            GrantChange.Role = role
-                            Scope = scope
-                            Active = active
-                        })
-                     : Fields<GrantChange, _>)
-                     |> field "role" _.Role role
-                     |> field "scope" _.Scope scope
-                     |> field "active" _.Active boolean)
+                    grant
                 variant
-                    (AuthorityKinds.token AuthorityKind.SetEnabled)
-                    AuthorityAct.SetEnabled
+                    (AuthorityKinds.token AuthorityKind.Revoke)
+                    AuthorityAct.Revoke
                     (function
-                    | AuthorityAct.SetEnabled value -> Some value
+                    | AuthorityAct.Revoke value -> Some value
                     | _ -> None)
-                    (record id |> field "enabled" id boolean)
+                    grant
+                unitVariant (AuthorityKinds.token AuthorityKind.Enable) AuthorityAct.Enable
+                unitVariant (AuthorityKinds.token AuthorityKind.Disable) AuthorityAct.Disable
             ]
 
     let authorityAct =

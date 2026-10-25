@@ -65,17 +65,19 @@ let private authorityProperty =
         let! action =
             Gen.item
                 [
-                    RecordedAuthorityAct.Operation(ClaimCore.Contract.AuthorityAct.RegisterActor)
+                    RecordedAuthorityAct.Operation(ClaimCore.Contract.AuthorityAct.Register)
                     RecordedAuthorityAct.Operation(
-                        ClaimCore.Contract.AuthorityAct.SetGrant
-                            {
-                                Role = role
-                                Scope = scope
-                                Active = active
-                            }
+                        (if active then
+                             ClaimCore.Contract.AuthorityAct.Grant
+                         else
+                             ClaimCore.Contract.AuthorityAct.Revoke)
+                            { Role = role; Scope = scope }
                     )
                     RecordedAuthorityAct.Operation(
-                        ClaimCore.Contract.AuthorityAct.SetEnabled active
+                        (if active then
+                             ClaimCore.Contract.AuthorityAct.Enable
+                         else
+                             ClaimCore.Contract.AuthorityAct.Disable)
                     )
                 ]
 
@@ -98,11 +100,10 @@ let private decoderProperty =
             steward (CaseAct.Void "Reason") |> RequestRecord.encode
             authority (
                 RecordedAuthorityAct.Operation(
-                    ClaimCore.Contract.AuthorityAct.SetGrant
+                    ClaimCore.Contract.AuthorityAct.Grant
                         {
                             Role = "CASE_HANDLER"
                             Scope = GrantTarget.Installation
-                            Active = true
                         }
                 )
             )
@@ -156,11 +157,10 @@ let private strictRecords () =
     let grant =
         authority (
             RecordedAuthorityAct.Operation(
-                ClaimCore.Contract.AuthorityAct.SetGrant
+                ClaimCore.Contract.AuthorityAct.Grant
                     {
                         Role = "CASE_HANDLER"
                         Scope = GrantTarget.Installation
-                        Active = true
                     }
             )
         )
@@ -169,9 +169,9 @@ let private strictRecords () =
 
     for candidate in
         [
-            encoded.Replace("\"active\":true", "\"active\":\"true\"")
+            encoded.Replace("\"kind\":\"GRANT\"", "\"kind\":\"GRANT\",\"active\":true")
             encoded.Replace("\"kind\":\"INSTALLATION\"", "\"kind\":\"UNKNOWN\"")
-            encoded.Replace("\"kind\":\"SET_GRANT\"", "\"kind\":\"UNKNOWN\"")
+            encoded.Replace("\"kind\":\"GRANT\"", "\"kind\":\"UNKNOWN\"")
             encoded.Replace("\"role\":\"CASE_HANDLER\",", "")
             encoded.Replace("\"kind\":\"HUMAN\"", "\"kind\":\"HUMAN\",\"extra\":true")
         ] do
@@ -188,7 +188,7 @@ let tests =
         [
             testCase "stewardship encoding has fixed independent bytes" (fun () ->
                 let expected =
-                    "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"format\":6,\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"scope\":\"CASE\"}"
+                    "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"format\":7,\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"scope\":\"CASE\"}"
 
                 Expect.equal
                     (steward CaseAct.Erase |> RequestRecord.encode |> Encoding.UTF8.GetString)
@@ -196,13 +196,11 @@ let tests =
                     "Canonical field order")
             testCase "authority encoding has fixed independent bytes" (fun () ->
                 let expected =
-                    "{\"act\":{\"kind\":\"REGISTER_ACTOR\"},\"format\":3,\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"scope\":\"AUTHORITY\",\"target\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}}"
+                    "{\"act\":{\"kind\":\"REGISTER\"},\"format\":4,\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"scope\":\"AUTHORITY\",\"target\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}}"
 
                 Expect.equal
                     (authority (
-                        RecordedAuthorityAct.Operation(
-                            ClaimCore.Contract.AuthorityAct.RegisterActor
-                        )
+                        RecordedAuthorityAct.Operation(ClaimCore.Contract.AuthorityAct.Register)
                      )
                      |> AuthorityRecord.encode
                      |> Encoding.UTF8.GetString)

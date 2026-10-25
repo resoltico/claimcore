@@ -63,7 +63,7 @@ for (const retainCurrent of [false, true]) {
           token="token"
           caseReference={fields.caseReference}
           reloadSignal={0}
-          definition={definition.descriptors}
+          definition={definition.catalog}
           onBack={vi.fn()}
           onCommand={vi.fn()}
         />,

@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "./presentation-test-support";
-import { InteractionInputs } from "../src/components/InteractionInputs";
+import { CatalogInputs } from "../src/components/CatalogInputs";
 import { initialOperationValues } from "../src/interaction/operationForm";
 import { catalogs } from "../src/presentation/generated/catalogs";
 import { preferenceKey } from "../src/presentation/preferences";
@@ -22,16 +22,14 @@ it.each(["en", "lv", "ar"] as const)(
   async (language) => {
     preferences(language);
     const user = userEvent.setup();
-    const values = initialOperationValues("AUTHORITY", "REGISTER_ACTOR", null);
+    const values = initialOperationValues("AUTHORITY", "REGISTER", null);
     const props = { values, current: null, disabled: false, onChange: vi.fn() };
-    const view = render(<InteractionInputs {...props} errorPath={null} errorNotice={null} />);
+    const view = render(<CatalogInputs {...props} errorPath={null} errorNotice={null} />);
     for (const field of ["issuer", "subject"] as const) {
-      const name = catalogs[language][`authority.field.${field}.label`];
+      const name = catalogs[language][`input.${field}.label`];
       const input = screen.getByRole("textbox", { name });
       expect(input).not.toHaveAccessibleDescription();
-      view.rerender(
-        <InteractionInputs {...props} errorPath={`target.${field}`} errorNotice={error} />,
-      );
+      view.rerender(<CatalogInputs {...props} errorPath={`target.${field}`} errorNotice={error} />);
       expect(input).toHaveAccessibleName(name);
       expect(input).toHaveAccessibleDescription(
         catalogs[language]["diagnostic.INPUT_PRINCIPAL_FORMAT"],
@@ -39,7 +37,7 @@ it.each(["en", "lv", "ar"] as const)(
       expect(input).toHaveAttribute("aria-invalid", "true");
       await user.click(screen.getByText(name, { exact: true, selector: "label" }));
       expect(input).toHaveFocus();
-      view.rerender(<InteractionInputs {...props} errorPath={null} errorNotice={null} />);
+      view.rerender(<CatalogInputs {...props} errorPath={null} errorNotice={null} />);
       expect(input).toHaveAccessibleName(name);
       expect(input).not.toHaveAccessibleDescription();
       expect(input).not.toHaveAttribute("aria-invalid");
@@ -52,8 +50,8 @@ it.each(["en", "lv", "ar"] as const)(
   (language) => {
     preferences(language);
     render(
-      <InteractionInputs
-        values={initialOperationValues("CASE", "CORRECT_CASE", null)}
+      <CatalogInputs
+        values={initialOperationValues("CASE", "CORRECT", null)}
         current={null}
         disabled={false}
         errorPath={null}

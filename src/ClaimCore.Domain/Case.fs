@@ -151,48 +151,48 @@ module private BusinessState =
         | PaymentProgress.Undecided
         | PaymentProgress.Decided _ -> Error Refusal.PaymentNotRecorded
 
-    let private change command (claim: Claim) =
-        match command with
-        | ValidatedCommand.Open _ -> Error Refusal.CaseAlreadyExists
-        | ValidatedCommand.Reopen ->
+    let private change act (claim: Claim) =
+        match act with
+        | ValidatedAct.Open _ -> Error Refusal.CaseAlreadyExists
+        | ValidatedAct.Reopen ->
             Ok
                 { claim with
                     Status = CaseStatus.Opened
                 }
-        | ValidatedCommand.Close ->
+        | ValidatedAct.Close ->
             Ok
                 { claim with
                     Status = CaseStatus.Closed
                 }
-        | ValidatedCommand.AmendRegistration facts -> Ok { claim with Facts = facts }
-        | ValidatedCommand.CorrectCase correction ->
+        | ValidatedAct.AmendRegistration facts -> Ok { claim with Facts = facts }
+        | ValidatedAct.Correct correction ->
             CaseCorrections.apply claim.Facts claim.Progress correction
             |> Result.map (fun (facts, progress) ->
                 { claim with
                     Facts = facts
                     Progress = progress
                 })
-        | ValidatedCommand.Decide decision ->
+        | ValidatedAct.Decide decision ->
             Ok
                 { claim with
                     Progress = PaymentProgress.Decided decision
                 }
-        | ValidatedCommand.WithdrawDecision ->
+        | ValidatedAct.WithdrawDecision ->
             Ok
                 { claim with
                     Progress = PaymentProgress.Undecided
                 }
-        | ValidatedCommand.RecordPayment date ->
+        | ValidatedAct.RecordPayment date ->
             recordPayment date claim.Progress
             |> Result.map (fun progress -> { claim with Progress = progress })
-        | ValidatedCommand.ClearPayment ->
+        | ValidatedAct.ClearPayment ->
             clearPayment claim.Progress
             |> Result.map (fun progress -> { claim with Progress = progress })
 
-    let transition today kind command claim =
+    let transition today kind act claim =
         result {
             do! Eligibility.check kind claim.Status claim.Progress
-            let! next = change command claim
+            let! next = change act claim
             do! StateValidation.progress next.Facts next.Progress
 
             do!
@@ -267,12 +267,11 @@ module Case =
         | CaseAct.Reinstate _
         | CaseAct.Erase -> steward act claim disposition
         | _ when disposition = Disposition.Voided -> Error Refusal.CaseVoided
-        | command ->
+        | act ->
             result {
-                let! parsed = RequestValidation.business command
+                let! parsed = RequestValidation.business act
 
-                let! next =
-                    BusinessState.transition today (BusinessCommands.kind command) parsed claim
+                let! next = BusinessState.transition today (ValidatedActs.kind parsed) parsed claim
 
                 return CaseState.Live(next, disposition)
             }

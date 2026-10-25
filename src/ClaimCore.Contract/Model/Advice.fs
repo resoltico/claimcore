@@ -35,7 +35,7 @@ type CorrectionChoices =
 [<RequireQualifiedAccess>]
 type CaseActOffer =
     | Act of act: CaseActKind * expectedRevision: int64
-    | CorrectCase of expectedRevision: int64 * choices: CorrectionChoices
+    | Correct of expectedRevision: int64 * choices: CorrectionChoices
 
 type CaseAdvice =
     {

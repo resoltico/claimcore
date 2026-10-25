@@ -14,7 +14,7 @@
     <Compile Include="FrameReader.fs" />
     <Compile Include="MessageCatalogs.fs" />
     <Compile Include="ContractDiscovery.fs" />
-    <Compile Include="DescriptorText.fs" />
+    <Compile Include="CatalogText.fs" />
     <Compile Include="Discovery.fs" />
     <Compile Include="RemoteConfiguration.fs" />
     <Compile Include="RemoteTls.fs" />
@@ -35,7 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../ClaimCore.Contract/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="../../contracts/descriptors.json" LogicalName="ClaimCore.descriptors.json" />
+    <EmbeddedResource Include="../../contracts/catalog.json" LogicalName="ClaimCore.catalog.json" />
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <PackageReference Include="Duende.IdentityModel" />
     <PackageReference Include="Duende.IdentityModel.OidcClient" />

@@ -87,7 +87,6 @@ let authorityReceipt (request: ClaimCore.Contract.AuthorityRequest) =
                     Act =
                         ClaimCore.RecordFormat.RecordedAuthorityAct.Operation request.Act
                         |> fun value -> ClaimCore.RecordFormat.RecordedAuthorityActs.kind value
-                        |> AuthorityRecordKinds.fromRecord
                 }
     }
 

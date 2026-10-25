@@ -18,7 +18,7 @@ let private businessCommands =
             { registration with
                 ClaimantName = "Amended Synthetic Name"
             }
-        CaseAct.CorrectCase
+        CaseAct.Correct
             {
                 Registration =
                     RegistrationGroup.Replace
@@ -37,7 +37,7 @@ let private businessCommands =
         CaseAct.Reopen
     ]
 
-let private commands =
+let private acts =
     businessCommands
     @ [
         CaseAct.Void "Entry error"
@@ -47,7 +47,7 @@ let private commands =
 
 let private stepGenerator =
     gen {
-        let! command = Gen.item commands
+        let! command = Gen.item acts
         let! stale = Gen.bool
         return { Act = command; Stale = stale }
     }
@@ -220,12 +220,12 @@ let private reach state =
 let private expectedBusiness =
     function
     | OpenUndecided -> [ "AMEND_REGISTRATION"; "DECIDE"; "CLOSE" ]
-    | OpenDecided -> [ "CORRECT_CASE"; "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ]
-    | OpenZeroDecision -> [ "CORRECT_CASE"; "DECIDE"; "WITHDRAW_DECISION"; "CLOSE" ]
-    | OpenPaid -> [ "CORRECT_CASE"; "CLEAR_PAYMENT"; "CLOSE" ]
+    | OpenDecided -> [ "CORRECT"; "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ]
+    | OpenZeroDecision -> [ "CORRECT"; "DECIDE"; "WITHDRAW_DECISION"; "CLOSE" ]
+    | OpenPaid -> [ "CORRECT"; "CLEAR_PAYMENT"; "CLOSE" ]
     | ClosedUndecided
     | ClosedDecided
-    | ClosedPaid -> [ "CORRECT_CASE"; "REOPEN" ]
+    | ClosedPaid -> [ "CORRECT"; "REOPEN" ]
     | Voided
     | Erased -> []
 
@@ -238,7 +238,7 @@ let private expectedCommands state =
 let private executionMatchesAdvertisement claim expected =
     let view = Case.snapshot claim
 
-    commands
+    acts
     |> List.forall (fun command ->
         let candidate =
             { actRequest view.Revision command with

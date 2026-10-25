@@ -6,7 +6,7 @@ import { definition } from "./service-ui.fixtures";
 it("gives exact scalar syntax and limits from each descriptor rather than an absent hint", () => {
   const p = createPresenter(defaults);
   const hint = (name: string) =>
-    p.hint(definition.descriptors.fields.find((field) => field.name === name)!);
+    p.hint(definition.catalog.fields.find((field) => field.name === name)!);
   expect(hint("caseReference")).toBe(
     "Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained.",
   );

@@ -36,7 +36,7 @@ let private endpointDescription fixture language =
 
 let private selectedInputs fixture =
     for language in LocalizationPolicy.languages do
-        let opening = description fixture language [ "commands"; "OPEN" ]
+        let opening = description fixture language [ "acts"; "OPEN" ]
 
         for field in
             [
@@ -53,7 +53,7 @@ let private selectedInputs fixture =
                 ("fieldName: " + field + " — ")
                 "All seven OPEN fields have meaningful labels"
 
-        let correction = description fixture language [ "commands"; "CORRECT_CASE" ]
+        let correction = description fixture language [ "acts"; "CORRECT" ]
 
         for item in
             [
@@ -74,7 +74,7 @@ let private selectedInputs fixture =
                 item
                 "Correction choices and replacement fields survive publication"
 
-        let authority = description fixture language [ "authority"; "SET_GRANT" ]
+        let authority = description fixture language [ "authority"; "GRANT" ]
 
         for item in [ "target"; "role"; "scope"; "active" ] do
             Expect.stringContains

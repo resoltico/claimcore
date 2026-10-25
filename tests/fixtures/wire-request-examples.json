@@ -137,7 +137,7 @@
         "caseReference": "x",
         "expectedRevision": 0,
         "act": {
-          "kind": "CORRECT_CASE",
+          "kind": "CORRECT",
           "groups": {
             "registration": {
               "mode": "KEEP"
@@ -356,7 +356,7 @@
         "caseReference": "x",
         "expectedRevision": 0,
         "act": {
-          "kind": "CORRECT_CASE",
+          "kind": "CORRECT",
           "groups": {
             "registration": {
               "mode": "KEEP"
@@ -539,7 +539,7 @@
           "subject": "x"
         },
         "act": {
-          "kind": "REGISTER_ACTOR"
+          "kind": "REGISTER"
         }
       }
     },
@@ -557,12 +557,11 @@
           "subject": "x"
         },
         "act": {
-          "kind": "SET_GRANT",
+          "kind": "REVOKE",
           "role": "OWNER",
           "scope": {
             "kind": "INSTALLATION"
-          },
-          "active": false
+          }
         }
       }
     },
@@ -580,8 +579,7 @@
           "subject": "x"
         },
         "act": {
-          "kind": "SET_ENABLED",
-          "enabled": false
+          "kind": "DISABLE"
         }
       }
     },
@@ -618,7 +616,7 @@
           "subject": "x"
         },
         "act": {
-          "kind": "REGISTER_ACTOR"
+          "kind": "REGISTER"
         }
       }
     },
@@ -636,12 +634,11 @@
           "subject": "x"
         },
         "act": {
-          "kind": "SET_GRANT",
+          "kind": "REVOKE",
           "role": "OWNER",
           "scope": {
             "kind": "INSTALLATION"
-          },
-          "active": false
+          }
         }
       }
     },
@@ -659,8 +656,7 @@
           "subject": "x"
         },
         "act": {
-          "kind": "SET_ENABLED",
-          "enabled": false
+          "kind": "DISABLE"
         }
       }
     },
@@ -675,7 +671,7 @@
         "caseReference": "x",
         "expectedRevision": 0,
         "act": {
-          "kind": "CORRECT_CASE",
+          "kind": "CORRECT",
           "groups": {
             "registration": {
               "mode": "REPLACE",
@@ -718,7 +714,7 @@
         "caseReference": "x",
         "expectedRevision": 0,
         "act": {
-          "kind": "CORRECT_CASE",
+          "kind": "CORRECT",
           "groups": {
             "registration": {
               "mode": "REPLACE",
@@ -753,7 +749,7 @@
         "caseReference": "x",
         "expectedRevision": 0,
         "act": {
-          "kind": "CORRECT_CASE",
+          "kind": "CORRECT",
           "groups": {
             "registration": {
               "mode": "REPLACE",
@@ -796,7 +792,7 @@
         "caseReference": "x",
         "expectedRevision": 0,
         "act": {
-          "kind": "CORRECT_CASE",
+          "kind": "CORRECT",
           "groups": {
             "registration": {
               "mode": "REPLACE",
@@ -846,6 +842,86 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "extra": true
+      }
+    },
+    {
+      "id": "operation.execute.authority-request-1-opposite-act",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "GRANT",
+          "role": "OWNER",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.execute.authority-request-2-opposite-act",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "ENABLE"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.authority-request-1-opposite-act",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "GRANT",
+          "role": "OWNER",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.preview.authority-request-2-opposite-act",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "scope": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "ENABLE"
+        }
       }
     }
   ]

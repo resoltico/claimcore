@@ -22,8 +22,7 @@ let private eligible (fields: CaseFields) command =
     match command with
     | CaseAct.Open _ -> false
     | CaseAct.Reopen -> fields.Status = CaseStatus.Closed
-    | CaseAct.CorrectCase _ ->
-        fields.Status = CaseStatus.Closed || fields.PaymentDecisionDate.IsSome
+    | CaseAct.Correct _ -> fields.Status = CaseStatus.Closed || fields.PaymentDecisionDate.IsSome
     | _ when fields.Status = CaseStatus.Closed -> false
     | _ -> activeEligible fields command
 
@@ -46,7 +45,7 @@ let private correctedRegistration fields =
 let private changed fields command =
     match command with
     | CaseAct.AmendRegistration value -> registration value fields
-    | CaseAct.CorrectCase value -> correctedRegistration fields value.Registration
+    | CaseAct.Correct value -> correctedRegistration fields value.Registration
     | CaseAct.Decide value ->
         { fields with
             PaymentDecisionDate = Some value.PaymentDecisionDate
@@ -82,7 +81,7 @@ let private business before fields stale command =
 
     let noOpCorrection =
         match command with
-        | CaseAct.CorrectCase _ -> nextFields = fields
+        | CaseAct.Correct _ -> nextFields = fields
         | _ -> false
 
     if stale || not (eligible fields command) || noOpCorrection then

@@ -325,7 +325,7 @@ let private assignedReader (actor: IActorClaimsCore) =
         let! registered =
             actor.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 15) principal AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 15) principal AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )
@@ -397,7 +397,7 @@ let private registerReader (owner: IActorClaimsCore) target =
         let! registered =
             owner.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 2) target AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 2) target AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )
@@ -435,7 +435,7 @@ let private authorityChanges fixture =
         let! disabled =
             owner.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 5) target (AdmittedAuthorityAct.SetEnabled false)
+                    authorityRequest (id 5) target (AdmittedAuthorityAct.Disable)
                 ),
                 CancellationToken.None
             )
@@ -491,7 +491,7 @@ let private scopedHandler fixture (admin: IActorClaimsCore) reference =
         let! registered =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 30) target AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 30) target AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )
@@ -519,7 +519,7 @@ let private checkScopedAdvice (actor: IActorClaimsCore) reference =
             let expected, correction =
                 value.Advice.Acts
                 |> List.pick (function
-                    | CaseActOffer.CorrectCase(expected, choices) -> Some(expected, choices)
+                    | CaseActOffer.Correct(expected, choices) -> Some(expected, choices)
                     | _ -> None)
 
             Expect.equal expected 2L "Advice binds the actual revision"
@@ -589,7 +589,7 @@ let private refusedAdvice fixture (actor: IActorClaimsCore) pending =
             Expect.isFalse
                 (value.Advice.Acts
                  |> List.exists (function
-                     | CaseActOffer.CorrectCase _ -> true
+                     | CaseActOffer.Correct _ -> true
                      | _ -> false))
                 "No stale act offer"
         | _ -> failtest "Reader remains authorized"
@@ -620,7 +620,7 @@ let private revokedAdvice fixture =
                 Payment = PaymentGroup.Keep
             }
 
-        let pending = request 35 reference 2L (CaseAct.CorrectCase correction)
+        let pending = request 35 reference 2L (CaseAct.Correct correction)
         let! preview = actor.Preview(OperationInput.Case pending, CancellationToken.None)
 
         match preview.Outcome with
@@ -650,7 +650,7 @@ let private scopedWorker fixture =
         let! registered =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 20) principal AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 20) principal AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )
@@ -794,10 +794,10 @@ let private authorityReviewRefusals fixture =
 
         for index, act, expected in
             [
-                10, AdmittedAuthorityAct.RegisterActor, Refusal.ActorAlreadyRegistered
-                11, AdmittedAuthorityAct.SetEnabled false, Refusal.LastOwner
+                10, AdmittedAuthorityAct.Register, Refusal.ActorAlreadyRegistered
+                11, AdmittedAuthorityAct.Disable, Refusal.LastOwner
                 12,
-                AdmittedAuthorityAct.SetGrant(Role.Owner, GrantTarget.Installation, false),
+                AdmittedAuthorityAct.Revoke(Role.Owner, GrantTarget.Installation),
                 Refusal.LastOwner
             ] do
             let input = authorityRequest (id index) fixture.Owner act
@@ -831,7 +831,7 @@ let private authorityReadIsNotManage fixture =
         let! registered =
             actor.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 2) auditor AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 2) auditor AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )
@@ -840,8 +840,7 @@ let private authorityReadIsNotManage fixture =
         let! granted = grant actor (id 3) auditor Role.Auditor GrantTarget.Installation true
         acceptedAuthority granted
 
-        let input =
-            authorityRequest (id 4) fixture.Owner (AdmittedAuthorityAct.SetEnabled false)
+        let input = authorityRequest (id 4) fixture.Owner (AdmittedAuthorityAct.Disable)
 
         let! preview, view = authorityReview fixture auditor input
 
@@ -875,7 +874,7 @@ let private authorityReviewReplay fixture =
             PrincipalKey.human "https://issuer.example/" "preview-target"
             |> Result.defaultWith failtest
 
-        let input = authorityRequest (id 2) target AdmittedAuthorityAct.RegisterActor
+        let input = authorityRequest (id 2) target AdmittedAuthorityAct.Register
         let! before = ledgerHead fixture
         let! preview, _ = authorityReview fixture fixture.Owner input
 
@@ -910,7 +909,7 @@ let private authorityReviewReplay fixture =
             (PreviewResult.AlreadyAccepted receipt)
             "Accepted registration replays before fresh-state refusal."
 
-        let changed = authorityRequest (id 2) target (AdmittedAuthorityAct.SetEnabled false)
+        let changed = authorityRequest (id 2) target (AdmittedAuthorityAct.Disable)
         let! conflict, _ = authorityReview fixture fixture.Owner changed
 
         Expect.equal
@@ -938,7 +937,7 @@ let private grantReviewTarget fixture =
         let! registered =
             actor.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 11) target AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 11) target AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )
@@ -965,10 +964,9 @@ let private grantReviewTarget fixture =
             authorityRequest
                 (id 14)
                 target
-                (AdmittedAuthorityAct.SetGrant(
+                (AdmittedAuthorityAct.Revoke(
                     Role.CaseReader,
-                    GrantTarget.CaseReference "review-case",
-                    false
+                    GrantTarget.CaseReference "review-case"
                 ))
 
         return target, input
@@ -1048,7 +1046,7 @@ let private authorityReviewRechecks fixture =
         let! registered =
             actor.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 2) other AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 2) other AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )
@@ -1057,8 +1055,7 @@ let private authorityReviewRechecks fixture =
         let! granted = grant actor (id 3) other Role.Owner GrantTarget.Installation true
         acceptedAuthority granted
 
-        let input =
-            authorityRequest (id 4) fixture.Owner (AdmittedAuthorityAct.SetEnabled false)
+        let input = authorityRequest (id 4) fixture.Owner (AdmittedAuthorityAct.Disable)
 
         let! preview, view = authorityReview fixture fixture.Owner input
         Expect.equal view.EnabledHumanOwners 2 "The preview sees two enabled owners."

@@ -1,4 +1,4 @@
 namespace ClaimCore.ContractGeneration
 
 module ContractDocuments =
-    let descriptors () = ContractDescriptors.render ()
+    let catalog () = ContractCatalog.render ()

@@ -41,7 +41,7 @@ let private authority (actor: IActorClaimsCore) principals =
                         authorityRequest
                             (id (100000 + index * 20))
                             principal
-                            AdmittedAuthorityAct.RegisterActor
+                            AdmittedAuthorityAct.Register
                     ),
                     token
                 )
@@ -104,7 +104,7 @@ let private command revision =
     | 2L -> CaseAct.RecordPayment { PaymentDate = "2026-08-05" }
     | 3L -> CaseAct.ClearPayment
     | 4L ->
-        CaseAct.CorrectCase
+        CaseAct.Correct
             {
                 Registration = RegistrationGroup.Replace amended
                 Decision = DecisionGroup.Keep

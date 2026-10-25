@@ -7,7 +7,7 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private correct registration decision payment =
-    CaseAct.CorrectCase
+    CaseAct.Correct
         {
             Registration = registration
             Decision = decision

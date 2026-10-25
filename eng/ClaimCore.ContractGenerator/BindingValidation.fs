@@ -71,7 +71,7 @@ module BindingValidation =
             Set.ofList options = choices variants
         | _ -> false
 
-    let private values (interaction: InteractionDefinition) (input: InteractionInput) =
+    let private values (interaction: CatalogEntry) (input: CatalogInput) =
         interaction.Constants
         |> List.map (fun item -> key item.Path, item.Value)
         |> Map.ofList
@@ -153,17 +153,16 @@ module BindingValidation =
             then
                 invalidOp "An interaction constant does not match its declared member."
 
-    let validate (interactions: InteractionDefinition list) =
+    let validate (entries: CatalogEntry list) =
         let identifiers =
-            interactions
-            |> List.map (fun interaction -> interaction.Scope, interaction.Kind)
+            entries |> List.map (fun interaction -> interaction.Scope, interaction.Kind)
 
         if Set.count (Set.ofList identifiers) <> identifiers.Length then
             invalidOp "Duplicate interaction definition."
 
         let knownFields = FieldTable.rows |> List.map _.Field |> Set.ofList
 
-        for interaction in interactions do
+        for interaction in entries do
             let identities = interaction.Inputs |> List.map _.Identity
 
             if Set.count (Set.ofList identities) <> identities.Length then

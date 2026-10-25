@@ -100,6 +100,12 @@ module ResponseCodecs =
         |> List.filter (fun (value, _) -> value <> AuthorityKind.ProvisionOwner)
         |> enumeration
 
+    let private maximumInstallationOffers =
+        1
+        + (AuthorityKinds.all
+           |> List.filter ((<>) AuthorityKind.ProvisionOwner)
+           |> List.length)
+
     let private dateValue =
         date
         |> map
@@ -139,14 +145,14 @@ module ResponseCodecs =
             fst
             (enumeration (
                 CaseActKinds.all
-                |> List.filter ((<>) (CaseActKind.Business BusinessActKind.CorrectCase))
+                |> List.filter ((<>) (CaseActKind.Business BusinessActKind.Correct))
                 |> List.map (fun act -> act, CaseActKinds.token act)
             ))
         |> field "expectedRevision" snd revision
 
     let private correctionOfferFields =
         record (fun revision correction -> revision, correction)
-        |> fixedField "act" (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
+        |> fixedField "act" (CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct))
         |> field "expectedRevision" fst revision
         |> field "correction" snd correctionAdvice
 
@@ -161,9 +167,9 @@ module ResponseCodecs =
                     | _ -> None)
                     (ordinaryOfferFields |> build |> named "OrdinaryCaseActOffer")
                 branch
-                    CaseActOffer.CorrectCase
+                    CaseActOffer.Correct
                     (function
-                    | CaseActOffer.CorrectCase(r, c) -> Some(r, c)
+                    | CaseActOffer.Correct(r, c) -> Some(r, c)
                     | _ -> None)
                     (correctionOfferFields |> build |> named "CorrectionCaseActOffer")
             ]
@@ -256,7 +262,7 @@ module ResponseCodecs =
                     Capabilities.all |> List.map (fun value -> value, Capabilities.token value)
                 )))
         |> field "views" _.Views (list 3 (vocabulary Views.vocabulary))
-        |> field "offers" _.Offers (list 4 installationOffer)
+        |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
         |> named "ActorContext"
 
@@ -511,6 +517,6 @@ module ResponseCodecs =
         : Fields<CaseSummaryPage, _>)
         |> field "items" _.Items (list 50 caseSummary)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
-        |> field "offers" _.Offers (list 4 installationOffer)
+        |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
         |> named "CasesPage"

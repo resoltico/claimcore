@@ -22,19 +22,13 @@ module RecordedAuthorityActs =
     let kind =
         function
         | RecordedAuthorityAct.ProvisionOwner -> AuthorityKind.ProvisionOwner
-        | RecordedAuthorityAct.Operation SharedAuthorityAct.RegisterActor ->
-            AuthorityKind.RegisterActor
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetGrant _) -> AuthorityKind.SetGrant
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetEnabled _) ->
-            AuthorityKind.SetEnabled
+        | RecordedAuthorityAct.Operation SharedAuthorityAct.Register -> AuthorityKind.Register
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant _) -> AuthorityKind.Grant
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke _) -> AuthorityKind.Revoke
+        | RecordedAuthorityAct.Operation SharedAuthorityAct.Enable -> AuthorityKind.Enable
+        | RecordedAuthorityAct.Operation SharedAuthorityAct.Disable -> AuthorityKind.Disable
 
-    let all =
-        [
-            AuthorityKind.ProvisionOwner
-            AuthorityKind.RegisterActor
-            AuthorityKind.SetGrant
-            AuthorityKind.SetEnabled
-        ]
+    let all = AuthorityKinds.all
 
     let token = AuthorityKinds.token
 
@@ -85,9 +79,12 @@ module AuthorityRecord =
 
     let private validScope =
         function
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetGrant {
-                                                                         Scope = GrantTarget.CaseReference reference
-                                                                     }) ->
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant {
+                                                                      Scope = GrantTarget.CaseReference reference
+                                                                  })
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke {
+                                                                       Scope = GrantTarget.CaseReference reference
+                                                                   }) ->
             CaseReference.validate reference |> Result.isOk
         | _ -> true
 

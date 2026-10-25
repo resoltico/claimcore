@@ -11,7 +11,7 @@ const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
-    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"]),
+    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
     history: ["SUMMARY", "FULL"],
   },
 
@@ -21,7 +21,7 @@ const current: CurrentCase = {
     disposition: "ACTIVE",
   },
 };
-const open = (command: "AMEND_REGISTRATION" | "CORRECT_CASE" = "AMEND_REGISTRATION") => {
+const open = (command: "AMEND_REGISTRATION" | "CORRECT" = "AMEND_REGISTRATION") => {
   const close = vi.fn();
   render(
     <OperationEditor
@@ -85,7 +85,7 @@ it("recognizes edit then exact revert but preserves distinct amount spelling", a
 
 it("protects hidden correction replacement edits after returning its mode to KEEP", async () => {
   const user = userEvent.setup();
-  const close = open("CORRECT_CASE");
+  const close = open("CORRECT");
   const mode = document.querySelector<HTMLSelectElement>("#correction-registration-mode")!;
   await user.selectOptions(mode, "REPLACE");
   await user.clear(screen.getByLabelText("Claimant name", { exact: true }));
@@ -97,7 +97,7 @@ it("protects hidden correction replacement edits after returning its mode to KEE
 
 it("leaves a correction whose mode was changed and reverted without value edits", async () => {
   const user = userEvent.setup();
-  const close = open("CORRECT_CASE");
+  const close = open("CORRECT");
   const mode = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
   await user.selectOptions(mode, "CLEAR");
   await user.selectOptions(mode, "KEEP");

@@ -63,7 +63,7 @@ let private assertReference language definitions output (input: JsonElement) =
         | _ -> ()
 
 let private knownInputs () =
-    let opening = rendered "en" (CliDescription.Commands(Some "OPEN"))
+    let opening = rendered "en" (CliDescription.Acts(Some "OPEN"))
 
     for name in
         [
@@ -80,7 +80,7 @@ let private knownInputs () =
             ("fieldName: " + name + " — ")
             "Independent OPEN inputs are meaningful"
 
-    let correction = rendered "en" (CliDescription.Commands(Some "CORRECT_CASE"))
+    let correction = rendered "en" (CliDescription.Acts(Some "CORRECT"))
 
     for value in
         [
@@ -101,7 +101,7 @@ let private knownInputs () =
             "Independent correction groups, choices and replacement fields"
 
 let private commandInputs () =
-    use document = JsonDocument.Parse(ContractDiscovery.descriptors ())
+    use document = JsonDocument.Parse(ContractDiscovery.catalog ())
     let root = document.RootElement
 
     let fields =
@@ -109,8 +109,8 @@ let private commandInputs () =
         |> List.collect (fun key -> root.GetProperty(key).EnumerateArray() |> Seq.toList)
 
     for language in LocalizationPolicy.languages do
-        for command in root.GetProperty("commands").EnumerateArray() do
-            let output = rendered language (CliDescription.Commands(Some(text "kind" command)))
+        for command in root.GetProperty("acts").EnumerateArray() do
+            let output = rendered language (CliDescription.Acts(Some(text "kind" command)))
 
             for input in references (command.GetProperty "inputs") do
                 assertReference language fields output input
@@ -133,11 +133,11 @@ let private commandInputs () =
     knownInputs ()
 
 let private authorityInputs () =
-    use document = JsonDocument.Parse(ContractDiscovery.descriptors ())
+    use document = JsonDocument.Parse(ContractDiscovery.catalog ())
     let root = document.RootElement
 
     for language in LocalizationPolicy.languages do
-        for command in root.GetProperty("authorityCommands").EnumerateArray() do
+        for command in root.GetProperty("authorityActs").EnumerateArray() do
             let output = rendered language (CliDescription.Authority(Some(text "kind" command)))
 
             for input in

@@ -120,10 +120,10 @@ export const validateCatalog = (source, translated, language) => {
     }
   }
 };
-/** @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {import("./tooling-types.mjs").JsonRecord} hostSchema @returns {Record<string, Record<string, unknown>>} */
-export const diagnosticRequirements = (descriptors, hostSchema) =>
+/** @param {import("./tooling-types.mjs").JsonRecord} operationCatalog @param {import("./tooling-types.mjs").JsonRecord} hostSchema @returns {Record<string, Record<string, unknown>>} */
+export const diagnosticRequirements = (operationCatalog, hostSchema) =>
   Object.fromEntries([
-    ...descriptors["rejectionDiagnostics"].map(
+    ...operationCatalog["rejectionDiagnostics"].map(
       (/** @type {import("./tooling-types.mjs").JsonRecord} */ d) => [
         `diagnostic.${d["id"]}`,
         Object.fromEntries(
@@ -134,7 +134,7 @@ export const diagnosticRequirements = (descriptors, hostSchema) =>
         ),
       ],
     ),
-    ...descriptors["faultDiagnostics"].map(
+    ...operationCatalog["faultDiagnostics"].map(
       (/** @type {import("./tooling-types.mjs").JsonRecord} */ d) => [`fault.${d["id"]}`, {}],
     ),
     ...hostSchema["components"].schemas.HostFailure.oneOf.map(
@@ -155,31 +155,31 @@ const assertDiagnosticShape = (message, args, id) => {
     throw new Error(`Diagnostic parameters differ: ${id}`);
   }
 };
-/** @param {import("./tooling-types.mjs").JsonRecord} descriptors */
-const authorityKeys = (descriptors) => {
+/** @param {import("./tooling-types.mjs").JsonRecord} operationCatalog */
+const authorityKeys = (operationCatalog) => {
   /** @type {Array<{kind:string}>} */
-  const commands = descriptors["authorityCommands"] ?? [];
+  const commands = operationCatalog["authorityActs"] ?? [];
   /** @type {Array<{labelId:string}>} */
-  const fields = descriptors["authorityFields"] ?? [];
+  const fields = operationCatalog["authorityFields"] ?? [];
   return [
     ...fields.map((field) => field.labelId),
     ...commands.flatMap((command) =>
-      ["label", "meaning"].map((part) => `authority.${command.kind}.${part}`),
+      ["label", "meaning"].map((part) => `act.${command.kind}.${part}`),
     ),
   ];
 };
-/** @param {Record<string, Message>} catalog @param {import("./tooling-types.mjs").JsonRecord} descriptors @param {Record<string, Record<string, unknown>>} requirements */
-export const validateCoverage = (catalog, descriptors, requirements) => {
+/** @param {Record<string, Message>} catalog @param {import("./tooling-types.mjs").JsonRecord} operationCatalog @param {Record<string, Record<string, unknown>>} requirements */
+export const validateCoverage = (catalog, operationCatalog, requirements) => {
   /** @type {string[]} */
   const keys = [];
-  for (const field of [...descriptors["fields"], ...(descriptors["inputFields"] ?? [])]) {
+  for (const field of [...operationCatalog["fields"], ...(operationCatalog["inputFields"] ?? [])]) {
     for (const s of ["label", "meaning"]) {
       keys.push(`field.${field.name}.${s}`);
     }
   }
-  for (const c of descriptors["commands"]) {
+  for (const c of operationCatalog["acts"]) {
     for (const s of ["label", "meaning"]) {
-      keys.push(`command.${c.kind}.${s}`);
+      keys.push(`act.${c.kind}.${s}`);
     }
     for (const g of c.inputs.groups ?? []) {
       for (const s of ["label", "meaning"]) {
@@ -187,7 +187,7 @@ export const validateCoverage = (catalog, descriptors, requirements) => {
       }
     }
   }
-  keys.push(...authorityKeys(descriptors));
+  keys.push(...authorityKeys(operationCatalog));
   for (const [id, args] of Object.entries(requirements)) {
     const key = id;
     keys.push(key);
@@ -197,7 +197,7 @@ export const validateCoverage = (catalog, descriptors, requirements) => {
     throw new Error("Catalog omits authoritative metadata.");
   }
   const owned = Object.keys(catalog).filter((k) =>
-    /^(field|command|group|authority|diagnostic|fault|host)\./u.test(k),
+    /^(field|act|group|input|authority|diagnostic|fault|host)\./u.test(k),
   );
   if (owned.some((k) => !keys.includes(k))) {
     throw new Error("Catalog contains obsolete metadata.");

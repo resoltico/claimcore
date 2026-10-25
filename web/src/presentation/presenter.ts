@@ -14,17 +14,17 @@ export type PresentationDefinitions = Readonly<{
   fields: ReadonlyArray<MessageDescriptor & { name: string }>;
   inputFields: ReadonlyArray<MessageDescriptor & { name: string }>;
   authorityFields: ReadonlyArray<MessageDescriptor & { name: string }>;
-  commands: ReadonlyArray<
+  acts: ReadonlyArray<
     MessageDescriptor & {
       kind: string;
       inputs: { kind: string; groups?: ReadonlyArray<MessageDescriptor & { name: string }> };
     }
   >;
-  authorityCommands: ReadonlyArray<MessageDescriptor & { kind: string }>;
+  authorityActs: ReadonlyArray<MessageDescriptor & { kind: string }>;
 }>;
 const metadata = (
   preferences: Preferences,
-  owner: "field" | "command" | "group" | "authority",
+  owner: "field" | "act" | "group" | "authority",
   name: string,
   part: "label" | "meaning",
   definitions: PresentationDefinitions,
@@ -38,15 +38,15 @@ const metadata = (
         ...definitions.authorityFields,
       ].find((candidate) => candidate.name === name);
       break;
-    case "command":
-      descriptor = definitions.commands.find((candidate) => candidate.kind === name);
+    case "act":
+      descriptor = definitions.acts.find((candidate) => candidate.kind === name);
       break;
     case "authority":
-      descriptor = definitions.authorityCommands.find((candidate) => candidate.kind === name);
+      descriptor = definitions.authorityActs.find((candidate) => candidate.kind === name);
       break;
     case "group":
-      descriptor = definitions.commands
-        .flatMap((command) => command.inputs.groups ?? [])
+      descriptor = definitions.acts
+        .flatMap((act) => act.inputs.groups ?? [])
         .find((candidate) => candidate.name === name);
       break;
   }
@@ -59,7 +59,7 @@ const metadata = (
 const token = (
   preferences: Preferences,
   value: string,
-  definitions: PresentationDefinitions = productMetadata.descriptors,
+  definitions: PresentationDefinitions = productMetadata.catalog,
 ): string => {
   const key = `token.${value}`;
   if (hasMessage(key)) {
@@ -67,7 +67,7 @@ const token = (
   }
   return metadata(
     preferences,
-    definitions.authorityCommands.some((item) => item.kind === value) ? "authority" : "command",
+    definitions.authorityActs.some((item) => item.kind === value) ? "authority" : "act",
     value,
     "label",
     definitions,
@@ -118,7 +118,7 @@ const hint = (preferences: Preferences, field: FieldDescriptor): string => {
 };
 export const createPresenter = (
   preferences: Preferences,
-  definitions: PresentationDefinitions = productMetadata.descriptors,
+  definitions: PresentationDefinitions = productMetadata.catalog,
 ) => ({
   ...preferences,
   direction: languageDirection(preferences.language),
@@ -137,8 +137,8 @@ export const createPresenter = (
   authorityLabel: (name: string) => metadata(preferences, "authority", name, "label", definitions),
   authorityMeaning: (name: string) =>
     metadata(preferences, "authority", name, "meaning", definitions),
-  commandLabel: (name: string) => metadata(preferences, "command", name, "label", definitions),
-  commandMeaning: (name: string) => metadata(preferences, "command", name, "meaning", definitions),
+  commandLabel: (name: string) => metadata(preferences, "act", name, "label", definitions),
+  commandMeaning: (name: string) => metadata(preferences, "act", name, "meaning", definitions),
   groupLabel: (name: string) => metadata(preferences, "group", name, "label", definitions),
   groupMeaning: (name: string) => metadata(preferences, "group", name, "meaning", definitions),
   actLabel: (value: string) => token(preferences, value, definitions),

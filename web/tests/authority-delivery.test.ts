@@ -13,7 +13,7 @@ const preparedHook = async () => {
     ({ token }) =>
       useOperation({
         scope: "AUTHORITY",
-        kind: "REGISTER_ACTOR",
+        kind: "REGISTER",
         current: null,
         token,
         onLockChange: vi.fn(),
