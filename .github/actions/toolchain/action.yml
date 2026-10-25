@@ -56,7 +56,7 @@ runs:
         key: npm-downloads-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
     # Node and npm have separate pins; install npm explicitly before checking both executables.
     - if: inputs.node == 'true'
-      name: Install and verify the declared Node and npm toolchain
+      name: Install and verify the declared Node and npm toolchain # zizmor: ignore[adhoc-packages] -- Exact toolchain pin; npm bundles its dependency tree and scripts are disabled.
       shell: bash
       run: |
         set -euo pipefail
