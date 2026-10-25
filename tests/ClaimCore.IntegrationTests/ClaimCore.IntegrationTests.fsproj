@@ -1,16 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
+    <Compile Include="TestRegistration.fs" />
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
-    <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
-    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
-    <Compile Include="../FixtureDisposal.fs" Link="FixtureDisposal.fs" />
-    <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
-    <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
-    <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
-    <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
-    <Compile Include="../StoreFixtures.fs" Link="StoreFixtures.fs" />
-    <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
-    <Compile Include="../PostgresFixture.fs" Link="PostgresFixture.fs" />
+    <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />
     <Compile Include="ResolutionTests.fs" />
@@ -40,9 +33,6 @@
     <Compile Include="PaginationTests.fs" />
     <Compile Include="GrantPaginationTests.fs" />
     <Compile Include="AcceptedHistoryFixtures.fs" />
-    <Compile Include="../ClaimCore.WebTests/ProbeHttpsFixture.fs" Link="ProbeHttpsFixture.fs" />
-    <Compile Include="../ClaimCore.WebTests/FacadeStub.fs" Link="FacadeStub.fs" />
-    <Compile Include="../ClaimCore.WebTests/TestServerFixture.fs" Link="TestServerFixture.fs" />
     <Compile Include="HistoricalHttpTests.fs" />
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="HostingTests.fs" />

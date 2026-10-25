@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="RepositoryRoot.fs" />
+    <Compile Include="CliProcessEnvironment.fs" />
+    <Compile Include="BoundedProcess.fs" />
+    <Compile Include="OutputControls.fs" />
+    <Compile Include="PublishedClientClosure.fs" />
+    <Compile Include="FixtureDisposal.fs" />
+    <Compile Include="PostgresBaseline.fs" />
+    <Compile Include="PostgresReadiness.fs" />
+    <Compile Include="StoreFixtures.fs" />
+    <Compile Include="PostgresFixture.fs" />
+    <Compile Include="IdentityReadiness.fs" />
+    <Compile Include="IdentityRealm.fs" />
+    <Compile Include="IdentityServer.fs" />
+    <Compile Include="PrivateTestPaths.fs" />
+    <Compile Include="ProbeHttpsFixture.fs" />
+    <Compile Include="FacadeStub.fs" />
+    <Compile Include="TestServerFixture.fs" />
+    <Compile Include="TestGuards.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Expecto" />
+    <PackageReference Include="Testcontainers" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+</Project>

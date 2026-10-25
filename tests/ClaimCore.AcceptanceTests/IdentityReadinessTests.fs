@@ -1,5 +1,7 @@
 module ClaimCore.AcceptanceTests.IdentityReadinessTests
 
+open ClaimCore.TestSupport
+
 open System.Text
 open Expecto
 

@@ -1,4 +1,4 @@
-module internal ClaimCore.ArchitectureTests.ApiRules
+module internal ClaimCore.Tests.Architecture.ApiRules
 
 open System.Reflection
 open ArchUnitNET.Domain

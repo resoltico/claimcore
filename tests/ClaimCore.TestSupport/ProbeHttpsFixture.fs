@@ -1,4 +1,4 @@
-module internal ClaimCore.WebTests.ProbeHttpsFixture
+module internal ClaimCore.TestSupport.ProbeHttpsFixture
 
 open System
 open System.Net

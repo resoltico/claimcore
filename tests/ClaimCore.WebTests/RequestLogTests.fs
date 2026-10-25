@@ -11,8 +11,8 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Web
-open ClaimCore.WebTests.FacadeStub
-open ClaimCore.WebTests.TestServerFixture
+open ClaimCore.TestSupport.FacadeStub
+open ClaimCore.TestSupport.TestServerFixture
 
 let private lines (text: string) =
     text.Split('\n', StringSplitOptions.RemoveEmptyEntries)

@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.IdentityReadinessTests
 
+open ClaimCore.TestSupport
+
 open System
 open System.Net
 open System.Net.Http
@@ -67,7 +69,7 @@ let private importedRealm () =
 
     use client = new HttpClient(handler)
 
-    IdentityReadiness.wait client issuer CancellationToken.None
+    IdentityReadiness.waitForIssuer client issuer CancellationToken.None
     |> _.GetAwaiter().GetResult()
 
     Expect.equal handler.Calls 3 "Wait for expected realm metadata, not merely the TCP port"
@@ -80,7 +82,7 @@ let private invalidMetadata () =
 
     Expect.throwsT<InvalidOperationException>
         (fun () ->
-            IdentityReadiness.wait client issuer CancellationToken.None
+            IdentityReadiness.waitForIssuer client issuer CancellationToken.None
             |> _.GetAwaiter().GetResult())
         "A successful HTTP response with the wrong issuer fails closed"
 
@@ -92,7 +94,7 @@ let private invalidTls () =
 
     Expect.throwsT<InvalidOperationException>
         (fun () ->
-            IdentityReadiness.wait client issuer CancellationToken.None
+            IdentityReadiness.waitForIssuer client issuer CancellationToken.None
             |> _.GetAwaiter().GetResult())
         "TLS refusal is not treated as realm import readiness"
 
@@ -102,7 +104,7 @@ let private cancellation () =
     use handler = new Blocked()
     use client = new HttpClient(handler)
     use cancelled = new CancellationTokenSource()
-    let pending = IdentityReadiness.wait client issuer cancelled.Token
+    let pending = IdentityReadiness.waitForIssuer client issuer cancelled.Token
     handler.Entered.WaitAsync(TimeSpan.FromSeconds 2.).GetAwaiter().GetResult()
     cancelled.Cancel()
 

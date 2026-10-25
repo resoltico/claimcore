@@ -1,4 +1,4 @@
-module ClaimCore.WebTests.TestServerFixture
+module ClaimCore.TestSupport.TestServerFixture
 
 open ClaimCore.Contract
 open ClaimCore.Contract.Protocol
@@ -24,7 +24,7 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open ClaimCore.Application
 open ClaimCore.Web
-open ClaimCore.WebTests.FacadeStub
+open ClaimCore.TestSupport.FacadeStub
 
 let origin = Uri "https://localhost:5443"
 

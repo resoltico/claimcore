@@ -2,6 +2,8 @@ module ClaimCore.IntegrationTests.HistoricalHttpTests
 
 open ClaimCore.TestSupport
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System.Text
@@ -31,7 +33,7 @@ let private caller (database: PostgresFixture.Database) =
 
         let principal =
             PrincipalKey.human
-                ClaimCore.WebTests.TestServerFixture.oidc.Issuer.AbsoluteUri
+                ClaimCore.TestSupport.TestServerFixture.oidc.Issuer.AbsoluteUri
                 "synthetic-human"
             |> Result.defaultWith (fun _ -> failtest "Synthetic human")
 
@@ -52,7 +54,7 @@ let private caller (database: PostgresFixture.Database) =
         return core database.Fixture
     }
 
-let private readRetained (host: ClaimCore.WebTests.TestServerFixture.Host) csrf name =
+let private readRetained (host: ClaimCore.TestSupport.TestServerFixture.Host) csrf name =
     task {
         let! status, response =
             host.Call(
@@ -78,7 +80,10 @@ let private retainedHistory (database: PostgresFixture.Database) =
         let! forActor = caller database
         let name = String.replicate 201 "A"
         do! AcceptedHistoryFixtures.seed database name
-        use host = new ClaimCore.WebTests.TestServerFixture.Host(true, forActor = forActor)
+
+        use host =
+            new ClaimCore.TestSupport.TestServerFixture.Host(true, forActor = forActor)
+
         let! status, _ = host.Login()
         Expect.equal status 200 "Authenticated synthetic browser"
         let! csrf = host.Token()
@@ -168,7 +173,10 @@ let private zeroRevisionReply endpoint status response =
 let private absentRevision (database: PostgresFixture.Database) =
     task {
         let! forActor = caller database
-        use host = new ClaimCore.WebTests.TestServerFixture.Host(true, forActor = forActor)
+
+        use host =
+            new ClaimCore.TestSupport.TestServerFixture.Host(true, forActor = forActor)
+
         let! _ = host.Login()
         let! csrf = host.Token()
         let! before = verified database

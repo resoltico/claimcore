@@ -42,6 +42,14 @@ gate. Named stages execute in order, stop at failure and share restore/build wor
 | browsers | Locked Playwright engine/system dependency installation |
 | acceptance | Published service/CLI and real browser qualification |
 
+The four test projects match environment requirements: `ClaimCore.Tests` contains pure and compiled
+architecture checks, `ClaimCore.IntegrationTests` owns PostgreSQL scenarios, `ClaimCore.WebTests` owns host
+integration, and `ClaimCore.AcceptanceTests` owns published processes and browsers. `ClaimCore.TestSupport`
+is a library containing shared fixtures and assembly-parameterized guards. Each test assembly registers
+those guards once; no source file is linked across project boundaries. Pure test folders follow the owning
+production component. The pure tier runs once in Debug with optimization disabled so the compiled
+architecture negative controls remain visible; deployed production outputs are built separately in Release.
+
 Native tests run Microsoft Testing Platform with automatic `[<Tests>]` discovery, evaluated Compile membership
 and nonempty-run enforcement. Every test project is assigned exactly once to a stage; missing/duplicate
 assignments fail before restore. No hand-kept minimum counts exist. Ad hoc focused, filtered, pending, skipped or

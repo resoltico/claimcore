@@ -6,7 +6,7 @@ open System.Net.Http
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Web
-open ClaimCore.WebTests.ProbeHttpsFixture
+open ClaimCore.TestSupport.ProbeHttpsFixture
 
 let private retainsPublicIdentity () =
     withServer (fun root binding ->

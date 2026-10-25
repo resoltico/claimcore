@@ -19,6 +19,8 @@ compatibility, security and operating instructions. Current behavior is describe
 - Input guidance and bounded Unicode warnings preserve authored text. Automated accessibility checks complement the human review still needed for translations and assistive technology.
 - Pinned runtime/provider security updates, maintained browser boundary rules and independent negative controls strengthen build and verification inputs.
 
+- Tests use four environment tiers and one shared support library; architecture checks join the pure tier and each published CLI usage error has its own discoverable case.
+
 ## [0.11.0] - 2026-10-21
 
 [Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.11.0).

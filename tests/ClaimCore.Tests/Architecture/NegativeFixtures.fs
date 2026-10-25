@@ -1,4 +1,4 @@
-namespace ClaimCore.ArchitectureTests.NegativeFixtures
+namespace ClaimCore.Tests.Architecture.NegativeFixtures
 
 open ClaimCore.Contract
 

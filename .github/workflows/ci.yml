@@ -80,7 +80,7 @@ jobs:
           advanced-security: false
 
   unit:
-    name: Native unit and architecture tests (${{ matrix.rid }})
+    name: Pure tests and compiled architecture (${{ matrix.rid }})
     strategy:
       fail-fast: true
       matrix:

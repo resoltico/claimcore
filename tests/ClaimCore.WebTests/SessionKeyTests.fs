@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.SessionKeyTests
 
+open ClaimCore.TestSupport
+
 open System
 open System.IO
 open System.Security.Claims

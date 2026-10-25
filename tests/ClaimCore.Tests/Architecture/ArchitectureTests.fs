@@ -1,4 +1,4 @@
-module ClaimCore.ArchitectureTests.ArchitectureTests
+module ClaimCore.Tests.Architecture.ArchitectureTests
 
 open System
 open System.IO
@@ -6,7 +6,7 @@ open System.Reflection
 open Expecto
 open ArchUnitNET.Loader
 open type ArchUnitNET.Fluent.ArchRuleDefinition
-open ClaimCore.ArchitectureTests.NegativeFixtures
+open ClaimCore.Tests.Architecture.NegativeFixtures
 
 let private root = ClaimCore.TestSupport.RepositoryRoot.find ()
 

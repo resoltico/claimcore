@@ -68,76 +68,6 @@ let private frameOracle fixture =
             ))
             cells[0]
 
-let private usageErrors fixture =
-    let cases =
-        [
-            [ "case"; "close"; "REF" ], "--expected-revision"
-            [ "case"; "close"; "REF"; "--expected-revison"; "1" ], "--expected-revision"
-            [ "case"; "closee"; "REF" ], "case close"
-            [ "case"; "close"; "--expected-revision"; "1" ], "CASE-REFERENCE"
-            [ "case"; "close"; "REF"; "extra"; "--expected-revision"; "1" ], "extra"
-            [ "case"; "close"; "REF"; "--expected-revision"; "three" ], "three"
-            [
-                "case"
-                "correct"
-                "REF"
-                "--expected-revision"
-                "1"
-                "--registration"
-                "swap"
-                "--decision"
-                "keep"
-                "--payment"
-                "keep"
-            ],
-            "swap"
-            [
-                "case"
-                "correct"
-                "REF"
-                "--expected-revision"
-                "1"
-                "--registration"
-                "keep"
-                "--decision"
-                "keep"
-                "--payment"
-                "keep"
-                "--payment-date"
-                "2026-01-01"
-            ],
-            "--payment-date"
-            [
-                "case"
-                "close"
-                "REF"
-                "--expected-revision"
-                "1"
-                "--expected-revision"
-                "2"
-            ],
-            "--expected-revision"
-            [ "case"; "close"; "REF"; "--expected-revision" ], "--expected-revision"
-        ]
-
-    for language in LocalizationPolicy.languages do
-        for arguments, token in cases do
-            let result = invoke fixture (arguments @ [ "--language"; language ]) None
-            Expect.equal result.ExitCode 64 "Specific usage failures never dispatch"
-            Expect.equal result.StandardOutput.Length 0 "No request or reply on stdout"
-            let text = Encoding.UTF8.GetString result.StandardError
-            Expect.stringContains text token "Specific problem or suggestion is named"
-            Expect.isLessThanOrEqual (text.TrimEnd().Split('\n').Length) 8 "Focused error guidance"
-
-            if arguments[1] <> "closee" then
-                Expect.stringContains
-                    text
-                    ("claimcore case " + arguments[1])
-                    "Only the matched synopsis is shown"
-
-            if language <> "en" then
-                Expect.isFalse (text.StartsWith "Missing") "The selected language is respected"
-
 let private diagnosticRoute fixture =
     let result =
         invoke fixture [ "call" ] (Some(Encoding.UTF8.GetBytes "{invalid-frame"))
@@ -175,5 +105,4 @@ let private diagnosticRoute fixture =
 let qualify fixture =
     selectedInputs fixture
     frameOracle fixture
-    usageErrors fixture
     diagnosticRoute fixture

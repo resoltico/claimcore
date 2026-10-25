@@ -1,4 +1,4 @@
-module internal ClaimCore.AcceptanceTests.IdentityServer
+module internal ClaimCore.TestSupport.IdentityServer
 
 open System
 open System.Security.Cryptography
@@ -72,12 +72,20 @@ let internal metadataMatches issuer (bytes: ReadOnlyMemory<byte>) =
     with :? JsonException ->
         false
 
-type Identity(origin: string) =
+type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.Account list) =
+    let realm: IdentityRealm.Definition =
+        {
+            Name = "synthetic"
+            Origin = origin
+            AccessTokenLifespan = accessTokenLifespan
+            Accounts = accounts
+        }
+
     let root = rootCertificate ()
     let key, certificate = serverCertificate root
 
-    let webSecret, serviceSecret, password, adminPassword =
-        secret (), secret (), secret (), secret ()
+    let webSecret, serviceSecret, unscopedSecret, password, adminPassword, foreignSecret =
+        secret (), secret (), secret (), secret (), secret (), secret ()
 
     let runId = Guid.NewGuid().ToString "N"
 
@@ -113,8 +121,31 @@ type Identity(origin: string) =
                 UnixFileModes.UserRead
             )
             .WithResourceMapping(
-                IdentityRealm.bytes origin webSecret serviceSecret password,
+                IdentityRealm.bytes
+                    realm
+                    {
+                        Web = webSecret
+                        Service = serviceSecret
+                        Unscoped = unscopedSecret
+                    }
+                    password,
                 "/opt/keycloak/data/import/realm.json"
+            )
+            .WithResourceMapping(
+                IdentityRealm.bytes
+                    { realm with
+                        Name = "foreign"
+                        Accounts =
+                            realm.Accounts
+                            |> List.map (fun account -> { account with Subject = None })
+                    }
+                    {
+                        Web = webSecret
+                        Service = foreignSecret
+                        Unscoped = unscopedSecret
+                    }
+                    password,
+                "/opt/keycloak/data/import/foreign.json"
             )
             .WithCommand(
                 "start-dev",
@@ -135,7 +166,8 @@ type Identity(origin: string) =
     member _.Issuer =
         "https://localhost:"
         + string (container.GetMappedPublicPort 8443)
-        + "/realms/synthetic"
+        + "/realms/"
+        + realm.Name
 
     member _.Credentials =
         System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
@@ -145,18 +177,39 @@ type Identity(origin: string) =
                 apiAudience = "api"
                 serviceClientId = "service"
                 serviceClientSecret = serviceSecret
+                secondServiceClientId = "second-service"
                 publicClientId = "cli"
+                unscopedClientId = "unscoped"
+                unscopedClientSecret = unscopedSecret
                 adminUsername = "synthetic-admin"
                 adminPassword = adminPassword
+                foreignRealm = "foreign"
+                foreignClientSecret = foreignSecret
                 users =
-                    IdentityRealm.users
-                    |> List.map (fun (_, username) ->
+                    accounts
+                    |> List.map (fun account ->
                         {|
-                            username = username
+                            username = account.Username
                             password = password
                         |})
                     |> List.toArray
             |}
+
+    member this.Start(token: CancellationToken) =
+        task {
+            do! container.StartAsync token
+            use handler = ClaimCore.Web.AuthMiddleware.syntheticTrustHandler root
+
+            use client =
+                new HttpClient(
+                    handler,
+                    false,
+                    Timeout = TimeSpan.FromSeconds 5.,
+                    MaxResponseContentBufferSize = 65536L
+                )
+
+            do! IdentityReadiness.waitForIssuer client (Uri this.Issuer) token
+        }
 
     member this.Start(http: HttpClient, token: CancellationToken) =
         task {

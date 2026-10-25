@@ -445,6 +445,24 @@
           "FSharp.Core": "[10.1.402, )"
         }
       },
+      "claimcore.testsupport": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Application": "[0.11.0, )",
+          "ClaimCore.Contract": "[0.11.0, )",
+          "ClaimCore.Domain": "[0.11.0, )",
+          "ClaimCore.HostSecurity": "[0.11.0, )",
+          "ClaimCore.Postgres": "[0.11.0, )",
+          "ClaimCore.RecordFormat": "[0.11.0, )",
+          "Expecto": "[11.1.1, )",
+          "FSharp.Core": "[10.1.402, )",
+          "Microsoft.AspNetCore.TestHost": "[10.0.13, )",
+          "Npgsql": "[10.0.3, )",
+          "Testcontainers": "[4.16.0, )",
+          "Testcontainers.PostgreSql": "[4.16.0, )",
+          "claimcore-server": "[0.11.0, )"
+        }
+      },
       "Duende.IdentityModel": {
         "type": "CentralTransitive",
         "requested": "[8.1.0, )",

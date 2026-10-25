@@ -1,4 +1,4 @@
-module ClaimCore.WebTests.PrivateTestPaths
+module ClaimCore.TestSupport.PrivateTestPaths
 
 open System
 open System.IO

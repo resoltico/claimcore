@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliCalls
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Cli
 
 open System

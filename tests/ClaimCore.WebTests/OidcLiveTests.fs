@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.OidcLiveTests
 
+open ClaimCore.TestSupport
+
 open System
 open System.Net.Http
 open System.Security.Cryptography
@@ -106,7 +108,16 @@ let private failureCategory (error: exn) =
 let private liveIdentity () =
     task {
         let mutable stage = "create owned fixture"
-        use! server = Task.FromResult(new IdentityServer.Identity())
+
+        use! server =
+            Task.FromResult(
+                new IdentityServer.Identity(
+                    "https://localhost:5443",
+                    15,
+                    IdentityRealm.browserAccounts
+                )
+            )
+
         use deadline = new CancellationTokenSource(TimeSpan.FromMinutes 3.)
 
         try

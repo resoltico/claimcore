@@ -1,4 +1,4 @@
-module internal ClaimCore.ArchitectureTests.ProjectReferences
+module internal ClaimCore.Tests.Architecture.ProjectReferences
 
 open System.Diagnostics
 open System.IO

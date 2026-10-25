@@ -1,4 +1,4 @@
-module ClaimCore.WebTests.FacadeStub
+module ClaimCore.TestSupport.FacadeStub
 
 open ClaimCore.Contract
 

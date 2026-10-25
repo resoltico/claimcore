@@ -19,7 +19,7 @@ Postgres loads the authoritative view and persists the result. One database owns
 | CLI | HTTPS client, command grammar and frames | Contract, HostSecurity |
 | Database | Owner administration | Application, Postgres, Contract, HostSecurity |
 
-The [compiled architecture tests](../tests/ClaimCore.ArchitectureTests/) check the evaluated project graph
+The [compiled architecture tests](../tests/ClaimCore.Tests/Architecture/) check the evaluated project graph
 and forbidden dependencies, including I/O, clocks and randomness in the four pure projects. Rejecting fixture
 assemblies exercise those guards. The published CLI closure cannot contain server decision or persistence
 assemblies. Pure code receives time, authority and state explicitly.
