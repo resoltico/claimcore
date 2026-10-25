@@ -22,6 +22,7 @@ git clone https://github.com/resoltico/claimcore.git "$claimcore_source"
 cd "$claimcore_source"
 dotnet restore src/ClaimCore.Cli --locked-mode
 dotnet build src/ClaimCore.Cli --configuration Release --no-restore
+npm install --global --ignore-scripts "npm@$(node -p "require('./web/package.json').engines.npm")"
 npm --prefix web ci
 ```
 

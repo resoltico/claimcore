@@ -8,7 +8,7 @@ inputs:
     required: false
     default: "true"
   node:
-    description: Set up the Node release selected by .node-version and assert the exact npm.
+    description: Set up the Node release selected by .node-version and install the declared npm.
     required: false
     default: "true"
 
@@ -54,12 +54,12 @@ runs:
       with:
         path: ${{ runner.temp }}/claimcore-npm-cache
         key: npm-downloads-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
-    # The setup action selects a version; this proves the runner is actually running it, including
-    # the npm release, which no setup input pins.
+    # Node and npm have separate pins; install npm explicitly before checking both executables.
     - if: inputs.node == 'true'
-      name: Require the exact Node and npm toolchain
+      name: Install and verify the declared Node and npm toolchain
       shell: bash
       run: |
         set -euo pipefail
         test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
+        npm install --global --ignore-scripts "npm@$(node -p "require('./web/package.json').engines.npm")"
         test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"

@@ -14,6 +14,7 @@ Unix sink controls use sh, mkfifo, dd, stty, script and Linux prlimit.
 ```sh
 dotnet restore ClaimCore.slnx --locked-mode
 dotnet tool restore
+npm install --global --ignore-scripts "npm@$(node -p "require('./web/package.json').engines.npm")"
 npm --prefix web ci
 bash eng/verify.sh browsers
 bash eng/verify.sh
