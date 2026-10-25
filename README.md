@@ -48,7 +48,7 @@ revision and exact request bytes and retry that request. For a final answer, use
 ## Run and verify
 
 Follow [Getting started](docs/getting-started.md) for a fresh local Compose installation and
-signed-in browser. Private-file admission supports macOS x64/arm64 and glibc Linux x64/arm64; other ABIs refuse. This setup is an
+signed-in browser. Private-file admission supports .NET-supported Unix platforms, including musl; Windows refuses private inputs. This setup is an
 evaluation environment; operators own deployment, identity, TLS, backups and retention.
 Ledger verification detects inconsistency against trusted checkpoints; it does not provide
 independent freshness or protection from an administrator rewriting all evidence.

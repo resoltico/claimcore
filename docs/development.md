@@ -4,7 +4,7 @@
 
 Use the SDK in [global.json](../global.json), Node/npm in [.node-version](../.node-version) and
 [web/package.json](../web/package.json), Bash, Python 3 for the independent durable oracle, and Docker for
-integration/acceptance/workflow checks. Runtime private-file ABIs and their real boundary controls are listed below.
+integration/acceptance/workflow checks. Private-file platform qualification and real-object controls are listed below.
 Unix sink controls use sh, mkfifo, dd, stty, script and Linux prlimit.
 
 ```sh
@@ -18,7 +18,7 @@ bash eng/verify.sh
 Ordinary .NET builds run neither npm nor generation. Frontend commands need no .NET/Python. Framework-dependent apphost
 publication is qualified; self-contained, trimmed and single-file modes remain unqualified. Preserve the entire publish
 directory and reviewed notices from [eng/licenses](../eng/licenses/third-party-notices.json). No C compiler or custom
-native library is required; HostSecurity binds the supported system library.
+native library is required; HostSecurity uses managed file APIs.
 
 ## Verification stages
 
@@ -130,15 +130,11 @@ case cardinality across 1/100/1,000; its verifier time and sampled memory are re
 measurements promise no production SLA or constant total-system memory.
 Native-language/assistive-technology review remains human.
 
-Private-file ABI jobs require actual Linux x64/arm64 glibc and macOS x64/arm64 runs. The stat layouts (size/mode offset
-and width/file-size offset) are glibc x64 144/24u32/48, glibc arm64 128/16u32/48, and both Darwin ABIs 144/4u16/96.
-Sources are glibc's [x86
-stat](https://github.com/bminor/glibc/blob/glibc-2.42/sysdeps/unix/sysv/linux/x86/bits/struct_stat.h), [generic
-stat](https://github.com/bminor/glibc/blob/glibc-2.42/sysdeps/unix/sysv/linux/bits/struct_stat.h),
-[flags](https://github.com/bminor/glibc/blob/glibc-2.42/sysdeps/unix/sysv/linux/bits/fcntl-linux.h), and target Apple
-SDK sys/stat.h, sys/cdefs.h and sys/fcntl.h. Darwin x64 uses fstat$INODE64; arm64 uses fstat. Linux requires the public
-glibc fstat symbol. Tests include fd0 ownership, same-fd substitution, nonregular handles, all forbidden mode bits,
-bounds/partial clearing and repeated refusals without abandoned workers.
+Private-file qualification exercises real objects on linux-x64, linux-musl-x64 and osx-arm64.
+The managed reader checks final link targets, pre-open lengths, handle permissions and exact bounded
+positional reads. FIFO refusals, descriptor-zero ownership, disposal, path substitution and failed-read
+buffer clearing are checked. The [private-input limits](operations.md#private-configuration) include
+the directory-writer/FIFO race; Windows refuses private inputs.
 
 ## Verification records
 

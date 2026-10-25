@@ -61,13 +61,16 @@ same actor. The fence stores no business data. Disabled actors must be re-enable
 ## Private configuration
 
 Private inputs are absolute valid UTF-8 paths without NUL. Symlinks follow their targets, including secret volume links.
-Narrow system-library interop opens read-only with nonblocking and close-on-exec flags, then checks regular-file type
-and mode on that same descriptor: no other access or group write/execute; group read (0640/0440) remains allowed.
-Bounded bytes come only from that handle and callers clear buffers. Directories, devices, FIFOs, sockets,
-missing/oversized files and malformed paths refuse. Supported ABIs are little-endian Linux x64/arm64 with glibc exporting public `fstat`, and
-macOS x64/arm64; musl/other ABIs refuse before use. No custom native binary or C compiler is required. Nonblocking
-avoids FIFO peer waits; arbitrary filesystem calls have no hard deadline. Admission freezes neither contents nor
-permissions and leaves no abandoned open worker.
+The managed reader checks the final target’s nonzero bounded length before opening, then checks
+permissions and length on the opened handle and reads exactly that many bytes positionally. Group
+read remains allowed; other access and group write/execute refuse. Empty inputs, directories,
+devices, FIFOs, sockets, missing files and excessive lengths refuse. The caller clears returned
+buffers, and failed partial reads clear their buffers. .NET-supported Unix platforms, including
+musl, are supported; Windows refuses with UnsupportedPlatform.
+
+A principal able to write the containing directory can replace a checked file with a FIFO before
+the open and block startup. That principal can already replace the secret. Admission does not
+freeze contents or permissions, and arbitrary filesystem calls have no hard deadline.
 
 Ownership and ACLs are not inspected. Filesystem mode semantics, the file owner and the host administrator
 remain trusted; admission does not freeze concurrent changes to contents or permissions. Preserve all notices
