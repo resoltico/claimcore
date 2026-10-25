@@ -6,6 +6,7 @@ open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Cli
 open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
 
 let private oracle () =
     let path =
@@ -77,6 +78,87 @@ let private byteLimits () =
         | Error issues -> failtestf "Wrong size refusal: %A" issues
         | Ok _ -> failtest "Dry-run must not emit a frame the frame reader rejects"
 
+let private operationId = "10000000-0000-4000-8000-000000000001"
+
+let private registration =
+    [
+        "--incident-date"
+        "2026-08-01"
+        "--incident-notification-date"
+        "2026-08-03"
+        "--incident-country"
+        "LV"
+        "--claimant-name"
+        "Synthetic claimant"
+        "--insurer-name"
+        "Synthetic insurer"
+        "--claimed-amount"
+        "1.0000"
+        "--claimed-currency"
+        "EUR"
+    ]
+
+let private prepare args =
+    Grammar.prepare (fun () -> operationId) args
+
+let private replacement () =
+    let prepared =
+        prepare (
+            [
+                "case"
+                "correct"
+                "SYNTHETIC"
+                "--expected-revision"
+                "1"
+                "--registration"
+                "REPLACE"
+                "--decision"
+                "KEEP"
+                "--payment"
+                "KEEP"
+                "--dry-run"
+            ]
+            @ registration
+        )
+        |> Fixtures.accepted
+
+    let frame = Frames.admit prepared.Bytes |> Fixtures.accepted
+
+    let request =
+        RequestCodecs.operationInput.Read "$" (Frames.input frame) |> Fixtures.accepted
+
+    match request with
+    | OperationInput.Case {
+                              Act = CaseAct.Correct {
+                                                        Registration = RegistrationGroup.Replace value
+                                                    }
+                          } ->
+        Expect.equal value.ClaimedAmount "1.0000" "Authored amount spelling is preserved"
+
+        Expect.equal
+            value.ClaimantName
+            "Synthetic claimant"
+            "Replacement fields follow their selected branch"
+    | _ -> failtest "The requested replacement must remain in the prepared frame"
+
+let private retiredBooleanInput () =
+    Expect.isError
+        (prepare
+            [
+                "authority"
+                "enable"
+                "--kind"
+                "human"
+                "--issuer"
+                "https://issuer.example/"
+                "--subject"
+                "synthetic"
+                "--enabled"
+                "true"
+            ])
+        "Retired boolean inputs cannot be sent"
+
+
 [<Tests>]
 let tests =
     testList
@@ -84,4 +166,18 @@ let tests =
         [
             testCase "typed CLI produces all thirty independently captured frames" oracle
             testCase "prepared frames enforce exact and multibyte request size bounds" byteLimits
+            testCase "correction replacement retains authored values" replacement
+            testCase "distinct authority acts refuse retired boolean input" retiredBooleanInput
+            testCase "a dotted unknown verb cannot alias a known verb" (fun () ->
+                Expect.isError
+                    (prepare ([ "case"; "open.extra"; "SYNTHETIC"; "--dry-run" ] @ registration))
+                    "Only declared verbs are admitted")
+            testCase "operational writes report their actual unsupported preview command" (fun () ->
+                let arguments =
+                    [ "operation"; "resolve"; "11111111-2222-4333-8444-555555555555"; "--preview" ]
+
+                Expect.equal
+                    (Grammar.prepare (fun () -> "unused") arguments)
+                    (Error [ UsageError.NotApplicable("--preview", "operation resolve") ])
+                    "Resolve is an operational write, so read-command wording is inaccurate")
         ]

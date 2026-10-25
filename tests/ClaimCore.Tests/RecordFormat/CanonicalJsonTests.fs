@@ -14,9 +14,11 @@ open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 open ClaimCore.Tests.PropertyHarness
 
-let private canonical (text: string) =
-    use document = JsonDocument.Parse(text)
-    document.RootElement |> StrictJson.ofElement |> CanonicalWriter.bytes
+let private admitted (text: string) =
+    Encoding.UTF8.GetBytes text |> StrictJson.read Int32.MaxValue
+
+let private canonical text =
+    admitted text |> Fixtures.accepted |> CanonicalWriter.bytes
 
 let private text (element: JsonElement) =
     element.GetString()
@@ -61,7 +63,9 @@ let private refusalTests =
         "unsafe integers, noninteger lexemes, invalid Unicode and duplicate names refuse"
         (fun () ->
             for value in refusedJson do
-                Expect.throws (fun () -> canonical value |> ignore) "Invalid I-JSON must refuse"
+                Expect.isError
+                    (admitted value)
+                    "Invalid I-JSON returns a typed refusal without throwing"
 
             for value in [ Int64.MinValue; -9007199254740992L; 9007199254740992L; Int64.MaxValue ] do
                 Expect.throws

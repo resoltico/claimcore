@@ -267,6 +267,53 @@ let private duplicatePrecedence () =
         (append (LedgerVerification.initial None (Some 2L)) entry metadata)
         "A later duplicate cannot hide an earlier valid row"
 
+let private invalidProjectionRows () =
+    let row: Actor =
+        {
+            ActorId = id
+            Principal = human
+            Enabled = true
+        }
+
+    let actors = Map.ofList [ id, owner ]
+
+    let duplicateGrant =
+        { owner with
+            Grants =
+                [
+                    {
+                        Role = Role.CaseReader
+                        Scope = GrantScope.Installation
+                    }
+                ]
+        }
+
+    let checks =
+        [
+            (fun () -> ProjectionVerification.actor Map.empty { row with ActorId = Guid.Empty })
+            (fun () -> ProjectionVerification.actor actors row)
+            (fun () ->
+                ProjectionVerification.actor
+                    actors
+                    { row with
+                        ActorId = Guid.Parse "20000000-0000-4000-8000-000000000002"
+                    })
+            (fun () -> ProjectionVerification.grant Map.empty (id, Role.CaseReader, None))
+            (fun () ->
+                ProjectionVerification.grant
+                    (Map.ofList[id, duplicateGrant])
+                    (id, Role.CaseReader, None))
+            (fun () -> ProjectionVerification.grant actors (id, Role.CaseReader, Some Guid.Empty))
+        ]
+
+    for check in checks do
+        match check () with
+        | Error {
+                    Sequence = None
+                    Finding = VerificationFinding.AuthorityProjection
+                } -> ()
+        | _ -> failtest "Malformed projections must return the stable authority finding"
+
 [<Tests>]
 let tests =
     let cases = ledgerChecks @ caseChecks @ authorityChecks
@@ -283,3 +330,9 @@ let tests =
             for expected, run in cases do
                 testCase (VerificationFindings.token expected) (fun () -> finding expected run)
         ]
+
+[<Tests>]
+let projectionTests =
+    testCase
+        "invalid projection rows return typed findings without escaping exceptions"
+        invalidProjectionRows

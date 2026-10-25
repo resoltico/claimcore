@@ -356,7 +356,12 @@ module Grammar =
                     entry.Endpoint
 
             if options.ContainsKey "--preview" && entry.Act.IsNone then
-                problems.Add(UsageError.NotApplicable("--preview", "a read command"))
+                problems.Add(
+                    UsageError.NotApplicable(
+                        "--preview",
+                        OperationCatalog.words entry |> String.concat " "
+                    )
+                )
 
             let option name fallback =
                 match options.TryGetValue name with

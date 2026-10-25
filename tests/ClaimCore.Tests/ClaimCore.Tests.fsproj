@@ -30,7 +30,7 @@
     <Compile Include="Domain/CorrectionMatrixTests.fs" />
     <Compile Include="Domain/DomainValidationTests.fs" />
     <Compile Include="Application/AvailabilityTests.fs" />
-    <Compile Include="ContractGenerator/ScalarAndActCatalogTests.fs" />
+    <Compile Include="Domain/ScalarRuleTests.fs" />
     <Compile Include="Contract/FieldTableTests.fs" />
     <Compile Include="Domain/StewardshipTests.fs" />
     <Compile Include="RecordFormat/CanonicalJsonTests.fs" />
@@ -54,7 +54,7 @@
     <Compile Include="Contract/MessageTemplateTests.fs" />
     <Compile Include="ContractGenerator/LocalizationCatalogTests.fs" />
     <Compile Include="Contract/EndpointRegistryTests.fs" />
-    <Compile Include="Contract/RegistryConformanceTests.fs" />
+    <Compile Include="Contract/HttpContractBehaviorTests.fs" />
     <Compile Include="Contract/ReceiptCorrelationTests.fs" />
     <Compile Include="Cli/RegistryFrameTests.fs" />
     <Compile Include="Cli/FrameSchemaTests.fs" />
@@ -71,14 +71,13 @@
     <Compile Include="Cli/CliTransportFixture.fs" />
     <Compile Include="Cli/CliTransportTests.fs" />
     <Compile Include="Cli/CliSignalDeliveryTests.fs" />
-    <Compile Include="Cli/ClientCatalogTests.fs" />
+    <Compile Include="Cli/CliDeliveryOutcomeTests.fs" />
     <Compile Include="Cli/ClientAdmissionTests.fs" />
     <Compile Include="Cli/CliReplyLossTests.fs" />
     <Compile Include="Cli/CliFrameTests.fs" />
     <Compile Include="Cli/ConfigurationHelpTests.fs" />
     <Compile Include="Cli/CliDescriptionTests.fs" />
     <Compile Include="Cli/CliInvocationTests.fs" />
-    <Compile Include="Cli/CliSyntaxTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />
     <Compile Include="Cli/CliCharacterWarningTests.fs" />

@@ -1,4 +1,4 @@
-module ClaimCore.Tests.RegistryConformanceTests
+module ClaimCore.Tests.HttpContractBehaviorTests
 
 open System.Text
 open System.Text.Json

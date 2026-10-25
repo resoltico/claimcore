@@ -8,16 +8,21 @@ open ClaimCore.Application.VerificationChecks
 /// Projections are comparison targets only after the ledger has been folded.
 module internal ProjectionVerification =
     let actor (actors: Map<Guid, ActorAuthority>) (row: Actor) =
-        capture None VerificationFinding.AuthorityProjection (fun () ->
+        result {
             let id = row.ActorId
             let principal = row.Principal
 
-            if
-                id = Guid.Empty
-                || Map.containsKey id actors
-                || (actors |> Map.values |> Seq.exists (fun actor -> actor.Principal = principal))
-            then
-                invalidOp "Duplicate projected actor identity."
+            do!
+                require
+                    None
+                    VerificationFinding.AuthorityProjection
+                    (id <> Guid.Empty
+                     && not (Map.containsKey id actors)
+                     && not (
+                         actors
+                         |> Map.values
+                         |> Seq.exists (fun actor -> actor.Principal = principal)
+                     ))
 
             let actor: ActorAuthority =
                 {
@@ -27,13 +32,13 @@ module internal ProjectionVerification =
                     Grants = []
                 }
 
-            Map.add id actor actors)
+            return Map.add id actor actors
+        }
 
     let grant (actors: Map<Guid, ActorAuthority>) (id, role, caseId) =
-        capture None VerificationFinding.AuthorityProjection (fun () ->
-            let actor =
-                Map.tryFind id actors
-                |> Option.defaultWith (fun () -> invalidOp "Grant target projection is absent.")
+        result {
+            let! actor =
+                Map.tryFind id actors |> known None VerificationFinding.AuthorityProjection
 
             let scope =
                 caseId
@@ -42,15 +47,20 @@ module internal ProjectionVerification =
 
             let grant: ActorGrant = { Role = role; Scope = scope }
 
-            if List.contains grant actor.Grants || scope = GrantScope.Case Guid.Empty then
-                invalidOp "Invalid projected grant."
+            do!
+                require
+                    None
+                    VerificationFinding.AuthorityProjection
+                    (not (List.contains grant actor.Grants) && scope <> GrantScope.Case Guid.Empty)
 
-            Map.add
-                id
-                { actor with
-                    Grants = grant :: actor.Grants
-                }
-                actors)
+            return
+                Map.add
+                    id
+                    { actor with
+                        Grants = grant :: actor.Grants
+                    }
+                    actors
+        }
 
     let private matching expected actual =
         Map.count expected = Map.count actual
