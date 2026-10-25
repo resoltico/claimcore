@@ -7,7 +7,8 @@ The required gate and opt-in growth qualification use the same commands locally 
 
 Use the SDK in [global.json](../global.json), Node/npm in [.node-version](../.node-version) and
 [web/package.json](../web/package.json), Bash, Python 3 for the independent durable oracle, and Docker for
-integration/acceptance/workflow checks. Use supported Unix platforms for private-file inputs. The qualified native platforms and controls are listed below.
+integration/acceptance/workflow checks. Install ShellCheck for workflow checks. Use supported Unix platforms for
+private-file inputs. The qualified native platforms and controls are listed below.
 Unix sink controls use sh, mkfifo, dd, stty, script and Linux prlimit.
 
 ```sh
@@ -90,10 +91,10 @@ Diagnostics exclude payloads, credentials and provider exception text.
 ## Changes
 
 Find the owning contract and read its behavior tests before editing. Keep endpoints in the typed registry and fields in
-the field table, Domain admission and RecordFormat codec. Update affected consumers, SQL, tests, source locales and docs
-together. Before 1.0.0 baseline replacement may explicitly refuse older installations; the current build admits one
-exact source-bound baseline. There is no in-place upgrade or conversion; preserve existing installations with matching
-software. Production and tests enforce complexity 12; line-count rules are absent. Only inline named rule
+the field table, Domain admission and Contract codecs. RecordFormat owns durable encodings. Update affected consumers,
+SQL, tests, source locales and docs together. The current build admits one exact source-bound baseline. There is no
+in-place upgrade or conversion; preserve incompatible installations with matching software. FSharpLint enforces
+complexity 12 in production and tests. Only inline named rule
 exceptions with reasons are allowed. Required deterministic properties run 200 cases
 with state sequences up to 20. Shrinking stops after 100 successful descent steps, retaining the failing replay token;
 this is not a bound on candidate count or wall time. Decoder fuzzing uses at most 4,096 random bytes plus fixed hostile
@@ -145,6 +146,23 @@ The managed reader checks final link targets, pre-open lengths, handle permissio
 positional reads. FIFO refusals, descriptor-zero ownership, disposal, path substitution and failed-read
 buffer clearing are checked. The [private-input limits](operations.md#private-configuration) include
 the directory-writer/FIFO race; Windows refuses private inputs.
+
+## Source releases
+
+Public releases distribute tagged source archives through [GitHub Releases](https://github.com/resoltico/claimcore/releases).
+They contain no installable application packages. Build and publication instructions above apply to that source.
+
+Keep pending release notes in [CHANGELOG.md](../CHANGELOG.md), covering the complete delivered change since the
+preceding published normal release. Version, date and tag assignment belong to the owner's release step.
+The release commit must agree across [Directory.Build.props](../Directory.Build.props), the dated changelog
+heading and the annotated version tag. Complete the required verification and separate growth qualification
+for the release candidate before publishing.
+
+The [source release workflow](../.github/workflows/release.yml) runs only from main and accepts an existing
+annotated tag and its full expected commit SHA. It checks that the tagged commit belongs to main, its version
+matches the tag, and push CI for that tag succeeded. It extracts only that version's dated changelog section
+and publishes it as the release body. An Unreleased section, an unqualified tag or a branch CI result alone
+does not satisfy those checks.
 
 ## Verification records
 

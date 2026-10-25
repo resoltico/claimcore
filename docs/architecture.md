@@ -41,9 +41,10 @@ Ledger hashes cover metadata and salted payload commitments. Erasure removes pay
 the chain verifiable. Projections are derived state committed with the ledger entry. Verification checks
 permanent history invariants without reapplying today's admission or capability policy.
 
-Only the shipped baseline and current formats are admitted. Before 1.0.0, a release may replace the baseline
-and refuse older installations untouched. Preserve those installations with matching software; no conversion
-is supplied. From 1.0.0, retain readers for released formats and ship forward migrations.
+Only the shipped baseline and current formats are admitted. Incompatible installations are refused untouched.
+Initialize a separate fresh installation; no in-place upgrade, conversion or compatibility reader is supplied.
+Keep incompatible installations with matching software and follow the [restore procedure](operations.md#backups-and-restore)
+before reopening access to any restored data.
 
 <a id="cc-run-001"></a>
 

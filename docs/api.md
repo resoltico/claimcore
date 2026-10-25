@@ -8,9 +8,11 @@ show the current registry without credentials.
 
 Session bootstrap is GET; other endpoints use POST `/api/<endpoint>` with literal dots. API calls carry
 matching `ClaimCore-Contract`; cookie POSTs also carry antiforgery. A POST body is the input itself with
-`application/json`. Frame wrappers belong to CLI stdin. Authentication and current ClaimCore grants are separate.
+`application/json`, bounded to 64 KiB. Frame wrappers belong to CLI stdin. Authentication and current ClaimCore grants are separate.
 
-Case/authority input uses `scope: CASE|AUTHORITY` at operation.preview and operation.execute.
+Case/authority input uses `scope: CASE|AUTHORITY` at operation.preview and operation.execute. HTTP reply bodies
+contain `outcome`; preview and execute also echo `operationId`. They have no CLI `endpoint` or `delivery` wrapper.
+Receipts share operation and ledger metadata, with case or authority details in the tagged `scope` object.
 
 | Operation | Outcomes |
 | --- | --- |

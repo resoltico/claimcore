@@ -11,5 +11,6 @@ iteration. Run `bash eng/verify.sh growth` separately before release or on deman
 | [Check-FSharpLint.sh](Check-FSharpLint.sh) | F# rules, collecting failures across source roots |
 | [third-party-notices.json](licenses/third-party-notices.json) | Reviewed package/apphost notices; acceptance checks actual publication contents |
 
-Source release is separate owner work in the [release workflow](../.github/workflows/release.yml).
+The [source release procedure](../docs/development.md#source-releases) explains the owner's inputs to the
+[release workflow](../.github/workflows/release.yml).
 CI success records executed checks, without granting release approval.
