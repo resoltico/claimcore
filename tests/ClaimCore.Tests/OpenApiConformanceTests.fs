@@ -125,6 +125,19 @@ let private validatorControls () =
             (evaluate constrained value.RootElement)
             "Validator rejects required, bound, type and closed-object violations"
 
+let private sharedResponse (document: JsonNode) (reference: JsonNode) =
+    let pointer = reference |> child "$ref" |> fun value -> value.GetValue<string>()
+    let prefix = "#/components/responses/"
+
+    Expect.isTrue
+        (pointer.StartsWith(prefix, StringComparison.Ordinal))
+        "Host failure uses a local response reference"
+
+    document
+    |> child "components"
+    |> child "responses"
+    |> child (pointer.Substring(prefix.Length))
+
 let private responseStatuses () =
     let document = JsonNode.Parse(emitted ()) |> nonNull
     let statuses = HostFailures.all |> List.map HostFailures.status |> List.distinct
@@ -140,6 +153,7 @@ let private responseStatuses () =
         let selected =
             responses
             |> child (string status)
+            |> sharedResponse document
             |> child "content"
             |> child "application/json"
             |> child "schema"
@@ -198,6 +212,34 @@ let private securityRequirements () =
             (Set.ofList expected)
             "Cookie and bearer alternatives have endpoint-specific CSRF requirements."
 
+let private sharedFailures () =
+    use bytes = JsonDocument.Parse(emitted ())
+    let minified = JsonSerializer.SerializeToUtf8Bytes bytes.RootElement
+    Expect.isLessThanOrEqual minified.Length 80000 "The minified contract remains within 80 KB"
+    let document = JsonNode.Parse(emitted ()) |> nonNull
+
+    let expected =
+        HostFailures.all |> List.map (HostFailures.status >> string) |> Set.ofList
+
+    for path in (document |> child "paths").AsObject() do
+        for operation in (nonNull path.Value).AsObject() do
+            let responses = nonNull operation.Value |> child "responses" |> _.AsObject()
+
+            Expect.equal
+                (responses |> Seq.map _.Key |> Set.ofSeq)
+                (Set.add "200" expected)
+                "Every endpoint retains the failure statuses"
+
+            for status in expected do
+                let reference = responses[status] |> nonNull
+
+                Expect.equal
+                    (reference.AsObject().Count)
+                    1
+                    "Host responses contain only the reference"
+
+                sharedResponse document reference |> ignore
+
 [<Tests>]
 let tests =
     testList
@@ -212,6 +254,7 @@ let tests =
                 (corpus true "wire-response-examples.json")
             testCase "JSON Schema 2020-12 validator enforces negative controls" validatorControls
             testCase "HTTP failure schemas bind their declared status" responseStatuses
+            testCase "host failures share responses within the size budget" sharedFailures
             testCase
                 "OpenAPI security alternatives preserve cookie CSRF and bearer admission"
                 securityRequirements

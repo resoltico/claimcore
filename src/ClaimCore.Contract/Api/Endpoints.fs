@@ -56,14 +56,12 @@ module Api =
             (ReplyCodecs.readReply "SessionReply" ResponseCodecs.session)
 
     let logout =
-        { endpoint
-              "session.logout"
-              HttpMethod.Post
-              EndpointEffect.Read
-              RequestCodecs.empty
-              (ReplyCodecs.readReply "LogoutReply" Codec.nullValue) with
-            Effect = EndpointEffect.OperationalWrite
-        }
+        endpoint
+            "session.logout"
+            HttpMethod.Post
+            EndpointEffect.OperationalWrite
+            RequestCodecs.empty
+            (ReplyCodecs.readReply "LogoutReply" Codec.nullValue)
 
     let context =
         endpoint

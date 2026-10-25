@@ -75,26 +75,27 @@ module OpenApi =
                 alternatives
         )
 
+    let private hostResponses =
+        HostFailures.all
+        |> List.map HostFailures.status
+        |> List.distinct
+        |> List.sort
+        |> List.map (fun status ->
+            let code = status.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            let name = "Host" + code
+
+            code,
+            name,
+            object [ "description", text ("HTTP " + code); "content", hostContent status ])
+
     let private responses output =
         let success =
             "200", object [ "description", text "HTTP 200"; "content", content output ]
 
         let failures =
-            HostFailures.all
-            |> List.map HostFailures.status
-            |> List.distinct
-            |> List.sort
-            |> List.map (fun status ->
-                status.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                object
-                    [
-                        "description",
-                        text (
-                            "HTTP "
-                            + status.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                        )
-                        "content", hostContent status
-                    ])
+            hostResponses
+            |> List.map (fun (code, name, _) ->
+                code, object [ "$ref", text ("#/components/responses/" + name) ])
 
         object (success :: failures)
 
@@ -197,6 +198,10 @@ module OpenApi =
                 object
                     [
                         "securitySchemes", securitySchemes
+                        "responses",
+                        object (
+                            hostResponses |> List.map (fun (_, name, response) -> name, response)
+                        )
                         "schemas",
                         object (
                             definitions

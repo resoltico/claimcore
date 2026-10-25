@@ -502,6 +502,6 @@ export const presentationPseudolanguage = "en-XA";
 export const presentationLanguages = ["en","lv","ar","en-XA"] as const;
 export const presentationDisplayLocales = ["en-GB","lv-LV","ar-EG"] as const;
 export const presentationDefaults = { language: "en", displayLocale: "en-GB" } as const;
-export const consumerContractIdentity = "865721f19888c4a2792a64f27510fc0776d64cdd64ecc3510c17717ddffe19d8";
+export const consumerContractIdentity = "fc4e64bb2e074b9b6b23a4ed358480331b648732623d854165a8b06ea80fbbf3";
 export const strictByteProfile = {"maximumDepth":32,"maximumInvocationBytes":131072,"maximumRequestBytes":65536,"maximumResponseBytes":4194304,"maximumSafeInteger":9007199254740991} as const;
 export const limits = { maximumPageSize: 50, requestBytes: 65536, responseBytes: 4194304 } as const;
