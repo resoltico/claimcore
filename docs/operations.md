@@ -8,8 +8,7 @@ assertions; ClaimCore transfers no money.
 
 ## Erasure limits
 
-ERASE clears payload and payload_nonce on every ledger entry of the case, removes business projections and all
-case-targeted recovery bodies (including authority intents and the erasure itself), and retains reference, revision and
+ERASE clears payload and payload_nonce on every ledger entry of the case, removes business projections and retains reference, revision and
 ledger metadata. It cannot reach old row versions, WAL, replicas, logs, exports or backups. Retained references may
 still identify a person. Operators own retention, physical disposal and privacy decisions outside this live-database
 act. VOID preserves all history and is not erasure.
@@ -48,18 +47,16 @@ lock. This shared-clock qualification does not qualify arbitrary load balancing,
 deployments.
 
 Protect the key-ring directory with owner-only directory access (0700), preserve admitted key files and retain keys for
-every live ticket, seven-day recovery row and protected backup. Local Linux key XML is unencrypted. Back up the database
+every live ticket and protected backup. Local Linux key XML is unencrypted. Back up the database
 and key ring together under controlled custody; neither substitutes for the other. Corrupt/unprotectable sessions
 invalidate safely with `OIDC_SESSION_UNREADABLE`; storage failures close authentication with `OIDC_SESSION_UNAVAILABLE`.
 These diagnostics contain no provider, credential or payload.
 
-Submitted case/authority bodies are protected operational recovery state, separate from accepted history. Pending lists
-expose only the current actor's currently authorized technical metadata and offers. Explicit retry may accept work that
-never committed; no login/reload/background worker executes it. Absence, expiry, forget, logout or later failure cannot
-establish non-acceptance. Acknowledge known results explicitly to reclaim journal capacity; forget neither cancels an
-admitted attempt nor changes accepted history. Recovery ends at expiry, erasure, key loss/retirement, deliberate forget
-or rollback; copies/WAL remain outside live erasure. Keep exact uncertain CLI frames privately; browser/CLI storage
-contains no submitted payload.
+Use `operation resolve` after uncertain mutation delivery. An accepted operation returns its author’s
+receipt under current snapshot disclosure. A missing or foreign acceptance installs a permanent
+actor-scoped fence and returns final `NOT_ACCEPTED`. That ID cannot accept a later request by the
+same actor. The fence stores no business data. Disabled actors must be re-enabled before resolving.
+`operation.observe` remains a read; absence there is not final.
 
 ## Private configuration
 

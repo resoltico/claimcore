@@ -81,3 +81,25 @@ module internal DecisionViews =
                 }
                 : AuthorityReadView)
         }
+
+    let operation connection installationId principal id time token =
+        task {
+            let! entry = StoredEntries.operation connection installationId id token
+
+            let! actor =
+                Projections.actor connection principal (Projections.operationCases entry) token
+
+            let! record =
+                match entry |> Option.map _.Scope with
+                | Some(StoredScope.Case(id, _, _, _)) -> Projections.caseById connection id token
+                | _ -> Task.FromResult None
+
+            return
+                ({
+                    ObservedAt = time
+                    Actor = actor
+                    Entry = entry
+                    Case = record
+                }
+                : OperationReadView)
+        }

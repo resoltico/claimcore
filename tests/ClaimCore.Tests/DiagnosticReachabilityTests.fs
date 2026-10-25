@@ -55,6 +55,13 @@ let private baseline =
 
 let private baselinePolicy code (reason: Refusal) =
     match Map.tryFind (code, reason.Field) baseline.Value with
+    | None when code = "OPERATION_RESOLVED" ->
+        Expect.equal
+            reason.Action
+            RecommendedAction.ReadCurrent
+            "Resolve requires a new operation after reading current state"
+
+        Expect.equal reason.Field (Some "operationId") "The resolved identity is targeted"
     | Some action ->
         Expect.equal (string reason.Action) action "Captured baseline action is preserved."
     | None ->
@@ -405,6 +412,9 @@ let private boundaryEvidence () =
         let! queries = queryEvidence actor
         let! authority = authorityEvidence actor
         let! principals = principalEvidence actor
+        let! resolved = actor.Resolve({ OperationId = id 42 }, ct)
+        Expect.equal resolved ResolveReply.NotAccepted "Resolve installs a fence"
+        let! fenced = execute actor (request 42 "REACH-1" 1L CaseAct.Close)
         let original = store.Cases.Head.Snapshot
 
         store.ReplaceCaseSnapshot(
@@ -429,7 +439,7 @@ let private boundaryEvidence () =
 
         return
             identity
-            @ [ refused denied; refused revision; refused ledger ]
+            @ [ refused denied; refused revision; refused ledger; refused fenced ]
             @ queries
             @ authority
             @ principals
@@ -450,7 +460,9 @@ let private completeVocabulary () =
 
         Expect.equal
             (Set.ofList Refusals.codes)
-            (Set.add "INPUT_PRINCIPAL_FORMAT" baselineCodes)
+            (baselineCodes
+             |> Set.add "INPUT_PRINCIPAL_FORMAT"
+             |> Set.add "OPERATION_RESOLVED")
             "The code table preserves every captured refusal with the adopted principal extension."
 
         let produced = Set.ofList evidence

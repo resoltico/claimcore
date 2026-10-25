@@ -23,15 +23,14 @@ One explicit operation-state engine and thin effects hook serve CASE and AUTHORI
 Controls, paths, tagged branches, diagnostic focus and CLI operands use checked interaction bindings;
 labels/policy/order come from typed descriptors, and permitted work from current core advice.
 Controls retain stable authored names and associate core meanings, hints and field refusals programmatically. Diagnostic
-focus follows explicit bindings, including the nested reference in case-scoped grants. Recovery rows use authored
-scope-specific action labels while retry identities retain protocol values.
-Preview never grants commit permission. Authority preview applies the same authorization and last-owner constraints as
-execute. The prepared request freezes exact bytes, operation ID and expected revision. Editing an exposed request creates a fresh identity and
-clears consent. An uncertain request blocks editing/rebasing; retry uses exact bytes. Later failures do not clear
-uncertainty. Only correlated exact acceptance or replay resolves it. Explicit warned abandonment is distinct from
-proving failed execution. Page memory retains frozen bytes; reload lists only the actor's authorized protected
-submission metadata. Explicit opaque retry may accept previously unaccepted work and requires consent; listing/login
-never executes. User acknowledgement of a known result may forget its row; failed cleanup never changes acceptance.
+focus follows explicit bindings, including the nested reference in case-scoped grants.
+Preview grants no commit permission. Frozen requests retain exact bytes, operation ID and expected
+revision. An uncertain submit offers Send again and Check outcome. Send again uses the exact frozen
+bytes. Check outcome calls `operation.resolve` for final acceptance or non-acceptance. Ordinary
+failures preserve uncertainty until a final answer arrives. On reload a notice offers Check outcome
+only: `sessionStorage` retains `{operationId, scope, act}`, never request bodies or business values.
+Storage access failures leave the in-page flow working. Re-enter a new operation after reading
+current state when resolution returns `NOT_ACCEPTED`.
 
 Access refusal/session replacement clears disclosed server views independently from pending bytes. Completion
 from an old actor/target cannot reveal data in the new context. Authority refusal invalidates context, offers

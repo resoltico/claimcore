@@ -121,11 +121,10 @@ runner results. Module lint checks follow transitive imports, aliases and JavaSc
 ## Synthetic growth qualification
 
 The required full-path profiles run 1k/10k/100k business operations with 1/4/16 writers, 1k cases, 100 actors/1k grants
-(setup entries counted separately), 500 sessions/32 session workers and 10k retained recovery rows. Disjoint lanes plus
-explicit same-case/revocation conflicts protect accepted-count evidence; normal submissions acknowledge known results to
-exercise turnover. All nine profiles are required once per qualified database; iteration selectors never satisfy the
+(setup entries counted separately), 500 sessions/32 session workers. Disjoint lanes plus
+explicit same-case/revocation conflicts protect accepted-count evidence. All nine profiles are required once per qualified database; iteration selectors never satisfy the
 gate. Reports in ignored artifacts/verification/growth record exact revision/dirty state, counts, p50/p95/p99,
-throughput, journal/session latency, verifier memory/time and DB temporary work. Unmeasured head wait/hold metrics
+throughput, session latency, verifier memory/time and DB temporary work. Unmeasured head wait/hold metrics
 remain explicit. A separate comparison fixes history at 1,000 case entries plus three authority entries while varying
 case cardinality across 1/100/1,000; its verifier time and sampled memory are recorded in cardinality.json. These
 measurements promise no production SLA or constant total-system memory.

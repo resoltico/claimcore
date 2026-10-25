@@ -144,7 +144,7 @@ let private executeOutcomes () =
             ] do
             let reply: ExecuteReply =
                 {
-                    RecoveryId = None
+
                     OperationId = id
                     Outcome = outcome
                 }
@@ -381,7 +381,7 @@ let private integerLexemes () =
                 Codec.encode
                     Api.operationExecute.Output
                     {
-                        RecoveryId = None
+
                         OperationId = id
                         Outcome =
                             ExecuteResult.Accepted

@@ -84,7 +84,9 @@ let private accepted fixture reference =
 let private fallback (operation: string) (result: ProcessRunner.Result) =
     Expect.equal result.ExitCode 4 "Undeliverable mutation confirmation remains uncertain"
     let lines = Encoding.UTF8.GetString(result.StandardError).TrimEnd('\n').Split('\n')
-    Expect.equal lines.Length 2 "Fallback reply followed by exact retry frame"
+    Expect.equal lines.Length 3 "Fallback reply, guidance, and exact request frame"
+    Expect.stringContains lines[1] "claimcore call" "Exact resending guidance"
+    Expect.stringContains lines[1] "claimcore operation resolve" "Final resolution guidance"
 
     let frame =
         Frames.decode (Encoding.UTF8.GetBytes lines[0])
@@ -94,7 +96,7 @@ let private fallback (operation: string) (result: ProcessRunner.Result) =
     Expect.equal frame.OperationId (Some(Guid.Parse operation)) "Original caller identity retained"
 
     let retry =
-        Frames.admit (Encoding.UTF8.GetBytes lines[1])
+        Frames.admit (Encoding.UTF8.GetBytes lines[2])
         |> Result.defaultWith (fun _ -> failtest "Last stderr line is a retryable request")
 
     Expect.equal (Frames.operationId retry) frame.OperationId "Exact retry identity retained"

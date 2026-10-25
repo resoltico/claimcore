@@ -35,12 +35,12 @@ let private aliases () =
 let private options () =
     Expect.equal
         (CliInvocations.admit [ "call"; "--retry" ])
-        (Ok(CliInvocation.Call true))
-        "Retry context is explicit and leaves the request frame unchanged."
+        (Error CliUsageIssue.Invocation)
+        "The retired retry flag is a usage error."
 
     Expect.equal
         (CliInvocations.admit [ "call" ])
-        (Ok(CliInvocation.Call false))
+        (Ok(CliInvocation.Call))
         "An ordinary call starts a fresh attempt."
 
     for args in
@@ -215,8 +215,7 @@ let private nonLedgerVerbExamples =
         [ "case"; "list"; "--limit"; "5"; "--cursor"; "synthetic" ], "case.list"
         [ "case"; "history"; "SYNTHETIC"; "--full" ], "case.history"
         [ "operation"; "observe"; "10000000-0000-4000-8000-000000000001" ], "operation.observe"
-        [ "operation"; "pending" ], "operation.pending"
-        [ "operation"; "forget"; "10000000-0000-4000-8000-000000000001" ], "operation.forget"
+        [ "operation"; "resolve"; "10000000-0000-4000-8000-000000000001" ], "operation.resolve"
         [ "authority"; "list" ], "authority.list"
         [ "authority"; "grants"; "10000000-0000-4000-8000-000000000001" ], "authority.grants"
         [ "context" ], "context"
@@ -258,7 +257,7 @@ let private nonLedgerVerbs () =
             Expect.equal actual endpoint "A read or operational verb selects its registry endpoint"
 
             let expectedEffect =
-                if endpoint = "operation.forget" then
+                if endpoint = "operation.resolve" then
                     EndpointEffect.OperationalWrite
                 else
                     EndpointEffect.Read
@@ -298,37 +297,28 @@ let private nonLedgerCoverageControls () =
         (fun () -> assertNonLedgerVerbCoverage Api.all (List.head mapped :: mapped))
         "Duplicating a mapping fails uniqueness even when sets agree"
 
-let private opaqueRetryVerb () =
-    let recoveryId = "10000000-0000-4000-8000-000000000002"
+let private resolveVerb () =
     let operationId = "10000000-0000-4000-8000-000000000003"
-    let invocation = prepared [ "operation"; "retry"; recoveryId; operationId ]
+    let invocation = prepared [ "operation"; "resolve"; operationId ]
 
     let admitted =
         Frames.admit invocation.Bytes
-        |> Result.defaultWith (fun _ -> failtest "Retry frame")
+        |> Result.defaultWith (fun _ -> failtest "Resolve frame")
 
     Expect.equal
         (Api.id (Frames.endpoint admitted))
-        Api.operationRetry.Id
-        "Registry-selected recovery retry"
+        Api.operationResolve.Id
+        "Registry-selected resolve"
 
     Expect.equal
         (Api.effect (Frames.endpoint admitted))
-        EndpointEffect.LedgerExecution
-        "Retry may accept a previously unaccepted operation"
+        EndpointEffect.OperationalWrite
+        "Resolve writes a fence only"
 
     Expect.equal
         (Frames.input admitted)
-        (Api.operationRetry.Input.Write
-            {
-                RecoveryId = Guid.Parse recoveryId
-                OperationId = Guid.Parse operationId
-            })
-        "Caller supplies both frozen identifiers"
-
-    Expect.isTrue
-        (Frames.retryingUncertain admitted)
-        "Opaque retry intrinsically retains earlier uncertainty"
+        (Api.operationResolve.Input.Write { OperationId = Guid.Parse operationId })
+        "Caller supplies operation ID only"
 
 let private localizedReplyRendering () =
     let path =
@@ -372,7 +362,9 @@ let renderingTests =
         "CLI verb rendering"
         [
             testCase "every read and operational write has a registry-selected verb" nonLedgerVerbs
-            testCase "opaque retry keeps explicit identifiers and prior uncertainty" opaqueRetryVerb
+            testCase
+                "operation resolution keeps explicit identifiers and prior uncertainty"
+                resolveVerb
             testCase
                 "non-ledger coverage rejects added endpoints and missing or repeated mappings"
                 nonLedgerCoverageControls

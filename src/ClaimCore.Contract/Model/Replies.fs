@@ -56,7 +56,6 @@ type ExecuteResult =
 
 type ExecuteReply =
     {
-        RecoveryId: Guid option
         OperationId: Guid
         Outcome: ExecuteResult
     }

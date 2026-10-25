@@ -101,18 +101,24 @@ let private interruptedRetries fixture source operationId =
     Expect.equal (field "operationId" lost) operationId "Original operation ID survives loss"
     let invalid = Dictionary<string, string>(fixture.Environment)
     invalid.Remove("CLAIMCORE_SERVICE_URL") |> ignore
-    retry fixture invalid retryFrame 4 |> uncertain
+    let notSent = run fixture invalid retryFrame 3
+    Expect.equal (field "delivery" notSent) "NOT_SENT" "Only this attempt is classified"
     arm fixture RedirectControl.beforeDispatchFailure
-    let host = retry fixture fixture.Environment retryFrame 4
-    uncertain host
+    let host = run fixture fixture.Environment retryFrame 3
+
+    Expect.equal
+        (field "delivery" host)
+        "DELIVERED"
+        "The host reports a definite failure of this attempt"
 
     Expect.equal
         (host.GetProperty("result").GetProperty("hostFailure").GetProperty("phase").GetString())
         "NOT_STARTED"
         "Later predispatched refusal cannot disprove the earlier commit"
 
-    retry fixture (interactiveEnvironment fixture "synthetic-reader" "valid") retryFrame 4
-    |> uncertain
+    run fixture (interactiveEnvironment fixture "synthetic-reader" "valid") retryFrame 2
+    |> require "REJECTED"
+    |> ignore
 
     retryFrame
 
@@ -122,7 +128,7 @@ let private exactResolution fixture source operationId =
 
     require "SUCCEEDED" observed |> ignore
     // Observation establishes identity, never equality with pending content.
-    let replay = retry fixture fixture.Environment source 0
+    let replay = run fixture fixture.Environment source 0
     require "ALREADY_ACCEPTED" replay |> ignore
 
     Expect.equal
@@ -146,8 +152,12 @@ let private differentContent fixture source =
     let different = Encoding.UTF8.GetBytes(changed.ToJsonString())
     arm fixture RedirectControl.lostResponse
     let _, pending = lostFrame fixture different
-    let conflict = retry fixture fixture.Environment pending 4
-    uncertain conflict
+    let conflict = run fixture fixture.Environment pending 2
+
+    Expect.equal
+        (field "delivery" conflict)
+        "DELIVERED"
+        "This attempt was refused; the earlier lost reply still requires resolution"
 
     Expect.equal
         ((require "REJECTED" conflict).GetProperty("code").GetString())
@@ -172,7 +182,7 @@ let private coreUnknown (fixture: PublishedFixture.Fixture) =
     Expect.equal (field "operationId" unknown) operationId "Core uncertainty retains identity"
     Expect.isTrue (intercepted.Wait(TimeSpan.FromSeconds 5.)) "Actual COMMIT confirmation withheld"
 
-    retry fixture fixture.Environment retryFrame 0
+    run fixture fixture.Environment retryFrame 0
     |> require "ALREADY_ACCEPTED"
     |> ignore
 

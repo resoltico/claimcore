@@ -33,7 +33,6 @@ let private configuredRuntime
     (result: Result<ClaimCore.Web.Composition.IRuntime, ClaimCore.Application.RuntimeOpenFault>)
     =
     let runtime = result |> Result.defaultWith (fun _ -> failtest "Runtime refused")
-    runtime.ConfigureRecoveryProtection(PostgresFixture.recoveryProtection().Value)
     runtime
 
 let private call (runtime: ClaimCore.Web.Composition.IRuntime) principal action =

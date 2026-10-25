@@ -54,7 +54,7 @@ module internal ApiRoutes =
                 | Error _ ->
                     return Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
                 | Ok value ->
-                    match Dispatch.prepareRaw endpoint value bytes with
+                    match Dispatch.prepare endpoint value with
                     | Error _ ->
                         return
                             Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)

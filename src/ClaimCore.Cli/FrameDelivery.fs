@@ -24,6 +24,16 @@ type FrameDelivery(output: Stream, errors: Stream) =
             match pending with
             | None -> ()
             | Some frame ->
+                errors.Write(
+                    System.Text.Encoding.UTF8.GetBytes(
+                        "Outcome unresolved. Resend the exact frame with claimcore call or check its final outcome with claimcore operation resolve "
+                        + (Frames.operationId frame
+                           |> Option.map string
+                           |> Option.defaultValue "OPERATION_ID")
+                        + ".\n"
+                    )
+                )
+
                 errors.Write(Frames.encodeInvocation frame)
                 errors.WriteByte(byte '\n')
                 errors.Flush())
@@ -37,7 +47,7 @@ type FrameDelivery(output: Stream, errors: Stream) =
     member _.Prepare frame =
         advance (fun () ->
             pending <- Some frame
-            potentiallyChanged <- Frames.retryingUncertain frame)
+            potentiallyChanged <- false)
 
     member _.BeforeDispatch frame =
         advance (fun () ->

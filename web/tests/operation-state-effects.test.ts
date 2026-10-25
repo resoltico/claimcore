@@ -23,12 +23,11 @@ it("fences stale execute acceptance after epoch or target change while retaining
     { token: "token", target: "CASE:OTHER" },
   ]) {
     const invalidated = operationReducer(submitting, { type: "CONTEXT", ...context });
-    expect(invalidated.operation.tag).toBe("UNCERTAIN");
+    expect(invalidated.operation.tag).toBe("UNRESOLVED");
     const late = operationReducer(invalidated, {
       type: "RECORD",
       receipt: result.outcome.data,
       identity: effect("execute"),
-      recoveryId: null,
     });
     expect(late).toBe(invalidated);
     expect(operationView(late).prepared).toBe(operationView(submitting).prepared);
@@ -46,7 +45,6 @@ const controlEvents = (state: OperationState): OperationAction[] => [
   { type: "EDIT", path: "caseReference", value: "OTHER", id: "replacement" },
   { type: "RETURN" },
   { type: "CONFIRM", value: true },
-  { type: "ACKNOWLEDGE", identity: effect("ack") },
   {
     type: "REFUSE",
     notice: { kind: "local", reason: "incomplete" },
@@ -63,6 +61,7 @@ it("200 deterministic event sequences preserve prior uncertainty and cannot sche
   for (let seed = 1; seed <= 200; seed += 1) {
     let state = unknown();
     const { prepared } = operationView(state);
+    const { effects } = state;
     let cursor = seed;
     for (let step = 0; step < 20; step += 1) {
       cursor = (Math.imul(cursor, 1664525) + 1013904223) >>> 0;
@@ -70,7 +69,7 @@ it("200 deterministic event sequences preserve prior uncertainty and cannot sche
       state = operationReducer(state, events[cursor % events.length]!);
       expect(operationView(state).priorUncertain).toBe(true);
       expect(operationView(state).prepared).toBe(prepared);
-      expect(state.effects.some((value) => value.kind === "FORGET")).toBe(false);
+      expect(state.effects.every((value) => effects.includes(value))).toBe(true);
     }
   }
 });

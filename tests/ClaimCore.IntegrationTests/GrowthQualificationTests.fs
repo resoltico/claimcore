@@ -30,31 +30,6 @@ let private subjects count =
             |> Result.defaultWith failtest
     ]
 
-let private acknowledge (actor: IActorClaimsCore) (reply: ExecuteReply) =
-    task {
-        match reply.RecoveryId with
-        | None -> failtest "Full-path execution did not disclose its recovery identity"
-        | Some recoveryId ->
-            let! result = actor.Forget({ RecoveryId = recoveryId }, token)
-            Expect.equal result (ReadReply.Succeeded()) "Known acceptance is acknowledged"
-    }
-
-let private acknowledgeSetup (actor: IActorClaimsCore) =
-    task {
-        let! pending = actor.Pending({ AfterCursor = None; Limit = 50 }, token)
-
-        match pending with
-        | ReadReply.Succeeded page ->
-            for item in page.Items do
-                let! result = actor.Forget({ RecoveryId = item.RecoveryId }, token)
-
-                Expect.equal
-                    result
-                    (ReadReply.Succeeded())
-                    "Known fixture setup grants are acknowledged"
-        | _ -> failtest "Fixture recovery setup failed"
-    }
-
 let private authority (actor: IActorClaimsCore) principals =
     task {
         for index, principal in principals |> List.indexed do
@@ -70,7 +45,7 @@ let private authority (actor: IActorClaimsCore) principals =
                 )
 
             acceptedAuthority registered
-            do! acknowledge actor registered
+
 
             let grants =
                 [
@@ -87,7 +62,7 @@ let private authority (actor: IActorClaimsCore) principals =
                     grant actor (id (100001 + index * 20 + offset)) principal role scope true
 
                 acceptedAuthority granted
-                do! acknowledge actor granted
+
     }
 
 let private openCases (actor: IActorClaimsCore) count =
@@ -106,7 +81,7 @@ let private openCases (actor: IActorClaimsCore) count =
                 )
 
             accepted result |> ignore
-            do! acknowledge actor result
+
     }
 
 let private command revision =
@@ -161,7 +136,7 @@ let private writeLane (actor: IActorClaimsCore) workload lane =
             let watch = Stopwatch.StartNew()
             let! result = actor.Execute(OperationInput.Case authored, token)
             accepted result |> ignore
-            do! acknowledge actor result
+
             durations.Add watch.Elapsed.TotalMilliseconds
             revisions[target] <- revision + 1L
             turn <- turn + 1
@@ -340,28 +315,25 @@ let private measuredWrites workload database actor protection =
 
 let private measure keyRing workload (database: PostgresFixture.Database) =
     task {
-        let timing = SubmissionStorage.Timing(GrowthProtection.store keyRing database)
         let sessionProtection = GrowthProtection.sessions keyRing
 
         let database =
             { database with
                 Fixture =
                     { database.Fixture with
-                        Store = timing.Store
+                        Store = GrowthProtection.store keyRing database
                     }
             }
 
         let environment = GrowthEnvironment.source ()
         let! databaseBefore = GrowthEnvironment.database database
         let! actor = caseWorker database.Fixture
-        do! acknowledgeSetup actor
+
         do! openCases actor workload.Cases
 
         let! elapsed, latencies, sessions =
             measuredWrites workload database actor sessionProtection
 
-        let! recovery =
-            GrowthRecovery.run database (database.Fixture.Owner :: subjects workload.Actors)
 
         let! timeoutMilliseconds = timeout database
 
@@ -376,8 +348,8 @@ let private measure keyRing workload (database: PostgresFixture.Database) =
             "The final case, actor and grant populations match qualification inputs"
 
         Expect.equal
-            (databaseAfter.sessions, databaseAfter.recovery)
-            (0L, 0L)
+            databaseAfter.sessions
+            0L
             "Owned operational qualification state was explicitly removed"
 
         return
@@ -386,10 +358,8 @@ let private measure keyRing workload (database: PostgresFixture.Database) =
                 protection = "ASP.NET Core DataProtection with an owned filesystem key ring"
                 databaseBefore = databaseBefore
                 databaseAfter = databaseAfter
-                journalLatencyMilliseconds = timing.Summary
                 business = report workload elapsed latencies timeoutMilliseconds verification
                 sessions = sessions
-                recovery = recovery
                 controls = controls
             |}
     }
@@ -405,7 +375,7 @@ let private cardinalityWrites cases keyRing (database: PostgresFixture.Database)
             }
 
         let! actor = caseWorker database.Fixture
-        do! acknowledgeSetup actor
+
         do! openCases actor cases
 
         let! _ =

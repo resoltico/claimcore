@@ -48,7 +48,7 @@ retain readers for every released format and ship forward migrations.
 
 A runtime lease keeps admitted work alive. Shutdown closes admission, drains leases within its bound and closes the
 source once. Expiry reports the bound without disposing resources still leased or relabeling/cancelling admitted work.
-Ticket/recovery operations share that lease; the source closes once after all users drain. Readiness checks
+Ticket operations share that lease; the source closes once after all users drain. Readiness checks
 installation/schema access, never freshness or operator approval.
 
 <a id="cc-auth-001"></a>
@@ -76,7 +76,7 @@ pages are separate snapshots.
 ### CC-APP-001 — Rejection changes no accepted state
 
 Every accepted case/authority operation appends exactly one ledger entry and updates projections in one READ
-COMMITTED transaction. Rejection changes no accepted ledger or projection state; a submitted recovery copy may remain. Writers first call `claimcore.lock_ledger_head()`, then read
+COMMITTED transaction. Rejection changes no accepted ledger or projection state. Writers first call `claimcore.lock_ledger_head()`, then read
 authority, operation ID and case; nothing influencing the decision is read before that lock. The store loads,
 invokes one pure decision and persists it. The lock helper reads the database instant after locking in a
 separate statement, avoiding an instant captured before a waiting writer acquires the lock. That instant and
@@ -91,57 +91,15 @@ An operation is its caller-chosen ID plus canonical request content. While conte
 exact replay returns original acceptance metadata with current snapshot disclosure; different content under a
 used ID refuses. Erased content cannot be replayed. `OUTCOME_UNKNOWN` means commit confirmation was lost.
 Preserve ID, expected revision and exact prepared bytes; never infer failed commit, mint a replacement ID or
-rebase an uncertain request. Only correlated exact acceptance/replay resolves prior uncertainty; later
+rebase an uncertain request. Correlated exact acceptance/replay confirms acceptance; later
 rejection, failure or NOT_STARTED cannot disprove an earlier commit. Observation identifies accepted metadata
-but cannot prove equality with pending content. Preview is advisory and appends nothing. Cancellation before
+but cannot prove equality with the submitted content. `operation.resolve` is a separate operational write: under the ledger head lock it returns the author’s receipt or inserts a permanent actor/operation fence and returns `NOT_ACCEPTED`. Execute checks the fence after replay/conflict lookup and refuses `OPERATION_RESOLVED`. Resolving a foreign ID reveals nothing and cannot fence its author. Fences hold no payload and remain indefinitely. Preview is advisory and appends nothing. Cancellation before
 commit maps to `FAILED CORE_STORE_UNAVAILABLE`; uncertain transport or cancellation after commit starts maps
 to `OUTCOME_UNKNOWN`. Confirmed PostgreSQL errors retain their known abort/integrity/schema/programmer
 classification regardless of the commit marker. Verification checks permanent history invariants, commitments,
 chain and projections without reapplying today's admission/capability rules. Detected stored violations are
 integrity faults; provider/I/O failures are availability faults and programming failures are
 `CORE_INTERNAL_ERROR`.
-
-<a id="cc-app-003"></a>
-
-### CC-APP-003 — Submitted request recovery
-
-Every ordinary actor-core execution first admits its validated frozen wire envelope in a separate head-locked
-transaction. Current actor, target and operation permissions and accepted replay identity are checked there. A fresh
-authorized request stores protected raw bytes before the business transaction starts; preview and owner bootstrap do not
-journal. Only confirmed journal persistence permits the ordinary acceptance path, which acquires the head and
-independently reloads authority. Lost journal confirmation returns a store fault for this attempt without starting
-acceptance; prior client uncertainty remains sticky. Recovery rows never establish acceptance or trigger background
-execution.
-
-Reservation is temporary and scoped to actor/operation ID. Canonical-equal resubmission retains the first frozen body
-and original expiry; differing content refuses. Global accepted ledger identity remains controlling. Protection purposes
-bind installation, actor, recovery identity, operation, contract identity and technical metadata. Decrypted bytes must
-decode and agree with the protected metadata before use. Web attempts to warm its recovery key-ring provider at startup
-and preflights it before acquiring the head. Unavailable protection prevents fresh staging, but cannot veto an authorized
-exact accepted-ledger replay; an unreadable optional copy returns no acknowledgement locator. Such read-only decisions
-require no operational COMMIT. Genuine database faults retain their classifications. Purpose-specific protection shares that initialized provider. DataProtection
-may still refresh its internal key-ring cache during a protection call; this is not a guarantee that per-record
-protection performs no filesystem I/O. Key-ring rotation, availability and retention remain host operational
-responsibilities.
-
-Recovery lists only the current actor's currently authorized technical metadata and Application-owned offers. It exposes
-no historical request-body retrieval. Retry loads an owned protected envelope and executes it under current
-authorization; absent, expired and foreign identities share the unavailable refusal. Forget removes an owned row and
-returns indistinguishable idempotent success for foreign or absent IDs after the actor boundary. Forget does not cancel
-work already admitted and never proves non-acceptance.
-
-Recovery defaults in `ServiceLimits` are seven days from creation, 100 active rows per actor and 10,000 per
-installation. Head locking serializes cap admission. A full journal refuses new acceptance rather than silently evicting
-live uncertainty; expiry cleanup removes at most 100 rows per admission. Accepted ERASE atomically deletes every indexed
-recovery copy for that case, including its own request. Staging observes the tombstone under the same head lock and
-cannot recreate the content.
-
-Execute replies carry a nullable owned recovery ID; null does not prove that no row exists. Known results remain until explicit acknowledgement, forget, expiry
-or erasure. CLI may acknowledge only after complete known terminal output has been accepted and flushed by the OS;
-output failure, exit 4 and unresolved prior uncertainty prevent cleanup. Operational forget failure cannot alter a
-confirmed result or justify business retry. Expiry, absence, logout, forget and key loss never resolve earlier
-uncertainty. Key custodians must retain protection keys for retained operational state and align backup retention; the
-live-database erasure guarantee excludes backups, WAL and in-flight memory.
 
 <a id="cc-cat-001"></a>
 

@@ -78,7 +78,6 @@ const unavailable = (): ApiResult<ServiceResponse<"operation.execute">> => ({
   kind: "outcome",
   status: 200,
   value: {
-    recoveryId: null,
     operationId: "10000000-0000-4000-8000-000000000001",
     outcome: {
       tag: "REJECTED",
@@ -186,7 +185,7 @@ it("aborts prior authority reads and ignores their late completion after an unce
   render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
   await prepare();
   fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Retry the same operation" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Send again" }));
   await waitFor(() => {
     expect(listing).toHaveBeenCalledTimes(2);
   });
@@ -195,7 +194,7 @@ it("aborts prior authority reads and ignores their late completion after an unce
     priorFinish?.(success("authority.list"));
   });
   expect(screen.queryByText(listPrincipal())).toBeNull();
-  expect(screen.getByRole("button", { name: "Retry the same operation" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Send again" })).toBeVisible();
   expect(execute.mock.calls[1]![0]).toBe(execute.mock.calls[0]![0]);
   expect(execute.mock.calls[1]![0].bytes).toBe(execute.mock.calls[0]![0].bytes);
 });
@@ -358,7 +357,6 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
               kind: "outcome",
               status: 200,
               value: {
-                recoveryId: null,
                 operationId: prepared.input.operationId,
                 outcome: {
                   tag: "OUTCOME_UNKNOWN",
@@ -373,7 +371,6 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
         kind: "outcome",
         status: 200,
         value: {
-          recoveryId: null,
           operationId: prepared.input.operationId,
           outcome: {
             tag: "ALREADY_ACCEPTED",
@@ -400,7 +397,7 @@ it.each(["lost", "unknown"] as const)(
     render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
     await prepare();
     fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
-    const retry = await screen.findByRole("button", { name: "Retry the same operation" });
+    const retry = await screen.findByRole("button", { name: "Send again" });
     expect(screen.getByRole("alert")).toBeVisible();
     const [pending] = execute.mock.calls[0]!;
     fireEvent.click(retry);
@@ -415,7 +412,7 @@ it.each(["lost", "unknown"] as const)(
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "accepted" })).toHaveFocus();
     });
-    expect(screen.queryByRole("button", { name: "Retry the same operation" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
     expect(execute.mock.calls[1]![0]).toBe(pending);
     expect(execute.mock.calls[1]![0].bytes).toBe(pending.bytes);
   },

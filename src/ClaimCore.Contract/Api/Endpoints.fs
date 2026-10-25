@@ -110,31 +110,13 @@ module Api =
             RequestCodecs.operationInput
             ReplyCodecs.execute
 
-    let operationPending =
+    let operationResolve =
         endpoint
-            "operation.pending"
+            "operation.resolve"
             HttpMethod.Post
-            EndpointEffect.Read
-            RequestCodecs.pageRequest
-            (ReplyCodecs.readReply "RecoveryPageReply" RecoveryCodecs.page)
-
-    let operationRetry =
-        endpoint
-            "operation.retry"
-            HttpMethod.Post
-            EndpointEffect.LedgerExecution
-            RecoveryCodecs.retry
-            ReplyCodecs.execute
-
-    let operationForget =
-        { endpoint
-              "operation.forget"
-              HttpMethod.Post
-              EndpointEffect.Read
-              RecoveryCodecs.forget
-              (ReplyCodecs.readReply "ForgetReply" Codec.nullValue) with
-            Effect = EndpointEffect.OperationalWrite
-        }
+            EndpointEffect.OperationalWrite
+            ResolutionCodecs.request
+            ResolutionCodecs.reply
 
     let operationObserve =
         endpoint
@@ -175,9 +157,7 @@ module Api =
             boxed caseHistory
             boxed operationPreview
             boxed operationExecute
-            boxed operationPending
-            boxed operationRetry
-            boxed operationForget
+            boxed operationResolve
             boxed operationObserve
             boxed authorityList
             boxed authorityGrants

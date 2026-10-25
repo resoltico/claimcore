@@ -66,28 +66,6 @@ module internal CaseDecisions =
                 bytes
                 view.ExistingOperation
 
-    let stage installationId principal request (view: CaseReadView) =
-        match admission installationId principal request (RequestRecord.encode request) view with
-        | IdentityDecision.Refuse refusal ->
-            RecoveryAdmission.Terminal(ExecuteResult.Rejected refusal)
-        | IdentityDecision.Fail fault -> RecoveryAdmission.Terminal(ExecuteResult.Failed fault)
-        | IdentityDecision.Replay entry ->
-            LedgerEntries.receipt principal view.Actor view.Case entry
-            |> Result.map ExecuteResult.AlreadyAccepted
-            |> Result.defaultWith ExecuteResult.Failed
-            |> RecoveryAdmission.Terminal
-        | IdentityDecision.Fresh ->
-            match view.Case with
-            | Some {
-                       Snapshot = { View = CaseView.Erased }
-                   } -> RecoveryAdmission.Terminal(ExecuteResult.Rejected Refusal.CaseErased)
-            | _ ->
-                RecoveryAdmission.Ready(
-                    view.Actor.Actor.Value.ActorId,
-                    Some(CaseReferenceId.encode installationId request.CaseReference),
-                    None
-                )
-
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseReadView) =
         let before =
             match view.Case with
@@ -180,6 +158,8 @@ module internal CaseDecisions =
             LedgerEntries.receipt principal view.Read.Actor view.Read.Case entry
             |> Result.map LedgerDecision.Replay
             |> Result.defaultWith LedgerDecision.Fail
+        | IdentityDecision.Fresh when view.IsFenced ->
+            LedgerDecision.Refuse Refusal.OperationResolved
         | IdentityDecision.Fresh when view.Head.Sequence = Revision.Maximum ->
             LedgerDecision.Refuse Refusal.LedgerExhausted
         | IdentityDecision.Fresh ->

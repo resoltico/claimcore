@@ -1,6 +1,6 @@
 namespace ClaimCore.Contract
 
-/// Stable fault identities, independent from Application recovery policy.
+/// Stable fault identities, independent from Application fault handling.
 module FaultDiagnosticIds =
     [<Literal>]
     let InternalError = "CORE_INTERNAL_ERROR"

@@ -1,15 +1,16 @@
 {
-  "notice.responseTimeout": "The service response timed out.",
-  "notice.unreachable": "The local service could not be reached.",
-  "notice.invalidHttp": "The local service returned an invalid HTTP {status} response.",
-  "notice.fileTooLarge": "The selected file exceeds {maximumBytes} bytes.",
-  "notice.fileUnreadable": "The selected file could not be read.",
-  "notice.definitionMismatch": "The installed Web contract does not match these browser assets. Reload after publishing matching assets.",
-  "notice.invalidSession": "Invalid session response.",
-  "notice.missingCsrf": "Authenticated session did not include an antiforgery token.",
   "notice.accepted": "Accepted exact operation {operationId}.",
   "notice.cancelled": "This request was cancelled. Earlier attempts are not settled by this cancellation.",
+  "notice.definitionMismatch": "The installed Web contract does not match these browser assets. Reload after publishing matching assets.",
+  "notice.fileTooLarge": "The selected file exceeds {maximumBytes} bytes.",
+  "notice.fileUnreadable": "The selected file could not be read.",
+  "notice.invalidHttp": "The local service returned an invalid HTTP {status} response.",
+  "notice.invalidInput": "Complete this input using the required format.",
+  "notice.invalidSession": "Invalid session response.",
+  "notice.missingCsrf": "Authenticated session did not include an antiforgery token.",
+  "notice.notAccepted": "NOT_ACCEPTED: this operation ID will never be accepted for the current actor. If you submitted it as another actor, sign in as that actor to check its outcome. Read current state before preparing a new operation.",
   "notice.outcomeUnknown": "The operation outcome is unknown. Retry the exact same operation.",
+  "notice.responseTimeout": "The service response timed out.",
   "notice.unknownDiagnostic": "An unsupported diagnostic was received.",
-  "notice.invalidInput": "Complete this input using the required format."
+  "notice.unreachable": "The local service could not be reached."
 }

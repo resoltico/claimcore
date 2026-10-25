@@ -4,39 +4,22 @@ open System.Threading.Tasks
 open ClaimCore.Application
 open ClaimCore.Contract
 
-let private recovery (store: ILedgerStore) intercept =
-    { new IRecoveryStore with
-        member _.StageCase(principal, envelope, authorize, token) =
-            intercept envelope (fun () ->
-                store.Recovery.StageCase(principal, envelope, authorize, token))
-
-        member _.StageAuthority(principal, request, envelope, authorize, token) =
-            intercept envelope (fun () ->
-                store.Recovery.StageAuthority(principal, request, envelope, authorize, token))
-
-        member _.Pending(actor, after, limit, token) =
-            store.Recovery.Pending(actor, after, limit, token)
-
-        member _.Load(actor, request, token) =
-            store.Recovery.Load(actor, request, token)
-
-        member _.Forget(actor, key, token) =
-            store.Recovery.Forget(actor, key, token)
-
-        member _.Retained(actor, key, token) =
-            store.Recovery.Retained(actor, key, token)
-    }
-
-
-let private withRecovery (store: ILedgerStore) recovery =
+let private interceptWrites (store: ILedgerStore) intercept =
     { new ILedgerStore with
-        member _.Recovery = recovery
+        member _.ResolveOperation(principal, id, decide, token) =
+            store.ResolveOperation(principal, id, decide, token)
 
         member _.WriteCase(principal, operation, reference, decide, token) =
-            store.WriteCase(principal, operation, reference, decide, token)
+            task {
+                do! intercept operation
+                return! store.WriteCase(principal, operation, reference, decide, token)
+            }
 
         member _.WriteAuthority(principal, operation, target, reference, decide, token) =
-            store.WriteAuthority(principal, operation, target, reference, decide, token)
+            task {
+                do! intercept operation
+                return! store.WriteAuthority(principal, operation, target, reference, decide, token)
+            }
 
         member _.ReadAuthorityTarget(principal, operation, target, reference, token) =
             store.ReadAuthorityTarget(principal, operation, target, reference, token)
@@ -63,7 +46,7 @@ let private withRecovery (store: ILedgerStore) recovery =
     }
 
 
-/// Pauses only after a real operational commit and before the core's independent acceptance.
+/// Pauses before the writer starts its real head-locked transaction.
 type Barrier(store: ILedgerStore, operationId) =
     let staged =
         TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -71,44 +54,13 @@ type Barrier(store: ILedgerStore, operationId) =
     let released =
         TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
 
-    let intercept (envelope: ExecutionEnvelope) run =
+    let intercept id =
         task {
-            let! result = run ()
-
-            if OperationInput.operationId envelope.Input = operationId then
+            if id = operationId then
                 staged.TrySetResult() |> ignore
                 do! released.Task
-
-            return result
         }
 
     member _.Staged = staged.Task
     member _.Release() = released.TrySetResult() |> ignore
-    member _.Store = withRecovery store (recovery store intercept)
-
-/// Measures the actual operational transaction separately from ledger acceptance.
-type Timing(store: ILedgerStore) =
-    let samples = System.Collections.Concurrent.ConcurrentBag<float>()
-
-    let intercept _ run =
-        task {
-            let watch = System.Diagnostics.Stopwatch.StartNew()
-            let! result = run ()
-            samples.Add watch.Elapsed.TotalMilliseconds
-            return result
-        }
-
-    member _.Store = withRecovery store (recovery store intercept)
-
-    member _.Summary =
-        let values = samples.ToArray() |> Array.sort
-
-        if values.Length = 0 then
-            invalidOp "No submission transaction was measured."
-
-        {|
-            count = values.Length
-            p50Milliseconds = values[values.Length / 2]
-            p95Milliseconds = values[int (float (values.Length - 1) * 0.95)]
-            p99Milliseconds = values[int (float (values.Length - 1) * 0.99)]
-        |}
+    member _.Store = interceptWrites store intercept

@@ -55,7 +55,8 @@ type AfterCaseWriteStore(inner: ILedgerStore, afterWrite: unit -> Task<unit>) =
     member _.ReadCalls = reads
 
     interface ILedgerStore with
-        member _.Recovery = inner.Recovery
+        member _.ResolveOperation(principal, id, decide, ct) =
+            inner.ResolveOperation(principal, id, decide, ct)
 
         member _.WriteCase(principal, operationId, reference, decide, ct) =
             task {

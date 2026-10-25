@@ -5,6 +5,50 @@ open ClaimCore.Contract
 open ClaimCore.Application
 
 module internal WriteOperations =
+    let private isFenced connection (actor: AuthorityView) operationId token =
+        task {
+            match actor.Actor with
+            | None -> return false
+            | Some actor ->
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT EXISTS (SELECT 1 FROM claimcore.operation_fences WHERE actor_id=$1 AND operation_id=$2)"
+                        [| box actor.ActorId; box operationId |]
+                        token
+
+                return DatabaseSession.value 0 rows.Head
+        }
+
+    let resolve source settings installationId principal operationId decide token =
+        Transactions.operational source settings token (fun connection ->
+            task {
+                let! _, instant, _ = Transactions.head connection token
+
+                let! view =
+                    DecisionViews.operation
+                        connection
+                        installationId
+                        principal
+                        operationId
+                        instant
+                        token
+
+                let result = decide view
+
+                match result with
+                | ResolveReply.NotAccepted ->
+                    let! _ =
+                        DatabaseSession.execute
+                            connection
+                            "INSERT INTO claimcore.operation_fences(actor_id,operation_id,fenced_at) VALUES ($1,$2,$3) ON CONFLICT (actor_id,operation_id) DO NOTHING"
+                            [| box view.Actor.Actor.Value.ActorId; box operationId; box instant |]
+                            token
+
+                    return Transactions.OperationalDecision.Persist result
+                | _ -> return Transactions.OperationalDecision.ReadOnly result
+            })
+
     let private persist connection token project decision =
         task {
             match decision with
@@ -32,8 +76,11 @@ module internal WriteOperations =
                         instant
                         token
 
+                let! fenced = isFenced connection read.Actor operationId token
+
                 let view: CaseLockedView =
                     {
+                        IsFenced = fenced
                         Head = head
                         PayloadNonce = nonce
                         Read = read
@@ -68,8 +115,11 @@ module internal WriteOperations =
                         instant
                         token
 
+                let! fenced = isFenced connection read.Actor operationId token
+
                 let view: AuthorityLockedView =
                     {
+                        IsFenced = fenced
                         Head = head
                         PayloadNonce = nonce
                         Read = read

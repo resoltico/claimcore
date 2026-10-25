@@ -46,7 +46,7 @@ let database (database: PostgresFixture.Database) =
         let! rows =
             DatabaseSession.rows
                 connection
-                "SELECT version(),temp_files,temp_bytes,(SELECT count(*) FROM claimcore.cases),(SELECT count(*) FROM claimcore.actors),(SELECT count(*) FROM claimcore.grants),(SELECT count(*) FROM claimcore.sessions),(SELECT count(*) FROM claimcore.recovery_requests) FROM pg_stat_database WHERE datname=current_database()"
+                "SELECT version(),temp_files,temp_bytes,(SELECT count(*) FROM claimcore.cases),(SELECT count(*) FROM claimcore.actors),(SELECT count(*) FROM claimcore.grants),(SELECT count(*) FROM claimcore.sessions) FROM pg_stat_database WHERE datname=current_database()"
                 [||]
                 CancellationToken.None
 
@@ -59,6 +59,5 @@ let database (database: PostgresFixture.Database) =
                 actors = DatabaseSession.value<int64> 4 rows.Head
                 grants = DatabaseSession.value<int64> 5 rows.Head
                 sessions = DatabaseSession.value<int64> 6 rows.Head
-                recovery = DatabaseSession.value<int64> 7 rows.Head
             |}
     }

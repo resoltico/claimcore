@@ -820,6 +820,10 @@
       "parameters": []
     },
     {
+      "id": "OPERATION_RESOLVED",
+      "parameters": []
+    },
+    {
       "id": "OPERATION_CONTENT_CONFLICT",
       "parameters": []
     },

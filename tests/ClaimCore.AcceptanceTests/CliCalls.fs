@@ -69,9 +69,6 @@ let internal invoke
 let run (fixture: PublishedFixture.Fixture) environment source code =
     invoke fixture environment [ "call" ] source code |> parse code
 
-let retry fixture environment source code =
-    invoke fixture environment [ "call"; "--retry" ] source code |> parse code
-
 let verb fixture environment arguments code =
     invoke fixture environment (arguments @ [ "--format"; "json" ]) Array.empty code
     |> parse code

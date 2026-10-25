@@ -1,3 +1,4 @@
+import { useUnresolvedOperation } from "./operation/unresolvedOperation";
 import { usePresentation } from "../presentation/context";
 import { useOperation } from "../hooks/operation/useOperation";
 import { AcceptedOperation } from "./operation/OperationDialogs";
@@ -13,6 +14,7 @@ export const OperationEditor = (props: OperationEditorProps) => {
     token: props.token,
     onLockChange: props.onMutationLockChange,
   });
+  useUnresolvedOperation(model);
   if (model.receipt?.scope.kind === "CASE") {
     return (
       <AcceptedOperation
@@ -20,7 +22,6 @@ export const OperationEditor = (props: OperationEditorProps) => {
         receipt={{ ...model.receipt, scope: model.receipt.scope }}
         message={model.notice}
         onCommitted={(receipt) => {
-          model.acknowledge();
           props.onCommitted(receipt);
         }}
       />

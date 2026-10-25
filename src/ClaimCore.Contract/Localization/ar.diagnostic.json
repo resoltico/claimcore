@@ -33,6 +33,7 @@
   "diagnostic.INPUT_DECIMAL_FORMAT": "استخدم نصًا عشريًا غير سالب: حتى {maximumIntegerDigits} رقمًا صحيحًا و{maximumFractionalDigits} أرقام كسرية؛ دون إشارة أو أس. دون أصفار بادئة زائدة: 0.10 صحيح؛ 00.10 غير صحيح.",
   "diagnostic.INPUT_FUTURE_DATE": "لا يمكن استخدام تاريخ مستقبلي لتسجيل واقعة حدثت بالفعل.",
   "diagnostic.INPUT_MALFORMED_UNICODE": "لا يُقبل Unicode غير السليم.",
+  "diagnostic.INPUT_PRINCIPAL_FORMAT": "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
   "diagnostic.INPUT_SURROUNDING_WHITESPACE": "لا تُقبل المسافات في بداية القيمة أو نهايتها.",
   "diagnostic.INPUT_TEXT_REQUIRED": "يجب إدخال قيمة غير فارغة.",
   "diagnostic.INPUT_TEXT_TOO_LONG": "يجب ألا تتجاوز القيمة {maximumCharacters} محارف Unicode.",
@@ -40,9 +41,9 @@
   "diagnostic.LEDGER_SEQUENCE_EXHAUSTED": "وصل السجل إلى رقم التسلسل الأخير.",
   "diagnostic.NOT_VOIDED": "هذا الملف غير ملغى.",
   "diagnostic.OPERATION_CONTENT_CONFLICT": "يخص معرّف العملية هذا محتوى أمر مختلفًا. لا تعِد استخدامه.",
+  "diagnostic.OPERATION_RESOLVED": "حُسمت نتيجة هذه العملية بأنها غير مقبولة. اقرأ الحالة الحالية وأعدّ عملية جديدة بمعرّف جديد.",
   "diagnostic.QUERY_CURSOR_INVALID": "لم يعد مؤشر متابعة الصفحة صالحًا. أعد تحميل القائمة من البداية.",
   "diagnostic.QUERY_PAGE_LIMIT_RANGE": "استخدم قيمة من 1 إلى {maximumPageSize}.",
   "diagnostic.REVISION_EXHAUSTED": "وصلت الحالة إلى مراجعتها الأخيرة.",
-  "diagnostic.TEXT_FORMATTING_CHARACTER": "لا تُقبل محارف التنسيق في البيانات الجديدة.",
-  "diagnostic.INPUT_PRINCIPAL_FORMAT": "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية."
+  "diagnostic.TEXT_FORMATTING_CHARACTER": "لا تُقبل محارف التنسيق في البيانات الجديدة."
 }

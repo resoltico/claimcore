@@ -1,31 +1,27 @@
-import type { OperationReceipt, OperationReview, RecoveryItem } from "@contracts/client";
+import type { OperationReceipt, OperationReview } from "@contracts/client";
 import type { Notice } from "../api/notices";
 import type { FormValues } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import { refusalPath } from "./operationForm";
 
 export type EffectIdentity = { id: string; token: string; target: string };
-export type PendingSource =
-  | { kind: "LOCAL"; prepared: PreparedRequest<"operation.execute">; recoveryId: string | null }
-  | { kind: "RECOVERED"; item: RecoveryItem };
-type LocalSource = Extract<PendingSource, { kind: "LOCAL" }>;
+type LocalSource = { prepared: PreparedRequest<"operation.execute"> };
 export type OperationPhase =
   | { tag: "EDITING"; exposed: LocalSource | null }
   | { tag: "PREVIEWING"; source: LocalSource; effect: EffectIdentity }
   | { tag: "REVIEWING"; source: LocalSource; review: OperationReview; confirmed: boolean }
   | {
       tag: "SUBMITTING";
-      source: PendingSource;
+      source: LocalSource;
       effect: EffectIdentity;
-      knowledge: "FRESH" | "UNCERTAIN";
       review: OperationReview | null;
     }
-  | { tag: "UNCERTAIN"; source: PendingSource }
-  | { tag: "ACCEPTED"; source: PendingSource; receipt: OperationReceipt | null };
+  | { tag: "UNRESOLVED"; source: LocalSource; effect: EffectIdentity | null }
+  | { tag: "ACCEPTED"; source: LocalSource; receipt: OperationReceipt | null };
 export type OperationEffect =
   | { kind: "PREVIEW"; identity: EffectIdentity; source: LocalSource }
-  | { kind: "EXECUTE"; identity: EffectIdentity; source: PendingSource }
-  | { kind: "FORGET"; identity: EffectIdentity; recoveryId: string }
+  | { kind: "EXECUTE"; identity: EffectIdentity; source: LocalSource }
+  | { kind: "RESOLVE"; identity: EffectIdentity; source: LocalSource }
   | { kind: "RECORDED"; identity: EffectIdentity; receipt: OperationReceipt }
   | { kind: "DISCLOSURE_REFUSED"; identity: EffectIdentity; notice: Notice };
 export type OperationState = {
@@ -57,7 +53,6 @@ export type OperationAction =
       type: "RECORD";
       receipt: OperationReceipt;
       identity: EffectIdentity;
-      recoveryId: string | null;
     }
   | {
       type: "REFUSE";
@@ -66,7 +61,6 @@ export type OperationAction =
       uncertain: boolean;
       disclosure: boolean;
       identity?: EffectIdentity;
-      recoveryId?: string | null;
     }
   | { type: "CONTEXT"; token: string; target: string }
   | { type: "INVALIDATE"; refused: boolean }
@@ -74,13 +68,15 @@ export type OperationAction =
   | { type: "RETURN" }
   | { type: "CONFIRM"; value: boolean }
   | { type: "EXECUTE"; identity: EffectIdentity }
-  | { type: "RECOVER"; item: RecoveryItem }
-  | { type: "ACKNOWLEDGE"; identity: EffectIdentity }
+  | { type: "RESOLVE"; identity: EffectIdentity }
+  | { type: "NOT_ACCEPTED"; identity: EffectIdentity; id: string }
   | { type: "EFFECT_STARTED"; id: string };
-export const operationSource = (phase: OperationPhase): PendingSource | null =>
+export const operationSource = (phase: OperationPhase): LocalSource | null =>
   phase.tag === "EDITING" ? phase.exposed : phase.source;
 const operationBusy = (state: OperationState): boolean =>
-  state.operation.tag === "PREVIEWING" || state.operation.tag === "SUBMITTING";
+  state.operation.tag === "PREVIEWING" ||
+  state.operation.tag === "SUBMITTING" ||
+  (state.operation.tag === "UNRESOLVED" && state.operation.effect !== null);
 const canEdit = (state: OperationState): boolean =>
   state.operation.tag === "EDITING" || state.operation.tag === "REVIEWING";
 const current = (state: OperationState, identity: EffectIdentity): boolean =>
@@ -88,23 +84,16 @@ const current = (state: OperationState, identity: EffectIdentity): boolean =>
 const completing = (state: OperationState, identity: EffectIdentity): boolean =>
   current(state, identity) &&
   operationBusy(state) &&
-  (state.operation.tag === "PREVIEWING" || state.operation.tag === "SUBMITTING") &&
-  state.operation.effect.id === identity.id;
+  (state.operation.tag === "PREVIEWING" ||
+    state.operation.tag === "SUBMITTING" ||
+    (state.operation.tag === "UNRESOLVED" && state.operation.effect !== null)) &&
+  state.operation.effect?.id === identity.id;
 const append = (state: OperationState, effect: OperationEffect): OperationState => ({
   ...state,
   effects: [...state.effects, effect],
 });
-const sourceWithRecovery = (
-  source: PendingSource,
-  recoveryId: string | null | undefined,
-): PendingSource =>
-  source.kind === "LOCAL" ? { ...source, recoveryId: recoveryId ?? source.recoveryId } : source;
-const localSource = (phase: OperationPhase): LocalSource | null => {
-  const source = operationSource(phase);
-  return source?.kind === "LOCAL" ? source : null;
-};
-const uncertain = (phase: OperationPhase): boolean =>
-  phase.tag === "UNCERTAIN" || (phase.tag === "SUBMITTING" && phase.knowledge === "UNCERTAIN");
+const localSource = operationSource;
+const uncertain = (phase: OperationPhase): boolean => phase.tag === "UNRESOLVED";
 const edit = (
   state: OperationState,
   action: Extract<OperationAction, { type: "EDIT" }>,
@@ -129,8 +118,8 @@ const edit = (
 const invalidate = (state: OperationState, refused: boolean): OperationState => {
   const phase = state.operation;
   let operation: OperationPhase;
-  if (phase.tag === "SUBMITTING" || phase.tag === "UNCERTAIN") {
-    operation = { tag: "UNCERTAIN", source: phase.source };
+  if (phase.tag === "SUBMITTING" || phase.tag === "UNRESOLVED") {
+    operation = { tag: "UNRESOLVED", source: phase.source, effect: null };
   } else if (phase.tag === "ACCEPTED") {
     operation = { ...phase, receipt: null };
   } else {
@@ -149,7 +138,7 @@ const preview = (
   ) {
     return state;
   }
-  const source: LocalSource = { kind: "LOCAL", prepared: action.prepared, recoveryId: null };
+  const source: LocalSource = { prepared: action.prepared };
   return append(
     {
       ...state,
@@ -170,23 +159,25 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
     phase.confirmed &&
     !state.disclosureRefused &&
     state.disclosureToken === identity.token;
-  if (phase.tag !== "UNCERTAIN" && !reviewed) {
+  if (operationBusy(state) || (phase.tag !== "UNRESOLVED" && !reviewed)) {
     return state;
   }
   const source = operationSource(phase);
-  if (source === null || (source.kind === "RECOVERED" && !source.item.offers.includes("RETRY"))) {
+  if (source === null) {
     return state;
   }
   return append(
     {
       ...state,
-      operation: {
-        tag: "SUBMITTING",
-        source,
-        effect: identity,
-        knowledge: phase.tag === "UNCERTAIN" ? "UNCERTAIN" : "FRESH",
-        review: phase.tag === "REVIEWING" ? phase.review : null,
-      },
+      operation:
+        phase.tag === "UNRESOLVED"
+          ? { ...phase, effect: identity }
+          : {
+              tag: "SUBMITTING",
+              source,
+              effect: identity,
+              review: phase.tag === "REVIEWING" ? phase.review : null,
+            },
       notice: null,
     },
     { kind: "EXECUTE", identity, source },
@@ -201,11 +192,11 @@ const refuse = (
   }
   const source = operationSource(state.operation);
   const sticky = uncertain(state.operation) || action.uncertain;
-  const retained = source === null ? null : sourceWithRecovery(source, action.recoveryId);
+  const retained = source;
   const operation: OperationPhase =
     sticky && retained !== null
-      ? { tag: "UNCERTAIN", source: retained }
-      : { tag: "EDITING", exposed: retained?.kind === "LOCAL" ? retained : null };
+      ? { tag: "UNRESOLVED", source: retained, effect: null }
+      : { tag: "EDITING", exposed: retained };
   const next = {
     ...state,
     operation,
@@ -233,7 +224,7 @@ const record = (
       ...state,
       operation: {
         tag: "ACCEPTED",
-        source: sourceWithRecovery(source, action.recoveryId),
+        source,
         receipt: action.receipt,
       },
       pendingDiscard: null,
@@ -243,16 +234,6 @@ const record = (
     },
     { kind: "RECORDED", identity: action.identity, receipt: action.receipt },
   );
-};
-const acknowledge = (state: OperationState, identity: EffectIdentity): OperationState => {
-  if (!current(state, identity) || uncertain(state.operation) || operationBusy(state)) {
-    return state;
-  }
-  const source = operationSource(state.operation);
-  const recoveryId = source?.kind === "LOCAL" ? source.recoveryId : source?.item.recoveryId;
-  return recoveryId === null || recoveryId === undefined
-    ? state
-    : append(state, { kind: "FORGET", identity, recoveryId });
 };
 const reviewed = (
   state: OperationState,
@@ -295,23 +276,25 @@ const reset = (
   operationBusy(state) || (uncertain(state.operation) && !action.abandon)
     ? state
     : { ...action.state, disclosureToken: state.disclosureToken };
-export const recoveryTarget = (item: RecoveryItem): string =>
-  item.scope === "CASE"
-    ? `CASE:${item.caseReference?.toUpperCase() ?? ""}`
-    : `AUTHORITY:${item.targetActorId ?? ""}`;
-const recovered = (state: OperationState, item: RecoveryItem): OperationState => {
-  if (state.operation.tag !== "EDITING" || state.operation.exposed !== null) {
-    return state;
-  }
-  const target = recoveryTarget(item);
-  return {
-    ...state,
-    target,
-    context: { ...state.context, target },
-    operation: { tag: "UNCERTAIN", source: { kind: "RECOVERED", item } },
-    notice: null,
-  };
-};
+const resolving = (state: OperationState, identity: EffectIdentity): OperationState =>
+  state.operation.tag === "UNRESOLVED" && !operationBusy(state) && current(state, identity)
+    ? append(
+        { ...state, operation: { ...state.operation, effect: identity } },
+        { kind: "RESOLVE", identity, source: state.operation.source },
+      )
+    : state;
+const notAccepted = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "NOT_ACCEPTED" }>,
+): OperationState =>
+  completing(state, action.identity)
+    ? {
+        ...state,
+        operation: { tag: "EDITING", exposed: null },
+        values: { ...state.values, operationId: action.id },
+        notice: { kind: "local", reason: "notAccepted" },
+      }
+    : state;
 type NavigationAction = Exclude<
   OperationAction,
   { type: "EDIT" | "PREVIEW" | "EXECUTE" | "REFUSE" | "RECORD" | "REVIEW" }
@@ -332,10 +315,10 @@ const navigation = (state: OperationState, action: NavigationAction): OperationS
       return operationBusy(state) ? state : { ...state, pendingDiscard: action.kind };
     case "RESET":
       return reset(state, action);
-    case "RECOVER":
-      return recovered(state, action.item);
-    case "ACKNOWLEDGE":
-      return acknowledge(state, action.identity);
+    case "RESOLVE":
+      return resolving(state, action.identity);
+    case "NOT_ACCEPTED":
+      return notAccepted(state, action);
     case "EFFECT_STARTED":
       return {
         ...state,
@@ -373,8 +356,7 @@ export const operationView = (state: OperationState) => {
     phase: phase.tag,
     busy: operationBusy(state),
     priorUncertain: uncertain(phase),
-    prepared: source?.kind === "LOCAL" ? source.prepared : null,
-    recovery: source?.kind === "RECOVERED" ? source.item : null,
+    prepared: source?.prepared ?? null,
     review: phase.tag === "REVIEWING" || phase.tag === "SUBMITTING" ? phase.review : null,
     receipt: phase.tag === "ACCEPTED" ? phase.receipt : null,
     confirmed:

@@ -41,9 +41,7 @@ let private registry () =
             "operation.preview"
             "operation.execute"
             "operation.observe"
-            "operation.pending"
-            "operation.retry"
-            "operation.forget"
+            "operation.resolve"
             "authority.list"
             "authority.grants"
         ]
@@ -62,9 +60,8 @@ let private registry () =
         Expect.equal
             effect
             (match endpoint with
-             | "operation.execute"
-             | "operation.retry" -> EndpointEffect.LedgerExecution
-             | "operation.forget"
+             | "operation.execute" -> EndpointEffect.LedgerExecution
+             | "operation.resolve"
              | "session.logout" -> EndpointEffect.OperationalWrite
              | _ -> EndpointEffect.Read)
             "Operational writes and ledger execution have distinct delivery effects."
@@ -142,7 +139,7 @@ let private mutationReplies () =
         roundTrip
             ReplyCodecs.execute
             {
-                RecoveryId = None
+
                 ExecuteReply.OperationId = id
                 Outcome = outcome
             }
@@ -230,7 +227,7 @@ let tests =
     testList
         "typed endpoint registry"
         [
-            testCase "the eleven endpoints own method and mutation classification" registry
+            testCase "the twelve endpoints own method and mutation classification" registry
             testCase "one read envelope carries success, refusal and fault" readReplies
             testCase "preview and execution share receipt and refusal models" mutationReplies
             testCase "identity includes only the registry's structural OpenAPI" structuralIdentity

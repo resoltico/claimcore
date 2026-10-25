@@ -5263,1329 +5263,9 @@
         }
       }
     },
-    "/api/operation.pending": {
+    "/api/operation.resolve": {
       "post": {
-        "operationId": "operation.pending",
-        "x-claimcore-effect": "READ_ONLY",
-        "parameters": [
-          {
-            "name": "ClaimCore-Contract",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
-              "minLength": 64,
-              "maxLength": 64
-            }
-          },
-          {
-            "name": "X-ClaimCore-Antiforgery",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 2147483647
-            }
-          }
-        ],
-        "security": [
-          {
-            "cookieAuth": [],
-            "antiforgery": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "HTTP 200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RecoveryPageReply"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "HTTP 400",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "INPUT_INVALID"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "HTTP 401",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "SESSION_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "HTTP 403",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "CONNECTION_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "ORIGIN_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "SESSION_FORBIDDEN"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "ANTIFORGERY_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "HTTP 404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "ENDPOINT_MISSING"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "HTTP 405",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "METHOD_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "HTTP 409",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "CONTRACT_MISMATCH"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "HTTP 413",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "BODY_TOO_LARGE"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "HTTP 415",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "MEDIA_TYPE_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "HTTP 429",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "RATE_LIMITED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "HTTP 500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "INTERNAL"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "INTERNAL"
-                                },
-                                "phase": {
-                                  "const": "STARTED_UNCONFIRMED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "RESPONSE_FAILED"
-                                },
-                                "phase": {
-                                  "type": "null"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PageRequest"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/operation.retry": {
-      "post": {
-        "operationId": "operation.retry",
-        "x-claimcore-effect": "LEDGER_EXECUTION",
-        "parameters": [
-          {
-            "name": "ClaimCore-Contract",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
-              "minLength": 64,
-              "maxLength": 64
-            }
-          },
-          {
-            "name": "X-ClaimCore-Antiforgery",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 2147483647
-            }
-          }
-        ],
-        "security": [
-          {
-            "cookieAuth": [],
-            "antiforgery": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "HTTP 200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExecuteReply"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "HTTP 400",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "INPUT_INVALID"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "HTTP 401",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "SESSION_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "HTTP 403",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "CONNECTION_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "ORIGIN_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "SESSION_FORBIDDEN"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "ANTIFORGERY_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "HTTP 404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "ENDPOINT_MISSING"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "HTTP 405",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "METHOD_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "HTTP 409",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "CONTRACT_MISMATCH"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "HTTP 413",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "BODY_TOO_LARGE"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "HTTP 415",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "MEDIA_TYPE_REJECTED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "HTTP 429",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "RATE_LIMITED"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "HTTP 500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "$ref": "#/components/schemas/HostFailure"
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "hostFailure": {
-                          "oneOf": [
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "INTERNAL"
-                                },
-                                "phase": {
-                                  "const": "NOT_STARTED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "INTERNAL"
-                                },
-                                "phase": {
-                                  "const": "STARTED_UNCONFIRMED"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "additionalProperties": false,
-                              "properties": {
-                                "code": {
-                                  "const": "RESPONSE_FAILED"
-                                },
-                                "phase": {
-                                  "type": "null"
-                                }
-                              },
-                              "required": [
-                                "code",
-                                "phase"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "hostFailure"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RecoveryRequest"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/operation.forget": {
-      "post": {
-        "operationId": "operation.forget",
+        "operationId": "operation.resolve",
         "x-claimcore-effect": "OPERATIONAL_WRITE",
         "parameters": [
           {
@@ -6625,7 +5305,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ForgetReply"
+                  "$ref": "#/components/schemas/ResolveReply"
                 }
               }
             }
@@ -7236,7 +5916,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ForgetRequest"
+                "$ref": "#/components/schemas/ResolveRequest"
               }
             }
           }
@@ -9641,110 +8321,6 @@
           "scope"
         ]
       },
-      "AuthorityRecoveryItem": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "recoveryId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          },
-          "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          },
-          "act": {
-            "oneOf": [
-              {
-                "const": "REGISTER_ACTOR"
-              },
-              {
-                "const": "SET_ENABLED"
-              },
-              {
-                "const": "SET_GRANT"
-              }
-            ]
-          },
-          "caseReference": {
-            "oneOf": [
-              {
-                "type": "string",
-                "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-                "minLength": 1,
-                "maxLength": 80
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "expectedRevision": {
-            "type": "null"
-          },
-          "targetActorId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          },
-          "createdAt": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-            "format": "date-time",
-            "minLength": 27,
-            "maxLength": 27
-          },
-          "expiresAt": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-            "format": "date-time",
-            "minLength": 27,
-            "maxLength": 27
-          },
-          "offers": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "const": "RETRY"
-                },
-                {
-                  "const": "FORGET"
-                }
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 2
-          },
-          "scope": {
-            "oneOf": [
-              {
-                "const": "AUTHORITY"
-              }
-            ]
-          }
-        },
-        "required": [
-          "recoveryId",
-          "operationId",
-          "act",
-          "caseReference",
-          "expectedRevision",
-          "targetActorId",
-          "createdAt",
-          "expiresAt",
-          "offers",
-          "scope"
-        ]
-      },
       "AuthorityState": {
         "type": "object",
         "additionalProperties": false,
@@ -10483,128 +9059,6 @@
           "revision",
           "act",
           "snapshot"
-        ]
-      },
-      "CaseRecoveryItem": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "recoveryId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          },
-          "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          },
-          "act": {
-            "oneOf": [
-              {
-                "const": "OPEN"
-              },
-              {
-                "const": "AMEND_REGISTRATION"
-              },
-              {
-                "const": "CORRECT_CASE"
-              },
-              {
-                "const": "DECIDE"
-              },
-              {
-                "const": "WITHDRAW_DECISION"
-              },
-              {
-                "const": "RECORD_PAYMENT"
-              },
-              {
-                "const": "CLEAR_PAYMENT"
-              },
-              {
-                "const": "CLOSE"
-              },
-              {
-                "const": "REOPEN"
-              },
-              {
-                "const": "VOID"
-              },
-              {
-                "const": "REINSTATE"
-              },
-              {
-                "const": "ERASE"
-              }
-            ]
-          },
-          "caseReference": {
-            "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "targetActorId": {
-            "type": "null"
-          },
-          "createdAt": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-            "format": "date-time",
-            "minLength": 27,
-            "maxLength": 27
-          },
-          "expiresAt": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-            "format": "date-time",
-            "minLength": 27,
-            "maxLength": 27
-          },
-          "offers": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "const": "RETRY"
-                },
-                {
-                  "const": "FORGET"
-                }
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 2
-          },
-          "scope": {
-            "oneOf": [
-              {
-                "const": "CASE"
-              }
-            ]
-          }
-        },
-        "required": [
-          "recoveryId",
-          "operationId",
-          "act",
-          "caseReference",
-          "expectedRevision",
-          "targetActorId",
-          "createdAt",
-          "expiresAt",
-          "offers",
-          "scope"
         ]
       },
       "CaseReview": {
@@ -11914,6 +10368,49 @@
               "code": {
                 "oneOf": [
                   {
+                    "const": "OPERATION_RESOLVED"
+                  }
+                ]
+              },
+              "action": {
+                "oneOf": [
+                  {
+                    "const": "READ_CURRENT"
+                  }
+                ]
+              },
+              "target": {
+                "oneOf": [
+                  {
+                    "const": "operationId"
+                  }
+                ]
+              },
+              "actualRevision": {
+                "type": "null"
+              },
+              "limits": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {},
+                "required": []
+              }
+            },
+            "required": [
+              "code",
+              "action",
+              "target",
+              "actualRevision",
+              "limits"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "oneOf": [
+                  {
                     "const": "QUERY_CURSOR_INVALID"
                   }
                 ]
@@ -11969,27 +10466,12 @@
             "minLength": 36,
             "maxLength": 36
           },
-          "recoveryId": {
-            "oneOf": [
-              {
-                "type": "string",
-                "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                "format": "uuid",
-                "minLength": 36,
-                "maxLength": 36
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "outcome": {
             "$ref": "#/components/schemas/ExecuteResult"
           }
         },
         "required": [
           "operationId",
-          "recoveryId",
           "outcome"
         ]
       },
@@ -12239,103 +10721,6 @@
           "field",
           "before",
           "after"
-        ]
-      },
-      "ForgetReply": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "outcome": {
-            "$ref": "#/components/schemas/ForgetReply.Outcome"
-          }
-        },
-        "required": [
-          "outcome"
-        ]
-      },
-      "ForgetReply.Outcome": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/ForgetReply.Outcome.SUCCEEDED"
-          },
-          {
-            "$ref": "#/components/schemas/ForgetReply.Outcome.REJECTED"
-          },
-          {
-            "$ref": "#/components/schemas/ForgetReply.Outcome.FAILED"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "tag",
-          "mapping": {
-            "SUCCEEDED": "#/components/schemas/ForgetReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/ForgetReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/ForgetReply.Outcome.FAILED"
-          }
-        }
-      },
-      "ForgetReply.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "tag": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "tag",
-          "data"
-        ]
-      },
-      "ForgetReply.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "tag": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "tag",
-          "data"
-        ]
-      },
-      "ForgetReply.Outcome.SUCCEEDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "tag": {
-            "const": "SUCCEEDED"
-          },
-          "data": {
-            "type": "null"
-          }
-        },
-        "required": [
-          "tag",
-          "data"
-        ]
-      },
-      "ForgetRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "recoveryId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          }
-        },
-        "required": [
-          "recoveryId"
         ]
       },
       "GrantsPage": {
@@ -13800,156 +12185,6 @@
           "snapshot"
         ]
       },
-      "RecoveryItem": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/CaseRecoveryItem"
-          },
-          {
-            "$ref": "#/components/schemas/AuthorityRecoveryItem"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "scope",
-          "mapping": {
-            "CASE": "#/components/schemas/CaseRecoveryItem",
-            "AUTHORITY": "#/components/schemas/AuthorityRecoveryItem"
-          }
-        }
-      },
-      "RecoveryPage": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RecoveryItem"
-            },
-            "minItems": 0,
-            "maxItems": 50
-          },
-          "nextCursor": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "items",
-          "nextCursor"
-        ]
-      },
-      "RecoveryPageReply": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "outcome": {
-            "$ref": "#/components/schemas/RecoveryPageReply.Outcome"
-          }
-        },
-        "required": [
-          "outcome"
-        ]
-      },
-      "RecoveryPageReply.Outcome": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/RecoveryPageReply.Outcome.SUCCEEDED"
-          },
-          {
-            "$ref": "#/components/schemas/RecoveryPageReply.Outcome.REJECTED"
-          },
-          {
-            "$ref": "#/components/schemas/RecoveryPageReply.Outcome.FAILED"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "tag",
-          "mapping": {
-            "SUCCEEDED": "#/components/schemas/RecoveryPageReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/RecoveryPageReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/RecoveryPageReply.Outcome.FAILED"
-          }
-        }
-      },
-      "RecoveryPageReply.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "tag": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "tag",
-          "data"
-        ]
-      },
-      "RecoveryPageReply.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "tag": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "tag",
-          "data"
-        ]
-      },
-      "RecoveryPageReply.Outcome.SUCCEEDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "tag": {
-            "const": "SUCCEEDED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/RecoveryPage"
-          }
-        },
-        "required": [
-          "tag",
-          "data"
-        ]
-      },
-      "RecoveryRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "recoveryId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          },
-          "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          }
-        },
-        "required": [
-          "recoveryId",
-          "operationId"
-        ]
-      },
       "Registration": {
         "type": "object",
         "additionalProperties": false,
@@ -14029,6 +12264,123 @@
         "required": [
           "mode",
           "values"
+        ]
+      },
+      "ResolveReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/ResolveResult"
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "ResolveRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
+          }
+        },
+        "required": [
+          "operationId"
+        ]
+      },
+      "ResolveResult": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResolveResult.ACCEPTED"
+          },
+          {
+            "$ref": "#/components/schemas/ResolveResult.NOT_ACCEPTED"
+          },
+          {
+            "$ref": "#/components/schemas/ResolveResult.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/ResolveResult.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "tag",
+          "mapping": {
+            "ACCEPTED": "#/components/schemas/ResolveResult.ACCEPTED",
+            "NOT_ACCEPTED": "#/components/schemas/ResolveResult.NOT_ACCEPTED",
+            "REJECTED": "#/components/schemas/ResolveResult.REJECTED",
+            "FAILED": "#/components/schemas/ResolveResult.FAILED"
+          }
+        }
+      },
+      "ResolveResult.ACCEPTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tag": {
+            "const": "ACCEPTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OperationReceipt"
+          }
+        },
+        "required": [
+          "tag",
+          "data"
+        ]
+      },
+      "ResolveResult.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tag": {
+            "const": "FAILED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Fault"
+          }
+        },
+        "required": [
+          "tag",
+          "data"
+        ]
+      },
+      "ResolveResult.NOT_ACCEPTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tag": {
+            "const": "NOT_ACCEPTED"
+          },
+          "data": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "tag",
+          "data"
+        ]
+      },
+      "ResolveResult.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tag": {
+            "const": "REJECTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Diagnostic"
+          }
+        },
+        "required": [
+          "tag",
+          "data"
         ]
       },
       "RuntimeContext": {

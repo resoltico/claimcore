@@ -32,17 +32,7 @@ let private keyRing () =
         ClaimCore.TestSupport.FixtureDisposal.afterFailure error [ owned.Dispose ]
         reraise ()
 
-let store directory (database: PostgresFixture.Database) =
-    let protection = ClaimCore.Web.RecoveryProtection.create directory
-    protection.Prepare()
-
-    LedgerStore(
-        database.RuntimeSource,
-        database.Fixture.InstallationId,
-        Transactions.timeouts,
-        fun () -> Some protection
-    )
-    :> ILedgerStore
+let store _ (database: PostgresFixture.Database) = database.Fixture.Store
 
 let sessions (directory: DirectoryInfo) =
     DataProtectionProvider.Create(

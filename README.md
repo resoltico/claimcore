@@ -43,8 +43,7 @@ keeps one pure Contract model/codec/registry, Domain/Application decisions and W
 
 Every mutation rechecks locked current state. Replaying a retained accepted request returns
 its original acceptance without another ledger entry. If delivery is uncertain, preserve the operation ID, expected
-revision and exact request bytes and retry that request. Submitted bodies are protected for seven days for explicit actor-bound recovery; reload lists metadata only.
-Known-result acknowledgement reclaims bounded journal capacity. Forget/expiry never prove non-acceptance.
+revision and exact request bytes and retry that request. For a final answer, use `operation resolve`: accepted receipt or definite non-acceptance. The browser retains only an unresolved operation ID, scope and act across reloads; it stores no submitted body.
 
 ## Run and verify
 

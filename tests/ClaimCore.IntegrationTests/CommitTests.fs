@@ -35,32 +35,6 @@ let private replay (database: PostgresFixture.Database) (actor: IActorClaimsCore
         else
             accepted replay |> ignore
 
-        let recoveryId =
-            replay.RecoveryId
-            |> Option.defaultWith (fun () ->
-                failtest "Exact execute replay must retain its matching owned recovery locator")
-
-        let! forgotten = actor.Forget({ RecoveryId = recoveryId }, token)
-
-        Expect.equal
-            forgotten
-            (ReadReply.Succeeded())
-            "Known replay output can acknowledge its journal"
-
-        use! connection = database.OwnerSource.OpenConnectionAsync()
-
-        let! rows =
-            DatabaseSession.rows
-                connection
-                "SELECT count(*) FROM claimcore.recovery_requests WHERE recovery_id=$1"
-                [| box recoveryId |]
-                token
-
-        Expect.equal
-            (DatabaseSession.value<int64> 0 rows.Head)
-            0L
-            "Known exact replay turnover does not retain resolved rows"
-
         let! head = Verification.verify database.OwnerSource None token
 
         Expect.equal
@@ -71,13 +45,7 @@ let private replay (database: PostgresFixture.Database) (actor: IActorClaimsCore
 
 let private proxyCore (database: PostgresFixture.Database) source =
     let store =
-        LedgerStore(
-            source,
-            database.Fixture.InstallationId,
-            Transactions.timeouts,
-            PostgresFixture.recoveryProtection
-        )
-        :> ILedgerStore
+        LedgerStore(source, database.Fixture.InstallationId, Transactions.timeouts) :> ILedgerStore
 
     let actor =
         Core.create
@@ -103,6 +71,57 @@ let private terminate (database: PostgresFixture.Database) backendId =
         Expect.isTrue
             (DatabaseSession.value<bool> 0 rows.Head)
             "Only the fixture's proxied backend is terminated"
+    }
+
+let private lostResolution drop (database: PostgresFixture.Database) =
+    task {
+        let! actor = caseWorker database.Fixture
+
+        let settings =
+            NpgsqlConnectionStringBuilder(database.RuntimeSource.ConnectionString)
+
+        use proxy =
+            new CommitProxy.Proxy(
+                nonNull settings.Host,
+                settings.Port,
+                drop,
+                terminate = terminate database
+            )
+
+        settings.Password <- "synthetic-only"
+        settings.Host <- "127.0.0.1"
+        settings.Port <- proxy.Port
+        settings.SslMode <- SslMode.Disable
+        settings.GssEncryptionMode <- GssEncryptionMode.Disable
+        use source = NpgsqlDataSource.Create(settings.ConnectionString)
+        let throughProxy = proxyCore database source
+        let! unknown = throughProxy.Resolve({ OperationId = id 140 }, token)
+
+        Expect.equal
+            unknown
+            (ResolveReply.Failed CoreFault.StoreUnavailable)
+            "Lost operational commit is a retriable store fault"
+
+        let! repeated = actor.Resolve({ OperationId = id 140 }, token)
+
+        Expect.equal
+            repeated
+            ResolveReply.NotAccepted
+            "Resolve repeats safely whether the first fence landed or aborted"
+
+        let! delayed =
+            actor.Execute(
+                OperationInput.Case(request 140 "LOST-RESOLUTION" 0L (CaseAct.Open registration)),
+                token
+            )
+
+        Expect.equal
+            delayed.Outcome
+            (ExecuteResult.Rejected Refusal.OperationResolved)
+            "Repeated resolution is final"
+
+        let! head = Verification.verify database.OwnerSource None token
+        Expect.equal (VerificationSupport.position head).Sequence 3L "Resolution never appends"
     }
 
 let private repeatedInitialization (database: PostgresFixture.Database) =
@@ -168,7 +187,7 @@ let tests =
                                     settings.Port,
                                     drop,
                                     terminate = terminate database,
-                                    commitNumber = 2
+                                    commitNumber = 1
                                 )
 
                             settings.Password <- "synthetic-only"
@@ -196,6 +215,13 @@ let tests =
 
                             do! replay database actor operation landed
                         }))
+            for drop in
+                [
+                    CommitProxy.Drop.BeforeCommit
+                    CommitProxy.Drop.AfterCommit
+                    CommitProxy.Drop.AfterCommitFatal
+                ] do
+                testCaseAsync ($"resolution repeats after {drop}") (run (lostResolution drop))
             for drop in
                 [
                     CommitProxy.Drop.BeforeCommit

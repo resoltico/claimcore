@@ -177,7 +177,8 @@ let private embeddedCatalogs () =
 
     let delivery = ContractDiscovery.helpTopic "en" "delivery"
     Expect.stringContains delivery "prepared request bytes" "Help describes the frozen body."
-    Expect.stringContains delivery "call --retry" "Prior uncertainty has an explicit retry path."
+    Expect.stringContains delivery "claimcore call" "Exact resending remains available."
+    Expect.stringContains delivery "claimcore operation resolve" "Final resolution is explicit."
 
     Expect.isFalse
         (delivery.Contains "original request bytes")

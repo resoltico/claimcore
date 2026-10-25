@@ -38,11 +38,9 @@ const refuseRetryBeforeDispatch = async (page: Page, requests: (string | null)[]
   const refused = page.waitForResponse(
     (response) => response.url().endsWith("/api/operation.execute") && response.status() === 409,
   );
-  await page.getByRole("button", { name: "Retry the same operation", exact: true }).click();
+  await page.getByRole("button", { name: "Send again", exact: true }).click();
   await (await refused).finished();
-  await expect(
-    page.getByRole("button", { name: "Retry the same operation", exact: true }),
-  ).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeEnabled();
   await expect(page.getByRole("alert")).toContainText("unknown");
   await expect(
     page.getByRole("heading", {
@@ -66,9 +64,7 @@ const expectUnknownOperation = async (page: Page) => {
       exact: true,
     }),
   ).toBeFocused();
-  await expect(
-    page.getByRole("button", { name: "Retry the same operation", exact: true }),
-  ).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Send again", exact: true })).toHaveCount(1);
 };
 
 test("retries one lost accepted reply with the exact reviewed operation and bytes [CC-WEB-001]", async ({
@@ -99,7 +95,7 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   const replayed = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.execute"),
   );
-  await page.getByRole("button", { name: "Retry the same operation", exact: true }).click();
+  await page.getByRole("button", { name: "Send again", exact: true }).click();
   const response = await replayed;
   const replay: unknown = await response.json();
   expect(isResponse("operation.execute", replay)).toBe(true);

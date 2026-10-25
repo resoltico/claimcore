@@ -89,7 +89,8 @@ type internal PausedPageStore
         selected
 
     interface ILedgerStore with
-        member _.Recovery = inner.Recovery
+        member _.ResolveOperation(principal, id, decide, ct) =
+            inner.ResolveOperation(principal, id, decide, ct)
 
         member _.WriteCase(principal, operationId, reference, decide, ct) =
             inner.WriteCase(principal, operationId, reference, decide, ct)

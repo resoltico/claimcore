@@ -12,43 +12,6 @@ open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreContractTests
 
 
-// Synthetic fixture key exists only in this process; purpose bytes are authenticated.
-let private recoveryKey =
-    System.Security.Cryptography.RandomNumberGenerator.GetBytes 32
-
-let recoveryProtection () : RecoveryProtection option =
-    let protect (purpose: string) (bytes: byte array) =
-        use cipher = new System.Security.Cryptography.AesGcm(recoveryKey, 16)
-        let nonce = System.Security.Cryptography.RandomNumberGenerator.GetBytes 12
-        let encrypted = Array.zeroCreate<byte> bytes.Length
-        let tag = Array.zeroCreate<byte> 16
-        cipher.Encrypt(nonce, bytes, encrypted, tag, Text.Encoding.UTF8.GetBytes purpose)
-        Array.concat [ nonce; tag; encrypted ]
-
-    let unprotect (purpose: string) (bytes: byte array) =
-        if bytes.Length < 28 then
-            invalidArg (nameof bytes) "Invalid synthetic envelope."
-
-        use cipher = new System.Security.Cryptography.AesGcm(recoveryKey, 16)
-        let plain = Array.zeroCreate<byte>(bytes.Length - 28)
-
-        cipher.Decrypt(
-            bytes[..11],
-            bytes[28..],
-            bytes[12..27],
-            plain,
-            Text.Encoding.UTF8.GetBytes purpose
-        )
-
-        plain
-
-    Some
-        {
-            Prepare = ignore
-            Protect = protect
-            Unprotect = unprotect
-        }
-
 type private SetupStage =
     | ContainerReadiness
     | OwnerConnection
@@ -125,9 +88,7 @@ let private admittedDatabase
 
     let fixture =
         {
-            Store =
-                LedgerStore(runtime, installationId, Transactions.timeouts, recoveryProtection)
-                :> ILedgerStore
+            Store = LedgerStore(runtime, installationId, Transactions.timeouts) :> ILedgerStore
             InstallationId = installationId
             Owner = owner
             Calendar = calendar

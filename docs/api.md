@@ -15,17 +15,11 @@ reference/revision/act or authority target/act. Clients check those echoes, reso
 revision before trusting responses. ASCII case-reference folding permits case differences while preserving
 accepted spelling. Observation checks its queried operation ID; grants responses check the requested actor ID.
 
-`operation.execute` additionally echoes nullable `recoveryId`; null does not establish journal absence. An exact supplied
-accepted request can still replay when optional recovery protection is unavailable, with no unsafe acknowledgement ID.
-`operation.pending` returns a bounded keyset page of the
-caller's currently authorized metadata and Retry/Forget offers, including technical target, operation identity and fixed
-creation/expiry instants. It never returns a historical body. `operation.retry` takes `recoveryId` and `operationId`;
-the server executes the stored bytes under current authority and returns the normal correlated execute outcome. Check
-receipt scope, act and target/revision against the selected metadata. `operation.forget` takes `recoveryId` and
-idempotently acknowledges any owned row. A forgotten, expired or absent entry does not prove an operation failed. Retry
-is always an explicit user decision. Endpoints classify effects as read, operational write or ledger execution; loss of
-a forget reply is not uncertain business acceptance. Direct API clients explicitly forget only acknowledged known
-terminal results. See [recovery orchestration](architecture.md#cc-app-003) for retention, bounds and erasure.
+`operation.resolve` returns `ACCEPTED` with the caller’s receipt, `NOT_ACCEPTED` with null data,
+`REJECTED` with a diagnostic or `FAILED` with a fault. `NOT_ACCEPTED` is final: a permanent
+actor/operation fence prevents delayed execution. Resolve again after a failed response.
+An author without current read access receives `WITHHELD`; erased snapshots report `ERASED`.
+`operation.observe` remains a READ lookup; absence is not final.
 
 Objects and tags are closed. Strict admission rejects invalid UTF-8/Unicode, duplicate decoded members, excess
 nesting/bytes, unsafe/non-integer number lexemes and invalid technical IDs. Malformed business strings and
@@ -66,9 +60,7 @@ claimcore case open DEMO-0001 --incident-date 2026-09-01 --incident-notification
 claimcore case get DEMO-0001
 claimcore authority list
 claimcore operation observe 10000000-0000-4000-8000-000000000001
-claimcore operation pending --limit 50
-claimcore operation retry 20000000-0000-4000-8000-000000000001 10000000-0000-4000-8000-000000000001
-claimcore operation forget 20000000-0000-4000-8000-000000000001
+claimcore operation resolve 10000000-0000-4000-8000-000000000001
 claimcore describe commands OPEN --format text
 claimcore schema operation.execute request
 ```
@@ -115,16 +107,15 @@ restrictions](operations.md#access-review-and-sessions).
 
 ### CC-CLI-003 — Mutation uncertainty after dispatch
 
-Exits: 0 success, 2 rejection/protocol refusal, 3 definite failure, 4 uncertain mutation, 64 usage, 70 internal, 130
-cancellation. Session stops on 4/130 or an oversized frame. On exit 4 the last stderr line is the exact prepared call
-frame. Retain it and retry with `claimcore call --retry`; this retains earlier uncertainty across process boundaries.
-Preparation compacts the admitted JSON once while preserving exact strings, amount spelling, reference, ID and revision;
-all sends/retries use those frozen bytes. Output failure after dispatch preserves exit 4. If both sinks fail, only the
-exit can remain available. A later NOT_STARTED, REJECTED or FAILED result cannot resolve earlier uncertainty. Only
-correlated ACCEPTED/ALREADY_ACCEPTED confirms exact pending content. Never replace its operation ID or edit it as a
-retry. The service retains submitted requests under the [recovery contract](architecture.md#cc-app-003). Complete
-writes/newline/flush establish OS acceptance, not downstream consumption or persistence. After such complete known
-terminal output, CLI best-effort forgets the owned recovery row. Unresolved uncertainty and output loss prevent that
-acknowledgement; a failed forget never changes the business result. Use the pending/retry/forget endpoints for
-explicitly selected recovery. Remote/private-file operation is qualified on macOS/Linux; offline discovery remains
-available elsewhere.
+Exits: 0 success, 2 rejection/protocol refusal, 3 definite failure, 4 uncertain mutation, 64 usage,
+70 internal, 130 cancellation. Session stops on 4/130 or an oversized frame. On exit 4 the last
+stderr line is the exact prepared call frame. Retain it privately and resend unchanged with
+`claimcore call`, or run `claimcore operation resolve OPERATION_ID` for a final answer.
+Resolve exits 0 for `ACCEPTED`, 2 for `NOT_ACCEPTED` or `REJECTED`, 3 for `FAILED`.
+
+A later execute refusal or failure cannot disprove an earlier commit. Only accepted execution,
+exact replay, or resolve’s `ACCEPTED`/`NOT_ACCEPTED` answers settle it. After `NOT_ACCEPTED`, read
+current state and prepare a new operation with a new ID. Complete writes/newline/flush establish
+OS acceptance, not downstream persistence. Output failure after dispatch preserves exit 4.
+Preparation compacts admitted JSON once while preserving strings, amount spelling, reference,
+operation ID and revision. Resending uses those frozen bytes.

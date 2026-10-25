@@ -1,3 +1,4 @@
+import { UnresolvedNotice } from "./views/operation/UnresolvedNotice";
 import { LoginScreen } from "./views/LoginScreen";
 import { Dashboard } from "./views/Dashboard";
 import { useSession } from "./hooks/useSession";
@@ -26,7 +27,12 @@ const SessionContent = () => {
     );
   }
   if (state.kind === "authenticated") {
-    return <Dashboard key={state.epoch} token={state.token} onLogout={logout} />;
+    return (
+      <>
+        <UnresolvedNotice key={state.epoch} token={state.token} />
+        <Dashboard key={state.epoch} token={state.token} onLogout={logout} />
+      </>
+    );
   }
   return <LoginScreen message={state.message} />;
 };

@@ -39,11 +39,7 @@
             "timeZone": "x",
             "offers": [],
             "capabilities": [],
-            "views": [
-              "CASES",
-              "AUTHORITY",
-              "OPERATIONS"
-            ]
+            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
           }
         }
       },
@@ -503,8 +499,7 @@
               }
             }
           }
-        },
-        "recoveryId": null
+        }
       },
       "valid": true
     },
@@ -552,8 +547,7 @@
               }
             }
           }
-        },
-        "recoveryId": null
+        }
       },
       "valid": true
     },
@@ -565,8 +559,7 @@
         "outcome": {
           "tag": "OUTCOME_UNKNOWN",
           "data": null
-        },
-        "recoveryId": null
+        }
       },
       "valid": true
     },
@@ -584,8 +577,7 @@
             "actualRevision": null,
             "limits": {}
           }
-        },
-        "recoveryId": null
+        }
       },
       "valid": true
     },
@@ -600,8 +592,7 @@
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
           }
-        },
-        "recoveryId": null
+        }
       },
       "valid": true
     },
@@ -613,8 +604,7 @@
         "outcome": {
           "tag": "CANCELLED",
           "data": null
-        },
-        "recoveryId": null
+        }
       },
       "valid": false
     },
@@ -728,8 +718,7 @@
               "act": "PROVISION_OWNER"
             }
           }
-        },
-        "recoveryId": null
+        }
       },
       "valid": true
     },
@@ -754,8 +743,7 @@
               "act": "PROVISION_OWNER"
             }
           }
-        },
-        "recoveryId": null
+        }
       },
       "valid": true
     },
@@ -767,8 +755,7 @@
         "outcome": {
           "tag": "OUTCOME_UNKNOWN",
           "data": null
-        },
-        "recoveryId": null
+        }
       },
       "valid": true
     },
@@ -786,8 +773,7 @@
             "actualRevision": null,
             "limits": {}
           }
-        },
-        "recoveryId": null
+        }
       },
       "valid": true
     },
@@ -802,8 +788,7 @@
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
           }
-        },
-        "recoveryId": null
+        }
       },
       "valid": true
     },
@@ -815,8 +800,7 @@
         "outcome": {
           "tag": "CANCELLED",
           "data": null
-        },
-        "recoveryId": null
+        }
       },
       "valid": false
     },
@@ -1007,11 +991,7 @@
               "MANAGE_AUTHORITY",
               "READ_AUTHORITY"
             ],
-            "views": [
-              "CASES",
-              "AUTHORITY",
-              "OPERATIONS"
-            ]
+            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
           }
         }
       }
@@ -1043,20 +1023,9 @@
                   "act": "CORRECT_CASE",
                   "expectedRevision": 1,
                   "correction": {
-                    "registration": [
-                      "KEEP",
-                      "REPLACE"
-                    ],
-                    "decision": [
-                      "KEEP",
-                      "REPLACE",
-                      "CLEAR"
-                    ],
-                    "payment": [
-                      "KEEP",
-                      "REPLACE",
-                      "CLEAR"
-                    ]
+                    "registration": ["KEEP", "REPLACE"],
+                    "decision": ["KEEP", "REPLACE", "CLEAR"],
+                    "payment": ["KEEP", "REPLACE", "CLEAR"]
                   }
                 },
                 {
@@ -1096,10 +1065,7 @@
                   "expectedRevision": 1
                 }
               ],
-              "history": [
-                "SUMMARY",
-                "FULL"
-              ]
+              "history": ["SUMMARY", "FULL"]
             }
           }
         }
@@ -1132,20 +1098,9 @@
                   "act": "CORRECT_CASE",
                   "expectedRevision": 1,
                   "correction": {
-                    "registration": [
-                      "KEEP",
-                      "REPLACE"
-                    ],
-                    "decision": [
-                      "KEEP",
-                      "REPLACE",
-                      "CLEAR"
-                    ],
-                    "payment": [
-                      "KEEP",
-                      "REPLACE",
-                      "CLEAR"
-                    ]
+                    "registration": ["KEEP", "REPLACE"],
+                    "decision": ["KEEP", "REPLACE", "CLEAR"],
+                    "payment": ["KEEP", "REPLACE", "CLEAR"]
                   }
                 },
                 {
@@ -1185,10 +1140,7 @@
                   "expectedRevision": 1
                 }
               ],
-              "history": [
-                "SUMMARY",
-                "FULL"
-              ]
+              "history": ["SUMMARY", "FULL"]
             }
           }
         }
@@ -1531,8 +1483,7 @@
             }
           }
         },
-        "operationId": "10000000-0000-4000-8000-000000000001",
-        "recoveryId": null
+        "operationId": "10000000-0000-4000-8000-000000000001"
       }
     },
     {
@@ -1616,8 +1567,7 @@
             }
           }
         },
-        "operationId": "10000000-0000-4000-8000-000000000001",
-        "recoveryId": null
+        "operationId": "10000000-0000-4000-8000-000000000001"
       }
     },
     {
@@ -1682,8 +1632,7 @@
             }
           }
         },
-        "operationId": "10000000-0000-4000-8000-000000000001",
-        "recoveryId": null
+        "operationId": "10000000-0000-4000-8000-000000000001"
       }
     },
     {
@@ -2808,8 +2757,7 @@
             }
           }
         },
-        "operationId": "10000000-0000-4000-8000-000000000001",
-        "recoveryId": null
+        "operationId": "10000000-0000-4000-8000-000000000001"
       }
     },
     {
@@ -2830,182 +2778,9 @@
       }
     },
     {
-      "name": "operation.pending-response-0",
-      "endpoint": "operation.pending",
+      "name": "operation.resolve-ACCEPTED",
+      "endpoint": "operation.resolve",
       "value": {
-        "outcome": {
-          "tag": "SUCCEEDED",
-          "data": {
-            "items": [],
-            "nextCursor": null
-          }
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "operation.forget-response-0",
-      "endpoint": "operation.forget",
-      "value": {
-        "outcome": {
-          "tag": "SUCCEEDED",
-          "data": null
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "operation.retry-response-0",
-      "endpoint": "operation.retry",
-      "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001",
-        "recoveryId": "20000000-0000-4000-8000-000000000001",
-        "outcome": {
-          "tag": "OUTCOME_UNKNOWN",
-          "data": null
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "pending-both-subjects",
-      "endpoint": "operation.pending",
-      "value": {
-        "outcome": {
-          "tag": "SUCCEEDED",
-          "data": {
-            "items": [
-              {
-                "recoveryId": "20000000-0000-4000-8000-000000000001",
-                "operationId": "10000000-0000-4000-8000-000000000001",
-                "scope": "CASE",
-                "act": "OPEN",
-                "caseReference": "SYNTHETIC-RECOVERY",
-                "expectedRevision": 0,
-                "targetActorId": null,
-                "createdAt": "2026-10-01T00:00:00.000000Z",
-                "expiresAt": "2026-10-08T00:00:00.000000Z",
-                "offers": [
-                  "RETRY",
-                  "FORGET"
-                ]
-              },
-              {
-                "recoveryId": "20000000-0000-4000-8000-000000000002",
-                "operationId": "10000000-0000-4000-8000-000000000002",
-                "scope": "AUTHORITY",
-                "act": "REGISTER_ACTOR",
-                "caseReference": null,
-                "expectedRevision": null,
-                "targetActorId": "30000000-0000-4000-8000-000000000001",
-                "createdAt": "2026-10-01T00:00:00.000000Z",
-                "expiresAt": "2026-10-08T00:00:00.000000Z",
-                "offers": [
-                  "FORGET"
-                ]
-              },
-              {
-                "recoveryId": "20000000-0000-4000-8000-000000000003",
-                "operationId": "10000000-0000-4000-8000-000000000003",
-                "scope": "AUTHORITY",
-                "act": "SET_ENABLED",
-                "caseReference": null,
-                "expectedRevision": null,
-                "targetActorId": "30000000-0000-4000-8000-000000000001",
-                "createdAt": "2026-10-01T00:00:00.000000Z",
-                "expiresAt": "2026-10-08T00:00:00.000000Z",
-                "offers": [
-                  "FORGET"
-                ]
-              },
-              {
-                "recoveryId": "20000000-0000-4000-8000-000000000004",
-                "operationId": "10000000-0000-4000-8000-000000000004",
-                "scope": "AUTHORITY",
-                "act": "SET_GRANT",
-                "caseReference": "SYNTHETIC-RECOVERY",
-                "expectedRevision": null,
-                "targetActorId": "30000000-0000-4000-8000-000000000001",
-                "createdAt": "2026-10-01T00:00:00.000000Z",
-                "expiresAt": "2026-10-08T00:00:00.000000Z",
-                "offers": [
-                  "FORGET"
-                ]
-              }
-            ],
-            "nextCursor": null
-          }
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "operation.pending-rejected",
-      "endpoint": "operation.pending",
-      "value": {
-        "outcome": {
-          "tag": "REJECTED",
-          "data": {
-            "code": "INPUT_TEXT_REQUIRED",
-            "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
-          }
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "operation.pending-failed",
-      "endpoint": "operation.pending",
-      "value": {
-        "outcome": {
-          "tag": "FAILED",
-          "data": {
-            "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
-          }
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "operation.forget-rejected",
-      "endpoint": "operation.forget",
-      "value": {
-        "outcome": {
-          "tag": "REJECTED",
-          "data": {
-            "code": "INPUT_TEXT_REQUIRED",
-            "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
-          }
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "operation.forget-failed",
-      "endpoint": "operation.forget",
-      "value": {
-        "outcome": {
-          "tag": "FAILED",
-          "data": {
-            "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
-          }
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "retry-accepted",
-      "endpoint": "operation.retry",
-      "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
           "tag": "ACCEPTED",
           "data": {
@@ -3045,92 +2820,49 @@
               }
             }
           }
-        },
-        "recoveryId": "20000000-0000-4000-8000-000000000001"
+        }
       },
       "valid": true
     },
     {
-      "name": "retry-already_accepted",
-      "endpoint": "operation.retry",
+      "name": "operation.resolve-NOT_ACCEPTED",
+      "endpoint": "operation.resolve",
       "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "ALREADY_ACCEPTED",
-          "data": {
-            "operationId": "10000000-0000-4000-8000-000000000001",
-            "position": {
-              "sequence": 1,
-              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
-            },
-            "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
-              "kind": "CASE",
-              "caseReference": "x",
-              "revision": 1,
-              "act": "OPEN",
-              "snapshot": {
-                "disclosure": "DISCLOSED",
-                "view": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
-                  "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
-                    "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "recoveryId": "20000000-0000-4000-8000-000000000001"
+          "tag": "NOT_ACCEPTED",
+          "data": null
+        }
       },
       "valid": true
     },
     {
-      "name": "retry-rejected",
-      "endpoint": "operation.retry",
+      "name": "operation.resolve-REJECTED",
+      "endpoint": "operation.resolve",
       "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
           "tag": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
-            "action": "CORRECT_INPUT",
-            "target": "incidentDate",
+            "code": "OPERATION_RESOLVED",
+            "action": "READ_CURRENT",
+            "target": "operationId",
             "actualRevision": null,
             "limits": {}
           }
-        },
-        "recoveryId": "20000000-0000-4000-8000-000000000001"
+        }
       },
       "valid": true
     },
     {
-      "name": "retry-failed",
-      "endpoint": "operation.retry",
+      "name": "operation.resolve-FAILED",
+      "endpoint": "operation.resolve",
       "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
           "tag": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
           }
-        },
-        "recoveryId": "20000000-0000-4000-8000-000000000001"
+        }
       },
       "valid": true
     }

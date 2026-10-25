@@ -26,10 +26,8 @@ for (const status of [301, 302, 303, 307, 308]) {
     expect(isResponse("operation.execute", payload)).toBe(true);
     const { outcome } = payload as ServiceResponse<"operation.execute">;
     expect(outcome.tag === "ACCEPTED" || outcome.tag === "ALREADY_ACCEPTED").toBe(true);
-    await expect(
-      page.getByRole("button", { name: "Retry the same operation", exact: true }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "Retry the same operation", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Send again", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Recorded change" })).toBeVisible();
     expect((await redirectResponse.evidence()).originals).toBe(1);
     expect((await redirectResponse.evidence()).destinations).toBe(0);

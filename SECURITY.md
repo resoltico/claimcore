@@ -19,7 +19,7 @@ Database administration uses a separate owner credential and executable.
 
 The [private-input policy](docs/operations.md#private-configuration) allows group read and follows
 secret-volume symlinks; it does not inspect ownership or ACLs. Protect the required Web key-ring
-directory as a separate secret; PostgreSQL holds protected session tickets and submitted recovery bodies.
+directory as a separate secret; PostgreSQL holds protected session tickets.
 Sessions retain database deadlines across restarts; two instances sharing a database and key ring are qualified
 under the documented clock conditions, without implying arbitrary multi-host support. See [session operation](docs/operations.md#access-review-and-sessions).
 

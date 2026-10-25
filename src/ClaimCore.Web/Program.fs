@@ -131,16 +131,7 @@ let private openRuntime (configuration: WebConfiguration) (ct: CancellationToken
         let! opened = ServiceRuntime.openConnection configuration.ConnectionString ct
 
         match opened with
-        | Ok value ->
-            try
-                value.ConfigureRecoveryProtection(
-                    RecoveryProtection.create configuration.KeyRingDirectory
-                )
-
-                return value
-            with error ->
-                value.Dispose()
-                return raise error
+        | Ok value -> return value
         | Error "Cancelled" when ct.IsCancellationRequested ->
             return raise (OperationCanceledException(ct))
         | Error reason -> return WebStartupDiagnostics.refuse (WebStartupProblem.RuntimeOpen reason)

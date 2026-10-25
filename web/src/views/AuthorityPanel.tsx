@@ -1,3 +1,4 @@
+import { useUnresolvedOperation } from "./operation/unresolvedOperation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { productMetadata } from "../protocol/productMetadata";
 import { isDisclosureRefused } from "../api/outcomes";
@@ -205,6 +206,7 @@ export const AuthorityPanel = ({ token, onLockChange }: AuthorityPanelProps) => 
     onRecorded,
     onDisclosureRefused: refused,
   });
+  useUnresolvedOperation(model);
   useLayoutEffect(() => {
     actions.current = {
       invalidate: model.invalidateDisclosure,

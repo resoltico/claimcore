@@ -12,7 +12,8 @@ export type LocalNoticeReason =
   | "definitionMismatch"
   | "invalidSession"
   | "missingCsrf"
-  | "outcomeUnknown";
+  | "outcomeUnknown"
+  | "notAccepted";
 export type Notice =
   | { readonly kind: "local"; readonly reason: LocalNoticeReason }
   | { readonly kind: "diagnostic"; readonly diagnostic: DiagnosticNotice }

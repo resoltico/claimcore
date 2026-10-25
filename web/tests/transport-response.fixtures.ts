@@ -64,7 +64,6 @@ const envelope = (endpoint: string, tag: string, original: unknown) => {
   }
   return {
     ...echo,
-    ...(endpoint === "operation.execute" ? { recoveryId: null } : {}),
     outcome: { tag, data },
   };
 };

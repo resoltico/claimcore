@@ -41,7 +41,6 @@ type Invocation =
             Target: AnyEndpoint
             Input: JsonValue
             Bytes: byte array
-            RetryingUncertain: bool
         }
 
 module Frames =
@@ -60,15 +59,6 @@ module Frames =
     let endpoint (invocation: Invocation) = invocation.Target
     let input (invocation: Invocation) = invocation.Input
     let inputBytes (invocation: Invocation) = Array.copy invocation.Bytes
-    let retryingUncertain (invocation: Invocation) = invocation.RetryingUncertain
-
-    let retry invocation =
-        if not (Api.executesLedger (endpoint invocation)) then
-            invalidArg (nameof invocation) "An uncertain retry requires a mutation."
-
-        { invocation with
-            RetryingUncertain = true
-        }
 
     let operationId invocation =
         JsonValue.tryMember "operationId" (input invocation)
@@ -100,8 +90,6 @@ module Frames =
                                         Target = endpoint
                                         Input = input
                                         Bytes = prepared
-                                        RetryingUncertain =
-                                            Api.id endpoint = Api.operationRetry.Id
                                     })
                 | Error problem, _ -> Error problem
                 | _ -> error "$.input" "missing input")
@@ -254,24 +242,16 @@ module Frames =
             | JsonValue.String tag -> Some tag
             | _ -> None)
 
-    /// A later attempt's refusal or failure cannot disprove an earlier commit.
-    let retainUncertainty invocation frame =
-        let accepted =
-            match frame.Result with
-            | FrameResult.Reply reply ->
-                Correlation.matches (endpoint invocation) (input invocation) reply
-                && (outcome reply = Some "ACCEPTED" || outcome reply = Some "ALREADY_ACCEPTED")
-            | _ -> false
-
-        if retryingUncertain invocation && not accepted then
-            { frame with
-                Delivery = DeliveryState.Uncertain
-            }
-        else
-            frame
-
     let private mutation frame =
         frame.Endpoint |> Option.bind Api.tryFind |> Option.exists Api.executesLedger
+
+    let private outcomeExitCode reply =
+        match outcome reply with
+        | Some "REJECTED"
+        | Some "NOT_ACCEPTED" -> 2
+        | Some "FAILED" -> 3
+        | Some "OUTCOME_UNKNOWN" -> 4
+        | _ -> 0
 
     let exitCode frame =
         if frame.Delivery = DeliveryState.Uncertain && mutation frame then
@@ -284,9 +264,4 @@ module Frames =
                 2
             | FrameResult.LocalFailure _
             | FrameResult.HostFailure _ -> 3
-            | FrameResult.Reply reply ->
-                match outcome reply with
-                | Some "REJECTED" -> 2
-                | Some "FAILED" -> 3
-                | Some "OUTCOME_UNKNOWN" -> 4
-                | _ -> 0
+            | FrameResult.Reply reply -> outcomeExitCode reply

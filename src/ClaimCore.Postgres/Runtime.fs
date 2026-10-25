@@ -10,25 +10,16 @@ open Npgsql
 /// The admitted runtime owns storage lifetime without exposing provider types.
 type IRuntime =
     inherit IDisposable
-    abstract ConfigureRecoveryProtection: RecoveryProtection -> unit
     abstract Sessions: ISessionStore
     abstract Installation: Installation
     abstract Ready: CancellationToken -> System.Threading.Tasks.Task<bool>
 
 type private RuntimeResource(source: NpgsqlDataSource, installation: Installation) =
-    let mutable protection: RecoveryProtection option = None
 
     member _.Store =
-        LedgerStore(
-            source,
-            installation.InstallationId,
-            Transactions.timeouts,
-            fun () -> protection
-        )
-        :> ILedgerStore
+        LedgerStore(source, installation.InstallationId, Transactions.timeouts) :> ILedgerStore
 
     interface IRuntime with
-        member _.ConfigureRecoveryProtection value = protection <- Some value
         member _.Sessions = SessionStore(source) :> ISessionStore
         member _.Installation = installation
 

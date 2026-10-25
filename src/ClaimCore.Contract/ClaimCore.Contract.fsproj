@@ -40,14 +40,14 @@
     <Compile Include="Model/AuthorityPages.fs" />
     <Compile Include="Model/Replies.fs" />
     <Compile Include="Model/Operations.fs" />
-    <Compile Include="Model/Recovery.fs" />
+    <Compile Include="Model/Resolution.fs" />
     <Compile Include="RequestCodecs.fs" />
     <Compile Include="ResponseScalars.fs" />
     <Compile Include="DiagnosticCodecs.fs" />
     <Compile Include="ResponseCodecs.fs" />
     <Compile Include="Codecs/ReceiptCodecs.fs" />
     <Compile Include="Codecs/ReplyCodecs.fs" />
-    <Compile Include="RecoveryCodecs.fs" />
+    <Compile Include="ResolutionCodecs.fs" />
     <Compile Include="Presentation/Definitions.fs" />
     <Compile Include="Presentation/DescriptorCodecs.fs" />
     <Compile Include="Api/Endpoints.fs" />

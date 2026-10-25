@@ -33,6 +33,7 @@ let private applicationExamples () =
         )
 
     document.RootElement.GetProperty("cases").EnumerateArray()
+    |> Seq.filter (fun example -> example.GetProperty("valid").GetBoolean())
     |> Seq.map (fun example ->
         let endpoint =
             example.GetProperty("endpoint").GetString()

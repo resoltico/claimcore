@@ -8,7 +8,7 @@ React and react-aria-components render one generated service contract. The brows
 - [protocol/schema.ts](src/protocol/schema.ts) admits bounded strict JSON before the generated executable request/response checks. Protocol modules remain independent from views and presentation.
 - [interaction/operationForm.ts](src/interaction/operationForm.ts) assembles exact member paths, tagged branches and diagnostic focus from typed interaction bindings; [hooks/operation/useOperation.ts](src/hooks/operation/useOperation.ts) retains the exact prepared request, consent and prior uncertainty for CASE and AUTHORITY.
 - [views](src/views/) render context-authorized navigation, cases/history, operation review/observation and authority work. Domain/Application own validation, available commands and outcome meaning.
-- [presentation](src/presentation/) renders authored [source catalogs](../src/ClaimCore.Contract/Localization/) in English, Latvian and Arabic. Language and display formats never rewrite business values. Latvian and Arabic text needs native review. Only language/display preferences persist in browser storage; requests and claimant state do not. Reload recovery lists only server-protected submission metadata and never executes automatically.
+- [presentation](src/presentation/) renders authored [source catalogs](../src/ClaimCore.Contract/Localization/) in English, Latvian and Arabic. Language and display formats never rewrite business values. Latvian and Arabic text needs native review. Language/display preferences persist in browser storage. While unresolved, sessionStorage holds only the operation ID, scope and act; reload offers Check outcome without retained request bytes.
 
 ## Build and checks
 

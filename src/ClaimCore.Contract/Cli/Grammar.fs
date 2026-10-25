@@ -194,12 +194,6 @@ module Grammar =
             )
         ]
 
-    let private retryIdentifiers =
-        function
-        | [ recoveryId; operationId ] ->
-            [ "recoveryId", str recoveryId; "operationId", str operationId ]
-        | _ -> raise Usage
-
     let private read descriptors command operands options =
         let one () =
             match operands with
@@ -209,9 +203,8 @@ module Grammar =
         let members =
             match command with
             | "case.get" -> [ "caseReference", one () ]
+            | "operation.resolve"
             | "operation.observe" -> [ "operationId", one () ]
-            | "operation.forget" -> [ "recoveryId", one () ]
-            | "operation.retry" -> retryIdentifiers operands
             | "authority.grants" -> [ "actorId", one () ] @ page descriptors options
             | "case.history" ->
                 let detail =
@@ -222,7 +215,6 @@ module Grammar =
 
                 [ "caseReference", one (); "detail", str detail ] @ page descriptors options
             | "case.list"
-            | "operation.pending"
             | "authority.list" when List.isEmpty operands -> page descriptors options
             | "context" when List.isEmpty operands -> []
             | _ -> raise Usage
@@ -336,12 +328,4 @@ module Grammar =
             |> List.filter (fun endpoint -> Api.effect endpoint <> EndpointEffect.LedgerExecution)
             |> List.map (Api.id >> fun id -> "schema " + id + " request")
 
-        String.concat
-            "\n"
-            (mutations
-             @ reads
-             @ [
-                 "operation pending [--limit N] [--cursor TOKEN]"
-                 "operation retry RECOVERY_ID OPERATION_ID"
-                 "operation forget RECOVERY_ID"
-             ])
+        String.concat "\n" (mutations @ reads @ [ "operation resolve OPERATION_ID" ])

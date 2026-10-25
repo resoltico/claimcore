@@ -21,6 +21,7 @@ let private resultExits () =
                 "ACCEPTED", 0
                 "ALREADY_ACCEPTED", 0
                 "REJECTED", 2
+                "NOT_ACCEPTED", 2
                 "FAILED", 3
                 "OUTCOME_UNKNOWN", 4
             ]
@@ -43,14 +44,7 @@ let private resultExits () =
 
             Expect.equal
                 reply.ExitCode
-                (if
-                     Api.id endpoint = Api.operationRetry.Id
-                     && tag <> "ACCEPTED"
-                     && tag <> "ALREADY_ACCEPTED"
-                 then
-                     4
-                 else
-                     Map.tryFind tag expected |> Option.defaultValue 0)
+                (Map.tryFind tag expected |> Option.defaultValue 0)
                 ("Outcome selects exit for " + (Api.id endpoint) + " " + tag)
 
             Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
@@ -100,8 +94,8 @@ let private requestBytes () =
 
         Expect.equal
             (send handler invocation).ExitCode
-            (if Api.id endpoint = Api.operationRetry.Id then 4 else 3)
-            "Admission refusal cannot resolve intrinsic recovery uncertainty"
+            3
+            "Admission refusal is definite for this attempt"
 
 let private failurePhases () =
     for endpoint in Api.all do
@@ -116,10 +110,9 @@ let private failurePhases () =
 
             let expected =
                 if
-                    Api.id endpoint = Api.operationRetry.Id
-                    || ((Api.executesLedger endpoint)
-                        && ClaimCore.Contract.Protocol.HostFailures.phase reason
-                           <> Some ExecutionPhase.NotStarted)
+                    ((Api.executesLedger endpoint)
+                     && ClaimCore.Contract.Protocol.HostFailures.phase reason
+                        <> Some ExecutionPhase.NotStarted)
                 then
                     4
                 else

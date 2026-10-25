@@ -218,11 +218,7 @@ type internal Store(instant: DateTimeOffset) =
             Entries = []
         }
 
-    let recovery =
-        System.Collections.Generic.Dictionary<
-            Guid,
-            Guid * Guid option * ExecutionEnvelope * RecoveryItem
-         >()
+    let fences = System.Collections.Generic.HashSet<Guid * Guid>()
 
     let mutable observedAt = instant
     let mutable nextFailure: StoreFailure option = None
@@ -383,208 +379,6 @@ type internal Store(instant: DateTimeOffset) =
             else
                 Ok(LedgerWriteResult.Appended receipt)
 
-    let recoveryMetadata id target (envelope: ExecutionEnvelope) =
-        let subject =
-            match envelope.Input with
-            | OperationInput.Case request ->
-                RecoverySubject.Case
-                    {
-                        CaseReference = request.CaseReference
-                        ExpectedRevision = request.ExpectedRevision
-                        Act = CaseActs.kind request.Act
-                    }
-            | OperationInput.Authority request ->
-                let reference =
-                    match request.Act with
-                    | AuthorityAct.SetGrant {
-                                                Scope = GrantTarget.CaseReference reference
-                                            } -> Some reference
-                    | _ -> None
-
-                RecoverySubject.Authority
-                    {
-                        TargetActorId = Option.get target
-                        CaseReference = reference
-                        Act = RecoveryAuthorityKinds.fromAct request.Act
-                    }
-
-        {
-            RecoveryId = id
-            OperationId = OperationInput.operationId envelope.Input
-            Subject = subject
-            CreatedAt = observedAt
-            ExpiresAt = observedAt.AddDays(float ServiceLimits.RecoveryRetentionDays)
-            Offers = []
-        }
-
-    let recoveryCleanup principal (envelope: ExecutionEnvelope) =
-        let expired =
-            recovery
-            |> Seq.filter (fun pair ->
-                let _, _, _, item = pair.Value in item.ExpiresAt <= observedAt)
-            |> Seq.sortBy (fun pair ->
-                let owner, _, _, item = pair.Value
-
-                let matches =
-                    actor principal
-                    |> Option.exists (fun value ->
-                        value.ActorId = owner
-                        && item.OperationId = OperationInput.operationId envelope.Input)
-
-                (if matches then 0 else 1), item.ExpiresAt, pair.Key)
-            |> Seq.map _.Key
-            |> Seq.truncate ServiceLimits.RecoveryCleanupBatch
-            |> Seq.toList
-
-        for key in expired do
-            recovery.Remove key |> ignore
-
-
-    let replayLocator principal (envelope: ExecutionEnvelope) result =
-        match result, actor principal with
-        | ExecuteResult.AlreadyAccepted _, Some actor ->
-            recovery
-            |> Seq.tryPick (fun pair ->
-                let owner, _, body, item = pair.Value
-
-                if
-                    owner = actor.ActorId
-                    && body.Input = envelope.Input
-                    && item.ExpiresAt > observedAt
-                then
-                    Some pair.Key
-                else
-                    None)
-        | _ -> None
-
-    let recoveryStage principal (envelope: ExecutionEnvelope) admission =
-        match admission with
-        | RecoveryAdmission.Terminal result ->
-            Ok(RecoveryStaged.Terminal(result, replayLocator principal envelope result))
-        | RecoveryAdmission.Ready(actor, caseId, target) ->
-            recoveryCleanup principal envelope
-
-            let existing =
-                recovery
-                |> Seq.tryFind (fun pair ->
-                    let owner, _, _, item = pair.Value in
-                    owner = actor && item.OperationId = OperationInput.operationId envelope.Input)
-
-            match existing with
-            | Some pair ->
-                let _, _, body, _ = pair.Value
-
-                if body.Input = envelope.Input then
-                    Ok(RecoveryStaged.Stored(pair.Key, actor, body))
-                else
-                    Ok(
-                        RecoveryStaged.Terminal(
-                            ExecuteResult.Rejected Refusal.IdempotencyConflict,
-                            None
-                        )
-                    )
-            | None ->
-                let owned =
-                    recovery.Values
-                    |> Seq.filter (fun (owner, _, _, _) -> owner = actor)
-                    |> Seq.length
-
-                if
-                    owned >= ServiceLimits.RecoveryPerActor
-                    || recovery.Count >= ServiceLimits.RecoveryInstallation
-                then
-                    Ok(
-                        RecoveryStaged.Terminal(
-                            ExecuteResult.Failed CoreFault.StoreUnavailable,
-                            None
-                        )
-                    )
-                else
-                    let id = Guid.NewGuid()
-
-                    let item = recoveryMetadata id target envelope
-
-                    recovery.Add(id, (actor, caseId, envelope, item))
-                    Ok(RecoveryStaged.Stored(id, actor, envelope))
-
-    let recoveryStore =
-        { new IRecoveryStore with
-            member _.StageCase(principal, envelope, decide, ct) =
-                locked ct (fun () ->
-                    match envelope.Input with
-                    | OperationInput.Case request ->
-                        recoveryStage
-                            principal
-                            envelope
-                            (decide (
-                                caseRead principal (Some request.OperationId) request.CaseReference
-                            ))
-                    | _ -> Error StoreFailure.Internal)
-
-            member _.StageAuthority(principal, request, envelope, decide, ct) =
-                locked ct (fun () ->
-                    recoveryStage
-                        principal
-                        envelope
-                        (decide (
-                            authorityRead
-                                principal
-                                request.OperationId
-                                request.Target
-                                (AuthorityRequests.targetCase request)
-                        )))
-
-            member _.Pending(actor, after, limit, ct) =
-                locked ct (fun () ->
-                    Ok(
-                        recovery.Values
-                        |> Seq.choose (fun (owner, _, _, item) ->
-                            if
-                                owner = actor
-                                && item.ExpiresAt > observedAt
-                                && (after |> Option.forall (fun id -> item.RecoveryId > id))
-                            then
-                                Some item
-                            else
-                                None)
-                        |> Seq.sortBy _.RecoveryId
-                        |> Seq.truncate limit
-                        |> Seq.toList
-                    ))
-
-            member _.Load(actor, request, ct) =
-                locked ct (fun () ->
-                    let body =
-                        match recovery.TryGetValue request.RecoveryId with
-                        | true, (owner, _, body, item) when
-                            owner = actor
-                            && item.OperationId = request.OperationId
-                            && item.ExpiresAt > observedAt
-                            ->
-                            Some body
-                        | _ -> None
-
-                    Ok body)
-
-            member _.Forget(actor, id, ct) =
-                locked ct (fun () ->
-                    match recovery.TryGetValue id with
-                    | true, (owner, _, _, _) when owner = actor -> recovery.Remove id |> ignore
-                    | _ -> ()
-
-                    Ok())
-
-            member _.Retained(actor, id, ct) =
-                locked ct (fun () ->
-                    let retained =
-                        match recovery.TryGetValue id with
-                        | true, (owner, _, _, item) -> owner = actor && item.ExpiresAt > observedAt
-                        | _ -> false
-
-                    Ok retained)
-        }
-
-
     member _.Instant
         with get () = observedAt
         and set value = observedAt <- value
@@ -619,7 +413,35 @@ type internal Store(instant: DateTimeOffset) =
         member _.Dispose() = gate.Dispose()
 
     interface ILedgerStore with
-        member _.Recovery = recoveryStore
+        member _.ResolveOperation(principal, id, decide, ct) =
+            locked ct (fun () ->
+                let entry = operation id
+
+                let current =
+                    entry
+                    |> Option.bind (fun entry ->
+                        match entry.Scope with
+                        | StoredScope.Case(id, _, _, _) ->
+                            state.Cases
+                            |> Map.values
+                            |> Seq.tryFind (fun record -> record.CaseId = id)
+                        | _ -> None)
+
+                let actor = authority principal (operationCases entry)
+
+                let reply =
+                    decide
+                        {
+                            ObservedAt = observedAt
+                            Actor = actor
+                            Entry = entry
+                            Case = current
+                        }
+
+                if reply = ResolveReply.NotAccepted then
+                    fences.Add(actor.Actor.Value.ActorId, id) |> ignore
+
+                Ok reply)
 
         member _.WriteCase(principal, id, reference, decide, ct) =
             locked ct (fun () ->
@@ -632,6 +454,9 @@ type internal Store(instant: DateTimeOffset) =
 
                     let view: CaseLockedView =
                         {
+                            IsFenced =
+                                actor principal
+                                |> Option.exists (fun actor -> fences.Contains(actor.ActorId, id))
                             Head = head ()
                             PayloadNonce = nonce ()
                             Read = caseRead principal (Some id) reference
@@ -639,21 +464,6 @@ type internal Store(instant: DateTimeOffset) =
 
                     let decision = decide view
                     let result = write decision applyCase failure
-
-                    match decision with
-                    | LedgerDecision.Append(_, CaseProjection.Erase(id, _), _) when
-                        failure.IsNone || unknownLands
-                        ->
-                        let keys =
-                            recovery
-                            |> Seq.filter (fun pair ->
-                                let _, caseId, _, _ = pair.Value in caseId = Some id)
-                            |> Seq.map _.Key
-                            |> Seq.toList
-
-                        for key in keys do
-                            recovery.Remove key |> ignore
-                    | _ -> ()
 
                     result)
 
@@ -668,6 +478,9 @@ type internal Store(instant: DateTimeOffset) =
 
                     let view: AuthorityLockedView =
                         {
+                            IsFenced =
+                                actor principal
+                                |> Option.exists (fun actor -> fences.Contains(actor.ActorId, id))
                             Head = head ()
                             PayloadNonce = nonce ()
                             Read = authorityRead principal id target reference

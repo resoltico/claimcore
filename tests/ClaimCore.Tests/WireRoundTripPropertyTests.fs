@@ -333,7 +333,6 @@ let private listBounds (path: string) =
                 "AuthorityState.Grants", 1
                 "CaseAdvice.Acts", 12
                 "CaseAdvice.History", 2
-                "RecoveryItem.Offers", 2
                 "CorrectionChoices.Registration", 2
                 "ActorContext.Capabilities", 10
                 "ActorContext.Views", 3

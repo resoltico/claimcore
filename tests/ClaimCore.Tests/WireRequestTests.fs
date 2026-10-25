@@ -42,25 +42,29 @@ let private examples () =
     for example in examples.EnumerateArray() do
         let endpoint = Api.tryFind (text "endpoint" example) |> Option.get
         let raw = example.GetProperty("value").GetRawText()
-        admit endpoint raw |> accepted |> ignore
 
-        let value =
-            StrictJson.read Limits.MaximumRequestBytes (Encoding.UTF8.GetBytes raw)
-            |> accepted
+        if example.GetProperty("valid").GetBoolean() then
+            admit endpoint raw |> accepted |> ignore
 
-        let encoded =
-            endpoint.Accept
-                { new IEndpointVisitor<JsonValue> with
-                    member _.Visit endpoint =
-                        endpoint.Input.Read "$" value |> accepted |> endpoint.Input.Write
-                }
+            let value =
+                StrictJson.read Limits.MaximumRequestBytes (Encoding.UTF8.GetBytes raw)
+                |> accepted
 
-        Expect.equal
-            (CanonicalWriter.bytes encoded)
-            (CanonicalWriter.bytes value)
-            "Typed inputs round trip without semantic changes."
+            let encoded =
+                endpoint.Accept
+                    { new IEndpointVisitor<JsonValue> with
+                        member _.Visit endpoint =
+                            endpoint.Input.Read "$" value |> accepted |> endpoint.Input.Write
+                    }
 
-        seen <- Set.add (Api.id endpoint) seen
+            Expect.equal
+                (CanonicalWriter.bytes encoded)
+                (CanonicalWriter.bytes value)
+                "Typed inputs round trip without semantic changes."
+
+            seen <- Set.add (Api.id endpoint) seen
+        else
+            Expect.isError (admit endpoint raw) "Negative authored request must be refused"
 
     Expect.equal
         seen

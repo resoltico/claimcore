@@ -41,6 +41,7 @@
   "diagnostic.LEDGER_SEQUENCE_EXHAUSTED": "The ledger has reached its final sequence.",
   "diagnostic.NOT_VOIDED": "This case is not voided.",
   "diagnostic.OPERATION_CONTENT_CONFLICT": "This operation ID belongs to different command content. Do not reuse it.",
+  "diagnostic.OPERATION_RESOLVED": "This operation was resolved as not accepted. Read the current state and prepare a new operation with a new ID.",
   "diagnostic.QUERY_CURSOR_INVALID": "Use one pagination cursor returned by ClaimCore.",
   "diagnostic.QUERY_PAGE_LIMIT_RANGE": "Use a value from 1 through {maximumPageSize}.",
   "diagnostic.REVISION_EXHAUSTED": "The case has reached its final revision.",
