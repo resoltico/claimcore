@@ -46,6 +46,11 @@ const login = async (context, fingerprint) => {
   require(typeof owner.username === "string" &&
     typeof owner.password === "string", "Credentials missing");
   const page = await context.newPage();
+  // This probe owns session/cookie capture. Do not start the React bootstrap in parallel.
+  // The ordinary Playwright specifications qualify the actual application page.
+  await page.route((url) => url.origin === origin && url.pathname === "/", (route) =>
+    route.fulfill({ status: 200, contentType: "text/html", body: "<title>Session probe</title>" }),
+  );
   await page.goto(`${origin}/auth/login`);
   await page.locator('input[name="username"]').fill(owner.username);
   await page.locator('input[name="password"]').fill(owner.password);
