@@ -1,5 +1,7 @@
 module ClaimCore.Tests.DiagnosticReachabilityTests
 
+open ClaimCore.ContractGeneration
+
 open ClaimCore.Contract
 
 open System
@@ -511,7 +513,7 @@ let private missingCasePrivacy () =
         let kinds = acts |> List.map CaseActs.kind |> Set.ofList
 
         let expected =
-            CommandDefinitions.all
+            CommandPresentation.all
             |> List.map _.Kind
             |> List.filter (fun kind -> kind <> CaseActKind.Business BusinessActKind.Open)
             |> Set.ofList

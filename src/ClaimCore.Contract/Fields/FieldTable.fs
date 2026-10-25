@@ -125,15 +125,20 @@ module FieldTable =
             row BusinessField.Status "status" FieldGroup.Status ScalarKind.Status false
         ]
 
+    let vocabulary =
+        rows |> List.map (fun row -> row.Field, row.Key) |> Vocabulary.define "field"
+
+    let key = Vocabulary.token vocabulary
+
     let forField field =
         rows |> List.find (fun row -> row.Field = field)
 
     let labelId field =
-        "field." + (forField field).Key + ".label"
+        Vocabulary.messageKey vocabulary field "label"
 
     let meaningId field =
-        "field." + (forField field).Key + ".meaning"
+        Vocabulary.messageKey vocabulary field "meaning"
 
 module BusinessField =
     let all = FieldTable.rows |> List.map (fun row -> row.Field, row.Key)
-    let token field = (FieldTable.forField field).Key
+    let token = FieldTable.key

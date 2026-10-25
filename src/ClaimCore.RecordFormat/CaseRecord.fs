@@ -24,7 +24,7 @@ module CaseRecord =
         |> Codec.field
             "disposition"
             (live >> snd)
-            (Codec.enumeration [ Disposition.Active, "ACTIVE"; Disposition.Voided, "VOIDED" ])
+            (Codec.enumeration (Vocabulary.entries Dispositions.vocabulary))
         |> Codec.field "fields" (live >> fst) ResponseCodecs.caseFields
         |> Codec.build
         |> Codec.withFormat (int64 RecordVersions.Snapshot)

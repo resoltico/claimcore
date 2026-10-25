@@ -53,7 +53,7 @@ module internal Validation =
             (field = (InputTarget.Field BusinessField.ClaimantName)
              || field = (InputTarget.Field BusinessField.InsurerName)
              || field = InputTarget.Reason)
-            && Encoding.UTF8.GetByteCount value > TextFormat.MaximumFreeTextBytes
+            && Encoding.UTF8.GetByteCount value > Formats.MaximumFreeTextBytes
         then
             // More than 1,024 UTF-8 bytes needs at least 257 scalars, beyond current input admission.
             failure (Violation.TooLong TextAdmission.MaximumCharacters)
@@ -258,4 +258,4 @@ module internal Validation =
         value.Value.ToString("0.####", CultureInfo.InvariantCulture)
 
     let dateText (value: DateOnly) =
-        value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        value.ToString(Formats.CalendarDateFormat, CultureInfo.InvariantCulture)

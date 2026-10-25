@@ -1,4 +1,6 @@
-module ClaimCore.Tests.DomainDescriptorTests
+module ClaimCore.Tests.ScalarAndCommandDescriptorTests
+
+open ClaimCore.ContractGeneration
 
 open ClaimCore.Contract
 
@@ -29,7 +31,7 @@ let private expectText name maximum =
     | _ -> failtest (BusinessField.token name + " must be a text scalar.")
 
 let private expectFields kind expected =
-    let definition = CommandDefinitions.forKind kind
+    let definition = CommandPresentation.forKind kind
 
     match definition.Inputs with
     | CommandInputShape.Fields inputs ->
@@ -184,7 +186,7 @@ let private correctionGroupDetails (groups: CorrectionGroupDefinition list) =
 let private commandInventoryTest =
     testCase "all twelve case act definitions are the sole command inventory" (fun () ->
         Expect.equal
-            (CommandDefinitions.all |> List.map (fun definition -> definition.Kind))
+            (CommandPresentation.all |> List.map (fun definition -> definition.Kind))
             CaseActKinds.all
             "Exact command order")
 
@@ -219,7 +221,7 @@ let private commandPrefillTest =
 let private correctionGroupMetadataTest =
     testCase "CORRECT_CASE describes required tagged groups and replacement fields" (fun () ->
         let definition =
-            CommandDefinitions.forKind (CaseActKind.Business BusinessActKind.CorrectCase)
+            CommandPresentation.forKind (CaseActKind.Business BusinessActKind.CorrectCase)
 
         match definition.Inputs with
         | CommandInputShape.Fields _ -> failtest "CORRECT_CASE requires grouped inputs."
@@ -230,7 +232,7 @@ let private correctionGroupMetadataTest =
                 "Groups, actions, and replacement scalars are semantic metadata")
 
 let private authoredInputFields () =
-    CommandDefinitions.all
+    CommandPresentation.all
     |> List.collect (fun definition ->
         match definition.Inputs with
         | CommandInputShape.Fields fields -> fields

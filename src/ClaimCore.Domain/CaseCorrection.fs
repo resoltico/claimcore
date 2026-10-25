@@ -70,17 +70,8 @@ module internal CaseCorrections =
             | CorrectionGroup.Payment ->
                 paymentChoice progress ValidatedPaymentCorrection.Clear |> Result.isOk
 
-        let definition =
-            match
-                (CommandDefinitions.forKind (CaseActKind.Business BusinessActKind.CorrectCase))
-                    .Inputs
-            with
-            | CommandInputShape.CorrectionGroups groups ->
-                groups |> List.find (fun value -> value.Name = group)
-            | _ -> invalidOp "Correction requires explicit groups."
-
         if present then
-            definition.Actions
+            CommandDefinitions.correctionActions group
         else
             [ CorrectionGroupAction.Keep ]
 

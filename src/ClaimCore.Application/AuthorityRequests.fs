@@ -43,7 +43,7 @@ module AuthorityRequests =
                                                                          Scope = scope
                                                                          Active = active
                                                                      }) ->
-            match RoleTokens.tryParse role with
+            match RoleTokens.parse role with
             | Some role -> Ok(AdmittedAuthorityAct.SetGrant(role, scope, active))
             | None -> Error "AUTHORITY_ROLE_INVALID"
         | RecordedAuthorityAct.ProvisionOwner -> Error "AUTHORITY_ACT_INVALID"

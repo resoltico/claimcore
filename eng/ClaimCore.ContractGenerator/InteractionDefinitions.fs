@@ -35,7 +35,7 @@ module InteractionDefinitions =
         { input
               [ "operationId" ]
               BindingKind.Text
-              "authority.field.operationId.label"
+              (AuthorityOperationDefinitions.labelId "operationId")
               (flag "operation-id") with
             Source = InputSource.OperationIdentity
             DiagnosticTargets = [ "operationId" ]
@@ -45,7 +45,7 @@ module InteractionDefinitions =
         { input
               [ "expectedRevision" ]
               BindingKind.Integer
-              "authority.field.expectedRevision.label"
+              (AuthorityOperationDefinitions.labelId "expectedRevision")
               (flag "expected-revision") with
             Source = InputSource.ExpectedRevision
             DiagnosticTargets = [ "expectedRevision" ]
@@ -68,7 +68,9 @@ module InteractionDefinitions =
         let label, meaning =
             match field.FieldName with
             | InputTarget.Field field -> FieldTable.labelId field, FieldTable.meaningId field
-            | InputTarget.Reason -> "field.reason.label", "field.reason.meaning"
+            | InputTarget.Reason ->
+                Vocabulary.messageKey InputTargets.vocabulary InputTarget.Reason "label",
+                Vocabulary.messageKey InputTargets.vocabulary InputTarget.Reason "meaning"
             | _ -> invalidOp "An authored scalar needs a semantic presentation."
 
         { input (prefix @ [ token ]) BindingKind.Text label (flag (Grammar.kebab token)) with
@@ -149,19 +151,19 @@ module InteractionDefinitions =
             input
                 [ "target"; "kind" ]
                 (BindingKind.Choice(PrincipalKinds.all))
-                "authority.field.kind.label"
+                (AuthorityOperationDefinitions.labelId "kind")
                 (flag "kind")
             { input
                   [ "target"; "issuer" ]
                   BindingKind.Text
-                  "authority.field.issuer.label"
+                  (AuthorityOperationDefinitions.labelId "issuer")
                   (flag "issuer") with
                 DiagnosticTargets = [ "principal.issuer" ]
             }
             { input
                   [ "target"; "subject" ]
                   BindingKind.Text
-                  "authority.field.subject.label"
+                  (AuthorityOperationDefinitions.labelId "subject")
                   (flag "subject") with
                 DiagnosticTargets = [ "principal.subject" ]
             }
@@ -228,5 +230,5 @@ module InteractionDefinitions =
         }
 
     let all =
-        List.map caseDefinition CommandDefinitions.all
+        List.map caseDefinition CommandPresentation.all
         @ List.map authorityDefinition AuthorityOperationDefinitions.all

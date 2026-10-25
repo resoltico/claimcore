@@ -14,7 +14,8 @@
 -- Domain and is applied to newly asserted values only; it is deliberately absent here so that a
 -- later policy change never invalidates accepted rows.
 --
--- Permanent byte bounds (RecordFormat FormatLimits): free business text is at most 1024 UTF-8
+-- Permanent byte bounds and scalar grammars: src/ClaimCore.Contract/Formats.fs.
+-- Retained byte bounds (RecordFormat FormatLimits): free business text is at most 1024 UTF-8
 -- bytes; a ledger payload (framed request plus snapshot) is at most 32768 bytes.
 
 CREATE SCHEMA claimcore;

@@ -28,9 +28,7 @@ revisions, timestamps, database users, and available commands remain outside it.
 |  12 | Payment date                                | `paymentDate`              | `null` until recorded.                                                                            |
 |  13 | Case status                                 | `status`                   | Core-derived: initialized `OPENED`, changed by `CLOSE`/`REOPEN`; never supplied as command input. |
 
-Labels and explanations originate in Contract source localization JSON. [Domain field
-descriptors](../src/ClaimCore.Domain/FieldDefinitions.fs) and [command
-descriptors](../src/ClaimCore.Domain/CommandDefinitions.fs) reference those identities for CLI discovery and
+Labels and explanations originate in Contract source localization JSON. [Domain scalar rules](../src/ClaimCore.Domain/FieldDefinitions.fs) and [generated command presentation](../eng/ClaimCore.ContractGenerator/CommandPresentation.fs) reference those identities for CLI discovery and
 generated browser presentation. The insurer is the handler’s assertion.
 
 Every rendered case contains all business keys. Unrecorded decision and payment values are `null`, never zero

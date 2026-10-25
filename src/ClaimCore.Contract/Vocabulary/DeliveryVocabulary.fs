@@ -6,11 +6,12 @@ type ExecutionPhase =
     | StartedUnconfirmed
 
 module DeliveryTokens =
-    let phases =
+    let vocabulary =
         [
             ExecutionPhase.NotStarted, "NOT_STARTED"
             ExecutionPhase.StartedUnconfirmed, "STARTED_UNCONFIRMED"
         ]
+        |> Vocabulary.define "phase"
 
-    let phase value =
-        phases |> List.find (fst >> (=) value) |> snd
+    let phases = Vocabulary.entries vocabulary
+    let phase = Vocabulary.token vocabulary

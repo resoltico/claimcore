@@ -8,7 +8,7 @@ module Correlation =
     let private reference (expected: string) (actual: string) =
         let valid (value: string) =
             value.Length >= 1
-            && value.Length <= 80
+            && value.Length <= Formats.ReferenceMaximumCharacters
             && value |> Seq.forall (fun character -> character >= '!' && character <= '~')
 
         valid expected

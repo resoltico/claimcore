@@ -104,7 +104,7 @@ let private matrix () =
 
     for role, token, capabilities in expectedRoles do
         Expect.equal (RoleTokens.token role) token "Independent role token"
-        Expect.equal (RoleTokens.tryParse token) (Some role) "Role parser"
+        Expect.equal (RoleTokens.parse token) (Some role) "Role parser"
 
         for principal in [ human; service ] do
             for scope in [ GrantScope.Installation; GrantScope.Case caseId ] do
@@ -131,7 +131,7 @@ let private matrix () =
                             "Independent role, principal and scope expectation"
 
     for token in [ "CASE_EDITOR"; "case_handler"; "" ] do
-        Expect.isNone (RoleTokens.tryParse token) "Unsupported role names refuse"
+        Expect.isNone (RoleTokens.parse token) "Unsupported role names refuse"
 
 let private invalidPrincipals () =
     for value in [ String([| char 0xD800 |]); "a\u0000b"; "a\ufdd0b"; "a\uffffb" ] do

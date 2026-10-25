@@ -153,7 +153,7 @@ module internal Cursors =
             | JsonValue.String value -> uuid value |> Option.map Some
             | _ -> None
 
-        match RoleTokens.tryParse role, scope with
+        match RoleTokens.parse role, scope with
         | Some role, Some caseId -> Some { Role = role; CaseId = caseId }
         | _ -> None
 

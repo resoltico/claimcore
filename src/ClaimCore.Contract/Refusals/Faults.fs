@@ -32,8 +32,13 @@ module CoreFaults =
     let private policy reason =
         policies |> List.find (fun (value, _, _) -> value = reason)
 
-    let all = policies |> List.map (fun (reason, id, _) -> reason, id)
-    let token reason = let _, id, _ = policy reason in id
+    let vocabulary =
+        policies
+        |> List.map (fun (reason, id, _) -> reason, id)
+        |> Vocabulary.define "fault"
+
+    let all = Vocabulary.entries vocabulary
+    let token = Vocabulary.token vocabulary
 
     let internal action reason =
         let _, _, action = policy reason in action

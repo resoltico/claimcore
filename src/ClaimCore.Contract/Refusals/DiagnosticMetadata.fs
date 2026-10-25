@@ -29,15 +29,13 @@ module DiagnosticArguments =
             DiagnosticArgument.MaximumPageSize, "maximumPageSize", 1
         ]
 
-    let token argument =
+    let vocabulary =
         definitions
-        |> List.find (fun (candidate, _, _) -> candidate = argument)
-        |> fun (_, name, _) -> name
+        |> List.map (fun (value, token, _) -> value, token)
+        |> Vocabulary.define "argument"
 
-    let tryParse name =
-        definitions
-        |> List.tryFind (fun (_, candidate, _) -> candidate = name)
-        |> Option.map (fun (argument, _, _) -> argument)
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
 
     let definition argument =
         let _, name, minimum =

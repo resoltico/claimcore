@@ -71,3 +71,19 @@ type AdvisoryReview =
         Changes: FieldDiff list
         Context: RuntimeContext
     }
+
+module HistoryDetails =
+    let vocabulary =
+        Vocabulary.define
+            "historyDetail"
+            [ HistoryDetail.Summary, "SUMMARY"; HistoryDetail.Full, "FULL" ]
+
+module Views =
+    let vocabulary =
+        Vocabulary.define
+            "view"
+            [
+                View.Cases, "CASES"
+                View.Authority, "AUTHORITY"
+                View.Operations, "OPERATIONS"
+            ]

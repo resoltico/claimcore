@@ -9,6 +9,7 @@
     <Compile Include="PropertyHarness.fs" />
     <Compile Include="PropertyHarnessTests.fs" />
     <Compile Include="Fixtures.fs" />
+    <Compile Include="VocabularyTests.fs" />
     <Compile Include="WireCodecTests.fs" />
     <Compile Include="WireRequestTests.fs" />
     <Compile Include="OpenApiConformanceTests.fs" />
@@ -27,7 +28,7 @@
     <Compile Include="CorrectionMatrixTests.fs" />
     <Compile Include="DomainValidationTests.fs" />
     <Compile Include="AvailabilityTests.fs" />
-    <Compile Include="DomainDescriptorTests.fs" />
+    <Compile Include="ScalarAndCommandDescriptorTests.fs" />
     <Compile Include="FieldTableTests.fs" />
     <Compile Include="StewardshipTests.fs" />
     <Compile Include="CanonicalJsonTests.fs" />

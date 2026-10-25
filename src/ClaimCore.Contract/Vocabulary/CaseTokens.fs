@@ -1,53 +1,64 @@
 namespace ClaimCore.Contract
 
-/// Stable semantic tokens shared by commands, storage, discovery and renderers.
-module CaseActKinds =
-    let business =
-        [
-            (CaseActKind.Business BusinessActKind.Open)
-            (CaseActKind.Business BusinessActKind.AmendRegistration)
-            (CaseActKind.Business BusinessActKind.CorrectCase)
-            (CaseActKind.Business BusinessActKind.Decide)
-            (CaseActKind.Business BusinessActKind.WithdrawDecision)
-            (CaseActKind.Business BusinessActKind.RecordPayment)
-            (CaseActKind.Business BusinessActKind.ClearPayment)
-            (CaseActKind.Business BusinessActKind.Close)
-            (CaseActKind.Business BusinessActKind.Reopen)
-        ]
+module BusinessActKinds =
+    let vocabulary =
+        Vocabulary.define
+            "command"
+            [
+                BusinessActKind.Open, "OPEN"
+                BusinessActKind.AmendRegistration, "AMEND_REGISTRATION"
+                BusinessActKind.CorrectCase, "CORRECT_CASE"
+                BusinessActKind.Decide, "DECIDE"
+                BusinessActKind.WithdrawDecision, "WITHDRAW_DECISION"
+                BusinessActKind.RecordPayment, "RECORD_PAYMENT"
+                BusinessActKind.ClearPayment, "CLEAR_PAYMENT"
+                BusinessActKind.Close, "CLOSE"
+                BusinessActKind.Reopen, "REOPEN"
+            ]
 
-    let all =
-        business
-        @ [
-            (CaseActKind.Stewardship StewardshipActKind.Void)
-            (CaseActKind.Stewardship StewardshipActKind.Reinstate)
-            (CaseActKind.Stewardship StewardshipActKind.Erase)
-        ]
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
 
-    let token kind =
-        match kind with
-        | (CaseActKind.Business BusinessActKind.Open) -> "OPEN"
-        | (CaseActKind.Business BusinessActKind.AmendRegistration) -> "AMEND_REGISTRATION"
-        | (CaseActKind.Business BusinessActKind.CorrectCase) -> "CORRECT_CASE"
-        | (CaseActKind.Business BusinessActKind.Decide) -> "DECIDE"
-        | (CaseActKind.Business BusinessActKind.WithdrawDecision) -> "WITHDRAW_DECISION"
-        | (CaseActKind.Business BusinessActKind.RecordPayment) -> "RECORD_PAYMENT"
-        | (CaseActKind.Business BusinessActKind.ClearPayment) -> "CLEAR_PAYMENT"
-        | (CaseActKind.Business BusinessActKind.Close) -> "CLOSE"
-        | (CaseActKind.Business BusinessActKind.Reopen) -> "REOPEN"
-        | (CaseActKind.Stewardship StewardshipActKind.Void) -> "VOID"
-        | (CaseActKind.Stewardship StewardshipActKind.Reinstate) -> "REINSTATE"
-        | (CaseActKind.Stewardship StewardshipActKind.Erase) -> "ERASE"
+module StewardshipActKinds =
+    let vocabulary =
+        Vocabulary.define
+            "command"
+            [
+                StewardshipActKind.Void, "VOID"
+                StewardshipActKind.Reinstate, "REINSTATE"
+                StewardshipActKind.Erase, "ERASE"
+            ]
 
-    let tryParse value =
-        all |> List.tryFind (token >> (=) value)
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
 
 module CaseStatuses =
-    let all = [ CaseStatus.Opened; CaseStatus.Closed ]
+    let vocabulary =
+        Vocabulary.define "token" [ CaseStatus.Opened, "OPENED"; CaseStatus.Closed, "CLOSED" ]
 
-    let token status =
-        match status with
-        | CaseStatus.Opened -> "OPENED"
-        | CaseStatus.Closed -> "CLOSED"
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
 
-    let tryParse value =
-        all |> List.tryFind (fun status -> token status = value)
+module CaseActKinds =
+    let vocabulary =
+        Vocabulary.define
+            "command"
+            ((Vocabulary.entries BusinessActKinds.vocabulary
+              |> List.map (fun (value, token) -> CaseActKind.Business value, token))
+             @ (Vocabulary.entries StewardshipActKinds.vocabulary
+                |> List.map (fun (value, token) -> CaseActKind.Stewardship value, token)))
+
+    let business = BusinessActKinds.all |> List.map CaseActKind.Business
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
+
+module Dispositions =
+    let vocabulary =
+        Vocabulary.define "token" [ Disposition.Active, "ACTIVE"; Disposition.Voided, "VOIDED" ]
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary

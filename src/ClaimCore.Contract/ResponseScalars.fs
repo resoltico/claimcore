@@ -16,30 +16,36 @@ module ResponseScalars =
     let nonempty = boundedText 1 Int32.MaxValue
 
     let private grammar minimum maximum pattern format =
-        let anchored = "^(?:" + pattern + ")(?![\\s\\S])"
+        let anchored = Formats.anchored pattern
         let expression = Regex(anchored, RegexOptions.CultureInvariant)
         let schema = Schema.String(Some anchored, format, Some minimum, maximum)
         nonempty |> constrained schema expression.IsMatch
 
-    let reference = grammar 1 (Some 80) "[!-~]{1,80}" None
-    let country = grammar 2 (Some 2) "[A-Z]{2}" None
-    let currency = grammar 3 (Some 3) "[A-Z]{3}" None
-    let amount = grammar 1 (Some 23) "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?" None
+    let reference =
+        grammar 1 (Some Formats.ReferenceMaximumCharacters) Formats.reference None
+
+    let country =
+        grammar Formats.CountryCharacters (Some Formats.CountryCharacters) Formats.country None
+
+    let currency =
+        grammar Formats.CurrencyCharacters (Some Formats.CurrencyCharacters) Formats.currency None
+
+    let amount = grammar 1 (Some Formats.amountMaximumCharacters) Formats.amount None
     let digest = grammar 64 (Some 64) "[0-9a-f]{64}" None
 
     let date =
-        grammar 10 (Some 10) "(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}" (Some "date")
+        grammar Formats.dateCharacters (Some Formats.dateCharacters) Formats.date (Some "date")
         |> constrained
             (Schema.String(
-                Some "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                Some("^" + Formats.date + "(?![\\s\\S])"),
                 Some "date",
-                Some 10,
-                Some 10
+                Some Formats.dateCharacters,
+                Some Formats.dateCharacters
             ))
             (fun value ->
                 DateOnly.TryParseExact(
                     value,
-                    "yyyy-MM-dd",
+                    Formats.CalendarDateFormat,
                     CultureInfo.InvariantCulture,
                     DateTimeStyles.None
                 )

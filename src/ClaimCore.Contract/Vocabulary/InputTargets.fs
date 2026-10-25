@@ -13,7 +13,7 @@ type InputTarget =
     | Cursor
 
 module InputTargets =
-    let all =
+    let private definitions =
         (FieldTable.rows
          |> List.filter (fun row -> row.Group <> FieldGroup.Status)
          |> List.map (fun row -> InputTarget.Field row.Field, row.Key))
@@ -28,7 +28,6 @@ module InputTargets =
             InputTarget.Cursor, "cursor"
         ]
 
-    let token =
-        function
-        | InputTarget.Field field -> BusinessField.token field
-        | target -> all |> List.find (fst >> (=) target) |> snd
+    let vocabulary = Vocabulary.define "field" definitions
+    let all = Vocabulary.entries vocabulary
+    let token = Vocabulary.token vocabulary

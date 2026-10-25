@@ -11,22 +11,13 @@ module DescriptorCodecs =
     let private count = integer 0L (int64 Int32.MaxValue) |> map int int64
     let private many codec = list Int32.MaxValue codec
 
-    let private fieldName =
-        BusinessField.all
-        |> List.map (fun (value, token) -> value, token)
-        |> enumeration
+    let private fieldName = vocabulary FieldTable.vocabulary
 
-    let private inputTarget = enumeration InputTargets.all
+    let private inputTarget = vocabulary InputTargets.vocabulary
 
-    let private caseStatus =
-        CaseStatuses.all
-        |> List.map (fun value -> value, CaseStatuses.token value)
-        |> enumeration
+    let private caseStatus = vocabulary CaseStatuses.vocabulary
 
-    let private caseKind =
-        CaseActKinds.all
-        |> List.map (fun value -> value, CaseActKinds.token value)
-        |> enumeration
+    let private caseKind = vocabulary CaseActKinds.vocabulary
 
     let private authorityKind =
         AuthorityKinds.all
@@ -34,21 +25,20 @@ module DescriptorCodecs =
         |> List.map (fun value -> value, AuthorityKinds.token value)
         |> enumeration
 
-    let private role =
-        RoleTokens.all
-        |> List.map (fun value -> value, RoleTokens.token value)
-        |> enumeration
+    let private role = vocabulary RoleTokens.vocabulary
 
-    let private capability =
-        Capabilities.all
-        |> List.map (fun value -> value, Capabilities.token value)
-        |> enumeration
+    let private capability = vocabulary Capabilities.vocabulary
 
     let private date =
         ResponseScalars.date
         |> map
-            (fun value -> DateOnly.ParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture))
-            (fun value -> value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
+            (fun value ->
+                DateOnly.ParseExact(
+                    value,
+                    Formats.CalendarDateFormat,
+                    CultureInfo.InvariantCulture
+                ))
+            (fun value -> value.ToString(Formats.CalendarDateFormat, CultureInfo.InvariantCulture))
 
     let private textFormat =
         (record (fun v0 v1 ->
@@ -296,13 +286,15 @@ module DescriptorCodecs =
         |> named "Presentation.CommandDefinition"
 
     let private primitive =
-        enumeration
+        Vocabulary.define
+            "primitive"
             [
                 AuthorityInputPrimitive.Principal, "PRINCIPAL"
                 AuthorityInputPrimitive.Role, "ROLE"
                 AuthorityInputPrimitive.Scope, "SCOPE"
                 AuthorityInputPrimitive.Boolean, "BOOLEAN"
             ]
+        |> vocabulary
 
     let private authorityInput =
         (record (fun v0 v1 v2 ->
@@ -538,12 +530,14 @@ module DescriptorCodecs =
             ]
 
     let private inputSource =
-        enumeration
+        Vocabulary.define
+            "inputSource"
             [
                 InputSource.Authored, "AUTHORED"
                 InputSource.OperationIdentity, "OPERATION_IDENTITY"
                 InputSource.ExpectedRevision, "EXPECTED_REVISION"
             ]
+        |> vocabulary
 
     let private binding =
         record

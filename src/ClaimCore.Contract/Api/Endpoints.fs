@@ -10,11 +10,16 @@ type EndpointEffect =
     | LedgerExecution
 
 module EndpointEffects =
-    let token =
-        function
-        | EndpointEffect.Read -> "READ_ONLY"
-        | EndpointEffect.OperationalWrite -> "OPERATIONAL_WRITE"
-        | EndpointEffect.LedgerExecution -> "LEDGER_EXECUTION"
+    let vocabulary =
+        Vocabulary.define
+            "effect"
+            [
+                EndpointEffect.Read, "READ_ONLY"
+                EndpointEffect.OperationalWrite, "OPERATIONAL_WRITE"
+                EndpointEffect.LedgerExecution, "LEDGER_EXECUTION"
+            ]
+
+    let token = Vocabulary.token vocabulary
 
 [<NoEquality; NoComparison>]
 type Endpoint<'In, 'Out> =

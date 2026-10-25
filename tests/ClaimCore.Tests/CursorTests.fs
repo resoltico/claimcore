@@ -74,7 +74,7 @@ let private accepted () =
 
                     let expected =
                         {
-                            Role = RoleTokens.tryParse (text "role" position) |> Option.get
+                            Role = RoleTokens.parse (text "role" position) |> Option.get
                             CaseId =
                                 if caseId.ValueKind = JsonValueKind.Null then
                                     None

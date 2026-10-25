@@ -5,7 +5,7 @@ open ClaimCore.Contract
 /// Permanent retained payload admission, independent of current business-text policy.
 module FormatLimits =
     [<Literal>]
-    let MaximumFreeTextBytes = ClaimCore.Contract.TextFormat.MaximumFreeTextBytes
+    let MaximumFreeTextBytes = Formats.MaximumFreeTextBytes
 
     [<Literal>]
-    let MaximumPayloadBytes = 32768
+    let MaximumPayloadBytes = Formats.MaximumPayloadBytes

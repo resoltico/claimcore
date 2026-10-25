@@ -51,6 +51,11 @@ module internal TextReply =
     let private label language key =
         MessageCatalogs.render language key Map.empty
 
+    let private authorityFieldLabel name =
+        (ContractDiscovery.definitions ()).AuthorityFields
+        |> List.find (fun field -> field.Name = name)
+        |> _.LabelId
+
     let private line language key value = label language key + ": " + value
 
     let private fieldLines language value =
@@ -58,7 +63,7 @@ module internal TextReply =
         |> List.map (fun row ->
             line
                 language
-                ("field." + row.Key + ".label")
+                (FieldTable.labelId row.Field)
                 (memberValue row.Key value |> displayed language))
 
     let private stateFields state = memberValue "fields" state
@@ -71,7 +76,7 @@ module internal TextReply =
                 if get "disposition" state = "VOIDED" then
                     "VOIDED"
                 else
-                    get "status" (stateFields state)
+                    get (FieldTable.key BusinessField.Status) (stateFields state)
             else
                 get "tag" state
 
@@ -84,7 +89,10 @@ module internal TextReply =
         let advice = memberValue "advice" value |> memberValue "acts" |> items
 
         [
-            line language "field.caseReference.label" (get "caseReference" value)
+            line
+                language
+                (FieldTable.labelId BusinessField.CaseReference)
+                (get (FieldTable.key BusinessField.CaseReference) value)
             line language "ui.revisionLabel" (get "revision" value)
             line language "cli.text.state" status
         ]
@@ -108,7 +116,7 @@ module internal TextReply =
 
         let target =
             if get "kind" scope = "CASE" then
-                get "caseReference" scope
+                get (FieldTable.key BusinessField.CaseReference) scope
             else
                 get "targetActorId" scope
 
@@ -123,7 +131,7 @@ module internal TextReply =
                 " "
                 ([ tag; verb; target ]
                  @ revision
-                 @ [ label language "authority.field.operationId.label"; get "operationId" value ])
+                 @ [ label language (authorityFieldLabel "operationId"); get "operationId" value ])
         ]
 
     let private nextLines language value =
@@ -184,7 +192,11 @@ module internal TextReply =
         | None ->
             let scope = memberValue "scope" value
 
-            [ get "role" value; get "kind" scope; get "caseReference" scope ]
+            [
+                get "role" value
+                get "kind" scope
+                get (FieldTable.key BusinessField.CaseReference) scope
+            ]
             |> String.concat "  "
 
     let private pageLines language value =
@@ -192,17 +204,26 @@ module internal TextReply =
             memberValue "items" value
             |> items
             |> List.map (fun item ->
-                if JsonValue.tryMember "caseReference" item |> Option.isSome then
+                if
+                    JsonValue.tryMember (FieldTable.key BusinessField.CaseReference) item
+                    |> Option.isSome
+                then
                     let status =
                         if get "tag" item = "LIVE" then
                             if get "disposition" item = "VOIDED" then
                                 "VOIDED"
                             else
-                                get "status" item
+                                get (FieldTable.key BusinessField.Status) item
                         else
                             get "tag" item
 
-                    String.concat "  " [ get "caseReference" item; get "revision" item; status ]
+                    String.concat
+                        "  "
+                        [
+                            get (FieldTable.key BusinessField.CaseReference) item
+                            get "revision" item
+                            status
+                        ]
                 else
                     authorityRow item)
 
@@ -238,7 +259,7 @@ module internal TextReply =
                 [ get "kind" principal; get "issuer" principal; get "subject" principal ]
                 |> String.concat " "
             else
-                memberValue "after" review |> get "caseReference"
+                memberValue "after" review |> get (FieldTable.key BusinessField.CaseReference)
 
         verb + " " + target
 
@@ -250,7 +271,7 @@ module internal TextReply =
             |> String.concat "; "
 
         [
-            "authority.field.enabled.label", get "enabled" before, get "enabled" after
+            (authorityFieldLabel "enabled"), get "enabled" before, get "enabled" after
             "cli.text.grants", grants before, grants after
         ]
         |> List.choose (fun (key, previous, next) ->
@@ -288,7 +309,7 @@ module internal TextReply =
                         Some(
                             line
                                 language
-                                ("field." + row.Key + ".label")
+                                (FieldTable.labelId row.Field)
                                 (displayed language previous + " → " + displayed language next)
                         ))
 
@@ -296,13 +317,15 @@ module internal TextReply =
 
     let private diagnosticTargetIdentity =
         function
-        | InputTarget.Field field -> "field." + BusinessField.token field + ".label"
-        | InputTarget.OperationId -> "authority.field.operationId.label"
-        | InputTarget.ExpectedRevision -> "authority.field.expectedRevision.label"
-        | InputTarget.PaymentGroup -> "group.payment.label"
-        | InputTarget.Reason -> "field.reason.label"
-        | InputTarget.PrincipalIssuer -> "authority.field.issuer.label"
-        | InputTarget.PrincipalSubject -> "authority.field.subject.label"
+        | InputTarget.Field field -> FieldTable.labelId field
+        | InputTarget.OperationId -> (authorityFieldLabel "operationId")
+        | InputTarget.ExpectedRevision -> (authorityFieldLabel "expectedRevision")
+        | InputTarget.PaymentGroup ->
+            Vocabulary.messageKey CorrectionGroup.vocabulary CorrectionGroup.Payment "label"
+        | InputTarget.Reason ->
+            Vocabulary.messageKey InputTargets.vocabulary InputTarget.Reason "label"
+        | InputTarget.PrincipalIssuer -> (authorityFieldLabel "issuer")
+        | InputTarget.PrincipalSubject -> (authorityFieldLabel "subject")
         | InputTarget.Limit -> "cli.target.limit"
         | InputTarget.Cursor -> "cli.target.cursor"
 

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.FieldTableTests
 
+open ClaimCore.ContractGeneration
+
 open System
 open System.IO
 open System.Text.Json
@@ -10,15 +12,12 @@ open ClaimCore.Domain
 open ClaimCore.TestSupport
 
 let private keys group =
-    FieldTable.rows
-    |> List.filter (fun row -> row.Group = group)
-    |> List.map _.Key
-    |> Set.ofList
+    FieldTable.rows |> List.filter (fun row -> row.Group = group) |> List.map _.Key
 
 let rec private members definitions =
     function
     | Schema.Ref name -> members definitions (Map.find name definitions)
-    | Schema.Object(properties, _) -> properties |> List.map fst |> Set.ofList
+    | Schema.Object(properties, _) -> properties |> List.map fst
     | _ -> failtest "Expected an object codec."
 
 let private expectGroup group (codec: Codec<'T>) =
@@ -35,9 +34,13 @@ let private codecs () =
     let actual =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema
 
-    let expected = FieldTable.rows |> List.map _.Key |> Set.ofList
+    let expected = FieldTable.rows |> List.map _.Key
     Expect.equal actual expected "Snapshot business fields follow the field table"
-    let renamed = actual |> Set.remove "incidentDate" |> Set.add "incidentDay"
+
+    let renamed =
+        actual
+        |> List.map (fun key -> if key = "incidentDate" then "incidentDay" else key)
+
     Expect.notEqual renamed expected "The comparison detects a renamed codec member"
 
 let private domain () =
@@ -70,7 +73,7 @@ let private commandGroups () =
         |> List.map (fun row -> InputTarget.Field row.Field)
 
     let actual kind =
-        match (CommandDefinitions.forKind (CaseActKind.Business kind)).Inputs with
+        match (CommandPresentation.forKind (CaseActKind.Business kind)).Inputs with
         | CommandInputShape.Fields fields -> fields |> List.map _.FieldName
         | _ -> failtest "Expected flat command fields"
 
@@ -87,7 +90,7 @@ let private commandGroups () =
             "Command fields follow their source group's order"
 
     let correction =
-        CommandDefinitions.forKind (CaseActKind.Business BusinessActKind.CorrectCase)
+        CommandPresentation.forKind (CaseActKind.Business BusinessActKind.CorrectCase)
 
     match correction.Inputs with
     | CommandInputShape.CorrectionGroups groups ->

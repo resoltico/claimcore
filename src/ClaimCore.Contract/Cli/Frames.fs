@@ -103,12 +103,15 @@ module Frames =
         |> WireWriter.bytes
 
     let private delivery =
-        Codec.enumeration
+        Vocabulary.define
+            "delivery"
             [
                 DeliveryState.NotSent, "NOT_SENT"
                 DeliveryState.Delivered, "DELIVERED"
                 DeliveryState.Uncertain, "UNCERTAIN"
             ]
+        |> Vocabulary.entries
+        |> Codec.enumeration
 
     let private localCodes =
         [

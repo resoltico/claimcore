@@ -28,10 +28,15 @@ module ContractDiscovery =
 
     let descriptors () = resource "descriptors.json"
 
+    let private admittedDefinitions =
+        lazy
+            (Codec.decode Limits.MaximumResponseBytes DescriptorCodecs.codec (descriptors ())
+             |> Result.defaultWith (fun _ -> invalidOp "Invalid embedded descriptors."))
+
+    let definitions () = admittedDefinitions.Value
+
     let descriptorValue () =
-        Codec.decode Limits.MaximumResponseBytes DescriptorCodecs.codec (descriptors ())
-        |> Result.defaultWith (fun _ -> invalidOp "Invalid embedded descriptors.")
-        |> DescriptorCodecs.codec.Write
+        definitions () |> DescriptorCodecs.codec.Write
 
     let helpTopic language topic =
         if topic = "verbs" then

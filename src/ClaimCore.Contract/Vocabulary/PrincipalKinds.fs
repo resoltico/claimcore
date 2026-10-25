@@ -8,4 +8,5 @@ module PrincipalKinds =
     [<Literal>]
     let Service = "SERVICE"
 
-    let all = [ Human; Service ]
+    let vocabulary = Vocabulary.define "token" [ Human, Human; Service, Service ]
+    let all = Vocabulary.tokens vocabulary

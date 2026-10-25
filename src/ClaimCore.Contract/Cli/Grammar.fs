@@ -202,7 +202,7 @@ module Grammar =
 
         let members =
             match command with
-            | "case.get" -> [ "caseReference", one () ]
+            | "case.get" -> [ (FieldTable.key BusinessField.CaseReference), one () ]
             | "operation.resolve"
             | "operation.observe" -> [ "operationId", one () ]
             | "authority.grants" -> [ "actorId", one () ] @ page descriptors options
@@ -213,7 +213,8 @@ module Grammar =
                     else
                         "SUMMARY"
 
-                [ "caseReference", one (); "detail", str detail ] @ page descriptors options
+                [ (FieldTable.key BusinessField.CaseReference), one (); "detail", str detail ]
+                @ page descriptors options
             | "case.list"
             | "authority.list" when List.isEmpty operands -> page descriptors options
             | "context" when List.isEmpty operands -> []

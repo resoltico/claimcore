@@ -44,7 +44,7 @@ module internal Projections =
 
     let private date index row =
         (DatabaseSession.calendarDate index row)
-            .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            .ToString(Formats.CalendarDateFormat, CultureInfo.InvariantCulture)
 
     let private optionalText formatter index (row: obj array) =
         if Convert.IsDBNull row[index] then
@@ -79,7 +79,7 @@ module internal Projections =
             PaymentDate =
                 optionalText date (CaseProjectionLayout.ordinal BusinessField.PaymentDate) row
             Status =
-                CaseStatuses.tryParse (
+                CaseStatuses.parse (
                     required<string> (CaseProjectionLayout.ordinal BusinessField.Status) row
                 )
                 |> Option.defaultWith (fun () ->
@@ -134,7 +134,7 @@ module internal Projections =
         }
 
     let private role row =
-        RoleTokens.tryParse (required<string> 0 row)
+        RoleTokens.parse (required<string> 0 row)
         |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid stored role."))
 
     let private authorityRows principal (rows: obj array list) =
@@ -147,7 +147,7 @@ module internal Projections =
                     optional<string> 2 row
                     |> Option.map (fun role ->
                         let role =
-                            RoleTokens.tryParse role
+                            RoleTokens.parse role
                             |> Option.defaultWith (fun () ->
                                 raise (RecordCorruptException "Invalid stored role."))
 
