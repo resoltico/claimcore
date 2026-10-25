@@ -1,9 +1,9 @@
 # Synthetic case walkthrough
 
-Run against a fresh synthetic installation with matching published service and CLI binaries.
-The CLI is an authenticated HTTPS client using the [OpenAPI contract](../contracts/openapi.json).
-It receives no database connection file. The Web service requires a persisted protected key-ring
-directory; use the [fresh setup](../docs/getting-started.md) to create it.
+Work through nine accepted changes on one synthetic case: open, decide, record payment, close, reopen,
+correct, void, reinstate and erase. Use a fresh installation and matching service/CLI.
+[Getting started](../docs/getting-started.md) creates the service, identity provider and protected key ring.
+The CLI uses HTTPS and receives no database credential.
 
 Configure `CLAIMCORE_SERVICE_URL`, `CLAIMCORE_OIDC_ISSUER`, `CLAIMCORE_OIDC_CLIENT_ID`
 and `CLAIMCORE_CLI_AUTH_MODE` as described by `ClaimCore.Cli help`. For automation, supply
@@ -35,7 +35,7 @@ structured reply. The numbered JSON files remain independent, exact request exam
 
 Each returns exit 0 and `ACCEPTED`. `DEMO-0001` ends at revision 6, open, with its
 payment date cleared. Payment facts are recorded assertions; no money is transferred.
-While its payload is retained and current authority permits replay, an exact retry returns
+While its payload is retained and current authority permits replay, an exact resend returns
 `ALREADY_ACCEPTED` with the original acceptance metadata and currently authorized snapshot
 disclosure. A preview is advisory; execution validates the locked current state.
 
@@ -51,7 +51,7 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- cal
 Erasure retains the case reference and revision 9. Every historical snapshot for that
 case is erased from the live database; ledger metadata remains. This does not delete WAL, backups or copies elsewhere.
 Fixed example identities deliberately support exact replay in one fresh installation.
-Do not change their request bytes to retry an uncertain operation.
+Do not change their request bytes when resending an uncertain operation.
 
 A structured reply has exactly `endpoint`, `operationId`, `delivery` and `result`.
 The first two are nullable when no request was admitted. Delivery is `NOT_SENT`,
@@ -63,7 +63,7 @@ An uncertain mutation exits 4 and writes the exact request frame as the last std
 Retain that frame privately and pass it unchanged to `call`. A later `NOT_STARTED`,
 ordinary refusal, failure or observation cannot disprove an earlier commit. Use `claimcore operation resolve OPERATION_ID` for final acceptance or non-acceptance. A correlated acceptance or exact replay also confirms acceptance. Discarding it does not cancel
 the operation. `operation.observe` reports retained acceptance metadata and cannot prove that
-pending content matches it. See the [delivery contract](../docs/api.md).
+submitted content matches it. See the [delivery contract](../docs/api.md).
 
 Published acceptance derives all nine human mutation invocations from these independent frames,
 checks exact dry-run equality, and executes them through the published CLI with fresh

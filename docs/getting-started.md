@@ -1,8 +1,8 @@
 # Getting started
 
-Create a fresh local installation with one PostgreSQL database, an HTTPS identity provider, and the browser
-service. Use fictional case data. The supplied local certificates and identity configuration are for
-evaluation; operators must review the [trust and retention limits](operations.md) before using personal data.
+This walkthrough takes a fresh checkout to a signed-in browser and one accepted synthetic case. It creates
+a separate PostgreSQL installation, HTTPS identity provider and Web service. Use fictional data: the included
+certificates and identity configuration are for evaluation. Read [Operations](operations.md) before using real data.
 
 ## Prerequisites
 
@@ -25,8 +25,8 @@ dotnet build src/ClaimCore.Cli --configuration Release --no-restore
 npm --prefix web ci
 ```
 
-Use offline `help configuration`, `help call`, `help session` and `help delivery` before calls. `describe
-commands OPEN --format text` and `schema invocation` expose current inputs without credentials.
+Before signing in, explore offline `help configuration`, `help call` and `help delivery`.
+`describe commands OPEN --format text` shows inputs, and `case open ... --dry-run` prints a request without credentials.
 
 ## Start a fresh installation
 
@@ -119,8 +119,8 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- aut
 
 Review the target and installation grant, then run the same verb without `--preview` to execute. The CLI
 prepares a fresh operation ID; use explicit `--operation-id` when an automation caller needs its chosen stable
-ID. Require ACCEPTED or ALREADY_ACCEPTED. For uncertain delivery preserve the last stderr frame and retry
-through `call`; do not regenerate its ID or infer failure from missing output. `CASE_HANDLER` permits
+ID. Require ACCEPTED or ALREADY_ACCEPTED. If delivery is uncertain, preserve the last stderr frame. Resend it unchanged through `call`, or use
+`operation resolve OPERATION_ID` for a final answer. Keep its original ID until the outcome is settled. `CASE_HANDLER` permits
 registration, decisions and closing. Grant PAYMENT_RECORDER separately when the human also records/clears
 payments. OWNER alone never grants case work. Use `--dry-run` to inspect a frame without authentication;
 [examples](../examples/README.md) show case verbs and equivalent frames. These are synthetic evaluation
@@ -131,8 +131,7 @@ In the trusted Firefox window, return to `https://localhost:7443`.
 Reload Cases to obtain current capability advice. Choose Open a case and use synthetic values: reference
 `START-0001`, incident `2026-09-01`, notification `2026-09-02`, country `LV`, claimant `Synthetic claimant`,
 insurer `Synthetic insurer`, amount `100.00`, currency `EUR`. Review, confirm and record the change. Expect an
-accepted receipt at revision 1 and the case fields on return to the case. You now have an explicitly granted
-human actor and one accepted synthetic case; owner status alone never grants case work.
+accepted receipt at revision 1 and the case fields on return to the case. You now have an explicitly granted human actor and one accepted synthetic case.
 
 ## Stop and retain data
 

@@ -1,8 +1,10 @@
-# ClaimCore browser
+# Browser development
 
-React and react-aria-components render one generated service contract. The browser is a same-origin authenticated HTTPS client with no database access. [Browser and host](../docs/web.md) owns runtime behavior, consent, disclosure and retry rules; [API](../docs/api.md) owns wire admission and delivery semantics.
+Start here to build or change the React browser. It uses the same authenticated HTTPS service as CLI, with
+no database access. [Browser and host](../docs/web.md) explains review, consent and outcome resolution;
+[Service and CLI](../docs/api.md) explains byte admission and delivery. Domain/Application decide the business behavior.
 
-## Source map
+## Find the owning module
 
 - [api/transport.ts](src/api/transport.ts) owns networking; [api/service.ts](src/api/service.ts) is the validated service facade.
 - [protocol/schema.ts](src/protocol/schema.ts) admits bounded strict JSON before the generated executable request/response checks. Protocol modules remain independent from views and presentation.
@@ -10,7 +12,7 @@ React and react-aria-components render one generated service contract. The brows
 - [views](src/views/) render context-authorized navigation, cases/history, operation review/observation and authority work. Domain/Application own validation, available commands and outcome meaning.
 - [presentation](src/presentation/) renders authored [source catalogs](../src/ClaimCore.Contract/Localization/) in English, Latvian and Arabic. Language and display formats never rewrite business values. Latvian and Arabic text needs native review. Language/display preferences persist in browser storage. While unresolved, sessionStorage holds only the operation ID, scope and act; reload offers Check outcome without retained request bytes.
 
-## Build and checks
+## Build locally
 
 Use the Node/npm versions in [.node-version](../.node-version) and [package.json](package.json), with [package-lock.json](package-lock.json) for dependencies. From the repository root:
 

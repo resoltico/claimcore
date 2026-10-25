@@ -1,10 +1,13 @@
 # Development
 
+Use this guide to build from a clean checkout, choose a verification scope and deliver a complete change.
+The required gate and opt-in growth qualification use the same commands locally and in CI.
+
 ## First checkout
 
 Use the SDK in [global.json](../global.json), Node/npm in [.node-version](../.node-version) and
 [web/package.json](../web/package.json), Bash, Python 3 for the independent durable oracle, and Docker for
-integration/acceptance/workflow checks. Private-file platform qualification and real-object controls are listed below.
+integration/acceptance/workflow checks. Use supported Unix platforms for private-file inputs. The qualified native platforms and controls are listed below.
 Unix sink controls use sh, mkfifo, dd, stty, script and Linux prlimit.
 
 ```sh
@@ -78,13 +81,15 @@ universal maximum or enforced whole-run quota. Measure the selected concurrency 
 reclaim only proven owned resources. Properties/fuzzing generate bounded in-memory values, not per-case files
 or on-disk corpora.
 
-Managed test processes use bounded readers/timeouts and two-second teardown observation. Cleanup failures
-retain the original failure; detached/reparented descendants remain outside process-tree kill guarantees.
+A native run creates a unique report directory and protects it while active. If a process is killed before
+completion, review its active marker and evidence manually. The retention script does not guess whether that
+process is still alive. Managed test processes use bounded readers/timeouts and two-second teardown observation.
+Cleanup failures retain the original failure; detached/reparented descendants remain outside process-tree kill guarantees.
 Diagnostics exclude payloads, credentials and provider exception text.
 
 ## Changes
 
-Read the owner contract and behavior tests before editing. An endpoint belongs in the typed registry; fields belong in
+Find the owning contract and read its behavior tests before editing. Keep endpoints in the typed registry and fields in
 the field table, Domain admission and RecordFormat codec. Update affected consumers, SQL, tests, source locales and docs
 together. Before 1.0.0 baseline replacement may explicitly refuse older installations; the current build admits one
 exact source-bound baseline. There is no in-place upgrade or conversion; preserve existing installations with matching

@@ -1,104 +1,94 @@
 # Operations and trust
 
-The one PostgreSQL database is the authority. A successful read proves only what that snapshot contains. The
-identity provider, service host, database owner and backup operator are trusted. Ledger hashes detect
-inconsistency against trusted retained evidence; they do not independently prove freshness, defeat a malicious
-administrator who rewrites everything, or prove real-world facts. Case fields and payment dates are operator
-assertions; ClaimCore transfers no money.
+Plan identity, access, backup/restore and retention before using real data. The supplied Compose setup is an
+evaluation environment. Operators own deployment, TLS, least privilege, monitoring and incident response.
+There is no production qualification, tenancy isolation or deployment orchestrator.
+
+One PostgreSQL database owns acceptance. Reads show one snapshot. The IdP, service host, database owner and
+backup operator are trusted. Hashes detect inconsistency against retained trusted evidence; they cannot prove
+real-world facts, independent freshness or honesty of an administrator rewriting everything.
 
 ## Erasure limits
 
-ERASE clears payload and payload_nonce on every ledger entry of the case, removes business projections and retains reference, revision and
-ledger metadata. It cannot reach old row versions, WAL, replicas, logs, exports or backups. Retained references may
-still identify a person. Operators own retention, physical disposal and privacy decisions outside this live-database
-act. VOID preserves all history and is not erasure.
+ERASE atomically clears every case ledger payload/nonce and its business projection. It retains reference,
+revision and ledger metadata. Authority history, issuer/subject, executor/target attribution and grants remain.
+The retained reference itself may identify a person.
 
-Authority history, issuer/subject, executor/target attribution, actor identities and grants are never erased.
+Erasure cannot reach dead row versions, WAL, replicas, exports, logs or backups. Operators decide retention,
+copy custody and physical disposal. VOID preserves history and is not erasure. A restore before erasure can
+resurrect data; address affected erasures before reopening access.
 
-The append-only guard permits only case payload clearing; it is an integrity guard, not protection against a
-hostile trusted owner. A schema owner can clear payload without recording ERASE under that exception;
-verification detects missing payload without an accepted erasure. Runtime erasure requires an accepted ERASE
-and removes its case’s complete live payload history atomically.
+The append-only guard allows case-payload clearing. A trusted schema owner can use that exception without an
+accepted ERASE; verification detects missing payload without an accepted erasure. The guard does not protect
+against a hostile owner able to rewrite the schema and evidence.
 
 ## Access review and sessions
 
-Use `authority.list` with installation OWNER or AUDITOR for current actor summaries, then `authority.grants`
-for the selected actor's bounded grant pages. Follow continuations to completion; actor summaries do not
-contain a hidden complete grant set, and disabled actors remain reviewable. Each request checks current caller
-rights; pages do not constitute one frozen cross-request audit. Registration records both executor and target;
-for REGISTER_ACTOR they differ. Scope grants deliberately, keep at least one enabled human installation owner,
-and revoke ClaimCore grants independently of IdP membership. Service principals cannot receive OWNER or
-DATA_STEWARD. Bearer service identity comes from the admitted client ID; the CLI’s PKCE principal uses the
-human subject.
+With installation OWNER or AUDITOR, list actor summaries, then inspect bounded grant pages for each selected
+actor. Follow continuations; summaries contain no complete grant inventory. Disabled targets remain reviewable.
+Every page checks current caller rights, so multiple pages are separate snapshots.
 
-Before registering a SERVICE principal, restrict its confidential IdP client to client credentials and disable
-interactive/user grant paths. The human CLI client is public authorization-code/PKCE, with service accounts
-disabled. Put the API audience in access tokens only, never ID tokens. `azp`/`client_id` classification does
-not establish the grant type; operators must maintain these flow restrictions. [Web
-admission](web.md#cc-web-001) owns token classification and technical checks.
+Scope grants deliberately and retain at least one enabled human installation owner. OWNER alone grants no
+case work. SERVICE principals cannot receive OWNER or DATA_STEWARD. IdP membership and ClaimCore grants must
+be managed independently.
 
-Protected authentication tickets now live in PostgreSQL; cookies contain only protected random lookup keys. Two Web
-instances with the same admitted database and key ring can share sessions. Logout deletes a row; renewal only updates an
-existing live row, so it cannot resurrect logout. Already admitted work may finish. DB UTC idle/absolute deadlines and
-observed backward-step refusal replace process-monotonic elapsed time: arbitrary clock corrections have no real-elapsed
-guarantee. Each row retains its original idle duration and absolute deadline across renewal/restart; changed deployment
-settings affect new sessions only. Row lookups are asynchronous and independent of the ledger head and creation-cap
-lock. This shared-clock qualification does not qualify arbitrary load balancing, key distribution or multi-host
-deployments.
+Before registering a SERVICE actor, restrict its confidential IdP client to client credentials and disable user
+flows. The public human CLI client uses authorization code/PKCE with service accounts disabled. Put API audience
+in access tokens only. azp/client_id classification cannot establish grant type; operators must enforce these
+restrictions. [Web admission](web.md#cc-web-001) checks the technical token claims.
 
-Protect the key-ring directory with owner-only directory access (0700), preserve admitted key files and retain keys for
-every live ticket and protected backup. Local Linux key XML is unencrypted. Back up the database
-and key ring together under controlled custody; neither substitutes for the other. Corrupt/unprotectable sessions
-invalidate safely with `OIDC_SESSION_UNREADABLE`; storage failures close authentication with `OIDC_SESSION_UNAVAILABLE`.
-These diagnostics contain no provider, credential or payload.
+Protected tickets live in PostgreSQL; cookies carry protected random lookup keys. Two Web instances sharing
+the database and key ring can share sessions under the qualified clock conditions. Logout deletes the row;
+renewal updates only an existing live row and cannot resurrect logout. Already admitted work may finish.
 
-Use `operation resolve` after uncertain mutation delivery. An accepted operation returns its author’s
-receipt under current snapshot disclosure. A missing or foreign acceptance installs a permanent
-actor-scoped fence and returns final `NOT_ACCEPTED`. That ID cannot accept a later request by the
-same actor. The fence stores no business data. Disabled actors must be re-enabled before resolving.
-`operation.observe` remains a read; absence there is not final.
+Database UTC idle/absolute deadlines survive restart. Each row retains its original idle duration and absolute
+deadline; new deployment settings affect new sessions. Observed backward clock steps refuse, but arbitrary clock
+corrections have no real-elapsed guarantee. Ticket lookups are asynchronous and independent of the ledger-head
+and session-cap locks. This evidence does not qualify arbitrary multi-host/load-balancer/key distribution setups.
+
+Protect the key-ring directory with 0700 directory access. Local Linux key XML is unencrypted. Retain keys for
+live tickets and protected backups, and back up the database and key ring together under controlled custody.
+Unprotectable sessions invalidate with OIDC_SESSION_UNREADABLE; storage failure closes authentication with
+OIDC_SESSION_UNAVAILABLE. Diagnostics exclude payloads, credentials and provider text.
+
+## Uncertain operation delivery
+
+Preserve the exact frame and original ID. Resend unchanged or use operation.resolve. Resolve returns the
+author's receipt with current disclosure, or installs a permanent actor-scoped fence and returns NOT_ACCEPTED.
+That ID then cannot accept delayed work by the same actor. A foreign acceptance is neither revealed nor changed.
+Fences contain no business payload and remain indefinitely. Disabled actors need re-enabling before resolving.
+Observation is a read whose absence is not final. [CLI delivery](api.md#cc-cli-003) explains exits and frames.
 
 ## Private configuration
 
-Private inputs are absolute valid UTF-8 paths without NUL. Symlinks follow their targets, including secret volume links.
-The managed reader checks the final target’s nonzero bounded length before opening, then checks
-permissions and length on the opened handle and reads exactly that many bytes positionally. Group
-read remains allowed; other access and group write/execute refuse. Empty inputs, directories,
-devices, FIFOs, sockets, missing files and excessive lengths refuse. The caller clears returned
-buffers, and failed partial reads clear their buffers. .NET-supported Unix platforms, including
-musl, are supported; Windows refuses with UnsupportedPlatform.
+Use absolute valid UTF-8 paths without NUL. Symlinks follow their final targets, including secret-volume links.
+The managed reader checks nonzero bounded target length before opening, then handle permissions/length and an
+exact positional read. Group read is allowed; other access and group write/execute refuse. Empty/oversized
+files, directories, devices, FIFOs, sockets and missing paths refuse. Callers clear returned buffers; failed
+partial reads clear theirs. .NET-supported Unix platforms, including musl, are supported; Windows refuses.
 
-A principal able to write the containing directory can replace a checked file with a FIFO before
-the open and block startup. That principal can already replace the secret. Admission does not
-freeze contents or permissions, and arbitrary filesystem calls have no hard deadline.
-
-Ownership and ACLs are not inspected. Filesystem mode semantics, the file owner and the host administrator
-remain trusted; admission does not freeze concurrent changes to contents or permissions. Preserve all notices
-when distributing a published application; [Development](development.md#first-checkout) owns qualified
-publication modes.
+The reader checks neither ownership nor ACLs and does not freeze permissions or contents. A directory writer
+can substitute a FIFO between precheck and open and block startup; that principal can already replace the secret.
+Arbitrary filesystem calls have no hard deadline. File ownership, filesystem semantics and administrators remain
+trusted. See [PrivateFile](../src/ClaimCore.HostSecurity/PrivateFile.fs) and its real-object tests for admission.
 
 ## Backups and restore
 
-Back up PostgreSQL with ordinary platform tools and protect copies as sensitive data. Retain trusted ledger
-sequence/hash checkpoints independently. After restoring, use Database verification with the expected
-checkpoint before reopening actor access. A restore from before later erasure can resurrect payload; `verify
---expect` against a later trusted position refuses that older state. Identify and address affected
-erasures/copies before reopening. A checkpoint can detect rollback behind it, not prove that no newer
-acceptance occurred. ClaimCore does not orchestrate backup, restore, replication, copy custody or multi-party
-approval, or decide when restored data is ready for use.
+Protect PostgreSQL backups as sensitive data and retain sequence/hash checkpoints independently. Restore into
+an empty database with ordinary full-restore tools, then use Database verify with the expected checkpoint before
+reopening actor access. A data-only restore into an initialized schema is unsupported.
 
-## Before real data
-
-Compose is evaluation setup, not production qualification. Operators own deployment, identity, least
-privilege, TLS, backup/restore tests, checkpoints, monitoring, physical retention and incident response.
-Verify actual privileges and erasure effects on copies. Green CI/source review grants no owner approval or
-production assurance. Keep older installations with matching software; no conversion exists.
+An older restore behind the checkpoint is detectable; no primary-only inspection proves there was no newer
+acceptance. Identify later erasures and affected copies before use. ClaimCore does not orchestrate backup,
+restore, replication, copy custody or multi-party approval. Preserve incompatible installations with matching
+software; no conversion is supplied.
 
 ## Serialized writes and verification growth
 
-Accepted writes intentionally serialize on one ledger head. Verification streams rows and retains folded
-case/actor/grant state. A same-snapshot SQL prepass finds the earliest duplicate operation ID, with database
-sorting/spill costs. Application memory still grows with folded resource cardinality; streaming does not imply constant
-total-system memory. [Synthetic reports](development.md#synthetic-growth-qualification) qualify bounded isolated
-workloads, not memory/asymptotic bounds or production capacity. Timeout/cancellation guards remain enforced. More
-writers do not remove serialization or promise throughput; qualify actual workloads/storage.
+Accepted writes serialize on one ledger head. Adding writers does not remove that limit. Verification streams
+entries but retains folded case/actor/grant state; its same-snapshot duplicate prepass can sort/spill in SQL.
+Streaming therefore promises no constant total-system memory.
+
+Run [synthetic growth qualification](development.md#synthetic-growth-qualification) before release and on demand,
+then qualify actual storage, workloads and concurrency. Those measurements establish neither an SLA nor a
+production capacity guarantee. Timeout/cancellation guards remain enforced.

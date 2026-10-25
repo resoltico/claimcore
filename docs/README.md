@@ -1,13 +1,15 @@
-# Documentation map
+# Documentation
 
-- [Getting started](getting-started.md): fresh local evaluation setup.
-- [Domain](domain.md): business fields, commands and stewardship.
-- [Architecture](architecture.md): component ownership, durable encodings, authorization, replay
-  and lifetime.
-- [API](api.md): one HTTPS/CLI contract and delivery outcomes.
-- [Web](web.md): host admission and browser behavior.
-- [Database](database.md): owner inputs, initialization, baseline admission and verification.
-- [Operations](operations.md): trust, erasure limits, checkpoints and restore obligations.
-- [Development](development.md): toolchain, gate and change workflow.
+Choose a guide by the work you need to do:
 
-[Contributing](../CONTRIBUTING.md) owns contributor policy; the owner reviews and merges.
+| Task | Guide |
+| --- | --- |
+| Evaluate a fresh local installation | [Getting started](getting-started.md) |
+| Understand case facts, corrections and stewardship | [Case work](domain.md) |
+| Call the service or use CLI frames | [Service and CLI](api.md), [examples](../examples/README.md) |
+| Use or host the browser | [Browser and HTTPS host](web.md) |
+| Initialize, provision or verify a database | [Database administration](database.md) |
+| Plan access, sessions, erasure, backup or restore | [Operations](operations.md) |
+| Build, test or change the system | [Development](development.md), [Architecture](architecture.md) |
+
+[Contributing](../CONTRIBUTING.md) describes change delivery; the owner reviews and merges.

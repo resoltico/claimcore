@@ -1,15 +1,14 @@
 # Support
 
-ClaimCore is pre-1.0 software maintained without a support SLA. Public releases distribute source,
-without installable application packages; questions and reports should identify their source revision.
+ClaimCore is pre-1.0 software with no support SLA. Releases distribute source, without installable application
+packages. Include the source revision when asking a question or reporting a problem.
 
-- For first-run and usage questions, begin with the [documentation map](docs/README.md) and [Getting
-  started](docs/getting-started.md).
-- For a non-sensitive defect, use the repository's bug form with only synthetic, redacted facts.
-- For a proposed code or documentation change, read [CONTRIBUTING.md](CONTRIBUTING.md).
-- For a vulnerability, suspected credential exposure, or any report requiring real claimant data,
-  stop and follow the private process in [SECURITY.md](SECURITY.md).
+- Start with [Getting started](docs/getting-started.md) for local evaluation, or use the
+  [documentation map](docs/README.md) to find the guide for your task.
+- Report non-sensitive defects through the repository's bug form, using a synthetic reproduction.
+- Read [Contributing](CONTRIBUTING.md) for proposed code or documentation changes.
+- Follow [Security](SECURITY.md) for vulnerabilities, credential exposure or anything requiring private data.
 
-Public issues must not contain connection strings, credentials, request files, claimant
-information, database extracts, private terminal captures, or unredacted logs. A maintainer may close
-a report that cannot be handled safely in public.
+Public issues must exclude connection strings, credentials, request files, claimant information, database
+extracts, private terminal captures and unredacted logs. A maintainer may close a report that cannot be handled
+safely in public.

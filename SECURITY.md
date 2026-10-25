@@ -2,42 +2,33 @@
 
 ## Report privately
 
-Use this repository's GitHub Security → Advisories → Report a vulnerability flow. Include
-the affected revision, impact and a minimal synthetic reproduction. Never send active
-credentials, claimant data or unredacted database extracts, including in a private report.
-Rotate exposed credentials through the operator's process.
+Use GitHub **Security → Advisories → Report a vulnerability** for this repository. Supply the affected revision,
+impact and a minimal synthetic reproduction. Exclude active credentials, claimant data and unredacted database
+extracts even from a private report. Rotate exposed credentials through the operator's process.
 
-If private reporting is unavailable, open a public issue asking for a private reporting path.
-Do not disclose the vulnerability, affected component or reproduction in that issue.
+If private reporting is unavailable, open a public issue asking for a private contact path. Keep vulnerability
+details, affected components and reproductions out of that issue.
 
-## Trust boundary
+## Understand the trust boundary
 
-OIDC identifies human and service principals. Scoped actor grants are default-deny and
-rechecked against authoritative locked state. Browser sessions use secure cookies and
-antiforgery admission. The browser and CLI are HTTPS clients and receive no database credentials.
-Database administration uses a separate owner credential and executable.
+OIDC identifies human/service principals; current scoped ClaimCore grants authorize work. Browser POSTs require
+antiforgery. The clients have no database credentials, and owner administration is a separate executable with
+a separate credential. Current permissions and receipt disclosure are decided within the authoritative view.
 
-The [private-input policy](docs/operations.md#private-configuration) allows group read and follows
-secret-volume symlinks; it does not inspect ownership or ACLs. Protect the required Web key-ring
-directory as a separate secret; PostgreSQL holds protected session tickets.
-Sessions retain database deadlines across restarts; two instances sharing a database and key ring are qualified
-under the documented clock conditions, without implying arbitrary multi-host support. See [session operation](docs/operations.md#access-review-and-sessions).
+The IdP, service host, database owner and backup operator remain trusted. Hashes detect inconsistency against
+trusted retained evidence; they cannot establish independent freshness or defeat an administrator rewriting all
+evidence. Live erasure cannot reach old row versions, WAL, exports, replicas or backups. Even retained references
+may identify people. Read [Operations](docs/operations.md) before handling personal data.
 
-The identity provider, service host, database owner and backup operator remain trusted.
-Ledger hashes detect inconsistency against trusted retained evidence. They do not prove
-independent freshness or protect against rewriting all evidence. Erasure clears live case
-payloads; it cannot reach dead row versions, WAL, replicas, exports or backups, and the
-retained case reference may still identify someone.
+[Private-file admission](docs/operations.md#private-configuration) follows secret-volume symlinks and allows group
+read. It checks neither ownership nor ACLs and does not freeze concurrent changes. Protect the Web key ring
+separately and back it up with the database. Database-backed session sharing is qualified under the documented
+clock conditions; arbitrary multi-host deployment is outside that evidence.
 
-The included loopback Compose installation is for evaluation. Operators own deployment,
-TLS, identity administration, monitoring, backup/restore, retention and incident response.
-Read [Operations](docs/operations.md). The project supplies no multi-tenancy or production
-qualification. The repository promises no security fixes for unmaintained revisions;
-identify the affected revision and reproduce against maintained source where possible.
+Compose supplies an evaluation environment. Operators own identity restrictions, TLS, deployment, monitoring,
+backup/restore, retention and incident response. There is no multi-tenancy or production qualification. Identify
+the affected revision in reports; no security-fix commitment is made for unmaintained revisions.
 
-Format invariants preserve retained history independently of current admission policy. Current
-snapshot disclosure needs case read; superseded snapshots need full history. Current actor grants
-and the result come from the same locked/read context, including accepted replay.
-
-PostgreSQL image identity is pinned in `db/postgresql-baseline.json`; ClaimCore ships no
-database image. Dependency and image updates require review and verification.
+Dependency/image declarations are pinned in source and lockfiles. Image or dependency changes need review and
+verification. ClaimCore ships no PostgreSQL image. See the [database declaration](db/postgresql-baseline.json)
+and [dependency guidance](docs/development.md#dependency-pins).
