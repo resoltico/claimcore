@@ -1,21 +1,14 @@
 import { IntlMessageFormat } from "intl-messageformat";
-import enAuthority from "../../src/ClaimCore.Contract/Localization/en.authority.json" with { type: "json" };
-import enDiagnostic from "../../src/ClaimCore.Contract/Localization/en.diagnostic.json" with { type: "json" };
-import enField from "../../src/ClaimCore.Contract/Localization/en.field.json" with { type: "json" };
-import enGroup from "../../src/ClaimCore.Contract/Localization/en.group.json" with { type: "json" };
-import lvAuthority from "../../src/ClaimCore.Contract/Localization/lv.authority.json" with { type: "json" };
-import lvDiagnostic from "../../src/ClaimCore.Contract/Localization/lv.diagnostic.json" with { type: "json" };
-import lvField from "../../src/ClaimCore.Contract/Localization/lv.field.json" with { type: "json" };
-import lvGroup from "../../src/ClaimCore.Contract/Localization/lv.group.json" with { type: "json" };
-import arAuthority from "../../src/ClaimCore.Contract/Localization/ar.authority.json" with { type: "json" };
-import arDiagnostic from "../../src/ClaimCore.Contract/Localization/ar.diagnostic.json" with { type: "json" };
-import arField from "../../src/ClaimCore.Contract/Localization/ar.field.json" with { type: "json" };
-import arGroup from "../../src/ClaimCore.Contract/Localization/ar.group.json" with { type: "json" };
+import enAuthority from "../../src/ClaimCore.Contract/Localization/en.json" with { type: "json" };
+
+import lvAuthority from "../../src/ClaimCore.Contract/Localization/lv.json" with { type: "json" };
+
+import arAuthority from "../../src/ClaimCore.Contract/Localization/ar.json" with { type: "json" };
 
 const messages = {
-  en: { ...enAuthority, ...enDiagnostic, ...enField, ...enGroup },
-  lv: { ...lvAuthority, ...lvDiagnostic, ...lvField, ...lvGroup },
-  ar: { ...arAuthority, ...arDiagnostic, ...arField, ...arGroup },
+  en: { ...enAuthority },
+  lv: { ...lvAuthority },
+  ar: { ...arAuthority },
 };
 
 export const inputMessage = (

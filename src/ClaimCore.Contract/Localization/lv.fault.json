@@ -1,7 +1,0 @@
-{
-  "fault.CORE_INTERNAL_ERROR": "Iekšēja kļūda. Apturiet darbu un izmeklējiet cēloni.",
-  "fault.CORE_OPERATION_CONTENT_CONFLICT": "Operācijas ID pieder citam pieprasījuma saturam.",
-  "fault.CORE_SCHEMA_MISMATCH": "Izpildlaika shēma vai datubāzes iestatījumi nav saderīgi.",
-  "fault.CORE_STORE_INTEGRITY_ERROR": "Saglabātie dati neizturēja integritātes pārbaudi.",
-  "fault.CORE_STORE_UNAVAILABLE": "Krātuve nebija pieejama pirms pabeigšanas apstiprināšanas."
-}

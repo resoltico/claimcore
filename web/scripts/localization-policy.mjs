@@ -23,13 +23,10 @@ export const readCatalog = (source) => {
   }
   return value;
 };
-/** @param {Record<string, Message>} catalog @param {Record<string, Message>} entries @param {string} domain */
-export const addDomain = (catalog, entries, domain) => {
-  for (const [key, value] of Object.entries(entries)) {
-    if (!key.startsWith(`${domain}.`) || Object.hasOwn(catalog, key)) {
-      throw new Error("Catalog domain ownership or key uniqueness failed.");
-    }
-    catalog[key] = value;
+/** @param {Record<string, Message>} catalog @param {ReadonlyArray<string>} domains */
+export const validatePrefixes = (catalog, domains) => {
+  if (Object.keys(catalog).some((key) => !domains.some((domain) => key.startsWith(`${domain}.`)))) {
+    throw new Error("Catalog contains an unknown message family.");
   }
 };
 const forbidden = /[<>\u202a-\u202e\u2066-\u2069\u200e\u200f]/u;

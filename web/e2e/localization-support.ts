@@ -6,12 +6,10 @@ import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
-import en from "../../src/ClaimCore.Contract/Localization/en.ui.json" with { type: "json" };
-import lv from "../../src/ClaimCore.Contract/Localization/lv.ui.json" with { type: "json" };
-import ar from "../../src/ClaimCore.Contract/Localization/ar.ui.json" with { type: "json" };
-import enPresentation from "../../src/ClaimCore.Contract/Localization/en.command.json" with { type: "json" };
-import lvPresentation from "../../src/ClaimCore.Contract/Localization/lv.command.json" with { type: "json" };
-import arPresentation from "../../src/ClaimCore.Contract/Localization/ar.command.json" with { type: "json" };
+import en from "../../src/ClaimCore.Contract/Localization/en.json" with { type: "json" };
+import lv from "../../src/ClaimCore.Contract/Localization/lv.json" with { type: "json" };
+import ar from "../../src/ClaimCore.Contract/Localization/ar.json" with { type: "json" };
+
 import type { ReviewIdentity } from "./case-workflow";
 
 export const seedPresentation = async (
@@ -29,7 +27,7 @@ export const seedPresentation = async (
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
   ({ en, lv, ar })[language][key];
 export const openLabel = (language: "en" | "lv" | "ar"): string =>
-  ({ en: enPresentation, lv: lvPresentation, ar: arPresentation })[language]["command.OPEN.label"];
+  ({ en, lv, ar })[language]["command.OPEN.label"];
 // Role lookup includes inert background controls; require the active native control.
 export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
   const control = page

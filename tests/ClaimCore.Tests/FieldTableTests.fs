@@ -120,7 +120,7 @@ let private locales () =
 
     for language in LocalizationPolicy.languages do
         use document =
-            JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, language + ".field.json")))
+            JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, language + ".json")))
 
         for row in FieldTable.rows do
             for key in [ FieldTable.labelId row.Field; FieldTable.meaningId row.Field ] do

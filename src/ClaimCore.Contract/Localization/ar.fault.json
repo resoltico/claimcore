@@ -1,7 +1,0 @@
-{
-  "fault.CORE_INTERNAL_ERROR": "حدث خطأ داخلي. توقف وتحقق من السبب.",
-  "fault.CORE_OPERATION_CONTENT_CONFLICT": "يخص معرّف العملية محتوى طلب مختلفًا.",
-  "fault.CORE_SCHEMA_MISMATCH": "مخطط التشغيل أو إعدادات قاعدة البيانات غير متوافقة.",
-  "fault.CORE_STORE_INTEGRITY_ERROR": "لم تجتز البيانات المخزنة التحقق من السلامة.",
-  "fault.CORE_STORE_UNAVAILABLE": "لم يكن المخزن متاحًا قبل تأكيد الاكتمال."
-}

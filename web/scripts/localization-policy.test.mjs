@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { IntlMessageFormat } from "intl-messageformat";
 import {
-  addDomain,
+  validatePrefixes,
   diagnosticRequirements,
   messageShape,
   pseudolocalize,
@@ -22,18 +22,8 @@ const json = (path) => JSON.parse(readFileSync(path, "utf8"));
 const descriptors = json(resolve(contracts, "descriptors.json"));
 const requirements = diagnosticRequirements(descriptors, json(resolve(contracts, "openapi.json")));
 /** @param {string} language */
-const catalog = (language) => {
-  /** @type {Record<string, string>} */
-  const result = {};
-  for (const name of readdirSync(locales).filter((entry) => entry.startsWith(`${language}.`))) {
-    addDomain(
-      result,
-      readCatalog(readFileSync(resolve(locales, name), "utf8")),
-      name.slice(language.length + 1, -5),
-    );
-  }
-  return result;
-};
+const catalog = (language) =>
+  readCatalog(readFileSync(resolve(locales, `${language}.json`), "utf8"));
 
 test("every authored language covers current metadata and public message families", () => {
   const english = catalog("en");
@@ -49,7 +39,7 @@ test("every authored language covers current metadata and public message familie
   );
 });
 
-test("catalog admission rejects duplicates, nonstring messages and cross-domain ownership", () => {
+test("catalog admission rejects duplicates, nonstring messages and unknown families", () => {
   for (const source of ['{"ui.a":"first","ui.a":"second"}', "[]", "null", "42", "broken"]) {
     assert.throws(() => readCatalog(source));
   }
@@ -57,8 +47,11 @@ test("catalog admission rejects duplicates, nonstring messages and cross-domain 
     assert.throws(() => readCatalog(JSON.stringify({ "ui.invalid": value })));
   }
   assert.deepEqual(readCatalog('{"ui.a":"safe"}'), { "ui.a": "safe" });
-  assert.throws(() => addDomain({}, { "notice.a": "wrong domain" }, "ui"));
-  assert.throws(() => addDomain({ "ui.a": "first" }, { "ui.a": "second" }, "ui"));
+  assert.throws(() => validatePrefixes({ "unknown.a": "wrong family" }, ["ui", "notice"]));
+  assert.throws(() => validatePrefixes({ ui: "missing separator" }, ["ui"]));
+  assert.doesNotThrow(() =>
+    validatePrefixes({ "ui.a": "first", "notice.a": "second" }, ["ui", "notice"]),
+  );
 });
 
 test("the independent ICU vectors agree with the runtime formatter", () => {
