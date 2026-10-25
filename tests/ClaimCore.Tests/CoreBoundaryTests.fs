@@ -157,9 +157,25 @@ let private cancelled () =
 
 let private committed () =
     async {
-        let _, _, _, receipt = created 472 "BOUNDARY-COMMIT"
-
         for input in inputs () do
+            let receipt =
+                match input with
+                | OperationInput.Case request ->
+                    let _, _, receipt = decide request (locked worker None None) |> appended
+                    receipt
+                | OperationInput.Authority input ->
+                    let request = AuthorityRequests.admit input |> Fixtures.accepted
+
+                    match
+                        AuthorityDecisions.execute
+                            installation
+                            owner
+                            request
+                            (authorityView worker AuthorityView.empty None)
+                    with
+                    | LedgerDecision.Append(_, _, receipt) -> receipt
+                    | _ -> failtest "Expected accepted authority fixture"
+
             use cancellation = new CancellationTokenSource()
 
             let probe =

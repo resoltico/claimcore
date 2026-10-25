@@ -158,11 +158,81 @@ let private resources () =
         expected
         "Erased beyond view is indistinguishable"
 
+let private context () =
+    let ungranted = actor owner (id 1) [] []
+
+    let view: ActorReadView =
+        {
+            Actor = ungranted
+            ObservedAt = instant
+        }
+
+    match Queries.contextResult calendar owner view with
+    | ReadReply.Succeeded value ->
+        Expect.isEmpty value.Capabilities "Enabled actor has context without implied capabilities"
+        Expect.isEmpty value.Views "No views before grants"
+        Expect.isEmpty value.Offers "No offers before grants"
+
+        Expect.equal
+            value.Runtime.EffectiveBusinessDate
+            (calendar.DateAt instant)
+            "Supplied instant owns business date"
+
+        Expect.equal value.Runtime.TimeZoneId calendar.TimeZoneId "Stored zone is retained"
+    | _ -> failtest "Enabled ungranted actor needs context"
+
+    Expect.equal
+        (Queries.contextResult
+            calendar
+            owner
+            { view with
+                Actor = AuthorityView.empty
+            })
+        (ReadReply.Rejected Refusal.ResourceUnavailable)
+        "Unregistered actor has no context"
+
+    let disabled =
+        { ungranted with
+            Actor = ungranted.Actor |> Option.map (fun value -> { value with Enabled = false })
+        }
+
+    Expect.equal
+        (Queries.contextResult calendar owner { view with Actor = disabled })
+        (ReadReply.Rejected Refusal.ResourceUnavailable)
+        "Disabled actor has no context"
+
+    let _, entry, current, _ = created 462 "SCOPED-AUDITOR"
+    let scoped = actor owner (id 1) [] [ current.CaseId, [ Role.Auditor ] ]
+
+    Expect.isTrue
+        (LedgerEntries.canObserve owner scoped entry.Scope)
+        "Scoped auditor reads its case metadata"
+
+    Expect.isFalse
+        (LedgerEntries.canObserve
+            owner
+            scoped
+            (StoredScope.Authority(id 1, AuthorityKind.RegisterActor)))
+        "Scoped auditor cannot observe installation authority"
+
+    Expect.equal
+        (Queries.selectActors owner { AfterCursor = None; Limit = 50 } { view with Actor = scoped })
+        (Error Refusal.ResourceUnavailable)
+        "Scoped audit cannot enumerate installation actors"
+
+    Expect.isTrue
+        (LedgerEntries.canObserve
+            owner
+            worker
+            (StoredScope.Authority(id 1, AuthorityKind.RegisterActor)))
+        "Installation owner may observe authority"
+
 [<Tests>]
 let tests =
     testList
         "pure query selections"
         [
+            testCase "context and authority observation preserve installation boundaries" context
             testCase "absent inaccessible and erased resources share refusal" resources
             testCase "current authority precedes cursors and target review" authorityAndCursor
             testCase "history detail and operation scope use current authority" history

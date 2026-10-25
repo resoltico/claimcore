@@ -77,41 +77,38 @@ module internal Queries =
                 | Ok view -> return caseResult installationId principal view
         }
 
-    let context
-        (store: ILedgerStore)
-        (calendar: IBusinessCalendar)
-        principal
-        ct
-        : Task<ReadReply<ActorContext>> =
+    let contextResult (calendar: IBusinessCalendar) principal (view: ActorReadView) =
+        match currentActor principal view.Actor with
+        | Error _ -> unavailable
+        | Ok _ ->
+            ReadReply.Succeeded
+                {
+                    Runtime =
+                        {
+                            ProductVersion = BuildIdentity.current.Version
+                            EffectiveBusinessDate = calendar.DateAt view.ObservedAt
+                            TimeZoneId = calendar.TimeZoneId
+                        }
+                    Views = Advice.views principal view.Actor
+                    Offers = Advice.installationOffers principal view.Actor
+                    Capabilities =
+                        Capabilities.all
+                        |> List.filter (fun capability ->
+                            ActorAuthorization.can
+                                principal
+                                view.Actor
+                                capability
+                                ResourceScope.Installation)
+                }
+
+    let context (store: ILedgerStore) calendar principal ct : Task<ReadReply<ActorContext>> =
         task {
             let! read = store.ReadActor(principal, ct)
 
-            match read with
-            | Error error -> return failure error
-            | Ok view ->
-                match currentActor principal view.Actor with
-                | Error _ -> return unavailable
-                | Ok _ ->
-                    return
-                        ReadReply.Succeeded
-                            {
-                                Runtime =
-                                    {
-                                        ProductVersion = BuildIdentity.current.Version
-                                        EffectiveBusinessDate = calendar.DateAt view.ObservedAt
-                                        TimeZoneId = calendar.TimeZoneId
-                                    }
-                                Views = Advice.views principal view.Actor
-                                Offers = Advice.installationOffers principal view.Actor
-                                Capabilities =
-                                    Capabilities.all
-                                    |> List.filter (fun capability ->
-                                        ActorAuthorization.can
-                                            principal
-                                            view.Actor
-                                            capability
-                                            ResourceScope.Installation)
-                            }
+            return
+                match read with
+                | Error error -> failure error
+                | Ok view -> contextResult calendar principal view
         }
 
     let private cursor decode token =

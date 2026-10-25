@@ -132,6 +132,11 @@ let private provision () =
             entry, receipt
         | _ -> failtest "Expected explicit bootstrap"
 
+    Expect.equal
+        entry.Scope
+        (StoredScope.Authority(id 104, AuthorityKind.ProvisionOwner))
+        "Bootstrap records its distinct durable kind"
+
     let target = actor owner (id 104) [ Role.Owner ] []
     let view = authorityView target target (Some(LedgerEntries.stored entry))
 
@@ -166,6 +171,26 @@ let private reviewAndFences () =
             })
         (LedgerDecision.Refuse Refusal.LedgerExhausted)
         "Capacity refuses fresh work"
+
+    let registered = admitted 106 owner AdmittedAuthorityAct.RegisterActor
+
+    let full =
+        { authorityView worker worker None with
+            Head =
+                { head with
+                    Sequence = Revision.Maximum
+                }
+        }
+
+    Expect.equal
+        (AuthorityDecisions.review installation owner registered full.Read)
+        (AuthorityReviewDecision.Refuse Refusal.ActorAlreadyRegistered)
+        "Preview applies target rules without a head"
+
+    Expect.equal
+        (AuthorityDecisions.execute installation owner registered full)
+        (LedgerDecision.Refuse Refusal.LedgerExhausted)
+        "Execution capacity precedes target projection refusal"
 
     let scoped = actor owner (id 1) [] [ id 77, [ Role.Owner ] ]
 

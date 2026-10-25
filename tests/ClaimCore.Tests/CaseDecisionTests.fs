@@ -107,6 +107,12 @@ let private reviewAndTime () =
         "Supplied snapshot instant owns the business date"
 
     let _, _, current, _ = created 14 "PURE-REVIEW-CURRENT"
+
+    Expect.equal
+        (decide (opening 13 current.Snapshot.Reference) (locked worker (Some current) None))
+        (LedgerDecision.Refuse Refusal.CaseAlreadyExists)
+        "An earlier preview cannot authorize opening after another acceptance"
+
     let stale = actRequest 15 current.Snapshot.Reference 0L CaseAct.Close
 
     Expect.equal
