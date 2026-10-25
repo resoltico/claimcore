@@ -1,4 +1,3 @@
-import { IntlMessageFormat } from "intl-messageformat";
 import enAuthority from "../../src/ClaimCore.Contract/Localization/en.json" with { type: "json" };
 
 import lvAuthority from "../../src/ClaimCore.Contract/Localization/lv.json" with { type: "json" };
@@ -14,4 +13,4 @@ const messages = {
 export const inputMessage = (
   language: keyof typeof messages,
   key: keyof typeof messages.en,
-): string => String(new IntlMessageFormat(messages[language][key], language).format());
+): string => messages[language][key];

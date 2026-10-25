@@ -3,7 +3,7 @@ import { definition } from "./service-ui.fixtures";
 import { renderKey } from "../src/presentation/messages";
 import { defaults } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
-import requirements from "../src/presentation/generated/diagnostic-parameters.json";
+import { diagnosticParameters as requirements } from "@contracts/messages";
 const { catalog } = definition;
 it("renders every admitted diagnostic identity in every real language", () => {
   const limits: Record<

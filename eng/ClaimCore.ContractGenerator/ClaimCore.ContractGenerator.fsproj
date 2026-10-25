@@ -7,6 +7,7 @@
     <Compile Include="ClientValidation.fs" />
     <Compile Include="TypeScript.fs" />
     <Compile Include="CatalogValidation.fs" />
+    <Compile Include="MessageGeneration.fs" />
     <Compile Include="Documents.fs" />
     <Compile Include="ArtifactPublication.fs" />
     <Compile Include="Artifacts.fs" />

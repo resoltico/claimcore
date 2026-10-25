@@ -9,26 +9,22 @@
     "npm": "11.21.1"
   },
   "scripts": {
-    "dev": "npm run localization:generate && vite",
-    "build": "npm run localization:generate && node scripts/check-react-aria.mjs && tsc -b && vite build && npm run notices:generate",
+    "dev": "vite",
+    "build": "node scripts/check-react-aria.mjs && tsc -b && vite build && npm run notices:generate",
     "preview": "vite preview",
-    "typecheck": "npm run localization:generate && tsc -b --pretty false",
+    "typecheck": "tsc -b --pretty false",
     "lint": "npm run architecture:check && node scripts/lint.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:unit": "npm run localization:generate && vitest run",
-    "test:unit:watch": "npm run localization:generate && vitest",
-    "dead-code": "npm run localization:generate && knip",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "dead-code": "knip",
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
-    "architecture:check": "npm run localization:check && node scripts/module-policy.mjs",
-    "localization:generate": "node scripts/localization.mjs --write",
-    "localization:check": "npm run localization:generate && node --test scripts/localization-policy.test.mjs",
-    "test:coverage": "npm run localization:generate && vitest run --coverage"
+    "architecture:check": "node scripts/module-policy.mjs",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@formatjs/icu-messageformat-parser": "3.5.22",
-    "intl-messageformat": "12.1.4",
     "react": "19.3.1",
     "react-aria-components": "1.22.1",
     "react-dom": "19.3.1"
@@ -55,7 +51,6 @@
     "prettier": "3.9.10",
     "typescript": "7.0.2",
     "vite": "8.3.5",
-    "vitest": "5.0.5",
-    "yaml": "2.9.1"
+    "vitest": "5.0.5"
   }
 }

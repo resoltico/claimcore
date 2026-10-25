@@ -1,6 +1,6 @@
 import { languageDirection } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
-import correctionTargets from "./generated/correction-targets.json";
+import { correctionTargets } from "@contracts/messages";
 import type { Notice } from "../api/notices";
 import type { FieldDescriptor } from "../api/service";
 import { calendarDate, displayField, exactAmount, exactInteger } from "./format";

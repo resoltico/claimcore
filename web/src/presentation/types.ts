@@ -1,28 +1,5 @@
-import type { AuthorityArgs } from "./generated/args.authority";
-import type { UiArgs } from "./generated/args.ui";
-import type { NoticeArgs } from "./generated/args.notice";
-import type { TokenArgs } from "./generated/args.token";
-import type { FieldArgs } from "./generated/args.field";
-import type { InputArgs } from "./generated/args.input";
-import type { ActArgs } from "./generated/args.act";
-import type { GroupArgs } from "./generated/args.group";
-import type { DiagnosticArgs } from "./generated/args.diagnostic";
-import type { FaultArgs } from "./generated/args.fault";
-import type { HostArgs } from "./generated/args.host";
-import type { CliArgs } from "./generated/args.cli";
-export type MessageArgs = FaultArgs &
-  HostArgs &
-  CliArgs &
-  AuthorityArgs &
-  UiArgs &
-  NoticeArgs &
-  TokenArgs &
-  FieldArgs &
-  ActArgs &
-  InputArgs &
-  GroupArgs &
-  DiagnosticArgs;
-export type MessageKey = keyof MessageArgs;
+import type { MessageArgs, MessageKey } from "@contracts/messages";
+export type { MessageArgs, MessageKey } from "@contracts/messages";
 export type Values<K extends MessageKey> =
   MessageArgs[K] extends Readonly<Record<string, never>>
     ? [args?: MessageArgs[K]]

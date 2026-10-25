@@ -26,7 +26,9 @@ export default {
     rolldownOptions: {
       output: {
         codeSplitting: {
-          groups: [{ name: "presentation-catalogs", test: /\/src\/presentation\/generated\//u }],
+          groups: [
+            { name: "presentation-catalogs", test: /\/ClaimCore.Contract\/Localization\//u },
+          ],
         },
       },
     },
@@ -50,7 +52,7 @@ export default {
       provider: "v8",
       reporter: ["text", "json-summary"],
       reportsDirectory: "../artifacts/frontend/coverage",
-      include: ["src/**/*.{ts,tsx}", "src/presentation/pseudolocalization.mjs"],
+      include: ["src/**/*.{ts,tsx}"],
     },
   },
 } satisfies UserConfig & { test: InlineConfig };

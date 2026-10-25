@@ -245,7 +245,7 @@ function sourceFiles(directory) {
 function checkModules() {
   const root = fileURLToPath(new URL("..", import.meta.url));
   const sources = Object.fromEntries(
-    ["src", "../contracts"]
+    ["src", "../contracts", "../src/ClaimCore.Contract/Localization"]
       .flatMap((directory) => sourceFiles(join(root, directory)))
       .map((file) => [relative(root, file).split("\\").join("/"), readFileSync(file, "utf8")]),
   );
