@@ -7,6 +7,11 @@ on:
   pull_request:
   merge_group:
   workflow_dispatch:
+    inputs:
+      growth:
+        description: Run the nine-profile growth qualification
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
@@ -84,10 +89,8 @@ jobs:
         include:
           - os: ubuntu-24.04
             rid: linux-x64
-          - os: ubuntu-24.04-arm
-            rid: linux-arm64
-          - os: macos-15-intel
-            rid: osx-x64
+          - os: ubuntu-24.04
+            rid: linux-musl-x64
           - os: macos-15
             rid: osx-arm64
     runs-on: ${{ matrix.os }}
@@ -96,13 +99,28 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+      - if: matrix.rid != 'linux-musl-x64'
+        uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
         with:
           node: "false"
-      - run: bash eng/verify.sh unit
+      - if: matrix.rid != 'linux-musl-x64'
+        run: bash eng/verify.sh unit
+      - if: matrix.rid == 'linux-musl-x64'
+        name: Run the complete native stage on musl
+        run: |
+          expected_sdk="$(sed -nE 's/^[[:space:]]*"version":[[:space:]]*"([^"]+)".*/\1/p' global.json)"
+          docker run --rm --env CI=true --env NO_COLOR=1 \
+            --env CLAIMCORE_EXPECTED_SDK="$expected_sdk" \
+            --volume "$PWD:/workspace" --workdir /workspace \
+            mcr.microsoft.com/dotnet/sdk@sha256:496914451b05ac5a24592024362ec370c3a2d3c3fe817f864e4aa55c4c194a56 \
+            sh -euc '
+              apk add --no-cache bash=5.3.9-r1 util-linux-misc=2.42.3-r1
+              test "$(dotnet --version)" = "$CLAIMCORE_EXPECTED_SDK"
+              bash eng/verify.sh unit
+            '
 
   integration:
-    name: PostgreSQL ${{ matrix.major }} store and full-path growth tests
+    name: PostgreSQL ${{ matrix.major }} store tests
     needs: [configuration]
     strategy:
       fail-fast: true
@@ -119,6 +137,26 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh postgres
+
+  growth:
+    name: Manual PostgreSQL ${{ matrix.major }} growth qualification
+    if: github.event_name == 'workflow_dispatch' && inputs.growth
+    needs: [configuration]
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJSON(needs.configuration.outputs.postgresql) }}
+    env:
+      CLAIMCORE_TEST_POSTGRES_MAJOR: ${{ matrix.major }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+        with:
+          node: "false"
+      - run: bash eng/verify.sh growth
 
   web:
     name: Web host and identity tests

@@ -31,15 +31,16 @@ gate. Named stages execute in order, stop at failure and share restore/build wor
 | unit | Build, unit/property and compiled architecture suites |
 | frontend | npm ci/audit, format/lint/types, browser unit completion, Knip/licenses/build/notices |
 | workflows | ShellCheck and pinned Docker Actionlint |
-| integration | Complete postgres then web suites |
-| postgres / web | Complete selected isolated suite with its project closure |
+| integration | Required postgres then web suites; growth is separate |
+| postgres / web | Required selected isolated suite with its project closure |
+| growth | Opt-in nine-profile contention and verifier qualification |
 | browsers | Locked Playwright engine/system dependency installation |
 | acceptance | Published service/CLI and real browser qualification |
 
 Native tests run Microsoft Testing Platform with automatic `[<Tests>]` discovery, evaluated Compile membership
 and nonempty-run enforcement. Every test project is assigned exactly once to a stage; missing/duplicate
-assignments fail before restore. No hand-kept minimum counts exist. Focused, filtered, pending, skipped or
-retried runs cannot satisfy verification. TRX and sanitized measurements are retained in unique ignored
+assignments fail before restore. No hand-kept minimum counts exist. Ad hoc focused, filtered, pending, skipped or
+retried runs cannot satisfy verification. The named postgres and growth stages select their disjoint scopes explicitly. TRX and sanitized measurements are retained in unique ignored
 `artifacts/verification/` directories, including failure evidence.
 
 Default acceptance runs all specifications on Chromium, Firefox and WebKit, sequentially stopping on first
@@ -51,7 +52,8 @@ Chromium's headless shell for CLI PKCE, including Firefox/WebKit jobs, and omits
 Fresh-login tests budget one admission window plus normal OIDC work. Their shared helper follows the actual
 browser challenge and recovers only from a validated login-admission refusal.
 
-CI runs independent lint/unit/frontend/PostgreSQL/Web jobs and requires every scheduled job in `Gate`. PR, merge queue,
+CI runs independent lint/unit/frontend/PostgreSQL/Web jobs and requires the scheduled required jobs in `Gate`.
+The native matrix is linux-x64, linux-musl-x64 and osx-arm64. Growth is available only through an explicit workflow dispatch input, outside Gate. PR, merge queue,
 main/tag and explicit dispatch use three isolated complete engines. Every scheduled engine must succeed in the aggregate
 Gate. The frontend runs in the pinned Node container without executable .NET. PostgreSQL majors/images come from
 [postgresql-baseline.json](../db/postgresql-baseline.json); each listed major needs actual qualification.
@@ -62,6 +64,10 @@ Successful fixtures clean their own resources. Failed fixtures retain private ev
 installations or prune unrelated containers/volumes.
 
 ## Disk use and retained evidence
+
+The verifier retains the newest ten completed managed `native.*` report directories. Active runs are protected
+until completion and may temporarily exceed the limit. Old unmanaged directories are untouched; review them
+separately before owner cleanup. This policy bounds new report retention, not total artifacts or cache use.
 
 NuGet/npm caches retain downloads keyed by lockfiles; locked restore/npm ci/audit still run. SDK-free frontend
 and acceptance share the same exact npm download key, without broad fallbacks. Build outputs, node_modules,
@@ -82,8 +88,8 @@ Read the owner contract and behavior tests before editing. An endpoint belongs i
 the field table, Domain admission and RecordFormat codec. Update affected consumers, SQL, tests, source locales and docs
 together. Before 1.0.0 baseline replacement may explicitly refuse older installations; the current build admits one
 exact source-bound baseline. There is no in-place upgrade or conversion; preserve existing installations with matching
-software. Production and tests retain function/lambda/member length 50 and complexity 12. Only inline named rule
-exceptions with reasons are allowed. File/module length is not a gate. Required deterministic properties run 200 cases
+software. Production and tests enforce complexity 12; line-count rules are absent. Only inline named rule
+exceptions with reasons are allowed. Required deterministic properties run 200 cases
 with state sequences up to 20. Shrinking stops after 100 successful descent steps, retaining the failing replay token;
 this is not a bound on candidate count or wall time. Decoder fuzzing uses at most 4,096 random bytes plus fixed hostile
 cases, including a 12,008-byte escaped-control string. There is no mutation campaign or environment switch for a
@@ -120,10 +126,9 @@ runner results. Module lint checks follow transitive imports, aliases and JavaSc
 
 ## Synthetic growth qualification
 
-The required full-path profiles run 1k/10k/100k business operations with 1/4/16 writers, 1k cases, 100 actors/1k grants
+Run `bash eng/verify.sh growth` before a release and on demand. It is outside the required gate; the manual CI growth input runs the same stage. The full-path profiles run 1k/10k/100k business operations with 1/4/16 writers, 1k cases, 100 actors/1k grants
 (setup entries counted separately), 500 sessions/32 session workers. Disjoint lanes plus
-explicit same-case/revocation conflicts protect accepted-count evidence. All nine profiles are required once per qualified database; iteration selectors never satisfy the
-gate. Reports in ignored artifacts/verification/growth record exact revision/dirty state, counts, p50/p95/p99,
+explicit same-case/revocation conflicts protect accepted-count evidence. All nine profiles are required for full growth qualification. `CLAIMCORE_GROWTH_PROFILE=writes:writers` selects one declared profile for iteration; its report explicitly marks incomplete qualification. Reports in ignored artifacts/verification/growth record exact revision/dirty state, counts, p50/p95/p99,
 throughput, session latency, verifier memory/time and DB temporary work. Unmeasured head wait/hold metrics
 remain explicit. A separate comparison fixes history at 1,000 case entries plus three authority entries while varying
 case cardinality across 1/100/1,000; its verifier time and sampled memory are recorded in cardinality.json. These

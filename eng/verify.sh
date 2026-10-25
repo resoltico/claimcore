@@ -2,6 +2,7 @@
 # Run every stage, --fast (no Docker), or named stages in order. CI calls the same stages.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+source eng/native-reports.sh
 
 # These assignments are also the inputs each native stage executes.
 unit_projects=(tests/ClaimCore.Tests/ClaimCore.Tests.fsproj tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj)
@@ -41,7 +42,7 @@ fi
 # Validate all arguments before restoring inputs or running a partial gate.
 for stage in "${stages[@]}"; do
   case "${stage}" in
-    lint | unit | frontend | workflows | integration | postgres | web | browsers | acceptance) ;;
+    lint | unit | frontend | workflows | integration | postgres | web | browsers | acceptance | growth) ;;
     *) echo "unknown stage: ${stage}" >&2; exit 64 ;;
   esac
 done
@@ -84,19 +85,7 @@ for stage in "${stages[@]}"; do
   case "${stage}" in
     browsers) validate_browser_selection ;;
     acceptance) validate_browser_selection; validate_postgres_selection ;;
-    integration | postgres) validate_postgres_selection ;;
-    *) : ;;
-  esac
-done
-
-# Iteration growth selection cannot qualify a complete PostgreSQL stage.
-for stage in "${stages[@]}"; do
-  case "${stage}" in
-    integration | postgres)
-      if [[ -n "${CLAIMCORE_GROWTH_PROFILE+x}" ]]; then
-        echo "Complete verification requires the unselected full growth profile; unset CLAIMCORE_GROWTH_PROFILE." >&2
-        exit 64
-      fi ;;
+    integration | postgres | growth) validate_postgres_selection ;;
     *) : ;;
   esac
 done
@@ -105,7 +94,7 @@ done
 # validates its pinned images and owns its isolated resources.
 for stage in "${stages[@]}"; do
   case "${stage}" in
-    workflows | integration | postgres | web | acceptance)
+    workflows | integration | postgres | web | acceptance | growth)
       if ! command -v docker >/dev/null 2>&1 || ! docker info --format '{{.ServerVersion}}' >/dev/null; then
         echo "Selected stages require a running Docker daemon; start Docker and retry." >&2
         exit 69
@@ -121,10 +110,18 @@ tests() { # <project> [configuration] [timeout] [settings]
   report_root="${CLAIMCORE_TEST_REPORT_DIRECTORY:-${PWD}/artifacts/verification}"
   mkdir -p "${report_root}"
   report_directory="$(mktemp -d "${report_root}/native.XXXXXXXX")"
+  touch "${report_directory}/.claimcore-native-active"
+  local result=0
+  local selection=()
+  if [[ -n "${5:-}" ]]; then selection=(--filter "$5"); fi
   CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" dotnet test --project "$1" --configuration "${2:-Release}" --no-build --no-restore \
-    --zero-tests-policy=strict --timeout="${3:-30m}" \
+    --zero-tests-policy=strict --timeout="${3:-30m}" "${selection[@]}" \
     --report-trx --report-trx-filename="${report_directory}/results.trx" \
-    -- --settings="${PWD}/${4:-eng/expecto.runsettings}"
+    -- --settings="${PWD}/${4:-eng/expecto.runsettings}" || result=$?
+  rm "${report_directory}/.claimcore-native-active"
+  touch "${report_directory}/.claimcore-native-complete"
+  prune_native_reports "${report_root}"
+  return "${result}"
 }
 
 native_restored=false
@@ -167,6 +164,7 @@ lint() {
 }
 
 unit() {
+  bash eng/test-native-reports.sh
   build_native
   local project
   for project in "${unit_projects[@]}"; do
@@ -211,7 +209,15 @@ postgres() {
   local project
   for project in "${postgres_projects[@]}"; do
     build_native "${project}"
-    tests "${project}" Release 110m eng/expecto.integration.runsettings
+    tests "${project}" Release 30m eng/expecto.integration.runsettings 'FullyQualifiedName!~synthetic write contention and verifier growth qualification'
+  done
+}
+
+growth() {
+  local project
+  for project in "${postgres_projects[@]}"; do
+    build_native "${project}"
+    tests "${project}" Release 110m eng/expecto.integration.runsettings 'FullyQualifiedName~synthetic write contention and verifier growth qualification'
   done
 }
 

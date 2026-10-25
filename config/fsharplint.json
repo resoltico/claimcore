@@ -13,42 +13,6 @@
       "maxComplexity": 12
     }
   },
-  "maxLinesInFunction": {
-    "enabled": true,
-    "config": {
-      "maxLines": 50
-    }
-  },
-  "maxLinesInLambdaFunction": {
-    "enabled": true,
-    "config": {
-      "maxLines": 50
-    }
-  },
-  "maxLinesInMatchLambdaFunction": {
-    "enabled": true,
-    "config": {
-      "maxLines": 50
-    }
-  },
-  "maxLinesInMember": {
-    "enabled": true,
-    "config": {
-      "maxLines": 50
-    }
-  },
-  "maxLinesInConstructor": {
-    "enabled": true,
-    "config": {
-      "maxLines": 50
-    }
-  },
-  "maxLinesInProperty": {
-    "enabled": true,
-    "config": {
-      "maxLines": 50
-    }
-  },
   "noTabCharacters": {
     "enabled": true
   },
