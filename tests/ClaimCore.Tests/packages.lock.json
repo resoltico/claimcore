@@ -26,9 +26,9 @@
       },
       "FSharp.Core": {
         "type": "Direct",
-        "requested": "[10.1.401, )",
-        "resolved": "10.1.401",
-        "contentHash": "/lvOK51KD8IangBYkfDVna3/HrE/r4VUnX3dI01KDspctoYXmind3POeoYkqWKeXHwiKlf6Hc9TxwSnoSCWcjw=="
+        "requested": "[10.1.402, )",
+        "resolved": "10.1.402",
+        "contentHash": "kfttzFL9uArPkhlhvoH99RZOOFpJnxOAZkGLqgfG+Wnc4FO2L+HnwradMgX1ubMjzhajuNzPTTcW1Yk8D1rGEg=="
       },
       "Hedgehog": {
         "type": "Direct",
@@ -42,24 +42,24 @@
       },
       "JsonSchema.Net": {
         "type": "Direct",
-        "requested": "[9.4.1, )",
-        "resolved": "9.4.1",
-        "contentHash": "7Nh0XyIse3a5nsc1nJJTECZVjxqHVE5jANGEPpQc2H+/M7u2sLueL93X6ZUuJLkLYy/pYzFmJhKYEpVIctaUZw==",
+        "requested": "[9.5.0, )",
+        "resolved": "9.5.0",
+        "contentHash": "yCohYtv0mi0oU+n3rpPBhoP/6OKkmxxwkGfprohst5DywbKoHaf9yJtFR8CYasKUUO5KfIR3gm43vsqxgT0nzA==",
         "dependencies": {
           "JsonPointer.Net": "7.0.3"
         }
       },
       "Markdig": {
         "type": "Direct",
-        "requested": "[1.4.0, )",
-        "resolved": "1.4.0",
-        "contentHash": "lLhaiI/mNDTNzgLqnmknhf4LjgTqOAyjx5+GNz0X3AxYMxUhmFppF2WVMdER+SDqwhE5wUF1pzs/cuLwFxs7xA=="
+        "requested": "[1.5.0, )",
+        "resolved": "1.5.0",
+        "contentHash": "oEm6N4PYFPUZiJ5e89993AE6hfC8EWRGD5M8nyoSJbwD4GgW818mjlQCk++SdTV4godaN50Ybcmm4j2Dp76oIQ=="
       },
       "Microsoft.OpenApi": {
         "type": "Direct",
-        "requested": "[3.10.2, )",
-        "resolved": "3.10.2",
-        "contentHash": "qzg4a3WmgQm28Azaporbnsu+KHA+vq5sgpQQFLiJgB06Rra2S+kzGAU7pzUB8/UIwZJCSCY2JEE/M5e0hQ2K8w=="
+        "requested": "[3.11.0, )",
+        "resolved": "3.11.0",
+        "contentHash": "kvQz+mL/fnDw2VaE8zMyQhbMv7FmOYUydIhCVNKxQdrLu9XiMT/07DHwJ5YkRO2uzcxTFvMAKFKKywxoyLKHcA=="
       },
       "Microsoft.Testing.Extensions.TrxReport": {
         "type": "Direct",
@@ -323,7 +323,7 @@
           "ClaimCore.Contract": "[0.11.0, )",
           "ClaimCore.Domain": "[0.11.0, )",
           "ClaimCore.RecordFormat": "[0.11.0, )",
-          "FSharp.Core": "[10.1.401, )"
+          "FSharp.Core": "[10.1.402, )"
         }
       },
       "claimcore.cli": {
@@ -333,13 +333,13 @@
           "ClaimCore.HostSecurity": "[0.11.0, )",
           "Duende.IdentityModel": "[8.1.0, )",
           "Duende.IdentityModel.OidcClient": "[7.1.1, )",
-          "FSharp.Core": "[10.1.401, )"
+          "FSharp.Core": "[10.1.402, )"
         }
       },
       "claimcore.contract": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.401, )"
+          "FSharp.Core": "[10.1.402, )"
         }
       },
       "claimcore.contractgenerator": {
@@ -348,20 +348,20 @@
           "ClaimCore.Application": "[0.11.0, )",
           "ClaimCore.Contract": "[0.11.0, )",
           "ClaimCore.Domain": "[0.11.0, )",
-          "FSharp.Core": "[10.1.401, )"
+          "FSharp.Core": "[10.1.402, )"
         }
       },
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {
           "ClaimCore.Contract": "[0.11.0, )",
-          "FSharp.Core": "[10.1.401, )"
+          "FSharp.Core": "[10.1.402, )"
         }
       },
       "claimcore.hostsecurity": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.401, )"
+          "FSharp.Core": "[10.1.402, )"
         }
       },
       "claimcore.postgres": {
@@ -371,7 +371,7 @@
           "ClaimCore.Contract": "[0.11.0, )",
           "ClaimCore.Domain": "[0.11.0, )",
           "ClaimCore.RecordFormat": "[0.11.0, )",
-          "FSharp.Core": "[10.1.401, )",
+          "FSharp.Core": "[10.1.402, )",
           "Npgsql": "[10.0.3, )"
         }
       },
@@ -380,7 +380,7 @@
         "dependencies": {
           "ClaimCore.Contract": "[0.11.0, )",
           "ClaimCore.Domain": "[0.11.0, )",
-          "FSharp.Core": "[10.1.401, )"
+          "FSharp.Core": "[10.1.402, )"
         }
       },
       "claimcore.web": {
@@ -390,7 +390,7 @@
           "ClaimCore.Contract": "[0.11.0, )",
           "ClaimCore.HostSecurity": "[0.11.0, )",
           "ClaimCore.Postgres": "[0.11.0, )",
-          "FSharp.Core": "[10.1.401, )",
+          "FSharp.Core": "[10.1.402, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.13, )"
         }

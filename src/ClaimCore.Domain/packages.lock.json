@@ -4,14 +4,14 @@
     "net10.0": {
       "FSharp.Core": {
         "type": "Direct",
-        "requested": "[10.1.401, )",
-        "resolved": "10.1.401",
-        "contentHash": "/lvOK51KD8IangBYkfDVna3/HrE/r4VUnX3dI01KDspctoYXmind3POeoYkqWKeXHwiKlf6Hc9TxwSnoSCWcjw=="
+        "requested": "[10.1.402, )",
+        "resolved": "10.1.402",
+        "contentHash": "kfttzFL9uArPkhlhvoH99RZOOFpJnxOAZkGLqgfG+Wnc4FO2L+HnwradMgX1ubMjzhajuNzPTTcW1Yk8D1rGEg=="
       },
       "claimcore.contract": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.401, )"
+          "FSharp.Core": "[10.1.402, )"
         }
       }
     }

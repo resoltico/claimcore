@@ -1,5 +1,5 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0.402@sha256:0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa AS sdk
-FROM node:26.10.0-bookworm@sha256:2aaae6d91f99fee84cfc92da9b52c22a185752d247746052bbc3f961e44478c6 AS node
+FROM mcr.microsoft.com/dotnet/sdk:10.0.402@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2 AS sdk
+FROM node:26.12.1-bookworm@sha256:5c4012d11d9857c42713ba511fbc19645cac1706bb710d51d42b0d301dff7f88 AS node
 
 # The browser build consumes tracked contracts and needs no .NET SDK.
 FROM node AS frontend
@@ -26,14 +26,14 @@ RUN --mount=type=cache,target=/root/.nuget/packages \
     && dotnet publish src/ClaimCore.Cli --configuration Release --no-restore --output /published/cli \
     && dotnet publish src/ClaimCore.Database --configuration Release --no-restore --output /published/database
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:d5633778c754e89a386882eddf8dbee6942447a8a4b8267c19cf1e1158d0b0ac AS administration
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS administration
 WORKDIR /app
 COPY --from=build /published/database/ ./database/
 COPY --from=build /published/cli/ ./cli/
 USER $APP_UID
 ENTRYPOINT ["dotnet", "/app/database/ClaimCore.Database.dll"]
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:d5633778c754e89a386882eddf8dbee6942447a8a4b8267c19cf1e1158d0b0ac AS web
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS web
 WORKDIR /app
 COPY --from=build /published/web/ ./
 USER $APP_UID
