@@ -178,6 +178,7 @@ type CatalogEntry =
 type FieldPresentationDefinition =
     {
         Name: BusinessField
+        Group: FieldGroup
         LabelId: string
         MeaningId: string
         Scalar: ScalarRule

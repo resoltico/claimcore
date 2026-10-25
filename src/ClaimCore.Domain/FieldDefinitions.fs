@@ -127,24 +127,7 @@ module FieldDefinitions =
     let forField field =
         all |> List.find (fun definition -> definition.Field = field)
 
-    /// Exact values follow the authoritative field-table order.
-    let values (fields: CaseFields) =
-        let values =
-            [
-                BusinessField.IncidentDate, Some fields.IncidentDate
-                BusinessField.IncidentNotificationDate, Some fields.IncidentNotificationDate
-                BusinessField.IncidentCountry, Some fields.IncidentCountry
-                BusinessField.ClaimantName, Some fields.ClaimantName
-                BusinessField.InsurerName, Some fields.InsurerName
-                BusinessField.ClaimedAmount, Some fields.ClaimedAmount
-                BusinessField.ClaimedCurrency, Some fields.ClaimedCurrency
-                BusinessField.CaseReference, Some fields.CaseReference
-                BusinessField.PaymentDecisionDate, fields.PaymentDecisionDate
-                BusinessField.PayableAmount, fields.PayableAmount
-                BusinessField.PayableCurrency, fields.PayableCurrency
-                BusinessField.PaymentDate, fields.PaymentDate
-                BusinessField.Status, Some(CaseStatuses.token fields.Status)
-            ]
-            |> Map.ofList
-
-        FieldTable.rows |> List.map (fun row -> row.Field, Map.find row.Field values)
+    /// Field order comes from the authoritative table; value access belongs to the view.
+    let values fields =
+        FieldTable.rows
+        |> List.map (fun row -> row.Field, CaseFields.value row.Field fields)

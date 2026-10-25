@@ -65,7 +65,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         Expect.equal store.ReadCalls 0 "No state is fetched after commit to shape the receipt"
 
         Expect.equal
-            (disclosedFields receipt).ClaimantName
+            (disclosedFields receipt).Registration.ClaimantName
             registration.ClaimantName
             "Disclosure uses the write's locked context"
 

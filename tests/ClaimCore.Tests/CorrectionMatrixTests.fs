@@ -45,8 +45,8 @@ let private paymentChoices =
     ]
 
 let private permitted (fields: CaseFields) registrationChanged decisionMode paymentMode =
-    let decided = fields.PaymentDecisionDate.IsSome
-    let paid = fields.PaymentDate.IsSome
+    let decided = fields.Decision.IsSome
+    let paid = fields.Payment.IsSome
 
     (fields.Status = CaseStatus.Closed || decided)
     && (decisionMode = "KEEP" || decided)
@@ -58,35 +58,35 @@ let private permitted (fields: CaseFields) registrationChanged decisionMode paym
 let private expectedFields (fields: CaseFields) registrationChanged decisionMode paymentMode =
     let registration =
         if registrationChanged then
-            { fields with
+            { fields.Registration with
                 ClaimantName = "Synthetic matrix party"
             }
         else
-            fields
+            fields.Registration
 
     let decision =
         match decisionMode with
         | "REPLACE" ->
-            { registration with
-                PaymentDecisionDate = Some "2026-08-15"
-                PayableAmount = Some "650"
-                PayableCurrency = Some "USD"
-            }
-        | "CLEAR" ->
-            { registration with
-                PaymentDecisionDate = None
-                PayableAmount = None
-                PayableCurrency = None
-            }
-        | _ -> registration
+            Some
+                {
+                    PaymentDecisionDate = "2026-08-15"
+                    PayableAmount = "650"
+                    PayableCurrency = "USD"
+                }
+        | "CLEAR" -> None
+        | _ -> fields.Decision
 
-    match paymentMode with
-    | "REPLACE" ->
-        { decision with
-            PaymentDate = Some "2026-08-21"
-        }
-    | "CLEAR" -> { decision with PaymentDate = None }
-    | _ -> decision
+    let payment =
+        match paymentMode with
+        | "REPLACE" -> Some { PaymentDate = "2026-08-21" }
+        | "CLEAR" -> None
+        | _ -> fields.Payment
+
+    { fields with
+        Registration = registration
+        Decision = decision
+        Payment = payment
+    }
 
 let private checkChoice
     before
@@ -166,8 +166,8 @@ let private zeroPaid =
             let after = paid () |> apply cleared |> accepted |> Case.snapshot
 
             Expect.isTrue
-                ((viewFields after).PayableAmount = Some "0"
-                 && (viewFields after).PaymentDate.IsNone)
+                (((viewFields after).Decision |> Option.map _.PayableAmount) = Some "0"
+                 && (viewFields after).Payment.IsNone)
                 "An unpaid zero decision is valid")
 
 [<Tests>]

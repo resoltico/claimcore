@@ -12,8 +12,11 @@ let private restored name =
 
     let fields =
         { viewFields original with
-            ClaimantName = name
-            InsurerName = name
+            Registration =
+                { (viewFields original).Registration with
+                    ClaimantName = name
+                    InsurerName = name
+                }
         }
 
     Case.ofAccepted (snapshot original.Revision fields)

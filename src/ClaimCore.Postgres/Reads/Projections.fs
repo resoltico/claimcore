@@ -52,35 +52,56 @@ module internal Projections =
     let caseColumns = CaseProjectionLayout.select
 
     let private fields reference row : CaseFields =
-        {
-            CaseReference = reference
-            IncidentDate = date (CaseProjectionLayout.ordinal BusinessField.IncidentDate) row
-            IncidentNotificationDate =
-                date (CaseProjectionLayout.ordinal BusinessField.IncidentNotificationDate) row
-            IncidentCountry =
-                required (CaseProjectionLayout.ordinal BusinessField.IncidentCountry) row
-            ClaimantName = required (CaseProjectionLayout.ordinal BusinessField.ClaimantName) row
-            InsurerName = required (CaseProjectionLayout.ordinal BusinessField.InsurerName) row
-            ClaimedAmount = amount (CaseProjectionLayout.ordinal BusinessField.ClaimedAmount) row
-            ClaimedCurrency =
-                required (CaseProjectionLayout.ordinal BusinessField.ClaimedCurrency) row
-            PaymentDecisionDate =
+        let decision =
+            match
                 optionalText
                     date
                     (CaseProjectionLayout.ordinal BusinessField.PaymentDecisionDate)
-                    row
-            PayableAmount =
-                optionalText amount (CaseProjectionLayout.ordinal BusinessField.PayableAmount) row
-            PayableCurrency =
+                    row,
+                optionalText amount (CaseProjectionLayout.ordinal BusinessField.PayableAmount) row,
                 optional<string> (CaseProjectionLayout.ordinal BusinessField.PayableCurrency) row
-            PaymentDate =
-                optionalText date (CaseProjectionLayout.ordinal BusinessField.PaymentDate) row
+            with
+            | None, None, None -> None
+            | Some date, Some amount, Some currency ->
+                Some
+                    {
+                        PaymentDecisionDate = date
+                        PayableAmount = amount
+                        PayableCurrency = currency
+                    }
+            | _ -> raise (RecordCorruptException "Incomplete stored decision.")
+
+        {
+            CaseReference = reference
             Status =
                 CaseStatuses.parse (
                     required<string> (CaseProjectionLayout.ordinal BusinessField.Status) row
                 )
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid stored status."))
+            Registration =
+                {
+                    IncidentDate =
+                        date (CaseProjectionLayout.ordinal BusinessField.IncidentDate) row
+                    IncidentNotificationDate =
+                        date
+                            (CaseProjectionLayout.ordinal BusinessField.IncidentNotificationDate)
+                            row
+                    IncidentCountry =
+                        required (CaseProjectionLayout.ordinal BusinessField.IncidentCountry) row
+                    ClaimantName =
+                        required (CaseProjectionLayout.ordinal BusinessField.ClaimantName) row
+                    InsurerName =
+                        required (CaseProjectionLayout.ordinal BusinessField.InsurerName) row
+                    ClaimedAmount =
+                        amount (CaseProjectionLayout.ordinal BusinessField.ClaimedAmount) row
+                    ClaimedCurrency =
+                        required (CaseProjectionLayout.ordinal BusinessField.ClaimedCurrency) row
+                }
+            Decision = decision
+            Payment =
+                optionalText date (CaseProjectionLayout.ordinal BusinessField.PaymentDate) row
+                |> Option.map (fun value -> { PaymentDate = value })
         }
 
     let caseRow (row: obj array) : StoredCase =

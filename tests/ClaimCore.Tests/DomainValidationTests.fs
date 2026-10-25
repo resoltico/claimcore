@@ -49,26 +49,53 @@ let private restorationTests =
                     snapshot
                         original.Revision
                         { (viewFields original) with
-                            PaymentDate = Some "2026-08-20"
+                            Payment = Some { PaymentDate = "2026-08-20" }
                         }
 
                 let result = Case.ofAccepted invalid |> Result.map Case.snapshot
                 Expect.isTrue (result = Error RecordViolation.InvalidProgress) "Corruption")
-            testCase "all six incomplete decision tuples are rejected on restoration" (fun () ->
-                let original = Case.snapshot (opened ())
+            testCase "all six partial decision objects are rejected at the wire boundary" (fun () ->
+                let text value = JsonValue.String value
+
+                let registration =
+                    JsonValue.Object
+                        [
+                            "incidentDate", text "2026-08-01"
+                            "incidentNotificationDate", text "2026-08-03"
+                            "incidentCountry", text "LV"
+                            "claimantName", text "Synthetic party"
+                            "insurerName", text "Synthetic insurer"
+                            "claimedAmount", text "1000"
+                            "claimedCurrency", text "EUR"
+                        ]
+
+                let candidate mask =
+                    JsonValue.Object
+                        [
+                            "caseReference", text "UNIT-001"
+                            "status", text "OPENED"
+                            "registration", registration
+                            "decision",
+                            JsonValue.Object
+                                [
+                                    if mask &&& 1 <> 0 then
+                                        "paymentDecisionDate", text "2026-08-15"
+                                    if mask &&& 2 <> 0 then
+                                        "payableAmount", text "750"
+                                    if mask &&& 4 <> 0 then
+                                        "payableCurrency", text "EUR"
+                                ]
+                            "payment", JsonValue.Null
+                        ]
+
+                Expect.isOk
+                    (Protocol.ResponseCodecs.caseFields.Read "$" (candidate 7))
+                    "The complete independent control admits"
 
                 for mask in 1..6 do
-                    let fields =
-                        { (viewFields original) with
-                            PaymentDecisionDate =
-                                if mask &&& 1 <> 0 then Some "2026-08-15" else None
-                            PayableAmount = if mask &&& 2 <> 0 then Some "750" else None
-                            PayableCurrency = if mask &&& 4 <> 0 then Some "EUR" else None
-                        }
-
                     Expect.isError
-                        (Case.ofAccepted (snapshot original.Revision fields))
-                        "An entire tuple, never a partial tuple")
+                        (Protocol.ResponseCodecs.caseFields.Read "$" (candidate mask))
+                        "A decision object requires all three members")
             testCase
                 "safe-integer terminal snapshots remain readable and refuse a successor"
                 (fun () ->
@@ -112,7 +139,7 @@ let private precisionAndRoundTripTests =
                 let claim = Case.decide today (request 0L (CaseAct.Open facts)) None |> accepted
 
                 Expect.isTrue
-                    ((Case.snapshot claim |> viewFields).ClaimedAmount = maximum)
+                    ((Case.snapshot claim |> viewFields).Registration.ClaimedAmount = maximum)
                     "No rounding")
             testCase "all supported state views rehydrate" (fun () ->
                 for state in
@@ -205,7 +232,7 @@ let private authoredUnicodeRoundTrip () =
         let snapshot = Case.snapshot claim
 
         Expect.equal
-            (viewFields snapshot).ClaimantName
+            (viewFields snapshot).Registration.ClaimantName
             value
             "Authored scalar content remains exact."
 

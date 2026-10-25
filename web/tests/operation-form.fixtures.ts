@@ -14,7 +14,11 @@ export const current: CurrentCase = {
     acts: caseOffers(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
     history: ["SUMMARY", "FULL"],
   },
-  state: { tag: "LIVE", disposition: "ACTIVE", fields: caseFields },
+  state: {
+    tag: "LIVE",
+    disposition: "ACTIVE",
+    fields: { ...caseFields, caseReference: "CASE-SERIALIZATION" },
+  },
 };
 export const valuesFor = (kind = "CLOSE") => initialOperationValues("CASE", kind, current, firstId);
 export const requestFor = (values: FormValues) =>

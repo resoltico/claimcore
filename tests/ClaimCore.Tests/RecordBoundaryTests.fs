@@ -62,7 +62,10 @@ let private textFormats () =
 
     let oldFields =
         { viewFields original with
-            ClaimantName = "A\u202eB"
+            Registration =
+                { (viewFields original).Registration with
+                    ClaimantName = "A\u202eB"
+                }
         }
 
     let snapshot =
@@ -80,7 +83,7 @@ let private textFormats () =
             1L
             (CaseAct.AmendRegistration
                 { registration with
-                    ClaimantName = oldFields.ClaimantName
+                    ClaimantName = oldFields.Registration.ClaimantName
                 })
 
     Expect.equal

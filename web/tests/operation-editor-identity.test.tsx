@@ -129,13 +129,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
 });
 
 const paidCase: CurrentCase = {
-  caseReference: {
-    ...fields,
-    paymentDecisionDate: "2026-09-03",
-    payableAmount: "9.99",
-    payableCurrency: "EUR",
-    paymentDate: "2026-09-04",
-  }.caseReference,
+  caseReference: fields.caseReference,
   revision: 1,
   advice: { acts: caseOffers(["CORRECT"]), history: ["SUMMARY", "FULL"] },
 
@@ -143,10 +137,12 @@ const paidCase: CurrentCase = {
     tag: "LIVE",
     fields: {
       ...fields,
-      paymentDecisionDate: "2026-09-03",
-      payableAmount: "9.99",
-      payableCurrency: "EUR",
-      paymentDate: "2026-09-04",
+      decision: {
+        paymentDecisionDate: "2026-09-03",
+        payableAmount: "9.99",
+        payableCurrency: "EUR",
+      },
+      payment: { paymentDate: "2026-09-04" },
     },
     disposition: "ACTIVE",
   },

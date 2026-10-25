@@ -11,51 +11,60 @@ module ResponseCodecs =
     let private principal = RequestCodecs.principal
     let private scope = RequestCodecs.scope
 
-    let caseFields =
-        (record (fun v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 ->
+    let private registration =
+        (record (fun incident notification country claimant insurer amount currency ->
             {
-                CaseFields.IncidentDate = v0
-                IncidentNotificationDate = v1
-                IncidentCountry = v2
-                ClaimantName = v3
-                InsurerName = v4
-                ClaimedAmount = v5
-                ClaimedCurrency = v6
-                CaseReference = v7
-                PaymentDecisionDate = v8
-                PayableAmount = v9
-                PayableCurrency = v10
-                PaymentDate = v11
-                Status = v12
+                Registration.IncidentDate = incident
+                IncidentNotificationDate = notification
+                IncidentCountry = country
+                ClaimantName = claimant
+                InsurerName = insurer
+                ClaimedAmount = amount
+                ClaimedCurrency = currency
+            })
+        : Fields<Registration, _>)
+        |> field "incidentDate" _.IncidentDate date
+        |> field "incidentNotificationDate" _.IncidentNotificationDate date
+        |> field "incidentCountry" _.IncidentCountry country
+        |> field "claimantName" _.ClaimantName nonempty
+        |> field "insurerName" _.InsurerName nonempty
+        |> field "claimedAmount" _.ClaimedAmount amount
+        |> field "claimedCurrency" _.ClaimedCurrency currency
+        |> build
+
+    let private decision =
+        (record (fun date amount currency ->
+            {
+                Decision.PaymentDecisionDate = date
+                PayableAmount = amount
+                PayableCurrency = currency
+            })
+        : Fields<Decision, _>)
+        |> field "paymentDecisionDate" _.PaymentDecisionDate date
+        |> field "payableAmount" _.PayableAmount amount
+        |> field "payableCurrency" _.PayableCurrency currency
+        |> build
+
+    let private payment =
+        (record (fun date -> { Payment.PaymentDate = date }): Fields<Payment, _>)
+        |> field "paymentDate" _.PaymentDate date
+        |> build
+
+    let caseFields =
+        (record (fun reference status registration decision payment ->
+            {
+                CaseFields.CaseReference = reference
+                Status = status
+                Registration = registration
+                Decision = decision
+                Payment = payment
             })
         : Fields<CaseFields, _>)
-        |> field (FieldTable.key BusinessField.IncidentDate) _.IncidentDate date
-        |> field
-            (FieldTable.key BusinessField.IncidentNotificationDate)
-            _.IncidentNotificationDate
-            date
-        |> field (FieldTable.key BusinessField.IncidentCountry) _.IncidentCountry country
-        |> field (FieldTable.key BusinessField.ClaimantName) _.ClaimantName (nonempty)
-        |> field (FieldTable.key BusinessField.InsurerName) _.InsurerName (nonempty)
-        |> field (FieldTable.key BusinessField.ClaimedAmount) _.ClaimedAmount amount
-        |> field (FieldTable.key BusinessField.ClaimedCurrency) _.ClaimedCurrency currency
-        |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference reference
-        |> field
-            (FieldTable.key BusinessField.PaymentDecisionDate)
-            _.PaymentDecisionDate
-            (nullable date)
-        |> field (FieldTable.key BusinessField.PayableAmount) _.PayableAmount (nullable amount)
-        |> field
-            (FieldTable.key BusinessField.PayableCurrency)
-            _.PayableCurrency
-            (nullable currency)
-        |> field (FieldTable.key BusinessField.PaymentDate) _.PaymentDate (nullable date)
-        |> field
-            (FieldTable.key BusinessField.Status)
-            _.Status
-            (enumeration (
-                CaseStatuses.all |> List.map (fun status -> status, CaseStatuses.token status)
-            ))
+        |> field "caseReference" _.CaseReference reference
+        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatuses.vocabulary))
+        |> field "registration" _.Registration registration
+        |> field "decision" _.Decision (nullable decision)
+        |> field "payment" _.Payment (nullable payment)
         |> build
         |> named "CaseFields"
 
@@ -64,19 +73,30 @@ module ResponseCodecs =
         |> field "disposition" snd (enumeration (Vocabulary.entries Dispositions.vocabulary))
         |> field "fields" fst caseFields
 
+    let private liveTag = "LIVE"
+
     let private liveVariant =
         variant
-            "LIVE"
+            liveTag
             CaseView.Live
             (function
             | CaseView.Live(fields, disposition) -> Some(fields, disposition)
             | _ -> None)
             liveStateFields
 
-    let liveState = tagged "LiveState" "tag" [ liveVariant ]
+    let private stateName = "CaseState"
+
+    // Current reads and the LIVE branch of retained views share the same codec definition.
+    let liveState =
+        let codec = tagged stateName "tag" [ liveVariant ]
+
+        { codec with
+            Schema = Schema.Ref(stateName + "." + liveTag)
+            Definitions = Map.remove stateName codec.Definitions
+        }
 
     let caseState =
-        tagged "CaseState" "tag" [ liveVariant; unitVariant "ERASED" CaseView.Erased ]
+        tagged stateName "tag" [ liveVariant; unitVariant "ERASED" CaseView.Erased ]
 
     let caseSnapshot =
         (record (fun reference revision view ->

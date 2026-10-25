@@ -18,6 +18,7 @@ let rec private members definitions =
     function
     | Schema.Ref name -> members definitions (Map.find name definitions)
     | Schema.Object(properties, _) -> properties |> List.map fst
+    | Schema.OneOf([ schema; Schema.Null ], _) -> members definitions schema
     | _ -> failtest "Expected an object codec."
 
 let private expectGroup group (codec: Codec<'T>) =
@@ -34,14 +35,30 @@ let private codecs () =
     let actual =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema
 
-    let expected = FieldTable.rows |> List.map _.Key
-    Expect.equal actual expected "Snapshot business fields follow the field table"
+    let expected = [ "caseReference"; "status"; "registration"; "decision"; "payment" ]
+    Expect.equal actual expected "The public view has complete groups"
+
+    let properties =
+        match Map.find "CaseFields" ResponseCodecs.caseFields.Definitions with
+        | Schema.Object(properties, _) -> Map.ofList properties
+        | _ -> failtest "Expected the grouped view"
+
+    for group, name in
+        [
+            FieldGroup.Registration, "registration"
+            FieldGroup.Decision, "decision"
+            FieldGroup.Payment, "payment"
+        ] do
+        Expect.equal
+            (members ResponseCodecs.caseFields.Definitions properties[name])
+            (keys group)
+            "Group members follow the authoritative field table"
 
     let renamed =
         actual
-        |> List.map (fun key -> if key = "incidentDate" then "incidentDay" else key)
+        |> List.map (fun key -> if key = "registration" then "registrationValues" else key)
 
-    Expect.notEqual renamed expected "The comparison detects a renamed codec member"
+    Expect.notEqual renamed expected "A renamed group is detectable"
 
 let private domain () =
     let fields = FieldTable.rows |> List.map _.Field

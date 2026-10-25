@@ -110,7 +110,7 @@ let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandle
             hasHandler
             "Authority belongs to this snapshot"
 
-        Expect.equal fields.ClaimantName name "Data belongs to this snapshot"
+        Expect.equal fields.Registration.ClaimantName name "Data belongs to this snapshot"
     | _ -> failtest "Expected a coherent read"
 
 [<Tests>]

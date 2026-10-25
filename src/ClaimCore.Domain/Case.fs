@@ -29,37 +29,34 @@ type CaseRecord =
         }
 
 module private BusinessState =
-    let fields reference claim =
-        let decision = PaymentProgress.decision claim.Progress
-
+    let fields reference claim : CaseFields =
         {
-            IncidentDate = Validation.dateText claim.Facts.IncidentDate
-            IncidentNotificationDate = Validation.dateText claim.Facts.NotificationDate
-            IncidentCountry = claim.Facts.Country
-            ClaimantName = claim.Facts.Claimant
-            InsurerName = claim.Facts.Insurer
-            ClaimedAmount = Validation.amountText claim.Facts.Claimed
-            ClaimedCurrency = claim.Facts.Claimed.Currency
             CaseReference = reference
-            PaymentDecisionDate =
-                decision |> Option.map (fun value -> Validation.dateText value.Date)
-            PayableAmount =
-                decision |> Option.map (fun value -> Validation.amountText value.Payable)
-            PayableCurrency = decision |> Option.map (fun value -> value.Payable.Currency)
-            PaymentDate =
-                PaymentProgress.paymentDate claim.Progress |> Option.map Validation.dateText
             Status = claim.Status
-        }
-
-    let private registration (fields: CaseFields) =
-        {
-            IncidentDate = fields.IncidentDate
-            IncidentNotificationDate = fields.IncidentNotificationDate
-            IncidentCountry = fields.IncidentCountry
-            ClaimantName = fields.ClaimantName
-            InsurerName = fields.InsurerName
-            ClaimedAmount = fields.ClaimedAmount
-            ClaimedCurrency = fields.ClaimedCurrency
+            Registration =
+                {
+                    IncidentDate = Validation.dateText claim.Facts.IncidentDate
+                    IncidentNotificationDate = Validation.dateText claim.Facts.NotificationDate
+                    IncidentCountry = claim.Facts.Country
+                    ClaimantName = claim.Facts.Claimant
+                    InsurerName = claim.Facts.Insurer
+                    ClaimedAmount = Validation.amountText claim.Facts.Claimed
+                    ClaimedCurrency = claim.Facts.Claimed.Currency
+                }
+            Decision =
+                PaymentProgress.decision claim.Progress
+                |> Option.map (fun value ->
+                    {
+                        PaymentDecisionDate = Validation.dateText value.Date
+                        PayableAmount = Validation.amountText value.Payable
+                        PayableCurrency = value.Payable.Currency
+                    })
+            Payment =
+                PaymentProgress.paymentDate claim.Progress
+                |> Option.map (fun value ->
+                    {
+                        PaymentDate = Validation.dateText value
+                    })
         }
 
     let private retained value =
@@ -70,33 +67,26 @@ module private BusinessState =
             | _ -> RecordViolation.InvalidProgress)
 
     let private restoreProgress (fields: CaseFields) =
-        match fields.PaymentDecisionDate, fields.PayableAmount, fields.PayableCurrency with
-        | None, None, None when fields.PaymentDate.IsNone -> Ok PaymentProgress.Undecided
-        | None, None, None -> Error RecordViolation.InvalidProgress
-        | Some date, Some amount, Some currency ->
-            result {
-                let! decision =
-                    Validation.decision
-                        {
-                            PaymentDecisionDate = date
-                            PayableAmount = amount
-                            PayableCurrency = currency
-                        }
+        result {
+            let! decision =
+                match fields.Decision with
+                | None -> Ok None
+                | Some value -> Validation.decision value |> retained |> Result.map Some
+
+            let! paid =
+                match fields.Payment with
+                | None -> Ok None
+                | Some value ->
+                    Validation.date DateInput.PaymentDate value.PaymentDate
                     |> retained
+                    |> Result.map Some
 
-                let! paid =
-                    match fields.PaymentDate with
-                    | None -> Ok None
-                    | Some value ->
-                        Validation.date DateInput.PaymentDate value |> retained |> Result.map Some
-
-                return! PaymentProgress.fromGroups (Some decision) paid |> retained
-            }
-        | _ -> Error RecordViolation.IncompleteDecision
+            return! PaymentProgress.fromGroups decision paid |> retained
+        }
 
     let restore (accepted: CaseFields) =
         result {
-            let! facts = accepted |> registration |> Validation.registration |> retained
+            let! facts = accepted.Registration |> Validation.registration |> retained
             let! progress = restoreProgress accepted
             do! StateValidation.progress facts progress |> retained
 

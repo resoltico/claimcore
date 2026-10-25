@@ -16,15 +16,22 @@ let private snapshots =
         let variants =
             [
                 { (viewFields original) with
-                    PayableAmount = Some "0"
+                    Decision =
+                        (viewFields original).Decision
+                        |> Option.map (fun value -> { value with PayableAmount = "0" })
                 },
                 RecordViolation.InvalidProgress
                 { (viewFields original) with
-                    PaymentDecisionDate = Some "2026-08-02"
+                    Decision =
+                        (viewFields original).Decision
+                        |> Option.map (fun value ->
+                            { value with
+                                PaymentDecisionDate = "2026-08-02"
+                            })
                 },
                 chronology (InputTarget.Field BusinessField.PaymentDecisionDate)
                 { (viewFields original) with
-                    PaymentDate = Some "2026-08-14"
+                    Payment = Some { PaymentDate = "2026-08-14" }
                 },
                 chronology (InputTarget.Field BusinessField.PaymentDate)
             ]

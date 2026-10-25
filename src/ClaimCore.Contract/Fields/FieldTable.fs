@@ -24,6 +24,15 @@ type FieldGroup =
     | Payment
     | Status
 
+module FieldGroup =
+    let token =
+        function
+        | FieldGroup.Identity -> "identity"
+        | FieldGroup.Registration -> "registration"
+        | FieldGroup.Decision -> "decision"
+        | FieldGroup.Payment -> "payment"
+        | FieldGroup.Status -> "status"
+
 [<RequireQualifiedAccess>]
 type ScalarKind =
     | Date

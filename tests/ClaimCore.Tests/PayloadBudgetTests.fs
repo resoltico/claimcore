@@ -16,18 +16,19 @@ let private maximum = 9007199254740991L
 let private fields length : CaseFields =
     {
         CaseReference = reference
-        IncidentDate = "2026-08-01"
-        IncidentNotificationDate = "2026-08-03"
-        IncidentCountry = "LV"
-        ClaimantName = String(char 1, length)
-        InsurerName = String(char 1, length)
-        ClaimedAmount = "999999999999999999.9999"
-        ClaimedCurrency = "EUR"
-        PaymentDecisionDate = None
-        PayableAmount = None
-        PayableCurrency = None
-        PaymentDate = None
         Status = CaseStatus.Closed
+        Registration =
+            {
+                IncidentDate = "2026-08-01"
+                IncidentNotificationDate = "2026-08-03"
+                IncidentCountry = "LV"
+                ClaimantName = String(char 1, length)
+                InsurerName = String(char 1, length)
+                ClaimedAmount = "999999999999999999.9999"
+                ClaimedCurrency = "EUR"
+            }
+        Decision = None
+        Payment = None
     }
 
 let private snapshot length : CaseSnapshot =

@@ -58,19 +58,20 @@ let private initial: CaseSnapshot =
         View =
             CaseView.Live(
                 {
-                    IncidentDate = "2026-08-01"
-                    IncidentNotificationDate = "2026-08-03"
-                    IncidentCountry = "LV"
-                    ClaimantName = "Example Claimant Ltd"
-                    InsurerName = "Example Alleged Insurer"
-                    ClaimedAmount = "1000"
-                    ClaimedCurrency = "EUR"
                     CaseReference = "UNIT-001"
-                    PaymentDecisionDate = None
-                    PayableAmount = None
-                    PayableCurrency = None
-                    PaymentDate = None
                     Status = CaseStatus.Opened
+                    Registration =
+                        {
+                            IncidentDate = "2026-08-01"
+                            IncidentNotificationDate = "2026-08-03"
+                            IncidentCountry = "LV"
+                            ClaimantName = "Example Claimant Ltd"
+                            InsurerName = "Example Alleged Insurer"
+                            ClaimedAmount = "1000"
+                            ClaimedCurrency = "EUR"
+                        }
+                    Decision = None
+                    Payment = None
                 },
                 Disposition.Active
             )
@@ -157,12 +158,7 @@ let private negativeControls () =
             Ok
                 { paid with
                     View =
-                        CaseView.Live(
-                            { viewFields paid with
-                                PaymentDate = None
-                            },
-                            Disposition.Active
-                        )
+                        CaseView.Live({ viewFields paid with Payment = None }, Disposition.Active)
                 }
             Some paid,
             Ok
@@ -175,7 +171,7 @@ let private negativeControls () =
                     View =
                         CaseView.Live(
                             { viewFields closed with
-                                PaymentDate = None
+                                Payment = None
                             },
                             Disposition.Active
                         )

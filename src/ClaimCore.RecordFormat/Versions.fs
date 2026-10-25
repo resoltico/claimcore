@@ -8,7 +8,7 @@ module RecordVersions =
     let CaseRequest = 7
 
     [<Literal>]
-    let Snapshot = 4
+    let Snapshot = 5
 
     [<Literal>]
     let Authority = 4

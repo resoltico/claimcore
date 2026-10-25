@@ -21,21 +21,32 @@ let private registrationTests =
                     Expect.equal (viewFields view).Status CaseStatus.Opened "Only requested status"
 
                     Expect.isTrue
-                        ((viewFields view).IncidentNotificationDate = "2026-08-03")
+                        ((viewFields view).Registration.IncidentNotificationDate = "2026-08-03")
                         "This handler's notification date"
 
                     Expect.isTrue
-                        ((viewFields view).ClaimantName = registration.ClaimantName)
+                        ((viewFields view).Registration.ClaimantName = registration.ClaimantName)
                         "A company name is not split"
 
                     Expect.isTrue
-                        ((viewFields view).InsurerName = registration.InsurerName)
+                        ((viewFields view).Registration.InsurerName = registration.InsurerName)
                         "No liability inference"
 
-                    Expect.isNone (viewFields view).PaymentDecisionDate "No invented decision date"
-                    Expect.isNone (viewFields view).PayableAmount "No invented payable amount"
-                    Expect.isNone (viewFields view).PayableCurrency "No invented payable currency"
-                    Expect.isNone (viewFields view).PaymentDate "No invented payment")
+                    Expect.isNone
+                        ((viewFields view).Decision |> Option.map _.PaymentDecisionDate)
+                        "No invented decision date"
+
+                    Expect.isNone
+                        ((viewFields view).Decision |> Option.map _.PayableAmount)
+                        "No invented payable amount"
+
+                    Expect.isNone
+                        ((viewFields view).Decision |> Option.map _.PayableCurrency)
+                        "No invented payable currency"
+
+                    Expect.isNone
+                        ((viewFields view).Payment |> Option.map _.PaymentDate)
+                        "No invented payment")
             testCase "notification before incident is rejected" (fun () ->
                 let facts =
                     { registration with
@@ -63,22 +74,40 @@ let private lifecycleTests =
         [
             testCase "decision is a tuple but is not a payment" (fun () ->
                 let fields = (decided () |> Case.snapshot |> viewFields)
-                Expect.isTrue (fields.PaymentDecisionDate = Some "2026-08-15") "Decided on"
-                Expect.isTrue (fields.PayableAmount = Some "750") "Exact decimal"
-                Expect.isTrue (fields.PayableCurrency = Some "EUR") "Decided currency"
-                Expect.isNone fields.PaymentDate "Still unpaid"
+
+                Expect.isTrue
+                    ((fields.Decision |> Option.map _.PaymentDecisionDate) = Some "2026-08-15")
+                    "Decided on"
+
+                Expect.isTrue
+                    ((fields.Decision |> Option.map _.PayableAmount) = Some "750")
+                    "Exact decimal"
+
+                Expect.isTrue
+                    ((fields.Decision |> Option.map _.PayableCurrency) = Some "EUR")
+                    "Decided currency"
+
+                Expect.isNone (fields.Payment |> Option.map _.PaymentDate) "Still unpaid"
                 Expect.equal fields.Status CaseStatus.Opened "Still open")
             testCase "payment is not closure" (fun () ->
                 let fields = (paid () |> Case.snapshot |> viewFields)
-                Expect.isTrue (fields.PaymentDate = Some "2026-08-20") "Recorded date"
+
+                Expect.isTrue
+                    ((fields.Payment |> Option.map _.PaymentDate) = Some "2026-08-20")
+                    "Recorded date"
+
                 Expect.equal fields.Status CaseStatus.Opened "No automatic closure")
             testCase "unpaid and undecided case can close" (fun () ->
                 let fields =
                     (opened () |> apply CaseAct.Close |> accepted |> Case.snapshot |> viewFields)
 
                 Expect.equal fields.Status CaseStatus.Closed "Administrative closure"
-                Expect.isNone fields.PaymentDecisionDate "No inferred decision"
-                Expect.isNone fields.PaymentDate "No inferred payment")
+
+                Expect.isNone
+                    (fields.Decision |> Option.map _.PaymentDecisionDate)
+                    "No inferred decision"
+
+                Expect.isNone (fields.Payment |> Option.map _.PaymentDate) "No inferred payment")
         ]
 
 let private identityAndVersionTests =
@@ -164,10 +193,12 @@ let private paymentGuardTests =
                      |> Case.snapshot
                      |> viewFields)
 
-                Expect.isTrue (fields.PayableAmount = Some "2500.01") "No invented coverage cap"
+                Expect.isTrue
+                    ((fields.Decision |> Option.map _.PayableAmount) = Some "2500.01")
+                    "No invented coverage cap"
 
                 Expect.isTrue
-                    (fields.PayableCurrency = Some "USD")
+                    ((fields.Decision |> Option.map _.PayableCurrency) = Some "USD")
                     "No invented currency conversion")
         ]
 
@@ -189,7 +220,9 @@ let private decisionEditingTests =
                      |> Case.snapshot
                      |> viewFields)
 
-                Expect.isTrue (fields.PayableAmount = Some "500") "Explicit replacement")
+                Expect.isTrue
+                    ((fields.Decision |> Option.map _.PayableAmount) = Some "500")
+                    "Explicit replacement")
             testCase "registration amendment requires withdrawal of an existing decision" (fun () ->
                 let amendment =
                     decided ()
@@ -209,7 +242,9 @@ let private decisionEditingTests =
                      |> Case.snapshot
                      |> viewFields)
 
-                Expect.isNone fields.PaymentDecisionDate "Decision withdrawn")
+                Expect.isNone
+                    (fields.Decision |> Option.map _.PaymentDecisionDate)
+                    "Decision withdrawn")
         ]
 
 let private correctionTests =
@@ -223,7 +258,7 @@ let private correctionTests =
 
                 let expected =
                     { (Case.snapshot before |> viewFields) with
-                        PaymentDate = None
+                        Payment = None
                     }
 
                 Expect.isTrue ((viewFields after) = expected) "Only requested payment date cleared"

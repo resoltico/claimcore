@@ -93,7 +93,12 @@ let private oneAcceptance fixture reference =
     Expect.equal (current.GetProperty("revision").GetInt64()) 1L "One accepted revision"
 
     let amount =
-        current.GetProperty("state").GetProperty("fields").GetProperty("claimedAmount").GetString()
+        current
+            .GetProperty("state")
+            .GetProperty("fields")
+            .GetProperty("registration")
+            .GetProperty("claimedAmount")
+            .GetString()
 
     Expect.equal amount "1" "Accepted payload is the original amount"
 

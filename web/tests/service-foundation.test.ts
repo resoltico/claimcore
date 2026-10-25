@@ -21,7 +21,7 @@ describe("core command metadata", () => {
       current,
       "10000000-0000-4000-8000-000000000001",
     );
-    expect(values["act.values.claimantName"]).toBe(fields.claimantName);
+    expect(values["act.values.claimantName"]).toBe(fields.registration.claimantName);
     const close = initialOperationValues(
       "CASE",
       "CLOSE",

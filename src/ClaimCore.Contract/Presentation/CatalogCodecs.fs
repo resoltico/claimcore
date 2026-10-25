@@ -308,13 +308,14 @@ module CatalogCodecs =
         |> named "Presentation.AuthorityOperationDefinition"
 
     let private businessField =
-        (record (fun v0 v1 v2 v3 v4 ->
+        (record (fun v0 v1 v2 v3 v4 v5 ->
             {
                 FieldPresentationDefinition.Name = v0
                 LabelId = v1
                 MeaningId = v2
                 Scalar = v3
                 AllowsAbsence = v4
+                Group = v5
             })
         : Fields<FieldPresentationDefinition, _>)
         |> field "name" _.Name (fieldName)
@@ -322,6 +323,14 @@ module CatalogCodecs =
         |> field "meaningId" _.MeaningId (text)
         |> field "scalar" _.Scalar (scalar)
         |> field "allowsAbsence" _.AllowsAbsence (boolean)
+        |> field
+            "group"
+            _.Group
+            (enumeration (
+                FieldTable.rows
+                |> List.map (fun row -> row.Group, FieldGroup.token row.Group)
+                |> List.distinct
+            ))
         |> build
         |> named "Presentation.FieldPresentationDefinition"
 

@@ -67,7 +67,12 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
     Expect.equal (current.GetProperty("revision").GetInt64()) 1L "Exactly one current revision"
 
     let amount =
-        current.GetProperty("state").GetProperty("fields").GetProperty("claimedAmount").GetString()
+        current
+            .GetProperty("state")
+            .GetProperty("fields")
+            .GetProperty("registration")
+            .GetProperty("claimedAmount")
+            .GetString()
 
     Expect.isTrue (amount = "1") "Original authored amount retains its accepted decimal value"
 

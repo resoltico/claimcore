@@ -10,7 +10,8 @@
         "minimum": "0001-01-01",
         "maximum": "9999-12-31"
       },
-      "allowsAbsence": false
+      "allowsAbsence": false,
+      "group": "registration"
     },
     {
       "name": "incidentNotificationDate",
@@ -22,7 +23,8 @@
         "minimum": "0001-01-01",
         "maximum": "9999-12-31"
       },
-      "allowsAbsence": false
+      "allowsAbsence": false,
+      "group": "registration"
     },
     {
       "name": "incidentCountry",
@@ -36,7 +38,8 @@
         },
         "maximumCharacters": null
       },
-      "allowsAbsence": false
+      "allowsAbsence": false,
+      "group": "registration"
     },
     {
       "name": "claimantName",
@@ -50,7 +53,8 @@
         },
         "maximumCharacters": 200
       },
-      "allowsAbsence": false
+      "allowsAbsence": false,
+      "group": "registration"
     },
     {
       "name": "insurerName",
@@ -64,7 +68,8 @@
         },
         "maximumCharacters": 200
       },
-      "allowsAbsence": false
+      "allowsAbsence": false,
+      "group": "registration"
     },
     {
       "name": "claimedAmount",
@@ -83,7 +88,8 @@
         "maximumIntegerDigits": 18,
         "maximumFractionalDigits": 4
       },
-      "allowsAbsence": false
+      "allowsAbsence": false,
+      "group": "registration"
     },
     {
       "name": "claimedCurrency",
@@ -101,7 +107,8 @@
         "grammar": "[A-Z]{3}",
         "exactCharacters": 3
       },
-      "allowsAbsence": false
+      "allowsAbsence": false,
+      "group": "registration"
     },
     {
       "name": "caseReference",
@@ -115,7 +122,8 @@
         },
         "maximumCharacters": null
       },
-      "allowsAbsence": false
+      "allowsAbsence": false,
+      "group": "identity"
     },
     {
       "name": "paymentDecisionDate",
@@ -127,7 +135,8 @@
         "minimum": "0001-01-01",
         "maximum": "9999-12-31"
       },
-      "allowsAbsence": true
+      "allowsAbsence": true,
+      "group": "decision"
     },
     {
       "name": "payableAmount",
@@ -146,7 +155,8 @@
         "maximumIntegerDigits": 18,
         "maximumFractionalDigits": 4
       },
-      "allowsAbsence": true
+      "allowsAbsence": true,
+      "group": "decision"
     },
     {
       "name": "payableCurrency",
@@ -164,7 +174,8 @@
         "grammar": "[A-Z]{3}",
         "exactCharacters": 3
       },
-      "allowsAbsence": true
+      "allowsAbsence": true,
+      "group": "decision"
     },
     {
       "name": "paymentDate",
@@ -176,7 +187,8 @@
         "minimum": "0001-01-01",
         "maximum": "9999-12-31"
       },
-      "allowsAbsence": true
+      "allowsAbsence": true,
+      "group": "payment"
     },
     {
       "name": "status",
@@ -189,7 +201,8 @@
           "CLOSED"
         ]
       },
-      "allowsAbsence": false
+      "allowsAbsence": false,
+      "group": "status"
     }
   ],
   "acts": [

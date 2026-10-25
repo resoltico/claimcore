@@ -33,7 +33,8 @@ let private amendmentRetainsDates =
         Expect.equal after.Revision 2L "One revision"
 
         Expect.isTrue
-            ((viewFields after).IncidentNotificationDate = registration.IncidentNotificationDate)
+            ((viewFields after).Registration.IncidentNotificationDate =
+                registration.IncidentNotificationDate)
             "Accepted historical date retained")
 
 let private newIncidentIsBounded =
@@ -70,10 +71,13 @@ let private decisionRetainsDate =
                 |> accepted
                 |> Case.snapshot
 
-            Expect.isTrue ((viewFields after).PayableAmount = Some "650") "Amount replaced"
+            Expect.isTrue
+                (((viewFields after).Decision |> Option.map _.PayableAmount) = Some "650")
+                "Amount replaced"
 
             Expect.isTrue
-                ((viewFields after).PaymentDecisionDate = Some decision.PaymentDecisionDate)
+                (((viewFields after).Decision |> Option.map _.PaymentDecisionDate) =
+                    Some decision.PaymentDecisionDate)
                 "Accepted decision date retained")
 
 let private newDecisionDateIsBounded =
@@ -135,7 +139,7 @@ let private closedCorrectionRetainsDates =
             Expect.equal (viewFields after).Status CaseStatus.Closed "Correction retains closure"
 
             Expect.isTrue
-                ((viewFields after).PaymentDate = Some "2026-08-20")
+                (((viewFields after).Payment |> Option.map _.PaymentDate) = Some "2026-08-20")
                 "Reaffirmed accepted payment"
 
             Expect.equal after.Revision 5L "One complete revision")

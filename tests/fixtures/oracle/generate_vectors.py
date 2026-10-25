@@ -5,7 +5,7 @@ derives RFC 8785 canonical bytes, case-reference identities (UUIDv8), framed led
 salted commitments, the 183-byte entry preimage and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 7 --snapshot 4 --authority 4
+  python3 -I generate_vectors.py --request 7 --snapshot 5 --authority 4
 
 Writes JSON to standard output.
 """

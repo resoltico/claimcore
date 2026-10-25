@@ -58,13 +58,31 @@ module internal TextReply =
 
     let private line language key value = label language key + ": " + value
 
+    let private fieldValue (row: FieldRow) value =
+        let group =
+            match row.Group with
+            | FieldGroup.Identity
+            | FieldGroup.Status -> value
+            | group -> memberValue (FieldGroup.token group) value
+
+        memberValue row.Key group
+
     let private fieldLines language value =
-        FieldTable.rows
-        |> List.map (fun row ->
-            line
-                language
-                (FieldTable.labelId row.Field)
-                (memberValue row.Key value |> displayed language))
+        let rows group =
+            FieldTable.rows
+            |> List.filter (fun row -> row.Group = group)
+            |> List.map (fun row ->
+                line
+                    language
+                    (FieldTable.labelId row.Field)
+                    (fieldValue row value |> displayed language))
+
+        rows FieldGroup.Identity
+        @ rows FieldGroup.Status
+        @ ([ FieldGroup.Registration; FieldGroup.Decision; FieldGroup.Payment ]
+           |> List.collect (fun group ->
+               (label language ("group." + FieldGroup.token group + ".label") + ":")
+               :: rows group))
 
     let private stateFields state = memberValue "fields" state
 
@@ -285,10 +303,9 @@ module internal TextReply =
             else
                 FieldTable.rows
                 |> List.choose (fun row ->
-                    let previous =
-                        before |> memberValue "state" |> stateFields |> memberValue row.Key
+                    let previous = before |> memberValue "state" |> stateFields |> fieldValue row
 
-                    let next = after |> memberValue "state" |> stateFields |> memberValue row.Key
+                    let next = after |> memberValue "state" |> stateFields |> fieldValue row
 
                     if previous = next then
                         None

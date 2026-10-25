@@ -42,6 +42,7 @@ module ContractCatalog =
                 |> List.map (fun field ->
                     {
                         Name = field.Field
+                        Group = (FieldTable.forField field.Field).Group
                         LabelId = FieldTable.labelId field.Field
                         MeaningId = FieldTable.meaningId field.Field
                         Scalar = field.Scalar

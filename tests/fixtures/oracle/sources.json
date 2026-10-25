@@ -130,20 +130,20 @@
       "disposition": "ACTIVE",
       "fields": {
         "caseReference": "Demo-0001",
-        "claimantName": "Rīgas Tulkojumu Birojs SIA",
-        "claimedAmount": "1000",
-        "claimedCurrency": "EUR",
-        "incidentCountry": "LV",
-        "incidentDate": "2026-08-01",
-        "incidentNotificationDate": "2026-08-03",
-        "insurerName": "شركة التأمين المثال",
-        "payableAmount": null,
-        "payableCurrency": null,
-        "paymentDate": null,
-        "paymentDecisionDate": null,
-        "status": "OPENED"
+        "status": "OPENED",
+        "registration": {
+          "incidentDate": "2026-08-01",
+          "incidentNotificationDate": "2026-08-03",
+          "incidentCountry": "LV",
+          "claimantName": "Rīgas Tulkojumu Birojs SIA",
+          "insurerName": "شركة التأمين المثال",
+          "claimedAmount": "1000",
+          "claimedCurrency": "EUR"
+        },
+        "decision": null,
+        "payment": null
       },
-      "format": 4,
+      "format": 5,
       "revision": 1
     }
   },

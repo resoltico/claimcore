@@ -34,19 +34,20 @@ let authorityRequest =
 let snapshot =
     let fields: CaseFields =
         {
-            IncidentDate = "2026-01-01"
-            IncidentNotificationDate = "2026-01-01"
-            IncidentCountry = "LV"
-            ClaimantName = "x"
-            InsurerName = "x"
-            ClaimedAmount = "0"
-            ClaimedCurrency = "EUR"
             CaseReference = "x"
-            PaymentDecisionDate = None
-            PayableAmount = None
-            PayableCurrency = None
-            PaymentDate = None
             Status = CaseStatus.Opened
+            Registration =
+                {
+                    IncidentDate = "2026-01-01"
+                    IncidentNotificationDate = "2026-01-01"
+                    IncidentCountry = "LV"
+                    ClaimantName = "x"
+                    InsurerName = "x"
+                    ClaimedAmount = "0"
+                    ClaimedCurrency = "EUR"
+                }
+            Decision = None
+            Payment = None
         }
 
     {

@@ -67,7 +67,7 @@ let private readRetained (host: ClaimCore.WebTests.TestServerFixture.Host) csrf 
             (outcome response).GetProperty("data").GetProperty("state").GetProperty("fields")
 
         Expect.equal
-            (fields.GetProperty("claimantName").GetString())
+            (fields.GetProperty("registration").GetProperty("claimantName").GetString())
             name
             "Retained text reaches the client"
 

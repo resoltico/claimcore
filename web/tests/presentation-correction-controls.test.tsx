@@ -16,10 +16,8 @@ const paidCase: CurrentCase = {
 
     fields: {
       ...current.state.fields,
-      paymentDecisionDate: "2026-09-03",
-      payableAmount: "1",
-      payableCurrency: "EUR",
-      paymentDate: "2026-09-04",
+      decision: { paymentDecisionDate: "2026-09-03", payableAmount: "1", payableCurrency: "EUR" },
+      payment: { paymentDate: "2026-09-04" },
     },
   },
 };

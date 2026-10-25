@@ -1,3 +1,4 @@
+import { caseFieldValue } from "../protocol/caseFields";
 import { productMetadata } from "../protocol/productMetadata";
 import { wireSchemas } from "../protocol/documents";
 import { buildRequest, isObject } from "../protocol/client";
@@ -24,11 +25,7 @@ const fieldValue = (current: CurrentCase | null, field: string | null): string =
   if (current === null || field === null) {
     return "";
   }
-  if (field === "caseReference") {
-    return current.caseReference;
-  }
-  const value = Object.entries(current.state.fields).find(([name]) => name === field)?.[1];
-  return typeof value === "string" ? value : "";
+  return caseFieldValue(current.state.fields, field) ?? "";
 };
 const initialValue = (input: CatalogInput, current: CurrentCase | null, id: string) => {
   if (input.source === "OPERATION_IDENTITY") {

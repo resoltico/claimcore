@@ -400,7 +400,10 @@ let private retainedText () =
 
         let fields =
             { viewFields original with
-                ClaimantName = name
+                Registration =
+                    { (viewFields original).Registration with
+                        ClaimantName = name
+                    }
             }
 
         let snapshot =

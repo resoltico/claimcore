@@ -67,9 +67,12 @@ let private snapshot () =
 
         match observed.View with
         | CaseView.Live(fields, Disposition.Active) ->
-            Expect.equal fields.ClaimedAmount "1000" "Canonical monetary spelling"
-            Expect.equal fields.IncidentCountry "LV" "Country syntax"
-            Expect.isNone fields.PaymentDecisionDate "Independent undecided state"
+            Expect.equal fields.Registration.ClaimedAmount "1000" "Canonical monetary spelling"
+            Expect.equal fields.Registration.IncidentCountry "LV" "Country syntax"
+
+            Expect.isNone
+                (fields.Decision |> Option.map _.PaymentDecisionDate)
+                "Independent undecided state"
         | _ -> failtest "Expected ACTIVE live snapshot"
 
         Expect.isTrue (CaseRecord.encodeSnapshot observed = encoded) "Independent snapshot bytes"
@@ -141,7 +144,7 @@ let private formats () =
                 RecordVersions.LedgerEntry
                 RecordVersions.CaseReferenceIdentity
             ]
-            [ 7; 4; 4; 3; 2 ]
+            [ 7; 4; 5; 3; 2 ]
             "Each retained grammar has its adopted format number"
 
         for format in [ "0"; "1"; "99"; "5"; "6.0"; "6e0"; "\"6\"" ] do
@@ -153,7 +156,7 @@ let private formats () =
 
         Expect.isError
             (CaseRecord.decodeSnapshot (
-                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":4", "\"format\":2"))
+                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":5", "\"format\":2"))
             ))
             "No old snapshot reinterpretation"
 

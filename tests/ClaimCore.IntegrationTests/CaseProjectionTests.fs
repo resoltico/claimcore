@@ -18,19 +18,20 @@ let private snapshot (reference: string) : CaseSnapshot =
         View =
             CaseView.Live(
                 {
-                    IncidentDate = "2026-08-01"
-                    IncidentNotificationDate = "2026-08-03"
-                    IncidentCountry = "LV"
-                    ClaimantName = "Synthetic Party"
-                    InsurerName = "Synthetic Insurer"
-                    ClaimedAmount = "1000.00"
-                    ClaimedCurrency = "EUR"
                     CaseReference = reference
-                    PaymentDecisionDate = None
-                    PayableAmount = None
-                    PayableCurrency = None
-                    PaymentDate = None
                     Status = CaseStatus.Opened
+                    Registration =
+                        {
+                            IncidentDate = "2026-08-01"
+                            IncidentNotificationDate = "2026-08-03"
+                            IncidentCountry = "LV"
+                            ClaimantName = "Synthetic Party"
+                            InsurerName = "Synthetic Insurer"
+                            ClaimedAmount = "1000.00"
+                            ClaimedCurrency = "EUR"
+                        }
+                    Decision = None
+                    Payment = None
                 },
                 Disposition.Active
             )
@@ -120,7 +121,10 @@ let private liveState () =
                         View =
                             CaseView.Live(
                                 { fields with
-                                    ClaimedAmount = "2000.00"
+                                    Registration =
+                                        { fields.Registration with
+                                            ClaimedAmount = "2000.00"
+                                        }
                                 },
                                 Disposition.Active
                             )
@@ -183,18 +187,25 @@ let private erasedState () =
 let private projectionFields: CaseFields =
     {
         CaseReference = "synthetic-layout"
-        IncidentDate = "2026-08-01"
-        IncidentNotificationDate = "2026-08-03"
-        IncidentCountry = "LV"
-        ClaimantName = "Synthetic claimant"
-        InsurerName = "Synthetic insurer"
-        ClaimedAmount = "1234.5678"
-        ClaimedCurrency = "EUR"
-        PaymentDecisionDate = Some "2026-08-04"
-        PayableAmount = Some "987.6543"
-        PayableCurrency = Some "USD"
-        PaymentDate = Some "2026-08-05"
         Status = CaseStatus.Closed
+        Registration =
+            {
+                IncidentDate = "2026-08-01"
+                IncidentNotificationDate = "2026-08-03"
+                IncidentCountry = "LV"
+                ClaimantName = "Synthetic claimant"
+                InsurerName = "Synthetic insurer"
+                ClaimedAmount = "1234.5678"
+                ClaimedCurrency = "EUR"
+            }
+        Decision =
+            Some
+                {
+                    PaymentDecisionDate = "2026-08-04"
+                    PayableAmount = "987.6543"
+                    PayableCurrency = "USD"
+                }
+        Payment = Some { PaymentDate = "2026-08-05" }
     }
 
 

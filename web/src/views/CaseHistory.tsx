@@ -2,7 +2,7 @@ import type { Notice } from "../api/notices";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import { Button } from "react-aria-components/Button";
-import type { FieldDescriptor, HistoryEntry, CaseReceipt, ServiceResponse } from "../api/service";
+import type { CatalogDocument, HistoryEntry, CaseReceipt, ServiceResponse } from "../api/service";
 import { service } from "../api/service";
 import { useRetryablePage } from "../hooks/useRead";
 import { NoticeView } from "../presentation/Message";
@@ -19,7 +19,7 @@ const HistoryReceipt = ({
   fields,
 }: {
   receipt: CaseReceipt;
-  fields: ReadonlyArray<FieldDescriptor>;
+  fields: CatalogDocument["fields"];
 }) => {
   const p = usePresentation();
   return (
@@ -47,13 +47,7 @@ const HistoryReceipt = ({
   );
 };
 
-const Entry = ({
-  entry,
-  fields,
-}: {
-  entry: HistoryEntry;
-  fields: ReadonlyArray<FieldDescriptor>;
-}) => {
+const Entry = ({ entry, fields }: { entry: HistoryEntry; fields: CatalogDocument["fields"] }) => {
   const p = usePresentation();
   if (entry.tag === "FULL") {
     return <HistoryReceipt receipt={entry.receipt} fields={fields} />;
@@ -84,7 +78,7 @@ const HistoryEntries = ({
   fields,
 }: {
   items: ReadonlyArray<HistoryEntry>;
-  fields: ReadonlyArray<FieldDescriptor>;
+  fields: CatalogDocument["fields"];
 }) => (
   <ol className="history-list">
     {items.map((entry) => (
@@ -167,7 +161,7 @@ export const CaseHistory = ({
   onDisclosureRefused?: () => void;
   token: string;
   caseReference: string;
-  fields: ReadonlyArray<FieldDescriptor>;
+  fields: CatalogDocument["fields"];
 }) => {
   const p = usePresentation();
   const [detail, setDetail] = useState<"SUMMARY" | "FULL">("SUMMARY");

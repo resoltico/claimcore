@@ -42,14 +42,17 @@ let private paidCorrectionTests =
                 Expect.equal (viewFields after).CaseReference "UNIT-001" "Case target is retained"
 
                 Expect.equal
-                    (viewFields after).ClaimantName
+                    (viewFields after).Registration.ClaimantName
                     changedRegistration.ClaimantName
                     "Registration replaced"
 
-                Expect.equal (viewFields after).PayableAmount (Some "650") "Decision replaced"
+                Expect.equal
+                    ((viewFields after).Decision |> Option.map _.PayableAmount)
+                    (Some "650")
+                    "Decision replaced"
 
                 Expect.equal
-                    (viewFields after).PaymentDate
+                    ((viewFields after).Payment |> Option.map _.PaymentDate)
                     (Some "2026-08-21")
                     "Payment reaffirmed")
             testCase "paid decision replacement requires explicit payment action" (fun () ->
@@ -96,7 +99,7 @@ let private closedCorrectionTests =
                     "Correction does not reopen"
 
                 Expect.equal
-                    (viewFields after).ClaimantName
+                    (viewFields after).Registration.ClaimantName
                     changedRegistration.ClaimantName
                     "Fact corrected")
             testCase "all-keep correction is refused without changing the accepted case" (fun () ->

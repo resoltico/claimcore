@@ -2451,107 +2451,11 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "incidentDate": {
-            "type": "string",
-            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
-            "format": "date",
-            "minLength": 10,
-            "maxLength": 10
-          },
-          "incidentNotificationDate": {
-            "type": "string",
-            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
-            "format": "date",
-            "minLength": 10,
-            "maxLength": 10
-          },
-          "incidentCountry": {
-            "type": "string",
-            "pattern": "^(?:[A-Z]{2})(?![\\s\\S])",
-            "minLength": 2,
-            "maxLength": 2
-          },
-          "claimantName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "insurerName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "claimedAmount": {
-            "type": "string",
-            "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 23
-          },
-          "claimedCurrency": {
-            "type": "string",
-            "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
-            "minLength": 3,
-            "maxLength": 3
-          },
           "caseReference": {
             "type": "string",
             "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
             "minLength": 1,
             "maxLength": 80
-          },
-          "paymentDecisionDate": {
-            "oneOf": [
-              {
-                "type": "string",
-                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
-                "format": "date",
-                "minLength": 10,
-                "maxLength": 10
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "payableAmount": {
-            "oneOf": [
-              {
-                "type": "string",
-                "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
-                "minLength": 1,
-                "maxLength": 23
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "payableCurrency": {
-            "oneOf": [
-              {
-                "type": "string",
-                "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
-                "minLength": 3,
-                "maxLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "paymentDate": {
-            "oneOf": [
-              {
-                "type": "string",
-                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
-                "format": "date",
-                "minLength": 10,
-                "maxLength": 10
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "status": {
             "oneOf": [
@@ -2562,22 +2466,131 @@
                 "const": "CLOSED"
               }
             ]
+          },
+          "registration": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "incidentDate": {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              "incidentNotificationDate": {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              "incidentCountry": {
+                "type": "string",
+                "pattern": "^(?:[A-Z]{2})(?![\\s\\S])",
+                "minLength": 2,
+                "maxLength": 2
+              },
+              "claimantName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2147483647
+              },
+              "insurerName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2147483647
+              },
+              "claimedAmount": {
+                "type": "string",
+                "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 23
+              },
+              "claimedCurrency": {
+                "type": "string",
+                "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                "minLength": 3,
+                "maxLength": 3
+              }
+            },
+            "required": [
+              "incidentDate",
+              "incidentNotificationDate",
+              "incidentCountry",
+              "claimantName",
+              "insurerName",
+              "claimedAmount",
+              "claimedCurrency"
+            ]
+          },
+          "decision": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "paymentDecisionDate": {
+                    "type": "string",
+                    "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                    "format": "date",
+                    "minLength": 10,
+                    "maxLength": 10
+                  },
+                  "payableAmount": {
+                    "type": "string",
+                    "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                    "minLength": 1,
+                    "maxLength": 23
+                  },
+                  "payableCurrency": {
+                    "type": "string",
+                    "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                    "minLength": 3,
+                    "maxLength": 3
+                  }
+                },
+                "required": [
+                  "paymentDecisionDate",
+                  "payableAmount",
+                  "payableCurrency"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "paymentDate": {
+                    "type": "string",
+                    "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                    "format": "date",
+                    "minLength": 10,
+                    "maxLength": 10
+                  }
+                },
+                "required": [
+                  "paymentDate"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "incidentDate",
-          "incidentNotificationDate",
-          "incidentCountry",
-          "claimantName",
-          "insurerName",
-          "claimedAmount",
-          "claimedCurrency",
           "caseReference",
-          "paymentDecisionDate",
-          "payableAmount",
-          "payableCurrency",
-          "paymentDate",
-          "status"
+          "status",
+          "registration",
+          "decision",
+          "payment"
         ]
       },
       "CaseGetRequest": {
@@ -5211,46 +5224,6 @@
           "expectedRevision"
         ]
       },
-      "LiveState": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/LiveState.LIVE"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "tag",
-          "mapping": {
-            "LIVE": "#/components/schemas/LiveState.LIVE"
-          }
-        }
-      },
-      "LiveState.LIVE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "tag": {
-            "const": "LIVE"
-          },
-          "disposition": {
-            "oneOf": [
-              {
-                "const": "ACTIVE"
-              },
-              {
-                "const": "VOIDED"
-              }
-            ]
-          },
-          "fields": {
-            "$ref": "#/components/schemas/CaseFields"
-          }
-        },
-        "required": [
-          "tag",
-          "disposition",
-          "fields"
-        ]
-      },
       "LogoutReply": {
         "type": "object",
         "additionalProperties": false,
@@ -6426,7 +6399,7 @@
             "const": "DISCLOSED"
           },
           "view": {
-            "$ref": "#/components/schemas/LiveState"
+            "$ref": "#/components/schemas/CaseState.LIVE"
           }
         },
         "required": [

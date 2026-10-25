@@ -34,19 +34,29 @@ let private accepted result =
 
 let private fields status decided paid : CaseFields =
     {
-        IncidentDate = registration.IncidentDate
-        IncidentNotificationDate = registration.IncidentNotificationDate
-        IncidentCountry = registration.IncidentCountry
-        ClaimantName = registration.ClaimantName
-        InsurerName = registration.InsurerName
-        ClaimedAmount = "1000"
-        ClaimedCurrency = "EUR"
         CaseReference = "Demo-1"
         Status = status
-        PaymentDecisionDate = if decided then Some "2026-08-15" else None
-        PayableAmount = if decided then Some "750" else None
-        PayableCurrency = if decided then Some "EUR" else None
-        PaymentDate = if paid then Some "2026-08-20" else None
+        Registration =
+            {
+                IncidentDate = registration.IncidentDate
+                IncidentNotificationDate = registration.IncidentNotificationDate
+                IncidentCountry = registration.IncidentCountry
+                ClaimantName = registration.ClaimantName
+                InsurerName = registration.InsurerName
+                ClaimedAmount = "1000"
+                ClaimedCurrency = "EUR"
+            }
+        Decision =
+            if decided then
+                Some
+                    {
+                        PaymentDecisionDate = "2026-08-15"
+                        PayableAmount = "750"
+                        PayableCurrency = "EUR"
+                    }
+            else
+                None
+        Payment = if paid then Some { PaymentDate = "2026-08-20" } else None
     }
 
 let private retained revision view =
@@ -221,7 +231,10 @@ let private grandfathering =
 
             let storedFields =
                 { fields CaseStatus.Opened false false with
-                    ClaimantName = oldName
+                    Registration =
+                        { (fields CaseStatus.Opened false false).Registration with
+                            ClaimantName = oldName
+                        }
                 }
 
             let current = retained 1L (CaseView.Live(storedFields, Disposition.Active))

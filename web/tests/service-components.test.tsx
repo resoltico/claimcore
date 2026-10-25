@@ -77,7 +77,7 @@ it("keeps generated endpoint inventory callable and presents suspicious Unicode 
 it("renders absent and suspicious accepted values without changing the recorded text", () => {
   render(
     <CaseFieldsView
-      values={{ ...fields, caseReference: "A\u202E", paymentDate: null }}
+      values={{ ...fields, caseReference: "A\u202E", payment: null }}
       revision={1}
       fields={definition.catalog.fields}
       context="synthetic current case"

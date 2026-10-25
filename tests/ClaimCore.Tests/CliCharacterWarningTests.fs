@@ -87,16 +87,16 @@ let private memberPath (path: string list) (root: JsonNode) =
     path |> List.fold (fun (node: JsonNode) key -> node[key] |> nonNull) root
 
 let private currentFields root =
-    memberPath [ "outcome"; "data"; "state"; "fields" ] root
+    memberPath [ "outcome"; "data"; "state"; "fields"; "registration" ] root
 
 let private reviewFields side root =
-    memberPath [ "outcome"; "data"; "review"; side; "state"; "fields" ] root
+    memberPath [ "outcome"; "data"; "review"; side; "state"; "fields"; "registration" ] root
 
 let private historyFields root =
     let entry =
         (memberPath [ "outcome"; "data"; "entries" ] root).AsArray()[0] |> nonNull
 
-    memberPath [ "receipt"; "scope"; "snapshot"; "view"; "fields" ] entry
+    memberPath [ "receipt"; "scope"; "snapshot"; "view"; "fields"; "registration" ] entry
 
 let private annotated language value points =
     let annotation =

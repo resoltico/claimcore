@@ -117,7 +117,7 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         "Reopened"
 
     Expect.equal
-        (view.GetProperty("state").GetProperty("fields").GetProperty("paymentDate").ValueKind)
+        (view.GetProperty("state").GetProperty("fields").GetProperty("payment").ValueKind)
         JsonValueKind.Null
         "Clear payment date"
 
@@ -360,6 +360,7 @@ let private supplementary fixture =
             .GetProperty("snapshot")
             .GetProperty("view")
             .GetProperty("fields")
+            .GetProperty("registration")
             .GetProperty("claimantName")
             .GetString()
 

@@ -47,15 +47,20 @@ let private dateProperty =
         let result =
             restoreWith (fun fields ->
                 { fields with
-                    IncidentDate = sample.Raw
-                    IncidentNotificationDate = sample.Raw
+                    Registration =
+                        { fields.Registration with
+                            IncidentDate = sample.Raw
+                            IncidentNotificationDate = sample.Raw
+                        }
                 })
 
         return
             match result, sample.Accepted with
             | Ok claim, true ->
                 let fields = (Case.snapshot claim |> viewFields)
-                fields.IncidentDate = sample.Raw && fields.IncidentNotificationDate = sample.Raw
+
+                fields.Registration.IncidentDate = sample.Raw
+                && fields.Registration.IncidentNotificationDate = sample.Raw
             | Error _, false -> true
             | _ -> false
     }
@@ -140,7 +145,10 @@ let private currencyProperty =
         let result =
             restoreWith (fun fields ->
                 { fields with
-                    ClaimedCurrency = sample.Raw
+                    Registration =
+                        { fields.Registration with
+                            ClaimedCurrency = sample.Raw
+                        }
                 })
 
         return Result.isOk result = sample.Accepted

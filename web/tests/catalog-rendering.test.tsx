@@ -42,10 +42,10 @@ const currentFor = (kind: ActKind): CurrentCase => {
       fields: {
         ...caseFields,
         status: kind === "REOPEN" ? "CLOSED" : "OPENED",
-        paymentDecisionDate: decided ? "2026-09-03" : null,
-        payableAmount: decided ? "5" : null,
-        payableCurrency: decided ? "EUR" : null,
-        paymentDate: paid ? "2026-09-04" : null,
+        decision: decided
+          ? { paymentDecisionDate: "2026-09-03", payableAmount: "5", payableCurrency: "EUR" }
+          : null,
+        payment: paid ? { paymentDate: "2026-09-04" } : null,
       },
     },
   };
@@ -170,7 +170,7 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
 const assertAuthoredCase = (request: CaseInput) => {
   switch (request.act.kind) {
     case "OPEN":
-      expect(request.act.values.claimantName).toBe(caseFields.claimantName);
+      expect(request.act.values.claimantName).toBe(caseFields.registration.claimantName);
       break;
     case "AMEND_REGISTRATION":
       expect(request.act.values.claimantName).toBe("Synthetic replacement");
