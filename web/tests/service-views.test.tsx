@@ -117,7 +117,7 @@ it("shows current fields, server command labels, full expandable history and ret
       reloadSignal={0}
       definition={definition.catalog}
       onBack={back}
-      onCommand={command}
+      onAct={command}
     />,
   );
   expect(await screen.findByText("CASE-1")).toBeVisible();

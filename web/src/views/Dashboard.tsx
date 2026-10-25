@@ -122,7 +122,7 @@ const CasesPane = ({
       onBack={() => {
         setSelectedReference(null);
       }}
-      onCommand={(current, act) => {
+      onAct={(current, act) => {
         setOperation({ current, act });
       }}
     />

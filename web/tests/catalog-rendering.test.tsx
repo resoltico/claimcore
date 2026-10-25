@@ -217,7 +217,7 @@ it.each(acts)(
       />,
     );
     expect(
-      screen.getByRole("heading", { name: createPresenter(defaults).commandLabel(command.kind) }),
+      screen.getByRole("heading", { name: createPresenter(defaults).actLabel(command.kind) }),
     ).toBeVisible();
     authorCase(command.kind);
     const user = userEvent.setup();

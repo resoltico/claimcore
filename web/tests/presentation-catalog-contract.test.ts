@@ -39,14 +39,18 @@ it("resolves business meaning through descriptor message identities", () => {
     expect(p.fieldLabel(field.name)).toBe(renderKey(defaults, field.labelId));
     expect(p.fieldMeaning(field.name)).toBe(renderKey(defaults, field.meaningId));
   }
-  for (const command of catalog.acts) {
-    expect(p.commandLabel(command.kind)).toBe(renderKey(defaults, command.labelId));
-    expect(p.commandMeaning(command.kind)).toBe(renderKey(defaults, command.meaningId));
-    if (command.inputs.kind === "CORRECTION_GROUPS") {
-      for (const group of command.inputs.groups) {
-        expect(p.groupLabel(group.name)).toBe(renderKey(defaults, group.labelId));
-        expect(p.groupMeaning(group.name)).toBe(renderKey(defaults, group.meaningId));
-      }
+  for (const entry of catalog.entries.filter(
+    (item) => item.scope === "CASE" && item.endpoint === "operation.execute",
+  )) {
+    expect(p.actLabel(entry.kind)).toBe(renderKey(defaults, entry.labelId));
+    expect(p.actMeaning(entry.kind)).toBe(renderKey(defaults, entry.meaningId));
+    for (const input of entry.inputs.filter(
+      (item) => item.kind.kind === "GROUP" && item.diagnosticTargets.length > 0,
+    )) {
+      expect(p.groupLabel(input.diagnosticTargets[0]!)).toBe(renderKey(defaults, input.labelId));
+      expect(p.groupMeaning(input.diagnosticTargets[0]!)).toBe(
+        renderKey(defaults, input.meaningId!),
+      );
     }
   }
 });

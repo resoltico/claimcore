@@ -65,7 +65,7 @@ for (const retainCurrent of [false, true]) {
           reloadSignal={0}
           definition={definition.catalog}
           onBack={vi.fn()}
-          onCommand={vi.fn()}
+          onAct={vi.fn()}
         />,
       );
       await screen.findByText(fields.registration.claimantName);

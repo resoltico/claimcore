@@ -75,7 +75,7 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
     </section>
   );
 };
-type Props = Omit<OperationFormProps, "onCommand">;
+type Props = Omit<OperationFormProps, "onAct">;
 type DiscardProps = { model: OperationModel; onClose?: () => void };
 type DialogProps = DiscardProps & {
   pending: string | null;
@@ -177,7 +177,7 @@ export const OperationPanel = (props: Props) => {
       <OperationForm
         {...props}
         {...(onClose === undefined ? {} : { onClose: leave })}
-        onCommand={requestChange}
+        onAct={requestChange}
       />
       <OperationReview model={model} />
     </>

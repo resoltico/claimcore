@@ -1,31 +1,32 @@
-import { caseFieldValue } from "../protocol/caseFields";
 import { productMetadata } from "../protocol/productMetadata";
 import { wireSchemas } from "../protocol/documents";
-import { buildRequest, isObject } from "../protocol/client";
+import { buildRequest } from "../protocol/client";
 import type { FormValues } from "../protocol/forms";
 import type { CurrentCase } from "../api/types";
 import type { CatalogDocument } from "@contracts/client";
+import {
+  atPath,
+  applies,
+  assembleCatalogInput,
+  bindingPath,
+  type CatalogInput,
+} from "../protocol/catalogAssembly";
+export { bindingPath, type CatalogInput } from "../protocol/catalogAssembly";
 
 // Read-only protocol summaries retain their structural document.
 export const operationDocument = wireSchemas["operation.execute"].request;
-export type CatalogInput = CatalogDocument["entries"][number]["inputs"][number];
-const interactionFor = (values: FormValues): CatalogDocument["entries"][number] => {
+export const operationEntry = (values: FormValues): CatalogDocument["entries"][number] => {
   const definition = productMetadata.catalog.entries.find(
     (item) => item.scope === values["scope"] && item.kind === values["act.kind"],
   );
   if (definition === undefined) {
-    throw new Error("Unknown interaction definition.");
+    throw new Error("Unknown operation catalog entry.");
   }
   return definition;
 };
-export const bindingPath = (input: CatalogInput): string => input.path.join(".");
-const applicableInput = (input: CatalogInput, values: FormValues): boolean =>
-  input.branches.every((branch) => values[branch.path.join(".")] === branch.value);
-const fieldValue = (current: CurrentCase | null, field: string | null): string => {
-  if (current === null || field === null) {
-    return "";
-  }
-  return caseFieldValue(current.state.fields, field) ?? "";
+const fieldValue = (current: CurrentCase | null, path: ReadonlyArray<string> | null): string => {
+  const value = path === null || current === null ? undefined : atPath(current.state.fields, path);
+  return typeof value === "string" ? value : "";
 };
 const initialValue = (input: CatalogInput, current: CurrentCase | null, id: string) => {
   if (input.source === "OPERATION_IDENTITY") {
@@ -33,6 +34,9 @@ const initialValue = (input: CatalogInput, current: CurrentCase | null, id: stri
   }
   if (input.source === "EXPECTED_REVISION") {
     return String(current?.revision ?? 0);
+  }
+  if (input.default !== null) {
+    return typeof input.default === "number" ? String(input.default) : input.default;
   }
   switch (input.kind.kind) {
     case "BOOLEAN":
@@ -50,7 +54,7 @@ export const initialOperationValues = (
   current: CurrentCase | null,
   id = crypto.randomUUID(),
 ): FormValues => {
-  const definition = interactionFor({ scope, "act.kind": kind });
+  const definition = operationEntry({ scope, "act.kind": kind });
   const values: Record<string, string | boolean> = {};
   for (const constant of definition.constants) {
     values[constant.path.join(".")] =
@@ -66,45 +70,19 @@ export const refusalPath = (target: string | null, values: FormValues): string |
     return null;
   }
   return (
-    interactionFor(values)
-      .inputs.find(
-        (input) => input.diagnosticTargets.includes(target) && applicableInput(input, values),
-      )
+    operationEntry(values)
+      .inputs.find((input) => input.diagnosticTargets.includes(target) && applies(input, values))
       ?.path.join(".") ?? null
   );
 };
-const assign = (
-  root: Record<string, unknown>,
-  path: ReadonlyArray<string>,
-  value: unknown,
-): void => {
-  let target = root;
-  for (const segment of path.slice(0, -1)) {
-    const child = target[segment];
-    const entries: Record<string, unknown> = isObject(child)
-      ? Object.fromEntries(Object.entries(child))
-      : {};
-    target[segment] = entries;
-    target = entries;
-  }
-  target[path.at(-1)!] = value;
-};
 export const assembleOperation = (values: FormValues) => {
-  const definition = interactionFor(values);
-  const root: Record<string, unknown> = {};
-  for (const constant of definition.constants) {
-    assign(root, constant.path, constant.value);
-  }
-  for (const input of definition.inputs.filter((item) => applicableInput(item, values))) {
-    const value = values[bindingPath(input)] ?? "";
-    assign(root, input.path, input.kind.kind === "INTEGER" ? Number(value) : value);
-  }
-  return buildRequest("operation.execute", root);
+  const entry = operationEntry(values);
+  return buildRequest("operation.execute", assembleCatalogInput(entry, values));
 };
 export const visibleOperationInputs = (values: FormValues, current: CurrentCase | null) =>
-  interactionFor(values).inputs.filter(
+  operationEntry(values).inputs.filter(
     (input) =>
       input.source === "AUTHORED" &&
       !(input.field === "caseReference" && current !== null) &&
-      applicableInput(input, values),
+      applies(input, values),
   );

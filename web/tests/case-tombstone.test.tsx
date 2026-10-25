@@ -23,7 +23,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
-      onCommand={vi.fn()}
+      onAct={vi.fn()}
     />,
   );
   expect(await screen.findByText(/Erased — only/u)).toBeVisible();

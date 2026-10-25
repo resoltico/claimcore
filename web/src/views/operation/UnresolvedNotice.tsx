@@ -44,7 +44,7 @@ export const UnresolvedNotice = ({ token }: { token: string }) => {
           <p>
             <bdi>{operation.operationId}</bdi>
             {operation.scope === "CASE"
-              ? p.commandLabel(operation.act)
+              ? p.actLabel(operation.act)
               : p.authorityLabel(operation.act)}
           </p>
           <button type="button" disabled={busy} onClick={() => void check()}>

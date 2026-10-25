@@ -97,12 +97,6 @@ type CatalogDerivedInput =
         Binding: CatalogInput
     }
 
-type CatalogDerivedConstant =
-    {
-        Assignment: BindingAssignment
-        Branches: BindingCondition list
-    }
-
 /// The actor-facing operation catalog. Bootstrap/session and owner administration belong to their hosts.
 module OperationCatalog =
     [<Literal>]
@@ -450,7 +444,17 @@ module OperationCatalog =
                         LabelId = inputMessage spec.Name "label"
                         MeaningId = Some(inputMessage spec.Name "meaning")
                         Order = 0
-                        Prefill = spec.Prefill
+                        Prefill =
+                            spec.Prefill
+                            |> Option.map (fun field ->
+                                let row = FieldTable.forField field
+
+                                match row.Group with
+                                | FieldGroup.Identity
+                                | FieldGroup.Status -> [ row.Key ]
+                                | group -> [ FieldGroup.token group; row.Key ])
+                        Required = spec.Required
+                        Default = spec.Default
                         DiagnosticTargets = diagnostics spec.Name
                         Source = source entry spec.Name
                     }
@@ -462,7 +466,8 @@ module OperationCatalog =
                 [],
                 [
                     {
-                        Assignment = { Path = path; Value = value }
+                        Path = path
+                        Value = value
                         Branches = branches
                     }
                 ]
@@ -678,7 +683,7 @@ module OperationCatalog =
                 ConfirmationId = confirmationId operation
                 Synopsis = synopsis operation
                 Inputs = inputs |> List.map _.Binding
-                Constants = constants |> List.map _.Assignment
+                Constants = constants
             })
 
     let technicalFields =

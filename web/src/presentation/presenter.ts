@@ -9,18 +9,20 @@ import { renderNotice } from "./notice";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
-type MessageDescriptor = Readonly<{ labelId: string; meaningId?: string }>;
+type MessageDescriptor = Readonly<{ labelId: string; meaningId?: string | null }>;
 export type PresentationDefinitions = Readonly<{
   fields: ReadonlyArray<MessageDescriptor & { name: string }>;
   inputFields: ReadonlyArray<MessageDescriptor & { name: string }>;
   authorityFields: ReadonlyArray<MessageDescriptor & { name: string }>;
-  acts: ReadonlyArray<
+  entries: ReadonlyArray<
     MessageDescriptor & {
+      scope: string;
       kind: string;
-      inputs: { kind: string; groups?: ReadonlyArray<MessageDescriptor & { name: string }> };
+      inputs: ReadonlyArray<
+        MessageDescriptor & { diagnosticTargets: ReadonlyArray<string>; kind: { kind: string } }
+      >;
     }
   >;
-  authorityActs: ReadonlyArray<MessageDescriptor & { kind: string }>;
 }>;
 const metadata = (
   preferences: Preferences,
@@ -39,19 +41,26 @@ const metadata = (
       ].find((candidate) => candidate.name === name);
       break;
     case "act":
-      descriptor = definitions.acts.find((candidate) => candidate.kind === name);
+      descriptor = definitions.entries.find(
+        (candidate) => candidate.scope === "CASE" && candidate.kind === name,
+      );
       break;
     case "authority":
-      descriptor = definitions.authorityActs.find((candidate) => candidate.kind === name);
+      descriptor = definitions.entries.find(
+        (candidate) => candidate.scope === "AUTHORITY" && candidate.kind === name,
+      );
       break;
     case "group":
-      descriptor = definitions.acts
-        .flatMap((act) => act.inputs.groups ?? [])
-        .find((candidate) => candidate.name === name);
+      descriptor = definitions.entries
+        .flatMap((entry) => entry.inputs)
+        .find(
+          (candidate) =>
+            candidate.kind.kind === "GROUP" && candidate.diagnosticTargets.includes(name),
+        );
       break;
   }
   const identity = part === "label" ? descriptor?.labelId : descriptor?.meaningId;
-  if (identity === undefined) {
+  if (identity === undefined || identity === null) {
     return part === "label" ? name : "";
   }
   return renderKey(preferences, identity);
@@ -67,7 +76,9 @@ const token = (
   }
   return metadata(
     preferences,
-    definitions.authorityActs.some((item) => item.kind === value) ? "authority" : "act",
+    definitions.entries.some((item) => item.scope === "AUTHORITY" && item.kind === value)
+      ? "authority"
+      : "act",
     value,
     "label",
     definitions,
@@ -137,11 +148,10 @@ export const createPresenter = (
   authorityLabel: (name: string) => metadata(preferences, "authority", name, "label", definitions),
   authorityMeaning: (name: string) =>
     metadata(preferences, "authority", name, "meaning", definitions),
-  commandLabel: (name: string) => metadata(preferences, "act", name, "label", definitions),
-  commandMeaning: (name: string) => metadata(preferences, "act", name, "meaning", definitions),
+  actMeaning: (name: string) => metadata(preferences, "act", name, "meaning", definitions),
   groupLabel: (name: string) => metadata(preferences, "group", name, "label", definitions),
   groupMeaning: (name: string) => metadata(preferences, "group", name, "meaning", definitions),
-  actLabel: (value: string) => token(preferences, value, definitions),
+  actLabel: (name: string) => metadata(preferences, "act", name, "label", definitions),
   token: (value: string) => token(preferences, value, definitions),
   hint: (field: FieldDescriptor) => hint(preferences, field),
   integer: (value: string | number) => exactInteger(String(value), preferences.displayLocale),

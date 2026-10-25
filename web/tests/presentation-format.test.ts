@@ -77,13 +77,13 @@ it("uses stable metadata identity rather than supplied English labels as catalog
   const p = createPresenter(defaults);
   expect(p.fieldLabel("claimantName")).toBe("Claimant name");
   expect(p.fieldMeaning("claimantName")).not.toBe("");
-  expect(p.commandLabel("CLOSE")).toBe("Close the case");
-  expect(p.commandMeaning("CLOSE")).not.toBe("");
+  expect(p.actLabel("CLOSE")).toBe("Close the case");
+  expect(p.actMeaning("CLOSE")).not.toBe("");
   expect(p.groupLabel("registration")).not.toBe("");
   expect(p.groupMeaning("registration")).not.toBe("");
   expect(p.fieldLabel("FUTURE_TECHNICAL_FIELD")).toBe("FUTURE_TECHNICAL_FIELD");
   expect(p.fieldMeaning("FUTURE_TECHNICAL_FIELD")).toBe("");
-  expect(p.token("CLOSE")).toBe(p.commandLabel("CLOSE"));
+  expect(p.token("CLOSE")).toBe(p.actLabel("CLOSE"));
   expect(p.token("opaque-identifier")).toBe("opaque-identifier");
   expect(p.integer("42")).toBe("42");
   expect(p.amount("42.0000")).toBe("42.0000");

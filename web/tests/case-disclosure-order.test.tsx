@@ -22,7 +22,7 @@ const detail = (token = "token", reloadSignal = 0) => (
     reloadSignal={reloadSignal}
     definition={definition.catalog}
     onBack={vi.fn()}
-    onCommand={vi.fn()}
+    onAct={vi.fn()}
   />
 );
 const readable = (historyDetails = ["SUMMARY", "FULL"]) =>

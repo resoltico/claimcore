@@ -1,4 +1,8 @@
+import type { CaseAct } from "@contracts/client";
 import { productMetadata } from "../protocol/productMetadata";
-export type ActKind = (typeof productMetadata.catalog.acts)[number]["kind"];
+export type ActKind = CaseAct["kind"];
 export const isCaseAct = (value: string): value is ActKind =>
-  productMetadata.catalog.acts.some((act) => act.kind === value);
+  productMetadata.catalog.entries.some(
+    (entry) =>
+      entry.scope === "CASE" && entry.endpoint === "operation.execute" && entry.kind === value,
+  );

@@ -39,8 +39,8 @@ let private valid operation =
     let fixedValues =
         constants
         |> List.choose (fun item ->
-            match item.Assignment.Value with
-            | BindingValue.Text value -> Some(item.Assignment.Path, value)
+            match item.Value with
+            | BindingValue.Text value -> Some(item.Path, value)
             | _ -> None)
 
     let endpoint =

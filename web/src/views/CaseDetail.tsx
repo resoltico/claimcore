@@ -18,16 +18,16 @@ type CaseDetailProps = {
   reloadSignal: number;
   definition: CatalogDocument;
   onBack: () => void;
-  onCommand: (current: CurrentCase, act: ActKind) => void;
+  onAct: (current: CurrentCase, act: ActKind) => void;
 };
 
 const AvailableCommands = ({
   current,
-  onCommand,
+  onAct,
 }: {
   current: CurrentCase;
   definition: CatalogDocument;
-  onCommand: (act: ActKind) => void;
+  onAct: (act: ActKind) => void;
 }) => {
   const p = usePresentation();
   return (
@@ -41,14 +41,14 @@ const AvailableCommands = ({
             <Button
               key={act}
               onPress={() => {
-                onCommand(act);
+                onAct(act);
               }}
               aria-label={p.text("ui.commandDescription", {
-                label: p.commandLabel(act),
-                meaning: p.commandMeaning(act),
+                label: p.actLabel(act),
+                meaning: p.actMeaning(act),
               })}
             >
-              {p.commandLabel(act)}
+              {p.actLabel(act)}
             </Button>
           ))}
       </div>
@@ -73,11 +73,11 @@ const CurrentFeedback = ({ message, loading }: { message: Notice | null; loading
 const CurrentPresentation = ({
   current,
   definition,
-  onCommand,
+  onAct,
 }: {
   current: CurrentCase;
   definition: CatalogDocument;
-  onCommand: (current: CurrentCase, act: ActKind) => void;
+  onAct: (current: CurrentCase, act: ActKind) => void;
 }) => {
   const p = usePresentation();
   return (
@@ -91,8 +91,8 @@ const CurrentPresentation = ({
       <AvailableCommands
         current={current}
         definition={definition}
-        onCommand={(act) => {
-          onCommand(current, act);
+        onAct={(act) => {
+          onAct(current, act);
         }}
       />
     </>
@@ -121,13 +121,7 @@ const CaseHeader = ({
   );
 };
 
-const CaseDisclosure = ({
-  token,
-  caseReference,
-  definition,
-  onBack,
-  onCommand,
-}: CaseDetailProps) => {
+const CaseDisclosure = ({ token, caseReference, definition, onBack, onAct }: CaseDetailProps) => {
   const p = usePresentation();
   const current = useCaseDisclosure(caseReference, token);
   const state = current.value;
@@ -147,7 +141,7 @@ const CaseDisclosure = ({
         </Button>
       )}
       {lookup === null ? null : (
-        <CurrentPresentation current={lookup} definition={definition} onCommand={onCommand} />
+        <CurrentPresentation current={lookup} definition={definition} onAct={onAct} />
       )}
       {state === null ? null : <LifecycleStatus value={state} />}
       {state?.state.tag === "ERASED" ? (

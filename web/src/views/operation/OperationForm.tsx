@@ -5,16 +5,16 @@ import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import type { CurrentCase } from "../../api/service";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import { productMetadata } from "../../protocol/productMetadata";
+import { operationEntry } from "../../interaction/operationForm";
 
 export type OperationFormProps = {
   model: OperationModel;
   current: CurrentCase | null;
   offered: ReadonlyArray<string>;
-  onCommand: (kind: string) => void;
+  onAct: (kind: string) => void;
   onClose?: () => void;
 };
-const ActPicker = ({ model, offered, onCommand }: OperationFormProps) => {
+const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
   const p = usePresentation();
   return offered.length < 2 ? null : (
     <label>
@@ -24,12 +24,12 @@ const ActPicker = ({ model, offered, onCommand }: OperationFormProps) => {
         value={String(model.values["act.kind"])}
         disabled={model.busy || model.phase === "REVIEWING" || model.priorUncertain}
         onChange={(event) => {
-          onCommand(event.target.value);
+          onAct(event.target.value);
         }}
       >
         {offered.map((kind) => (
           <option key={kind} value={kind}>
-            {model.values["scope"] === "CASE" ? p.commandLabel(kind) : p.authorityLabel(kind)}
+            {model.values["scope"] === "CASE" ? p.actLabel(kind) : p.authorityLabel(kind)}
           </option>
         ))}
       </select>
@@ -39,9 +39,7 @@ const ActPicker = ({ model, offered, onCommand }: OperationFormProps) => {
 const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
   const p = usePresentation();
   const allowed = offered.includes(String(model.values["act.kind"]));
-  const act = productMetadata.catalog.acts.find(
-    (item) => model.values["scope"] === "CASE" && item.kind === model.values["act.kind"],
-  );
+  const act = operationEntry(model.values);
   return (
     <>
       {" "}
@@ -56,7 +54,15 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
           />
         </p>
       )}
-      {act?.inputs.kind === "CORRECTION_GROUPS" ? <p>{p.text("ui.correctionHint")}</p> : null}
+      {act.inputs.some(
+        (input) =>
+          input.kind.kind === "GROUP" &&
+          input.diagnosticTargets.some((target) =>
+            ["registration", "decision", "payment"].includes(target),
+          ),
+      ) ? (
+        <p>{p.text("ui.correctionHint")}</p>
+      ) : null}
       {offered.length === 0 ? null : (
         <CatalogInputs
           current={current}

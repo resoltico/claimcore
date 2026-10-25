@@ -48,9 +48,7 @@ const AuthorityForm = ({ kind }: { kind: "GRANT" | "REVOKE" }) => {
     token: "synthetic-token",
     onLockChange: noLockChange,
   });
-  return (
-    <OperationForm model={model} current={null} offered={[kind]} onCommand={() => undefined} />
-  );
+  return <OperationForm model={model} current={null} offered={[kind]} onAct={() => undefined} />;
 };
 const rejectedPreview = () =>
   vi.spyOn(service, "preview").mockImplementation((prepared) =>

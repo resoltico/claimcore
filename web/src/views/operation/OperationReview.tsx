@@ -78,7 +78,7 @@ const ReviewConfirmation = ({
   confirmationId,
 }: {
   model: ReviewModel;
-  confirmationId: (typeof productMetadata.catalog.acts)[number]["confirmationId"];
+  confirmationId: string;
 }) => {
   const p = usePresentation();
   return (
@@ -113,10 +113,9 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
   const { input } = model.prepared;
   const schema = selectedSchema(operationDocument, operationDocument, "", { scope: input.scope });
   const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "scope"));
-  const act =
-    input.scope === "CASE"
-      ? productMetadata.catalog.acts.find((item) => item.kind === input.act.kind)!
-      : productMetadata.catalog.authorityActs.find((item) => item.kind === input.act.kind)!;
+  const act = productMetadata.catalog.entries.find(
+    (item) => item.scope === input.scope && item.kind === input.act.kind,
+  )!;
   return (
     <AccessibleModal
       title={p.text("ui.reviewTitle")}
@@ -128,13 +127,11 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
     >
       <>
         <h3>
-          {input.scope === "CASE"
-            ? p.commandLabel(input.act.kind)
-            : p.authorityLabel(input.act.kind)}
+          {input.scope === "CASE" ? p.actLabel(input.act.kind) : p.authorityLabel(input.act.kind)}
         </h3>
         <p>
           {input.scope === "CASE"
-            ? p.commandMeaning(input.act.kind)
+            ? p.actMeaning(input.act.kind)
             : p.authorityMeaning(input.act.kind)}
         </p>
         <ProtocolSummary value={display} document={operationDocument} node={schema} />
@@ -143,7 +140,7 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
         ) : (
           <AuthorityValues review={model.review} />
         )}
-        <ReviewConfirmation model={model} confirmationId={act.confirmationId} />
+        <ReviewConfirmation model={model} confirmationId={act.confirmationId!} />
       </>
     </AccessibleModal>
   );

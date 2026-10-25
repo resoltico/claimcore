@@ -64,7 +64,7 @@ it("invalidates the pending current read synchronously on a second history refus
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
-      onCommand={vi.fn()}
+      onAct={vi.fn()}
     />,
   );
   const picker = await screen.findByRole("combobox", { name: "History detail" });

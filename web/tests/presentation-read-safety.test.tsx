@@ -110,7 +110,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
-      onCommand={vi.fn()}
+      onAct={vi.fn()}
     />,
   );
   assertSafe(view.container.querySelector(".section-heading + p")!, value, points);

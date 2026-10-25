@@ -135,6 +135,7 @@ type BindingAssignment =
     {
         Path: string list
         Value: BindingValue
+        Branches: BindingCondition list
     }
 
 [<RequireQualifiedAccess>]
@@ -161,7 +162,9 @@ type CatalogInput =
         LabelId: string
         MeaningId: string option
         Order: int
-        Prefill: BusinessField option
+        Prefill: string list option
+        Required: bool
+        Default: BindingValue option
         DiagnosticTargets: string list
         Source: InputSource
     }

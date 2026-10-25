@@ -74,7 +74,8 @@ const AuthorityWorkspace = ({
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const context = useAuthorityContext(token, disclosure);
   const { refused } = disclosure;
-  const offered = productMetadata.catalog.authorityActs
+  const offered = productMetadata.catalog.entries
+    .filter((entry) => entry.scope === "AUTHORITY" && entry.endpoint === "operation.execute")
     .filter(
       (act) =>
         context.value?.offers.some(
@@ -177,6 +178,10 @@ const AuthorityLayout = ({
   );
 };
 
+const initialAuthorityAct = productMetadata.catalog.entries.find(
+  (entry) => entry.scope === "AUTHORITY" && entry.endpoint === "operation.execute",
+)!.kind;
+
 type AuthorityPanelProps = { token: string; onLockChange: (locked: boolean) => void };
 export const AuthorityPanel = ({ token, onLockChange }: AuthorityPanelProps) => {
   const disclosure = useAuthorityDisclosure();
@@ -199,7 +204,7 @@ export const AuthorityPanel = ({ token, onLockChange }: AuthorityPanelProps) => 
   };
   const model = useOperation({
     scope: "AUTHORITY",
-    kind: productMetadata.catalog.authorityActs[0]!.kind,
+    kind: initialAuthorityAct,
     current: null,
     token,
     onLockChange,

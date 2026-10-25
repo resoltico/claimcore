@@ -26,7 +26,7 @@ const HistoryReceipt = ({
     <details>
       <summary>
         {p.text("ui.historySummary", {
-          act: p.actLabel(receipt.scope.act),
+          act: p.token(receipt.scope.act),
           revision: p.integer(receipt.scope.revision),
           timestamp: receipt.recordedAt,
         })}
@@ -57,7 +57,7 @@ const Entry = ({ entry, fields }: { entry: HistoryEntry; fields: CatalogDocument
     <>
       <p>
         {p.text("ui.historySummary", {
-          act: p.actLabel(change.act),
+          act: p.token(change.act),
           revision: p.integer(change.revision),
           timestamp: change.recordedAt,
         })}

@@ -462,14 +462,16 @@ module CatalogCodecs =
         |> build
 
     let private assignment =
-        (record (fun path value ->
+        (record (fun path value branches ->
             {
                 BindingAssignment.Path = path
                 Value = value
+                Branches = branches
             })
         : Fields<BindingAssignment, _>)
         |> field "path" _.Path (many text)
         |> field "value" _.Value bindingValue
+        |> field "branches" _.Branches (many condition)
         |> build
 
     let private bindingKind =
@@ -507,20 +509,36 @@ module CatalogCodecs =
         |> vocabulary
 
     let private binding =
-        record (fun identity field path kind branches label meaning order prefill targets source ->
-            {
-                CatalogInput.Identity = identity
-                Field = field
-                Path = path
-                Kind = kind
-                Branches = branches
-                LabelId = label
-                MeaningId = meaning
-                Order = order
-                Prefill = prefill
-                DiagnosticTargets = targets
-                Source = source
-            })
+        record
+            (fun
+                identity
+                field
+                path
+                kind
+                branches
+                label
+                meaning
+                order
+                prefill
+                required
+                defaultValue
+                targets
+                source ->
+                {
+                    CatalogInput.Identity = identity
+                    Field = field
+                    Path = path
+                    Kind = kind
+                    Branches = branches
+                    LabelId = label
+                    MeaningId = meaning
+                    Order = order
+                    Prefill = prefill
+                    Required = required
+                    Default = defaultValue
+                    DiagnosticTargets = targets
+                    Source = source
+                })
         |> field "identity" _.Identity text
         |> field "field" _.Field (nullable inputTarget)
         |> field "path" _.Path (many text)
@@ -529,7 +547,9 @@ module CatalogCodecs =
         |> field "labelId" _.LabelId text
         |> field "meaningId" _.MeaningId (nullable text)
         |> field "order" _.Order count
-        |> field "prefill" _.Prefill (nullable fieldName)
+        |> field "prefill" _.Prefill (nullable (many text))
+        |> field "required" _.Required boolean
+        |> field "default" _.Default (nullable bindingValue)
         |> field "diagnosticTargets" _.DiagnosticTargets (many text)
         |> field "source" _.Source inputSource
         |> build
