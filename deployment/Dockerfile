@@ -26,14 +26,14 @@ RUN --mount=type=cache,target=/root/.nuget/packages \
     && dotnet publish src/ClaimCore.Cli --configuration Release --no-restore --output /published/cli \
     && dotnet publish src/ClaimCore.Database --configuration Release --no-restore --output /published/database
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:d5633778c754e89a386882eddf8dbee6942447a8a4b8267c19cf1e1158d0b0ac AS administration
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS administration
 WORKDIR /app
 COPY --from=build /published/database/ ./database/
 COPY --from=build /published/cli/ ./cli/
 USER $APP_UID
 ENTRYPOINT ["dotnet", "/app/database/ClaimCore.Database.dll"]
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:d5633778c754e89a386882eddf8dbee6942447a8a4b8267c19cf1e1158d0b0ac AS web
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS web
 WORKDIR /app
 COPY --from=build /published/web/ ./
 USER $APP_UID
