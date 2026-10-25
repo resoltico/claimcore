@@ -36,6 +36,7 @@ module CliCommands =
         ]
         @ diagnosticTopics
 
+
     let aliases = [ "--help"; "-h" ]
 
     let acts = [ "help"; "version"; "describe"; "schema"; "call"; "session" ]

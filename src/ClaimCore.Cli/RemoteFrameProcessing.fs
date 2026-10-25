@@ -64,8 +64,9 @@ module private FrameInvocation =
         }
 
 type RemoteFrameProcessor
-    private (input: Stream, output: Stream, errors: Stream, invoke, owned: IDisposable) =
-    let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
+    private
+    (input: Stream, output: Stream, errors: Stream, language: string, invoke, owned: IDisposable) =
+    let delivery = ClaimCore.Cli.FrameDelivery(output, errors, language)
 
     let interpret frame stopped =
         match frame with
@@ -90,15 +91,24 @@ type RemoteFrameProcessor
                         CliReply.forAttempt frame delivery reply
                 )
 
-    new(input, output, errors) =
+    new(input, output, errors, language) =
         let holder = new RemoteSessionHolder()
-        new RemoteFrameProcessor(input, output, errors, FrameInvocation.invoke holder, holder)
+
+        new RemoteFrameProcessor(
+            input,
+            output,
+            errors,
+            language,
+            FrameInvocation.invoke holder,
+            holder
+        )
 
     static member internal ForTest(input, output, errors, invoke) =
         new RemoteFrameProcessor(
             input,
             output,
             errors,
+            "en",
             invoke,
             { new IDisposable with
                 member _.Dispose() = ()

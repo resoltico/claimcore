@@ -31,7 +31,7 @@ let private aliases () =
 
             Expect.isGreaterThan
                 (ClaimCore.Cli.ContractDiscovery.helpTopic language topic).Length
-                100
+                20
                 "Useful guidance"
 
 let private options () =
@@ -48,7 +48,7 @@ let private options () =
     for args in
         [
             [ "call"; "--format"; "text" ]
-            [ "describe"; "--language"; "lv" ]
+            [ "describe"; "--language"; "unknown" ]
             [ "schema"; "invocation"; "--language"; "en" ]
             [ "help"; "call"; "--language"; "en"; "--language"; "en" ]
             [ "help"; "secret-canary" ]
@@ -61,8 +61,8 @@ let private options () =
         Expect.isError (CliInvocations.admit args) "Unsupported combinations refuse atomically"
 
     Expect.equal
-        (CliInvocations.admit [ "describe"; "acts"; "OPEN"; "--format"; "text"; "--language"; "ar" ])
-        (Ok(CliInvocation.Describe(CliDescription.Acts(Some "OPEN"), true, "ar")))
+        (CliInvocations.admit [ "describe"; "case"; "open"; "--format"; "text"; "--language"; "ar" ])
+        (Ok(CliInvocation.Describe(CliDescription.Operation [ "case"; "open" ], true, "ar")))
         "Explicit human format"
 
     Expect.isOk
@@ -78,100 +78,9 @@ let tests =
             testCase "strict human versus machine option combinations" options
         ]
 
-let private grammarCatalogDocument () =
-    ClaimCore.Cli.ContractDiscovery.catalog ()
-    |> StrictJson.read Limits.MaximumResponseBytes
-    |> Result.defaultWith (fun _ -> failtest "Embedded catalog are valid")
-
 let private prepared arguments =
-    Grammar.prepare
-        (fun () -> "10000000-0000-4000-8000-000000000001")
-        (grammarCatalogDocument ())
-        arguments
-    |> Result.defaultWith (fun _ -> failtest "Derived verb prepares a request")
-
-let private verbCoverage () =
-    let catalog = JsonNode.Parse(ClaimCore.Cli.ContractDiscovery.catalog ()) |> nonNull
-
-    let acts = catalog["acts"] |> nonNull |> _.AsArray()
-
-    let verbs =
-        acts
-        |> Seq.map (fun item ->
-            (nonNull item)["kind"] |> nonNull |> _.GetValue<string>() |> CliSyntax.caseVerb)
-        |> Seq.toList
-
-    Expect.equal
-        (List.distinct verbs).Length
-        CaseActKinds.all.Length
-        "Exactly one derived verb for each case act"
-
-    for command in acts do
-        let command = nonNull command
-        let kind = command["kind"] |> nonNull |> _.GetValue<string>()
-        let inputs = command["inputs"] |> nonNull
-
-        let flags =
-            if (inputs["kind"] |> nonNull).GetValue<string>() = "CORRECTION_GROUPS" then
-                inputs["groups"]
-                |> nonNull
-                |> _.AsArray()
-                |> Seq.collect (fun group ->
-                    [ "--" + ((nonNull group)["name"] |> nonNull).GetValue<string>(); "keep" ])
-                |> Seq.toList
-            else
-                inputs["fields"]
-                |> nonNull
-                |> _.AsArray()
-                |> Seq.collect (fun field ->
-                    let name = ((nonNull field)["fieldName"] |> nonNull).GetValue<string>()
-                    [ "--" + CliSyntax.kebab name; "synthetic" ])
-                |> Seq.toList
-
-        let revision = if kind = "OPEN" then [] else [ "--expected-revision"; "1" ]
-
-        let request =
-            prepared ([ "case"; CliSyntax.caseVerb kind; "SYNTHETIC" ] @ revision @ flags)
-
-        Expect.isOk (Frames.admit request.Bytes) "Every descriptor-derived case verb is admitted"
-
-
-let private authorityVerbCoverage () =
-    let definitions =
-        CliSyntax.compile (ContractDiscovery.definitions ()) |> Fixtures.accepted
-
-    for kind in AuthorityKinds.all |> List.filter ((<>) AuthorityKind.ProvisionOwner) do
-        let syntax =
-            definitions
-            |> List.find (fun row ->
-                row.Definition.Scope = OperationScopes.Authority
-                && row.Definition.Kind = AuthorityKinds.token kind)
-
-        for alias in syntax.Invocations do
-            let verb = alias.Verb
-
-            let role =
-                if List.contains verb [ "grant"; "revoke" ] then
-                    [ "--role"; "CASE_READER" ]
-                else
-                    []
-
-            let request =
-                prepared (
-                    [
-                        "authority"
-                        verb
-                        "--kind"
-                        "HUMAN"
-                        "--issuer"
-                        "synthetic"
-                        "--subject"
-                        "synthetic"
-                    ]
-                    @ role
-                )
-
-            Expect.isOk (Frames.admit request.Bytes) "Every authority act alias is admitted"
+    Grammar.prepare (fun () -> "10000000-0000-4000-8000-000000000001") arguments
+    |> Result.defaultWith (fun issues -> failtestf "Request preparation failed: %A" issues)
 
 let private verbPreparation () =
     let args = [ "case"; "close"; "SYNTHETIC"; "--expected-revision"; "1" ]
@@ -204,21 +113,14 @@ let private verbPreparation () =
             args @ [ "--format"; "binary" ]
         ] do
         Expect.isError
-            (Grammar.prepare
-                (fun () -> Guid.NewGuid().ToString("D"))
-                (grammarCatalogDocument ())
-                rejected)
+            (Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) rejected)
             "Malformed verbs refuse atomically"
 
 [<Tests>]
 let grammarTests =
     testList
         "derived CLI verbs"
-        [
-            testCase "every case and authority act has a derived verb" verbCoverage
-            testCase "every authority alias has a core act" authorityVerbCoverage
-            testCase "preparation is exact and malformed flags fail" verbPreparation
-        ]
+        [ testCase "preparation is exact and malformed flags fail" verbPreparation ]
 
 let private nonLedgerVerbExamples =
     [

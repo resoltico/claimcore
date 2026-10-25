@@ -21,7 +21,11 @@ let private writeText (output: System.IO.Stream) (value: string) =
     output.Flush()
 
 let private unsupported errors language issue =
-    writeText errors (ContractDiscovery.helpTopic language ("usage." + string issue))
+    writeText
+        errors
+        (MessageCatalogs.render language "cli.usage.host" (Map.ofList [ "issue", string issue ])
+         + "\n")
+
     64
 
 let private writeDiscovery output errors language response =
@@ -51,8 +55,8 @@ let private discovery output errors =
         Discovery.schema selection |> writeDiscovery output errors "en"
     | _ -> unsupported errors "en" CliUsageIssue.Invocation
 
-let private remote input output errors session =
-    use processor = new RemoteFrameProcessor(input, output, errors)
+let private remote input output errors session language =
+    use processor = new RemoteFrameProcessor(input, output, errors, language)
     let stop () = Environment.Exit(processor.Interrupt())
 
     let interrupt =
@@ -85,13 +89,11 @@ let private remote input output errors session =
         registrations |> List.iter _.Dispose()
 
 let private verb output errors arguments =
-    let catalog = ContractDiscovery.descriptorValue ()
-
-    match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) catalog arguments with
-    | Error() ->
+    match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) arguments with
+    | Error issues ->
         let language = CliInvocations.usageLanguage arguments
-        writeText errors (ContractDiscovery.helpTopic language "verbs" + "\n")
-        unsupported errors language CliUsageIssue.Invocation
+        writeText errors (UsageText.render language arguments issues)
+        64
     | Ok prepared when prepared.DryRun ->
         writeBytes output prepared.Bytes
         0
@@ -104,19 +106,19 @@ let private verb output errors arguments =
                 |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
 
             use rendered = new TextReplySink(output, prepared.Language, invocation)
-            remote input rendered errors false
+            remote input rendered errors false prepared.Language
         else
-            remote input output errors false
+            remote input output errors false prepared.Language
 
 let private dispatch output errors argv =
     try
         match CliInvocations.admit (Array.toList argv) with
         | Ok CliInvocation.Call ->
             use input = Console.OpenStandardInput()
-            remote input output errors false
+            remote input output errors false "en"
         | Ok CliInvocation.Session ->
             use input = Console.OpenStandardInput()
-            remote input output errors true
+            remote input output errors true "en"
         | Ok(CliInvocation.Verb arguments) -> verb output errors arguments
         | Ok invocation -> discovery output errors invocation
         | Error issue -> unsupported errors (CliInvocations.usageLanguage (Array.toList argv)) issue

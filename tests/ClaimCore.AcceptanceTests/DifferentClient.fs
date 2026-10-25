@@ -141,7 +141,7 @@ let private localeClient (fixture: PublishedFixture.Fixture) directory =
 
     ProcessRunner.dotnet
         60_000
-        (Path.Combine(output, "ClaimCore.Cli.dll"))
+        (Path.Combine(output, "claimcore.dll"))
         [ "call" ]
         fixture.Environment
         (Some(CliCalls.frame "context" (JsonObject())))
@@ -178,7 +178,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
     let result =
         ProcessRunner.dotnet
             60_000
-            (Path.Combine(output, "ClaimCore.Cli.dll"))
+            (Path.Combine(output, "claimcore.dll"))
             [ "call" ]
             fixture.Environment
             (Some(CliCalls.frame "operation.execute" input))

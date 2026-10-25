@@ -22,7 +22,16 @@ let private projectPaths =
 let private products =
     lazy
         (projectPaths.Value
-         |> Array.map (Path.GetFileNameWithoutExtension >> nonNull >> Assembly.Load))
+         |> Array.map (fun path ->
+             let document = System.Xml.Linq.XDocument.Load path
+
+             let name =
+                 document.Descendants(System.Xml.Linq.XName.Get "AssemblyName")
+                 |> Seq.tryHead
+                 |> Option.map _.Value
+                 |> Option.defaultValue (Path.GetFileNameWithoutExtension path |> nonNull)
+
+             Assembly.Load name))
 
 let private model =
     lazy
@@ -124,7 +133,11 @@ let private postgres () =
         let name = assembly.GetName().Name |> nonNull
 
         if
-            not (List.contains name [ "ClaimCore.Postgres"; "ClaimCore.Web"; "ClaimCore.Database" ])
+            not (
+                List.contains
+                    name
+                    [ "ClaimCore.Postgres"; "claimcore-server"; "claimcore-database" ]
+            )
         then
             check "postgres" assembly
 
@@ -146,7 +159,7 @@ let private publishedClosure () =
     let directory = Directory.CreateTempSubdirectory("claimcore-client-closure-")
 
     try
-        let dependencies = Path.Combine(directory.FullName, "ClaimCore.Cli.deps.json")
+        let dependencies = Path.Combine(directory.FullName, "claimcore.deps.json")
         File.WriteAllText(dependencies, "{\"libraries\":{}}")
 
         let check () =

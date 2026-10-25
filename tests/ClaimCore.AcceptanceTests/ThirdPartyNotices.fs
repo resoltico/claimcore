@@ -20,7 +20,8 @@ let private explained name known (relative: string) =
     || (Path.GetExtension relative = ".pdb"
         && Set.contains (Path.ChangeExtension(relative, ".dll") |> nonNull) known)
 
-let qualify root directory name =
+let qualify root directory project =
+    let name = ThirdPartyNoticeAssets.assemblyName root project
     let manifest = delivered root directory
     let assets = ThirdPartyNoticeAssets.graph root directory name manifest
     let native = ThirdPartyNoticeAssets.host directory name manifest

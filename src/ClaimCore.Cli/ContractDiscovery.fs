@@ -10,15 +10,6 @@ open ClaimCore.Contract.Protocol
 
 /// Offline discovery consumes the same tracked resources published for HTTPS clients.
 module ContractDiscovery =
-    let private resource name =
-        use stream =
-            Assembly.GetExecutingAssembly().GetManifestResourceStream("ClaimCore." + name)
-            |> nonNull
-
-        use output = new MemoryStream()
-        stream.CopyTo output
-        output.ToArray()
-
     let message identity =
         MessageCatalogs.render "en" identity Map.empty
 
@@ -26,28 +17,59 @@ module ContractDiscovery =
     let localized language identity =
         MessageCatalogs.template language identity
 
-    let catalog () = resource "catalog.json"
+    let entries () = OperationCatalog.entries
 
-    let private admittedDefinitions =
-        lazy
-            (Codec.decode Limits.MaximumResponseBytes CatalogCodecs.codec (catalog ())
-             |> Result.defaultWith (fun _ -> invalidOp "Invalid embedded catalog."))
-
-    let definitions () = admittedDefinitions.Value
-
-    let descriptorValue () =
-        definitions () |> CatalogCodecs.codec.Write
+    let inputLabel name =
+        OperationCatalog.technicalFields
+        |> List.find (fun input -> input.Name = name)
+        |> _.LabelId
 
     let helpTopic language topic =
         if topic = "verbs" then
-            let grammar =
-                descriptorValue ()
-                |> Grammar.description
-                |> Result.defaultWith (fun () -> invalidOp "Invalid embedded CLI syntax.")
+            OperationCatalog.all
+            |> List.map (fun entry ->
+                CliIdentity.programName + " " + OperationCatalog.synopsis entry)
+            |> String.concat "\n"
+            |> fun value -> value + "\n"
+        elif topic = "overview" then
+            let families =
+                [
+                    "case"
+                    "authority"
+                    "operation"
+                    "context"
+                    "call"
+                    "session"
+                    "describe"
+                    "schema"
+                    "help"
+                ]
 
-            MessageCatalogs.render language "cli.help.verbs" (Map.ofList [ "grammar", grammar ])
+            CliIdentity.programName
+            + "\n"
+            + (families
+               |> List.map (fun family ->
+                   family
+                   + " — "
+                   + MessageCatalogs.render language ("cli.family." + family) Map.empty)
+               |> String.concat "\n")
+            + "\n"
         else
+            let syntax =
+                match topic with
+                | "describe" ->
+                    [ "describe [family verb] [--format text|json] [--language en|lv|ar]" ]
+                | "schema" -> [ "schema name"; "schema endpoint request|response" ]
+                | "version" -> [ "version [--json]" ]
+                | "help" -> [ "help [topic] [--language en|lv|ar]" ]
+                | "examples" ->
+                    [ "describe case open"; "case get REF"; "schema operation.execute request" ]
+                | _ -> []
+
             MessageCatalogs.help language topic
+            + (syntax
+               |> List.map (fun value -> CliIdentity.programName + " " + value + "\n")
+               |> String.concat "")
 
     let private openapi () =
         WireWriter.indentedBytes ClaimCore.Contract.OpenApi.document

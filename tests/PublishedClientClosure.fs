@@ -20,7 +20,7 @@ let violations directory =
         |> Set.ofSeq
 
     use dependencies =
-        JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, "ClaimCore.Cli.deps.json")))
+        JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, "claimcore.deps.json")))
 
     let libraries =
         dependencies.RootElement.GetProperty("libraries").EnumerateObject()

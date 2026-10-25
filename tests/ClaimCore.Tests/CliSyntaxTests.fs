@@ -26,7 +26,7 @@ let private registration =
     ]
 
 let private prepare args =
-    Grammar.prepare (fun () -> operationId) (ContractDiscovery.descriptorValue ()) args
+    Grammar.prepare (fun () -> operationId) args
 
 let private replacement () =
     let prepared =
@@ -69,46 +69,21 @@ let private replacement () =
     | _ -> failtest "The requested replacement must remain in the prepared frame"
 
 let private invalidAliasConstants () =
-    let metadata = ContractDiscovery.definitions ()
-    let definitions = CliSyntax.compile metadata |> Fixtures.accepted
-
-    let arguments =
-        [
-            "authority"
-            "enable"
-            "--kind"
-            "HUMAN"
-            "--issuer"
-            "https://issuer.example/"
-            "--subject"
-            "synthetic"
-            "--dry-run"
-        ]
-
-    for constants in
-        [
+    Expect.isError
+        (prepare
             [
-                {
-                    Path = [ "act"; "enabled" ]
-                    Value = BindingValue.Text "wrong"
-                }
-            ]
-        ] do
-        let changed =
-            definitions
-            |> List.map (fun row ->
-                if row.Definition.Kind = "ENABLE" then
-                    { row with
-                        Invocations =
-                            row.Invocations
-                            |> List.map (fun alias -> { alias with Constants = constants })
-                    }
-                else
-                    row)
-
-        Expect.isError
-            (Grammar.prepareWith (fun () -> operationId) metadata changed arguments)
-            "A retired boolean operand cannot be sent"
+                "authority"
+                "enable"
+                "--kind"
+                "human"
+                "--issuer"
+                "https://issuer.example/"
+                "--subject"
+                "synthetic"
+                "--enabled"
+                "true"
+            ])
+        "Retired boolean inputs cannot be sent"
 
 [<Tests>]
 let tests =

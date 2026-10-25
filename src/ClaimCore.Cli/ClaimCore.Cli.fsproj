@@ -1,20 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType></PropertyGroup>
+  <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType><AssemblyName>claimcore</AssemblyName></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="CliIdentity.fs" />
     <Compile Include="CliCommands.fs" />
     <Compile Include="Frames.fs" />
     <Compile Include="Schemas.fs" />
-    <Compile Include="CliSyntax.fs" />
     <Compile Include="Grammar.fs" />
     <Compile Include="CliInvocation.fs" />
     <Compile Include="ClientFailures.fs" />
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="FrameReader.fs" />
     <Compile Include="MessageCatalogs.fs" />
+    <Compile Include="UsageText.fs" />
     <Compile Include="ContractDiscovery.fs" />
-    <Compile Include="CatalogText.fs" />
     <Compile Include="Discovery.fs" />
     <Compile Include="RemoteConfiguration.fs" />
     <Compile Include="RemoteTls.fs" />
@@ -35,7 +35,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../ClaimCore.Contract/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="../../contracts/catalog.json" LogicalName="ClaimCore.catalog.json" />
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <PackageReference Include="Duende.IdentityModel" />
     <PackageReference Include="Duende.IdentityModel.OidcClient" />

@@ -55,7 +55,7 @@ let publish root directory name =
             (ClaimCore.TestSupport.PublishedClientClosure.violations output)
             "Published CLI excludes server assemblies and resolved dependencies"
 
-    Path.Combine(output, name + ".dll")
+    Path.Combine(output, ThirdPartyNoticeAssets.assemblyName root name + ".dll")
 
 type Web(binary, environment, directory, ?logPrefix: string) =
     let logPrefix = defaultArg logPrefix "web"

@@ -308,9 +308,9 @@
   ],
   "host": {
     "assets": [
-      "ClaimCore.Cli",
-      "ClaimCore.Database",
-      "ClaimCore.Web"
+      "claimcore",
+      "claimcore-database",
+      "claimcore-server"
     ],
     "texts": [
       "DotNet-Foundation-MIT.txt",

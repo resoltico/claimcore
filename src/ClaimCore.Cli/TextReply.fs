@@ -51,10 +51,7 @@ module internal TextReply =
     let private label language key =
         MessageCatalogs.render language key Map.empty
 
-    let private authorityFieldLabel name =
-        (ContractDiscovery.definitions ()).AuthorityFields
-        |> List.find (fun field -> field.Name = name)
-        |> _.LabelId
+    let private authorityFieldLabel name = ContractDiscovery.inputLabel name
 
     let private line language key value = label language key + ": " + value
 
@@ -119,7 +116,7 @@ module internal TextReply =
             line
                 language
                 "ui.availableCommands"
-                (advice |> List.map (get "act" >> CliSyntax.caseVerb) |> String.concat ", ")
+                (advice |> List.map (get "act" >> OperationCatalog.kebab) |> String.concat ", ")
         ]
 
     let private receiptLines language tag value =
@@ -128,9 +125,9 @@ module internal TextReply =
 
         let verb =
             if get "kind" scope = "CASE" then
-                CliSyntax.caseVerb token
+                OperationCatalog.kebab token
             else
-                CliSyntax.kebab token
+                OperationCatalog.kebab token
 
         let target =
             if get "kind" scope = "CASE" then
@@ -177,7 +174,7 @@ module internal TextReply =
                 let summary =
                     [
                         get "revision" scope
-                        get "act" scope |> CliSyntax.caseVerb
+                        get "act" scope |> OperationCatalog.kebab
                         get "recordedAt" change
                         get "operationId" change
                     ]
@@ -252,7 +249,7 @@ module internal TextReply =
         let act = memberValue "act" input
         let token = get "kind" act
 
-        let verb = CliSyntax.kebab token
+        let verb = OperationCatalog.kebab token
 
         let target =
             if get "scope" review = "AUTHORITY" then

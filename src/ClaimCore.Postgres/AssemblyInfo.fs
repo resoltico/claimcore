@@ -2,7 +2,7 @@ namespace ClaimCore.Postgres
 
 open System.Runtime.CompilerServices
 
-[<assembly: InternalsVisibleTo("ClaimCore.Web")>]
+[<assembly: InternalsVisibleTo("claimcore-server")>]
 [<assembly: InternalsVisibleTo("ClaimCore.IntegrationTests")>]
 [<assembly: InternalsVisibleTo("ClaimCore.WebTests")>]
 do ()

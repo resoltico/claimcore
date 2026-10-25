@@ -3,16 +3,10 @@ namespace ClaimCore.Cli
 open ClaimCore.Contract
 open ClaimCore.Contract.Protocol
 
-open ClaimCore.Contract
-
 [<RequireQualifiedAccess>]
 type CliDescription =
     | Summary
-    | Fields of string option
-    | Acts of string option
-    | Authority of string option
-    | Endpoints of string option
-    | Diagnostics
+    | Operation of string list
 
 [<RequireQualifiedAccess>]
 type CliSchema =
@@ -63,28 +57,15 @@ module CliInvocations =
             | [ topic ], None -> help topic (defaultArg language "en")
             | _ -> Error CliUsageIssue.Options)
 
-    let private descriptions =
-        [
-            "fields", CliDescription.Fields
-            "acts", CliDescription.Acts
-            "authority", CliDescription.Authority
-        ]
-
-    let private describeSelector =
-        function
-        | []
-        | [ "summary" ] -> Ok CliDescription.Summary
-        | [ "diagnostics" ] -> Ok CliDescription.Diagnostics
-        | [ "endpoints" ] -> Ok(CliDescription.Endpoints None)
-        | [ "endpoints"; name ] ->
-            match Api.tryFind name with
-            | Some endpoint -> Ok(CliDescription.Endpoints(Some(Api.id endpoint)))
-            | None -> Error CliUsageIssue.Selector
-        | category :: tail ->
-            match List.tryFind (fst >> (=) category) descriptions, tail with
-            | Some(_, create), [] -> Ok(create None)
-            | Some(_, create), [ name ] -> Ok(create (Some name))
-            | _ -> Error CliUsageIssue.Selector
+    let private describeSelector operands =
+        match operands with
+        | [] -> Ok CliDescription.Summary
+        | words when
+            OperationCatalog.all
+            |> List.exists (fun entry -> OperationCatalog.words entry = words)
+            ->
+            Ok(CliDescription.Operation words)
+        | _ -> Error CliUsageIssue.Selector
 
     let private schemaSelector =
         function
@@ -99,14 +80,14 @@ module CliInvocations =
     let private admitDescribe tail =
         options tail
         |> Result.bind (fun (operands, format, language) ->
-            if language.IsSome && format <> Some "text" then
+            if language.IsSome && format = Some "json" then
                 Error CliUsageIssue.Options
             else
                 describeSelector operands
                 |> Result.map (fun selector ->
                     CliInvocation.Describe(
                         selector,
-                        (format = Some "text"),
+                        (format <> Some "json"),
                         defaultArg language "en"
                     )))
 
@@ -139,7 +120,8 @@ module CliInvocations =
             schemaSelector tail |> Result.map CliInvocation.Schema
         | family :: _ when List.contains family [ "case"; "authority"; "operation"; "context" ] ->
             Ok(CliInvocation.Verb arguments)
-        | _ -> Error CliUsageIssue.Invocation
+        | head :: _ when List.contains head CliCommands.acts -> Error CliUsageIssue.Invocation
+        | _ -> Ok(CliInvocation.Verb arguments)
 
     let usageLanguage arguments =
         arguments

@@ -27,14 +27,14 @@ type private PartialOutput() =
 let private deliveryKnowledge () =
     use output = new MemoryStream()
     use errors = new MemoryStream()
-    let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
+    let delivery = ClaimCore.Cli.FrameDelivery(output, errors, "en")
     delivery.BeginFrame()
     Expect.equal (delivery.Interrupt()) 130 "Before dispatch cancellation"
-    let mutation = ClaimCore.Cli.FrameDelivery(output, errors)
+    let mutation = ClaimCore.Cli.FrameDelivery(output, errors, "en")
     mutation.BeginFrame()
     mutation.BeforeDispatch(frame "operation.execute")
     Expect.equal (mutation.Interrupt()) 4 "Cancellation after mutation dispatch"
-    let completed = ClaimCore.Cli.FrameDelivery(output, errors)
+    let completed = ClaimCore.Cli.FrameDelivery(output, errors, "en")
     completed.BeginFrame()
     completed.BeforeDispatch(frame "operation.execute")
     completed.Write(CliReply.protocol CliFailure.InvalidResponse)
@@ -46,7 +46,7 @@ let private deliveryKnowledge () =
         "Next frame does not inherit flushed mutation knowledge"
 
     use broken = new BrokenOutput()
-    let lost = ClaimCore.Cli.FrameDelivery(broken, errors)
+    let lost = ClaimCore.Cli.FrameDelivery(broken, errors, "en")
     lost.BeginFrame()
     lost.BeforeDispatch(frame "operation.execute")
 
@@ -60,7 +60,7 @@ let private readOutputFailure () =
     for dispatched, expected in [ false, "NOT_SENT"; true, "UNCERTAIN" ] do
         use output = new BrokenOutput()
         use errors = new MemoryStream()
-        let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
+        let delivery = ClaimCore.Cli.FrameDelivery(output, errors, "en")
         let invocation = frame "case.get"
         delivery.BeginFrame()
         delivery.Prepare invocation
@@ -94,7 +94,7 @@ let private partialOutputKnowledge () =
         [ "operation.execute", 4, "UNCERTAIN"; "case.get", 70, "UNCERTAIN" ] do
         use output = new PartialOutput()
         use errors = new MemoryStream()
-        let delivery = ClaimCore.Cli.FrameDelivery(output, errors)
+        let delivery = ClaimCore.Cli.FrameDelivery(output, errors, "en")
         delivery.BeginFrame()
         delivery.BeforeDispatch(frame endpoint)
 
@@ -116,7 +116,7 @@ let private partialOutputKnowledge () =
             "Stderr safely reports the attempt knowledge"
 
         use brokenErrors = new PartialOutput()
-        let both = ClaimCore.Cli.FrameDelivery(output, brokenErrors)
+        let both = ClaimCore.Cli.FrameDelivery(output, brokenErrors, "en")
         both.BeginFrame()
         both.BeforeDispatch(frame endpoint)
 
@@ -240,16 +240,7 @@ let private schema arguments =
     | _ -> None
 
 let private offlineDiscovery () =
-    for args in
-        [
-            [ "summary" ]
-            [ "fields" ]
-            [ "acts" ]
-            [ "authority" ]
-            [ "authority"; "REGISTER" ]
-            [ "endpoints" ]
-            [ "diagnostics" ]
-        ] do
+    for args in [ []; [ "case"; "open" ]; [ "authority"; "register" ]; [ "context" ] ] do
         Expect.isSome (describe args) "Offline catalogue read"
 
     for args in

@@ -376,22 +376,34 @@
           "Microsoft.IdentityModel.Tokens": "8.19.2"
         }
       },
-      "claimcore.application": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Contract": "[0.11.0, )",
-          "ClaimCore.Domain": "[0.11.0, )",
-          "ClaimCore.RecordFormat": "[0.11.0, )",
-          "FSharp.Core": "[10.1.402, )"
-        }
-      },
-      "claimcore.cli": {
+      "claimcore": {
         "type": "Project",
         "dependencies": {
           "ClaimCore.Contract": "[0.11.0, )",
           "ClaimCore.HostSecurity": "[0.11.0, )",
           "Duende.IdentityModel": "[8.1.0, )",
           "Duende.IdentityModel.OidcClient": "[7.1.1, )",
+          "FSharp.Core": "[10.1.402, )"
+        }
+      },
+      "claimcore-server": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Application": "[0.11.0, )",
+          "ClaimCore.Contract": "[0.11.0, )",
+          "ClaimCore.HostSecurity": "[0.11.0, )",
+          "ClaimCore.Postgres": "[0.11.0, )",
+          "FSharp.Core": "[10.1.402, )",
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
+          "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.13, )"
+        }
+      },
+      "claimcore.application": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Contract": "[0.11.0, )",
+          "ClaimCore.Domain": "[0.11.0, )",
+          "ClaimCore.RecordFormat": "[0.11.0, )",
           "FSharp.Core": "[10.1.402, )"
         }
       },
@@ -431,18 +443,6 @@
           "ClaimCore.Contract": "[0.11.0, )",
           "ClaimCore.Domain": "[0.11.0, )",
           "FSharp.Core": "[10.1.402, )"
-        }
-      },
-      "claimcore.web": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.11.0, )",
-          "ClaimCore.Contract": "[0.11.0, )",
-          "ClaimCore.HostSecurity": "[0.11.0, )",
-          "ClaimCore.Postgres": "[0.11.0, )",
-          "FSharp.Core": "[10.1.402, )",
-          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
-          "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.13, )"
         }
       },
       "Duende.IdentityModel": {

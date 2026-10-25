@@ -119,6 +119,9 @@ let private cliArguments () =
                 "maximumResponseBytes"
                 "maximumSecretBytes"
                 "maximumTrustRootBytes"
+                "retryCommand"
+                "resolveCommand"
+                "program"
             ]
 
     for language in LocalizationPolicy.languages do
@@ -147,6 +150,11 @@ let private cliArguments () =
                     arguments
                     (Set.singleton "grammar")
                     "Verb help receives exactly the grammar derived from its producers."
+            | _ when
+                key.StartsWith("cli.usage.", System.StringComparison.Ordinal)
+                || key = "cli.delivery.unresolved"
+                ->
+                ()
             | _ ->
                 Expect.isTrue
                     (Set.isSubset arguments limits)
@@ -205,26 +213,6 @@ let private diagnosticDiscovery () =
         actual
         expected
         "Discovery contains the entire current public diagnostic vocabulary."
-
-    for language in LocalizationPolicy.languages do
-        let bytes = Discovery.describeText language CliDescription.Diagnostics |> Option.get
-
-        let text = System.Text.Encoding.UTF8.GetString bytes
-
-        for key in
-            [
-                "diagnostic.ACCESS_RESOURCE_UNAVAILABLE"
-                "fault.CORE_STORE_UNAVAILABLE"
-                "host.CONTRACT_MISMATCH"
-            ] do
-            Expect.stringContains
-                text
-                (key + ": ")
-                "Offline discovery renders each public message family."
-
-        Expect.isFalse
-            (text.Contains "diagnostic.CLI_")
-            "Help topic aliases are not public diagnostic identities."
 
 [<Tests>]
 let tests =

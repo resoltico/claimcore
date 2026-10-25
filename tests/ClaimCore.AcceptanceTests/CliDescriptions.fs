@@ -20,73 +20,123 @@ let private description fixture language arguments =
     Expect.equal result.StandardError.Length 0 "No prose on stderr"
     Encoding.UTF8.GetString result.StandardOutput
 
-let private endpointDescription fixture language =
-    let endpoint = description fixture language [ "endpoints"; "operation.execute" ]
-
-    for item in
-        [
-            "effect: LEDGER_EXECUTION"
-            "ClaimCore.Cli schema operation.execute request"
-            "ClaimCore.Cli schema operation.execute response"
-        ] do
-        Expect.stringContains
-            endpoint
-            item
-            "Endpoint meaning and exact lookup routes survive publication"
-
 let private selectedInputs fixture =
     for language in LocalizationPolicy.languages do
-        let opening = description fixture language [ "acts"; "OPEN" ]
+        for operation in OperationCatalog.all do
+            let output = description fixture language (OperationCatalog.words operation)
 
-        for field in
+            Expect.stringContains
+                output
+                (OperationCatalog.synopsis operation)
+                "Published grammar matches the catalog"
+
+            let inputs, _ = OperationCatalog.derive operation
+
+            for input in inputs do
+                if input.Spec.Argument <> CatalogArgument.Implicit then
+                    Expect.stringContains
+                        output
+                        (ClaimCore.Cli.ContractDiscovery.localized language input.Binding.LabelId)
+                        "Published input labels survive"
+
+let private frameOracle fixture =
+    let rows =
+        System.IO.File.ReadAllLines(
+            System.IO.Path.Combine(
+                ClaimCore.TestSupport.RepositoryRoot.find (),
+                "tests/fixtures/cli-frames.tsv"
+            )
+        )
+
+    Expect.equal rows.Length 30 "Complete captured oracle"
+
+    for row in rows do
+        let cells = row.Split('\t', 2)
+
+        let arguments =
+            cells[0].Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
+            |> List.ofArray
+
+        let result = invoke fixture (arguments @ [ "--dry-run" ]) None
+        Expect.equal result.ExitCode 0 cells[0]
+        Expect.equal result.StandardError.Length 0 "Offline preparation emits only the frame"
+
+        Expect.isTrue
+            (System.Text.Json.Nodes.JsonNode.DeepEquals(
+                System.Text.Json.Nodes.JsonNode.Parse cells[1],
+                System.Text.Json.Nodes.JsonNode.Parse result.StandardOutput
+            ))
+            cells[0]
+
+let private usageErrors fixture =
+    let cases =
+        [
+            [ "case"; "close"; "REF" ], "--expected-revision"
+            [ "case"; "close"; "REF"; "--expected-revison"; "1" ], "--expected-revision"
+            [ "case"; "closee"; "REF" ], "case close"
+            [ "case"; "close"; "--expected-revision"; "1" ], "CASE-REFERENCE"
+            [ "case"; "close"; "REF"; "extra"; "--expected-revision"; "1" ], "extra"
+            [ "case"; "close"; "REF"; "--expected-revision"; "three" ], "three"
             [
-                "incidentDate"
-                "incidentNotificationDate"
-                "incidentCountry"
-                "claimantName"
-                "insurerName"
-                "claimedAmount"
-                "claimedCurrency"
-            ] do
-            Expect.stringContains
-                opening
-                ("fieldName: " + field + " — ")
-                "All seven OPEN fields have meaningful labels"
-
-        let correction = description fixture language [ "acts"; "CORRECT" ]
-
-        for item in
+                "case"
+                "correct"
+                "REF"
+                "--expected-revision"
+                "1"
+                "--registration"
+                "swap"
+                "--decision"
+                "keep"
+                "--payment"
+                "keep"
+            ],
+            "swap"
             [
-                "registration"
-                "decision"
-                "payment"
-                "KEEP"
-                "REPLACE"
-                "CLEAR"
-                "paymentDecisionDate"
-                "payableAmount"
-                "payableCurrency"
-                "paymentDate"
-                "currentField: paymentDate"
-            ] do
-            Expect.stringContains
-                correction
-                item
-                "Correction choices and replacement fields survive publication"
+                "case"
+                "correct"
+                "REF"
+                "--expected-revision"
+                "1"
+                "--registration"
+                "keep"
+                "--decision"
+                "keep"
+                "--payment"
+                "keep"
+                "--payment-date"
+                "2026-01-01"
+            ],
+            "--payment-date"
+            [
+                "case"
+                "close"
+                "REF"
+                "--expected-revision"
+                "1"
+                "--expected-revision"
+                "2"
+            ],
+            "--expected-revision"
+            [ "case"; "close"; "REF"; "--expected-revision" ], "--expected-revision"
+        ]
 
-        let authority = description fixture language [ "authority"; "GRANT" ]
+    for language in LocalizationPolicy.languages do
+        for arguments, token in cases do
+            let result = invoke fixture (arguments @ [ "--language"; language ]) None
+            Expect.equal result.ExitCode 64 "Specific usage failures never dispatch"
+            Expect.equal result.StandardOutput.Length 0 "No request or reply on stdout"
+            let text = Encoding.UTF8.GetString result.StandardError
+            Expect.stringContains text token "Specific problem or suggestion is named"
+            Expect.isLessThanOrEqual (text.TrimEnd().Split('\n').Length) 8 "Focused error guidance"
 
-        for item in [ "target"; "role"; "scope" ] do
-            Expect.stringContains
-                authority
-                ("fieldName: " + item + " — ")
-                "Common and act authority input labels survive"
+            if arguments[1] <> "closee" then
+                Expect.stringContains
+                    text
+                    ("claimcore case " + arguments[1])
+                    "Only the matched synopsis is shown"
 
-        Expect.isFalse
-            (authority.Contains("fieldName: active", System.StringComparison.Ordinal))
-            "Distinct grant/revoke acts have no boolean active input"
-
-        endpointDescription fixture language
+            if language <> "en" then
+                Expect.isFalse (text.StartsWith "Missing") "The selected language is respected"
 
 let private diagnosticRoute fixture =
     let result =
@@ -112,10 +162,10 @@ let private diagnosticRoute fixture =
 
         for route in
             [
-                "ClaimCore.Cli schema invocation"
-                "ClaimCore.Cli schema response"
-                "ClaimCore.Cli help call"
-                "ClaimCore.Cli help session"
+                "claimcore schema invocation"
+                "claimcore schema response"
+                "claimcore help call"
+                "claimcore help session"
                 "NDJSON"
                 "EOF"
             ] do
@@ -124,4 +174,6 @@ let private diagnosticRoute fixture =
 
 let qualify fixture =
     selectedInputs fixture
+    frameOracle fixture
+    usageErrors fixture
     diagnosticRoute fixture

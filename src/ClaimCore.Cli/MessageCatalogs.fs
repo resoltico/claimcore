@@ -52,6 +52,9 @@ module internal MessageCatalogs =
     let private bounds =
         Map.ofList
             [
+                "program", CliIdentity.programName
+                "retryCommand", CliIdentity.programName + " call"
+                "resolveCommand", CliIdentity.programName + " operation resolve OPERATION_ID"
                 "maximumInvocationBytes", string Limits.MaximumInvocationBytes
                 "maximumRequestBytes", string Limits.MaximumRequestBytes
                 "maximumResponseBytes", string Limits.MaximumResponseBytes

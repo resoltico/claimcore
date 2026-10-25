@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>Exe</OutputType><IsShippedApplication>true</IsShippedApplication></PropertyGroup>
+  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>claimcore-database</AssemblyName><IsShippedApplication>true</IsShippedApplication></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="Inputs.fs" />

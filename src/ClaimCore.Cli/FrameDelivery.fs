@@ -5,7 +5,7 @@ open System.IO
 open ClaimCore.Contract
 
 /// The current request stays frozen until its complete reply is flushed.
-type FrameDelivery(output: Stream, errors: Stream) =
+type FrameDelivery(output: Stream, errors: Stream, language: string) =
     let gate = obj ()
     let mutable interrupted = false
     let mutable potentiallyChanged = false
@@ -26,11 +26,20 @@ type FrameDelivery(output: Stream, errors: Stream) =
             | Some frame ->
                 errors.Write(
                     System.Text.Encoding.UTF8.GetBytes(
-                        "Outcome unresolved. Resend the exact frame with claimcore call or check its final outcome with claimcore operation resolve "
-                        + (Frames.operationId frame
-                           |> Option.map string
-                           |> Option.defaultValue "OPERATION_ID")
-                        + ".\n"
+                        (MessageCatalogs.render
+                            language
+                            "cli.delivery.unresolved"
+                            (Map.ofList
+                                [
+                                    "retryCommand", CliIdentity.programName + " call"
+                                    "resolveCommand",
+                                    CliIdentity.programName
+                                    + " operation resolve "
+                                    + (Frames.operationId frame
+                                       |> Option.map string
+                                       |> Option.defaultValue "OPERATION_ID")
+                                ])
+                         + "\n")
                     )
                 )
 
