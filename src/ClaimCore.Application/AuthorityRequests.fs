@@ -9,6 +9,32 @@ open ClaimCore.RecordFormat
 module AuthorityRequests =
     type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
 
+    /// Only a case-scope reference has alternate identity spellings; principals stay exact.
+    let canonical (request: AuthorityRequestRecord) =
+        let grant (value: GrantChange) =
+            let scope =
+                match value.Scope with
+                | GrantTarget.Installation -> GrantTarget.Installation
+                | GrantTarget.CaseReference reference ->
+                    GrantTarget.CaseReference(
+                        if System.String.IsNullOrEmpty reference then
+                            reference
+                        else
+                            CaseReference.key reference
+                    )
+
+            { value with Scope = scope }
+
+        let act =
+            match request.Act with
+            | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant value) ->
+                RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant(grant value))
+            | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke value) ->
+                RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke(grant value))
+            | act -> act
+
+        { request with Act = act }
+
     let toRecord (request: AdmittedAuthorityRequest) : AuthorityRequestRecord =
         let grant role target =
             {

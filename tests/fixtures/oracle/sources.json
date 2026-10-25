@@ -272,5 +272,451 @@
         }
       }
     }
-  }
+  },
+  "canonicalIdentity": [
+    {
+      "name": "equal amount",
+      "same": true,
+      "left": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Ann",
+            "claimedAmount": "10.50",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "Synthetic insurer"
+          }
+        },
+        "caseReference": "CANONICAL-AMOUNT",
+        "expectedRevision": 0,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000001",
+        "scope": "CASE"
+      },
+      "right": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Ann",
+            "claimedAmount": "10.5",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "Synthetic insurer"
+          }
+        },
+        "caseReference": "CANONICAL-AMOUNT",
+        "expectedRevision": 0,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000001",
+        "scope": "CASE"
+      }
+    },
+    {
+      "name": "equal reference",
+      "same": true,
+      "left": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Ann",
+            "claimedAmount": "10.50",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "Synthetic insurer"
+          }
+        },
+        "caseReference": "R-1",
+        "expectedRevision": 0,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000002",
+        "scope": "CASE"
+      },
+      "right": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Ann",
+            "claimedAmount": "10.50",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "Synthetic insurer"
+          }
+        },
+        "caseReference": "r-1",
+        "expectedRevision": 0,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000002",
+        "scope": "CASE"
+      }
+    },
+    {
+      "name": "different amount",
+      "same": false,
+      "left": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Ann",
+            "claimedAmount": "10.50",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "Synthetic insurer"
+          }
+        },
+        "caseReference": "CANONICAL-VALUE",
+        "expectedRevision": 0,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000003",
+        "scope": "CASE"
+      },
+      "right": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Ann",
+            "claimedAmount": "10.6",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "Synthetic insurer"
+          }
+        },
+        "caseReference": "CANONICAL-VALUE",
+        "expectedRevision": 0,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000003",
+        "scope": "CASE"
+      }
+    },
+    {
+      "name": "different name",
+      "same": false,
+      "left": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Ann",
+            "claimedAmount": "10.50",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "Synthetic insurer"
+          }
+        },
+        "caseReference": "CANONICAL-NAME",
+        "expectedRevision": 0,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000004",
+        "scope": "CASE"
+      },
+      "right": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "ann",
+            "claimedAmount": "10.50",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "Synthetic insurer"
+          }
+        },
+        "caseReference": "CANONICAL-NAME",
+        "expectedRevision": 0,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000004",
+        "scope": "CASE"
+      }
+    },
+    {
+      "name": "amend amount",
+      "same": true,
+      "left": {
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "claimantName": "Ann",
+            "claimedAmount": "10.50",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "Synthetic insurer"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 1,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000005",
+        "scope": "CASE"
+      },
+      "right": {
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "claimantName": "Ann",
+            "claimedAmount": "10.5",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "Synthetic insurer"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 1,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000005",
+        "scope": "CASE"
+      }
+    },
+    {
+      "name": "decision amount",
+      "same": true,
+      "left": {
+        "act": {
+          "kind": "DECIDE",
+          "values": {
+            "paymentDecisionDate": "2026-08-15",
+            "payableAmount": "10.50",
+            "payableCurrency": "EUR"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 1,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000006",
+        "scope": "CASE"
+      },
+      "right": {
+        "act": {
+          "kind": "DECIDE",
+          "values": {
+            "paymentDecisionDate": "2026-08-15",
+            "payableAmount": "10.5",
+            "payableCurrency": "EUR"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 1,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000006",
+        "scope": "CASE"
+      }
+    },
+    {
+      "name": "correction registration amount",
+      "same": true,
+      "left": {
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "mode": "REPLACE",
+              "values": {
+                "claimantName": "Ann",
+                "claimedAmount": "10.50",
+                "claimedCurrency": "EUR",
+                "incidentCountry": "LV",
+                "incidentDate": "2026-08-01",
+                "incidentNotificationDate": "2026-08-03",
+                "insurerName": "Synthetic insurer"
+              }
+            },
+            "decision": {
+              "mode": "KEEP"
+            },
+            "payment": {
+              "mode": "KEEP"
+            }
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 1,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000007",
+        "scope": "CASE"
+      },
+      "right": {
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "mode": "REPLACE",
+              "values": {
+                "claimantName": "Ann",
+                "claimedAmount": "10.5",
+                "claimedCurrency": "EUR",
+                "incidentCountry": "LV",
+                "incidentDate": "2026-08-01",
+                "incidentNotificationDate": "2026-08-03",
+                "insurerName": "Synthetic insurer"
+              }
+            },
+            "decision": {
+              "mode": "KEEP"
+            },
+            "payment": {
+              "mode": "KEEP"
+            }
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 1,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000007",
+        "scope": "CASE"
+      }
+    },
+    {
+      "name": "correction decision amount",
+      "same": true,
+      "left": {
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "mode": "KEEP"
+            },
+            "decision": {
+              "mode": "REPLACE",
+              "values": {
+                "paymentDecisionDate": "2026-08-15",
+                "payableAmount": "10.50",
+                "payableCurrency": "EUR"
+              }
+            },
+            "payment": {
+              "mode": "KEEP"
+            }
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 1,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000008",
+        "scope": "CASE"
+      },
+      "right": {
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "mode": "KEEP"
+            },
+            "decision": {
+              "mode": "REPLACE",
+              "values": {
+                "paymentDecisionDate": "2026-08-15",
+                "payableAmount": "10.5",
+                "payableCurrency": "EUR"
+              }
+            },
+            "payment": {
+              "mode": "KEEP"
+            }
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 1,
+        "format": 7,
+        "operationId": "30000000-0000-4000-8000-000000000008",
+        "scope": "CASE"
+      }
+    },
+    {
+      "name": "grant reference",
+      "same": true,
+      "left": {
+        "format": 4,
+        "scope": "AUTHORITY",
+        "operationId": "30000000-0000-4000-8000-000000000009",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "canonical-target"
+        },
+        "act": {
+          "kind": "GRANT",
+          "role": "CASE_READER",
+          "scope": {
+            "kind": "CASE",
+            "caseReference": "R-1"
+          }
+        }
+      },
+      "right": {
+        "format": 4,
+        "scope": "AUTHORITY",
+        "operationId": "30000000-0000-4000-8000-000000000009",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "canonical-target"
+        },
+        "act": {
+          "kind": "GRANT",
+          "role": "CASE_READER",
+          "scope": {
+            "kind": "CASE",
+            "caseReference": "r-1"
+          }
+        }
+      }
+    },
+    {
+      "name": "revoke reference",
+      "same": true,
+      "left": {
+        "format": 4,
+        "scope": "AUTHORITY",
+        "operationId": "30000000-0000-4000-8000-000000000010",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "canonical-target"
+        },
+        "act": {
+          "kind": "REVOKE",
+          "role": "CASE_READER",
+          "scope": {
+            "kind": "CASE",
+            "caseReference": "R-1"
+          }
+        }
+      },
+      "right": {
+        "format": 4,
+        "scope": "AUTHORITY",
+        "operationId": "30000000-0000-4000-8000-000000000010",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "canonical-target"
+        },
+        "act": {
+          "kind": "REVOKE",
+          "role": "CASE_READER",
+          "scope": {
+            "kind": "CASE",
+            "caseReference": "r-1"
+          }
+        }
+      }
+    }
+  ]
 }

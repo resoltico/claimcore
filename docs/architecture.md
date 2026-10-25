@@ -90,9 +90,11 @@ See [Transactions](../src/ClaimCore.Postgres/Ledger/Transactions.fs) and the [st
 
 ### CC-APP-002 — Exact replay and commit uncertainty
 
-Identity combines a caller-chosen operation ID with canonical request content. Authorized exact replay of
-retained content returns original acceptance metadata with current snapshot disclosure. Changed content
-under a used ID refuses. Erased content cannot be replayed.
+Identity combines a caller-chosen operation ID with canonical request content: amounts compare by decimal
+value, references after ASCII case folding, and free text exactly. Authorized equivalent replay returns
+original acceptance metadata with current snapshot disclosure. The ledger retains authored request bytes;
+public history exposes receipts and canonical snapshots. Changed content under a used ID refuses. Erased
+content cannot be replayed.
 
 `OUTCOME_UNKNOWN` means confirmation was lost after commit could have started. Preserve the exact request,
 ID and revision. A later ordinary refusal, fault or NOT_STARTED response cannot disprove the earlier commit.

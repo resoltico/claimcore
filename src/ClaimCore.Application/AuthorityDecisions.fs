@@ -220,6 +220,7 @@ module internal AuthorityDecisions =
         target
         action
         bytes
+        identityBytes
         (view: AuthorityLockedView)
         =
         let identity =
@@ -227,7 +228,7 @@ module internal AuthorityDecisions =
             | AuthorityAction.ProvisionOwner ->
                 provisionIdentity installationId operationId bytes view
             | AuthorityAction.User _ ->
-                admission installationId principal operationId bytes view.Read
+                admission installationId principal operationId identityBytes view.Read
 
         match identity with
         | IdentityDecision.Replay entry ->
@@ -249,7 +250,10 @@ module internal AuthorityDecisions =
         (request: AdmittedAuthorityRequest)
         (view: AuthorityReadView)
         =
-        let bytes = AuthorityRequests.toRecord request |> AuthorityRecord.encode
+        let bytes =
+            AuthorityRequests.toRecord request
+            |> AuthorityRequests.canonical
+            |> AuthorityRecord.encode
 
         match admission installationId principal request.OperationId bytes view with
         | IdentityDecision.Refuse refusal -> AuthorityReviewDecision.Refuse refusal
@@ -272,7 +276,9 @@ module internal AuthorityDecisions =
         (request: AdmittedAuthorityRequest)
         (view: AuthorityLockedView)
         =
-        let bytes = AuthorityRequests.toRecord request |> AuthorityRecord.encode
+        let record = AuthorityRequests.toRecord request
+        let bytes = AuthorityRecord.encode record
+        let identityBytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
         decide
             installationId
@@ -281,6 +287,7 @@ module internal AuthorityDecisions =
             request.Target
             (AuthorityAction.User request.Act)
             bytes
+            identityBytes
             view
 
     /// Reachable only through the owner administration composition, never the actor facade.
@@ -288,4 +295,12 @@ module internal AuthorityDecisions =
         let bytes =
             AuthorityRequests.provisionRecord operationId target |> AuthorityRecord.encode
 
-        decide installationId target operationId target AuthorityAction.ProvisionOwner bytes view
+        decide
+            installationId
+            target
+            operationId
+            target
+            AuthorityAction.ProvisionOwner
+            bytes
+            bytes
+            view

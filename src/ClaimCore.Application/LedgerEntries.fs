@@ -233,10 +233,12 @@ module internal LedgerEntries =
                     Content = content
                 })
 
+    /// Comparison bytes are canonical; retained ledger payloads remain authored.
     let internal identityBytes validated =
         match validated.Content with
-        | EntryContent.Case(request, _) -> Some(RequestRecord.encode request)
-        | EntryContent.Authority request -> Some(AuthorityRecord.encode request)
+        | EntryContent.Case(request, _) -> Some(Case.canonical request |> RequestRecord.encode)
+        | EntryContent.Authority request ->
+            Some(AuthorityRequests.canonical request |> AuthorityRecord.encode)
         | EntryContent.ErasedCase -> None
 
     /// The same snapshot-disclosure policy shapes append, replay, preview, observation and history.

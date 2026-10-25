@@ -9,6 +9,7 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
+open ClaimCore.Application
 open ClaimCore.TestSupport
 
 let private withVectors action =
@@ -198,14 +199,66 @@ let private operationIdentity () =
                     )))
                 "The record scope must agree with the case record grammar")
 
+let private identityForms () =
+    withVectors (fun root ->
+        let vectors = root.GetProperty("canonicalIdentity").EnumerateArray() |> Seq.toList
+        Expect.equal vectors.Length 10 "Every amount carrier and both authority reference acts"
+
+        for vector in vectors do
+            let normalize (side: string) =
+                let source = bytes (vector.GetProperty side)
+
+                match text vector "scope" with
+                | "CASE" ->
+                    RequestRecord.decode 65536 source
+                    |> Fixtures.accepted
+                    |> Case.canonical
+                    |> RequestRecord.encode
+                | "AUTHORITY" ->
+                    AuthorityRecord.decode 65536 source
+                    |> Fixtures.accepted
+                    |> AuthorityRequests.canonical
+                    |> AuthorityRecord.encode
+                | _ -> failtest "Unexpected oracle scope"
+
+            let left, right = normalize "left", normalize "right"
+            Expect.equal left (bytes (vector.GetProperty "canonicalLeft")) (text vector "name")
+            Expect.equal right (bytes (vector.GetProperty "canonicalRight")) (text vector "name")
+
+            Expect.equal
+                (left = right)
+                (vector.GetProperty("same").GetBoolean())
+                "Independent identity equality")
+
+let private malformedIdentity () =
+    for amount in [ "01"; "-1"; "1e0"; "NaN"; "" ] do
+        let request =
+            Fixtures.request
+                0L
+                (CaseAct.Open
+                    { Fixtures.registration with
+                        ClaimedAmount = amount
+                    })
+
+        Expect.equal
+            (Case.canonical request)
+            request
+            "Canonical identity preserves malformed authored scalars"
+
+        Expect.isError
+            (Case.validateRequest request)
+            "Malformed business values retain their rejection path"
+
 [<Tests>]
 let tests =
     testList
         "canonical durable records"
         [
+            testCase "canonical identities match independent Python vectors" identityForms
+            testCase "malformed amount spelling is preserved for diagnostics" malformedIdentity
             testCase "durable requests are canonical operation inputs" operationIdentity
-            testCase "format-6 requests reproduce independent bytes and meaning" requests
-            testCase "format-4 snapshots reproduce independent bytes and meaning" snapshot
-            testCase "format-3 authority requests reproduce independent bytes and meaning" authority
+            testCase "case requests reproduce independent bytes and meaning" requests
+            testCase "snapshots reproduce independent bytes and meaning" snapshot
+            testCase "authority requests reproduce independent bytes and meaning" authority
             testCase "unknown formats and noninteger format lexemes refuse" formats
         ]

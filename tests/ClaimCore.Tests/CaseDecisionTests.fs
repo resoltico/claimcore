@@ -33,8 +33,8 @@ let private replay () =
         ] do
         Expect.equal
             (decide changed view)
-            (LedgerDecision.Refuse Refusal.IdempotencyConflict)
-            "Authored spelling is identity"
+            (LedgerDecision.Replay receipt)
+            "Equivalent amount and reference spellings retain the original receipt"
 
     let later =
         { current with
@@ -257,8 +257,13 @@ let private wireSpelling () =
 
     Expect.equal
         (decide (decodeWire (respelledOpening.Replace("1000.00", "1000.0"))) later)
+        (LedgerDecision.Replay receipt)
+        "Equivalent decimal value retains the original receipt"
+
+    Expect.equal
+        (decide (decodeWire (respelledOpening.Replace("1000.00", "1000.01"))) later)
         (LedgerDecision.Refuse Refusal.IdempotencyConflict)
-        "Authored decimal spelling remains identity"
+        "A different amount still conflicts"
 
 [<Tests>]
 let tests =
@@ -266,7 +271,7 @@ let tests =
         "pure case decisions"
         [
             testCase "raw JSON spelling preserves the accepted receipt" wireSpelling
-            testCase "exact replay preserves attribution and authored identity" replay
+            testCase "canonical replay preserves attribution and original identity" replay
             testCase "current resource authority precedes replay and creation" authorization
             testCase "review business date and revision use the supplied view" reviewAndTime
             testCase

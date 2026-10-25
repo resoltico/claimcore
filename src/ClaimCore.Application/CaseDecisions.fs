@@ -54,7 +54,7 @@ module internal CaseDecisions =
                 Error Refusal.ActNotPermitted
             | _ -> Error Refusal.ResourceUnavailable
 
-    let private admission installationId principal request bytes (view: CaseReadView) =
+    let private admission installationId principal request (view: CaseReadView) =
         match permission principal view.Actor request view.Case with
         | Error refusal -> IdentityDecision.Refuse refusal
         | Ok() ->
@@ -63,7 +63,7 @@ module internal CaseDecisions =
                 principal
                 view.Actor
                 request.OperationId
-                bytes
+                (Case.canonical request |> RequestRecord.encode)
                 view.ExistingOperation
 
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseReadView) =
@@ -80,9 +80,7 @@ module internal CaseDecisions =
             | Ok after -> CaseReviewDecision.Proposed(before, after)
 
     let review installationId calendar principal request (view: CaseReadView) =
-        let bytes = RequestRecord.encode request
-
-        match admission installationId principal request bytes view with
+        match admission installationId principal request view with
         | IdentityDecision.Refuse refusal -> CaseReviewDecision.Refuse refusal
         | IdentityDecision.Fail fault -> CaseReviewDecision.Fail fault
         | IdentityDecision.Replay entry ->
@@ -151,7 +149,7 @@ module internal CaseDecisions =
 
         let read = view.Read
 
-        match admission installationId principal request bytes read with
+        match admission installationId principal request read with
         | IdentityDecision.Refuse refusal -> LedgerDecision.Refuse refusal
         | IdentityDecision.Fail fault -> LedgerDecision.Fail fault
         | IdentityDecision.Replay entry ->

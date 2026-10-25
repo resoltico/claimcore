@@ -196,6 +196,53 @@ module private BusinessState =
         }
 
 module Case =
+    /// Identity normalization never rewrites authored payloads or free text.
+    let canonical (request: CaseRequest) =
+        let registration (value: Registration) =
+            { value with
+                ClaimedAmount = Validation.canonicalAmount value.ClaimedAmount
+            }
+
+        let decision (value: ClaimCore.Contract.Decision) =
+            { value with
+                PayableAmount = Validation.canonicalAmount value.PayableAmount
+            }
+
+        let registrationGroup =
+            function
+            | RegistrationGroup.Keep -> RegistrationGroup.Keep
+            | RegistrationGroup.Replace value -> RegistrationGroup.Replace(registration value)
+
+        let decisionGroup =
+            function
+            | DecisionGroup.Keep -> DecisionGroup.Keep
+            | DecisionGroup.Clear -> DecisionGroup.Clear
+            | DecisionGroup.Replace value -> DecisionGroup.Replace(decision value)
+
+        let act =
+            match request.Act with
+            | CaseAct.Open value -> CaseAct.Open(registration value)
+            | CaseAct.AmendRegistration value -> CaseAct.AmendRegistration(registration value)
+            | CaseAct.Decide value -> CaseAct.Decide(decision value)
+            | CaseAct.Correct value ->
+                CaseAct.Correct
+                    { value with
+                        Registration = registrationGroup value.Registration
+                        Decision = decisionGroup value.Decision
+                    }
+            | act -> act
+
+        let reference =
+            if System.String.IsNullOrEmpty request.CaseReference then
+                request.CaseReference
+            else
+                CaseReference.key request.CaseReference
+
+        { request with
+            Act = act
+            CaseReference = reference
+        }
+
     let validateRequest request = RequestValidation.parse request
 
     let snapshot (record: CaseRecord) =

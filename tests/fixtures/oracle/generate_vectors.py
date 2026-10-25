@@ -11,6 +11,8 @@ Writes JSON to standard output.
 """
 
 import argparse
+import copy
+import decimal
 import datetime
 import hashlib
 import json
@@ -83,8 +85,49 @@ def with_format(value, number):
     return copy
 
 
+def fold_reference(reference):
+    return "".join(chr(ord(c) - 32) if "a" <= c <= "z" else c for c in reference)
+
+
+def canonical_identity(request):
+    result = copy.deepcopy(request)
+    def amount(values, key):
+        text = format(decimal.Decimal(values[key]), "f")
+        values[key] = text.rstrip("0").rstrip(".") if "." in text else text
+    act = result["act"]
+    if result["scope"] == "CASE":
+        result["caseReference"] = fold_reference(result["caseReference"])
+        if act["kind"] in ("OPEN", "AMEND_REGISTRATION"):
+            amount(act["values"], "claimedAmount")
+        elif act["kind"] == "DECIDE":
+            amount(act["values"], "payableAmount")
+        elif act["kind"] == "CORRECT":
+            for group, key in (("registration", "claimedAmount"), ("decision", "payableAmount")):
+                if act["groups"][group]["mode"] == "REPLACE":
+                    amount(act["groups"][group]["values"], key)
+    elif act["kind"] in ("GRANT", "REVOKE") and act["scope"]["kind"] == "CASE":
+        act["scope"]["caseReference"] = fold_reference(act["scope"]["caseReference"])
+    return result
+
+
+def identity_vectors(sources, case_format, authority_format):
+    result = []
+    for item in sources["canonicalIdentity"]:
+        version = case_format if item["left"]["scope"] == "CASE" else authority_format
+        authored_left = with_format(item["left"], version)
+        authored_right = with_format(item["right"], version)
+        left = canonical_identity(authored_left)
+        right = canonical_identity(authored_right)
+        same = canonical(left) == canonical(right)
+        assert same == item["same"], item["name"]
+        result.append({"name": item["name"], "scope": item["left"]["scope"], "same": same,
+                       "left": vector("authored left", authored_left), "right": vector("authored right", authored_right),
+                       "canonicalLeft": vector("identity left", left), "canonicalRight": vector("identity right", right)})
+    return result
+
+
 def case_id(installation, reference):
-    folded = "".join(chr(ord(c) - 32) if "a" <= c <= "z" else c for c in reference)
+    folded = fold_reference(reference)
     digest = hashlib.sha256(REFERENCE_TAG + uuid.UUID(installation).bytes
                             + folded.encode("ascii")).digest()
     raw = bytearray(digest[:16])
@@ -186,6 +229,7 @@ def main():
         "jcsRefusals": sources["jcsRefusals"],
         "caseRequests": [vector(item["name"], value)
                          for item, value in zip(sources["caseRequests"], requests)],
+        "canonicalIdentity": identity_vectors(sources, arguments.request, arguments.authority),
         "snapshot": vector(sources["snapshot"]["name"], snapshot),
         "authorityRecord": vector(sources["authorityRecord"]["name"], authority),
         "caseReferenceIds": {

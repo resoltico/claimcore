@@ -12,6 +12,7 @@
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
     <Compile Include="../PostgresFixture.fs" Link="PostgresFixture.fs" />
     <Compile Include="VerificationSupport.fs" />
+    <Compile Include="CanonicalIdentityTests.fs" />
     <Compile Include="ResolutionTests.fs" />
     <Compile Include="SessionDrain.fs" />
     <Compile Include="SessionCapRace.fs" />

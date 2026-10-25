@@ -20,7 +20,8 @@ or date. Claimant may identify a person or organization; insurer records the han
 
 The immutable reference uses printable non-space ASCII, within the [reference format](../src/ClaimCore.Contract/Formats.fs).
 Resource lookup folds ASCII letter case within an installation; accepted snapshots retain the initial spelling.
-Operation identity preserves authored spelling, so recasing a request under a used operation ID conflicts.
+Operation identity compares amounts by value and references after ASCII case folding. Respelled equal values
+under the same operation ID replay the original acceptance. The ledger retains the request as authored.
 There are no policy, coverage, reserve, banking, address, notes or attachment fields.
 
 ## State and acts
@@ -78,8 +79,8 @@ instant and installation zone. Clearing then recording a date makes a new assert
 date remains possible after a clock change.
 
 Amounts are unsigned decimal strings, with at most eighteen integer and four fractional digits. No exponents,
-redundant leading zeroes or rounding are accepted. Views show canonical decimal value; operation identity
-still retains the authored amount spelling. Currency and country check uppercase ASCII syntax, not ISO
+redundant leading zeroes or rounding are accepted. Views show canonical decimal value; replay identity compares that value while the retained request
+keeps the authored amount spelling. Currency and country check uppercase ASCII syntax, not ISO
 membership. ZZ means unknown/international country; translated country names are display hints.
 
 Retained business text is nonempty, excludes NUL, unpaired surrogates and Unicode noncharacters, and obeys

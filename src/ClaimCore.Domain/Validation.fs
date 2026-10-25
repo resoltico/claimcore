@@ -141,6 +141,28 @@ module internal Validation =
         else
             invalid field (Violation.FutureDate)
 
+    let private amountValue (value: string) =
+        if
+            String.IsNullOrEmpty value
+            || not (matches FieldDefinitions.amount.Grammar value)
+        then
+            None
+        else
+            match
+                Decimal.TryParse(
+                    value,
+                    NumberStyles.AllowDecimalPoint,
+                    CultureInfo.InvariantCulture
+                )
+            with
+            | true, parsed -> Some parsed
+            | false, _ -> None
+
+    let canonicalAmount value =
+        amountValue value
+        |> Option.map (fun amount -> amount.ToString("0.####", CultureInfo.InvariantCulture))
+        |> Option.defaultValue value
+
     let amount input rawAmount rawCurrency =
         let amountField, currencyField = ScalarInputs.amountTargets input
         let amountRule = FieldDefinitions.amount
@@ -150,7 +172,8 @@ module internal Validation =
             let! valueText = representable amountField false rawAmount
             let! currency = representable currencyField false rawCurrency
 
-            if not (matches amountRule.Grammar valueText) then
+            match amountValue valueText with
+            | None ->
                 return!
                     invalid
                         amountField
@@ -158,19 +181,9 @@ module internal Validation =
                             amountRule.MaximumIntegerDigits,
                             amountRule.MaximumFractionalDigits
                         ))
-            elif not (matches currencyRule.Grammar currency) then
+            | Some _ when not (matches currencyRule.Grammar currency) ->
                 return! invalid currencyField Violation.CurrencyFormat
-            else
-                return
-                    {
-                        Value =
-                            Decimal.Parse(
-                                valueText,
-                                NumberStyles.AllowDecimalPoint,
-                                CultureInfo.InvariantCulture
-                            )
-                        Currency = currency
-                    }
+            | Some value -> return { Value = value; Currency = currency }
         }
 
     let registration (input: Registration) =
