@@ -33,10 +33,8 @@ let private dump (database: Testcontainers.PostgreSql.PostgreSqlContainer) =
         return result.Stdout |> Encoding.UTF8.GetBytes |> SHA256.HashData
     }
 
-let private install filename current (source: NpgsqlDataSource) =
+let private install (bytes: byte array) current (source: NpgsqlDataSource) =
     task {
-        let bytes = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, filename))
-
         use! connection = source.OpenConnectionAsync()
         use! transaction = connection.BeginTransactionAsync()
 
@@ -82,14 +80,14 @@ let private refuses action =
         Expect.isTrue refused "Published baseline bytes are refused by the baseline admission"
     }
 
-let private previousInstallation filename current =
+let private refusedInstallation load current =
     async {
         let database = PostgresFixture.empty ()
 
         try
             do! database.StartAsync() |> Async.AwaitTask
             use source = NpgsqlDataSource.Create(database.GetConnectionString())
-            do! install filename current source |> Async.AwaitTask
+            do! install (load ()) current source |> Async.AwaitTask
             let! before = dump database |> Async.AwaitTask
 
             do!
@@ -121,18 +119,26 @@ let private previousInstallation filename current =
             database.DisposeAsync().AsTask().GetAwaiter().GetResult()
     }
 
+let private previousRelease () =
+    File.ReadAllBytes(
+        Path.Combine(AppContext.BaseDirectory, "previous-release-baseline.v0.11.0.sql")
+    )
+
+let private differentChecksum () =
+    let baseline =
+        File.ReadAllBytes(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))
+
+    Array.append baseline (Encoding.UTF8.GetBytes "\n-- Synthetic checksum control.\n")
+
 [<Tests>]
 let tests =
     testList
-        "prior installations refuse untouched"
+        "baseline admission preserves incompatible installations"
         [
             testCaseAsync
-                "exact catalog-redesign starting baseline 03a5a72e"
-                (previousInstallation "baseline.03a5a72e.sql" true)
+                "a previous release installation is refused untouched"
+                (refusedInstallation previousRelease false)
             testCaseAsync
-                "published 0.11.0 baseline"
-                (previousInstallation "0001_baseline.v0.11.0.sql" false)
-            testCaseAsync
-                "submitted-body baseline at a2f8359"
-                (previousInstallation "baseline-with-submission-storage.sql" true)
+                "a schema with a different checksum is refused untouched"
+                (refusedInstallation differentChecksum true)
         ]

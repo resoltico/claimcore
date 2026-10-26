@@ -44,9 +44,7 @@
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />
     <Compile Include="AdministrationTests.fs" />
-    <None Include="../fixtures/baseline.03a5a72e.sql" Link="baseline.03a5a72e.sql" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../fixtures/baseline-with-submission-storage.sql" Link="baseline-with-submission-storage.sql" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../fixtures/0001_baseline.v0.11.0.sql" Link="0001_baseline.v0.11.0.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../fixtures/previous-release-baseline.v0.11.0.sql" Link="previous-release-baseline.v0.11.0.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="OwnerSchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
