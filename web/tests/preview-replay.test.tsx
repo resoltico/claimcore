@@ -19,7 +19,7 @@ it("readonly preview can be repeated with its unchanged exact draft after lost o
 });
 it("already accepted preview returns its recorded receipt without another execution", async () => {
   const value = wireReply("operation.execute");
-  if (value.outcome.tag !== "ACCEPTED") {
+  if (value.outcome.kind !== "ACCEPTED") {
     throw new Error("Accepted fixture required.");
   }
   vi.mocked(fetch).mockResolvedValueOnce(

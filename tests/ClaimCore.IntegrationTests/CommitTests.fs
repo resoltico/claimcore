@@ -24,9 +24,10 @@ let private run action =
 
 let private token = CancellationToken.None
 
-let private replay (database: PostgresFixture.Database) (actor: IActorClaimsCore) operation landed =
+let private replay (database: PostgresFixture.Database) (actor: HandlerContext) operation landed =
     task {
-        let! replay = actor.Execute(OperationInput.Case operation, token)
+        let! replay =
+            (Handlers.call Api.operationExecute actor (OperationInput.Case operation) (token))
 
         if landed then
             Expect.isTrue
@@ -50,7 +51,7 @@ let private proxyCore (database: PostgresFixture.Database) source =
         LedgerStore(source, database.Fixture.InstallationId, Transactions.timeouts) :> ILedgerStore
 
     let actor =
-        Core.create
+        Handlers.context
             database.Fixture.InstallationId
             store
             database.Fixture.Calendar
@@ -97,14 +98,17 @@ let private lostResolution drop (database: PostgresFixture.Database) =
         settings.GssEncryptionMode <- GssEncryptionMode.Disable
         use source = NpgsqlDataSource.Create(settings.ConnectionString)
         let throughProxy = proxyCore database source
-        let! unknown = throughProxy.Resolve({ OperationId = id 140 }, token)
+
+        let! unknown =
+            (Handlers.call Api.operationResolve throughProxy ({ OperationId = id 140 }) (token))
 
         Expect.equal
             unknown
             (ResolveReply.Failed CoreFault.StoreUnavailable)
             "Lost operational commit is a retriable store fault"
 
-        let! repeated = actor.Resolve({ OperationId = id 140 }, token)
+        let! repeated =
+            (Handlers.call Api.operationResolve actor ({ OperationId = id 140 }) (token))
 
         Expect.equal
             repeated
@@ -112,10 +116,11 @@ let private lostResolution drop (database: PostgresFixture.Database) =
             "Resolve repeats safely whether the first fence landed or aborted"
 
         let! delayed =
-            actor.Execute(
-                OperationInput.Case(request 140 "LOST-RESOLUTION" 0L (CaseAct.Open registration)),
-                token
-            )
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(request 140 "LOST-RESOLUTION" 0L (CaseAct.Open registration)))
+                (token))
 
         Expect.equal
             delayed.Outcome
@@ -155,10 +160,16 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
         let request = authorityRequest (id 145) target AdmittedAuthorityAct.Register
 
         let! unknown =
-            (proxyCore database source).Execute(OperationInput.Authority request, token)
+            (Handlers.call
+                Api.operationExecute
+                (proxyCore database source)
+                (OperationInput.Authority request)
+                (token))
 
         Expect.equal unknown.Outcome ExecuteResult.OutcomeUnknown "Authority commit loss is unknown"
-        let! repeated = actor.Execute(OperationInput.Authority request, token)
+
+        let! repeated =
+            (Handlers.call Api.operationExecute actor (OperationInput.Authority request) (token))
 
         Expect.isTrue
             (match repeated.Outcome, landed with
@@ -256,7 +267,11 @@ let tests =
                                     (ClaimCore.Contract.CaseAct.Open registration)
 
                             let! result =
-                                throughProxy.Execute(OperationInput.Case operation, token)
+                                (Handlers.call
+                                    Api.operationExecute
+                                    throughProxy
+                                    (OperationInput.Case operation)
+                                    (token))
 
                             do! commitEvidence drop operation proxy result
 

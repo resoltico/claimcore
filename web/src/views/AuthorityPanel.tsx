@@ -13,7 +13,7 @@ import { useAuthorityDisclosure } from "../hooks/operation/useAuthorityDisclosur
 import { useOperation, type OperationModel } from "../hooks/operation/useOperation";
 import { OperationPanel, OperationDiscard } from "./operation/OperationPanel";
 const contextData = (response: ServiceResponse<"context">) =>
-  response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
+  response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 type Disclosure = ReturnType<typeof useAuthorityDisclosure>;
 const useAuthorityContext = (token: string, disclosure: Disclosure) => {
   const { refused, restored } = disclosure;
@@ -24,7 +24,7 @@ const useAuthorityContext = (token: string, disclosure: Disclosure) => {
         if (!signal.aborted) {
           if (isDisclosureRefused(result)) {
             refused(resultNotice(result));
-          } else if (result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED") {
+          } else if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
             restored("context");
           }
         }
@@ -75,7 +75,7 @@ const AuthorityWorkspace = ({
   const context = useAuthorityContext(token, disclosure);
   const { refused } = disclosure;
   const offered = productMetadata.catalog.entries
-    .filter((entry) => entry.scope === "AUTHORITY" && entry.endpoint === "operation.execute")
+    .filter((entry) => entry.subject === "AUTHORITY" && entry.endpoint === "operation.execute")
     .filter(
       (act) =>
         context.value?.offers.some(
@@ -129,17 +129,15 @@ const AuthorityReceipt = ({ identity }: { identity: string }) => {
     </>
   );
 };
-const AuthorityLayout = ({
-  token,
-  model,
-  disclosure,
-  recorded,
-}: {
+type RecordedAuthority = { token: string; id: string } | null;
+type AuthorityActions = { invalidate: () => void; restore: () => void; reset: () => void } | null;
+type AuthorityLayoutProps = {
   token: string;
   model: OperationModel;
   disclosure: Disclosure;
-  recorded: { token: string; id: string } | null;
-}) => {
+  recorded: RecordedAuthority;
+};
+const AuthorityLayout = ({ token, model, disclosure, recorded }: AuthorityLayoutProps) => {
   const p = usePresentation();
   const { invalidate } = disclosure;
   return (
@@ -177,19 +175,18 @@ const AuthorityLayout = ({
     </section>
   );
 };
-
 const initialAuthorityAct = productMetadata.catalog.entries.find(
-  (entry) => entry.scope === "AUTHORITY" && entry.endpoint === "operation.execute",
+  (entry) => entry.subject === "AUTHORITY" && entry.endpoint === "operation.execute",
 )!.kind;
-
-type AuthorityPanelProps = { token: string; onLockChange: (locked: boolean) => void };
-export const AuthorityPanel = ({ token, onLockChange }: AuthorityPanelProps) => {
+type AuthorityPanelProps = {
+  token: string;
+  onLockChange: (locked: boolean) => void;
+};
+const useAuthorityOperation = ({ token, onLockChange }: AuthorityPanelProps) => {
   const disclosure = useAuthorityDisclosure();
   const { refused: refuseDisclosure, invalidate, ready } = disclosure;
-  const [recorded, setRecorded] = useState<{ token: string; id: string } | null>(null);
-  const actions = useRef<{ invalidate: () => void; restore: () => void; reset: () => void } | null>(
-    null,
-  );
+  const [recorded, setRecorded] = useState<RecordedAuthority>(null);
+  const actions = useRef<AuthorityActions>(null);
   const refused = useCallback(
     (notice?: Notice) => {
       actions.current?.invalidate();
@@ -199,11 +196,14 @@ export const AuthorityPanel = ({ token, onLockChange }: AuthorityPanelProps) => 
     [refuseDisclosure],
   );
   const onRecorded = (receipt: OperationReceipt) => {
-    setRecorded({ token, id: receipt.operationId });
+    setRecorded({
+      token,
+      id: receipt.operationId,
+    });
     invalidate(true);
   };
   const model = useOperation({
-    scope: "AUTHORITY",
+    subject: "AUTHORITY",
     kind: initialAuthorityAct,
     current: null,
     token,
@@ -224,12 +224,9 @@ export const AuthorityPanel = ({ token, onLockChange }: AuthorityPanelProps) => 
       actions.current?.restore();
     }
   }, [ready]);
-  return (
-    <AuthorityLayout
-      token={token}
-      model={model}
-      disclosure={{ ...disclosure, refused }}
-      recorded={recorded}
-    />
-  );
+  return { model, disclosure: { ...disclosure, refused }, recorded };
+};
+export const AuthorityPanel = (props: AuthorityPanelProps) => {
+  const state = useAuthorityOperation(props);
+  return <AuthorityLayout token={props.token} {...state} />;
 };

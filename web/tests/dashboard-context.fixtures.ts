@@ -6,7 +6,7 @@ export const stubDashboardContext = () =>
     status: 200,
     value: {
       outcome: {
-        tag: "SUCCEEDED",
+        kind: "SUCCEEDED",
         data: {
           productVersion: "0.10.0",
           businessDate: "2026-09-09",

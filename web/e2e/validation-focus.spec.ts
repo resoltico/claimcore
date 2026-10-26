@@ -35,8 +35,8 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   const policy = await pauseJsonReply(page, "operation.preview");
   await page.getByRole("button", { name: "Review changes" }).click();
   const { outcome } = (await policy.ready).reply;
-  expect(outcome.tag).toBe("REJECTED");
-  if (outcome.tag === "REJECTED") {
+  expect(outcome.kind).toBe("REJECTED");
+  if (outcome.kind === "REJECTED") {
     expect(outcome.data.code).toBe("INPUT_TEXT_TOO_LONG");
     expect(outcome.data.target).toBe("claimantName");
   }

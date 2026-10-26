@@ -16,7 +16,7 @@ let private safeText =
     Gen.choice
         [
             Gen.string (Range.constant 1 20) Gen.alpha
-            Gen.item [ "Žąsis"; "東京"; "😀"; "e\u0301"; "quoted\"value"; "path\\value" ]
+            Gen.item [ "Žąsis"; "東京"; "😀"; "é"; "quoted\"value"; "path\\value" ]
         ]
 
 let private registrationGenerator =
@@ -106,7 +106,7 @@ let private requestsGenerator =
 
 let private limit = 65536
 
-let private correctionModesMatch (request: CaseRequest) (encoded: byte array) =
+let private correctionKindsMatch (request: CaseRequest) (encoded: byte array) =
     match request.Act with
     | (CaseAct.Correct correction) ->
         let registration =
@@ -131,7 +131,7 @@ let private correctionModesMatch (request: CaseRequest) (encoded: byte array) =
 
         [ "registration", registration; "decision", decision; "payment", payment ]
         |> List.forall (fun (group, expected) ->
-            groups.GetProperty(group).GetProperty("mode").GetString() = expected)
+            groups.GetProperty(group).GetProperty("kind").GetString() = expected)
     | _ -> true
 
 let private requestRoundTripProperty =
@@ -145,7 +145,7 @@ let private requestRoundTripProperty =
 
                 RequestRecord.decode limit encoded = Ok request
                 && RequestRecord.encode request = encoded
-                && correctionModesMatch request encoded)
+                && correctionKindsMatch request encoded)
     }
 
 let private reordered (bytes: byte array) =

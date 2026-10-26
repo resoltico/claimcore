@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ActorIdentity.fs" />
     <Compile Include="AuthorizationTypes.fs" />
     <Compile Include="AuthorizationPolicy.fs" />
     <Compile Include="CoreModels.fs" />
-    <Compile Include="ServiceLimits.fs" />
     <Compile Include="AuthorityRequests.fs" />
     <Compile Include="LedgerStorePort.fs" />
     <Compile Include="Cursors.fs" />
@@ -18,7 +18,9 @@
     <Compile Include="Advice.fs" />
     <Compile Include="Queries.fs" />
     <Compile Include="Resolution.fs" />
+    <Compile Include="HandlerContext.fs" />
     <Compile Include="Core.fs" />
+    <Compile Include="Handlers.fs" />
     <Compile Include="Verification/VerificationTypes.fs" />
     <Compile Include="Verification/AuthorityFold.fs" />
     <Compile Include="Verification/VerificationPayload.fs" />

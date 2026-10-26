@@ -7,13 +7,15 @@ import type { HistoryEntry } from "../src/api/service";
 import { CaseDetail } from "../src/views/CaseDetail";
 import { render, screen, waitFor } from "./presentation-test-support";
 import { definition, fields, response, unavailable } from "./service-ui.fixtures";
-
 const deferred = () => {
   let release!: (value: Response) => void;
   const promise = new Promise<Response>((resolve) => {
     release = resolve;
   });
-  return { promise, release };
+  return {
+    promise,
+    release,
+  };
 };
 const detail = (token = "token", reloadSignal = 0) => (
   <CaseDetail
@@ -29,27 +31,55 @@ const readable = (historyDetails = ["SUMMARY", "FULL"]) =>
   response("case.get", "SUCCEEDED", {
     caseReference: fields.caseReference,
     revision: 1,
-    advice: { acts: caseOffers([]), history: historyDetails },
-
-    state: { tag: "LIVE", disposition: "ACTIVE", fields },
+    advice: {
+      acts: caseOffers([]),
+      history: historyDetails,
+    },
+    state: {
+      kind: "ACTIVE",
+      fields,
+    },
   });
-const pageEntry = (entry: Extract<HistoryEntry, { tag: "SUMMARY" }>, page: number) => ({
-  tag: entry.tag,
-  change: { ...entry.change, operationId: `10000000-0000-4000-8000-00000000000${page}` },
+const pageEntry = (
+  entry: Extract<
+    HistoryEntry,
+    {
+      kind: "SUMMARY";
+    }
+  >,
+  page: number,
+) => ({
+  kind: entry.kind,
+  change: {
+    ...entry.change,
+    operationId: `10000000-0000-4000-8000-00000000000${page}`,
+  },
 });
 const history = (nextCursor: string | null = null, page = 1) => {
   const { summary } = historyVariants();
   const entries = [pageEntry(summary, page)];
-  return response("case.history", "SUCCEEDED", { entries, nextCursor });
+  return response("case.history", "SUCCEEDED", {
+    entries,
+    nextCursor,
+  });
 };
 const refusal = (kind: string) =>
   kind === "access"
     ? response("case.get", "REJECTED", unavailable)
     : new Response(
-        JSON.stringify({ hostFailure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" } }),
-        { status: 401, headers: { "content-type": "application/json" } },
+        JSON.stringify({
+          hostFailure: {
+            code: "SESSION_REJECTED",
+            phase: "NOT_STARTED",
+          },
+        }),
+        {
+          status: 401,
+          headers: {
+            "content-type": "application/json",
+          },
+        },
       );
-
 it.each(["access", "session"])(
   "does not launch history before current advice or after %s refusal",
   async (kind) => {
@@ -74,20 +104,26 @@ it.each(["access", "session"])(
       oldHistory.release(history());
       await oldHistory.promise;
     });
-    expect(screen.queryByRole("heading", { name: "Case history" })).toBeNull();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Case history",
+      }),
+    ).toBeNull();
     expect(fetch).toHaveBeenCalledTimes(1);
   },
 );
-
 it("does not invent SUMMARY access for a readable case without history advice", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(readable([]));
   vi.stubGlobal("fetch", fetch);
   render(detail());
   await screen.findByText(fields.registration.claimantName);
-  expect(screen.queryByRole("heading", { name: "Case history" })).toBeNull();
+  expect(
+    screen.queryByRole("heading", {
+      name: "Case history",
+    }),
+  ).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
 });
-
 for (const replacement of ["session", "refresh"]) {
   it(`aborts earlier history when ${replacement} current advice is refused`, async () => {
     const oldHistory = deferred();
@@ -117,12 +153,15 @@ for (const replacement of ["session", "refresh"]) {
       await Promise.all([nextCurrent.promise, oldHistory.promise]);
     });
     await screen.findByRole("alert");
-    expect(screen.queryByRole("heading", { name: "Case history" })).toBeNull();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Case history",
+      }),
+    ).toBeNull();
     expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 }
-
 it("keeps authorized history pagination and aborts a pending page on session replacement", async () => {
   const nextPage = deferred();
   const fetch = vi
@@ -134,14 +173,20 @@ it("keeps authorized history pagination and aborts a pending page on session rep
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(detail());
-  await user.click(await screen.findByRole("button", { name: "Load more history" }));
+  await user.click(
+    await screen.findByRole("button", {
+      name: "Load more history",
+    }),
+  );
   expect(document.querySelectorAll(".history-list li")).toHaveLength(1);
   const signal = fetch.mock.calls[2]?.[1]?.signal;
   const body = fetch.mock.calls[2]?.[1]?.body;
   if (typeof body !== "string") {
     throw new Error("History request body is required.");
   }
-  const request = JSON.parse(body) as { cursor: string };
+  const request = JSON.parse(body) as {
+    cursor: string;
+  };
   expect(request.cursor).toBe("continuation");
   view.rerender(detail("replacement"));
   expect(document.querySelectorAll(".history-list li")).toHaveLength(0);
@@ -154,7 +199,6 @@ it("keeps authorized history pagination and aborts a pending page on session rep
   expect(document.querySelectorAll(".history-list li")).toHaveLength(0);
   expect(fetch).toHaveBeenCalledTimes(4);
 });
-
 it("appends an authorized next history page without dropping current advice", async () => {
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -164,11 +208,19 @@ it("appends an authorized next history page without dropping current advice", as
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   render(detail());
-  await user.click(await screen.findByRole("button", { name: "Load more history" }));
+  await user.click(
+    await screen.findByRole("button", {
+      name: "Load more history",
+    }),
+  );
   await waitFor(() => {
     expect(document.querySelectorAll(".history-list li")).toHaveLength(2);
   });
   expect(screen.getByText(fields.registration.claimantName)).toBeVisible();
-  expect(screen.queryByRole("button", { name: "Load more history" })).toBeNull();
+  expect(
+    screen.queryByRole("button", {
+      name: "Load more history",
+    }),
+  ).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(3);
 });

@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Json
+
 open ClaimCore.Contract.Protocol
 
 module ResolutionCodecs =
@@ -17,7 +19,6 @@ module ResolutionCodecs =
         let outcome =
             tagged
                 "ResolveResult"
-                "tag"
                 [
                     variant
                         "ACCEPTED"

@@ -84,7 +84,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -108,7 +108,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -132,7 +132,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -140,13 +140,13 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             },
             "decision": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             },
             "payment": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             }
           }
         }
@@ -158,7 +158,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -178,7 +178,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -193,7 +193,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -211,7 +211,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -226,7 +226,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -241,7 +241,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -256,7 +256,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -272,7 +272,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -288,7 +288,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -303,7 +303,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -327,7 +327,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -351,7 +351,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -359,13 +359,13 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             },
             "decision": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             },
             "payment": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             }
           }
         }
@@ -377,7 +377,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -397,7 +397,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -412,7 +412,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -430,7 +430,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -445,7 +445,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -460,7 +460,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -475,7 +475,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -491,7 +491,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -507,7 +507,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -531,7 +531,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "AUTHORITY",
+        "kind": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -549,7 +549,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "AUTHORITY",
+        "kind": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -571,7 +571,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "AUTHORITY",
+        "kind": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -608,7 +608,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "AUTHORITY",
+        "kind": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -626,7 +626,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "AUTHORITY",
+        "kind": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -648,7 +648,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "AUTHORITY",
+        "kind": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -666,7 +666,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -674,7 +674,7 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "incidentDate": "2026-01-01",
                 "incidentNotificationDate": "2026-01-01",
@@ -686,7 +686,7 @@
               }
             },
             "decision": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "paymentDecisionDate": "2026-01-01",
                 "payableAmount": "0",
@@ -694,7 +694,7 @@
               }
             },
             "payment": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "paymentDate": "2026-01-01"
               }
@@ -709,7 +709,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -717,7 +717,7 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "incidentDate": "2026-01-01",
                 "incidentNotificationDate": "2026-01-01",
@@ -729,10 +729,10 @@
               }
             },
             "decision": {
-              "mode": "CLEAR"
+              "kind": "CLEAR"
             },
             "payment": {
-              "mode": "CLEAR"
+              "kind": "CLEAR"
             }
           }
         }
@@ -744,7 +744,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -752,7 +752,7 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "incidentDate": "2026-01-01",
                 "incidentNotificationDate": "2026-01-01",
@@ -764,7 +764,7 @@
               }
             },
             "decision": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "paymentDecisionDate": "2026-01-01",
                 "payableAmount": "0",
@@ -772,7 +772,7 @@
               }
             },
             "payment": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "paymentDate": "2026-01-01"
               }
@@ -787,7 +787,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "CASE",
+        "kind": "CASE",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "caseReference": "x",
         "expectedRevision": 0,
@@ -795,7 +795,7 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "incidentDate": "2026-01-01",
                 "incidentNotificationDate": "2026-01-01",
@@ -807,10 +807,10 @@
               }
             },
             "decision": {
-              "mode": "CLEAR"
+              "kind": "CLEAR"
             },
             "payment": {
-              "mode": "CLEAR"
+              "kind": "CLEAR"
             }
           }
         }
@@ -850,7 +850,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "AUTHORITY",
+        "kind": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -872,7 +872,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "AUTHORITY",
+        "kind": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -890,7 +890,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "AUTHORITY",
+        "kind": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -912,7 +912,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "scope": "AUTHORITY",
+        "kind": "AUTHORITY",
         "operationId": "10000000-0000-4000-8000-000000000001",
         "target": {
           "kind": "HUMAN",

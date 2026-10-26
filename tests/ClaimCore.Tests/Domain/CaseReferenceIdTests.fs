@@ -71,7 +71,7 @@ let private refusals () =
             ""
             "a b"
             "réference"
-            "re\u0301ference"
+            "réference"
             String([| char 0xD800 |])
         ] do
         Expect.throws

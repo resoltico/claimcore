@@ -1,25 +1,25 @@
 # Changelog
 
-Concise change records are kept here. Published GitHub release notes retain the detailed historical
-compatibility, security and operating instructions. Current behavior is described in the [guides](docs/README.md).
+`Unreleased` summarizes implemented changes intended for the next release, including relevant uncommitted work, cumulatively against the preceding published non-prerelease version; the first release describes implemented scope. Verify actual publication rather than inferring it from headings, tags or workflow status; public prereleases do not reset this baseline. Check claims and material omissions against implementation, contracts, tests and documentation; commits and plans are leads. Describe consequences for users, operators, integrators or contributors, preserving material compatibility effects, limitations and required action, including for prerelease users. Exclude development chronology, superseded changes and verification logs.
+
+Use concise bullets without category labels or subheadings, grouping related changes and putting breaking changes and required actions first. Each bullet occupies one physical line, at most 200 characters including Markdown but excluding its `- ` marker: a ceiling, not a target. Shorten or split without losing material consequences. Use technical names when helpful; link to existing relevant documentation, without assuming paths or creating documents merely to satisfy this rule. Keep `## [Unreleased]` above dated `## [version] - YYYY-MM-DD` headings, newest first; retain existing release-note links. This file is authoritative for release summaries and their writing rules; derive published summaries from it and leave unrelated history unchanged. Review accuracy, completeness, duplication, compatibility and format; report unresolved evidence gaps outside this file and run applicable existing checks. Versioning, dating and publication require release authorization.
 
 ## [Unreleased]
 
-- **Breaking installation baseline:** initialize a separate installation; earlier schema baselines are refused untouched. Preserve them with matching software. [Compatibility](docs/architecture.md#durable-records) describes the posture.
-- **Breaking wire contracts:** deploy matching service, CLI and browser. Shared operation preview/execution uses CASE or AUTHORITY scope; case views group registration, decision and payment facts while history diffs remain per field.
-- Operation identity compares amount values and ASCII-folded references. Free text remains exact, and ledger requests retain authored values. Public snapshots keep their canonical representation.
-- Acts and CLI verbs use consistent names, including CORRECT, REGISTER, GRANT, REVOKE, ENABLE and DISABLE; grant/revoke and enable/disable have distinct request shapes.
-- Contract owns the typed operation catalog. It derives CLI syntax, browser bindings and the checked [CLI reference](docs/cli.md); generated contract and message types come from the same sources.
-- Executables are `claimcore`, `claimcore-server` and `claimcore-database`. Human verbs have localized specific usage errors, preview, and byte-bounded offline preparation.
-- One Template grammar serves CLI and browser messages. Typed arguments, frozen renderer vectors, bidi isolation and literal-only pseudolocalization replace the browser ICU runtime.
-- Case and authority decisions share ledger sequencing, while scope-specific admission, policy and projections remain explicit.
-- `operation.resolve` returns the author’s receipt or permanently fences an unaccepted ID. Exit 4 retains the exact retry frame; ordinary failure does not resolve prior uncertainty.
-- Protected sessions use PostgreSQL deadlines and shared key-ring custody. Clock, restart and deployment limits remain explicit in the [operations guide](docs/operations.md#access-review-and-sessions).
-- Managed Unix private-file admission supports secret-volume links and group read. Windows, ownership/ACL and open-race limits are documented in [private configuration](docs/operations.md#private-configuration).
-- Input guidance and bounded Unicode warnings preserve authored text. Automated accessibility checks complement the human review still needed for translations and assistive technology.
-- Pinned runtime/provider security updates, maintained browser boundary rules and independent negative controls strengthen build and verification inputs.
+## [0.12.0] - 2026-10-26
 
-- Tests use four environment tiers and one shared support library; architecture checks join the pure tier and each published CLI usage error has its own discoverable case.
+- Initialize a separate installation; the new database baseline refuses earlier installations untouched. Preserve them with matching software; no conversion is supplied.
+- Deploy matching service, CLI and browser: shared operation preview/execution and renamed acts replace the preceding wire contract. Regenerate integrations from the checked OpenAPI.
+- Tagged unions use `kind`; receipts and reviews use `subject`. Cases expose ACTIVE, VOIDED or ERASED state with grouped registration, decision and payment fields.
+- Durable records have independent codecs and format 1. Database administration replies use `kind`, `entryHash` and `REJECTED`.
+- Executables are `claimcore`, `claimcore-server` and `claimcore-database`. CLI verbs provide localized usage errors, preview and bounded offline preparation.
+- Operation identity compares amount values and ASCII-folded case references while retaining authored requests; free text remains exact.
+- `operation.resolve` returns the author’s receipt or permanently fences an unaccepted ID. Exit 4 retains the exact retry frame; ordinary failure leaves prior uncertainty unresolved.
+- A codec-derived operation catalog supplies CLI syntax, browser bindings and the generated [CLI reference](docs/cli.md); generated contracts replace the preceding artifact inventory.
+- Core, browser and CLI own separate locale catalogs using one Template grammar. Typed arguments, bidi isolation and literal-only pseudolocalization support presentation.
+- Typed endpoint handlers, field-owned scalar rules and one eligibility table align server, client and persistence behavior while preserving refusal precedence.
+- Four test environments share support code; independent byte fixtures, compiled architecture checks and maintained browser boundary rules cover the shared contracts.
+- Refresh pinned dependencies and deployment images, including Keycloak 26.8.1-1.
 
 ## [0.11.0] - 2026-10-21
 

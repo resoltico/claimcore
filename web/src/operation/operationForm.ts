@@ -17,7 +17,7 @@ export { bindingPath, type CatalogInput } from "../protocol/catalogAssembly";
 export const operationDocument = wireSchemas["operation.execute"].request;
 export const operationEntry = (values: FormValues): CatalogDocument["entries"][number] => {
   const definition = productMetadata.catalog.entries.find(
-    (item) => item.scope === values["scope"] && item.kind === values["act.kind"],
+    (item) => item.subject === values["kind"] && item.kind === values["act.kind"],
   );
   if (definition === undefined) {
     throw new Error("Unknown operation catalog entry.");
@@ -49,12 +49,12 @@ const initialValue = (input: CatalogInput, current: CurrentCase | null, id: stri
   }
 };
 export const initialOperationValues = (
-  scope: "CASE" | "AUTHORITY",
+  subject: "CASE" | "AUTHORITY",
   kind: string,
   current: CurrentCase | null,
   id = crypto.randomUUID(),
 ): FormValues => {
-  const definition = operationEntry({ scope, "act.kind": kind });
+  const definition = operationEntry({ kind: subject, "act.kind": kind });
   const values: Record<string, string | boolean> = {};
   for (const constant of definition.constants) {
     values[constant.path.join(".")] =

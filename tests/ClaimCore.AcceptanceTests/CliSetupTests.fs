@@ -199,7 +199,7 @@ let tests =
         (fun () ->
             let accepted = acceptedFrame ()
 
-            let refused = "{\"outcome\":{\"tag\":\"REJECTED\",\"data\":{}}}\n"
+            let refused = "{\"outcome\":{\"kind\":\"REJECTED\",\"data\":{}}}"
 
             let result exitCode (output: string) (errors: string) : ProcessRunner.Result =
                 {

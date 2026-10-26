@@ -10,18 +10,23 @@ type ClientFailure =
     | Cancelled
     | Unexpected
 
-type CliReply = { Bytes: byte array; ExitCode: int }
+[<NoComparison>]
+type CliReply =
+    {
+        Frame: FrameReply
+        Bytes: byte array
+        ExitCode: int
+    }
 
 module CliReply =
     let private encoded frame =
         {
+            Frame = frame
             Bytes = Frames.encode frame
             ExitCode = Frames.exitCode frame
         }
 
-    let private decode reply =
-        Frames.decode reply.Bytes
-        |> Result.defaultWith (fun _ -> invalidArg "reply" "Expected an admitted CLI reply.")
+    let private decode (reply: CliReply) = reply.Frame
 
     let admitted bytes =
         let frame =
@@ -29,6 +34,7 @@ module CliReply =
             |> Result.defaultWith (fun _ -> invalidArg "bytes" "Expected an admitted CLI reply.")
 
         {
+            Frame = frame
             Bytes = bytes
             ExitCode = Frames.exitCode frame
         }
@@ -66,6 +72,11 @@ module CliReply =
         }
 
     let result invocation reply =
+        let typed =
+            TypedReply.read (Frames.endpoint invocation) reply
+            |> Result.defaultWith (fun _ ->
+                invalidArg (nameof reply) "Reply does not match the endpoint codec.")
+
         if
             not (Correlation.matches (Frames.endpoint invocation) (Frames.input invocation) reply)
         then
@@ -77,7 +88,7 @@ module CliReply =
             else
                 DeliveryState.Delivered
 
-        frame invocation delivery (FrameResult.Reply reply) |> encoded
+        frame invocation delivery (FrameResult.Reply typed) |> encoded
 
     let serviceFailure invocation (failure: HostFailure) =
         let delivery =

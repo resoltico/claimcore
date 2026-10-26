@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 open System
@@ -23,12 +24,13 @@ type CliFailure =
     | InvalidResponse
     | ContractMismatch
 
-[<RequireQualifiedAccess>]
+[<RequireQualifiedAccess; NoComparison>]
 type FrameResult =
-    | Reply of JsonValue
+    | Reply of TypedReply
     | HostFailure of HostFailure
     | LocalFailure of CliFailure
 
+[<NoComparison>]
 type FrameReply =
     {
         Endpoint: string option
@@ -128,6 +130,13 @@ module Frames =
             CliFailure.ContractMismatch, "CONTRACT_MISMATCH"
         ]
 
+    let failureCodes = localCodes |> List.map snd
+
+    let failureCode =
+        function
+        | CliFailure.ConfigurationIssue _ -> "CLI_CONFIGURATION_INVALID"
+        | failure -> localCodes |> List.find (fst >> (=) failure) |> snd
+
     let private simpleFailure =
         Codec.record id
         |> Codec.field "code" id (Codec.enumeration localCodes)
@@ -178,8 +187,7 @@ module Frames =
             |> Result.map FrameResult.LocalFailure
         | reply ->
             match target with
-            | Some endpoint ->
-                Api.admitOutput endpoint reply |> Result.map (fun () -> FrameResult.Reply reply)
+            | Some endpoint -> TypedReply.read endpoint reply |> Result.map FrameResult.Reply
             | None -> error "$.result" "a reply requires an endpoint"
 
     let private read document =
@@ -214,7 +222,7 @@ module Frames =
 
     let private resultValue =
         function
-        | FrameResult.Reply value -> value
+        | FrameResult.Reply value -> TypedReply.json value
         | FrameResult.HostFailure failure ->
             JsonValue.Object [ "hostFailure", HostFailureCodecs.failure.Write failure ]
         | FrameResult.LocalFailure failure ->
@@ -224,15 +232,20 @@ module Frames =
         let value =
             JsonValue.Object
                 [
-                    "endpoint", (Codec.nullable Codec.text).Write frame.Endpoint
+                    "endpoint", (Codec.nullable (Codec.boundedText 1 80)).Write frame.Endpoint
                     "operationId", (Codec.nullable Codec.uuid).Write frame.OperationId
                     "delivery", delivery.Write frame.Delivery
                     "result", resultValue frame.Result
                 ]
 
-        read value
-        |> Result.defaultWith (fun _ -> invalidArg "frame" "Invalid reply frame.")
+        knownEndpoint frame.Endpoint
+        |> Result.defaultWith (fun _ -> invalidArg "frame" "Unknown reply endpoint.")
         |> ignore
+
+        match frame.Result with
+        | FrameResult.Reply reply when frame.Endpoint <> Some(EndpointIds.token reply.Endpoint) ->
+            invalidArg "frame" "Reply endpoint and typed value differ."
+        | _ -> ()
 
         let bytes = WireWriter.bytes value
 
@@ -243,7 +256,7 @@ module Frames =
 
     let outcome reply =
         JsonValue.tryMember "outcome" reply
-        |> Option.bind (JsonValue.tryMember "tag")
+        |> Option.bind (JsonValue.tryMember "kind")
         |> Option.bind (function
             | JsonValue.String tag -> Some tag
             | _ -> None)
@@ -270,4 +283,4 @@ module Frames =
                 2
             | FrameResult.LocalFailure _
             | FrameResult.HostFailure _ -> 3
-            | FrameResult.Reply reply -> outcomeExitCode reply
+            | FrameResult.Reply reply -> outcomeExitCode (TypedReply.json reply)

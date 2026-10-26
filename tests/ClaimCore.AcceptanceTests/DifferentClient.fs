@@ -8,6 +8,7 @@ open System.Text.Json.Nodes
 open System.Xml.Linq
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 
 let private copySourceFile (root: string) directory relative =
     let target = Path.Combine(directory, relative)
@@ -127,10 +128,10 @@ let private publish (fixture: PublishedFixture.Fixture) directory name =
     output
 
 let private changeLocaleText directory =
-    let path = Path.Combine(directory, "src/ClaimCore.Contract/Localization/en.json")
+    let path = Path.Combine(directory, "src/ClaimCore.Cli/Localization/en.json")
     let locale = JsonNode.Parse(File.ReadAllBytes path) |> nonNull
-    let original = (locale["ui.loading"] |> nonNull).GetValue<string>()
-    locale["ui.loading"] <- JsonValue.Create(original + " synthetic locale control")
+    let original = (locale["cli.text.code"] |> nonNull).GetValue<string>()
+    locale["cli.text.code"] <- JsonValue.Create(original + " synthetic locale control")
     File.WriteAllText(path, locale.ToJsonString() + "\n")
 
 let private localeClient (fixture: PublishedFixture.Fixture) directory =

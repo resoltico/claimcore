@@ -134,7 +134,7 @@ let private matrix () =
         Expect.isNone (RoleTokens.parse token) "Unsupported role names refuse"
 
 let private invalidPrincipals () =
-    for value in [ String([| char 0xD800 |]); "a\u0000b"; "a\ufdd0b"; "a\uffffb" ] do
+    for value in [ String([| char 0xD800 |]); "a\u0000b"; "a﷐b"; "a￿b" ] do
         Expect.isError
             (PrincipalKey.human "https://issuer.example/" value)
             "Identity text has permanent Unicode bounds"
@@ -380,17 +380,17 @@ let private absentCorrectionValues () =
     let record = opened ()
 
     Expect.equal
-        (Case.correctionActions record CorrectionGroup.Decision)
+        (Case.correctionActions record RecordGroup.Decision)
         [ CorrectionGroupAction.Keep ]
         "A correction cannot introduce a missing decision"
 
     Expect.equal
-        (Case.correctionActions record CorrectionGroup.Payment)
+        (Case.correctionActions record RecordGroup.Payment)
         [ CorrectionGroupAction.Keep ]
         "A correction cannot introduce a missing payment"
 
     Expect.equal
-        (Case.correctionActions (decided ()) CorrectionGroup.Payment)
+        (Case.correctionActions (decided ()) RecordGroup.Payment)
         [ CorrectionGroupAction.Keep ]
         "Decision presence does not permit introducing a payment through correction"
 
@@ -424,11 +424,43 @@ let private noUsableCorrectionOffer () =
              | _ -> false))
         "An all-KEEP form is never offered"
 
+let private humanOnlyCapabilities () =
+    let derived policy =
+        RoleTokens.all
+        |> List.filter (fun role ->
+            policy role |> List.exists ActorAuthorization.humanOnlyCapability)
+
+    Expect.equal
+        (derived ActorAuthorization.capabilities)
+        [ Role.Owner; Role.DataSteward ]
+        "Current human-only roles"
+
+    Expect.equal
+        (RoleTokens.all |> List.filter ActorAuthorization.humanOnlyRole)
+        [ Role.Owner; Role.DataSteward ]
+        "Production roles derive from capabilities"
+
+    let withSteward role =
+        let granted = ActorAuthorization.capabilities role
+
+        if role = Role.CaseReader then
+            Capability.Steward :: granted
+        else
+            granted
+
+    Expect.equal
+        (derived withSteward)
+        [ Role.Owner; Role.CaseReader; Role.DataSteward ]
+        "Negative control: granting Steward changes the principal restriction"
+
 [<Tests>]
 let tests =
     testList
         "actor authorization policy"
         [
+            testCase
+                "human-only roles derive from capabilities with a Steward-grant negative control"
+                humanOnlyCapabilities
             testCase
                 "all role, capability, principal and scope combinations match independent expectations"
                 matrix

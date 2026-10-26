@@ -26,7 +26,7 @@ module AuthorityKinds =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
-/// The complete act vocabulary combines the disjoint case and authority scopes.
+/// The complete act vocabulary combines the disjoint case and authority subjects.
 [<RequireQualifiedAccess>]
 type ActKind =
     | Case of CaseActKind

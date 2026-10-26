@@ -2,6 +2,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="PrivateFile.fs" />
+    <Compile Include="HttpsOrigins.fs" />
     <Compile Include="TlsCertificatePurpose.fs" />
   </ItemGroup>
 </Project>

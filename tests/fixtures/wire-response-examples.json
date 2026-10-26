@@ -6,7 +6,7 @@
       "endpoint": "session",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "authenticated": false,
             "contractIdentity": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -21,7 +21,7 @@
       "endpoint": "session.logout",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": null
         }
       },
@@ -32,7 +32,7 @@
       "endpoint": "context",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "productVersion": "x",
             "businessDate": "2026-01-01",
@@ -54,7 +54,7 @@
       "endpoint": "context",
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -71,7 +71,7 @@
       "endpoint": "context",
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -85,7 +85,7 @@
       "endpoint": "context",
       "value": {
         "outcome": {
-          "tag": "CANCELLED",
+          "kind": "CANCELLED",
           "data": null
         }
       },
@@ -96,13 +96,12 @@
       "endpoint": "case.get",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "caseReference": "x",
             "revision": 1,
             "state": {
-              "tag": "LIVE",
-              "disposition": "ACTIVE",
+              "kind": "ACTIVE",
               "fields": {
                 "caseReference": "x",
                 "status": "OPENED",
@@ -139,7 +138,7 @@
       "endpoint": "case.get",
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -156,7 +155,7 @@
       "endpoint": "case.get",
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -170,7 +169,7 @@
       "endpoint": "case.get",
       "value": {
         "outcome": {
-          "tag": "CANCELLED",
+          "kind": "CANCELLED",
           "data": null
         }
       },
@@ -181,7 +180,7 @@
       "endpoint": "case.list",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "items": [],
             "nextCursor": "x",
@@ -196,7 +195,7 @@
       "endpoint": "case.list",
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -213,7 +212,7 @@
       "endpoint": "case.list",
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -227,7 +226,7 @@
       "endpoint": "case.list",
       "value": {
         "outcome": {
-          "tag": "CANCELLED",
+          "kind": "CANCELLED",
           "data": null
         }
       },
@@ -238,11 +237,11 @@
       "endpoint": "case.history",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "entries": [
               {
-                "tag": "SUMMARY",
+                "kind": "SUMMARY",
                 "change": {
                   "operationId": "10000000-0000-4000-8000-000000000001",
                   "position": {
@@ -267,7 +266,7 @@
       "endpoint": "case.history",
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -284,7 +283,7 @@
       "endpoint": "case.history",
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -298,7 +297,7 @@
       "endpoint": "case.history",
       "value": {
         "outcome": {
-          "tag": "CANCELLED",
+          "kind": "CANCELLED",
           "data": null
         }
       },
@@ -310,74 +309,74 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "REVIEWED",
+          "kind": "REVIEWED",
           "data": {
             "review": {
-              "before": {
-                "caseReference": "x",
-                "revision": 1,
-                "state": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
-                  "fields": {
-                    "caseReference": "x",
-                    "status": "OPENED",
-                    "registration": {
-                      "incidentDate": "2026-01-01",
-                      "incidentNotificationDate": "2026-01-01",
-                      "incidentCountry": "LV",
-                      "claimantName": "x",
-                      "insurerName": "x",
-                      "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
-                    },
-                    "decision": {
-                      "paymentDecisionDate": "2026-01-01",
-                      "payableAmount": "0",
-                      "payableCurrency": "EUR"
-                    },
-                    "payment": {
-                      "paymentDate": "2026-01-01"
+              "subject": {
+                "kind": "CASE",
+                "before": {
+                  "caseReference": "x",
+                  "revision": 1,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "x",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-01",
+                        "incidentCountry": "LV",
+                        "claimantName": "x",
+                        "insurerName": "x",
+                        "claimedAmount": "0",
+                        "claimedCurrency": "EUR"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-01",
+                        "payableAmount": "0",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-01"
+                      }
                     }
                   }
-                }
-              },
-              "after": {
-                "caseReference": "x",
-                "revision": 1,
-                "state": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
-                  "fields": {
-                    "caseReference": "x",
-                    "status": "OPENED",
-                    "registration": {
-                      "incidentDate": "2026-01-01",
-                      "incidentNotificationDate": "2026-01-01",
-                      "incidentCountry": "LV",
-                      "claimantName": "x",
-                      "insurerName": "x",
-                      "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
-                    },
-                    "decision": {
-                      "paymentDecisionDate": "2026-01-01",
-                      "payableAmount": "0",
-                      "payableCurrency": "EUR"
-                    },
-                    "payment": {
-                      "paymentDate": "2026-01-01"
+                },
+                "after": {
+                  "caseReference": "x",
+                  "revision": 1,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "x",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-01",
+                        "incidentCountry": "LV",
+                        "claimantName": "x",
+                        "insurerName": "x",
+                        "claimedAmount": "0",
+                        "claimedCurrency": "EUR"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-01",
+                        "payableAmount": "0",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-01"
+                      }
                     }
                   }
+                },
+                "changes": [],
+                "context": {
+                  "productVersion": "x",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
                 }
-              },
-              "changes": [],
-              "context": {
-                "productVersion": "x",
-                "businessDate": "2026-01-01",
-                "timeZone": "x"
-              },
-              "scope": "CASE"
+              }
             }
           }
         }
@@ -390,7 +389,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "ALREADY_ACCEPTED",
+          "kind": "ALREADY_ACCEPTED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -399,16 +398,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
               "act": "OPEN",
               "snapshot": {
-                "disclosure": "DISCLOSED",
+                "kind": "DISCLOSED",
                 "view": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
+                  "kind": "ACTIVE",
                   "fields": {
                     "caseReference": "x",
                     "status": "OPENED",
@@ -444,7 +442,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -462,7 +460,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -477,7 +475,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "CANCELLED",
+          "kind": "CANCELLED",
           "data": null
         }
       },
@@ -489,7 +487,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "ACCEPTED",
+          "kind": "ACCEPTED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -498,16 +496,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
               "act": "OPEN",
               "snapshot": {
-                "disclosure": "DISCLOSED",
+                "kind": "DISCLOSED",
                 "view": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
+                  "kind": "ACTIVE",
                   "fields": {
                     "caseReference": "x",
                     "status": "OPENED",
@@ -543,7 +540,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "ALREADY_ACCEPTED",
+          "kind": "ALREADY_ACCEPTED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -552,16 +549,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
               "act": "OPEN",
               "snapshot": {
-                "disclosure": "DISCLOSED",
+                "kind": "DISCLOSED",
                 "view": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
+                  "kind": "ACTIVE",
                   "fields": {
                     "caseReference": "x",
                     "status": "OPENED",
@@ -597,7 +593,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "OUTCOME_UNKNOWN",
+          "kind": "OUTCOME_UNKNOWN",
           "data": null
         }
       },
@@ -609,7 +605,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -627,7 +623,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -642,7 +638,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "CANCELLED",
+          "kind": "CANCELLED",
           "data": null
         }
       },
@@ -653,7 +649,7 @@
       "endpoint": "operation.observe",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -662,16 +658,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
               "act": "OPEN",
               "snapshot": {
-                "disclosure": "DISCLOSED",
+                "kind": "DISCLOSED",
                 "view": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
+                  "kind": "ACTIVE",
                   "fields": {
                     "caseReference": "x",
                     "status": "OPENED",
@@ -706,7 +701,7 @@
       "endpoint": "operation.observe",
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -723,7 +718,7 @@
       "endpoint": "operation.observe",
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -737,7 +732,7 @@
       "endpoint": "operation.observe",
       "value": {
         "outcome": {
-          "tag": "CANCELLED",
+          "kind": "CANCELLED",
           "data": null
         }
       },
@@ -749,7 +744,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "ACCEPTED",
+          "kind": "ACCEPTED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -758,7 +753,7 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
               "act": "PROVISION_OWNER"
@@ -774,7 +769,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "ALREADY_ACCEPTED",
+          "kind": "ALREADY_ACCEPTED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -783,7 +778,7 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
               "act": "PROVISION_OWNER"
@@ -799,7 +794,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "OUTCOME_UNKNOWN",
+          "kind": "OUTCOME_UNKNOWN",
           "data": null
         }
       },
@@ -811,7 +806,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -829,7 +824,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -844,7 +839,7 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "CANCELLED",
+          "kind": "CANCELLED",
           "data": null
         }
       },
@@ -855,7 +850,7 @@
       "endpoint": "authority.list",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "items": [],
             "nextCursor": "x"
@@ -869,7 +864,7 @@
       "endpoint": "authority.list",
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -886,7 +881,7 @@
       "endpoint": "authority.list",
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -900,7 +895,7 @@
       "endpoint": "authority.list",
       "value": {
         "outcome": {
-          "tag": "CANCELLED",
+          "kind": "CANCELLED",
           "data": null
         }
       },
@@ -911,7 +906,7 @@
       "endpoint": "authority.grants",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "actor": {
               "actorId": "10000000-0000-4000-8000-000000000001",
@@ -934,7 +929,7 @@
       "endpoint": "authority.grants",
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -951,7 +946,7 @@
       "endpoint": "authority.grants",
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -965,7 +960,7 @@
       "endpoint": "authority.grants",
       "value": {
         "outcome": {
-          "tag": "CANCELLED",
+          "kind": "CANCELLED",
           "data": null
         }
       },
@@ -978,18 +973,20 @@
       "value": {
         "operationId": "10000000-0000-4000-8000-000000000001",
         "outcome": {
-          "tag": "REVIEWED",
+          "kind": "REVIEWED",
           "data": {
             "review": {
-              "scope": "AUTHORITY",
-              "target": null,
-              "before": {
-                "enabled": false,
-                "grants": []
-              },
-              "after": {
-                "enabled": true,
-                "grants": []
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": []
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": []
+                }
               }
             }
           }
@@ -1002,7 +999,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "productVersion": "x",
             "businessDate": "2026-01-01",
@@ -1060,25 +1057,27 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "caseReference": "x",
             "revision": 1,
             "state": {
-              "tag": "ERASED"
+              "kind": "ERASED"
             },
             "advice": {
               "acts": [
                 {
+                  "kind": "ACT",
                   "act": "OPEN",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "AMEND_REGISTRATION",
                   "expectedRevision": 1
                 },
                 {
-                  "act": "CORRECT",
+                  "kind": "CORRECT",
                   "expectedRevision": 1,
                   "correction": {
                     "registration": [
@@ -1098,38 +1097,47 @@
                   }
                 },
                 {
+                  "kind": "ACT",
                   "act": "DECIDE",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "WITHDRAW_DECISION",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "RECORD_PAYMENT",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "CLEAR_PAYMENT",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "CLOSE",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "REOPEN",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "VOID",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "REINSTATE",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "ERASE",
                   "expectedRevision": 1
                 }
@@ -1149,25 +1157,27 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "caseReference": "x",
             "revision": 1,
             "state": {
-              "tag": "ERASED"
+              "kind": "ERASED"
             },
             "advice": {
               "acts": [
                 {
+                  "kind": "ACT",
                   "act": "OPEN",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "AMEND_REGISTRATION",
                   "expectedRevision": 1
                 },
                 {
-                  "act": "CORRECT",
+                  "kind": "CORRECT",
                   "expectedRevision": 1,
                   "correction": {
                     "registration": [
@@ -1187,38 +1197,47 @@
                   }
                 },
                 {
+                  "kind": "ACT",
                   "act": "DECIDE",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "WITHDRAW_DECISION",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "RECORD_PAYMENT",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "CLEAR_PAYMENT",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "CLOSE",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "REOPEN",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "VOID",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "REINSTATE",
                   "expectedRevision": 1
                 },
                 {
+                  "kind": "ACT",
                   "act": "ERASE",
                   "expectedRevision": 1
                 }
@@ -1238,27 +1257,31 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "items": [
               {
-                "state": "LIVE",
                 "caseReference": "CASE-001",
                 "revision": 1,
-                "status": "OPENED",
-                "disposition": "ACTIVE"
+                "state": {
+                  "kind": "ACTIVE",
+                  "status": "OPENED"
+                }
               },
               {
-                "state": "LIVE",
                 "caseReference": "CASE-002",
                 "revision": 2,
-                "status": "CLOSED",
-                "disposition": "VOIDED"
+                "state": {
+                  "kind": "VOIDED",
+                  "status": "CLOSED"
+                }
               },
               {
-                "state": "ERASED",
                 "caseReference": "CASE-003",
-                "revision": 3
+                "revision": 3,
+                "state": {
+                  "kind": "ERASED"
+                }
               }
             ],
             "nextCursor": "x",
@@ -1298,7 +1321,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "actor": {
               "actorId": "10000000-0000-4000-8000-000000000001",
@@ -1371,7 +1394,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "items": [
               {
@@ -1404,140 +1427,140 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REVIEWED",
+          "kind": "REVIEWED",
           "data": {
             "review": {
-              "before": {
-                "caseReference": "x",
-                "revision": 1,
-                "state": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
-                  "fields": {
-                    "caseReference": "x",
-                    "status": "OPENED",
-                    "registration": {
-                      "incidentDate": "2026-01-01",
-                      "incidentNotificationDate": "2026-01-01",
-                      "incidentCountry": "LV",
-                      "claimantName": "x",
-                      "insurerName": "x",
-                      "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
-                    },
-                    "decision": {
-                      "paymentDecisionDate": "2026-01-01",
-                      "payableAmount": "0",
-                      "payableCurrency": "EUR"
-                    },
-                    "payment": {
-                      "paymentDate": "2026-01-01"
+              "subject": {
+                "kind": "CASE",
+                "before": {
+                  "caseReference": "x",
+                  "revision": 1,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "x",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-01",
+                        "incidentCountry": "LV",
+                        "claimantName": "x",
+                        "insurerName": "x",
+                        "claimedAmount": "0",
+                        "claimedCurrency": "EUR"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-01",
+                        "payableAmount": "0",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-01"
+                      }
                     }
                   }
-                }
-              },
-              "after": {
-                "caseReference": "x",
-                "revision": 1,
-                "state": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
-                  "fields": {
-                    "caseReference": "x",
-                    "status": "OPENED",
-                    "registration": {
-                      "incidentDate": "2026-01-01",
-                      "incidentNotificationDate": "2026-01-01",
-                      "incidentCountry": "LV",
-                      "claimantName": "x",
-                      "insurerName": "x",
-                      "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
-                    },
-                    "decision": {
-                      "paymentDecisionDate": "2026-01-01",
-                      "payableAmount": "0",
-                      "payableCurrency": "EUR"
-                    },
-                    "payment": {
-                      "paymentDate": "2026-01-01"
+                },
+                "after": {
+                  "caseReference": "x",
+                  "revision": 1,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "x",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-01",
+                        "incidentCountry": "LV",
+                        "claimantName": "x",
+                        "insurerName": "x",
+                        "claimedAmount": "0",
+                        "claimedCurrency": "EUR"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-01",
+                        "payableAmount": "0",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-01"
+                      }
                     }
                   }
+                },
+                "changes": [
+                  {
+                    "field": "incidentDate",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "incidentNotificationDate",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "incidentCountry",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "claimantName",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "insurerName",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "claimedAmount",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "claimedCurrency",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "caseReference",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "paymentDecisionDate",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "payableAmount",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "payableCurrency",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "paymentDate",
+                    "before": "before",
+                    "after": "after"
+                  },
+                  {
+                    "field": "status",
+                    "before": "before",
+                    "after": "after"
+                  }
+                ],
+                "context": {
+                  "productVersion": "x",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
                 }
-              },
-              "changes": [
-                {
-                  "field": "incidentDate",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "incidentNotificationDate",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "incidentCountry",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "claimantName",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "insurerName",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "claimedAmount",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "claimedCurrency",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "caseReference",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "paymentDecisionDate",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "payableAmount",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "payableCurrency",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "paymentDate",
-                  "before": "before",
-                  "after": "after"
-                },
-                {
-                  "field": "status",
-                  "before": "before",
-                  "after": "after"
-                }
-              ],
-              "context": {
-                "productVersion": "x",
-                "businessDate": "2026-01-01",
-                "timeZone": "x"
-              },
-              "scope": "CASE"
+              }
             }
           }
         },
@@ -1550,7 +1573,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "ACCEPTED",
+          "kind": "ACCEPTED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -1559,16 +1582,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
               "act": "OPEN",
               "snapshot": {
-                "disclosure": "DISCLOSED",
+                "kind": "DISCLOSED",
                 "view": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
+                  "kind": "ACTIVE",
                   "fields": {
                     "caseReference": "x",
                     "status": "OPENED",
@@ -1604,11 +1626,11 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "entries": [
               {
-                "tag": "FULL",
+                "kind": "FULL",
                 "receipt": {
                   "operationId": "10000000-0000-4000-8000-000000000001",
                   "position": {
@@ -1617,16 +1639,15 @@
                   },
                   "recordedAt": "2026-01-01T00:00:00.000000Z",
                   "recordedBy": "10000000-0000-4000-8000-000000000001",
-                  "scope": {
+                  "subject": {
                     "kind": "CASE",
                     "caseReference": "x",
                     "revision": 1,
                     "act": "OPEN",
                     "snapshot": {
-                      "disclosure": "DISCLOSED",
+                      "kind": "DISCLOSED",
                       "view": {
-                        "tag": "LIVE",
-                        "disposition": "ACTIVE",
+                        "kind": "ACTIVE",
                         "fields": {
                           "caseReference": "x",
                           "status": "OPENED",
@@ -1665,7 +1686,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "ACCEPTED",
+          "kind": "ACCEPTED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -1674,13 +1695,13 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
               "act": "OPEN",
               "snapshot": {
-                "disclosure": "WITHHELD"
+                "kind": "WITHHELD"
               }
             }
           }
@@ -1694,11 +1715,11 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "entries": [
               {
-                "tag": "FULL",
+                "kind": "FULL",
                 "receipt": {
                   "operationId": "10000000-0000-4000-8000-000000000001",
                   "position": {
@@ -1707,13 +1728,13 @@
                   },
                   "recordedAt": "2026-01-01T00:00:00.000000Z",
                   "recordedBy": "10000000-0000-4000-8000-000000000001",
-                  "scope": {
+                  "subject": {
                     "kind": "CASE",
                     "caseReference": "x",
                     "revision": 1,
                     "act": "OPEN",
                     "snapshot": {
-                      "disclosure": "WITHHELD"
+                      "kind": "WITHHELD"
                     }
                   }
                 }
@@ -1730,7 +1751,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "ACCEPTED",
+          "kind": "ACCEPTED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -1739,13 +1760,13 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
               "act": "OPEN",
               "snapshot": {
-                "disclosure": "ERASED"
+                "kind": "ERASED"
               }
             }
           }
@@ -1759,11 +1780,11 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "entries": [
               {
-                "tag": "FULL",
+                "kind": "FULL",
                 "receipt": {
                   "operationId": "10000000-0000-4000-8000-000000000001",
                   "position": {
@@ -1772,13 +1793,13 @@
                   },
                   "recordedAt": "2026-01-01T00:00:00.000000Z",
                   "recordedBy": "10000000-0000-4000-8000-000000000001",
-                  "scope": {
+                  "subject": {
                     "kind": "CASE",
                     "caseReference": "x",
                     "revision": 1,
                     "act": "OPEN",
                     "snapshot": {
-                      "disclosure": "ERASED"
+                      "kind": "ERASED"
                     }
                   }
                 }
@@ -1795,7 +1816,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_INTERNAL_ERROR",
             "action": "STOP_AND_INVESTIGATE"
@@ -1809,7 +1830,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -1823,7 +1844,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_INTEGRITY_ERROR",
             "action": "STOP_AND_INVESTIGATE"
@@ -1837,7 +1858,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_SCHEMA_MISMATCH",
             "action": "STOP_AND_INVESTIGATE"
@@ -1851,7 +1872,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_OPERATION_CONTENT_CONFLICT",
             "action": "STOP_AND_INVESTIGATE"
@@ -1865,7 +1886,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "ACCESS_RESOURCE_UNAVAILABLE",
             "action": "NONE_REQUIRED",
@@ -1882,7 +1903,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "ACTOR_ALREADY_REGISTERED",
             "action": "NONE_REQUIRED",
@@ -1899,7 +1920,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "ACTOR_UNKNOWN",
             "action": "NONE_REQUIRED",
@@ -1916,7 +1937,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "ACT_NOT_PERMITTED",
             "action": "NONE_REQUIRED",
@@ -1933,7 +1954,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "ALREADY_VOIDED",
             "action": "NONE_REQUIRED",
@@ -1950,7 +1971,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_ALREADY_CLOSED",
             "action": "NONE_REQUIRED",
@@ -1967,7 +1988,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_ALREADY_EXISTS",
             "action": "NONE_REQUIRED",
@@ -1984,7 +2005,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_ALREADY_OPENED",
             "action": "NONE_REQUIRED",
@@ -2001,7 +2022,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_AMENDMENT_REQUIRES_UNDECIDED",
             "action": "NONE_REQUIRED",
@@ -2018,7 +2039,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_CLOSED",
             "action": "NONE_REQUIRED",
@@ -2035,7 +2056,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_DECISION_ALREADY_PAID",
             "action": "NONE_REQUIRED",
@@ -2052,7 +2073,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_DECISION_REQUIRED",
             "action": "NONE_REQUIRED",
@@ -2069,7 +2090,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_ERASED",
             "action": "NONE_REQUIRED",
@@ -2086,7 +2107,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_PAYMENT_ALREADY_RECORDED",
             "action": "NONE_REQUIRED",
@@ -2103,7 +2124,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_PAYMENT_NOT_RECORDED",
             "action": "NONE_REQUIRED",
@@ -2120,7 +2141,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_REVISION_CONFLICT",
             "action": "READ_CURRENT",
@@ -2137,7 +2158,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_VOIDED",
             "action": "NONE_REQUIRED",
@@ -2154,7 +2175,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CASE_ZERO_DECISION_CANNOT_BE_PAID",
             "action": "NONE_REQUIRED",
@@ -2171,7 +2192,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "COMMAND_EXPECTED_REVISION_RANGE",
             "action": "CORRECT_INPUT",
@@ -2188,7 +2209,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "COMMAND_OPERATION_ID_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2205,7 +2226,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CORRECTION_EXISTING_VALUE_REQUIRED",
             "action": "NONE_REQUIRED",
@@ -2222,7 +2243,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CORRECTION_NO_CHANGES",
             "action": "NONE_REQUIRED",
@@ -2239,7 +2260,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2256,7 +2277,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "CORRECTION_PAYMENT_CLEAR_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2273,7 +2294,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "HUMAN_PRINCIPAL_REQUIRED",
             "action": "NONE_REQUIRED",
@@ -2290,7 +2311,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_CALENDAR_DATE_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2307,7 +2328,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_CALENDAR_DATE_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2324,7 +2345,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_CALENDAR_DATE_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2341,7 +2362,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_CALENDAR_DATE_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2358,7 +2379,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_CASE_REFERENCE_FORMAT",
             "action": "CORRECT_INPUT",
@@ -2375,7 +2396,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_CONTROL_CHARACTERS",
             "action": "CORRECT_INPUT",
@@ -2392,7 +2413,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_COUNTRY_FORMAT",
             "action": "CORRECT_INPUT",
@@ -2409,7 +2430,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_CURRENCY_FORMAT",
             "action": "CORRECT_INPUT",
@@ -2426,7 +2447,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_CURRENCY_FORMAT",
             "action": "CORRECT_INPUT",
@@ -2443,7 +2464,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_DATE_ORDER",
             "action": "CORRECT_INPUT",
@@ -2460,7 +2481,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_DECIMAL_FORMAT",
             "action": "CORRECT_INPUT",
@@ -2480,7 +2501,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_DECIMAL_FORMAT",
             "action": "CORRECT_INPUT",
@@ -2500,7 +2521,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_FUTURE_DATE",
             "action": "CORRECT_INPUT",
@@ -2517,7 +2538,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_MALFORMED_UNICODE",
             "action": "CORRECT_INPUT",
@@ -2534,7 +2555,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_SURROUNDING_WHITESPACE",
             "action": "CORRECT_INPUT",
@@ -2551,7 +2572,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2568,7 +2589,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2585,7 +2606,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2602,7 +2623,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_TOO_LONG",
             "action": "CORRECT_INPUT",
@@ -2621,7 +2642,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "LAST_OWNER",
             "action": "NONE_REQUIRED",
@@ -2638,7 +2659,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "LEDGER_SEQUENCE_EXHAUSTED",
             "action": "STOP_AND_INVESTIGATE",
@@ -2655,7 +2676,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "NOT_VOIDED",
             "action": "NONE_REQUIRED",
@@ -2672,7 +2693,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "OPERATION_CONTENT_CONFLICT",
             "action": "STOP_AND_INVESTIGATE",
@@ -2689,7 +2710,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "QUERY_CURSOR_INVALID",
             "action": "READ_CURRENT",
@@ -2706,7 +2727,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "QUERY_PAGE_LIMIT_RANGE",
             "action": "CORRECT_INPUT",
@@ -2725,7 +2746,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "REVISION_EXHAUSTED",
             "action": "NONE_REQUIRED",
@@ -2742,7 +2763,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "TEXT_FORMATTING_CHARACTER",
             "action": "CORRECT_INPUT",
@@ -2759,7 +2780,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_PRINCIPAL_FORMAT",
             "action": "CORRECT_INPUT",
@@ -2776,7 +2797,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_PRINCIPAL_FORMAT",
             "action": "CORRECT_INPUT",
@@ -2793,7 +2814,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "ACCESS_RESOURCE_UNAVAILABLE",
             "action": "NONE_REQUIRED",
@@ -2810,7 +2831,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -2824,7 +2845,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "ACCESS_RESOURCE_UNAVAILABLE",
             "action": "NONE_REQUIRED",
@@ -2841,7 +2862,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -2855,7 +2876,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "ACCEPTED",
+          "kind": "ACCEPTED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -2864,13 +2885,13 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
               "act": "CORRECT",
               "snapshot": {
-                "disclosure": "WITHHELD"
+                "kind": "WITHHELD"
               }
             }
           }
@@ -2884,7 +2905,7 @@
       "valid": true,
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "INPUT_TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
@@ -2900,7 +2921,7 @@
       "endpoint": "operation.resolve",
       "value": {
         "outcome": {
-          "tag": "ACCEPTED",
+          "kind": "ACCEPTED",
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
@@ -2909,16 +2930,15 @@
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
             "recordedBy": "10000000-0000-4000-8000-000000000001",
-            "scope": {
+            "subject": {
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
               "act": "OPEN",
               "snapshot": {
-                "disclosure": "DISCLOSED",
+                "kind": "DISCLOSED",
                 "view": {
-                  "tag": "LIVE",
-                  "disposition": "ACTIVE",
+                  "kind": "ACTIVE",
                   "fields": {
                     "caseReference": "x",
                     "status": "OPENED",
@@ -2953,7 +2973,7 @@
       "endpoint": "operation.resolve",
       "value": {
         "outcome": {
-          "tag": "NOT_ACCEPTED",
+          "kind": "NOT_ACCEPTED",
           "data": null
         }
       },
@@ -2964,7 +2984,7 @@
       "endpoint": "operation.resolve",
       "value": {
         "outcome": {
-          "tag": "REJECTED",
+          "kind": "REJECTED",
           "data": {
             "code": "OPERATION_RESOLVED",
             "action": "READ_CURRENT",
@@ -2981,7 +3001,7 @@
       "endpoint": "operation.resolve",
       "value": {
         "outcome": {
-          "tag": "FAILED",
+          "kind": "FAILED",
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
@@ -2995,12 +3015,12 @@
       "endpoint": "case.get",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "caseReference": "x",
             "revision": 1,
             "state": {
-              "tag": "ERASED",
+              "kind": "ERASED",
               "disposition": "ACTIVE",
               "fields": {
                 "caseReference": "x",
@@ -3038,12 +3058,12 @@
       "endpoint": "case.get",
       "value": {
         "outcome": {
-          "tag": "SUCCEEDED",
+          "kind": "SUCCEEDED",
           "data": {
             "caseReference": "x",
             "revision": 1,
             "state": {
-              "tag": "UNKNOWN",
+              "kind": "UNKNOWN",
               "disposition": "ACTIVE",
               "fields": {
                 "caseReference": "x",
@@ -3075,6 +3095,101 @@
         }
       },
       "valid": false
+    },
+    {
+      "name": "case-get-voided",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "VOIDED",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR"
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                }
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": []
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "receipt-disclosed-voided",
+      "endpoint": "operation.execute",
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "CASE",
+              "caseReference": "x",
+              "revision": 1,
+              "act": "VOID",
+              "snapshot": {
+                "kind": "DISCLOSED",
+                "view": {
+                  "kind": "VOIDED",
+                  "fields": {
+                    "caseReference": "x",
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }

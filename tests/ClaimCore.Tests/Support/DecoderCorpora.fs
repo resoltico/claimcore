@@ -54,7 +54,7 @@ let adversarialJson =
             fun () -> "{\"a\":\"" + String.replicate 2000 "\\u0000" + "\"}"
             fun () -> "{\"a\":\"\\ud800\"}"
             fun () -> "{\"a\":\"\\udfff\\ud800\"}"
-            fun () -> "\uFEFF{\"a\":1}"
+            fun () -> "﻿{\"a\":1}"
             fun () -> "{\"a\":1}{\"a\":2}"
             fun () -> "{\"a\":1} trailing"
             fun () -> "{\"a\":1,}"

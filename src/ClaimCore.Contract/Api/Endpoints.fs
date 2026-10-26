@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Json
+
 open System.Net.Http
 open ClaimCore.Contract.Protocol
 
@@ -21,15 +23,73 @@ module EndpointEffects =
 
     let token = Vocabulary.token vocabulary
 
+[<RequireQualifiedAccess>]
+type HostEndpoint =
+    | Session
+    | Logout
+
+[<RequireQualifiedAccess>]
+type ActorEndpoint =
+    | Preview
+    | Execute
+    | CaseGet
+    | CaseList
+    | CaseHistory
+    | Observe
+    | Resolve
+    | AuthorityList
+    | AuthorityGrants
+    | Context
+
+module HostEndpoints =
+    let vocabulary =
+        Vocabulary.define
+            "endpoint"
+            [ HostEndpoint.Session, "session"; HostEndpoint.Logout, "session.logout" ]
+
+    let all = Vocabulary.all vocabulary
+
+module ActorEndpoints =
+    let vocabulary =
+        Vocabulary.define
+            "endpoint"
+            [
+                ActorEndpoint.Preview, "operation.preview"
+                ActorEndpoint.Execute, "operation.execute"
+                ActorEndpoint.CaseGet, "case.get"
+                ActorEndpoint.CaseList, "case.list"
+                ActorEndpoint.CaseHistory, "case.history"
+                ActorEndpoint.Observe, "operation.observe"
+                ActorEndpoint.Resolve, "operation.resolve"
+                ActorEndpoint.AuthorityList, "authority.list"
+                ActorEndpoint.AuthorityGrants, "authority.grants"
+                ActorEndpoint.Context, "context"
+            ]
+
+    let all = Vocabulary.all vocabulary
+
+[<RequireQualifiedAccess>]
+type EndpointId =
+    | Host of HostEndpoint
+    | Actor of ActorEndpoint
+
+module EndpointIds =
+    let token =
+        function
+        | EndpointId.Host value -> Vocabulary.token HostEndpoints.vocabulary value
+        | EndpointId.Actor value -> Vocabulary.token ActorEndpoints.vocabulary value
+
 [<NoEquality; NoComparison>]
 type Endpoint<'In, 'Out> =
     {
-        Id: string
+        Id: EndpointId
         Method: HttpMethod
         Effect: EndpointEffect
         Input: Codec<'In>
         Output: Codec<'Out>
     }
+
+    member this.Token = EndpointIds.token this.Id
 
 type IEndpointVisitor<'Result> =
     abstract Visit<'In, 'Out> : Endpoint<'In, 'Out> -> 'Result
@@ -49,7 +109,7 @@ module Api =
 
     let session =
         endpoint
-            "session"
+            (EndpointId.Host HostEndpoint.Session)
             HttpMethod.Get
             EndpointEffect.Read
             RequestCodecs.empty
@@ -57,7 +117,7 @@ module Api =
 
     let logout =
         endpoint
-            "session.logout"
+            (EndpointId.Host HostEndpoint.Logout)
             HttpMethod.Post
             EndpointEffect.OperationalWrite
             RequestCodecs.empty
@@ -65,7 +125,7 @@ module Api =
 
     let context =
         endpoint
-            "context"
+            (EndpointId.Actor ActorEndpoint.Context)
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.empty
@@ -73,7 +133,7 @@ module Api =
 
     let caseGet =
         endpoint
-            "case.get"
+            (EndpointId.Actor ActorEndpoint.CaseGet)
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.caseGetRequest
@@ -81,7 +141,7 @@ module Api =
 
     let caseList =
         endpoint
-            "case.list"
+            (EndpointId.Actor ActorEndpoint.CaseList)
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.pageRequest
@@ -89,7 +149,7 @@ module Api =
 
     let caseHistory =
         endpoint
-            "case.history"
+            (EndpointId.Actor ActorEndpoint.CaseHistory)
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.historyRequest
@@ -99,7 +159,7 @@ module Api =
 
     let operationPreview =
         endpoint
-            "operation.preview"
+            (EndpointId.Actor ActorEndpoint.Preview)
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.operationInput
@@ -107,7 +167,7 @@ module Api =
 
     let operationExecute =
         endpoint
-            "operation.execute"
+            (EndpointId.Actor ActorEndpoint.Execute)
             HttpMethod.Post
             EndpointEffect.LedgerExecution
             RequestCodecs.operationInput
@@ -115,7 +175,7 @@ module Api =
 
     let operationResolve =
         endpoint
-            "operation.resolve"
+            (EndpointId.Actor ActorEndpoint.Resolve)
             HttpMethod.Post
             EndpointEffect.OperationalWrite
             ResolutionCodecs.request
@@ -123,7 +183,7 @@ module Api =
 
     let operationObserve =
         endpoint
-            "operation.observe"
+            (EndpointId.Actor ActorEndpoint.Observe)
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.observeRequest
@@ -131,7 +191,7 @@ module Api =
 
     let authorityList =
         endpoint
-            "authority.list"
+            (EndpointId.Actor ActorEndpoint.AuthorityList)
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.pageRequest
@@ -139,7 +199,7 @@ module Api =
 
     let authorityGrants =
         endpoint
-            "authority.grants"
+            (EndpointId.Actor ActorEndpoint.AuthorityGrants)
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.grantsRequest
@@ -150,26 +210,38 @@ module Api =
             member _.Accept visitor = visitor.Visit endpoint
         }
 
+    let forHost =
+        function
+        | HostEndpoint.Session -> boxed session
+        | HostEndpoint.Logout -> boxed logout
+
+    let forActor =
+        function
+        | ActorEndpoint.Context -> boxed context
+        | ActorEndpoint.CaseGet -> boxed caseGet
+        | ActorEndpoint.CaseList -> boxed caseList
+        | ActorEndpoint.CaseHistory -> boxed caseHistory
+        | ActorEndpoint.Preview -> boxed operationPreview
+        | ActorEndpoint.Execute -> boxed operationExecute
+        | ActorEndpoint.Resolve -> boxed operationResolve
+        | ActorEndpoint.Observe -> boxed operationObserve
+        | ActorEndpoint.AuthorityList -> boxed authorityList
+        | ActorEndpoint.AuthorityGrants -> boxed authorityGrants
+
     let all =
-        [
-            boxed session
-            boxed logout
-            boxed context
-            boxed caseGet
-            boxed caseList
-            boxed caseHistory
-            boxed operationPreview
-            boxed operationExecute
-            boxed operationResolve
-            boxed operationObserve
-            boxed authorityList
-            boxed authorityGrants
-        ]
+        (HostEndpoints.all |> List.map forHost)
+        @ (ActorEndpoints.all |> List.map forActor)
+
+    let identity (endpoint: AnyEndpoint) =
+        endpoint.Accept
+            { new IEndpointVisitor<EndpointId> with
+                member _.Visit value = value.Id
+            }
 
     let id (endpoint: AnyEndpoint) =
         endpoint.Accept
             { new IEndpointVisitor<string> with
-                member _.Visit value = value.Id
+                member _.Visit value = value.Token
             }
 
     let path endpoint = "/api/" + id endpoint

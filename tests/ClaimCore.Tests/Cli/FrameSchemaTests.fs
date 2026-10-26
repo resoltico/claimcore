@@ -8,6 +8,7 @@ open System.Text.Json.Nodes
 open Expecto
 open global.Json.Schema
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.TestSupport
 
 let private schema shape =

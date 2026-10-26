@@ -2,60 +2,92 @@ import { caseOffers } from "./case-advice.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
-import { render, screen } from "./presentation-test-support";
+import { findButton, getButton, render, screen } from "./presentation-test-support";
 import { current, deferredResponse, draftAt, editor } from "./presentation-state.fixtures";
 import { wireReply } from "./contract-corpus.fixtures";
 import { fields, response, runtime, unavailable } from "./service-ui.fixtures";
-
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 const refusal = (kind: "access" | "session") =>
   kind === "access"
     ? response("operation.execute", "REJECTED", unavailable)
     : new Response(
         JSON.stringify({
-          hostFailure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" },
+          hostFailure: {
+            code: "SESSION_REJECTED",
+            phase: "NOT_STARTED",
+          },
         }),
-        { status: 401, headers: { "content-type": "application/json" } },
+        {
+          status: 401,
+          headers: {
+            "content-type": "application/json",
+          },
+        },
       );
 const currentCanary = "CURRENT_DISCLOSURE_CANARY";
 const reviewCanary = "REVIEW_DISCLOSURE_CANARY";
 const disclosedCurrent = {
   ...current,
-  advice: { ...current.advice, acts: caseOffers(["AMEND_REGISTRATION"]) },
+  advice: {
+    ...current.advice,
+    acts: caseOffers(["AMEND_REGISTRATION"]),
+  },
   state: {
     ...current.state,
-    tag: "LIVE" as const,
-    disposition: "ACTIVE" as const,
-    fields: { ...fields, registration: { ...fields.registration, claimantName: currentCanary } },
+    kind: "ACTIVE" as const,
+    fields: {
+      ...fields,
+      registration: {
+        ...fields.registration,
+        claimantName: currentCanary,
+      },
+    },
   },
 };
 const preview = () =>
   response("operation.preview", "REVIEWED", {
     review: {
-      before: disclosedCurrent,
-      after: {
-        ...disclosedCurrent,
-        revision: 2,
-        state: {
-          ...disclosedCurrent.state,
-          fields: {
-            ...fields,
-            registration: { ...fields.registration, claimantName: reviewCanary },
+      subject: {
+        kind: "CASE",
+        before: disclosedCurrent,
+        after: {
+          ...disclosedCurrent,
+          revision: 2,
+          state: {
+            ...disclosedCurrent.state,
+            fields: {
+              ...fields,
+              registration: {
+                ...fields.registration,
+                claimantName: reviewCanary,
+              },
+            },
           },
         },
+        changes: [
+          {
+            field: "claimantName",
+            before: currentCanary,
+            after: reviewCanary,
+          },
+        ],
+        context: runtime,
       },
-      changes: [{ field: "claimantName", before: currentCanary, after: reviewCanary }],
-      context: runtime,
     },
   });
 const replay = () => {
   const accepted = wireReply("operation.execute");
-  if (accepted.outcome.tag !== "ACCEPTED") {
+  if (accepted.outcome.kind !== "ACCEPTED") {
     throw new Error("Missing acceptance fixture");
   }
   return response("operation.execute", "ALREADY_ACCEPTED", {
     ...accepted.outcome.data,
-    scope: { ...accepted.outcome.data.scope, snapshot: { disclosure: "WITHHELD" } },
+    subject: {
+      ...accepted.outcome.data.subject,
+      snapshot: {
+        kind: "WITHHELD",
+      },
+    },
   });
 };
 const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => {
@@ -67,24 +99,44 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
       initialAct: "AMEND_REGISTRATION",
     }),
   );
-  const claimant = screen.getByLabelText("Claimant name", { exact: true });
+  const claimant = screen.getByLabelText("Claimant name", {
+    exact: true,
+  });
   expect(claimant).toHaveValue(currentCanary);
   await user.clear(claimant);
   await user.type(claimant, reviewCanary);
-  await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await screen.findByRole("dialog", { name: "Review changes" });
+  await user.click(getButton("Review changes"));
+  await screen.findByRole("dialog", {
+    name: "Review changes",
+  });
   expect(document.body).toHaveTextContent(currentCanary);
   expect(document.body).toHaveTextContent(reviewCanary);
-  await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
-  await user.click(screen.getByRole("button", { name: "Record changes" }));
-  await screen.findByRole("button", { name: "Send again" });
+  await user.click(
+    screen.getByRole("checkbox", {
+      name: "I confirm these changes.",
+    }),
+  );
+  await user.click(getButton("Record changes"));
+  await findButton("Send again");
   return user;
 };
 const expectPendingOnly = (locked: (locked: boolean) => void) => {
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "Back to case" })).toBeNull();
-  expect(screen.queryByRole("heading", { name: "Recorded change" })).toBeNull();
+  expect(
+    screen.queryByRole("button", {
+      name: "Review changes",
+    }),
+  ).toBeNull();
+  expect(
+    screen.queryByRole("button", {
+      name: "Back to case",
+    }),
+  ).toBeNull();
+  expect(
+    screen.queryByRole("heading", {
+      name: "Recorded change",
+    }),
+  ).toBeNull();
   expect(document.body).not.toHaveTextContent(currentCanary);
   expect(document.body).not.toHaveTextContent(reviewCanary);
   expect(locked).toHaveBeenLastCalledWith(true);
@@ -103,26 +155,34 @@ it.each(["access", "session"] as const)(
     const user = await beginUnknown(locked);
     const original = vi.mocked(fetch).mock.calls[1]?.[1]?.body;
     expect(draftAt(1).expectedRevision).toBe(1);
-    await user.click(screen.getByRole("button", { name: "Send again" }));
+    await user.click(getButton("Send again"));
     expectPendingOnly(locked);
-    await user.click(screen.getByRole("button", { name: "Send again" }));
+    await user.click(getButton("Send again"));
     expectPendingOnly(locked);
-    expect(screen.getByRole("button", { name: "Send again" })).toBeDisabled();
+    expect(getButton("Send again")).toBeDisabled();
     await act(async () => {
       pending.resolve(response("operation.execute", "OUTCOME_UNKNOWN", {}));
       await pending.promise;
     });
-    expect(screen.getByRole("button", { name: "Send again" })).not.toBeDisabled();
+    expect(getButton("Send again")).not.toBeDisabled();
     expectPendingOnly(locked);
-    await user.click(screen.getByRole("button", { name: "Send again" }));
-    expect(await screen.findByRole("heading", { name: "Recorded change" })).toBeVisible();
+    await user.click(getButton("Send again"));
+    expect(
+      await screen.findByRole("heading", {
+        name: "Recorded change",
+      }),
+    ).toBeVisible();
     expect(
       screen.getByText("The recorded fields are withheld under your current access rights."),
     ).toBeVisible();
     expect(document.body).not.toHaveTextContent(currentCanary);
     expect(document.body).not.toHaveTextContent(reviewCanary);
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
+    expect(
+      screen.queryByRole("button", {
+        name: "Send again",
+      }),
+    ).toBeNull();
     expect(locked).toHaveBeenLastCalledWith(false);
     expect(
       vi

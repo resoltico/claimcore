@@ -15,9 +15,11 @@ export const current: CurrentCase = {
     history: ["SUMMARY", "FULL"],
   },
   state: {
-    tag: "LIVE",
-    disposition: "ACTIVE",
-    fields: { ...caseFields, caseReference: "CASE-SERIALIZATION" },
+    kind: "ACTIVE",
+    fields: {
+      ...caseFields,
+      caseReference: "CASE-SERIALIZATION",
+    },
   },
 };
 export const valuesFor = (kind = "CLOSE") => initialOperationValues("CASE", kind, current, firstId);

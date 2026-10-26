@@ -53,8 +53,8 @@ let private row payload =
             ActorId = id
             RecordedAt = instant
             PayloadCommitment = commitment
-            Scope =
-                LedgerScope.Authority
+            Subject =
+                LedgerSubject.Authority
                     {
                         TargetActorId = id
                         Act = AuthorityKind.ProvisionOwner
@@ -68,7 +68,7 @@ let private row payload =
             OperationId = id
             ActorId = id
             RecordedAt = instant
-            Scope = StoredScope.Authority(id, AuthorityKind.ProvisionOwner)
+            Subject = StoredSubject.Authority(id, AuthorityKind.ProvisionOwner)
             PayloadCommitment = commitment
             PayloadNonce = Some nonce
             Payload = Some payload
@@ -81,8 +81,7 @@ let private history: CaseHistory =
         Revision = 1L
         Snapshot = None
         Reference = Some "SYNTHETIC"
-        Disposition = Disposition.Active
-        Erased = false
+        State = CaseState.Active()
         MissingPayloadAt = None
         PresentPayloadAt = None
         ErasedAt = None
@@ -144,10 +143,16 @@ let private caseChecks =
         fun () -> CaseFold.apply Map.empty entry id 2L opened VerifiedPayload.Erased |> unitResult
         VerificationFinding.HistoryStart,
         fun () -> CaseFold.apply Map.empty entry id 1L closed VerifiedPayload.Erased |> unitResult
-        VerificationFinding.DispositionSequence,
+        VerificationFinding.StateSequence,
         fun () ->
             CaseFold.apply
-                (Map.ofList [ id, { history with Erased = true } ])
+                (Map.ofList
+                    [
+                        id,
+                        { history with
+                            State = CaseState.Erased
+                        }
+                    ])
                 entry
                 id
                 2L
@@ -161,7 +166,7 @@ let private caseChecks =
                     [
                         id,
                         { history with
-                            Erased = true
+                            State = CaseState.Erased
                             PresentPayloadAt = Some 1L
                             ErasedAt = Some 2L
                         }
@@ -197,7 +202,7 @@ let private authorityChecks =
         fun () ->
             let entry =
                 { entry with
-                    Scope = StoredScope.Authority(id, AuthorityKind.Register)
+                    Subject = StoredSubject.Authority(id, AuthorityKind.Register)
                 }
 
             let request: AuthorityRequestRecord =

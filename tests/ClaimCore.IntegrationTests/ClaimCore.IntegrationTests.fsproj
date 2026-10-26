@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
     <Compile Include="TestRegistration.fs" />
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
@@ -43,7 +44,7 @@
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />
     <Compile Include="AdministrationTests.fs" />
-    <None Include="../fixtures/baseline.0d6f68a2.sql" Link="baseline.0d6f68a2.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../fixtures/baseline.03a5a72e.sql" Link="baseline.03a5a72e.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../fixtures/baseline-with-submission-storage.sql" Link="baseline-with-submission-storage.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../fixtures/0001_baseline.v0.11.0.sql" Link="0001_baseline.v0.11.0.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />

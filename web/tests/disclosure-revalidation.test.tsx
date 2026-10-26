@@ -7,16 +7,29 @@ import { definition, fields, response, unavailable } from "./service-ui.fixtures
 const context = {
   caseReference: fields.caseReference,
   revision: 1,
-
-  advice: { acts: caseOffers(["CLOSE"]), history: ["SUMMARY", "FULL"] },
-  state: { tag: "LIVE", disposition: "ACTIVE", fields },
+  advice: {
+    acts: caseOffers(["CLOSE"]),
+    history: ["SUMMARY", "FULL"],
+  },
+  state: {
+    kind: "ACTIVE",
+    fields,
+  },
 };
 const sessionRefusal = () =>
   new Response(
     JSON.stringify({
-      hostFailure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" },
+      hostFailure: {
+        code: "SESSION_REJECTED",
+        phase: "NOT_STARTED",
+      },
     }),
-    { status: 401, headers: { "content-type": "application/json" } },
+    {
+      status: 401,
+      headers: {
+        "content-type": "application/json",
+      },
+    },
   );
 const stubReads = (kind: string, retainCurrent: boolean) => {
   let revoked = false;
@@ -27,7 +40,9 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
         throw new Error("Missing synthetic read.");
       }
       if (url.endsWith("case.history")) {
-        const input = JSON.parse(init.body) as { detail: string };
+        const input = JSON.parse(init.body) as {
+          detail: string;
+        };
         if (input.detail === "FULL") {
           revoked = true;
           return Promise.resolve(
@@ -37,7 +52,10 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
           );
         }
         return Promise.resolve(
-          response("case.history", "SUCCEEDED", { entries: [], nextCursor: null }),
+          response("case.history", "SUCCEEDED", {
+            entries: [],
+            nextCursor: null,
+          }),
         );
       }
       return Promise.resolve(
@@ -45,7 +63,10 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
           ? response("case.get", "REJECTED", unavailable)
           : response("case.get", "SUCCEEDED", {
               ...context,
-              advice: { ...context.advice, history: revoked ? ["SUMMARY"] : ["SUMMARY", "FULL"] },
+              advice: {
+                ...context.advice,
+                history: revoked ? ["SUMMARY"] : ["SUMMARY", "FULL"],
+              },
             }),
       );
     }),
@@ -69,11 +90,20 @@ for (const retainCurrent of [false, true]) {
         />,
       );
       await screen.findByText(fields.registration.claimantName);
-      await user.selectOptions(screen.getByRole("combobox", { name: "History detail" }), "FULL");
+      await user.selectOptions(
+        screen.getByRole("combobox", {
+          name: "History detail",
+        }),
+        "FULL",
+      );
       await waitFor(() => {
         expect(revoked()).toBe(true);
         expect(document.querySelectorAll(".case-fields")).toHaveLength(retainCurrent ? 1 : 0);
-        expect(screen.queryByRole("option", { name: "Full snapshots" })).toBeNull();
+        expect(
+          screen.queryByRole("option", {
+            name: "Full snapshots",
+          }),
+        ).toBeNull();
       });
       await waitFor(() => {
         expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(retainCurrent ? 5 : 4);

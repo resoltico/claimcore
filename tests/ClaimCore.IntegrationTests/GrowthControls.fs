@@ -50,25 +50,29 @@ let private waiters (database: PostgresFixture.Database) expected =
             "The intended acceptance transactions are waiting for the head"
     }
 
-let private sameCase database (actor: IActorClaimsCore) =
+let private sameCase database (actor: HandlerContext) =
     task {
         let! snapshot = current database "synthetic-growth-0"
 
         let act =
-            match snapshot.View with
-            | CaseView.Live(fields, _) when fields.Status = CaseStatus.Closed -> CaseAct.Reopen
+            match snapshot.State with
+            | (CaseState.Active(fields) | CaseState.Voided(fields)) when
+                fields.Status = CaseStatus.Closed
+                ->
+                CaseAct.Reopen
             | _ -> CaseAct.Close
 
         let! replies =
             Task.WhenAll
                 [|
                     for index in 0..1 ->
-                        actor.Execute(
-                            OperationInput.Case(
+                        (Handlers.call
+                            Api.operationExecute
+                            actor
+                            (OperationInput.Case(
                                 request (710000 + index) snapshot.Reference snapshot.Revision act
-                            ),
-                            token
-                        )
+                            ))
+                            (token))
                 |]
 
         let acceptedCount =
@@ -102,21 +106,25 @@ let private revocation (database: PostgresFixture.Database) owner principal =
         let fixture = database.Fixture
 
         let writer =
-            Core.create fixture.InstallationId writerGate.Store fixture.Calendar principal
+            Handlers.context fixture.InstallationId writerGate.Store fixture.Calendar principal
 
         let revoker =
-            Core.create fixture.InstallationId revokeGate.Store fixture.Calendar fixture.Owner
+            Handlers.context fixture.InstallationId revokeGate.Store fixture.Calendar fixture.Owner
 
         let act =
-            match snapshot.View with
-            | CaseView.Live(fields, _) when fields.Status = CaseStatus.Closed -> CaseAct.Reopen
+            match snapshot.State with
+            | (CaseState.Active(fields) | CaseState.Voided(fields)) when
+                fields.Status = CaseStatus.Closed
+                ->
+                CaseAct.Reopen
             | _ -> CaseAct.Close
 
         let write =
-            writer.Execute(
-                OperationInput.Case(request 710010 snapshot.Reference snapshot.Revision act),
-                token
-            )
+            (Handlers.call
+                Api.operationExecute
+                writer
+                (OperationInput.Case(request 710010 snapshot.Reference snapshot.Revision act))
+                (token))
 
         let revoke =
             grant revoker (id 710011) principal Role.CaseHandler GrantTarget.Installation false
@@ -147,14 +155,15 @@ let private revocation (database: PostgresFixture.Database) owner principal =
 
     }
 
-let private longCase database (actor: IActorClaimsCore) =
+let private longCase database (actor: HandlerContext) =
     task {
         let! snapshot = current database "synthetic-growth-998"
         let mutable revision = snapshot.Revision
 
         let mutable closed =
-            match snapshot.View with
-            | CaseView.Live(fields, _) -> fields.Status = CaseStatus.Closed
+            match snapshot.State with
+            | (CaseState.Active(fields) | CaseState.Voided(fields)) ->
+                fields.Status = CaseStatus.Closed
             | _ -> failtest "Live case expected"
 
         let watch = Stopwatch.StartNew()
@@ -163,10 +172,11 @@ let private longCase database (actor: IActorClaimsCore) =
             let act = if closed then CaseAct.Reopen else CaseAct.Close
 
             let! reply =
-                actor.Execute(
-                    OperationInput.Case(request (720000 + index) snapshot.Reference revision act),
-                    token
-                )
+                (Handlers.call
+                    Api.operationExecute
+                    actor
+                    (OperationInput.Case(request (720000 + index) snapshot.Reference revision act))
+                    (token))
 
             accepted reply |> ignore
 
@@ -188,7 +198,7 @@ let private longCase database (actor: IActorClaimsCore) =
             |}
     }
 
-let private erase (database: PostgresFixture.Database) (actor: IActorClaimsCore) =
+let private erase (database: PostgresFixture.Database) (actor: HandlerContext) =
     task {
         let! granted =
             grant
@@ -204,16 +214,17 @@ let private erase (database: PostgresFixture.Database) (actor: IActorClaimsCore)
         let! snapshot = current database "synthetic-growth-999"
 
         let! erased =
-            actor.Execute(
-                OperationInput.Case(
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(
                     request 730001 snapshot.Reference snapshot.Revision CaseAct.Erase
-                ),
-                token
-            )
+                ))
+                (token))
 
         accepted erased |> ignore
         let! final = current database snapshot.Reference
-        Expect.equal final.View CaseView.Erased "Erasure clears the final projection"
+        Expect.equal final.State CaseState.Erased "Erasure clears the final projection"
 
         let! revoked =
             grant

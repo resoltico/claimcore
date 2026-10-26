@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Json
 
 module SchemaJson =
     let rec private references =

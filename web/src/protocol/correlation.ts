@@ -16,26 +16,32 @@ const successor = (expected: unknown, actual: unknown): boolean =>
   Number.isSafeInteger(expected + 1) &&
   actual === expected + 1;
 const receipt = (request: unknown, value: unknown): boolean => {
-  const scope = at(request, ["scope"]);
+  const subject = at(request, ["kind"]);
   return (
     at(request, ["operationId"]) === at(value, ["operationId"]) &&
-    scope === at(value, ["scope", "kind"]) &&
-    at(request, ["act", "kind"]) === at(value, ["scope", "act"]) &&
-    (scope === "AUTHORITY" ||
-      (scope === "CASE" &&
-        reference(at(request, ["caseReference"]), at(value, ["scope", "caseReference"])) &&
-        successor(at(request, ["expectedRevision"]), at(value, ["scope", "revision"]))))
+    subject === at(value, ["subject", "kind"]) &&
+    at(request, ["act", "kind"]) === at(value, ["subject", "act"]) &&
+    (subject === "AUTHORITY" ||
+      (subject === "CASE" &&
+        reference(at(request, ["caseReference"]), at(value, ["subject", "caseReference"])) &&
+        successor(at(request, ["expectedRevision"]), at(value, ["subject", "revision"]))))
   );
 };
 
 const review = (request: unknown, data: unknown): boolean => {
-  const scope = at(request, ["scope"]);
+  const subject = at(request, ["kind"]);
   return (
-    scope === at(data, ["review", "scope"]) &&
-    (scope === "AUTHORITY" ||
-      (scope === "CASE" &&
-        reference(at(request, ["caseReference"]), at(data, ["review", "after", "caseReference"])) &&
-        successor(at(request, ["expectedRevision"]), at(data, ["review", "after", "revision"]))))
+    subject === at(data, ["review", "subject", "kind"]) &&
+    (subject === "AUTHORITY" ||
+      (subject === "CASE" &&
+        reference(
+          at(request, ["caseReference"]),
+          at(data, ["review", "subject", "after", "caseReference"]),
+        ) &&
+        successor(
+          at(request, ["expectedRevision"]),
+          at(data, ["review", "subject", "after", "revision"]),
+        )))
   );
 };
 /** Schema admission precedes these request-dependent consistency checks. */
@@ -44,7 +50,7 @@ export const correlateReply = (
   request: unknown,
   response: unknown,
 ): boolean => {
-  const tag = at(response, ["outcome", "tag"]);
+  const tag = at(response, ["outcome", "kind"]);
   const data = at(response, ["outcome", "data"]);
   if (endpoint === "operation.execute" || endpoint === "operation.preview") {
     const id = at(request, ["operationId"]);

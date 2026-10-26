@@ -10,6 +10,7 @@ open ClaimCore.Application
 open ClaimCore.Web
 open ClaimCore.Web.Composition
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -68,7 +69,12 @@ let private mappedExamples () =
         let actor = core fixture owner
 
         for endpoint, input in applicationExamples () do
-            let prepared = Dispatch.prepare endpoint input |> admitted
+            let actorEndpoint =
+                match Api.identity endpoint with
+                | EndpointId.Actor actor -> actor
+                | _ -> failtest "Expected an actor endpoint"
+
+            let prepared = Dispatch.prepare (Handlers.forActor actorEndpoint) input |> admitted
             let! reply = prepared.Invoke actor CancellationToken.None ignore |> Async.AwaitTask
             Api.admitOutput endpoint reply |> admitted |> ignore
 
@@ -91,14 +97,19 @@ let private cancellationPolicy () =
         let input = OperationInput.Case(openRequest 91 "MAPPING-001")
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
-        let! preview = actor.Preview(input, cancellation.Token) |> Async.AwaitTask
+
+        let! preview =
+            (Handlers.call Api.operationPreview actor (input) (cancellation.Token))
+            |> Async.AwaitTask
 
         Expect.equal
             preview.Outcome
             (PreviewResult.Failed CoreFault.StoreUnavailable)
             "Preview observes caller cancellation."
 
-        let! execute = actor.Execute(input, CancellationToken.None) |> Async.AwaitTask
+        let! execute =
+            (Handlers.call Api.operationExecute actor (input) (CancellationToken.None))
+            |> Async.AwaitTask
 
         match execute.Outcome with
         | ExecuteResult.Accepted _ -> ()

@@ -35,16 +35,20 @@ type AdmittedAuthorityRequest =
         Act: AdmittedAuthorityAct
     }
 
-type IActorClaimsCore =
-    abstract Context: CancellationToken -> Task<ReadReply<ActorContext>>
-    abstract Preview: OperationInput * CancellationToken -> Task<PreviewReply>
-    abstract Execute: OperationInput * CancellationToken -> Task<ExecuteReply>
-    abstract Resolve: ResolveRequest * CancellationToken -> Task<ResolveReply>
-    abstract Get: CaseGetRequest * CancellationToken -> Task<ReadReply<CaseReadModel>>
-    abstract List: PageRequest * CancellationToken -> Task<ReadReply<CaseSummaryPage>>
-    abstract History: HistoryRequest * CancellationToken -> Task<ReadReply<HistoryResultPage>>
-    abstract Observe: ObserveRequest * CancellationToken -> Task<ReadReply<OperationReceipt>>
+[<RequireQualifiedAccess; NoComparison>]
+type internal Decision<'proceed> =
+    | Proceed of 'proceed
+    | Replay of OperationReceipt
+    | Refuse of Refusal
+    | Fail of CoreFault
 
-    abstract ListActors: PageRequest * CancellationToken -> Task<ReadReply<ActorReviewPage>>
+module internal Decision =
+    let bind next =
+        function
+        | Decision.Proceed value -> next value
+        | Decision.Replay receipt -> Decision.Replay receipt
+        | Decision.Refuse refusal -> Decision.Refuse refusal
+        | Decision.Fail fault -> Decision.Fail fault
 
-    abstract ListGrants: GrantsRequest * CancellationToken -> Task<ReadReply<AuthorityGrantPage>>
+    let map mapping value =
+        bind (mapping >> Decision.Proceed) value

@@ -5,15 +5,24 @@ effect of each operation. Use the [generated CLI reference](cli.md) for verbs an
 `claimcore describe case open` describes one operation offline; `claimcore describe --format json` returns
 the catalog entries, and `claimcore schema ENDPOINT request|response` shows a wire schema without credentials.
 
+## Protocol terms
+
+An operation's **subject** is CASE or AUTHORITY. A grant's **scope** is installation or case reach.
+Every tagged union uses **kind**. A case's **state** is ACTIVE, VOIDED or ERASED; active and voided
+states carry fields, while erased states carry no payload. A **record group** is registration,
+decision or payment. Case views and summaries retain top-level `caseReference` and `revision` even when erased.
+Full views carry business values in `state.fields`; summaries carry only `state.status` for active or voided cases.
+The [case guide](domain.md) explains the business meaning.
+
 ## HTTPS requests and replies
 
 Session bootstrap is GET; other endpoints use POST `/api/<endpoint>` with literal dots. API calls carry
 matching `ClaimCore-Contract`; cookie POSTs also carry antiforgery. A POST body is the input itself with
-`application/json`, bounded to 64 KiB. Frame wrappers belong to CLI stdin. Authentication and current ClaimCore grants are separate.
+`application/json`, bounded by [Contract Limits](../src/ClaimCore.Contract/Api/Limits.fs). Frame wrappers belong to CLI stdin. Authentication and current ClaimCore grants are separate.
 
-Case/authority input uses `scope: CASE|AUTHORITY` at operation.preview and operation.execute. HTTP reply bodies
+Case/authority input uses `kind: CASE|AUTHORITY` at operation.preview and operation.execute. HTTP reply bodies
 contain `outcome`; preview and execute also echo `operationId`. They have no CLI `endpoint` or `delivery` wrapper.
-Receipts share operation and ledger metadata, with case or authority details in the tagged `scope` object.
+Receipts share operation and ledger metadata, with case or authority details in the tagged `subject` object.
 
 | Operation | Outcomes |
 | --- | --- |
@@ -31,7 +40,7 @@ operation ID; receipts identify case/revision/act or authority target/act. Obser
 grant pages check the requested actor. Case lookup permits ASCII reference-case differences while preserving
 accepted spelling.
 
-Objects/tags are closed. Strict admission rejects malformed UTF-8/Unicode, duplicate decoded members, excessive
+Objects and `kind` discriminators are closed. Strict admission rejects malformed UTF-8/Unicode, duplicate decoded members, excessive
 bytes/depth, invalid technical IDs and unsafe numbers. Malformed business strings reach Application/Domain
 and return typed REJECTED guidance with HTTP 200. Structural errors remain host refusals. Diagnostics carry
 codes, targets, actions and limits, with no server prose.
@@ -44,8 +53,9 @@ Contract identity is SHA-256 of canonical derived OpenAPI. It identifies wire st
 changes leave it unchanged. The tracked contract artifacts are [openapi.json](../contracts/openapi.json),
 [client.ts](../contracts/client.ts), [catalog.json](../contracts/catalog.json) and
 [messages.ts](../contracts/messages.ts). The same generator
-also owns [the CLI reference](cli.md). Catalog bodies define operations once; paths, branches, flags and
-synopses are derived from them.
+also owns [the CLI reference](cli.md). Endpoint input codecs define request structure; the catalog derives
+paths and tagged branches from those schemas. Typed annotations supply operands, defaults, switches and
+prefill details, from which CLI flags and synopses are derived.
 [Development](development.md#generated-contracts-and-boundary-verification) explains regeneration and checks.
 
 Pagination independently authorizes each page. Follow non-null nextCursor even after a short page; null ends

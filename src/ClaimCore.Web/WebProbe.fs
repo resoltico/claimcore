@@ -1,5 +1,6 @@
 namespace ClaimCore.Web
 
+open ClaimCore.HostSecurity
 open ClaimCore.Contract
 open ClaimCore.Contract.Protocol
 

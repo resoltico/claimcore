@@ -1,5 +1,7 @@
 module internal ClaimCore.WebTests.OidcHostFixture
 
+open ClaimCore.Contract
+open ClaimCore.Application
 open ClaimCore.TestSupport
 
 open System
@@ -84,8 +86,14 @@ let private authenticationRoutes (application: WebApplication) configuration =
     )
     |> ignore
 
-type Host(configuration: OidcConfiguration, root: X509Certificate2, forActor, stage: string -> unit)
-    =
+type Host
+    (
+        configuration: OidcConfiguration,
+        root: X509Certificate2,
+        forActor,
+        stage: string -> unit,
+        ?handlers: ActorEndpoint -> AnyHandler
+    ) =
     let assets = Directory.CreateTempSubdirectory("claimcore-oidc-host-").FullName
 
     let builder =
@@ -135,6 +143,7 @@ type Host(configuration: OidcConfiguration, root: X509Certificate2, forActor, st
         HostRoutes.map
             assets
             web
+            (defaultArg handlers ClaimCore.Application.Handlers.forActor)
             (fun principal action ->
                 task { let! value = action (forActor principal) in return Some value })
             application

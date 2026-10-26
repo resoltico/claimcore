@@ -6,12 +6,13 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Cli
 
 let private warningCases =
     [
-        "Synthetic\u180EName", [ "U+180E" ]
-        "Synthetic👩\u200D💻", [ "U+200D" ]
+        "Synthetic᠎Name", [ "U+180E" ]
+        "Synthetic👩‍💻", [ "U+200D" ]
         "Synthetic\U000E0001Name", [ "U+E0001" ]
         "Synthetic\U000E0020Name", [ "U+E0020" ]
     ]
@@ -23,7 +24,7 @@ let private scalarWarnings () =
         Expect.isFalse actual.Truncated "A single distinct warning is complete"
 
 let private ordinaryText () =
-    for value in [ "Synthetic Name"; "Synthe\u0301tic"; "Synthetic\uE000Name"; "Synthetic😀👩💻" ] do
+    for value in [ "Synthetic Name"; "Synthétic"; "SyntheticName"; "Synthetic😀👩💻" ] do
         let actual = TextDisplay.warning value
 
         Expect.isEmpty
@@ -33,7 +34,7 @@ let private ordinaryText () =
         Expect.isFalse actual.Truncated "No warning does not imply truncation"
 
 let private warningBudget () =
-    let eight = "\u180E\u200B\u200C\u200D\u2060\u2061\u2062\u2063"
+    let eight = "᠎​‌‍⁠⁡⁢⁣"
 
     let expected =
         [
@@ -55,7 +56,7 @@ let private warningBudget () =
         "Duplicates preserve the first eight distinct points in scalar order"
 
     Expect.isFalse exact.Truncated "Eight distinct points fit, even with repeated occurrences"
-    let over = TextDisplay.warning (eight + "\u2064" + eight)
+    let over = TextDisplay.warning (eight + "⁤" + eight)
 
     Expect.equal
         over.CodePoints
@@ -63,7 +64,7 @@ let private warningBudget () =
         "The ninth distinct point is outside the bounded annotation"
 
     Expect.isTrue over.Truncated "A ninth distinct point marks truncation"
-    let repeated = TextDisplay.warning (String.replicate 12 "\u180E")
+    let repeated = TextDisplay.warning (String.replicate 12 "᠎")
     Expect.equal repeated.CodePoints [ "U+180E" ] "Repeated invisible points consume one slot"
     Expect.isFalse repeated.Truncated "Duplicate occurrences do not cause truncation"
 
@@ -90,19 +91,30 @@ let private currentFields root =
     memberPath [ "outcome"; "data"; "state"; "fields"; "registration" ] root
 
 let private reviewFields side root =
-    memberPath [ "outcome"; "data"; "review"; side; "state"; "fields"; "registration" ] root
+    memberPath
+        [
+            "outcome"
+            "data"
+            "review"
+            "subject"
+            side
+            "state"
+            "fields"
+            "registration"
+        ]
+        root
 
 let private historyFields root =
     let entry =
         (memberPath [ "outcome"; "data"; "entries" ] root).AsArray()[0] |> nonNull
 
-    memberPath [ "receipt"; "scope"; "snapshot"; "view"; "fields"; "registration" ] entry
+    memberPath [ "receipt"; "subject"; "snapshot"; "view"; "fields"; "registration" ] entry
 
 let private annotated language value points =
     let annotation =
         MessageCatalogs.render
             language
-            "ui.characterWarning"
+            "label.characterWarning"
             (Map.ofList [ "characters", String.concat ", " points ])
 
     value + " [" + annotation + "]"
@@ -122,14 +134,18 @@ let private rendered exampleName customize verify =
             Endpoint = Some endpoint
             OperationId = None
             Delivery = DeliveryState.Delivered
-            Result = FrameResult.Reply value
+            Result =
+                FrameResult.Reply(
+                    TypedReply.read (Api.tryFind endpoint |> Option.get) value
+                    |> Result.defaultWith (fun _ -> failtest "Frozen DTO")
+                )
         }
 
     let bytes = Frames.encode frame
     let original = Array.copy bytes
 
     for language in LocalizationPolicy.languages do
-        let text = TextReply.bytes language bytes |> Encoding.UTF8.GetString
+        let text = TextReply.bytes language frame |> Encoding.UTF8.GetString
         verify language text
         Expect.isTrue (bytes = original) "Human annotations never mutate the structured reply bytes"
 
@@ -151,8 +167,8 @@ let private currentWarnings () =
                     "Current fields retain the value and show its localized scalar warning")
 
 let private previewWarnings () =
-    let before = "Synthetic\u180EBefore"
-    let after = "Synthetic👩\u200D💻After"
+    let before = "Synthetic᠎Before"
+    let after = "Synthetic👩‍💻After"
 
     rendered
         "review-all-fields"
@@ -183,7 +199,7 @@ let private fullHistoryWarnings () =
                     "Full history retains the accepted value and localized warning")
 
 let private humanBudgetAndOrdinaryControl () =
-    let values = "Synthetic\u180E\u200B\u200C\u200D\u2060\u2061\u2062\u2063\u2064"
+    let values = "Synthetic᠎​‌‍⁠⁡⁢⁣⁤"
 
     let points =
         [
@@ -210,7 +226,7 @@ let private humanBudgetAndOrdinaryControl () =
                 (text.Contains("U+2064", System.StringComparison.Ordinal))
                 "Ninth code-point identity is outside the visible annotation budget")
 
-    for value in [ "Synthetic Name"; "Synthe\u0301tic"; "Synthetic\uE000Name"; "Synthetic😀👩💻" ] do
+    for value in [ "Synthetic Name"; "Synthétic"; "SyntheticName"; "Synthetic😀👩💻" ] do
         rendered
             "case.get-response-0"
             (fun root -> (currentFields root)["claimantName"] <- JsonValue.Create value)

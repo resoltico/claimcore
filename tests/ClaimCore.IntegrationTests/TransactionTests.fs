@@ -89,7 +89,7 @@ let private waiter (database: PostgresFixture.Database) settings =
             database.Fixture.Owner,
             id 20,
             "synthetic-timeout",
-            (fun _ -> LedgerDecision.Refuse Refusal.ResourceUnavailable),
+            (fun _ -> Decision.Refuse Refusal.ResourceUnavailable),
             token
         )
 
@@ -101,7 +101,7 @@ let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandle
              Actor = ({ Actor = Some _ } as authority)
              Case = Some {
                              Snapshot = {
-                                            View = ClaimCore.Contract.CaseView.Live(fields, _)
+                                            State = (ClaimCore.Contract.CaseState.Active(fields) | CaseState.Voided(fields))
                                         }
                          }
          } ->
@@ -127,16 +127,17 @@ let tests =
                         let tasks =
                             [|
                                 for index in 1..20 ->
-                                    actor.Execute(
-                                        OperationInput.Case(
+                                    (Handlers.call
+                                        Api.operationExecute
+                                        actor
+                                        (OperationInput.Case(
                                             request
                                                 (100 + index)
                                                 ($"synthetic-{index}")
                                                 0L
                                                 (ClaimCore.Contract.CaseAct.Open registration)
-                                        ),
-                                        token
-                                    )
+                                        ))
+                                        (token))
                             |]
 
                         let! results = Task.WhenAll tasks
@@ -211,7 +212,7 @@ let tests =
 
                         Expect.equal
                             recovered
-                            (Ok(LedgerWriteResult.Refused Refusal.ResourceUnavailable))
+                            (Ok(Decision.Refuse Refusal.ResourceUnavailable))
                             "Next writer proceeds"
 
                         let! head = Verification.verify database.OwnerSource None token
@@ -221,7 +222,9 @@ let tests =
                             3L
                             "Neither waiter wrote"
 
-                        let! _ = actor.Get({ CaseReference = "absent" }, token)
+                        let! _ =
+                            (Handlers.call Api.caseGet actor ({ CaseReference = "absent" }) (token))
+
                         return ()
                     }))
             testCaseAsync
@@ -318,7 +321,12 @@ let tests =
                                 0L
                                 (ClaimCore.Contract.CaseAct.Open registration)
 
-                        let! failed = actor.Execute(OperationInput.Case operation, token)
+                        let! failed =
+                            (Handlers.call
+                                Api.operationExecute
+                                actor
+                                (OperationInput.Case operation)
+                                (token))
 
                         Expect.equal
                             failed.Outcome
@@ -333,7 +341,14 @@ let tests =
                             "Failed commit did not append"
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
-                        let! retry = actor.Execute(OperationInput.Case operation, token)
+
+                        let! retry =
+                            (Handlers.call
+                                Api.operationExecute
+                                actor
+                                (OperationInput.Case operation)
+                                (token))
+
                         accepted retry |> ignore
                     }))
             testCaseAsync
@@ -341,7 +356,7 @@ let tests =
                 (run (fun database ->
                     task {
                         let insert =
-                            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,scope,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce) VALUES (2,decode(repeat('00',32),'hex'),decode(repeat('11',32),'hex'),3,'AUTHORITY','REGISTER','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001',clock_timestamp(),'80000000-0000-4000-8000-000000000001',decode(repeat('00',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('00',32),'hex'))"
+                            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce) VALUES (2,decode(repeat('00',32),'hex'),decode(repeat('11',32),'hex'),1,'AUTHORITY','REGISTER','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001',clock_timestamp(),'80000000-0000-4000-8000-000000000001',decode(repeat('00',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('00',32),'hex'))"
 
                         use! connection = database.RuntimeSource.OpenConnectionAsync()
 
@@ -372,16 +387,17 @@ let tests =
                         let! actor = caseWorker database.Fixture
 
                         let! opened =
-                            actor.Execute(
-                                OperationInput.Case(
+                            (Handlers.call
+                                Api.operationExecute
+                                actor
+                                (OperationInput.Case(
                                     request
                                         20
                                         "synthetic-snapshot"
                                         0L
                                         (ClaimCore.Contract.CaseAct.Open registration)
-                                ),
-                                token
-                            )
+                                ))
+                                (token))
 
                         accepted opened |> ignore
                         use! holder = database.OwnerSource.OpenConnectionAsync()

@@ -44,7 +44,7 @@ let private formatBoundaries () =
 
 let private admissionInsideFormat () =
     Expect.isLessThanOrEqual
-        (4 * TextAdmission.MaximumCharacters)
+        (4 * Admission.MaximumCharacters)
         Formats.MaximumFreeTextBytes
         "Every admitted scalar sequence fits the permanent byte bound"
 

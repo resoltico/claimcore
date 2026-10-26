@@ -11,7 +11,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Web
-open ClaimCore.TestSupport.FacadeStub
+open ClaimCore.TestSupport.HandlerStub
 open ClaimCore.TestSupport.TestServerFixture
 
 let private lines (text: string) =
@@ -40,7 +40,7 @@ let private canaryLog () =
 
         Expect.isFalse (host.Log.Contains canary) "No case reference"
         host.ClearLog()
-        host.Facade.Error <- Some(InvalidOperationException canary)
+        host.HandlerStub.Error <- Some(InvalidOperationException canary)
         let! status, _ = host.Call("case.get", input, token)
         Expect.equal status 500 "Unexpected failure"
         Expect.isFalse (host.Log.Contains canary) "No body or exception message"
@@ -81,8 +81,8 @@ let private actorIdentity () =
                 ExecuteResult.AlreadyAccepted(receipt operationId "WEB-001"), false
             ] do
             host.ClearLog()
-            host.Facade.Execute <- (fun _ -> Task.FromResult outcome)
-            let! status, _ = host.Call(endpoint.Id, input, token)
+            host.HandlerStub.Execute <- (fun _ -> Task.FromResult outcome)
+            let! status, _ = host.Call(endpoint.Token, input, token)
             Expect.equal status 200 "Mutation"
             use entry = JsonDocument.Parse((lines host.Log)[0])
 

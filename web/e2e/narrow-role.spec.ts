@@ -27,7 +27,7 @@ const expectContextAccess = async (page: Page) => {
   });
   expect(definition.status).toBe(200);
   expect(definition.payload).toMatchObject({
-    outcome: { tag: "SUCCEEDED" },
+    outcome: { kind: "SUCCEEDED" },
   });
   expect(token.length).toBeGreaterThan(0);
 };

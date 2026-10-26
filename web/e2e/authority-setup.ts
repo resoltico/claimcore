@@ -62,11 +62,11 @@ export const applyAuthority = async (page: Page, body: RequestByEndpoint["operat
       throw new Error("Synthetic authority response is invalid.");
     }
     const { outcome } = reply.payload;
-    await progress(`authority-execute-${outcome.tag.toLowerCase()}`);
-    if (outcome.tag === "ACCEPTED" || outcome.tag === "ALREADY_ACCEPTED") {
+    await progress(`authority-execute-${outcome.kind.toLowerCase()}`);
+    if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
       return;
     }
-    if (outcome.tag !== "OUTCOME_UNKNOWN") {
+    if (outcome.kind !== "OUTCOME_UNKNOWN") {
       throw new Error("Synthetic authority action was refused.");
     }
   }

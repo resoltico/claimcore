@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.HostTransportTests
 
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 open System
@@ -12,12 +13,12 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Web
-open ClaimCore.TestSupport.FacadeStub
+open ClaimCore.TestSupport.HandlerStub
 open ClaimCore.TestSupport.TestServerFixture
 
 let private authorityBody =
     Encoding.UTF8.GetBytes(
-        $"""{{"scope":"AUTHORITY","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER"}}}}"""
+        $"""{{"kind":"AUTHORITY","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER"}}}}"""
     )
 
 let private body name =
@@ -90,7 +91,7 @@ let private catalogueRoutes () =
                 actorTarget (Api.id endpoint) response
 
             Expect.equal
-                (host.Facade.Calls |> List.sort)
+                (host.HandlerStub.Calls |> List.sort)
                 (endpoints |> List.map Api.id |> List.sort)
                 "Every core endpoint exactly once"
 
@@ -135,11 +136,11 @@ let private handshakeRefusals () =
                 )
 
             Expect.equal status 409 "Missing header"
-            Expect.isEmpty host.Facade.Calls "No factory/core dispatch on mismatch"
-            Expect.isNone host.Facade.Principal "No actor factory on mismatch"
+            Expect.isEmpty host.HandlerStub.Calls "No factory/core dispatch on mismatch"
+            Expect.isNone host.HandlerStub.Principal "No actor factory on mismatch"
             let! status, _ = host.Call("operation.execute", body "operation.execute", token)
             Expect.equal status 200 "Matching header"
-            Expect.equal host.Facade.Calls [ "operation.execute" ] "One matching dispatch"
+            Expect.equal host.HandlerStub.Calls [ "operation.execute" ] "One matching dispatch"
         })
 
 let private admissionRefusals () =
@@ -169,7 +170,7 @@ let private admissionRefusals () =
                 host.Send(HttpMethod.Post, "/api/unsupported.endpoint", Some [||], [])
 
             Expect.equal status 404 "Absent endpoint"
-            Expect.isEmpty host.Facade.Calls "Refusing guards never call core"
+            Expect.isEmpty host.HandlerStub.Calls "Refusing guards never call core"
         })
 
 let private outcomes () =
@@ -187,7 +188,7 @@ let private outcomes () =
                 ]
 
             for value, tag in values do
-                host.Facade.Execute <-
+                host.HandlerStub.Execute <-
                     (fun (_, ct) ->
                         Expect.equal
                             ct
@@ -211,7 +212,7 @@ let private outcomes () =
                     "Every outcome, including refusal, echoes admitted request identity"
 
                 Expect.equal
-                    (payload.RootElement.GetProperty("outcome").GetProperty("tag").GetString())
+                    (payload.RootElement.GetProperty("outcome").GetProperty("kind").GetString())
                     tag
                     "Outcome identity"
         })
@@ -219,7 +220,7 @@ let private outcomes () =
 let private authorityCancellation () =
     loggedIn true (fun host token ->
         task {
-            host.Facade.ExecuteAuthority <-
+            host.HandlerStub.ExecuteAuthority <-
                 fun (request, ct) ->
                     Expect.equal
                         ct
@@ -260,7 +261,7 @@ let private malformedWire () =
 
                 Expect.equal status 400 "Permanent malformed format refuses before dispatch"
 
-            Expect.isEmpty host.Facade.Calls "Malformed wire never reaches Application"
+            Expect.isEmpty host.HandlerStub.Calls "Malformed wire never reaches Application"
         })
 
 let private businessFormatRefusals () =
@@ -309,7 +310,7 @@ let private readiness () =
             host.Send(HttpMethod.Post, "/health/ready", None, []).GetAwaiter().GetResult()
 
         Expect.equal actual 405 "Readiness is GET only"
-        Expect.isEmpty host.Facade.Calls "Health has no actor facade"
+        Expect.isEmpty host.HandlerStub.Calls "Health has no actor facade"
 
 let private authorityPreview () =
     task {
@@ -352,7 +353,7 @@ let private completionFailure () =
                     Position = { position with EntryHash = "invalid" }
                 }
 
-            host.Facade.Execute <- fun _ -> Task.FromResult(ExecuteResult.Accepted invalid)
+            host.HandlerStub.Execute <- fun _ -> Task.FromResult(ExecuteResult.Accepted invalid)
 
             let! status, response =
                 host.Call("operation.execute", body "operation.execute", token)
@@ -368,7 +369,7 @@ let private completionFailure () =
 let private closedAdmission () =
     loggedIn true (fun host token ->
         task {
-            host.Facade.AdmissionOpen <- false
+            host.HandlerStub.AdmissionOpen <- false
 
             for endpoint in [ "context"; "operation.preview"; "operation.execute" ] do
                 let! status, response = host.Call(endpoint, body endpoint, token)
@@ -377,7 +378,7 @@ let private closedAdmission () =
                 let outcome = document.RootElement.GetProperty("outcome")
 
                 Expect.equal
-                    (outcome.GetProperty("tag").GetString())
+                    (outcome.GetProperty("kind").GetString())
                     "FAILED"
                     "Definite refusal to start"
 
@@ -392,22 +393,9 @@ let private closedAdmission () =
                         operationId
                         "Unavailable reply retains the original ID"
 
-            Expect.isNone host.Facade.Principal "Denied work never invokes the actor factory"
-            Expect.isEmpty host.Facade.Calls "No core call after admission closes"
+            Expect.isNone host.HandlerStub.Principal "Denied work never invokes the actor factory"
+            Expect.isEmpty host.HandlerStub.Calls "No core call after admission closes"
         })
-
-let private bindingInventory () =
-    let ids =
-        Api.all
-        |> List.map Api.id
-        |> List.filter (fun id -> id <> "session" && id <> "session.logout")
-
-    ClaimCore.Web.Composition.Dispatch.validate ids
-
-    for changed in [ List.tail ids; ids @ [ List.head ids ]; ids @ [ "unbound.synthetic" ] ] do
-        Expect.throwsT<InvalidOperationException>
-            (fun () -> ClaimCore.Web.Composition.Dispatch.validate changed)
-            "Missing duplicate and extra handlers must fail startup"
 
 let private principalAdmission () =
     task {
@@ -420,7 +408,7 @@ let private principalAdmission () =
         let target kind issuer subject =
             System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
                 {|
-                    scope = "AUTHORITY"
+                    kind = "AUTHORITY"
                     operationId = operationId
                     target =
                         {|
@@ -482,15 +470,12 @@ let tests =
             testCase
                 "business scalar formats reject through real Application after HTTP dispatch"
                 businessFormatRefusals
-            testCase "all registered endpoints use the registry and typed facade" catalogueRoutes
+            testCase "all registered endpoints use the registry and typed handlers" catalogueRoutes
             testCase "authority preview reaches the shared core without recording" authorityPreview
             testCase "core completion precedes response encoding failure" completionFailure
             testCase
                 "closed admission preserves typed read preview and execute failures"
                 closedAdmission
-            testCase
-                "dispatch bindings reject missing duplicate and extra handlers"
-                bindingInventory
             testCase
                 "matching contract dispatches; missing and different contracts never dispatch"
                 handshakeRefusals

@@ -13,8 +13,8 @@ open ClaimCore.Postgres
 open Npgsql
 open AdministrationProcess
 
-let private tag (value: JsonElement) =
-    value.GetProperty("tag").GetString() |> Option.ofObj |> Option.get
+let private kind (value: JsonElement) =
+    value.GetProperty("kind").GetString() |> Option.ofObj |> Option.get
 
 let private owner operationId subject =
     JsonSerializer.Serialize
@@ -41,13 +41,13 @@ let private discovery binary connection principal =
                 invoke binary (connection + ".absent") (principal + ".absent") [ "version" ] 0
 
             let! refusal = invoke binary connection principal [ "unsupported.synthetic" ] 2
-            Expect.equal (tag refusal) "REFUSED" "Unsupported command"
+            Expect.equal (kind refusal) "REJECTED" "Unsupported command"
     }
 
 let private initialize binary connection principal =
     task {
         let! missing = invoke binary connection principal [ "migrate" ] 2
-        Expect.equal (tag missing) "REFUSED" "Removed command refuses"
+        Expect.equal (kind missing) "REJECTED" "Removed command refuses"
         let! _ = invoke binary connection principal [ "head" ] 2
         let! _ = invoke binary connection principal [ "verify" ] 2
         let! _ = invoke binary connection principal [ "initialize"; "UTC" ] 2
@@ -83,13 +83,13 @@ let private provision binary connection principal =
             ] do
             File.WriteAllText(principal, malformed)
             let! refused = invoke binary connection principal [ "provision-owner" ] 2
-            Expect.equal (tag refused) "REFUSED" "Invalid owner input is refused before bootstrap"
+            Expect.equal (kind refused) "REJECTED" "Invalid owner input is refused before bootstrap"
 
         File.WriteAllText(principal, original)
         let! first = invoke binary connection principal [ "provision-owner" ] 0
-        Expect.equal (tag first) "ACCEPTED" "First human owner"
+        Expect.equal (kind first) "ACCEPTED" "First human owner"
         let! repeated = invoke binary connection principal [ "provision-owner" ] 0
-        Expect.equal (tag repeated) "ALREADY_ACCEPTED" "Exact repeat"
+        Expect.equal (kind repeated) "ALREADY_ACCEPTED" "Exact repeat"
 
         Expect.equal
             (first.GetProperty("position").GetRawText())
@@ -100,7 +100,7 @@ let private provision binary connection principal =
             [ owner (Guid.NewGuid()) "other"; original.Replace("synthetic-owner", "other") ] do
             File.WriteAllText(principal, malformed)
             let! refused = invoke binary connection principal [ "provision-owner" ] 2
-            Expect.equal (tag refused) "REFUSED" "Invalid or replacement owner refused"
+            Expect.equal (kind refused) "REJECTED" "Invalid or replacement owner refused"
 
         File.WriteAllText(principal, original)
     }
@@ -116,7 +116,7 @@ let private checkpoints binary connection principal =
                 .GetInt64()
                 .ToString(Globalization.CultureInfo.InvariantCulture))
             + ":"
-            + (position.GetProperty("hash").GetString() |> nonNull)
+            + (position.GetProperty("entryHash").GetString() |> nonNull)
 
         for _ in 1..2 do
             let! verified =
@@ -150,7 +150,7 @@ let private divergence binary connection principal (database: NpgsqlConnection) 
                 CancellationToken.None
 
         let! result = invoke binary connection principal [ "verify" ] 5
-        Expect.equal (tag result) "DIVERGED" "Divergence has its own public tag and exit"
+        Expect.equal (kind result) "DIVERGED" "Divergence has its own public kind and exit"
         Expect.equal (result.GetProperty("finding").GetString() |> nonNull) "HEAD" "Exact finding"
 
         Expect.equal
@@ -187,7 +187,7 @@ let private connectionGuards
         settings.Password <- "incorrect-synthetic-password"
         let path = privateText directory "bad-connection" settings.ConnectionString
         let! failed = invoke binary path principal [ "head" ] 3
-        Expect.equal (tag failed) "FAILED" "Authentication failure reveals no provider detail"
+        Expect.equal (kind failed) "FAILED" "Authentication failure reveals no provider detail"
         File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.GroupWrite)
         let! _ = invoke binary path principal [ "head" ] 2
         File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
@@ -233,7 +233,7 @@ let private lostCommit
         let! unknown = invoke binary proxyFile principal [ "initialize"; "Etc/UTC" ] 4
 
         Expect.equal
-            (tag unknown)
+            (kind unknown)
             "OUTCOME_UNKNOWN"
             "Landed commit with lost confirmation is uncertain"
 

@@ -32,19 +32,23 @@ export const corpusCases = (): CorpusCase[] =>
       value: row["value"],
     }));
   });
-const hasScope = (value: unknown, endpoint: EndpointId, scope: string): boolean => {
+const hasScope = (value: unknown, endpoint: EndpointId, subject: string): boolean => {
   if (!isObject(value) || !isObject(value["outcome"]) || !isObject(value["outcome"]["data"])) {
     return false;
   }
   const { data } = value["outcome"];
   if (endpoint === "operation.preview") {
-    return isObject(data["review"]) && data["review"]["scope"] === scope;
+    return (
+      isObject(data["review"]) &&
+      isObject(data["review"]["subject"]) &&
+      data["review"]["subject"]["kind"] === subject
+    );
   }
-  return isObject(data["scope"]) && data["scope"]["kind"] === scope;
+  return isObject(data["subject"]) && data["subject"]["kind"] === subject;
 };
 export const wireReply = <K extends EndpointId>(
   endpoint: K,
-  scope: "CASE" | "AUTHORITY" = "CASE",
+  subject: "CASE" | "AUTHORITY" = "CASE",
 ): ServiceResponse<K> => {
   const sample = corpusCases().find(
     (row) =>
@@ -52,7 +56,7 @@ export const wireReply = <K extends EndpointId>(
       row.direction === "response" &&
       row.valid &&
       (!["operation.execute", "operation.preview"].includes(endpoint) ||
-        hasScope(row.value, endpoint, scope)),
+        hasScope(row.value, endpoint, subject)),
   );
   if (sample === undefined || !isResponse(endpoint, sample.value)) {
     throw new Error("Admitted synthetic reply absent.");
@@ -62,10 +66,10 @@ export const wireReply = <K extends EndpointId>(
 export const wireResponse = (
   endpoint: EndpointId,
   status = 200,
-  scope: "CASE" | "AUTHORITY" = "CASE",
+  subject: "CASE" | "AUTHORITY" = "CASE",
 ): Response => {
-  const reply = wireReply(endpoint, scope);
-  return transportResponse(endpoint, reply.outcome.tag, reply.outcome.data, status);
+  const reply = wireReply(endpoint, subject);
+  return transportResponse(endpoint, reply.outcome.kind, reply.outcome.data, status);
 };
 export const hostCases = () => [
   {
@@ -78,16 +82,16 @@ export const hostCases = () => [
 ];
 export const historyVariants = () => {
   const { outcome } = wireReply("operation.execute");
-  if (outcome.tag !== "ACCEPTED" || outcome.data.scope.kind !== "CASE") {
+  if (outcome.kind !== "ACCEPTED" || outcome.data.subject.kind !== "CASE") {
     throw new Error("Case receipt example absent.");
   }
-  const receipt = { ...outcome.data, scope: outcome.data.scope };
+  const receipt = { ...outcome.data, subject: outcome.data.subject };
   const { operationId, position, recordedAt, recordedBy } = receipt;
-  const { revision, act } = receipt.scope;
+  const { revision, act } = receipt.subject;
   return {
-    full: { tag: "FULL" as const, receipt },
+    full: { kind: "FULL" as const, receipt },
     summary: {
-      tag: "SUMMARY" as const,
+      kind: "SUMMARY" as const,
       change: { operationId, position, revision, act, recordedAt, recordedBy },
     },
   };

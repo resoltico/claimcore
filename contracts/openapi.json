@@ -163,9 +163,9 @@
         }
       }
     },
-    "/api/context": {
+    "/api/operation.preview": {
       "post": {
-        "operationId": "context",
+        "operationId": "operation.preview",
         "x-claimcore-effect": "READ_ONLY",
         "parameters": [
           {
@@ -205,7 +205,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContextReply"
+                  "$ref": "#/components/schemas/PreviewReply"
                 }
               }
             }
@@ -246,7 +246,97 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Empty"
+                "$ref": "#/components/schemas/OperationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operation.execute": {
+      "post": {
+        "operationId": "operation.execute",
+        "x-claimcore-effect": "LEDGER_EXECUTION",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecuteReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationInput"
               }
             }
           }
@@ -523,9 +613,9 @@
         }
       }
     },
-    "/api/operation.preview": {
+    "/api/operation.observe": {
       "post": {
-        "operationId": "operation.preview",
+        "operationId": "operation.observe",
         "x-claimcore-effect": "READ_ONLY",
         "parameters": [
           {
@@ -565,7 +655,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreviewReply"
+                  "$ref": "#/components/schemas/ObservationReply"
                 }
               }
             }
@@ -606,97 +696,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OperationInput"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/operation.execute": {
-      "post": {
-        "operationId": "operation.execute",
-        "x-claimcore-effect": "LEDGER_EXECUTION",
-        "parameters": [
-          {
-            "name": "ClaimCore-Contract",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
-              "minLength": 64,
-              "maxLength": 64
-            }
-          },
-          {
-            "name": "X-ClaimCore-Antiforgery",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 2147483647
-            }
-          }
-        ],
-        "security": [
-          {
-            "cookieAuth": [],
-            "antiforgery": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "HTTP 200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExecuteReply"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/Host400"
-          },
-          "401": {
-            "$ref": "#/components/responses/Host401"
-          },
-          "403": {
-            "$ref": "#/components/responses/Host403"
-          },
-          "404": {
-            "$ref": "#/components/responses/Host404"
-          },
-          "405": {
-            "$ref": "#/components/responses/Host405"
-          },
-          "409": {
-            "$ref": "#/components/responses/Host409"
-          },
-          "413": {
-            "$ref": "#/components/responses/Host413"
-          },
-          "415": {
-            "$ref": "#/components/responses/Host415"
-          },
-          "429": {
-            "$ref": "#/components/responses/Host429"
-          },
-          "500": {
-            "$ref": "#/components/responses/Host500"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OperationInput"
+                "$ref": "#/components/schemas/ObserveRequest"
               }
             }
           }
@@ -787,96 +787,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ResolveRequest"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/operation.observe": {
-      "post": {
-        "operationId": "operation.observe",
-        "x-claimcore-effect": "READ_ONLY",
-        "parameters": [
-          {
-            "name": "ClaimCore-Contract",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
-              "minLength": 64,
-              "maxLength": 64
-            }
-          },
-          {
-            "name": "X-ClaimCore-Antiforgery",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 2147483647
-            }
-          }
-        ],
-        "security": [
-          {
-            "cookieAuth": [],
-            "antiforgery": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "HTTP 200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ObservationReply"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/Host400"
-          },
-          "401": {
-            "$ref": "#/components/responses/Host401"
-          },
-          "403": {
-            "$ref": "#/components/responses/Host403"
-          },
-          "404": {
-            "$ref": "#/components/responses/Host404"
-          },
-          "405": {
-            "$ref": "#/components/responses/Host405"
-          },
-          "409": {
-            "$ref": "#/components/responses/Host409"
-          },
-          "413": {
-            "$ref": "#/components/responses/Host413"
-          },
-          "415": {
-            "$ref": "#/components/responses/Host415"
-          },
-          "429": {
-            "$ref": "#/components/responses/Host429"
-          },
-          "500": {
-            "$ref": "#/components/responses/Host500"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ObserveRequest"
               }
             }
           }
@@ -1057,6 +967,96 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/GrantsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/context": {
+      "post": {
+        "operationId": "context",
+        "x-claimcore-effect": "READ_ONLY",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
               }
             }
           }
@@ -1785,11 +1785,7 @@
         "additionalProperties": false,
         "properties": {
           "actorId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "principal": {
             "$ref": "#/components/schemas/Principal"
@@ -1859,7 +1855,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/ActorsReply.Outcome.SUCCEEDED",
             "REJECTED": "#/components/schemas/ActorsReply.Outcome.REJECTED",
@@ -1871,7 +1867,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -1879,7 +1875,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -1887,7 +1883,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -1895,7 +1891,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -1903,7 +1899,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "SUCCEEDED"
           },
           "data": {
@@ -1911,7 +1907,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -2099,41 +2095,6 @@
         },
         "required": [
           "role",
-          "scope"
-        ]
-      },
-      "AuthorityOperationReview": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "target": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ActorSummary"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "before": {
-            "$ref": "#/components/schemas/AuthorityState"
-          },
-          "after": {
-            "$ref": "#/components/schemas/AuthorityState"
-          },
-          "scope": {
-            "oneOf": [
-              {
-                "const": "AUTHORITY"
-              }
-            ]
-          }
-        },
-        "required": [
-          "target",
-          "before",
-          "after",
           "scope"
         ]
       },
@@ -2390,29 +2351,97 @@
       "CaseActOffer": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/OrdinaryCaseActOffer"
+            "$ref": "#/components/schemas/CaseActOffer.ACT"
           },
           {
-            "$ref": "#/components/schemas/CorrectionCaseActOffer"
+            "$ref": "#/components/schemas/CaseActOffer.CORRECT"
           }
         ],
         "discriminator": {
-          "propertyName": "act",
+          "propertyName": "kind",
           "mapping": {
-            "OPEN": "#/components/schemas/OrdinaryCaseActOffer",
-            "AMEND_REGISTRATION": "#/components/schemas/OrdinaryCaseActOffer",
-            "DECIDE": "#/components/schemas/OrdinaryCaseActOffer",
-            "WITHDRAW_DECISION": "#/components/schemas/OrdinaryCaseActOffer",
-            "RECORD_PAYMENT": "#/components/schemas/OrdinaryCaseActOffer",
-            "CLEAR_PAYMENT": "#/components/schemas/OrdinaryCaseActOffer",
-            "CLOSE": "#/components/schemas/OrdinaryCaseActOffer",
-            "REOPEN": "#/components/schemas/OrdinaryCaseActOffer",
-            "VOID": "#/components/schemas/OrdinaryCaseActOffer",
-            "REINSTATE": "#/components/schemas/OrdinaryCaseActOffer",
-            "ERASE": "#/components/schemas/OrdinaryCaseActOffer",
-            "CORRECT": "#/components/schemas/CorrectionCaseActOffer"
+            "ACT": "#/components/schemas/CaseActOffer.ACT",
+            "CORRECT": "#/components/schemas/CaseActOffer.CORRECT"
           }
         }
+      },
+      "CaseActOffer.ACT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACT"
+          },
+          "act": {
+            "oneOf": [
+              {
+                "const": "OPEN"
+              },
+              {
+                "const": "AMEND_REGISTRATION"
+              },
+              {
+                "const": "DECIDE"
+              },
+              {
+                "const": "WITHDRAW_DECISION"
+              },
+              {
+                "const": "RECORD_PAYMENT"
+              },
+              {
+                "const": "CLEAR_PAYMENT"
+              },
+              {
+                "const": "CLOSE"
+              },
+              {
+                "const": "REOPEN"
+              },
+              {
+                "const": "VOID"
+              },
+              {
+                "const": "REINSTATE"
+              },
+              {
+                "const": "ERASE"
+              }
+            ]
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "act",
+          "expectedRevision"
+        ]
+      },
+      "CaseActOffer.CORRECT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CORRECT"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "correction": {
+            "$ref": "#/components/schemas/CorrectionAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "expectedRevision",
+          "correction"
+        ]
       },
       "CaseAdvice": {
         "type": "object",
@@ -2630,7 +2659,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/CasePageReply.Outcome.SUCCEEDED",
             "REJECTED": "#/components/schemas/CasePageReply.Outcome.REJECTED",
@@ -2642,7 +2671,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -2650,7 +2679,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -2658,7 +2687,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -2666,7 +2695,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -2674,7 +2703,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "SUCCEEDED"
           },
           "data": {
@@ -2682,7 +2711,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -2711,7 +2740,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/CaseReadReply.Outcome.SUCCEEDED",
             "REJECTED": "#/components/schemas/CaseReadReply.Outcome.REJECTED",
@@ -2723,7 +2752,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -2731,7 +2760,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -2739,7 +2768,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -2747,7 +2776,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -2755,7 +2784,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "SUCCEEDED"
           },
           "data": {
@@ -2763,7 +2792,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -2772,11 +2801,7 @@
         "additionalProperties": false,
         "properties": {
           "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "position": {
             "$ref": "#/components/schemas/Position"
@@ -2789,14 +2814,10 @@
             "maxLength": 27
           },
           "recordedBy": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
-          "scope": {
-            "$ref": "#/components/schemas/CaseReceiptScope"
+          "subject": {
+            "$ref": "#/components/schemas/CaseReceiptSubject"
           }
         },
         "required": [
@@ -2804,23 +2825,23 @@
           "position",
           "recordedAt",
           "recordedBy",
-          "scope"
+          "subject"
         ]
       },
-      "CaseReceiptScope": {
+      "CaseReceiptSubject": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/CaseReceiptScope.CASE"
+            "$ref": "#/components/schemas/CaseReceiptSubject.CASE"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "CASE": "#/components/schemas/CaseReceiptScope.CASE"
+            "CASE": "#/components/schemas/CaseReceiptSubject.CASE"
           }
         }
       },
-      "CaseReceiptScope.CASE": {
+      "CaseReceiptSubject.CASE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2890,50 +2911,6 @@
           "snapshot"
         ]
       },
-      "CaseReview": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "before": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CaseSnapshot"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "after": {
-            "$ref": "#/components/schemas/CaseSnapshot"
-          },
-          "changes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FieldChange"
-            },
-            "minItems": 0,
-            "maxItems": 13
-          },
-          "context": {
-            "$ref": "#/components/schemas/RuntimeContext"
-          },
-          "scope": {
-            "oneOf": [
-              {
-                "const": "CASE"
-              }
-            ]
-          }
-        },
-        "required": [
-          "before",
-          "after",
-          "changes",
-          "context",
-          "scope"
-        ]
-      },
       "CaseSnapshot": {
         "type": "object",
         "additionalProperties": false,
@@ -2962,83 +2939,72 @@
       "CaseState": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/CaseState.LIVE"
+            "$ref": "#/components/schemas/CaseState.ACTIVE"
+          },
+          {
+            "$ref": "#/components/schemas/CaseState.VOIDED"
           },
           {
             "$ref": "#/components/schemas/CaseState.ERASED"
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
-            "LIVE": "#/components/schemas/CaseState.LIVE",
+            "ACTIVE": "#/components/schemas/CaseState.ACTIVE",
+            "VOIDED": "#/components/schemas/CaseState.VOIDED",
             "ERASED": "#/components/schemas/CaseState.ERASED"
           }
         }
       },
-      "CaseState.ERASED": {
+      "CaseState.ACTIVE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
-            "const": "ERASED"
-          }
-        },
-        "required": [
-          "tag"
-        ]
-      },
-      "CaseState.LIVE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "tag": {
-            "const": "LIVE"
-          },
-          "disposition": {
-            "oneOf": [
-              {
-                "const": "ACTIVE"
-              },
-              {
-                "const": "VOIDED"
-              }
-            ]
+          "kind": {
+            "const": "ACTIVE"
           },
           "fields": {
             "$ref": "#/components/schemas/CaseFields"
           }
         },
         "required": [
-          "tag",
-          "disposition",
+          "kind",
+          "fields"
+        ]
+      },
+      "CaseState.ERASED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ERASED"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "CaseState.VOIDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "VOIDED"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/CaseFields"
+          }
+        },
+        "required": [
+          "kind",
           "fields"
         ]
       },
       "CaseSummary": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/CaseSummary.LIVE"
-          },
-          {
-            "$ref": "#/components/schemas/CaseSummary.ERASED"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "state",
-          "mapping": {
-            "LIVE": "#/components/schemas/CaseSummary.LIVE",
-            "ERASED": "#/components/schemas/CaseSummary.ERASED"
-          }
-        }
-      },
-      "CaseSummary.ERASED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "state": {
-            "const": "ERASED"
-          },
           "caseReference": {
             "type": "string",
             "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
@@ -3049,31 +3015,44 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 9007199254740991
+          },
+          "state": {
+            "$ref": "#/components/schemas/CaseSummaryState"
           }
         },
         "required": [
-          "state",
           "caseReference",
-          "revision"
+          "revision",
+          "state"
         ]
       },
-      "CaseSummary.LIVE": {
+      "CaseSummaryState": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseSummaryState.ACTIVE"
+          },
+          {
+            "$ref": "#/components/schemas/CaseSummaryState.VOIDED"
+          },
+          {
+            "$ref": "#/components/schemas/CaseSummaryState.ERASED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ACTIVE": "#/components/schemas/CaseSummaryState.ACTIVE",
+            "VOIDED": "#/components/schemas/CaseSummaryState.VOIDED",
+            "ERASED": "#/components/schemas/CaseSummaryState.ERASED"
+          }
+        }
+      },
+      "CaseSummaryState.ACTIVE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "state": {
-            "const": "LIVE"
-          },
-          "caseReference": {
-            "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "revision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
+          "kind": {
+            "const": "ACTIVE"
           },
           "status": {
             "oneOf": [
@@ -3084,24 +3063,46 @@
                 "const": "CLOSED"
               }
             ]
+          }
+        },
+        "required": [
+          "kind",
+          "status"
+        ]
+      },
+      "CaseSummaryState.ERASED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ERASED"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "CaseSummaryState.VOIDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "VOIDED"
           },
-          "disposition": {
+          "status": {
             "oneOf": [
               {
-                "const": "ACTIVE"
+                "const": "OPENED"
               },
               {
-                "const": "VOIDED"
+                "const": "CLOSED"
               }
             ]
           }
         },
         "required": [
-          "state",
-          "caseReference",
-          "revision",
-          "status",
-          "disposition"
+          "kind",
+          "status"
         ]
       },
       "CaseView": {
@@ -3177,11 +3178,7 @@
         "additionalProperties": false,
         "properties": {
           "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "position": {
             "$ref": "#/components/schemas/Position"
@@ -3239,11 +3236,7 @@
             "maxLength": 27
           },
           "recordedBy": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           }
         },
         "required": [
@@ -3280,7 +3273,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/ContextReply.Outcome.SUCCEEDED",
             "REJECTED": "#/components/schemas/ContextReply.Outcome.REJECTED",
@@ -3292,7 +3285,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -3300,7 +3293,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -3308,7 +3301,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -3316,7 +3309,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -3324,7 +3317,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "SUCCEEDED"
           },
           "data": {
@@ -3332,7 +3325,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -3418,32 +3411,6 @@
           "payment"
         ]
       },
-      "CorrectionCaseActOffer": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "act": {
-            "oneOf": [
-              {
-                "const": "CORRECT"
-              }
-            ]
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "correction": {
-            "$ref": "#/components/schemas/CorrectionAdvice"
-          }
-        },
-        "required": [
-          "act",
-          "expectedRevision",
-          "correction"
-        ]
-      },
       "Decision": {
         "type": "object",
         "additionalProperties": false,
@@ -3477,7 +3444,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "mode",
+          "propertyName": "kind",
           "mapping": {
             "KEEP": "#/components/schemas/DecisionGroup.KEEP",
             "REPLACE": "#/components/schemas/DecisionGroup.REPLACE",
@@ -3489,31 +3456,31 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "mode": {
+          "kind": {
             "const": "CLEAR"
           }
         },
         "required": [
-          "mode"
+          "kind"
         ]
       },
       "DecisionGroup.KEEP": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "mode": {
+          "kind": {
             "const": "KEEP"
           }
         },
         "required": [
-          "mode"
+          "kind"
         ]
       },
       "DecisionGroup.REPLACE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "mode": {
+          "kind": {
             "const": "REPLACE"
           },
           "values": {
@@ -3521,7 +3488,7 @@
           }
         },
         "required": [
-          "mode",
+          "kind",
           "values"
         ]
       },
@@ -4289,11 +4256,7 @@
         "additionalProperties": false,
         "properties": {
           "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "outcome": {
             "$ref": "#/components/schemas/ExecuteResult"
@@ -4323,7 +4286,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "ACCEPTED": "#/components/schemas/ExecuteResult.ACCEPTED",
             "ALREADY_ACCEPTED": "#/components/schemas/ExecuteResult.ALREADY_ACCEPTED",
@@ -4337,7 +4300,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "ACCEPTED"
           },
           "data": {
@@ -4345,7 +4308,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -4353,7 +4316,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "ALREADY_ACCEPTED"
           },
           "data": {
@@ -4361,7 +4324,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -4369,7 +4332,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -4377,7 +4340,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -4385,7 +4348,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "OUTCOME_UNKNOWN"
           },
           "data": {
@@ -4393,7 +4356,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -4401,7 +4364,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -4409,7 +4372,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -4611,7 +4574,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/GrantsReply.Outcome.SUCCEEDED",
             "REJECTED": "#/components/schemas/GrantsReply.Outcome.REJECTED",
@@ -4623,7 +4586,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -4631,7 +4594,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -4639,7 +4602,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -4647,7 +4610,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -4655,7 +4618,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "SUCCEEDED"
           },
           "data": {
@@ -4663,7 +4626,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -4672,11 +4635,7 @@
         "additionalProperties": false,
         "properties": {
           "actorId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "cursor": {
             "type": "string",
@@ -4702,7 +4661,7 @@
               "type": "object",
               "additionalProperties": false,
               "properties": {
-                "tag": {
+                "kind": {
                   "oneOf": [
                     {
                       "const": "SUMMARY"
@@ -4714,7 +4673,7 @@
                 }
               },
               "required": [
-                "tag",
+                "kind",
                 "change"
               ]
             },
@@ -4727,7 +4686,7 @@
               "type": "object",
               "additionalProperties": false,
               "properties": {
-                "tag": {
+                "kind": {
                   "oneOf": [
                     {
                       "const": "SUMMARY"
@@ -4739,7 +4698,7 @@
                 }
               },
               "required": [
-                "tag",
+                "kind",
                 "change"
               ]
             },
@@ -4752,7 +4711,7 @@
               "type": "object",
               "additionalProperties": false,
               "properties": {
-                "tag": {
+                "kind": {
                   "oneOf": [
                     {
                       "const": "FULL"
@@ -4764,7 +4723,7 @@
                 }
               },
               "required": [
-                "tag",
+                "kind",
                 "receipt"
               ]
             },
@@ -4823,7 +4782,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HistoryReply.Outcome.SUCCEEDED",
             "REJECTED": "#/components/schemas/HistoryReply.Outcome.REJECTED",
@@ -4835,7 +4794,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -4843,7 +4802,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -4851,7 +4810,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -4859,7 +4818,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -4867,7 +4826,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "SUCCEEDED"
           },
           "data": {
@@ -4875,7 +4834,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5224,6 +5183,55 @@
           "expectedRevision"
         ]
       },
+      "LiveCase": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LiveCase.ACTIVE"
+          },
+          {
+            "$ref": "#/components/schemas/LiveCase.VOIDED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ACTIVE": "#/components/schemas/LiveCase.ACTIVE",
+            "VOIDED": "#/components/schemas/LiveCase.VOIDED"
+          }
+        }
+      },
+      "LiveCase.ACTIVE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACTIVE"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/CaseFields"
+          }
+        },
+        "required": [
+          "kind",
+          "fields"
+        ]
+      },
+      "LiveCase.VOIDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "VOIDED"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/CaseFields"
+          }
+        },
+        "required": [
+          "kind",
+          "fields"
+        ]
+      },
       "LogoutReply": {
         "type": "object",
         "additionalProperties": false,
@@ -5249,7 +5257,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/LogoutReply.Outcome.SUCCEEDED",
             "REJECTED": "#/components/schemas/LogoutReply.Outcome.REJECTED",
@@ -5261,7 +5269,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -5269,7 +5277,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5277,7 +5285,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -5285,7 +5293,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5293,7 +5301,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "SUCCEEDED"
           },
           "data": {
@@ -5301,7 +5309,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5330,7 +5338,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/ObservationReply.Outcome.SUCCEEDED",
             "REJECTED": "#/components/schemas/ObservationReply.Outcome.REJECTED",
@@ -5342,7 +5350,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -5350,7 +5358,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5358,7 +5366,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -5366,7 +5374,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5374,7 +5382,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "SUCCEEDED"
           },
           "data": {
@@ -5382,7 +5390,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5391,11 +5399,7 @@
         "additionalProperties": false,
         "properties": {
           "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           }
         },
         "required": [
@@ -5405,62 +5409,53 @@
       "OperationInput": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/OperationInput.Case"
+            "$ref": "#/components/schemas/OperationInput.CASE"
           },
           {
-            "$ref": "#/components/schemas/OperationInput.Authority"
+            "$ref": "#/components/schemas/OperationInput.AUTHORITY"
           }
         ],
         "discriminator": {
-          "propertyName": "scope",
+          "propertyName": "kind",
           "mapping": {
-            "CASE": "#/components/schemas/OperationInput.Case",
-            "AUTHORITY": "#/components/schemas/OperationInput.Authority"
+            "CASE": "#/components/schemas/OperationInput.CASE",
+            "AUTHORITY": "#/components/schemas/OperationInput.AUTHORITY"
           }
         }
       },
-      "OperationInput.Authority": {
+      "OperationInput.AUTHORITY": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "kind": {
+            "const": "AUTHORITY"
+          },
           "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "target": {
             "$ref": "#/components/schemas/Principal"
           },
           "act": {
             "$ref": "#/components/schemas/AuthorityAct"
-          },
-          "scope": {
-            "oneOf": [
-              {
-                "const": "AUTHORITY"
-              }
-            ]
           }
         },
         "required": [
+          "kind",
           "operationId",
           "target",
-          "act",
-          "scope"
+          "act"
         ]
       },
-      "OperationInput.Case": {
+      "OperationInput.CASE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "kind": {
+            "const": "CASE"
+          },
           "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "caseReference": {
             "type": "string"
@@ -5472,21 +5467,14 @@
           },
           "act": {
             "$ref": "#/components/schemas/CaseAct"
-          },
-          "scope": {
-            "oneOf": [
-              {
-                "const": "CASE"
-              }
-            ]
           }
         },
         "required": [
+          "kind",
           "operationId",
           "caseReference",
           "expectedRevision",
-          "act",
-          "scope"
+          "act"
         ]
       },
       "OperationReceipt": {
@@ -5494,11 +5482,7 @@
         "additionalProperties": false,
         "properties": {
           "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "position": {
             "$ref": "#/components/schemas/Position"
@@ -5511,14 +5495,10 @@
             "maxLength": 27
           },
           "recordedBy": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
-          "scope": {
-            "$ref": "#/components/schemas/ReceiptScope"
+          "subject": {
+            "$ref": "#/components/schemas/ReceiptSubject"
           }
         },
         "required": [
@@ -5526,76 +5506,19 @@
           "position",
           "recordedAt",
           "recordedBy",
-          "scope"
+          "subject"
         ]
       },
       "OperationReview": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/CaseReview"
-          },
-          {
-            "$ref": "#/components/schemas/AuthorityOperationReview"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "scope",
-          "mapping": {
-            "CASE": "#/components/schemas/CaseReview",
-            "AUTHORITY": "#/components/schemas/AuthorityOperationReview"
-          }
-        }
-      },
-      "OrdinaryCaseActOffer": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "act": {
-            "oneOf": [
-              {
-                "const": "OPEN"
-              },
-              {
-                "const": "AMEND_REGISTRATION"
-              },
-              {
-                "const": "DECIDE"
-              },
-              {
-                "const": "WITHDRAW_DECISION"
-              },
-              {
-                "const": "RECORD_PAYMENT"
-              },
-              {
-                "const": "CLEAR_PAYMENT"
-              },
-              {
-                "const": "CLOSE"
-              },
-              {
-                "const": "REOPEN"
-              },
-              {
-                "const": "VOID"
-              },
-              {
-                "const": "REINSTATE"
-              },
-              {
-                "const": "ERASE"
-              }
-            ]
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
+          "subject": {
+            "$ref": "#/components/schemas/ReviewSubject"
           }
         },
         "required": [
-          "act",
-          "expectedRevision"
+          "subject"
         ]
       },
       "PageRequest": {
@@ -5642,7 +5565,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "mode",
+          "propertyName": "kind",
           "mapping": {
             "KEEP": "#/components/schemas/PaymentGroup.KEEP",
             "REPLACE": "#/components/schemas/PaymentGroup.REPLACE",
@@ -5654,31 +5577,31 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "mode": {
+          "kind": {
             "const": "CLEAR"
           }
         },
         "required": [
-          "mode"
+          "kind"
         ]
       },
       "PaymentGroup.KEEP": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "mode": {
+          "kind": {
             "const": "KEEP"
           }
         },
         "required": [
-          "mode"
+          "kind"
         ]
       },
       "PaymentGroup.REPLACE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "mode": {
+          "kind": {
             "const": "REPLACE"
           },
           "values": {
@@ -5686,7 +5609,7 @@
           }
         },
         "required": [
-          "mode",
+          "kind",
           "values"
         ]
       },
@@ -5716,11 +5639,7 @@
         "additionalProperties": false,
         "properties": {
           "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "outcome": {
             "$ref": "#/components/schemas/PreviewResult"
@@ -5747,7 +5666,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "REVIEWED": "#/components/schemas/PreviewResult.REVIEWED",
             "ALREADY_ACCEPTED": "#/components/schemas/PreviewResult.ALREADY_ACCEPTED",
@@ -5760,7 +5679,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "ALREADY_ACCEPTED"
           },
           "data": {
@@ -5768,7 +5687,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5776,7 +5695,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -5784,7 +5703,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5792,7 +5711,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -5800,7 +5719,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5808,7 +5727,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REVIEWED"
           },
           "data": {
@@ -5825,7 +5744,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -5856,24 +5775,24 @@
           "subject"
         ]
       },
-      "ReceiptScope": {
+      "ReceiptSubject": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/ReceiptScope.CASE"
+            "$ref": "#/components/schemas/ReceiptSubject.CASE"
           },
           {
-            "$ref": "#/components/schemas/ReceiptScope.AUTHORITY"
+            "$ref": "#/components/schemas/ReceiptSubject.AUTHORITY"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "CASE": "#/components/schemas/ReceiptScope.CASE",
-            "AUTHORITY": "#/components/schemas/ReceiptScope.AUTHORITY"
+            "CASE": "#/components/schemas/ReceiptSubject.CASE",
+            "AUTHORITY": "#/components/schemas/ReceiptSubject.AUTHORITY"
           }
         }
       },
-      "ReceiptScope.AUTHORITY": {
+      "ReceiptSubject.AUTHORITY": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -5881,11 +5800,7 @@
             "const": "AUTHORITY"
           },
           "targetActorId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "act": {
             "oneOf": [
@@ -5916,7 +5831,7 @@
           "act"
         ]
       },
-      "ReceiptScope.CASE": {
+      "ReceiptSubject.CASE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6032,7 +5947,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "mode",
+          "propertyName": "kind",
           "mapping": {
             "KEEP": "#/components/schemas/RegistrationGroup.KEEP",
             "REPLACE": "#/components/schemas/RegistrationGroup.REPLACE"
@@ -6043,19 +5958,19 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "mode": {
+          "kind": {
             "const": "KEEP"
           }
         },
         "required": [
-          "mode"
+          "kind"
         ]
       },
       "RegistrationGroup.REPLACE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "mode": {
+          "kind": {
             "const": "REPLACE"
           },
           "values": {
@@ -6063,7 +5978,7 @@
           }
         },
         "required": [
-          "mode",
+          "kind",
           "values"
         ]
       },
@@ -6084,11 +5999,7 @@
         "additionalProperties": false,
         "properties": {
           "operationId": {
-            "type": "string",
-            "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           }
         },
         "required": [
@@ -6111,7 +6022,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "ACCEPTED": "#/components/schemas/ResolveResult.ACCEPTED",
             "NOT_ACCEPTED": "#/components/schemas/ResolveResult.NOT_ACCEPTED",
@@ -6124,7 +6035,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "ACCEPTED"
           },
           "data": {
@@ -6132,7 +6043,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -6140,7 +6051,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -6148,7 +6059,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -6156,7 +6067,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "NOT_ACCEPTED"
           },
           "data": {
@@ -6164,7 +6075,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -6172,7 +6083,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -6180,8 +6091,96 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
+        ]
+      },
+      "ReviewSubject": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ReviewSubject.CASE"
+          },
+          {
+            "$ref": "#/components/schemas/ReviewSubject.AUTHORITY"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "CASE": "#/components/schemas/ReviewSubject.CASE",
+            "AUTHORITY": "#/components/schemas/ReviewSubject.AUTHORITY"
+          }
+        }
+      },
+      "ReviewSubject.AUTHORITY": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "AUTHORITY"
+          },
+          "target": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "before": {
+            "$ref": "#/components/schemas/AuthorityState"
+          },
+          "after": {
+            "$ref": "#/components/schemas/AuthorityState"
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "before",
+          "after"
+        ]
+      },
+      "ReviewSubject.CASE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "$ref": "#/components/schemas/CaseSnapshot"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldChange"
+            },
+            "minItems": 0,
+            "maxItems": 13
+          },
+          "context": {
+            "$ref": "#/components/schemas/RuntimeContext"
+          }
+        },
+        "required": [
+          "kind",
+          "before",
+          "after",
+          "changes",
+          "context"
         ]
       },
       "RuntimeContext": {
@@ -6314,7 +6313,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "tag",
+          "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/SessionReply.Outcome.SUCCEEDED",
             "REJECTED": "#/components/schemas/SessionReply.Outcome.REJECTED",
@@ -6326,7 +6325,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "FAILED"
           },
           "data": {
@@ -6334,7 +6333,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -6342,7 +6341,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "REJECTED"
           },
           "data": {
@@ -6350,7 +6349,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -6358,7 +6357,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "tag": {
+          "kind": {
             "const": "SUCCEEDED"
           },
           "data": {
@@ -6366,7 +6365,7 @@
           }
         },
         "required": [
-          "tag",
+          "kind",
           "data"
         ]
       },
@@ -6383,7 +6382,7 @@
           }
         ],
         "discriminator": {
-          "propertyName": "disclosure",
+          "propertyName": "kind",
           "mapping": {
             "DISCLOSED": "#/components/schemas/SnapshotDisclosure.DISCLOSED",
             "WITHHELD": "#/components/schemas/SnapshotDisclosure.WITHHELD",
@@ -6395,15 +6394,15 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "disclosure": {
+          "kind": {
             "const": "DISCLOSED"
           },
           "view": {
-            "$ref": "#/components/schemas/CaseState.LIVE"
+            "$ref": "#/components/schemas/LiveCase"
           }
         },
         "required": [
-          "disclosure",
+          "kind",
           "view"
         ]
       },
@@ -6411,25 +6410,32 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "disclosure": {
+          "kind": {
             "const": "ERASED"
           }
         },
         "required": [
-          "disclosure"
+          "kind"
         ]
       },
       "SnapshotDisclosure.WITHHELD": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "disclosure": {
+          "kind": {
             "const": "WITHHELD"
           }
         },
         "required": [
-          "disclosure"
+          "kind"
         ]
+      },
+      "Uuid": {
+        "type": "string",
+        "pattern": "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "format": "uuid",
+        "minLength": 36,
+        "maxLength": 36
       }
     }
   }

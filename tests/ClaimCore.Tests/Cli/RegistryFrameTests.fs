@@ -6,6 +6,7 @@ open System
 open System.Text
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 
 let private id = Guid.Parse "10000000-0000-4000-8000-000000000001"
 let private other = Guid.Parse "10000000-0000-4000-8000-000000000002"
@@ -17,15 +18,7 @@ let private accepted value =
 let private bytes (text: string) = Encoding.UTF8.GetBytes text
 
 let private source =
-    """{
-  "endpoint": "operation.execute",
-  "input": {
-    "operationId": "10000000-0000-4000-8000-000000000001",
-    "scope": "AUTHORITY",
-    "target": { "kind": "HUMAN", "issuer": "https://issuer.example/", "subject": "synthetic" },
-    "act": { "kind": "REGISTER" }
-  }
-}"""
+    """{"endpoint":"operation.execute","input":{"kind":"AUTHORITY","operationId":"10000000-0000-4000-8000-000000000001","target":{"kind":"HUMAN","issuer":"https://issuer.example/","subject":"synthetic"},"act":{"kind":"REGISTER"}}}"""
 
 let private frozen () =
     let original = bytes source
@@ -60,10 +53,7 @@ let private frozen () =
 
 let private preparedEncoding () =
     let literal =
-        source.Replace("synthetic", "synthetic-e\u0301")
-        |> bytes
-        |> Frames.admit
-        |> accepted
+        source.Replace("synthetic", "synthetic-é") |> bytes |> Frames.admit |> accepted
 
     let escaped =
         source.Replace("synthetic", "synth\\u0065tic-\\u0065\\u0301")
@@ -83,7 +73,7 @@ let private preparedEncoding () =
 
     Expect.equal
         subject
-        (Some(JsonValue.String "synthetic-e\u0301"))
+        (Some(JsonValue.String "synthetic-é"))
         "Preparation preserves combining characters without Unicode normalization."
 
     let replay = Frames.encodeInvocation escaped |> Frames.admit |> accepted
@@ -169,7 +159,8 @@ let private results () =
         )
 
     let output =
-        ReplyCodecs.execute.Write
+        TypedReply.ofValue
+            Api.operationExecute
             {
 
                 ExecuteReply.OperationId = id
@@ -208,7 +199,8 @@ let private exits () =
         "Protocol refusal retains its exit."
 
     let output =
-        ReplyCodecs.execute.Write
+        TypedReply.ofValue
+            Api.operationExecute
             {
 
                 ExecuteReply.OperationId = id
@@ -232,18 +224,34 @@ let private refusingFrames () =
             (Frames.admit (bytes input))
             "Unknown, extra and duplicate frame members refuse."
 
-    let invalid = reply (FrameResult.Reply(JsonValue.Object [])) DeliveryState.Delivered
+    Expect.isError
+        (TypedReply.read (Api.forActor ActorEndpoint.Execute) (JsonValue.Object []))
+        "A malformed raw reply cannot construct a typed value."
+
+    let typed =
+        TypedReply.ofValue
+            Api.operationExecute
+            {
+                ExecuteReply.OperationId = id
+                Outcome = ExecuteResult.OutcomeUnknown
+            }
+
+    let invalid =
+        { reply (FrameResult.Reply typed) DeliveryState.Delivered with
+            Endpoint = Some Api.context.Token
+        }
 
     Expect.throws
         (fun () -> Frames.encode invalid |> ignore)
-        "A frame cannot carry an invalid endpoint reply."
+        "A frame cannot retag a typed value for another endpoint."
 
 let private operationEcho () =
     let prepared = Frames.admit (bytes source) |> accepted
 
     for actual, expected in [ id, true; other, false ] do
         let output =
-            ReplyCodecs.execute.Write
+            TypedReply.ofValue
+                Api.operationExecute
                 {
 
                     ExecuteReply.OperationId = actual
@@ -251,7 +259,10 @@ let private operationEcho () =
                 }
 
         Expect.equal
-            (Correlation.matches (Frames.endpoint prepared) (Frames.input prepared) output)
+            (Correlation.matches
+                (Frames.endpoint prepared)
+                (Frames.input prepared)
+                (TypedReply.json output))
             expected
             "Only the frozen operation ID settles a mutation."
 

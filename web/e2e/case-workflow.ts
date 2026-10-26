@@ -19,7 +19,7 @@ const fill = async (page: Page, values: Readonly<Record<string, string>>): Promi
 
 type SubmitOutcome = ServiceResponse<"operation.execute">["outcome"];
 
-const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.tag;
+const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.kind;
 
 export const recordReviewed = async (page: Page): Promise<void> => {
   const confirmed = page.getByRole("checkbox", { name: "I confirm these changes.", exact: true });
@@ -52,7 +52,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
     throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
   }
   const { outcome } = payload;
-  if (outcome.tag !== "ALREADY_ACCEPTED" && outcome.tag !== "ACCEPTED") {
+  if (outcome.kind !== "ALREADY_ACCEPTED" && outcome.kind !== "ACCEPTED") {
     throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
   await expect(page.getByRole("heading", { name: "Recorded change", exact: true })).toBeVisible();
@@ -97,7 +97,7 @@ export const reviewDraft = async (
     throw new Error("E2E_PREVIEW_PROTOCOL_FAILURE");
   }
   const { outcome } = payload;
-  if (outcome.tag !== "REVIEWED") {
+  if (outcome.kind !== "REVIEWED") {
     throw new Error("E2E_REVIEW_UNAVAILABLE");
   }
   const posted: unknown = response.request().postDataJSON();

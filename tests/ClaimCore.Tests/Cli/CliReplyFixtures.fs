@@ -2,6 +2,7 @@ module ClaimCore.Tests.CliReplyFixtures
 
 open System
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 let id = Guid.Parse "10000000-0000-4000-8000-000000000001"
@@ -53,7 +54,7 @@ let snapshot =
     {
         Reference = "x"
         Revision = 1L
-        View = CaseView.Live(fields, Disposition.Active)
+        State = CaseState.Active(fields)
     }
 
 let receipt =
@@ -64,8 +65,8 @@ let receipt =
                 Sequence = 1L
                 EntryHash = String.replicate 64 "0"
             }
-        Scope =
-            ReceiptScope.Case
+        Subject =
+            ReceiptSubject.Case
                 {
                     Reference = "x"
                     Revision = 1L

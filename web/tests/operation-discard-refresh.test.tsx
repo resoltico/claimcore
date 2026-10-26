@@ -7,7 +7,7 @@ import { OperationPanel, OperationDiscard } from "../src/views/operation/Operati
 const locked = vi.fn();
 const Workspace = ({ epoch }: { epoch: number }) => {
   const model = useOperation({
-    scope: "AUTHORITY",
+    subject: "AUTHORITY",
     kind: "REGISTER",
     current: null,
     token: "synthetic",
@@ -24,22 +24,44 @@ it("preserves an open discard warning when a readonly workspace epoch is replace
   const user = userEvent.setup();
   const view = render(<Workspace epoch={0} />);
   await user.type(
-    screen.getByRole("textbox", { name: "Subject or client ID" }),
+    screen.getByRole("textbox", {
+      name: "Subject or client ID",
+    }),
     "synthetic-authored",
   );
-  await user.click(screen.getByRole("button", { name: "Discard and leave" }));
+  await user.click(
+    screen.getByRole("button", {
+      name: "Discard and leave",
+    }),
+  );
   expect(screen.getByRole("dialog")).toBeVisible();
   view.rerender(<Workspace epoch={1} />);
   const dialog = screen.getByRole("dialog");
   expect(dialog).toBeVisible();
-  await user.click(within(dialog).getByRole("button", { name: "Keep editing" }));
-  expect(screen.getByRole("textbox", { name: "Subject or client ID" })).toHaveValue(
-    "synthetic-authored",
-  );
-  await user.click(screen.getByRole("button", { name: "Discard and leave" }));
   await user.click(
-    within(screen.getByRole("dialog")).getByRole("button", { name: "Discard and leave" }),
+    within(dialog).getByRole("button", {
+      name: "Keep editing",
+    }),
   );
-  expect(screen.getByRole("textbox", { name: "Subject or client ID" })).toHaveValue("");
+  expect(
+    screen.getByRole("textbox", {
+      name: "Subject or client ID",
+    }),
+  ).toHaveValue("synthetic-authored");
+  await user.click(
+    screen.getByRole("button", {
+      name: "Discard and leave",
+    }),
+  );
+  await user.click(
+    within(screen.getByRole("dialog")).getByRole("button", {
+      name: "Discard and leave",
+    }),
+  );
+  expect(
+    screen.getByRole("textbox", {
+      name: "Subject or client ID",
+    }),
+  ).toHaveValue("");
   expect(locked).toHaveBeenLastCalledWith(false);
 });

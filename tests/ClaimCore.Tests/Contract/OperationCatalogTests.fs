@@ -5,66 +5,9 @@ open System.IO
 open System.Text.Json
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.ContractGeneration
 open ClaimCore.TestSupport
-
-let rec private pathExists
-    (definitions: Map<string, Schema>)
-    (known: Map<string list, string>)
-    prefix
-    (path: string list)
-    schema
-    =
-    match schema with
-    | Schema.Ref name -> pathExists definitions known prefix path definitions[name]
-    | Schema.OneOf(cases, Some(tag, mapping)) ->
-        match Map.tryFind (prefix @ [ tag ]) known with
-        | Some value ->
-            mapping
-            |> List.tryFind (fst >> (=) value)
-            |> Option.exists (fun (_, name) ->
-                pathExists definitions known prefix path definitions[name])
-        | None -> cases |> List.forall (pathExists definitions known prefix path)
-    | _ when path.IsEmpty -> true
-    | Schema.Object(properties, _) ->
-        properties
-        |> List.tryFind (fst >> (=) path.Head)
-        |> Option.exists (fun (name, child) ->
-            pathExists definitions known (prefix @ [ name ]) path.Tail child)
-    | _ -> false
-
-let private valid operation =
-    let inputs, constants = OperationCatalog.derive operation
-
-    let fixedValues =
-        constants
-        |> List.choose (fun item ->
-            match item.Value with
-            | BindingValue.Text value -> Some(item.Path, value)
-            | _ -> None)
-
-    let endpoint =
-        Api.tryFind operation.Endpoint
-        |> Option.defaultWith (fun () -> failtest "Unknown catalog endpoint")
-
-    endpoint.Accept
-        { new IEndpointVisitor<bool> with
-            member _.Visit endpoint =
-                inputs
-                |> List.forall (fun input ->
-                    let known =
-                        fixedValues
-                        @ (input.Binding.Branches
-                           |> List.map (fun branch -> branch.Path, branch.Value))
-                        |> Map.ofList
-
-                    pathExists
-                        endpoint.Input.Definitions
-                        known
-                        []
-                        input.Binding.Path
-                        endpoint.Input.Schema)
-        }
 
 let private find words =
     OperationCatalog.all
@@ -95,41 +38,66 @@ let tests =
                 let expected =
                     Api.all
                     |> List.map Api.id
-                    |> List.filter (fun id -> id <> Api.session.Id && id <> Api.logout.Id)
+                    |> List.filter (fun id -> id <> Api.session.Token && id <> Api.logout.Token)
                     |> Set.ofList
 
                 let actual =
-                    Api.operationPreview.Id :: (OperationCatalog.all |> List.map _.Endpoint)
+                    Api.operationPreview.Token :: (OperationCatalog.all |> List.map _.Endpoint)
                     |> Set.ofList
 
                 Expect.equal actual expected "Session bootstrap and logout belong to the host")
-            testCase "every derived input resolves in its selected request schema" (fun () ->
-                for entry in OperationCatalog.all do
-                    Expect.isTrue (valid entry) (String.concat " " (OperationCatalog.words entry)))
-            testCase "a catalog input absent from its codec is rejected" (fun () ->
+            testCase "annotation paths exist in their selected endpoint and act" (fun () ->
+                for operation in OperationCatalog.all do
+                    Expect.equal
+                        (OperationCatalog.validateAnnotations
+                            operation
+                            (OperationCatalog.annotations operation))
+                        (Ok())
+                        "The annotation names a real selected path")
+            testCase "a missing annotation path is rejected with a positive control" (fun () ->
                 let original = find [ "case"; "open" ]
+                let notes = OperationCatalog.annotations original
+
+                Expect.equal
+                    (OperationCatalog.validateAnnotations original notes)
+                    (Ok())
+                    "Positive control"
 
                 let bad =
-                    { original with
-                        Body =
-                            CatalogShape.Object
-                                [
-                                    "unknownInput",
-                                    CatalogShape.Input
-                                        {
-                                            Name =
-                                                CatalogInputName.Technical TechnicalInput.Subject
-                                            Atom = CatalogAtom.Text
-                                            Argument = CatalogArgument.Named
-                                            Required = true
-                                            Default = None
-                                            Prefill = None
-                                        }
-                                ]
+                    { notes with
+                        Operands = [ [ "missingMember" ] ] @ notes.Operands
                     }
 
-                Expect.isTrue (valid original) "Positive control"
-                Expect.isFalse (valid bad) "The missing codec member is detected")
+                Expect.equal
+                    (OperationCatalog.validateAnnotations original bad)
+                    (Error [ [ "missingMember" ] ])
+                    "The negative control is detected")
+            testCase
+                "annotation validation selects the act rather than another union branch"
+                (fun () ->
+                    let opened = find [ "case"; "open" ]
+                    let voided = find [ "case"; "void" ]
+                    let path = [ "act"; "values" ]
+
+                    let opening =
+                        { OperationCatalog.annotations opened with
+                            Prefill = [ path ]
+                        }
+
+                    let voiding =
+                        { OperationCatalog.annotations voided with
+                            Prefill = [ path ]
+                        }
+
+                    Expect.equal
+                        (OperationCatalog.validateAnnotations opened opening)
+                        (Ok())
+                        "OPEN has values"
+
+                    Expect.equal
+                        (OperationCatalog.validateAnnotations voided voiding)
+                        (Error [ path ])
+                        "VOID cannot borrow OPEN's values")
             testCase
                 "every entry and input has authored labels and meanings in all languages"
                 (fun () ->
@@ -188,19 +156,19 @@ let tests =
                 let payment =
                     inputs
                     |> List.find (fun input ->
-                        input.Spec.Name = CatalogInputName.Field BusinessField.PaymentDate)
+                        input.Name = CatalogInputName.Field BusinessField.PaymentDate)
 
                 Expect.equal
                     payment.Binding.Branches
                     [
                         {
-                            Path = [ "act"; "groups"; "payment"; "mode" ]
+                            Path = [ "act"; "groups"; "payment"; "kind" ]
                             Value = "REPLACE"
                         }
                     ]
                     "Payment date exists only for REPLACE")
             testCase "the published catalog contains all entries with their synopses" (fun () ->
-                let value = ContractCatalog.valueFrom ContractCatalog.defaults
+                let value = Catalog.document
                 Expect.equal value.Entries.Length 25 "Mutations and reads"
 
                 Expect.equal

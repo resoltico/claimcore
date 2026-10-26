@@ -1,6 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System.Text
 open System.Text.Json
@@ -68,7 +69,7 @@ module TypeScript =
             maximumRequestBytes = Limits.MaximumRequestBytes
             maximumInvocationBytes = Limits.MaximumInvocationBytes
             maximumDepth = StrictJson.MaximumDepth
-            maximumSafeInteger = ClaimCore.Contract.JsonValue.MaximumInteger
+            maximumSafeInteger = ClaimCore.Json.JsonValue.MaximumInteger
         |}
         |> JsonSerializer.Serialize
 

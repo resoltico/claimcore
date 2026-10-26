@@ -65,8 +65,16 @@ module private FrameInvocation =
 
 type RemoteFrameProcessor
     private
-    (input: Stream, output: Stream, errors: Stream, language: string, invoke, owned: IDisposable) =
-    let delivery = ClaimCore.Cli.FrameDelivery(output, errors, language)
+    (
+        input: Stream,
+        output: Stream,
+        errors: Stream,
+        language: string,
+        render,
+        invoke,
+        owned: IDisposable
+    ) =
+    let delivery = ClaimCore.Cli.FrameDelivery(output, errors, language, render)
 
     let interpret frame stopped =
         match frame with
@@ -81,17 +89,10 @@ type RemoteFrameProcessor
                 Some(
                     invoke frame (fun () -> delivery.BeforeDispatch frame) stopped
                     |> fun (value: Task<CliReply>) -> value.GetAwaiter().GetResult()
-                    |> fun reply ->
-                        let decoded =
-                            Frames.decode reply.Bytes
-                            |> Result.defaultWith (fun _ -> invalidOp "Invalid local reply.")
-
-                        let delivery = decoded.Delivery
-
-                        CliReply.forAttempt frame delivery reply
+                    |> fun reply -> CliReply.forAttempt frame reply.Frame.Delivery reply
                 )
 
-    new(input, output, errors, language) =
+    new(input, output, errors, language, render) =
         let holder = new RemoteSessionHolder()
 
         new RemoteFrameProcessor(
@@ -99,9 +100,13 @@ type RemoteFrameProcessor
             output,
             errors,
             language,
+            render,
             FrameInvocation.invoke holder,
             holder
         )
+
+    new(input, output, errors, language) =
+        new RemoteFrameProcessor(input, output, errors, language, (fun reply -> reply.Bytes))
 
     static member internal ForTest(input, output, errors, invoke) =
         new RemoteFrameProcessor(
@@ -109,6 +114,7 @@ type RemoteFrameProcessor
             output,
             errors,
             "en",
+            (fun reply -> reply.Bytes),
             invoke,
             { new IDisposable with
                 member _.Dispose() = ()

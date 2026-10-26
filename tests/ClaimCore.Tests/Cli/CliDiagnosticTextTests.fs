@@ -7,10 +7,10 @@ open ClaimCore.Cli
 
 let private frame refusal =
     {
-        Endpoint = Some Api.caseGet.Id
+        Endpoint = Some Api.caseGet.Token
         OperationId = None
         Delivery = DeliveryState.Delivered
-        Result = FrameResult.Reply(Api.caseGet.Output.Write(ReadReply.Rejected refusal))
+        Result = FrameResult.Reply(TypedReply.ofValue Api.caseGet (ReadReply.Rejected refusal))
     }
 
 let private assertTarget target identity violation =
@@ -24,7 +24,7 @@ let private assertTarget target identity violation =
         |> Map.ofList
 
     for language in LocalizationPolicy.languages do
-        let rendered = TextReply.bytes language source |> Encoding.UTF8.GetString
+        let rendered = TextReply.bytes language (frame refusal) |> Encoding.UTF8.GetString
         let label = MessageCatalogs.render language identity Map.empty
 
         let message =
@@ -62,7 +62,11 @@ let private principalAndPayment () =
     assertTarget InputTarget.PrincipalIssuer "input.issuer.label" Violation.PrincipalFormat
 
     assertTarget InputTarget.PrincipalSubject "input.subject.label" Violation.TextRequired
-    assertTarget InputTarget.PaymentGroup "group.payment.label" Violation.PaymentClearRequired
+
+    assertTarget
+        (InputTarget.Group RecordGroup.Payment)
+        "group.payment.label"
+        Violation.PaymentClearRequired
 
 let private remainingTargets () =
     assertTarget InputTarget.OperationId "input.operationId.label" Violation.OperationIdRequired
@@ -84,7 +88,7 @@ let private assertOptionalTarget refusal identity =
     let source = Frames.encode (frame refusal)
 
     for language in LocalizationPolicy.languages do
-        let rendered = TextReply.bytes language source |> Encoding.UTF8.GetString
+        let rendered = TextReply.bytes language (frame refusal) |> Encoding.UTF8.GetString
 
         let message =
             MessageCatalogs.render language ("diagnostic." + (Refusals.row refusal).Code) Map.empty

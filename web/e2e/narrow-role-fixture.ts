@@ -31,7 +31,7 @@ const setGrant = (
   active: boolean,
 ) =>
   applyAuthority(page, {
-    scope: "AUTHORITY",
+    kind: "AUTHORITY",
     operationId: randomUUID(),
     target: fixture.principal,
     act: {

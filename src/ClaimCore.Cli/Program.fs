@@ -2,6 +2,7 @@ module ClaimCore.Cli.Program
 
 open ClaimCore.Contract.Protocol
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.Text
@@ -52,8 +53,8 @@ let private discovery output errors =
         Discovery.schema selection |> writeDiscovery output errors "en" "schema"
     | _ -> unsupported errors "en" [] CliUsageIssue.Invocation
 
-let private remote input output errors session language =
-    use processor = new RemoteFrameProcessor(input, output, errors, language)
+let private remote input output errors session language render =
+    use processor = new RemoteFrameProcessor(input, output, errors, language, render)
     let stop () = Environment.Exit(processor.Interrupt())
 
     let interrupt =
@@ -102,20 +103,20 @@ let private verb output errors arguments =
                 Frames.admit prepared.Bytes
                 |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
 
-            use rendered = new TextReplySink(output, prepared.Language, invocation)
-            remote input rendered errors false prepared.Language
+            remote input output errors false prepared.Language (fun reply ->
+                TextReply.bytesFor prepared.Language (Some invocation) reply.Frame)
         else
-            remote input output errors false prepared.Language
+            remote input output errors false prepared.Language (fun reply -> reply.Bytes)
 
 let private dispatch output errors argv =
     try
         match CliInvocations.admit (Array.toList argv) with
         | Ok CliInvocation.Call ->
             use input = Console.OpenStandardInput()
-            remote input output errors false "en"
+            remote input output errors false "en" (fun reply -> reply.Bytes)
         | Ok CliInvocation.Session ->
             use input = Console.OpenStandardInput()
-            remote input output errors true "en"
+            remote input output errors true "en" (fun reply -> reply.Bytes)
         | Ok(CliInvocation.Verb arguments) -> verb output errors arguments
         | Ok invocation -> discovery output errors invocation
         | Error issue ->

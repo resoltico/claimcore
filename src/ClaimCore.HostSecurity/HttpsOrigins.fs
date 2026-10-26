@@ -1,6 +1,4 @@
-namespace ClaimCore.Contract.Protocol
-
-open ClaimCore.Contract
+namespace ClaimCore.HostSecurity
 
 open System
 

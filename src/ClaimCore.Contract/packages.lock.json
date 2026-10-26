@@ -7,6 +7,12 @@
         "requested": "[10.1.402, )",
         "resolved": "10.1.402",
         "contentHash": "kfttzFL9uArPkhlhvoH99RZOOFpJnxOAZkGLqgfG+Wnc4FO2L+HnwradMgX1ubMjzhajuNzPTTcW1Yk8D1rGEg=="
+      },
+      "claimcore.json": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.402, )"
+        }
       }
     }
   }

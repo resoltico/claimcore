@@ -145,7 +145,7 @@ export const sessionToken = async (page: Page): Promise<string> => {
   if (!isResponse("session", reply.payload)) {
     throw new Error("Invalid session response.");
   }
-  if (reply.payload.outcome.tag !== "SUCCEEDED") {
+  if (reply.payload.outcome.kind !== "SUCCEEDED") {
     throw new Error("Session refused.");
   }
   const snapshot = reply.payload.outcome.data;
@@ -330,7 +330,7 @@ export const logout = async (page: Page): Promise<void> => {
   if (!isResponse("session", reply.payload)) {
     throw new Error("Invalid logout response.");
   }
-  if (reply.payload.outcome.tag !== "SUCCEEDED") {
+  if (reply.payload.outcome.kind !== "SUCCEEDED") {
     throw new Error("Session refused.");
   }
   expect(reply.payload.outcome.data.authenticated).toBe(false);

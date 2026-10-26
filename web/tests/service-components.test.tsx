@@ -6,7 +6,7 @@ import { isEndpointId } from "../src/protocol/client";
 import { CopyValue } from "../src/components/CopyValue";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
 import { CatalogField } from "../src/components/CatalogField";
-import { TextInput } from "../src/components/TextInput";
+import { LabeledTextInput } from "../src/components/LabeledTextInput";
 import { hasSuspiciousCharacters, suspiciousCodePoints } from "../src/utils/text";
 import { definition, fields } from "./service-ui.fixtures";
 
@@ -28,7 +28,7 @@ it("associates optional field errors and supports password text input", () => {
   const onChange = vi.fn();
   render(
     <>
-      <TextInput
+      <LabeledTextInput
         id="credential"
         label="Credential"
         value="secret"
@@ -51,7 +51,7 @@ it("associates optional field errors and supports password text input", () => {
 it("renders ordinary text input without an error and forwards edits", async () => {
   const user = userEvent.setup();
   const onChange = vi.fn();
-  render(<TextInput id="reference" label="Reference" value="" onChange={onChange} />);
+  render(<LabeledTextInput id="reference" label="Reference" value="" onChange={onChange} />);
   const input = screen.getByRole("textbox", { name: "Reference" });
   expect(input).toHaveAttribute("type", "text");
   expect(screen.queryByRole("alert")).toBeNull();

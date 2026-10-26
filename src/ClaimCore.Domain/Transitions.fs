@@ -2,33 +2,7 @@ namespace ClaimCore.Domain
 
 open ClaimCore.Contract
 
-[<RequireQualifiedAccess>]
-type internal PaymentProgress =
-    | Undecided
-    | Decided of decision: Validation.Decision
-    | Paid of decision: Validation.Decision * paidDate: System.DateOnly
-
-/// Complete groups are retained as typed state; no paid state can omit its decision.
-module internal PaymentProgress =
-    let decision =
-        function
-        | PaymentProgress.Undecided -> None
-        | PaymentProgress.Decided value
-        | PaymentProgress.Paid(value, _) -> Some value
-
-    let paymentDate =
-        function
-        | PaymentProgress.Paid(_, date) -> Some date
-        | _ -> None
-
-    let fromGroups decision payment =
-        match decision, payment with
-        | None, None -> Ok PaymentProgress.Undecided
-        | None, Some _ -> Error Refusal.DecisionRequired
-        | Some value, None -> Ok(PaymentProgress.Decided value)
-        | Some value, Some date -> Ok(PaymentProgress.Paid(value, date))
-
-module internal Eligibility =
+module internal Transitions =
     let private amendment progress =
         match progress with
         | PaymentProgress.Undecided -> Ok()
@@ -49,7 +23,7 @@ module internal Eligibility =
         match progress with
         | PaymentProgress.Undecided -> Error Refusal.DecisionRequired
         | PaymentProgress.Paid _ -> Error Refusal.PaymentAlreadyRecorded
-        | PaymentProgress.Decided value when value.Payable.Value = 0M ->
+        | PaymentProgress.Decided value when value.PayableAmount.Value = 0M ->
             Error Refusal.ZeroDecisionCannotBePaid
         | PaymentProgress.Decided _ -> Ok()
 
@@ -75,7 +49,7 @@ module internal Eligibility =
         | BusinessActKind.RecordPayment -> payment progress
         | BusinessActKind.ClearPayment -> clearPayment progress
 
-    let check kind status progress =
+    let private business kind status progress =
         match status, kind with
         | CaseStatus.Closed, BusinessActKind.Open -> Error Refusal.CaseAlreadyExists
         | CaseStatus.Closed, BusinessActKind.Reopen -> Ok()
@@ -83,3 +57,21 @@ module internal Eligibility =
         | CaseStatus.Closed, BusinessActKind.Correct -> Ok()
         | CaseStatus.Closed, _ -> Error Refusal.CaseClosed
         | CaseStatus.Opened, _ -> opened kind progress
+
+    /// Existence and revision precedence belong to Case.decide. This total rule
+    /// also serves availability, including the erased and already-existing states.
+    let check (state: CaseState<Claim>) kind =
+        match state, kind with
+        | CaseState.Erased, _ -> Error Refusal.CaseErased
+        | (CaseState.Active _ | CaseState.Voided _), CaseActKind.Business BusinessActKind.Open ->
+            Error Refusal.CaseAlreadyExists
+        | CaseState.Voided _, CaseActKind.Stewardship StewardshipActKind.Void ->
+            Error Refusal.AlreadyVoided
+        | CaseState.Voided _, CaseActKind.Business _ -> Error Refusal.CaseVoided
+        | CaseState.Active _, CaseActKind.Stewardship StewardshipActKind.Reinstate ->
+            Error Refusal.NotVoided
+        | (CaseState.Active _ | CaseState.Voided _),
+          CaseActKind.Stewardship(StewardshipActKind.Void | StewardshipActKind.Reinstate | StewardshipActKind.Erase) ->
+            Ok()
+        | CaseState.Active claim, CaseActKind.Business kind ->
+            business kind claim.Status claim.Progress

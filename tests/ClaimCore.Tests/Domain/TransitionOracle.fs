@@ -67,7 +67,7 @@ let private changed fields act =
     | CaseAct.Reinstate _
     | CaseAct.Erase -> fields
 
-let private business before fields stale act =
+let private business (before: CaseSnapshot) fields stale act =
     let nextFields = changed fields act
 
     let noOpCorrection =
@@ -81,7 +81,7 @@ let private business before fields stale act =
         Some
             { before with
                 Revision = before.Revision + 1L
-                View = CaseView.Live(nextFields, Disposition.Active)
+                State = CaseState.Active(nextFields)
             }
 
 let advance (before: CaseSnapshot) stale act =
@@ -92,19 +92,17 @@ let advance (before: CaseSnapshot) stale act =
             Some
                 { before with
                     Revision = before.Revision + 1L
-                    View = view
+                    State = view
                 }
 
-        match before.View, act with
-        | CaseView.Erased, _ -> None
-        | CaseView.Live(fields, Disposition.Active), CaseAct.Void _ ->
-            changed (CaseView.Live(fields, Disposition.Voided))
-        | CaseView.Live(fields, Disposition.Voided), CaseAct.Reinstate _ ->
-            changed (CaseView.Live(fields, Disposition.Active))
-        | CaseView.Live _, CaseAct.Erase -> changed CaseView.Erased
+        match before.State, act with
+        | CaseState.Erased, _ -> None
+        | CaseState.Active(fields), CaseAct.Void _ -> changed (CaseState.Voided(fields))
+        | CaseState.Voided(fields), CaseAct.Reinstate _ -> changed (CaseState.Active(fields))
+        | (CaseState.Active _ | CaseState.Voided _), CaseAct.Erase -> changed CaseState.Erased
         | _, (CaseAct.Void _ | CaseAct.Reinstate _) -> None
-        | CaseView.Live(fields, Disposition.Active), act -> business before fields stale act
-        | CaseView.Live(_, Disposition.Voided), _ -> None
+        | CaseState.Active(fields), act -> business before fields stale act
+        | CaseState.Voided(_), _ -> None
 
 let matches expected (actual: Result<CaseSnapshot, Refusal>) =
     match expected, actual with

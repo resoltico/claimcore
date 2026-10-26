@@ -7,7 +7,7 @@ import { usePresentation } from "../presentation/context";
 import { ActorSummary } from "./AuthorityListing";
 
 const grantPage = (response: ServiceResponse<"authority.grants">) =>
-  response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
+  response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 type GrantPage = NonNullable<ReturnType<typeof grantPage>>;
 type Props = {
   actorId: string;

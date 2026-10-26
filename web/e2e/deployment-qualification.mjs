@@ -161,7 +161,7 @@ const session = async (context, origin, fingerprint) => {
     }),
   );
   if (
-    value.outcome.tag !== "SUCCEEDED" ||
+    value.outcome.kind !== "SUCCEEDED" ||
     !value.outcome.data.authenticated ||
     !value.outcome.data.antiforgeryToken
   ) {
@@ -177,7 +177,7 @@ const post = (context, origin, endpoint, fingerprint, csrf) =>
 const owner = async (context, origin, fingerprint, csrf) => {
   const value = await payload(await post(context, origin, "context", fingerprint, csrf));
   if (
-    value.outcome.tag !== "SUCCEEDED" ||
+    value.outcome.kind !== "SUCCEEDED" ||
     !value.outcome.data.capabilities.includes("MANAGE_AUTHORITY")
   ) {
     throw new Error("Fresh owner authority was not provisioned.");

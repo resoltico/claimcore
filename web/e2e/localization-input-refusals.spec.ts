@@ -22,16 +22,16 @@ const forgedCorrection = async (page: Page, reference: string) => {
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
-      scope: "CASE",
+      kind: "CASE",
       operationId: randomUUID(),
       caseReference: reference,
       expectedRevision: 2,
       act: {
         kind: "CORRECT",
         groups: {
-          registration: { mode: "KEEP" },
-          decision: { mode: "CLEAR" },
-          payment: { mode: "KEEP" },
+          registration: { kind: "KEEP" },
+          decision: { kind: "CLEAR" },
+          payment: { kind: "KEEP" },
         },
       },
     }),
@@ -41,8 +41,8 @@ const forgedCorrection = async (page: Page, reference: string) => {
     throw new Error("Expected typed correction refusal.");
   }
   const { outcome } = reply.payload;
-  expect(outcome.tag).toBe("REJECTED");
-  if (outcome.tag === "REJECTED") {
+  expect(outcome.kind).toBe("REJECTED");
+  if (outcome.kind === "REJECTED") {
     expect(outcome.data.code).toBe("CORRECTION_EXISTING_VALUE_REQUIRED");
   }
 };
@@ -59,7 +59,7 @@ const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
   if (!isResponse("operation.preview", value)) {
     throw new Error("Expected typed review.");
   }
-  expect(value.outcome.tag).toBe("REVIEWED");
+  expect(value.outcome.kind).toBe("REVIEWED");
 };
 
 for (const language of ["en", "lv", "ar"] as const) {
@@ -118,7 +118,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await page.getByRole("button", { name: "Return to case" }).click();
     await startAct(page, "Correct case facts");
     await selectLanguage(page, language);
-    const mode = page.locator('[name="act.groups.decision.mode"]');
+    const mode = page.locator('[name="act.groups.decision.kind"]');
     await expect(mode).toHaveValue("KEEP");
     await expect(mode.locator("option")).toHaveCount(1);
     await forgedCorrection(page, reference);

@@ -21,7 +21,7 @@ export const refusedRead = async (
   const payload: unknown = await response.json();
   expect(isResponse(endpoint, payload)).toBe(true);
   const { outcome } = payload as ServiceResponse<typeof endpoint>;
-  if (outcome.tag !== "REJECTED") {
+  if (outcome.kind !== "REJECTED") {
     throw new Error("Narrow read did not return its actual authorization refusal.");
   }
   expect(outcome.data.code).toBe("ACCESS_RESOURCE_UNAVAILABLE");
@@ -39,7 +39,7 @@ const directCaseRefusal = async (page: Page, reference: string) => {
   });
   expect(reply.status).toBe(200);
   expect(reply.cacheControl).toContain("no-store");
-  if (!isResponse("case.get", reply.payload) || reply.payload.outcome.tag !== "REJECTED") {
+  if (!isResponse("case.get", reply.payload) || reply.payload.outcome.kind !== "REJECTED") {
     throw new Error("A case without read authority must return a typed public refusal.");
   }
   expect(reply.payload.outcome.data.code).toBe("ACCESS_RESOURCE_UNAVAILABLE");

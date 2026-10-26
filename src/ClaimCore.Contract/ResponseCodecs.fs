@@ -1,6 +1,7 @@
 namespace ClaimCore.Contract.Protocol
 
 open ClaimCore.Contract
+open ClaimCore.Json
 open System
 open System.Globalization
 
@@ -68,52 +69,67 @@ module ResponseCodecs =
         |> build
         |> named "CaseFields"
 
-    let private liveStateFields =
-        Codec.record (fun disposition fields -> fields, disposition)
-        |> field "disposition" snd (enumeration (Vocabulary.entries Dispositions.vocabulary))
-        |> field "fields" fst caseFields
+    let private stateCodec name fields =
+        tagged
+            name
+            [
+                variant
+                    "ACTIVE"
+                    CaseState.Active
+                    (function
+                    | CaseState.Active value -> Some value
+                    | _ -> None)
+                    fields
+                variant
+                    "VOIDED"
+                    CaseState.Voided
+                    (function
+                    | CaseState.Voided value -> Some value
+                    | _ -> None)
+                    fields
+                unitVariant "ERASED" CaseState.Erased
+            ]
 
-    let private liveTag = "LIVE"
-
-    let private liveVariant =
-        variant
-            liveTag
-            CaseView.Live
-            (function
-            | CaseView.Live(fields, disposition) -> Some(fields, disposition)
-            | _ -> None)
-            liveStateFields
-
-    let private stateName = "CaseState"
-
-    // Current reads and the LIVE branch of retained views share the same codec definition.
     let liveState =
-        let codec = tagged stateName "tag" [ liveVariant ]
+        let fields = record id |> field "fields" id caseFields
 
-        { codec with
-            Schema = Schema.Ref(stateName + "." + liveTag)
-            Definitions = Map.remove stateName codec.Definitions
-        }
+        tagged
+            "LiveCase"
+            [
+                variant
+                    "ACTIVE"
+                    LiveCase.Active
+                    (function
+                    | LiveCase.Active value -> Some value
+                    | _ -> None)
+                    fields
+                variant
+                    "VOIDED"
+                    LiveCase.Voided
+                    (function
+                    | LiveCase.Voided value -> Some value
+                    | _ -> None)
+                    fields
+            ]
 
-    let caseState =
-        tagged stateName "tag" [ liveVariant; unitVariant "ERASED" CaseView.Erased ]
+    let caseState = stateCodec "CaseState" (record id |> field "fields" id caseFields)
 
     let caseSnapshot =
         (record (fun reference revision view ->
             {
-                Reference = reference
+                CaseSnapshot.Reference = reference
                 Revision = revision
-                View = view
+                State = view
             })
         : Fields<CaseSnapshot, _>)
         |> field (FieldTable.key BusinessField.CaseReference) _.Reference reference
         |> field "revision" _.Revision sequence
-        |> field "state" _.View caseState
+        |> field "state" _.State caseState
         |> build
         |> named "CaseSnapshot"
 
-    let private correctionAction = vocabulary CorrectionActions.vocabulary
-    let private historyDetail = vocabulary HistoryDetails.vocabulary
+    let private correctionAction = VocabularyCodec.create CorrectionActions.vocabulary
+    let private historyDetail = VocabularyCodec.create HistoryDetails.vocabulary
 
     let private authorityKind =
         Vocabulary.entries AuthorityKinds.vocabulary
@@ -158,42 +174,42 @@ module ResponseCodecs =
         |> build
         |> named "CorrectionAdvice"
 
-    let private ordinaryOfferFields =
-        record (fun act revision -> act, revision)
-        |> field
-            "act"
-            fst
-            (enumeration (
-                CaseActKinds.all
-                |> List.filter ((<>) (CaseActKind.Business BusinessActKind.Correct))
-                |> List.map (fun act -> act, CaseActKinds.token act)
-            ))
-        |> field "expectedRevision" snd revision
-
-    let private correctionOfferFields =
-        record (fun revision correction -> revision, correction)
-        |> fixedField "act" (CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct))
-        |> field "expectedRevision" fst revision
-        |> field "correction" snd correctionAdvice
-
     let caseActOffer =
-        choice
+        let ordinary =
+            record (fun act revision -> act, revision)
+            |> field
+                "act"
+                fst
+                (enumeration (
+                    CaseActKinds.all
+                    |> List.filter ((<>) (CaseActKind.Business BusinessActKind.Correct))
+                    |> List.map (fun kind -> kind, CaseActKinds.token kind)
+                ))
+            |> field "expectedRevision" snd revision
+
+        let correction =
+            record (fun revision choices -> revision, choices)
+            |> field "expectedRevision" fst revision
+            |> field "correction" snd correctionAdvice
+
+        tagged
             "CaseActOffer"
             [
-                branch
+                variant
+                    "ACT"
                     CaseActOffer.Act
                     (function
-                    | CaseActOffer.Act(a, r) -> Some(a, r)
+                    | CaseActOffer.Act(act, revision) -> Some(act, revision)
                     | _ -> None)
-                    (ordinaryOfferFields |> build |> named "OrdinaryCaseActOffer")
-                branch
+                    ordinary
+                variant
+                    "CORRECT"
                     CaseActOffer.Correct
                     (function
-                    | CaseActOffer.Correct(r, c) -> Some(r, c)
+                    | CaseActOffer.Correct(revision, choices) -> Some(revision, choices)
                     | _ -> None)
-                    (correctionOfferFields |> build |> named "CorrectionCaseActOffer")
+                    correction
             ]
-        |> discriminated "act"
 
     let caseAdvice =
         (record (fun v0 v1 -> { CaseAdvice.Acts = v0; History = v1 }): Fields<CaseAdvice, _>)
@@ -209,14 +225,14 @@ module ResponseCodecs =
                     {
                         Reference = reference
                         Revision = revision
-                        View = view
+                        State = view
                     }
                 Advice = advice
             })
         : Fields<CaseReadModel, _>)
         |> field (FieldTable.key BusinessField.CaseReference) _.Snapshot.Reference reference
         |> field "revision" _.Snapshot.Revision sequence
-        |> field "state" _.Snapshot.View caseState
+        |> field "state" _.Snapshot.State caseState
         |> field "advice" _.Advice caseAdvice
         |> build
         |> named "CaseView"
@@ -224,7 +240,6 @@ module ResponseCodecs =
     let installationOffer =
         tagged
             "InstallationOffer"
-            "kind"
             [
                 variant
                     "OPEN"
@@ -281,7 +296,7 @@ module ResponseCodecs =
                 (enumeration (
                     Capabilities.all |> List.map (fun value -> value, Capabilities.token value)
                 )))
-        |> field "views" _.Views (list 3 (vocabulary Views.vocabulary))
+        |> field "views" _.Views (list 3 (VocabularyCodec.create Views.vocabulary))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
         |> named "ActorContext"
@@ -335,7 +350,7 @@ module ResponseCodecs =
         |> build
         |> named "FieldChange"
 
-    let review =
+    let reviewFields =
         (record (fun before proposed changes context ->
             {
                 Before = before
@@ -348,8 +363,6 @@ module ResponseCodecs =
         |> field "after" _.Proposed caseSnapshot
         |> field "changes" _.Changes (list FieldTable.rows.Length fieldChange)
         |> field "context" _.Context runtimeContext
-        |> build
-        |> named "Review"
 
     let actorSummary =
         (record (fun v0 v1 v2 ->
@@ -403,7 +416,7 @@ module ResponseCodecs =
 
     let private summaryEntry =
         record id
-        |> fixedField "tag" "SUMMARY"
+        |> fixedField "kind" "SUMMARY"
         |> field "change" id changeSummary
         |> build
         |> map HistoryEntry.SummaryEntry (function
@@ -412,7 +425,7 @@ module ResponseCodecs =
 
     let private fullEntry receiptCodec =
         record id
-        |> fixedField "tag" "FULL"
+        |> fixedField "kind" "FULL"
         |> field "receipt" id receiptCodec
         |> build
         |> map HistoryEntry.FullEntry (function
@@ -484,48 +497,24 @@ module ResponseCodecs =
         |> build
         |> named "Session"
 
-    let private liveSummaryFields =
-        record (fun reference revision status disposition ->
-            reference, revision, status, disposition)
-        |> field
-            (FieldTable.key BusinessField.CaseReference)
-            (fun (reference, _, _, _) -> reference)
-            reference
-        |> field "revision" (fun (_, revision, _, _) -> revision) sequence
-        |> field
-            (FieldTable.key BusinessField.Status)
-            (fun (_, _, status, _) -> status)
-            (enumeration (
-                CaseStatuses.all |> List.map (fun status -> status, CaseStatuses.token status)
-            ))
-        |> field
-            "disposition"
-            (fun (_, _, _, disposition) -> disposition)
-            (enumeration (Vocabulary.entries Dispositions.vocabulary))
-
     let caseSummary =
-        tagged
-            "CaseSummary"
-            "state"
-            [
-                variant
-                    "LIVE"
-                    CaseSummary.Live
-                    (function
-                    | CaseSummary.Live(reference, revision, status, disposition) ->
-                        Some(reference, revision, status, disposition)
-                    | _ -> None)
-                    liveSummaryFields
-                variant
-                    "ERASED"
-                    CaseSummary.Erased
-                    (function
-                    | CaseSummary.Erased(reference, revision) -> Some(reference, revision)
-                    | _ -> None)
-                    (record (fun reference revision -> reference, revision)
-                     |> field (FieldTable.key BusinessField.CaseReference) fst reference
-                     |> field "revision" snd sequence)
-            ]
+        let state =
+            stateCodec
+                "CaseSummaryState"
+                (record id |> field "status" id (VocabularyCodec.create CaseStatuses.vocabulary))
+
+        (record (fun reference revision state ->
+            {
+                CaseSummary.Reference = reference
+                Revision = revision
+                State = state
+            })
+        : Fields<CaseSummary, _>)
+        |> field "caseReference" _.Reference reference
+        |> field "revision" _.Revision sequence
+        |> field "state" _.State state
+        |> build
+        |> named "CaseSummary"
 
     let casesPage =
         (record (fun items next offers ->

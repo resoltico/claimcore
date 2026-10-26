@@ -3,6 +3,7 @@ module ClaimCore.Tests.ContractTests
 open ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.Text
@@ -29,15 +30,16 @@ let private receipt: ClaimCore.Contract.OperationReceipt =
     {
         OperationId = id
         Position = position
-        Scope =
-            ClaimCore.Contract.ReceiptScope.Case
+        Subject =
+            ClaimCore.Contract.ReceiptSubject.Case
                 {
                     Reference = "UNIT-001"
                     Revision = 1L
                     Act = (CaseActKind.Business BusinessActKind.Open)
                     Snapshot =
-                        ClaimCore.Contract.SnapshotDisclosure.Disclosed
-                            (Case.snapshot (opened ())).View
+                        ClaimCore.Contract.SnapshotDisclosure.Disclosed(
+                            LiveCase.ofState (Case.snapshot (opened ())).State |> Option.get
+                        )
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
         RecordedBy = id
@@ -45,8 +47,8 @@ let private receipt: ClaimCore.Contract.OperationReceipt =
 
 let private authority =
     { receipt with
-        Scope =
-            ClaimCore.Contract.ReceiptScope.Authority
+        Subject =
+            ClaimCore.Contract.ReceiptSubject.Authority
                 {
                     TargetActorId = id
                     Act = AuthorityKind.Register
@@ -97,7 +99,7 @@ let private queryCodecs () =
         [
             snapshot
             { snapshot with
-                View = ClaimCore.Contract.CaseView.Erased
+                State = ClaimCore.Contract.CaseState.Erased
             }
         ] do
         admitted
@@ -162,7 +164,7 @@ let private executeOutcomes () =
                             DeliveryState.Uncertain
                         else
                             DeliveryState.Delivered
-                    Result = FrameResult.Reply(Api.operationExecute.Output.Write reply)
+                    Result = FrameResult.Reply(TypedReply.ofValue Api.operationExecute reply)
                 }
 
             Expect.equal
@@ -180,8 +182,8 @@ let private disclosures () =
         [ SnapshotDisclosure.Withheld, "WITHHELD"; SnapshotDisclosure.Erased, "ERASED" ] do
         let value =
             { receipt with
-                Scope =
-                    ClaimCore.Contract.ReceiptScope.Case
+                Subject =
+                    ClaimCore.Contract.ReceiptSubject.Case
                         {
                             Reference = "UNIT-001"
                             Revision = 1L
@@ -196,9 +198,9 @@ let private disclosures () =
             (result
                 .GetProperty("outcome")
                 .GetProperty("data")
-                .GetProperty("scope")
+                .GetProperty("subject")
                 .GetProperty("snapshot")
-                .GetProperty("disclosure")
+                .GetProperty("kind")
                 .GetString())
             tag
             "Disclosure remains explicit"
@@ -296,10 +298,10 @@ let private diagnosticRevisions () =
         "An accepted snapshot revision stays positive"
 
     let invalidReceipt =
-        match receipt.Scope with
-        | ReceiptScope.Case target ->
+        match receipt.Subject with
+        | ReceiptSubject.Case target ->
             { receipt with
-                Scope = ReceiptScope.Case { target with Revision = 0L }
+                Subject = ReceiptSubject.Case { target with Revision = 0L }
             }
         | _ -> failtest "Case receipt fixture"
 
@@ -395,7 +397,7 @@ let private integerLexemes () =
             "Accepted sequence bounds"
 
 let private retainedText () =
-    for name in [ String.replicate 201 "A"; "Earlier\u202eName" ] do
+    for name in [ String.replicate 201 "A"; "Earlier‮Name" ] do
         let original = Case.snapshot (opened ())
 
         let fields =
@@ -408,7 +410,7 @@ let private retainedText () =
 
         let snapshot =
             { original with
-                View = ClaimCore.Contract.CaseView.Live(fields, Disposition.Active)
+                State = ClaimCore.Contract.CaseState.Active(fields)
             }
 
         let prior = Case.ofAccepted snapshot |> accepted
@@ -462,7 +464,7 @@ let private retainedText () =
 let private authorityWire kind issuer subject =
     JsonSerializer.SerializeToUtf8Bytes
         {|
-            scope = "AUTHORITY"
+            kind = "AUTHORITY"
             operationId = id.ToString("D")
             target =
                 {|
@@ -496,7 +498,7 @@ let private principalAdmission () =
             false, "HUMAN", "https://user@issuer.example/", "subject"
             false, "HUMAN", "https://issuer.example/?q=x", "subject"
             false, "HUMAN", "https://issuer.example/#x", "subject"
-            false, "HUMAN", "https://issuer.example/", "\u2003"
+            false, "HUMAN", "https://issuer.example/", " "
             true, "HUMAN", "https://issuer.example/", "Unicode \U0001f642 subject"
         ]
 
@@ -540,7 +542,7 @@ let private policyHints () =
 let private authorityFieldPresentation () =
     use document = artifact "catalog.json"
     let root = document.RootElement
-    let fields = root.GetProperty("authorityFields").EnumerateArray() |> Seq.toList
+    let fields = root.GetProperty("inputFields").EnumerateArray() |> Seq.toList
 
     let names =
         fields

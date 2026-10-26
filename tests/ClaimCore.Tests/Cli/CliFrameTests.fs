@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CliFrameTests
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.IO
@@ -293,7 +294,11 @@ let private exampleFrames () =
 
     let final = current |> Option.get |> ClaimCore.Domain.Case.snapshot
     Expect.equal final.Reference "DEMO-0001" "Original reference retained"
-    Expect.equal final.View ClaimCore.Contract.CaseView.Erased "Examples end with explicit erasure"
+
+    Expect.equal
+        final.State
+        ClaimCore.Contract.CaseState.Erased
+        "Examples end with explicit erasure"
 
 [<Tests>]
 let tests =

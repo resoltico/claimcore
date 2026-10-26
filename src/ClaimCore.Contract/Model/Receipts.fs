@@ -6,7 +6,7 @@ type LedgerPosition = { Sequence: int64; EntryHash: string }
 
 [<RequireQualifiedAccess>]
 type SnapshotDisclosure =
-    | Disclosed of CaseView
+    | Disclosed of LiveCase
     | Withheld
     | Erased
 
@@ -25,7 +25,7 @@ type AuthorityReceipt =
     }
 
 [<RequireQualifiedAccess>]
-type ReceiptScope =
+type ReceiptSubject =
     | Case of CaseReceipt
     | Authority of AuthorityReceipt
 
@@ -33,7 +33,7 @@ type OperationReceipt =
     {
         OperationId: Guid
         Position: LedgerPosition
-        Scope: ReceiptScope
+        Subject: ReceiptSubject
         RecordedAt: DateTimeOffset
         RecordedBy: Guid
     }

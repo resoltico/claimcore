@@ -2,7 +2,6 @@ import { expect, it } from "vitest";
 import { admitBytes } from "../src/protocol/schema";
 import { isRequest, isResponse, decodeResponse } from "../src/protocol/client";
 import { corpusCases, wireReply } from "./contract-corpus.fixtures";
-
 it("admits every positive and rejects every negative authored endpoint examples case from bytes", () => {
   const cases = corpusCases();
   expect(cases.some((sample) => !sample.valid)).toBe(true);
@@ -22,7 +21,6 @@ it("admits every positive and rejects every negative authored endpoint examples 
     expect(valid, sample.id).toBe(sample.valid);
   }
 });
-
 it("independently rejects lossy numeric spellings, duplicate decoded names, depth, Unicode and UTF-8 boundaries", () => {
   const invalid = [
     '{"limit":1.0}',
@@ -50,7 +48,7 @@ it("independently rejects lossy numeric spellings, duplicate decoded names, dept
       "operation.execute",
       admitBytes(
         new TextEncoder().encode(
-          '{"scope":"CASE","operationId":"10000000-0000-4000-8000-000000000001","caseReference":"A","expectedRevision":-0,"act":{"kind":"CLOSE"}}',
+          '{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","caseReference":"A","expectedRevision":-0,"act":{"kind":"CLOSE"}}',
         ),
       ),
     ),
@@ -59,45 +57,62 @@ it("independently rejects lossy numeric spellings, duplicate decoded names, dept
     decodeResponse(
       "session",
       new TextEncoder().encode(
-        `{"endpoint":"session","outcome":{"tag":"SUCCEEDED","data":{"authenticated":true,"contractIdentity":"${"a".repeat(
-          64,
-        )}","antiforgeryToken":null,"unexpected":true}}}`,
+        `{"endpoint":"session","outcome":{"kind":"SUCCEEDED","data":{"authenticated":true,"contractIdentity":"${"a".repeat(64)}","antiforgeryToken":null,"unexpected":true}}}`,
       ),
     ),
   ).toThrow();
 });
-
 it("admits business date strings for typed Domain rejection", () => {
   const base = {
-    scope: "CASE",
+    kind: "CASE",
     operationId: "10000000-0000-4000-8000-000000000001",
     caseReference: "A",
     expectedRevision: 0,
-    act: { kind: "RECORD_PAYMENT", values: { paymentDate: "2024-02-29" } },
+    act: {
+      kind: "RECORD_PAYMENT",
+      values: {
+        paymentDate: "2024-02-29",
+      },
+    },
   };
   expect(isRequest("operation.execute", base)).toBe(true);
   expect(
     isRequest("operation.execute", {
       ...base,
-      act: { ...base.act, values: { paymentDate: "2023-02-29" } },
+      act: {
+        ...base.act,
+        values: {
+          paymentDate: "2023-02-29",
+        },
+      },
     }),
   ).toBe(true);
   expect(
     isRequest("operation.execute", {
       ...base,
-      act: { ...base.act, values: { paymentDate: "0000-02-29" } },
+      act: {
+        ...base.act,
+        values: {
+          paymentDate: "0000-02-29",
+        },
+      },
     }),
   ).toBe(true);
 });
-
 it("requires the owned canonical timestamp spelling rather than permissive host parsing", () => {
   const source = wireReply("operation.execute");
-  if (source.outcome.tag !== "ACCEPTED") {
+  if (source.outcome.kind !== "ACCEPTED") {
     throw new Error("Missing independent receipt fixture.");
   }
   const reply = (recordedAt: string) => ({
     ...source,
-    outcome: { ...source.outcome, data: { ...source.outcome.data, recordedAt } },
+    outcome: {
+      ...source.outcome,
+      data: {
+        ...source.outcome.data,
+        recordedAt,
+      },
+    },
   });
   expect(isResponse("operation.execute", reply("2026-10-16T12:34:56.123456Z"))).toBe(true);
   for (const timestamp of [

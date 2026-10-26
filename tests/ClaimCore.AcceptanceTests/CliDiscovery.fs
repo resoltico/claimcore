@@ -113,7 +113,7 @@ let private missingConfiguration
 let qualify (fixture: PublishedFixture.Fixture) =
     configurationRefusals fixture
     configurationGuidance fixture
-    CliDescriptions.qualify fixture
+    CliDescriptions.qualify fixture.Cli
     let environment = Dictionary<string, string>()
 
     let invoke args input =

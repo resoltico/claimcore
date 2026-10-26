@@ -11,6 +11,13 @@
       "claimcore.contract": {
         "type": "Project",
         "dependencies": {
+          "ClaimCore.Json": "[0.12.0, )",
+          "FSharp.Core": "[10.1.402, )"
+        }
+      },
+      "claimcore.json": {
+        "type": "Project",
+        "dependencies": {
           "FSharp.Core": "[10.1.402, )"
         }
       }

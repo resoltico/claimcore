@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Json
+
 open System.Net.Http
 open ClaimCore.Contract.Protocol
 
@@ -103,7 +105,7 @@ module OpenApi =
         let parameters = [ header "ClaimCore-Contract" true ResponseScalars.digest.Schema ]
 
         let parameters =
-            if endpoint.Id = "session" then
+            if endpoint.Token = "session" then
                 parameters
             else
                 parameters
@@ -111,10 +113,10 @@ module OpenApi =
 
         let fields =
             [
-                "operationId", text endpoint.Id
+                "operationId", text endpoint.Token
                 "x-claimcore-effect", text (EndpointEffects.token endpoint.Effect)
                 "parameters", array parameters
-                "security", security endpoint.Id
+                "security", security endpoint.Token
                 "responses", responses endpoint.Output.Schema
             ]
 
@@ -137,7 +139,7 @@ module OpenApi =
         endpoint.Accept
             { new IEndpointVisitor<_> with
                 member _.Visit value =
-                    value.Id,
+                    value.Token,
                     value.Method.Method.ToLowerInvariant(),
                     operation value,
                     merge value.Input.Definitions value.Output.Definitions

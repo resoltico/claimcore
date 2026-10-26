@@ -24,8 +24,7 @@ module internal VerificationPayload =
     let private case installationId (entry: StoredEntry) id revision act (payload: LedgerPayload) =
         result {
             let! request =
-                RequestRecord.decode ServiceLimits.RequestByteLimit payload.Request
-                |> decoded entry
+                RequestRecord.decode Limits.MaximumRequestBytes payload.Request |> decoded entry
 
             do!
                 require
@@ -63,7 +62,7 @@ module internal VerificationPayload =
     let private authority (entry: StoredEntry) kind (payload: LedgerPayload) =
         result {
             let! request =
-                AuthorityRecord.decode ServiceLimits.RequestByteLimit payload.Request
+                AuthorityRecord.decode Limits.MaximumRequestBytes payload.Request
                 |> decoded entry
 
             do!
@@ -78,8 +77,8 @@ module internal VerificationPayload =
         }
 
     let read installationId (entry: StoredEntry) =
-        match entry.Payload, entry.PayloadNonce, entry.Scope with
-        | None, None, StoredScope.Case _ -> Ok VerifiedPayload.Erased
+        match entry.Payload, entry.PayloadNonce, entry.Subject with
+        | None, None, StoredSubject.Case _ -> Ok VerifiedPayload.Erased
         | Some bytes, Some nonce, _ ->
             result {
                 let! commitment =
@@ -93,13 +92,12 @@ module internal VerificationPayload =
                         (commitment = entry.PayloadCommitment)
 
                 let! payload =
-                    LedgerEntry.decodePayload FormatLimits.MaximumPayloadBytes bytes
-                    |> decoded entry
+                    LedgerEntry.decodePayload Formats.MaximumPayloadBytes bytes |> decoded entry
 
                 return!
-                    match entry.Scope with
-                    | StoredScope.Case(id, revision, act, _) ->
+                    match entry.Subject with
+                    | StoredSubject.Case(id, revision, act, _) ->
                         case installationId entry id revision act payload
-                    | StoredScope.Authority(_, kind) -> authority entry kind payload
+                    | StoredSubject.Authority(_, kind) -> authority entry kind payload
             }
         | _ -> Error(problem entry.Sequence)

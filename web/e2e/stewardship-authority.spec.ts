@@ -24,7 +24,7 @@ const stewardAct = async (page: Page, label: string, reason?: string) => {
   if (!isResponse("operation.execute", value)) {
     throw new Error("Missing stewardship response.");
   }
-  expect(value.outcome.tag).toBe("ACCEPTED");
+  expect(value.outcome.kind).toBe("ACCEPTED");
   await page.getByRole("button", { name: "Return to case", exact: true }).click();
 };
 test("browser renders void, reinstatement and live payload erasure through authoritative preview", async ({
@@ -67,12 +67,15 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
   if (!isResponse("operation.preview", preview)) {
     throw new Error("Missing authority preview.");
   }
-  expect(preview.outcome.tag).toBe(expected === "ACCEPTED" ? "REVIEWED" : "REJECTED");
+  expect(preview.outcome.kind).toBe(expected === "ACCEPTED" ? "REVIEWED" : "REJECTED");
   if (expected === "REJECTED") {
     await expect(page.getByRole("dialog")).toHaveCount(0);
     return;
   }
-  if (preview.outcome.tag !== "REVIEWED" || preview.outcome.data.review.scope !== "AUTHORITY") {
+  if (
+    preview.outcome.kind !== "REVIEWED" ||
+    preview.outcome.data.review.subject.kind !== "AUTHORITY"
+  ) {
     throw new Error("Expected authority review.");
   }
   await page.getByRole("checkbox", { name: "I confirm this exact request.", exact: true }).check();
@@ -84,8 +87,8 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
   if (!isResponse("operation.execute", value)) {
     throw new Error("Missing authority response.");
   }
-  expect(value.outcome.tag).toBe("ACCEPTED");
-  if (value.outcome.tag === "ACCEPTED") {
+  expect(value.outcome.kind).toBe("ACCEPTED");
+  if (value.outcome.kind === "ACCEPTED") {
     await expect(
       page.getByRole("status").filter({ hasText: value.outcome.data.operationId }),
     ).toBeVisible();

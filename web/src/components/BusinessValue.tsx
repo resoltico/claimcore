@@ -8,7 +8,7 @@ export const CharacterWarning = ({ value }: { value: string | null }) => {
   const points = value === null ? [] : suspiciousCodePoints(value);
   return points.length === 0 ? null : (
     <small className="character-warning">
-      {p.text("ui.characterWarning", { characters: points.join(", ") })}
+      {p.text("label.characterWarning", { characters: points.join(", ") })}
     </small>
   );
 };

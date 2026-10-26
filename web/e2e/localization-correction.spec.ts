@@ -36,9 +36,9 @@ const expectAuthored = (bytes: Buffer, reference: string, modes: Modes, revision
     act: {
       kind: "CORRECT",
       groups: {
-        registration: { mode: modes.registration },
-        decision: { mode: modes.decision },
-        payment: { mode: modes.payment },
+        registration: { kind: modes.registration },
+        decision: { kind: modes.decision },
+        payment: { kind: modes.payment },
       },
     },
   });
@@ -52,9 +52,9 @@ const preserveChoice = async (page: Page, modes: Modes) => {
       page.getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true }),
     ).toBeVisible();
     for (const group of ["registration", "decision", "payment"] as const) {
-      const control = page.locator(`[name="act.groups.${group}.mode"]`);
+      const control = page.locator(`[name="act.groups.${group}.kind"]`);
       await expect(control).toHaveValue(modes[group]);
-      await expect(control).toHaveAccessibleName(ui(language, "ui.action"));
+      await expect(control).toHaveAccessibleName(ui(language, "label.action"));
       await expect(control).toHaveAccessibleDescription(
         inputMessage(language, `group.${group}.meaning`),
       );
@@ -78,14 +78,14 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
   if (refusal !== "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED") {
     return;
   }
-  const payment = page.locator('[name="act.groups.payment.mode"]');
+  const payment = page.locator('[name="act.groups.payment.kind"]');
   await expect(payment).toBeFocused();
   await expect(payment).toHaveAttribute("aria-invalid", "true");
   await expect(payment).toHaveAttribute(
     "aria-describedby",
-    "act.groups.payment.mode-meaning act.groups.payment.mode-error",
+    "act.groups.payment.kind-meaning act.groups.payment.kind-error",
   );
-  const description = page.locator('[id="act.groups.payment.mode-error"]');
+  const description = page.locator('[id="act.groups.payment.kind-error"]');
   for (const [language, text] of [
     ["en", "explicit payment reaffirmation"],
     ["lv", "skaidri jāapstiprina"],
@@ -93,7 +93,7 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
   ] as const) {
     await selectLanguage(page, language);
     await expect(description).toContainText(text);
-    await expect(payment).toHaveAccessibleName(ui(language, "ui.action"));
+    await expect(payment).toHaveAccessibleName(ui(language, "label.action"));
     await expect(payment).toHaveAccessibleDescription(
       `${inputMessage(language, "group.payment.meaning")} ${inputMessage(language, "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED")}`,
     );
@@ -101,7 +101,7 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
   }
   await payment.selectOption("CLEAR");
   await expect(payment).not.toHaveAttribute("aria-invalid");
-  await expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.mode-meaning");
+  await expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-meaning");
 };
 for (const status of ["CLOSED"] as const) {
   for (const language of ["en", "lv", "ar"] as const) {
@@ -124,7 +124,7 @@ for (const status of ["CLOSED"] as const) {
         expectAuthored(captured.bytes, reference, modes, before.revision);
         pending.release();
         if (refusal === null) {
-          expect(captured.reply.outcome.tag).toBe("REVIEWED");
+          expect(captured.reply.outcome.kind).toBe("REVIEWED");
           await confirmReview(page);
           const recorded = page.waitForResponse(
             (response) => new URL(response.url()).pathname === "/api/operation.execute",
@@ -139,12 +139,12 @@ for (const status of ["CLOSED"] as const) {
           expect(acceptedHistory).toHaveLength(before.revision + 1);
           expect(
             acceptedHistory.some(
-              (entry) => entry.tag === "FULL" && entry.receipt.scope.act === "CORRECT",
+              (entry) => entry.kind === "FULL" && entry.receipt.subject.act === "CORRECT",
             ),
           ).toBe(true);
         } else {
-          expect(captured.reply.outcome.tag).toBe("REJECTED");
-          if (captured.reply.outcome.tag === "REJECTED") {
+          expect(captured.reply.outcome.kind).toBe("REJECTED");
+          if (captured.reply.outcome.kind === "REJECTED") {
             expect(captured.reply.outcome.data.code).toBe(refusal);
           }
           await expect(page.getByRole("alert")).toBeVisible();

@@ -23,7 +23,7 @@ type AuthorityEntryMetadata =
     }
 
 [<RequireQualifiedAccess>]
-type LedgerScope =
+type LedgerSubject =
     | Case of CaseEntryMetadata
     | Authority of AuthorityEntryMetadata
 
@@ -35,7 +35,7 @@ type LedgerMetadata =
         OperationId: Guid
         ActorId: Guid
         RecordedAt: DateTimeOffset
-        Scope: LedgerScope
+        Subject: LedgerSubject
         PayloadCommitment: byte array
     }
 
@@ -143,22 +143,26 @@ module LedgerEntry =
 
     let requestDigest (request: byte array) = SHA256.HashData request
 
-    let private scopeBytes =
+    let private subjectBytes =
         function
-        | LedgerScope.Authority scope ->
-            if scope.TargetActorId = Guid.Empty then
-                invalidArg (nameof scope) "Invalid authority subject."
+        | LedgerSubject.Authority subject ->
+            if subject.TargetActorId = Guid.Empty then
+                invalidArg (nameof subject) "Invalid authority subject."
 
-            2uy, authorityCode scope.Act, scope.TargetActorId, 0L, 0
-        | LedgerScope.Case scope ->
+            2uy, authorityCode subject.Act, subject.TargetActorId, 0L, 0
+        | LedgerSubject.Case subject ->
             if
-                scope.CaseId = Guid.Empty
-                || scope.Revision < 1L
-                || scope.Revision > Revision.Maximum
+                subject.CaseId = Guid.Empty
+                || subject.Revision < 1L
+                || subject.Revision > Revision.Maximum
             then
-                invalidArg (nameof scope) "Invalid case ledger metadata."
+                invalidArg (nameof subject) "Invalid case ledger metadata."
 
-            1uy, actCode scope.Act, scope.CaseId, scope.Revision, scope.BusinessDate.DayNumber
+            1uy,
+            actCode subject.Act,
+            subject.CaseId,
+            subject.Revision,
+            subject.BusinessDate.DayNumber
 
     /// Exactly 183 bytes. Only the salted payload commitment covers erasable business content.
     let preimage (metadata: LedgerMetadata) =
@@ -179,19 +183,21 @@ module LedgerEntry =
         if ticks % 10L <> 0L then
             invalidArg (nameof metadata) "Use microsecond precision."
 
-        let scope, act, subject, revision, date = scopeBytes metadata.Scope
+        let subjectKind, act, subjectId, revision, date = subjectBytes metadata.Subject
 
         Array.concat
             [
-                Encoding.ASCII.GetBytes "claimcore/ledger-entry/3\n"
+                Encoding.ASCII.GetBytes(
+                    sprintf "claimcore/ledger-entry/%d\n" RecordVersions.LedgerEntry
+                )
                 metadata.InstallationId.ToByteArray(bigEndian = true)
                 u64 (uint64 metadata.Sequence)
                 metadata.PreviousHash
-                [| scope; act |]
+                [| subjectKind; act |]
                 metadata.OperationId.ToByteArray(bigEndian = true)
                 metadata.ActorId.ToByteArray(bigEndian = true)
                 i64 (ticks / 10L)
-                subject.ToByteArray(bigEndian = true)
+                subjectId.ToByteArray(bigEndian = true)
                 i64 revision
                 i32 date
                 metadata.PayloadCommitment

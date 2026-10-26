@@ -68,9 +68,9 @@ it.each(["en", "lv", "ar"])(
     expect(draftAt(0).act).toMatchObject({
       kind: "CORRECT",
       groups: {
-        registration: { mode: "REPLACE", values: { claimedAmount: "1.0000" } },
-        decision: { mode: "CLEAR" },
-        payment: { mode: "CLEAR" },
+        registration: { kind: "REPLACE", values: { claimedAmount: "1.0000" } },
+        decision: { kind: "CLEAR" },
+        payment: { kind: "CLEAR" },
       },
     });
   },
@@ -103,16 +103,16 @@ it("associates payment acknowledgement with the generated mode control [CC-DOM-0
     expect(payment).toHaveFocus();
   });
   expect(payment).toHaveAttribute("aria-invalid", "true");
-  const description = document.getElementById("act.groups.payment.mode-error");
+  const description = document.getElementById("act.groups.payment.kind-error");
   expect(payment.getAttribute("aria-describedby")?.split(" ")).toEqual([
-    "act.groups.payment.mode-meaning",
-    "act.groups.payment.mode-error",
+    "act.groups.payment.kind-meaning",
+    "act.groups.payment.kind-error",
   ]);
   expect(description).toHaveTextContent("explicit payment reaffirmation");
   await user.selectOptions(screen.getByRole("combobox", { name: "Interface language" }), "lv");
   expect(description).toHaveTextContent("skaidri jāapstiprina");
   await user.selectOptions(payment, "CLEAR");
   expect(payment).not.toHaveAttribute("aria-invalid");
-  expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.mode-meaning");
+  expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-meaning");
   expect(globalThis.fetch).toHaveBeenCalledOnce();
 });

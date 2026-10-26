@@ -4,24 +4,23 @@ import type { ApiResult, CaseSummary, ServiceResponse } from "../src/api/service
 import { isDisclosureRefused } from "../src/api/outcomes";
 import { localNotice } from "../src/api/notices";
 import { useRetryablePage } from "../src/hooks/useRead";
-
 type ListResponse = ServiceResponse<"case.list">;
-
 const initial: ApiResult<ListResponse> = {
   kind: "outcome",
   status: 200,
   value: {
     outcome: {
-      tag: "SUCCEEDED",
+      kind: "SUCCEEDED",
       data: {
         offers: [],
         items: [
           {
-            state: "LIVE",
-            disposition: "ACTIVE",
+            state: {
+              kind: "ACTIVE",
+              status: "OPENED",
+            },
             caseReference: "SYNTHETIC-PRIVATE",
             revision: 1,
-            status: "OPENED",
           },
         ],
         nextCursor: "continuation",
@@ -29,16 +28,14 @@ const initial: ApiResult<ListResponse> = {
     },
   },
 };
-
 const select = (response: ListResponse) =>
-  response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
-
+  response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 const unavailable: ApiResult<ListResponse> = {
   kind: "outcome",
   status: 200,
   value: {
     outcome: {
-      tag: "REJECTED",
+      kind: "REJECTED",
       data: {
         code: "ACCESS_RESOURCE_UNAVAILABLE",
         action: "NONE_REQUIRED",
@@ -49,7 +46,6 @@ const unavailable: ApiResult<ListResponse> = {
     },
   },
 };
-
 const sessionRejected: ApiResult<ListResponse> = {
   kind: "hostFailure",
   status: 401,
@@ -58,7 +54,6 @@ const sessionRejected: ApiResult<ListResponse> = {
     phase: "NOT_STARTED",
   },
 };
-
 const loadAfter = async (next: ApiResult<ListResponse>) => {
   const request = vi.fn().mockResolvedValueOnce(initial).mockResolvedValueOnce(next);
   const { result } = renderHook(() => useRetryablePage<ListResponse, CaseSummary>(request, select));
@@ -71,10 +66,15 @@ const loadAfter = async (next: ApiResult<ListResponse>) => {
   });
   return result;
 };
-
 it.each([
-  { label: "resource grant", refusal: unavailable },
-  { label: "browser session", refusal: sessionRejected },
+  {
+    label: "resource grant",
+    refusal: unavailable,
+  },
+  {
+    label: "browser session",
+    refusal: sessionRejected,
+  },
 ])(
   "clears this page's cached rows cursor and metadata after a $label refusal",
   async ({ refusal }) => {
@@ -85,28 +85,31 @@ it.each([
     expect(result.current.message).not.toBeNull();
   },
 );
-
 it("keeps a previously disclosed page retryable after a transient delivery failure", async () => {
-  const result = await loadAfter({ kind: "deliveryFailure", notice: localNotice("incomplete") });
+  const result = await loadAfter({
+    kind: "deliveryFailure",
+    notice: localNotice("incomplete"),
+  });
   expect(result.current.items).toHaveLength(1);
   expect(result.current.items[0]?.caseReference).toBe("SYNTHETIC-PRIVATE");
   expect(result.current.cursor).toBe("continuation");
   expect(result.current.page).not.toBeNull();
   expect(result.current.message).not.toBeNull();
 });
-
 it("does not interpret a local delivery notice as a definite server refusal", () => {
   expect(
     isDisclosureRefused({
       kind: "deliveryFailure",
       notice: {
         kind: "diagnostic",
-        diagnostic: { code: "ACCESS_RESOURCE_UNAVAILABLE", limits: {} },
+        diagnostic: {
+          code: "ACCESS_RESOURCE_UNAVAILABLE",
+          limits: {},
+        },
       },
     }),
   ).toBe(false);
 });
-
 it("resets an invalid continuation locally and waits for a deliberate fresh reload", async () => {
   const refused = vi.fn();
   const invalid: ApiResult<ListResponse> = {
@@ -114,7 +117,7 @@ it("resets an invalid continuation locally and waits for a deliberate fresh relo
     status: 200,
     value: {
       outcome: {
-        tag: "REJECTED",
+        kind: "REJECTED",
         data: {
           code: "QUERY_CURSOR_INVALID",
           action: "READ_CURRENT",

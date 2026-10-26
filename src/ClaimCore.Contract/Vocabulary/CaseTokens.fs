@@ -55,10 +55,3 @@ module CaseActKinds =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
-
-module Dispositions =
-    let vocabulary =
-        Vocabulary.define "token" [ Disposition.Active, "ACTIVE"; Disposition.Voided, "VOIDED" ]
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary

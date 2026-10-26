@@ -28,7 +28,7 @@ let private lastOwner () =
 
         Expect.equal
             (AuthorityDecisions.execute installation owner request last)
-            (LedgerDecision.Refuse Refusal.LastOwner)
+            (Decision.Refuse Refusal.LastOwner)
             "The last enabled human owner remains protected"
 
 let private humanOnly () =
@@ -44,7 +44,7 @@ let private humanOnly () =
                 owner
                 request
                 (authorityView worker target None))
-            (LedgerDecision.Refuse Refusal.HumanPrincipalRequired)
+            (Decision.Refuse Refusal.HumanPrincipalRequired)
             "Service principals cannot receive human-only grants"
 
     let view = authorityView AuthorityView.empty AuthorityView.empty None
@@ -61,7 +61,7 @@ let private humanOnly () =
 
     Expect.equal
         (AuthorityDecisions.provision installation (id 102) service genesis)
-        (LedgerDecision.Refuse Refusal.HumanPrincipalRequired)
+        (Decision.Refuse Refusal.HumanPrincipalRequired)
         "Bootstrap also requires a human"
 
 let private replay () =
@@ -70,7 +70,7 @@ let private replay () =
 
     let entry, receipt =
         match AuthorityDecisions.execute installation owner request view with
-        | LedgerDecision.Append(entry, AuthorityProjection.Register(target, principal), receipt) ->
+        | Decision.Proceed(entry, AuthorityProjection.Register(target, principal), receipt) ->
             Expect.equal target request.OperationId "Registration owns the target identity"
             Expect.equal principal other "Exact authored principal"
             entry, receipt
@@ -81,7 +81,7 @@ let private replay () =
 
     Expect.equal
         (AuthorityDecisions.execute installation owner request existing)
-        (LedgerDecision.Replay receipt)
+        (Decision.Replay receipt)
         "Executor target and position survive replay"
 
     let changed =
@@ -91,7 +91,7 @@ let private replay () =
 
     Expect.equal
         (AuthorityDecisions.execute installation owner changed existing)
-        (LedgerDecision.Refuse Refusal.IdempotencyConflict)
+        (Decision.Refuse Refusal.IdempotencyConflict)
         "Changed content cannot reuse the ID"
 
     let revoked =
@@ -104,7 +104,7 @@ let private replay () =
 
     Expect.equal
         (AuthorityDecisions.execute installation owner request revoked)
-        (LedgerDecision.Refuse Refusal.ResourceUnavailable)
+        (Decision.Refuse Refusal.ResourceUnavailable)
         "Current management precedes replay"
 
 let private provision () =
@@ -122,16 +122,14 @@ let private provision () =
 
     let entry, receipt =
         match AuthorityDecisions.provision installation (id 104) owner initial with
-        | LedgerDecision.Append(entry,
-                                AuthorityProjection.ProvisionOwner(target, principal),
-                                receipt) ->
+        | Decision.Proceed(entry, AuthorityProjection.ProvisionOwner(target, principal), receipt) ->
             Expect.equal (target, principal) (id 104, owner) "Bootstrap has explicit identity"
             entry, receipt
         | _ -> failtest "Expected explicit bootstrap"
 
     Expect.equal
-        entry.Scope
-        (StoredScope.Authority(id 104, AuthorityKind.ProvisionOwner))
+        entry.Subject
+        (StoredSubject.Authority(id 104, AuthorityKind.ProvisionOwner))
         "Bootstrap records its distinct durable kind"
 
     let target = actor owner (id 104) [ Role.Owner ] []
@@ -139,7 +137,7 @@ let private provision () =
 
     Expect.equal
         (AuthorityDecisions.provision installation (id 104) owner view)
-        (LedgerDecision.Replay receipt)
+        (Decision.Replay receipt)
         "Bootstrap exact replay is idempotent"
 
 let private reviewAndFences () =
@@ -147,12 +145,12 @@ let private reviewAndFences () =
     let view = authorityView worker AuthorityView.empty None
 
     match AuthorityDecisions.review installation owner request view.Read with
-    | LedgerReviewDecision.Proposed(_, AuthorityProjection.Register _) -> ()
+    | Decision.Proceed(_, AuthorityProjection.Register _) -> ()
     | _ -> failtest "Review must be a pure proposal"
 
     Expect.equal
         (AuthorityDecisions.execute installation owner request { view with IsFenced = true })
-        (LedgerDecision.Refuse Refusal.OperationResolved)
+        (Decision.Refuse Refusal.OperationResolved)
         "Operational fence precedes append"
 
     Expect.equal
@@ -166,7 +164,7 @@ let private reviewAndFences () =
                         Sequence = Revision.Maximum
                     }
             })
-        (LedgerDecision.Refuse Refusal.LedgerExhausted)
+        (Decision.Refuse Refusal.LedgerExhausted)
         "Capacity refuses fresh work"
 
     let registered = admitted 106 owner AdmittedAuthorityAct.Register
@@ -181,12 +179,12 @@ let private reviewAndFences () =
 
     Expect.equal
         (AuthorityDecisions.review installation owner registered full.Read)
-        (LedgerReviewDecision.Refuse Refusal.ActorAlreadyRegistered)
+        (Decision.Refuse Refusal.ActorAlreadyRegistered)
         "Preview applies target rules without a head"
 
     Expect.equal
         (AuthorityDecisions.execute installation owner registered full)
-        (LedgerDecision.Refuse Refusal.LedgerExhausted)
+        (Decision.Refuse Refusal.LedgerExhausted)
         "Execution capacity precedes target projection refusal"
 
     let scoped = actor owner (id 1) [] [ id 77, [ Role.Owner ] ]

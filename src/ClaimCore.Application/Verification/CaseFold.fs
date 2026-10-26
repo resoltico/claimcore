@@ -11,44 +11,40 @@ type internal CaseHistory =
         Revision: int64
         Snapshot: CaseSnapshot option
         Reference: string option
-        Disposition: Disposition
-        Erased: bool
+        State: CaseState<unit>
         MissingPayloadAt: int64 option
         PresentPayloadAt: int64 option
         ErasedAt: int64 option
     }
 
 module internal CaseFold =
-    let private nextDisposition sequence previous act =
-        let disposition =
-            previous |> Option.map _.Disposition |> Option.defaultValue Disposition.Active
+    let private nextState sequence previous act =
+        let state =
+            previous |> Option.map _.State |> Option.defaultValue (CaseState.Active())
 
-        let erased = previous |> Option.exists _.Erased
+        let refuse () =
+            Error(divergence (Some sequence) VerificationFinding.StateSequence)
 
-        match act, disposition with
-        | _ when erased -> Error(divergence (Some sequence) VerificationFinding.DispositionSequence)
-        | (CaseActKind.Stewardship StewardshipActKind.Void), Disposition.Active ->
-            Ok Disposition.Voided
-        | (CaseActKind.Stewardship StewardshipActKind.Reinstate), Disposition.Voided ->
-            Ok Disposition.Active
-        | (CaseActKind.Stewardship StewardshipActKind.Void), Disposition.Voided
-        | (CaseActKind.Stewardship StewardshipActKind.Reinstate), Disposition.Active ->
-            Error(divergence (Some sequence) VerificationFinding.DispositionSequence)
-        | (CaseActKind.Stewardship StewardshipActKind.Erase), _ -> Ok disposition
-        | _, Disposition.Voided ->
-            Error(divergence (Some sequence) VerificationFinding.DispositionSequence)
-        | _ -> Ok Disposition.Active
+        match act, state with
+        | _, CaseState.Erased -> refuse ()
+        | CaseActKind.Stewardship StewardshipActKind.Void, CaseState.Active() ->
+            Ok(CaseState.Voided())
+        | CaseActKind.Stewardship StewardshipActKind.Reinstate, CaseState.Voided() ->
+            Ok(CaseState.Active())
+        | CaseActKind.Stewardship StewardshipActKind.Void, CaseState.Voided()
+        | CaseActKind.Stewardship StewardshipActKind.Reinstate, CaseState.Active() -> refuse ()
+        | CaseActKind.Stewardship StewardshipActKind.Erase, _ -> Ok CaseState.Erased
+        | _, CaseState.Voided() -> refuse ()
+        | _, CaseState.Active() -> Ok(CaseState.Active())
 
-    let private snapshot sequence disposition reference payload =
+    let private snapshot sequence state reference payload =
         match payload with
         | VerifiedPayload.Case(_, Some snapshot) ->
             let matches =
-                match snapshot.View with
-                | CaseView.Live(_, value) ->
-                    value = disposition && (reference |> Option.forall ((=) snapshot.Reference))
-                | _ -> false
+                CaseState.map ignore snapshot.State = state
+                && (reference |> Option.forall ((=) snapshot.Reference))
 
-            require (Some sequence) VerificationFinding.DispositionSequence matches
+            require (Some sequence) VerificationFinding.StateSequence matches
             |> Result.map (fun () -> Some snapshot, Some snapshot.Reference)
         | VerifiedPayload.Case(_, None)
         | VerifiedPayload.Erased -> Ok(None, reference)
@@ -71,9 +67,9 @@ module internal CaseFold =
                     VerificationFinding.HistoryStart
                     ((previous.IsNone) = (act = (CaseActKind.Business BusinessActKind.Open)))
 
-            let! disposition = nextDisposition entry.Sequence previous act
+            let! state = nextState entry.Sequence previous act
             let reference = previous |> Option.bind _.Reference
-            let! snapshot, reference = snapshot entry.Sequence disposition reference payload
+            let! snapshot, reference = snapshot entry.Sequence state reference payload
             let first field = previous |> Option.bind field
 
             let missing =
@@ -95,8 +91,7 @@ module internal CaseFold =
                         Revision = revision
                         Snapshot = snapshot
                         Reference = reference
-                        Disposition = disposition
-                        Erased = act = (CaseActKind.Stewardship StewardshipActKind.Erase)
+                        State = state
                         MissingPayloadAt = missing
                         PresentPayloadAt = present
                         ErasedAt =
@@ -112,9 +107,9 @@ module internal CaseFold =
         histories
         |> Map.values
         |> Seq.choose (fun history ->
-            if history.Erased && history.PresentPayloadAt.IsSome then
+            if history.State = CaseState.Erased && history.PresentPayloadAt.IsSome then
                 Some(divergence history.ErasedAt VerificationFinding.ErasureIncomplete)
-            elif not history.Erased && history.MissingPayloadAt.IsSome then
+            elif history.State <> CaseState.Erased && history.MissingPayloadAt.IsSome then
                 Some(divergence history.MissingPayloadAt VerificationFinding.PayloadWithoutErasure)
             else
                 None)
@@ -136,13 +131,15 @@ module internal CaseFold =
                     record.CaseId
 
             let state =
-                match record.Snapshot.View with
-                | CaseView.Erased -> history.Erased && history.MissingPayloadAt.IsSome
-                | CaseView.Live(_, disposition) ->
-                    not history.Erased
+                match record.Snapshot.State with
+                | CaseState.Erased ->
+                    history.State = CaseState.Erased && history.MissingPayloadAt.IsSome
+                | CaseState.Active _
+                | CaseState.Voided _ ->
+                    history.State <> CaseState.Erased
                     && history.MissingPayloadAt.IsNone
                     && history.Snapshot = Some record.Snapshot
-                    && disposition = history.Disposition
+                    && CaseState.map ignore record.Snapshot.State = history.State
 
             identity && record.Snapshot.Revision = history.Revision && state
 

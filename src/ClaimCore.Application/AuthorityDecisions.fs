@@ -19,9 +19,15 @@ module internal AuthorityDecisions =
             && PrincipalKey.isHuman actor.Principal
             && List.contains Role.Owner view.Installation)
 
-    let private grantProjection role scope active (actor: AuthorityView) (view: AuthorityReadView) =
+    let private grantProjection
+        role
+        subject
+        active
+        (actor: AuthorityView)
+        (view: AuthorityReadView)
+        =
         let caseId =
-            match scope, view.TargetCase with
+            match subject, view.TargetCase with
             | GrantTarget.Installation, _ -> Ok None
             | GrantTarget.CaseReference _, Some record -> Ok(Some record.CaseId)
             | _ -> Error Refusal.ResourceUnavailable
@@ -72,10 +78,10 @@ module internal AuthorityDecisions =
             Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, true))
         | AuthorityAction.User AdmittedAuthorityAct.Disable, Some actor ->
             Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, false))
-        | AuthorityAction.User(AdmittedAuthorityAct.Grant(role, scope)), Some _ ->
-            grantProjection role scope true view.Target view
-        | AuthorityAction.User(AdmittedAuthorityAct.Revoke(role, scope)), Some _ ->
-            grantProjection role scope false view.Target view
+        | AuthorityAction.User(AdmittedAuthorityAct.Grant(role, subject)), Some _ ->
+            grantProjection role subject true view.Target view
+        | AuthorityAction.User(AdmittedAuthorityAct.Revoke(role, subject)), Some _ ->
+            grantProjection role subject false view.Target view
 
     let private targets installationId target action (view: AuthorityReadView) =
         if
@@ -110,7 +116,7 @@ module internal AuthorityDecisions =
                     ResourceScope.Installation
             )
         then
-            IdentityDecision.Refuse Refusal.ResourceUnavailable
+            Decision.Refuse Refusal.ResourceUnavailable
         else
             OperationIdentity.decide
                 installationId
@@ -119,34 +125,44 @@ module internal AuthorityDecisions =
                 operationId
                 bytes
                 view.ExistingOperation
+                (LedgerEntries.receipt principal view.Actor None)
 
 
     let private propose installationId operationId target action view =
         match targets installationId target action view with
-        | Error fault -> LedgerReviewDecision.Fail fault
+        | Error fault -> Decision.Fail fault
         | Ok() ->
             match projection operationId target action view with
-            | Error refusal -> LedgerReviewDecision.Refuse refusal
-            | Ok(targetId, projection) -> LedgerReviewDecision.Proposed(targetId, projection)
+            | Error refusal -> Decision.Refuse refusal
+            | Ok(targetId, projection) -> Decision.Proceed(targetId, projection)
 
-    let private provisionIdentity installationId operationId bytes (view: AuthorityLockedView) =
+    let private provisionIdentity
+        installationId
+        operationId
+        principal
+        bytes
+        (view: AuthorityLockedView)
+        =
         if view.Read.ActorCount = 0 then
             if view.Head.Sequence = 0L && view.Read.ExistingOperation.IsNone then
-                IdentityDecision.Fresh
+                Decision.Proceed()
             else
-                IdentityDecision.Fail CoreFault.StoreIntegrityError
+                Decision.Fail CoreFault.StoreIntegrityError
         else
             match view.Read.ExistingOperation with
-            | None -> IdentityDecision.Refuse Refusal.ActorAlreadyRegistered
+            | None -> Decision.Refuse Refusal.ActorAlreadyRegistered
             | Some entry when entry.OperationId <> operationId ->
-                IdentityDecision.Fail CoreFault.StoreIntegrityError
+                Decision.Fail CoreFault.StoreIntegrityError
             | Some entry ->
                 match LedgerEntries.validate installationId entry with
-                | Error fault -> IdentityDecision.Fail fault
+                | Error fault -> Decision.Fail fault
                 | Ok validated ->
                     match LedgerEntries.identityBytes validated with
-                    | Some accepted when accepted = bytes -> IdentityDecision.Replay validated
-                    | _ -> IdentityDecision.Refuse Refusal.IdempotencyConflict
+                    | Some accepted when accepted = bytes ->
+                        LedgerEntries.receipt principal view.Read.Actor None validated
+                        |> Result.map Decision.Replay
+                        |> Result.defaultWith Decision.Fail
+                    | _ -> Decision.Refuse Refusal.IdempotencyConflict
 
     let private project
         action
@@ -160,13 +176,13 @@ module internal AuthorityDecisions =
                 match action with
                 | AuthorityAction.ProvisionOwner -> targetId
                 | AuthorityAction.User _ -> LedgerEnvelope.actorId view.Actor
-            Scope = StoredScope.Authority(targetId, RecordedAuthorityActs.kind record.Act)
+            Subject = StoredSubject.Authority(targetId, RecordedAuthorityActs.kind record.Act)
             Snapshot = Array.empty
             Current = None
             Projection = projection
         }
 
-    let private scope installationId principal target action record admit =
+    let private subject installationId principal target action record admit =
         {
             Encode = fun () -> AuthorityRecord.encode record
             Canonical = fun () -> AuthorityRequests.canonical record |> AuthorityRecord.encode
@@ -178,10 +194,10 @@ module internal AuthorityDecisions =
                     LedgerEntries.receipt principal view.Actor None entry
         }
 
-    let private userScope installationId principal (request: AdmittedAuthorityRequest) =
+    let private userSubject installationId principal (request: AdmittedAuthorityRequest) =
         let record = AuthorityRequests.toRecord request
 
-        scope
+        subject
             installationId
             principal
             request.Target
@@ -190,7 +206,7 @@ module internal AuthorityDecisions =
             (admission installationId principal request.OperationId)
 
     let review installationId principal request (view: AuthorityReadView) =
-        LedgerEnvelope.review (userScope installationId principal request) view
+        LedgerEnvelope.review (userSubject installationId principal request) view
 
     let execute
         installationId
@@ -201,7 +217,7 @@ module internal AuthorityDecisions =
         LedgerEnvelope.execute
             installationId
             request.OperationId
-            (userScope installationId principal request)
+            (userSubject installationId principal request)
             view.Head
             view.IsFenced
             view.PayloadNonce
@@ -212,15 +228,15 @@ module internal AuthorityDecisions =
         let record = AuthorityRequests.provisionRecord operationId target
 
         let admit bytes _ =
-            provisionIdentity installationId operationId bytes view
+            provisionIdentity installationId operationId target bytes view
 
-        let scope =
-            scope installationId target target AuthorityAction.ProvisionOwner record admit
+        let subject =
+            subject installationId target target AuthorityAction.ProvisionOwner record admit
 
         LedgerEnvelope.execute
             installationId
             operationId
-            scope
+            subject
             view.Head
             view.IsFenced
             view.PayloadNonce

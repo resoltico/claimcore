@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Cli
 
 open System
 open Microsoft.FSharp.Reflection
@@ -46,7 +46,7 @@ type CliMessage =
         retryCommand: string *
         resolveCommand: string
     | [<MessageKey("cli.configurationIssue")>] ConfigurationIssue of setting: string * issue: string
-    | [<MessageKey("ui.characterWarning")>] CharacterWarning of characters: string
+    | [<MessageKey("label.characterWarning")>] CharacterWarning of characters: string
     | [<MessageKey("cli.help.layout")>] HelpLayout of body: string
     | [<MessageKey("cli.help.call")>] HelpCall of
         maximumInvocationBytes: string *
@@ -71,11 +71,11 @@ type CliMessage =
     | [<MessageKey("cli.help.delivery")>] HelpDelivery of
         retryCommand: string *
         resolveCommand: string
-    | [<MessageKey("ui.action")>] ActionLabel
-    | [<MessageKey("ui.availableActs")>] AvailableActsLabel
-    | [<MessageKey("ui.enabled")>] EnabledLabel
-    | [<MessageKey("ui.reviewTitle")>] ReviewTitle
-    | [<MessageKey("ui.revisionLabel")>] RevisionLabel
+    | [<MessageKey("label.action")>] ActionLabel
+    | [<MessageKey("label.availableActs")>] AvailableActsLabel
+    | [<MessageKey("label.enabled")>] EnabledLabel
+    | [<MessageKey("label.reviewTitle")>] ReviewTitle
+    | [<MessageKey("label.revisionLabel")>] RevisionLabel
 
 /// Rendering and publication inspect the same closed producers; no separate argument-name list exists.
 module CliMessages =

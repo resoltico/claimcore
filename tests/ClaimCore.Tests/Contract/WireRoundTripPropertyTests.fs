@@ -1,6 +1,7 @@
 module ClaimCore.Tests.WireRoundTripPropertyTests
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.Collections
@@ -113,11 +114,11 @@ let private load () =
         endpoint.Accept
             { new IEndpointVisitor<bool> with
                 member _.Visit(endpoint: Endpoint<'Input, 'Output>) =
-                    for value in source.Requests[endpoint.Id] do
+                    for value in source.Requests[endpoint.Token] do
                         let typed = endpoint.Input.Read "$" value |> admitted
                         collect source "request" typeof<'Input> (box typed)
 
-                    for value in source.Replies[endpoint.Id] do
+                    for value in source.Replies[endpoint.Token] do
                         let typed = endpoint.Output.Read "$" value |> admitted
                         collect source "reply" typeof<'Output> (box typed)
 
@@ -148,7 +149,7 @@ let private scalarText =
                 "Ž"
                 "東京"
                 "😀"
-                "e\u0301"
+                "é"
                 "\""
                 "\\"
                 "\u0001"
@@ -158,8 +159,8 @@ let private scalarText =
                 "\f"
                 "\r"
                 "\u001f"
-                "\u2028"
-                "\u2029"
+                " "
+                " "
                 " "
             ]
 
@@ -225,7 +226,6 @@ let private tokens =
             "act"
             "Role"
             "Status"
-            "Disposition"
             "Detail"
             "Field"
             "RecommendedAction"
@@ -476,14 +476,14 @@ let private requestProperty (endpoint: AnyEndpoint) =
     endpoint.Accept
         { new IEndpointVisitor<Property<bool>> with
             member _.Visit endpoint =
-                codecProperty false endpoint.Input seeds.Value.Requests[endpoint.Id]
+                codecProperty false endpoint.Input seeds.Value.Requests[endpoint.Token]
         }
 
 let private replyProperty (endpoint: AnyEndpoint) =
     endpoint.Accept
         { new IEndpointVisitor<Property<bool>> with
             member _.Visit endpoint =
-                codecProperty true endpoint.Output seeds.Value.Replies[endpoint.Id]
+                codecProperty true endpoint.Output seeds.Value.Replies[endpoint.Token]
         }
 
 let private closedUnionCoverage (source: Seeds) =
@@ -497,7 +497,14 @@ let private closedUnionCoverage (source: Seeds) =
                             FSharpValue.GetUnionFields(value, kind) |> fst |> _.Tag)
                         |> Set.ofSeq
 
-                    for case in FSharpType.GetUnionCases kind do
+                    // RecordGroup is shared with corrections; diagnostic targets admit
+                    // only Payment. Its other cases are not values of this wire codec.
+                    let cases =
+                        FSharpType.GetUnionCases kind
+                        |> Array.filter (fun case ->
+                            kind <> typeof<RecordGroup> || case.Name = "Payment")
+
+                    for case in cases do
                         if not (Set.contains case.Tag actual) then
                             yield kind.Name + "." + case.Name
         ]
@@ -515,7 +522,7 @@ let private seedCases () =
         endpoint.Accept
             { new IEndpointVisitor<bool> with
                 member _.Visit endpoint =
-                    for value in source.Requests[endpoint.Id] do
+                    for value in source.Requests[endpoint.Token] do
                         endpoint.Input.Read "$" value
                         |> admitted
                         |> endpoint.Input.Write
@@ -526,7 +533,7 @@ let private seedCases () =
                                 (CanonicalWriter.bytes value)
                                 "Every request seed round trips."
 
-                    for value in source.Replies[endpoint.Id] do
+                    for value in source.Replies[endpoint.Token] do
                         endpoint.Output.Read "$" value
                         |> admitted
                         |> endpoint.Output.Write

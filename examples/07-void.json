@@ -1,7 +1,7 @@
 {
   "endpoint": "operation.execute",
   "input": {
-    "scope": "CASE",
+    "kind": "CASE",
     "operationId": "10000000-0000-4000-8000-000000000007",
     "caseReference": "DEMO-0001",
     "expectedRevision": 6,

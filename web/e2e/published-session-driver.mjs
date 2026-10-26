@@ -25,7 +25,7 @@ const session = async (context, fingerprint, cookie) => {
     headers: headers(fingerprint, undefined, cookie),
   });
   const reply = await response.json();
-  require(response.status() === 200 && reply.outcome.tag === "SUCCEEDED", "Session unavailable");
+  require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "Session unavailable");
   return reply.outcome.data;
 };
 const contextRequest = (context, fingerprint, csrf, cookie) =>
@@ -37,7 +37,7 @@ const protectedContext = async (context, fingerprint, csrf) => {
   const response = await contextRequest(context, fingerprint, csrf);
   const reply = await response.json();
   require(response.status() === 200 &&
-    reply.outcome.tag === "SUCCEEDED", "Protected context refused");
+    reply.outcome.kind === "SUCCEEDED", "Protected context refused");
   require(reply.outcome.data.capabilities.includes("MANAGE_AUTHORITY"), "Owner context missing");
 };
 const login = async (context, fingerprint) => {
@@ -101,7 +101,7 @@ const probe = async (context, fingerprint, state) => {
       data: {},
     });
     const reply = await response.json();
-    require(response.status() === 200 && reply.outcome.tag === "SUCCEEDED", "Logout refused");
+    require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "Logout refused");
   }
   return { authenticated: true, protectedStatus: 200 };
 };

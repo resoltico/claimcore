@@ -250,11 +250,11 @@ let tests =
             testCase "Unicode text and length boundaries" (fun () ->
                 let invalidValues =
                     [
-                        "\u00a0"
-                        "\u00a0value"
-                        "value\u3000"
+                        " "
+                        " value"
+                        "value　"
                         "prefix\u0000suffix"
-                        "prefix\u0080suffix"
+                        "prefixsuffix"
                         String([| char 0xD800 |])
                         String([| char 0xDFFF |])
                         String.replicate 201 "😀"

@@ -1,6 +1,8 @@
 namespace ClaimCore.Web
 
 open ClaimCore.Contract
+open ClaimCore.Json
+open ClaimCore.Application
 
 open ClaimCore.Contract.Protocol
 
@@ -42,7 +44,7 @@ module internal ApiRoutes =
                 context
 
     let private input
-        (endpoint: AnyEndpoint)
+        (handler: AnyHandler)
         (configuration: WebConfiguration)
         (context: HttpContext)
         =
@@ -54,7 +56,7 @@ module internal ApiRoutes =
                 | Error _ ->
                     return Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
                 | Ok value ->
-                    match Dispatch.prepare endpoint value with
+                    match Dispatch.prepare handler value with
                     | Error _ ->
                         return
                             Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
@@ -63,7 +65,9 @@ module internal ApiRoutes =
                     | Ok prepared -> return Ok(value, prepared)
         }
 
-    let handle endpoint configuration withActor (context: HttpContext) =
+    let handle handler configuration withActor (context: HttpContext) =
+        let endpoint = Handlers.endpoint handler
+
         task {
             HttpHeaders.noStore context
 
@@ -73,7 +77,7 @@ module internal ApiRoutes =
                 match! admit configuration context with
                 | Error reason -> return RouteSupport.admissionFailure context reason
                 | Ok principal ->
-                    match! input endpoint configuration context with
+                    match! input handler configuration context with
                     | Error result -> return result
                     | Ok(input, prepared) ->
                         JsonValue.tryMember "operationId" input

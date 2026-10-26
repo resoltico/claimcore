@@ -2,7 +2,7 @@ import { createPresenter } from "../src/presentation/presenter";
 import { defaults } from "../src/presentation/preferences";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "./presentation-test-support";
+import { getButton, fireEvent, render, screen, waitFor } from "./presentation-test-support";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { AuthorityPanel } from "../src/views/AuthorityPanel";
 import { productMetadata } from "../src/protocol/productMetadata";
@@ -15,18 +15,35 @@ import { installationOffers } from "./installation-advice.fixtures";
 import { wireReply } from "./contract-corpus.fixtures";
 import { caseFields } from "./service-foundation.fixtures";
 import { fillRegistrationInputs } from "./registration-inputs.fixtures";
-
 afterEach(() => vi.unstubAllGlobals());
-type CaseInput = Extract<RequestByEndpoint["operation.execute"], { scope: "CASE" }>;
-type AuthorityInput = Extract<RequestByEndpoint["operation.execute"], { scope: "AUTHORITY" }>;
-type Dispatch<T> = { path: string; bytes: string; input: T };
-const { acts, authorityActs } = productMetadata.catalog;
+type CaseInput = Extract<
+  RequestByEndpoint["operation.execute"],
+  {
+    kind: "CASE";
+  }
+>;
+type AuthorityInput = Extract<
+  RequestByEndpoint["operation.execute"],
+  {
+    kind: "AUTHORITY";
+  }
+>;
+type Dispatch<T> = {
+  path: string;
+  bytes: string;
+  input: T;
+};
+const acts = productMetadata.catalog.entries
+  .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE")
+  .map((entry) => entry as typeof entry & { kind: ActKind });
+const authorityActs = productMetadata.catalog.entries
+  .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "AUTHORITY")
+  .map((entry) => entry as typeof entry & { kind: AuthorityInput["act"]["kind"] });
 const runtime = {
   productVersion: "0.10.0",
   businessDate: "2026-09-09",
   timeZone: "Etc/UTC",
 };
-
 const currentFor = (kind: ActKind): CurrentCase => {
   const decided = ["WITHDRAW_DECISION", "RECORD_PAYMENT", "CLEAR_PAYMENT", "CORRECT"].includes(
     kind,
@@ -35,17 +52,27 @@ const currentFor = (kind: ActKind): CurrentCase => {
   return {
     caseReference: caseFields.caseReference,
     revision: 1,
-    advice: { acts: caseOffers([kind]), history: ["SUMMARY", "FULL"] },
+    advice: {
+      acts: caseOffers([kind]),
+      history: ["SUMMARY", "FULL"],
+    },
     state: {
-      tag: "LIVE",
-      disposition: kind === "REINSTATE" ? "VOIDED" : "ACTIVE",
+      kind: kind === "REINSTATE" ? "VOIDED" : "ACTIVE",
       fields: {
         ...caseFields,
         status: kind === "REOPEN" ? "CLOSED" : "OPENED",
         decision: decided
-          ? { paymentDecisionDate: "2026-09-03", payableAmount: "5", payableCurrency: "EUR" }
+          ? {
+              paymentDecisionDate: "2026-09-03",
+              payableAmount: "5",
+              payableCurrency: "EUR",
+            }
           : null,
-        payment: paid ? { paymentDate: "2026-09-04" } : null,
+        payment: paid
+          ? {
+              paymentDate: "2026-09-04",
+            }
+          : null,
       },
     },
   };
@@ -57,7 +84,11 @@ const input = (name: string, value: string) => {
   if (control === null) {
     throw new Error(`Missing catalogue input: ${name}`);
   }
-  fireEvent.change(control, { target: { value } });
+  fireEvent.change(control, {
+    target: {
+      value,
+    },
+  });
 };
 const authorCase = (kind: ActKind) => {
   switch (kind) {
@@ -68,8 +99,10 @@ const authorCase = (kind: ActKind) => {
       input("claimantName", "Synthetic replacement");
       break;
     case "CORRECT":
-      fireEvent.change(document.querySelector('[name="act.groups.registration.mode"]')!, {
-        target: { value: "REPLACE" },
+      fireEvent.change(document.querySelector('[name="act.groups.registration.kind"]')!, {
+        target: {
+          value: "REPLACE",
+        },
       });
       input("claimantName", "Synthetic correction");
       break;
@@ -99,47 +132,63 @@ const response = <K extends EndpointId>(endpoint: K, value: ResponseByEndpoint[K
   }
   return new Response(JSON.stringify(value), {
     status: 200,
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+    },
   });
 };
 const caseReceipt = (request: CaseInput) => {
   const source = wireReply("operation.execute");
-  if (source.outcome.tag !== "ACCEPTED" || source.outcome.data.scope.kind !== "CASE") {
+  if (source.outcome.kind !== "ACCEPTED" || source.outcome.data.subject.kind !== "CASE") {
     throw new Error("Missing frozen receipt alternative.");
   }
   return {
     ...source.outcome.data,
     operationId: request.operationId,
-    scope: {
+    subject: {
       kind: "CASE" as const,
       act: request.act.kind,
       caseReference: request.caseReference,
       revision: request.expectedRevision + 1,
-      snapshot: { disclosure: "WITHHELD" as const },
+      snapshot: {
+        kind: "WITHHELD" as const,
+      },
     },
   };
 };
 const canonicalChanges = (request: CaseInput): CaseReview["changes"] =>
-  request.act.kind === "DECIDE" ? [{ field: "payableAmount", before: null, after: "5" }] : [];
+  request.act.kind === "DECIDE"
+    ? [
+        {
+          field: "payableAmount",
+          before: null,
+          after: "5",
+        },
+      ]
+    : [];
 const caseReview = (request: CaseInput) => ({
   operationId: request.operationId,
   outcome: {
-    tag: "REVIEWED" as const,
+    kind: "REVIEWED" as const,
     data: {
       review: {
-        scope: "CASE" as const,
-        before: null,
-        after: {
-          caseReference: request.caseReference,
-          revision: request.expectedRevision + 1,
-          state: {
-            tag: "LIVE" as const,
-            disposition: "ACTIVE" as const,
-            fields: { ...caseFields, caseReference: request.caseReference },
+        subject: {
+          kind: "CASE" as const,
+          before: null,
+          after: {
+            caseReference: request.caseReference,
+            revision: request.expectedRevision + 1,
+            state: {
+              kind: "ACTIVE" as const,
+              fields: {
+                ...caseFields,
+                caseReference: request.caseReference,
+              },
+            },
           },
+          changes: canonicalChanges(request),
+          context: runtime,
         },
-        changes: canonicalChanges(request),
-        context: runtime,
       },
     },
   },
@@ -150,10 +199,14 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
       throw new Error("Expected a typed case dispatch.");
     }
     const parsed: unknown = JSON.parse(init.body);
-    if (!isRequest("operation.execute", parsed) || parsed.scope !== "CASE") {
+    if (!isRequest("operation.execute", parsed) || parsed.kind !== "CASE") {
       throw new Error("Production editor did not produce a complete case request.");
     }
-    calls.push({ path, bytes: init.body, input: parsed });
+    calls.push({
+      path,
+      bytes: init.body,
+      input: parsed,
+    });
     if (path === "/api/operation.preview") {
       return Promise.resolve(response("operation.preview", caseReview(parsed)));
     }
@@ -163,7 +216,10 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
     return Promise.resolve(
       response("operation.execute", {
         operationId: parsed.operationId,
-        outcome: { tag: "ACCEPTED", data: caseReceipt(parsed) },
+        outcome: {
+          kind: "ACCEPTED",
+          data: caseReceipt(parsed),
+        },
       }),
     );
   });
@@ -184,11 +240,17 @@ const assertAuthoredCase = (request: CaseInput) => {
     case "CORRECT":
       expect(request.act.groups).toMatchObject({
         registration: {
-          mode: "REPLACE",
-          values: { claimantName: "Synthetic correction" },
+          kind: "REPLACE",
+          values: {
+            claimantName: "Synthetic correction",
+          },
         },
-        decision: { mode: "KEEP" },
-        payment: { mode: "KEEP" },
+        decision: {
+          kind: "KEEP",
+        },
+        payment: {
+          kind: "KEEP",
+        },
       });
       break;
     case "VOID":
@@ -217,11 +279,13 @@ it.each(acts)(
       />,
     );
     expect(
-      screen.getByRole("heading", { name: createPresenter(defaults).actLabel(act.kind) }),
+      screen.getByRole("heading", {
+        name: createPresenter(defaults).actLabel(act.kind),
+      }),
     ).toBeVisible();
     authorCase(act.kind);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Review changes" }));
+    await user.click(getButton("Review changes"));
     const dialog = await screen.findByRole("dialog");
     if (act.kind === "DECIDE") {
       expect(dialog).toHaveTextContent("5.0000");
@@ -230,9 +294,15 @@ it.each(acts)(
     if (act.kind === "CORRECT") {
       expect(dialog).toHaveTextContent("Synthetic correction");
     }
-    await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
-    await user.click(screen.getByRole("button", { name: "Record changes" }));
-    await screen.findByRole("heading", { name: "Recorded change" });
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: "I confirm these changes.",
+      }),
+    );
+    await user.click(getButton("Record changes"));
+    await screen.findByRole("heading", {
+      name: "Recorded change",
+    });
     expect(calls.map((call) => call.path)).toEqual([
       "/api/operation.preview",
       "/api/operation.execute",
@@ -245,24 +315,50 @@ it.each(acts)(
 );
 const authorityReceipt = (request: AuthorityInput) => {
   const source = wireReply("operation.execute", "AUTHORITY");
-  if (source.outcome.tag !== "ACCEPTED" || source.outcome.data.scope.kind !== "AUTHORITY") {
+  if (source.outcome.kind !== "ACCEPTED" || source.outcome.data.subject.kind !== "AUTHORITY") {
     throw new Error("Missing frozen authority alternative.");
   }
   return {
     ...source.outcome.data,
     operationId: request.operationId,
-    scope: { ...source.outcome.data.scope, act: request.act.kind },
+    subject: {
+      ...source.outcome.data.subject,
+      act: request.act.kind,
+    },
   };
 };
 const contextReply = (): Response =>
   response("context", {
     outcome: {
-      tag: "SUCCEEDED",
+      kind: "SUCCEEDED",
       data: {
         ...runtime,
         capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
         views: ["AUTHORITY", "OPERATIONS"],
         offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
+      },
+    },
+  });
+const authorityPreview = (parsed: AuthorityInput) =>
+  response("operation.preview", {
+    operationId: parsed.operationId,
+    outcome: {
+      kind: "REVIEWED",
+      data: {
+        review: {
+          subject: {
+            kind: "AUTHORITY",
+            target: null,
+            before: {
+              enabled: false,
+              grants: [],
+            },
+            after: {
+              enabled: true,
+              grants: [],
+            },
+          },
+        },
       },
     },
   });
@@ -274,7 +370,13 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
     if (path === "/api/authority.list") {
       return Promise.resolve(
         response("authority.list", {
-          outcome: { tag: "SUCCEEDED", data: { items: [], nextCursor: null } },
+          outcome: {
+            kind: "SUCCEEDED",
+            data: {
+              items: [],
+              nextCursor: null,
+            },
+          },
         }),
       );
     }
@@ -286,52 +388,59 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
       throw new Error("Unexpected authority endpoint.");
     }
     const parsed: unknown = JSON.parse(init.body);
-    if (!isRequest("operation.execute", parsed) || parsed.scope !== "AUTHORITY") {
+    if (!isRequest("operation.execute", parsed) || parsed.kind !== "AUTHORITY") {
       throw new Error("Production authority form did not produce a complete request.");
     }
-    calls.push({ path, bytes: init.body, input: parsed });
+    calls.push({
+      path,
+      bytes: init.body,
+      input: parsed,
+    });
     if (path === "/api/operation.preview") {
-      return Promise.resolve(
-        response("operation.preview", {
-          operationId: parsed.operationId,
-          outcome: {
-            tag: "REVIEWED",
-            data: {
-              review: {
-                scope: "AUTHORITY",
-                target: null,
-                before: { enabled: false, grants: [] },
-                after: { enabled: true, grants: [] },
-              },
-            },
-          },
-        }),
-      );
+      return Promise.resolve(authorityPreview(parsed));
     }
     return Promise.resolve(
       response("operation.execute", {
         operationId: parsed.operationId,
-        outcome: { tag: "ACCEPTED", data: authorityReceipt(parsed) },
+        outcome: {
+          kind: "ACCEPTED",
+          data: authorityReceipt(parsed),
+        },
       }),
     );
   });
 const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
   await waitFor(() => {
     expect(
-      screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
+      screen
+        .getByLabelText("Authority action", {
+          exact: true,
+        })
+        .querySelectorAll("option"),
     ).toHaveLength(5);
   });
-  fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
-    target: { value: kind },
-  });
+  fireEvent.change(
+    screen.getByLabelText("Authority action", {
+      exact: true,
+    }),
+    {
+      target: {
+        value: kind,
+      },
+    },
+  );
   input("target.issuer", "https://issuer.example/");
   input("target.subject", "synthetic-catalogue-human");
   fireEvent.change(document.querySelector('[name="target.kind"]')!, {
-    target: { value: "HUMAN" },
+    target: {
+      value: "HUMAN",
+    },
   });
   if (kind === "GRANT" || kind === "REVOKE") {
     fireEvent.change(document.querySelector('[name="act.role"]')!, {
-      target: { value: "CASE_READER" },
+      target: {
+        value: "CASE_READER",
+      },
     });
   }
 };
@@ -344,16 +453,24 @@ it.each(authorityActs)(
     render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
     await authorAuthority(act.kind);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Review changes" }));
-    await screen.findByRole("heading", { name: "Review changes" });
+    await user.click(getButton("Review changes"));
+    await screen.findByRole("heading", {
+      name: "Review changes",
+    });
     const before = screen.getByRole("dialog").textContent;
-    await user.click(screen.getByRole("checkbox", { name: "I confirm this exact request." }));
-    await user.click(screen.getByRole("button", { name: "Record changes" }));
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: "I confirm this exact request.",
+      }),
+    );
+    await user.click(getButton("Record changes"));
     await waitFor(() => {
       expect(calls).toHaveLength(2);
       expect(calls[1]!.bytes).toBe(calls[0]!.bytes);
     });
-    await screen.findByText(calls[0]!.input.operationId, { exact: true });
+    await screen.findByText(calls[0]!.input.operationId, {
+      exact: true,
+    });
     expect(before).toContain(calls[0]!.input.operationId);
     expect(calls[0]!.input.act.kind).toBe(act.kind);
     expect(calls[0]!.input.target).toEqual({
@@ -364,11 +481,15 @@ it.each(authorityActs)(
     if (calls[0]!.input.act.kind === "GRANT" || calls[0]!.input.act.kind === "REVOKE") {
       expect(calls[0]!.input.act).toMatchObject({
         role: "CASE_READER",
-        scope: { kind: "INSTALLATION" },
+        scope: {
+          kind: "INSTALLATION",
+        },
       });
     }
     if (calls[0]!.input.act.kind === "ENABLE") {
-      expect(calls[0]!.input.act).toEqual({ kind: "ENABLE" });
+      expect(calls[0]!.input.act).toEqual({
+        kind: "ENABLE",
+      });
     }
   },
 );

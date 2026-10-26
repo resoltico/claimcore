@@ -5,55 +5,85 @@ import { corpusCases, wireReply } from "./contract-corpus.fixtures";
 import type { EndpointOutcome } from "../src/api/types";
 const accepted = wireReply("operation.execute");
 const receipt = () => {
-  if (accepted.outcome.tag !== "ACCEPTED" || accepted.outcome.data.scope.kind !== "CASE") {
+  if (accepted.outcome.kind !== "ACCEPTED" || accepted.outcome.data.subject.kind !== "CASE") {
     throw new Error("Missing case receipt fixture.");
   }
-  return { ...accepted.outcome.data, scope: accepted.outcome.data.scope };
+  return {
+    ...accepted.outcome.data,
+    subject: accepted.outcome.data.subject,
+  };
 };
 const { operationId } = receipt();
 const request = {
-  scope: "CASE",
+  kind: "CASE",
   operationId,
   caseReference: "Case-Identity",
   expectedRevision: 2,
-  act: { kind: receipt().scope.act },
+  act: {
+    kind: receipt().subject.act,
+  },
 };
 const reply = () => ({
   operationId,
   outcome: {
-    tag: "ACCEPTED",
+    kind: "ACCEPTED",
     data: {
       ...receipt(),
-      scope: { ...receipt().scope, caseReference: "case-identity", revision: 3 },
+      subject: {
+        ...receipt().subject,
+        caseReference: "case-identity",
+        revision: 3,
+      },
     },
   },
 });
-it("binds accepted scope, operation ID, act, ASCII case identity and successor revision", () => {
+const changedSubjects = [
+  {
+    kind: "AUTHORITY",
+  },
+  {
+    act: "ERASE",
+  },
+  {
+    caseReference: "other",
+  },
+  {
+    revision: 4,
+  },
+];
+it("binds accepted subject, operation ID, act, ASCII case identity and successor revision", () => {
   expect(correlateReply("operation.execute", request, reply())).toBe(true);
   const source = reply();
-  for (const changed of [
-    { kind: "AUTHORITY" },
-    { act: "ERASE" },
-    { caseReference: "other" },
-    { revision: 4 },
-  ]) {
+  for (const changed of changedSubjects) {
     expect(
       correlateReply("operation.execute", request, {
         ...source,
         outcome: {
           ...source.outcome,
-          data: { ...source.outcome.data, scope: { ...source.outcome.data.scope, ...changed } },
+          data: {
+            ...source.outcome.data,
+            subject: {
+              ...source.outcome.data.subject,
+              ...changed,
+            },
+          },
         },
       }),
     ).toBe(false);
   }
   for (const change of [
-    { ...source, operationId: "20000000-0000-4000-8000-000000000002" },
+    {
+      ...source,
+      operationId: "20000000-0000-4000-8000-000000000002",
+    },
     {
       ...source,
       outcome: {
         ...source.outcome,
-        data: { ...source.outcome.data, operationId: "20000000-0000-4000-8000-000000000002" },
+        data: {
+          ...source.outcome.data,
+          operationId: "20000000-0000-4000-8000-000000000002",
+        },
       },
     },
   ]) {
@@ -65,10 +95,14 @@ it("classifies authored outcome examples without a generated delivery oracle", (
     (item) => item.direction === "response" && item.valid,
   )) {
     const value = sample.value as EndpointOutcome;
-    const result = { kind: "outcome" as const, value, status: 200 };
+    const result = {
+      kind: "outcome" as const,
+      value,
+      status: 200,
+    };
     expect(mutationAccepted(result), sample.id).toBe(
-      ["ACCEPTED", "ALREADY_ACCEPTED"].includes(value.outcome.tag),
+      ["ACCEPTED", "ALREADY_ACCEPTED"].includes(value.outcome.kind),
     );
-    expect(mutationUncertain(result), sample.id).toBe(value.outcome.tag === "OUTCOME_UNKNOWN");
+    expect(mutationUncertain(result), sample.id).toBe(value.outcome.kind === "OUTCOME_UNKNOWN");
   }
 });

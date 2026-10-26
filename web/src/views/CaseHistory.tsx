@@ -8,12 +8,13 @@ import { useRetryablePage } from "../hooks/useRead";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { ReceiptFields } from "../components/ReceiptFields";
-
 const historyPage = (response: ServiceResponse<"case.history">) =>
-  response.outcome.tag === "SUCCEEDED"
-    ? { items: response.outcome.data.entries, nextCursor: response.outcome.data.nextCursor }
+  response.outcome.kind === "SUCCEEDED"
+    ? {
+        items: response.outcome.data.entries,
+        nextCursor: response.outcome.data.nextCursor,
+      }
     : null;
-
 const HistoryReceipt = ({
   receipt,
   fields,
@@ -26,8 +27,8 @@ const HistoryReceipt = ({
     <details>
       <summary>
         {p.text("ui.historySummary", {
-          act: p.token(receipt.scope.act),
-          revision: p.integer(receipt.scope.revision),
+          act: p.token(receipt.subject.act),
+          revision: p.integer(receipt.subject.revision),
           timestamp: receipt.recordedAt,
         })}
       </summary>
@@ -39,17 +40,18 @@ const HistoryReceipt = ({
         })}
       </p>
       <ReceiptFields
-        scope={receipt.scope}
+        subject={receipt.subject}
         fields={fields}
-        context={p.text("ui.historyContext", { operationId: receipt.operationId })}
+        context={p.text("ui.historyContext", {
+          operationId: receipt.operationId,
+        })}
       />
     </details>
   );
 };
-
 const Entry = ({ entry, fields }: { entry: HistoryEntry; fields: CatalogDocument["fields"] }) => {
   const p = usePresentation();
-  if (entry.tag === "FULL") {
+  if (entry.kind === "FULL") {
     return <HistoryReceipt receipt={entry.receipt} fields={fields} />;
   }
   const { change } = entry;
@@ -72,7 +74,6 @@ const Entry = ({ entry, fields }: { entry: HistoryEntry; fields: CatalogDocument
     </>
   );
 };
-
 const HistoryEntries = ({
   items,
   fields,
@@ -82,13 +83,12 @@ const HistoryEntries = ({
 }) => (
   <ol className="history-list">
     {items.map((entry) => (
-      <li key={entry.tag === "FULL" ? entry.receipt.operationId : entry.change.operationId}>
+      <li key={entry.kind === "FULL" ? entry.receipt.operationId : entry.change.operationId}>
         <Entry entry={entry} fields={fields} />
       </li>
     ))}
   </ol>
 );
-
 type HistoryMode = "SUMMARY" | "FULL";
 const HistoryModePicker = ({
   detail,
@@ -119,7 +119,6 @@ const HistoryModePicker = ({
     </label>
   );
 };
-
 const HistoryPageStatus = ({
   loading,
   loaded,
@@ -148,27 +147,59 @@ const HistoryPageStatus = ({
     </>
   );
 };
-
 const summaryModes: ReadonlyArray<HistoryMode> = ["SUMMARY"];
+type CaseHistoryProps = {
+  modes?: ReadonlyArray<HistoryMode>;
+  onDisclosureRefused?: () => void;
+  token: string;
+  caseReference: string;
+  fields: CatalogDocument["fields"];
+};
+const HistoryPageActions = ({
+  cursor,
+  loading,
+  load,
+}: {
+  cursor: string | null;
+  loading: boolean;
+  load: (cursor: string | null) => Promise<void>;
+}) => {
+  const p = usePresentation();
+  return (
+    <>
+      <Button onPress={() => void load(null)} isDisabled={loading}>
+        {p.text("ui.reloadHistory")}
+      </Button>
+      {cursor === null ? null : (
+        <Button onPress={() => void load(cursor)} isDisabled={loading}>
+          {p.text("ui.moreHistory")}
+        </Button>
+      )}
+    </>
+  );
+};
 export const CaseHistory = ({
   token,
   caseReference,
   fields,
   modes = summaryModes,
   onDisclosureRefused,
-}: {
-  modes?: ReadonlyArray<HistoryMode>;
-  onDisclosureRefused?: () => void;
-  token: string;
-  caseReference: string;
-  fields: CatalogDocument["fields"];
-}) => {
+}: CaseHistoryProps) => {
   const p = usePresentation();
   const [detail, setDetail] = useState<"SUMMARY" | "FULL">("SUMMARY");
   const requestedDetail = modes.includes(detail) ? detail : (modes[0] ?? "SUMMARY");
   const request = useCallback(
     (cursor: string | null, signal: AbortSignal) =>
-      service.history({ caseReference, cursor, limit: 50, detail: requestedDetail }, token, signal),
+      service.history(
+        {
+          caseReference,
+          cursor,
+          limit: 50,
+          detail: requestedDetail,
+        },
+        token,
+        signal,
+      ),
     [caseReference, token, requestedDetail],
   );
   const { items, cursor, message, loading, load, page } = useRetryablePage<
@@ -188,14 +219,7 @@ export const CaseHistory = ({
         empty={items.length === 0}
         cursor={cursor}
       />
-      <Button onPress={() => void load(null)} isDisabled={loading}>
-        {p.text("ui.reloadHistory")}
-      </Button>
-      {cursor === null ? null : (
-        <Button onPress={() => void load(cursor)} isDisabled={loading}>
-          {p.text("ui.moreHistory")}
-        </Button>
-      )}
+      <HistoryPageActions cursor={cursor} loading={loading} load={load} />
     </section>
   );
 };

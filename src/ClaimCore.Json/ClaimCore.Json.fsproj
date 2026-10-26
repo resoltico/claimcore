@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="JsonFormats.fs" />
+    <Compile Include="JsonValue.fs" />
+    <Compile Include="StrictJson.fs" />
+    <Compile Include="Writers.fs" />
+    <Compile Include="Codec.fs" />
+    <Compile Include="SchemaJson.fs" />
+  </ItemGroup>
+</Project>

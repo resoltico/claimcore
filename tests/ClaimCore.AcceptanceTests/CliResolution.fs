@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliResolution
 
+open ClaimCore.Json
+
 open System
 open System.IO
 open System.Text
@@ -48,11 +50,11 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
         submitted.OperationId
         "Recovered acceptance keeps its operation ID"
 
-    let scope = receipt.GetProperty "scope"
-    Expect.equal (field "kind" scope) "CASE" "Case receipt"
-    Expect.equal (field "act" scope) "OPEN" "No changed act"
-    Expect.equal (field "caseReference" scope) submitted.Reference "No changed target"
-    Expect.equal (scope.GetProperty("revision").GetInt64()) 1L "No implicit rebase"
+    let subject = receipt.GetProperty "subject"
+    Expect.equal (field "kind" subject) "CASE" "Case receipt"
+    Expect.equal (field "act" subject) "OPEN" "No changed act"
+    Expect.equal (field "caseReference" subject) submitted.Reference "No changed target"
+    Expect.equal (subject.GetProperty("revision").GetInt64()) 1L "No implicit rebase"
 
     let current =
         automation
@@ -123,7 +125,7 @@ let private originalAcceptance fixture =
     let reply = originalReply fixture
 
     Expect.equal
-        (reply.GetProperty("outcome").GetProperty("tag").GetString())
+        (reply.GetProperty("outcome").GetProperty("kind").GetString())
         "ACCEPTED"
         "The real backend accepted before its HTTP reply was lost"
 

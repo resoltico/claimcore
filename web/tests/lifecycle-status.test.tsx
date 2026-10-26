@@ -3,15 +3,18 @@ import { it, expect } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import { LifecycleStatus } from "../src/views/LifecycleStatus";
 import { fields } from "./service-ui.fixtures";
+const fullHistory = { acts: caseOffers([]), history: ["SUMMARY", "FULL"] as const };
 it("renders active voided and erased states from the accepted case view", () => {
   const { rerender } = render(
     <LifecycleStatus
       value={{
         caseReference: fields.caseReference,
         revision: 1,
-        advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
-
-        state: { tag: "LIVE", fields, disposition: "ACTIVE" },
+        advice: fullHistory,
+        state: {
+          kind: "ACTIVE",
+          fields,
+        },
       }}
     />,
   );
@@ -21,9 +24,11 @@ it("renders active voided and erased states from the accepted case view", () => 
       value={{
         caseReference: fields.caseReference,
         revision: 2,
-        advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
-
-        state: { tag: "LIVE", fields, disposition: "VOIDED" },
+        advice: fullHistory,
+        state: {
+          kind: "VOIDED",
+          fields,
+        },
       }}
     />,
   );
@@ -31,10 +36,15 @@ it("renders active voided and erased states from the accepted case view", () => 
   rerender(
     <LifecycleStatus
       value={{
-        state: { tag: "ERASED" },
+        state: {
+          kind: "ERASED",
+        },
         caseReference: "CASE-1",
         revision: 3,
-        advice: { acts: caseOffers([]), history: ["SUMMARY"] },
+        advice: {
+          acts: caseOffers([]),
+          history: ["SUMMARY"],
+        },
       }}
     />,
   );

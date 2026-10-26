@@ -5,7 +5,7 @@ type InputTarget =
     | Field of BusinessField
     | OperationId
     | ExpectedRevision
-    | PaymentGroup
+    | Group of RecordGroup
     | Reason
     | PrincipalIssuer
     | PrincipalSubject
@@ -15,12 +15,13 @@ type InputTarget =
 module InputTargets =
     let private definitions =
         (FieldTable.rows
-         |> List.filter (fun row -> row.Group <> FieldGroup.Status)
+         |> List.filter (fun row -> row.Field <> BusinessField.Status)
          |> List.map (fun row -> InputTarget.Field row.Field, row.Key))
         @ [
             InputTarget.OperationId, "operationId"
             InputTarget.ExpectedRevision, "expectedRevision"
-            InputTarget.PaymentGroup, "payment"
+            InputTarget.Group RecordGroup.Payment, "payment"
+
             InputTarget.Reason, "reason"
             InputTarget.PrincipalIssuer, "principal.issuer"
             InputTarget.PrincipalSubject, "principal.subject"

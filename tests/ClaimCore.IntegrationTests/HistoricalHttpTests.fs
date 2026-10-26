@@ -5,6 +5,7 @@ open ClaimCore.TestSupport
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System.Text
 open System.Text.Json
@@ -16,12 +17,7 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private httpRequest request =
-    // The shared operation input is the durable request grammar without its format number.
-    let node =
-        System.Text.Json.Nodes.JsonNode.Parse(RequestRecord.encode request) |> nonNull
-
-    node.AsObject().Remove("format") |> ignore
-    System.Text.Encoding.UTF8.GetBytes(node.ToJsonString())
+    Codec.encode Api.operationExecute.Input (OperationInput.Case request)
 
 let private outcome (bytes: byte array) =
     use document = JsonDocument.Parse bytes
@@ -38,12 +34,13 @@ let private caller (database: PostgresFixture.Database) =
             |> Result.defaultWith (fun _ -> failtest "Synthetic human")
 
         let! registered =
-            owner.Execute(
-                OperationInput.Authority(
+            (Handlers.call
+                Api.operationExecute
+                owner
+                (OperationInput.Authority(
                     authorityRequest (id 20) principal AdmittedAuthorityAct.Register
-                ),
-                token
-            )
+                ))
+                (token))
 
         acceptedAuthority registered
 
@@ -103,7 +100,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
         Expect.equal status 200 "Reaffirmation passes intake and response validation"
 
         Expect.equal
-            ((outcome response).GetProperty("tag").GetString())
+            ((outcome response).GetProperty("kind").GetString())
             "ACCEPTED"
             "Actual locked decision accepts unchanged retained text"
 
@@ -121,7 +118,11 @@ let private retainedHistory (database: PostgresFixture.Database) =
 
         Expect.equal status 200 "Admission refusal stays a typed outcome"
         let refusal = outcome response
-        Expect.equal (refusal.GetProperty("tag").GetString()) "REJECTED" "Changed assertion refused"
+
+        Expect.equal
+            (refusal.GetProperty("kind").GetString())
+            "REJECTED"
+            "Changed assertion refused"
 
         Expect.equal
             (refusal.GetProperty("data").GetProperty("code").GetString())
@@ -147,7 +148,7 @@ let private zeroRevisionReply endpoint status response =
         "Original operation identity"
 
     let outcome = document.RootElement.GetProperty("outcome")
-    Expect.equal (outcome.GetProperty("tag").GetString()) "REJECTED" "No response encoding failure"
+    Expect.equal (outcome.GetProperty("kind").GetString()) "REJECTED" "No response encoding failure"
     let diagnostic = outcome.GetProperty("data")
 
     Expect.equal
@@ -183,7 +184,7 @@ let private absentRevision (database: PostgresFixture.Database) =
         let pending = request 31 "ABSENT-REVISION" 1L (CaseAct.Open registration)
         let responses = ResizeArray<_>()
 
-        for name in [ Api.operationPreview.Id; Api.operationExecute.Id ] do
+        for name in [ Api.operationPreview.Token; Api.operationExecute.Token ] do
             let! status, response = host.Call(name, httpRequest pending, csrf)
 
             responses.Add(

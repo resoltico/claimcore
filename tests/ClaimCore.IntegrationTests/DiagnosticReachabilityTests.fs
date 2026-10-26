@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.DiagnosticReachabilityTests
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.Threading
@@ -121,7 +122,7 @@ let private queryRefused =
     | _ -> failtest "The query must produce a public refusal."
 
 let private execute actor pending =
-    (actor: IActorClaimsCore).Execute(OperationInput.Case pending, ct)
+    (Handlers.call Api.operationExecute (actor: HandlerContext) (OperationInput.Case pending) (ct))
 
 let private opening values =
     { openRequest 10 "REACH-1" with
@@ -149,7 +150,7 @@ let private textRequests () =
             }
         opening
             { registration with
-                ClaimantName = "Synthetic\u200bParty"
+                ClaimantName = "Synthetic​Party"
             }
         opening { registration with InsurerName = "" }
     ]
@@ -325,9 +326,17 @@ let private stateEvidence (setup, final) =
 
 let private queryEvidence actor =
     task {
-        let! limit = (actor: IActorClaimsCore).List({ AfterCursor = None; Limit = 0 }, ct)
-        let! cursor = actor.List({ AfterCursor = Some "bad"; Limit = 1 }, ct)
-        let! missing = actor.Get({ CaseReference = "MISSING" }, ct)
+        let! limit =
+            (Handlers.call
+                Api.caseList
+                (actor: HandlerContext)
+                ({ AfterCursor = None; Limit = 0 })
+                (ct))
+
+        let! cursor =
+            (Handlers.call Api.caseList actor ({ AfterCursor = Some "bad"; Limit = 1 }) (ct))
+
+        let! missing = (Handlers.call Api.caseGet actor ({ CaseReference = "MISSING" }) (ct))
         return [ queryRefused limit; queryRefused cursor; queryRefused missing ]
     }
 
@@ -338,8 +347,11 @@ let private authorityEvidence actor =
             |> Result.defaultWith failtest
 
         let send n target act =
-            (actor: IActorClaimsCore)
-                .Execute(OperationInput.Authority(authorityRequest (id n) target act), ct)
+            (Handlers.call
+                Api.operationExecute
+                (actor: HandlerContext)
+                (OperationInput.Authority(authorityRequest (id n) target act))
+                (ct))
 
         let! registered = send 30 owner AdmittedAuthorityAct.Register
         let! unknown = send 31 service (AdmittedAuthorityAct.Disable)
@@ -366,12 +378,13 @@ let private identityEvidence actor =
             |> Result.defaultWith failtest
 
         let! registered =
-            actor.Execute(
-                OperationInput.Authority(
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Authority(
                     authorityRequest (id 35) reader AdmittedAuthorityAct.Register
-                ),
-                ct
-            )
+                ))
+                (ct))
 
         acceptedAuthority registered
 
@@ -382,7 +395,7 @@ let private identityEvidence actor =
         return [ refused conflict; refused revision ], reader
     }
 
-let private principalEvidence (actor: IActorClaimsCore) =
+let private principalEvidence (actor: HandlerContext) =
     task {
         let evidence = ResizeArray<_>()
 
@@ -406,7 +419,9 @@ let private principalEvidence (actor: IActorClaimsCore) =
                     Act = ClaimCore.Contract.AuthorityAct.Register
                 }
 
-            let! outcome = actor.Execute(OperationInput.Authority request, ct)
+            let! outcome =
+                (Handlers.call Api.operationExecute actor (OperationInput.Authority request) (ct))
+
             evidence.Add(refused outcome)
 
         return List.ofSeq evidence
@@ -429,7 +444,10 @@ let private boundaryEvidence () =
         let! queries = queryEvidence actor
         let! authority = authorityEvidence actor
         let! principals = principalEvidence actor
-        let! resolved = actor.Resolve({ OperationId = id 42 }, ct)
+
+        let! resolved =
+            (Handlers.call Api.operationResolve actor ({ OperationId = id 42 }) (ct))
+
         Expect.equal resolved ResolveReply.NotAccepted "Resolve installs a fence"
         let! fenced = execute actor (request 42 "REACH-1" 1L CaseAct.Close)
         let! loaded = fixture.Store.ReadCase(fixture.Owner, None, "REACH-1", ct)
@@ -470,7 +488,7 @@ let private boundaryEvidence () =
                     request
                     view
             with
-            | LedgerDecision.Refuse reason -> reason
+            | Decision.Refuse reason -> reason
             | _ -> failtest "Expected boundary refusal"
 
         let revision =

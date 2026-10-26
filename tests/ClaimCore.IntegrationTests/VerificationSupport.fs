@@ -64,10 +64,11 @@ let populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! opened =
-            actor.Execute(
-                OperationInput.Case(request 10 "synthetic-a" 0L (CaseAct.Open registration)),
-                token
-            )
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(request 10 "synthetic-a" 0L (CaseAct.Open registration)))
+                (token))
 
         accepted opened |> ignore
         let! _ = verified database
@@ -88,23 +89,23 @@ let row (database: PostgresFixture.Database) sequence =
         return StoredEntries.decode database.Fixture.InstallationId (List.exactlyOne rows)
     }
 
-let private scope =
+let private subject =
     function
-    | LedgerScope.Case value ->
+    | LedgerSubject.Case value ->
         "CASE",
         CaseActKinds.token value.Act,
         value.CaseId,
         Some value.Revision,
         Some value.BusinessDate
-    | LedgerScope.Authority value ->
+    | LedgerSubject.Authority value ->
         "AUTHORITY", RecordedAuthorityActs.token value.Act, value.TargetActorId, None, None
 
 let private updateSql =
-    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,scope=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14 WHERE sequence=$1"
+    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14 WHERE sequence=$1"
 
 let private parameters (value: LedgerRow) =
     let metadata = value.Metadata
-    let kind, act, subject, revision, date = scope metadata.Scope
+    let kind, act, subject, revision, date = subject metadata.Subject
 
     [|
         box metadata.Sequence
@@ -226,24 +227,24 @@ let payload request snapshot (value: LedgerRow) =
             }
     }
 
-let caseScope change (value: LedgerRow) =
-    match value.Metadata.Scope with
-    | LedgerScope.Case current ->
+let caseSubject change (value: LedgerRow) =
+    match value.Metadata.Subject with
+    | LedgerSubject.Case current ->
         { value with
             Metadata =
                 { value.Metadata with
-                    Scope = LedgerScope.Case(change current)
+                    Subject = LedgerSubject.Case(change current)
                 }
         }
     | _ -> failtest "Case fixture is required"
 
-let authorityScope change (value: LedgerRow) =
-    match value.Metadata.Scope with
-    | LedgerScope.Authority current ->
+let authoritySubject change (value: LedgerRow) =
+    match value.Metadata.Subject with
+    | LedgerSubject.Authority current ->
         { value with
             Metadata =
                 { value.Metadata with
-                    Scope = LedgerScope.Authority(change current)
+                    Subject = LedgerSubject.Authority(change current)
                 }
         }
     | _ -> failtest "Authority fixture is required"

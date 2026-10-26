@@ -7,7 +7,7 @@ import { isCurrentCase } from "../api/service";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { ReferenceSummary } from "../components/ReferenceSummary";
 import { CopyValue } from "../components/CopyValue";
-import { isCaseAct, type ActKind } from "../operation/metadata";
+import { isCaseAct, offerAct, type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
@@ -32,10 +32,10 @@ const AvailableActs = ({
   const p = usePresentation();
   return (
     <section aria-labelledby="acts-title">
-      <h2 id="acts-title">{p.text("ui.availableActs")}</h2>
+      <h2 id="acts-title">{p.text("label.availableActs")}</h2>
       <div className="actions">
         {current.advice.acts
-          .map((offer) => offer.act)
+          .map(offerAct)
           .filter(isCaseAct)
           .map((act) => (
             <Button
@@ -144,7 +144,7 @@ const CaseDisclosure = ({ token, caseReference, definition, onBack, onAct }: Cas
         <CurrentPresentation current={lookup} definition={definition} onAct={onAct} />
       )}
       {state === null ? null : <LifecycleStatus value={state} />}
-      {state?.state.tag === "ERASED" ? (
+      {state?.state.kind === "ERASED" ? (
         <p role="status">
           {state.caseReference} · {state.revision}
         </p>

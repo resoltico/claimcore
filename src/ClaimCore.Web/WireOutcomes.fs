@@ -1,6 +1,7 @@
 namespace ClaimCore.Web
 
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 open System.Threading.Tasks

@@ -6,9 +6,16 @@ import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
-import en from "../../src/ClaimCore.Contract/Localization/en.json" with { type: "json" };
-import lv from "../../src/ClaimCore.Contract/Localization/lv.json" with { type: "json" };
-import ar from "../../src/ClaimCore.Contract/Localization/ar.json" with { type: "json" };
+import enCore from "../../src/ClaimCore.Contract/Localization/en.json" with { type: "json" };
+import lvCore from "../../src/ClaimCore.Contract/Localization/lv.json" with { type: "json" };
+import arCore from "../../src/ClaimCore.Contract/Localization/ar.json" with { type: "json" };
+
+import enChrome from "../locales/en.json" with { type: "json" };
+const en = { ...enCore, ...enChrome };
+import lvChrome from "../locales/lv.json" with { type: "json" };
+const lv = { ...lvCore, ...lvChrome };
+import arChrome from "../locales/ar.json" with { type: "json" };
+const ar = { ...arCore, ...arChrome };
 
 import type { ReviewIdentity } from "./case-workflow";
 
@@ -66,7 +73,7 @@ export const reviewFrom = (
   value: ServiceResponse<"operation.preview">,
   bytes: Buffer,
 ): ReviewIdentity => {
-  if (value.outcome.tag !== "REVIEWED") {
+  if (value.outcome.kind !== "REVIEWED") {
     throw new Error("E2E_LOCALIZATION_PREPARATION_REFUSED");
   }
   const draft: unknown = JSON.parse(bytes.toString("utf8"));
@@ -95,7 +102,7 @@ const replyCategory = (endpoint: EndpointId, status: number, payload: unknown): 
   if (isHostFailure(payload, status)) {
     return `HOST_${payload.hostFailure.code}_${payload.hostFailure.phase ?? "UNSPECIFIED"}`;
   }
-  return isResponse(endpoint, payload) ? payload.outcome.tag : "UNRECOGNIZED";
+  return isResponse(endpoint, payload) ? payload.outcome.kind : "UNRECOGNIZED";
 };
 const readReply = async (response: APIResponse): Promise<unknown> => {
   if (
@@ -213,8 +220,8 @@ export const expectBusinessFormatRefusal = async (
   try {
     await submit();
     const { outcome } = (await pending.ready).reply;
-    expect(outcome.tag).toBe("REJECTED");
-    if (outcome.tag !== "REJECTED") {
+    expect(outcome.kind).toBe("REJECTED");
+    if (outcome.kind !== "REJECTED") {
       throw new Error("Expected a typed business format refusal.");
     }
     expect(outcome.data.target).toBe(field);

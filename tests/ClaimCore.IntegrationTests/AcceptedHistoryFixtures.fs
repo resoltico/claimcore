@@ -17,8 +17,8 @@ let private snapshot reference claimant : CaseSnapshot =
     {
         Reference = reference
         Revision = 1L
-        View =
-            CaseView.Live(
+        State =
+            CaseState.Active(
                 {
                     CaseReference = reference
                     Status = CaseStatus.Opened
@@ -34,8 +34,7 @@ let private snapshot reference claimant : CaseSnapshot =
                         }
                     Decision = None
                     Payment = None
-                },
-                Disposition.Active
+                }
             )
     }
 
@@ -70,7 +69,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
         let scope =
-            StoredScope.Case(
+            StoredSubject.Case(
                 id,
                 1L,
                 (CaseActKind.Business BusinessActKind.Open),
@@ -97,7 +96,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             |> Result.defaultWith (fun _ ->
                 failtest "Historical fixture receipt is structurally valid")
 
-        LedgerDecision.Append(entry, CaseProjection.Insert(id, snapshot), receipt)
+        Decision.Proceed(entry, CaseProjection.Insert(id, snapshot), receipt)
 
     task {
         let! result =
@@ -110,7 +109,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             )
 
         match result with
-        | Ok(LedgerWriteResult.Appended _) -> ()
+        | Ok(Decision.Proceed _) -> ()
         | _ -> failtest "Historical fixture append failed"
     }
 
@@ -119,11 +118,15 @@ let private grandfathering (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
         let name = String.replicate 201 "A"
         do! seed database name
-        let! current = actor.Get({ CaseReference = "historical-1" }, token)
+
+        let! current =
+            (Handlers.call Api.caseGet actor ({ CaseReference = "historical-1" }) (token))
 
         match current with
         | ReadReply.Succeeded {
-                                  Snapshot = { View = CaseView.Live(fields, _) }
+                                  Snapshot = {
+                                                 State = (CaseState.Active(fields) | CaseState.Voided(fields))
+                                             }
                               } ->
             Expect.equal
                 fields.Registration.ClaimantName
@@ -138,16 +141,21 @@ let private grandfathering (database: PostgresFixture.Database) =
             }
 
         let! reaffirm =
-            actor.Execute(
-                OperationInput.Case(request 11 "HISTORICAL-1" 1L (CaseAct.AmendRegistration values)),
-                token
-            )
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(
+                    request 11 "HISTORICAL-1" 1L (CaseAct.AmendRegistration values)
+                ))
+                (token))
 
         accepted reaffirm |> ignore
 
         let! changed =
-            actor.Execute(
-                OperationInput.Case(
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(
                     request
                         12
                         "HISTORICAL-1"
@@ -156,9 +164,8 @@ let private grandfathering (database: PostgresFixture.Database) =
                             { values with
                                 ClaimantName = name + "B"
                             })
-                ),
-                token
-            )
+                ))
+                (token))
 
         Expect.equal
             changed.Outcome
@@ -174,16 +181,17 @@ let private grandfathering (database: PostgresFixture.Database) =
         return ()
     }
 
-let private appendTransitions (actor: IActorClaimsCore) =
+let private appendTransitions (actor: HandlerContext) =
     task {
         for revision in 1L .. 59L do
             let act = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
 
             let! result =
-                actor.Execute(
-                    OperationInput.Case(request (100 + int revision) "HISTORICAL-1" revision act),
-                    token
-                )
+                (Handlers.call
+                    Api.operationExecute
+                    actor
+                    (OperationInput.Case(request (100 + int revision) "HISTORICAL-1" revision act))
+                    (token))
 
             accepted result |> ignore
 
@@ -193,10 +201,9 @@ let private assertRetained name entries =
     for entry in entries do
         match entry with
         | HistoryEntry.FullEntry {
-                                     Scope = ReceiptScope.Case {
-                                                                   Snapshot = SnapshotDisclosure.Disclosed(CaseView.Live(fields,
-                                                                                                                         _))
-                                                               }
+                                     Subject = ReceiptSubject.Case {
+                                                                       Snapshot = SnapshotDisclosure.Disclosed((LiveCase.Active fields | LiveCase.Voided fields))
+                                                                   }
                                  } ->
             Expect.equal
                 fields.Registration.ClaimantName
@@ -210,13 +217,15 @@ let private historyPage =
     | ReadReply.Succeeded page -> page
     | _ -> failtest "Expected accepted history page"
 
-let private remainingHistory (actor: IActorClaimsCore) (query: HistoryRequest) =
+let private remainingHistory (actor: HandlerContext) (query: HistoryRequest) =
     task {
         let mutable cursor = query.AfterCursor
         let mutable entries = []
 
         while cursor.IsSome do
-            let! current = actor.History({ query with AfterCursor = cursor }, token)
+            let! current =
+                (Handlers.call Api.caseHistory actor ({ query with AfterCursor = cursor }) (token))
+
             let current = historyPage current
 
             Expect.equal
@@ -234,31 +243,37 @@ let private withheldReceipt (receipt: OperationReceipt) =
     let scope = caseReceipt receipt
 
     { receipt with
-        Scope =
-            ReceiptScope.Case
+        Subject =
+            ReceiptSubject.Case
                 { scope with
                     Snapshot = SnapshotDisclosure.Withheld
                 }
     }
 
 let private assertRemainingHistoryAccess
-    (actor: IActorClaimsCore)
+    (actor: HandlerContext)
     (query: HistoryRequest)
     (original: OperationReceipt)
     =
     task {
         let! summary =
-            actor.History(
-                { query with
+            (Handlers.call
+                Api.caseHistory
+                actor
+                ({ query with
                     Detail = HistoryDetail.Summary
-                },
-                token
-            )
+                })
+                (token))
 
         let summary = historyPage summary
         Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
 
-        let! observed = actor.Observe({ OperationId = original.OperationId }, token)
+        let! observed =
+            (Handlers.call
+                Api.operationObserve
+                actor
+                ({ OperationId = original.OperationId })
+                (token))
 
         Expect.equal
             observed
@@ -268,7 +283,7 @@ let private assertRemainingHistoryAccess
 
 let private revokedFullHistory
     (database: PostgresFixture.Database)
-    (actor: IActorClaimsCore)
+    (actor: HandlerContext)
     (query: HistoryRequest)
     (first: HistoryResultPage)
     =
@@ -303,7 +318,7 @@ let private revokedFullHistory
                 }
                 query
             ] do
-            let! refused = actor.History(request, token)
+            let! refused = (Handlers.call Api.caseHistory actor (request) (token))
 
             Expect.equal
                 refused
@@ -329,7 +344,7 @@ let private retainedPages (database: PostgresFixture.Database) =
                 Detail = HistoryDetail.Full
             }
 
-        let! first = actor.History(query, token)
+        let! first = (Handlers.call Api.caseHistory actor (query) (token))
 
         let first = historyPage first
 
@@ -347,7 +362,7 @@ let private retainedPages (database: PostgresFixture.Database) =
         let revisions =
             entries
             |> List.map (function
-                | HistoryEntry.FullEntry { Scope = ReceiptScope.Case c } -> c.Revision
+                | HistoryEntry.FullEntry { Subject = ReceiptSubject.Case c } -> c.Revision
                 | _ -> failtest "Full case receipt")
 
         Expect.equal
@@ -358,12 +373,13 @@ let private retainedPages (database: PostgresFixture.Database) =
         assertRetained name entries
 
         let! summary =
-            actor.History(
-                { query with
+            (Handlers.call
+                Api.caseHistory
+                actor
+                ({ query with
                     Detail = HistoryDetail.Summary
-                },
-                token
-            )
+                })
+                (token))
 
         match summary with
         | ReadReply.Succeeded p -> Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"

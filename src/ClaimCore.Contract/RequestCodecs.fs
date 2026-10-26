@@ -1,6 +1,7 @@
 namespace ClaimCore.Contract.Protocol
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 
 module RequestCodecs =
@@ -57,81 +58,70 @@ module RequestCodecs =
         |> build
         |> named "Payment"
 
+    let private correctionVariants group variants =
+        CorrectionActions.forGroup group
+        |> List.map (fun action ->
+            variants |> List.find (fun make -> make.Tag = CorrectionActions.token action))
+
     let registrationGroup =
         tagged
             "RegistrationGroup"
-            "mode"
-            [
-                unitVariant
-                    (CorrectionActions.token CorrectionGroupAction.Keep)
-                    RegistrationGroup.Keep
-                variant
-                    (CorrectionActions.token CorrectionGroupAction.Replace)
-                    RegistrationGroup.Replace
-                    (function
-                    | RegistrationGroup.Replace value -> Some value
-                    | _ -> None)
-                    (record id |> field "values" id registration)
-            ]
+            (correctionVariants
+                RecordGroup.Registration
+                [
+                    unitVariant
+                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        RegistrationGroup.Keep
+                    variant
+                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        RegistrationGroup.Replace
+                        (function
+                        | RegistrationGroup.Replace value -> Some value
+                        | _ -> None)
+                        (record id |> field "values" id registration)
+                ])
 
     let decisionGroup =
         tagged
             "DecisionGroup"
-            "mode"
-            [
-                unitVariant (CorrectionActions.token CorrectionGroupAction.Keep) DecisionGroup.Keep
-                variant
-                    (CorrectionActions.token CorrectionGroupAction.Replace)
-                    DecisionGroup.Replace
-                    (function
-                    | DecisionGroup.Replace value -> Some value
-                    | _ -> None)
-                    (record id |> field "values" id decision)
-                unitVariant
-                    (CorrectionActions.token CorrectionGroupAction.Clear)
-                    DecisionGroup.Clear
-            ]
+            (correctionVariants
+                RecordGroup.Decision
+                [
+                    unitVariant
+                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        DecisionGroup.Keep
+                    variant
+                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        DecisionGroup.Replace
+                        (function
+                        | DecisionGroup.Replace value -> Some value
+                        | _ -> None)
+                        (record id |> field "values" id decision)
+                    unitVariant
+                        (CorrectionActions.token CorrectionGroupAction.Clear)
+                        DecisionGroup.Clear
+                ])
 
     let paymentGroup =
         tagged
             "PaymentGroup"
-            "mode"
-            [
-                unitVariant (CorrectionActions.token CorrectionGroupAction.Keep) PaymentGroup.Keep
-                variant
-                    (CorrectionActions.token CorrectionGroupAction.Replace)
-                    PaymentGroup.Replace
-                    (function
-                    | PaymentGroup.Replace value -> Some value
-                    | _ -> None)
-                    (record id |> field "values" id payment)
-                unitVariant (CorrectionActions.token CorrectionGroupAction.Clear) PaymentGroup.Clear
-            ]
-
-    /// The permitted selectors are the tags of the wire union, not a parallel mode list.
-    let correctionActions =
-        let actions (codec: Codec<'T>) =
-            let schema =
-                match codec.Schema with
-                | Schema.Ref name -> Map.find name codec.Definitions
-                | schema -> schema
-
-            match schema with
-            | Schema.OneOf(_, Some("mode", cases)) ->
-                cases
-                |> List.map (fun (token, _) ->
-                    CorrectionActions.all
-                    |> List.find (fun action -> CorrectionActions.token action = token))
-            | _ -> invalidOp "A correction input must be a tagged mode union."
-
-        let registration = actions registrationGroup
-        let decision = actions decisionGroup
-        let payment = actions paymentGroup
-
-        function
-        | CorrectionGroup.Registration -> registration
-        | CorrectionGroup.Decision -> decision
-        | CorrectionGroup.Payment -> payment
+            (correctionVariants
+                RecordGroup.Payment
+                [
+                    unitVariant
+                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        PaymentGroup.Keep
+                    variant
+                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        PaymentGroup.Replace
+                        (function
+                        | PaymentGroup.Replace value -> Some value
+                        | _ -> None)
+                        (record id |> field "values" id payment)
+                    unitVariant
+                        (CorrectionActions.token CorrectionGroupAction.Clear)
+                        PaymentGroup.Clear
+                ])
 
     let correction =
         (record (fun v0 v1 v2 ->
@@ -219,9 +209,9 @@ module RequestCodecs =
                 CaseAct.Erase
         ]
 
-    let caseAct = tagged "CaseAct" "kind" (businessActs @ stewardshipActs)
+    let caseAct = tagged "CaseAct" (businessActs @ stewardshipActs)
 
-    let caseRequest =
+    let caseRequestFields =
         (record (fun v0 v1 v2 v3 ->
             {
                 CaseRequest.OperationId = v0
@@ -234,8 +224,8 @@ module RequestCodecs =
         |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference (text)
         |> field "expectedRevision" _.ExpectedRevision (revision)
         |> field "act" _.Act (caseAct)
-        |> build
-        |> named "CaseRequest"
+
+    let caseRequest = caseRequestFields |> build |> named "CaseRequest"
 
     let principal =
         (record (fun v0 v1 v2 ->
@@ -254,7 +244,6 @@ module RequestCodecs =
     let scope =
         tagged
             "Scope"
-            "kind"
             [
                 unitVariant "INSTALLATION" GrantTarget.Installation
                 variant
@@ -279,7 +268,6 @@ module RequestCodecs =
 
         tagged
             "AuthorityAct"
-            "kind"
             [
                 unitVariant (AuthorityKinds.token AuthorityKind.Register) AuthorityAct.Register
                 variant
@@ -303,7 +291,7 @@ module RequestCodecs =
     let authorityAct =
         authorityActWith (tokens (RoleTokens.all |> List.map RoleTokens.token))
 
-    let authorityRequest =
+    let authorityRequestFields =
         (record (fun v0 v1 v2 ->
             {
                 AuthorityRequest.OperationId = v0
@@ -314,35 +302,28 @@ module RequestCodecs =
         |> field "operationId" _.OperationId (uuid)
         |> field "target" _.Target (principal)
         |> field "act" _.Act (authorityAct)
-        |> build
-        |> named "AuthorityRequest"
 
-    let caseOperation =
-        caseRequest |> withScope OperationScopes.Case |> named "OperationInput.Case"
+    let authorityRequest = authorityRequestFields |> build |> named "AuthorityRequest"
 
-    let authorityOperation =
-        authorityRequest
-        |> withScope OperationScopes.Authority
-        |> named "OperationInput.Authority"
+    let private caseVariant =
+        variant
+            OperationSubjects.Case
+            OperationInput.Case
+            (function
+            | OperationInput.Case value -> Some value
+            | _ -> None)
+            caseRequestFields
 
-    let operationInput =
-        choice
-            "OperationInput"
-            [
-                branch
-                    OperationInput.Case
-                    (function
-                    | OperationInput.Case value -> Some value
-                    | _ -> None)
-                    caseOperation
-                branch
-                    OperationInput.Authority
-                    (function
-                    | OperationInput.Authority value -> Some value
-                    | _ -> None)
-                    authorityOperation
-            ]
-        |> discriminated "scope"
+    let private authorityVariant =
+        variant
+            OperationSubjects.Authority
+            OperationInput.Authority
+            (function
+            | OperationInput.Authority value -> Some value
+            | _ -> None)
+            authorityRequestFields
+
+    let operationInput = tagged "OperationInput" [ caseVariant; authorityVariant ]
 
     let pageRequest =
         (record (fun v0 v1 ->
@@ -372,7 +353,7 @@ module RequestCodecs =
             })
         : Fields<HistoryRequest, _>)
         |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference (text)
-        |> field "detail" _.Detail (vocabulary HistoryDetails.vocabulary)
+        |> field "detail" _.Detail (VocabularyCodec.create HistoryDetails.vocabulary)
         |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
         |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize) |> map int int64)
         |> build

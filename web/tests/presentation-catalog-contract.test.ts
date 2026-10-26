@@ -40,7 +40,7 @@ it("resolves business meaning through catalog message identities", () => {
     expect(p.fieldMeaning(field.name)).toBe(renderKey(defaults, field.meaningId));
   }
   for (const entry of catalog.entries.filter(
-    (item) => item.scope === "CASE" && item.endpoint === "operation.execute",
+    (item) => item.subject === "CASE" && item.endpoint === "operation.execute",
   )) {
     expect(p.actLabel(entry.kind)).toBe(renderKey(defaults, entry.labelId));
     expect(p.actMeaning(entry.kind)).toBe(renderKey(defaults, entry.meaningId));

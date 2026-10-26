@@ -27,7 +27,7 @@ type internal StoredCase =
     { CaseId: Guid; Snapshot: CaseSnapshot }
 
 [<RequireQualifiedAccess>]
-type internal StoredScope =
+type internal StoredSubject =
     | Case of caseId: Guid * revision: int64 * act: CaseActKind * businessDate: DateOnly
     | Authority of targetActorId: Guid * act: AuthorityKind
 
@@ -38,7 +38,7 @@ type internal StoredEntry =
         OperationId: Guid
         ActorId: Guid
         RecordedAt: DateTimeOffset
-        Scope: StoredScope
+        Subject: StoredSubject
         PayloadCommitment: byte array
         PayloadNonce: byte array option
         Payload: byte array option
@@ -74,25 +74,11 @@ type internal EntryDraft =
         OperationId: Guid
         ActorId: Guid
         RecordedAt: DateTimeOffset
-        Scope: StoredScope
+        Subject: StoredSubject
         PayloadCommitment: byte array
         PayloadNonce: byte array
         Payload: byte array
     }
-
-[<RequireQualifiedAccess>]
-type internal LedgerDecision<'projection> =
-    | Append of EntryDraft * 'projection * OperationReceipt
-    | Replay of OperationReceipt
-    | Refuse of Refusal
-    | Fail of CoreFault
-
-[<RequireQualifiedAccess>]
-type internal LedgerWriteResult =
-    | Appended of OperationReceipt
-    | Replayed of OperationReceipt
-    | Refused of Refusal
-    | Failed of CoreFault
 
 type internal AuthorityReadView =
     {
@@ -202,18 +188,19 @@ type internal ILedgerStore =
         principal: PrincipalKey *
         operationId: Guid *
         caseReference: string *
-        decide: (CaseLockedView -> LedgerDecision<CaseProjection>) *
+        decide: (CaseLockedView -> Decision<EntryDraft * CaseProjection * OperationReceipt>) *
         cancellationToken: CancellationToken ->
-            Task<Result<LedgerWriteResult, StoreFailure>>
+            Task<Result<Decision<OperationReceipt>, StoreFailure>>
 
     abstract WriteAuthority:
         principal: PrincipalKey *
         operationId: Guid *
         target: PrincipalKey *
         targetCaseReference: string option *
-        decide: (AuthorityLockedView -> LedgerDecision<AuthorityProjection>) *
+        decide:
+            (AuthorityLockedView -> Decision<EntryDraft * AuthorityProjection * OperationReceipt>) *
         cancellationToken: CancellationToken ->
-            Task<Result<LedgerWriteResult, StoreFailure>>
+            Task<Result<Decision<OperationReceipt>, StoreFailure>>
 
     abstract ReadAuthorityTarget:
         principal: PrincipalKey *

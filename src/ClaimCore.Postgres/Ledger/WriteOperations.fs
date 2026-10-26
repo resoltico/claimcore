@@ -52,13 +52,11 @@ module internal WriteOperations =
     let private persist connection token project decision =
         task {
             match decision with
-            | LedgerDecision.Replay entry -> return LedgerWriteResult.Replayed entry, false
-            | LedgerDecision.Refuse reason -> return LedgerWriteResult.Refused reason, false
-            | LedgerDecision.Fail fault -> return LedgerWriteResult.Failed fault, false
-            | LedgerDecision.Append(entry, projection, receipt) ->
+            | Decision.Proceed(entry, projection, receipt) ->
                 let! _ = Persistence.entry connection entry token
                 do! project connection projection token
-                return LedgerWriteResult.Appended receipt, true
+                return Decision.Proceed receipt, true
+            | other -> return Decision.map (fun (_, _, receipt) -> receipt) other, false
         }
 
     let case source settings installationId principal operationId reference decide token =

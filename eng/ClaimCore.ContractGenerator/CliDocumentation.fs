@@ -4,10 +4,10 @@ open System.Text
 open ClaimCore.Contract
 
 module CliDocumentation =
-    let private argument input =
-        let name = OperationCatalog.inputKey input.Spec.Name |> OperationCatalog.kebab
+    let private argument (input: CatalogDerivedInput) =
+        let name = OperationCatalog.inputKey input.Name |> OperationCatalog.kebab
 
-        match input.Spec.Argument with
+        match input.Argument with
         | CatalogArgument.Named -> "--" + name
         | CatalogArgument.Operand -> name.ToUpperInvariant()
         | CatalogArgument.Implicit -> ""
@@ -37,16 +37,16 @@ module CliDocumentation =
                 "| --- | --- | --- | --- |"
                 yield!
                     inputs
-                    |> List.filter (fun input -> input.Spec.Argument <> CatalogArgument.Implicit)
+                    |> List.filter (fun input -> input.Argument <> CatalogArgument.Implicit)
                     |> List.map (fun input ->
                         let choices =
-                            match input.Spec.Atom with
+                            match input.Atom with
                             | CatalogAtom.Choice choices ->
                                 choices |> List.map OperationCatalog.kebab |> String.concat ", "
                             | _ -> ""
 
                         let defaultValue =
-                            match input.Spec.Default with
+                            match input.Binding.Default with
                             | Some(BindingValue.Integer value) -> string value
                             | Some(BindingValue.Text value) -> value
                             | Some(BindingValue.Boolean value) -> string value

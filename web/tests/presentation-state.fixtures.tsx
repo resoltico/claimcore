@@ -6,13 +6,17 @@ import type { OperationDraft, CurrentCase } from "../src/api/service";
 import { PresentationControls } from "../src/presentation/PresentationControls";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { definition, fields, response, runtime } from "./service-ui.fixtures";
-
 export const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
-  advice: { acts: caseOffers(["CLOSE"]), history: ["SUMMARY", "FULL"] },
-
-  state: { tag: "LIVE", fields, disposition: "ACTIVE" },
+  advice: {
+    acts: caseOffers(["CLOSE"]),
+    history: ["SUMMARY", "FULL"],
+  },
+  state: {
+    kind: "ACTIVE",
+    fields,
+  },
 };
 export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>> = {}) => (
   <>
@@ -29,7 +33,6 @@ export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>
     />
   </>
 );
-
 export const draftAt = (index: number): OperationDraft => {
   const body = vi.mocked(globalThis.fetch).mock.calls[index]?.[1]?.body;
   if (typeof body !== "string") {
@@ -41,18 +44,39 @@ export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
   return response("operation.preview", "REVIEWED", {
     review: {
-      before: {
-        caseReference: fields.caseReference,
-        revision: draft.expectedRevision,
-        state: { tag: "LIVE", disposition: "ACTIVE", fields },
+      subject: {
+        kind: "CASE",
+        before: {
+          caseReference: fields.caseReference,
+          revision: draft.expectedRevision,
+          state: {
+            kind: "ACTIVE",
+            fields,
+          },
+        },
+        after: {
+          caseReference: {
+            ...fields,
+            status: "CLOSED",
+          }.caseReference,
+          revision: 2,
+          state: {
+            kind: "ACTIVE",
+            fields: {
+              ...fields,
+              status: "CLOSED",
+            },
+          },
+        },
+        changes: [
+          {
+            field: "status",
+            before: "OPENED",
+            after: "CLOSED",
+          },
+        ],
+        context: runtime,
       },
-      after: {
-        caseReference: { ...fields, status: "CLOSED" }.caseReference,
-        revision: 2,
-        state: { tag: "LIVE", disposition: "ACTIVE", fields: { ...fields, status: "CLOSED" } },
-      },
-      changes: [{ field: "status", before: "OPENED", after: "CLOSED" }],
-      context: runtime,
     },
   });
 };
@@ -63,7 +87,11 @@ export const deferredResponse = () => {
     resolve = yes;
     reject = no;
   });
-  return { promise, resolve, reject };
+  return {
+    promise,
+    resolve,
+    reject,
+  };
 };
 export const languageControl = (): HTMLSelectElement => {
   const result = screen.getAllByRole("combobox").find((item) => item.id.endsWith("-language"));

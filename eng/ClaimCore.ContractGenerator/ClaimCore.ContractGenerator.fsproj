@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><DefineConstants>$(DefineConstants);CONTRACT_GENERATION</DefineConstants></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AuthoredMessages.fs" />
     <Compile Include="CatalogRendering.fs" />
@@ -13,8 +15,8 @@
     <Compile Include="ArtifactPublication.fs" />
     <Compile Include="Artifacts.fs" />
     <Compile Include="Program.fs" />
+    <EmbeddedResource Include="../../web/locales/*.json" LogicalName="ClaimCore.Localization.%(Filename).browser%(Extension)" />
+    <EmbeddedResource Include="../../src/ClaimCore.Cli/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename).cli%(Extension)" />
     <EmbeddedResource Include="../../src/ClaimCore.Contract/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
-    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
   </ItemGroup>
 </Project>

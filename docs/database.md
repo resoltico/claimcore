@@ -1,7 +1,20 @@
 # Database administration
 
-Use ClaimCore.Database for owner-only initialization, provisioning, verification and head inspection.
-It serves no case work. Start with its offline `help`; invocation discovery opens no database.
+Use `claimcore-database` for owner-only initialization, provisioning, verification and head inspection.
+It serves no case work. Offline `help` lists commands and exit codes; `version` reports build identity.
+Neither command opens a database.
+
+| Invocation | Purpose |
+| --- | --- |
+| `claimcore-database initialize ZONE` | Initialize the supported schema with a canonical IANA business time zone. |
+| `claimcore-database provision-owner` | Bootstrap one human owner from the private owner-principal input. |
+| `claimcore-database head` | Read the admitted installation's current ledger position. |
+| `claimcore-database verify` | Verify the installation's retained ledger and projections. |
+| `claimcore-database verify --expect SEQUENCE:ENTRY_HASH` | Also compare an independently retained checkpoint. |
+
+Checkpoint sequences use canonical nonnegative decimal notation within the protocol's safe-integer range;
+entry hashes use 64 lowercase hexadecimal characters. Verification requires that sequence/hash position to
+belong to the verified chain, including its empty genesis position; the ledger may extend beyond the checkpoint.
 
 <a id="cc-db-002"></a>
 
@@ -33,9 +46,9 @@ Supported PostgreSQL majors, minimum minors and qualified image pins live in
 scalar guards protect permanent formats, independently of current admission policy. Reference identity uses
 ASCII folding with C-collation semantics.
 
-Provision-owner bootstraps only empty authority. Outputs are structured tags and positions. Exit 0 succeeds;
+Provision-owner bootstraps only empty authority. Outputs are structured `kind` outcomes and shared positions (`sequence`, `entryHash`). `REJECTED` denotes refusal. Exit 0 succeeds;
 2 refuses invocation/input; 3 fails; 4 reports lost commit knowledge; 5 reports verification divergence.
-Lost output after durable work remains uncertain. See `help` for each command's exact syntax.
+Lost output after durable work remains uncertain. The command table above gives the supported syntax.
 
 ## Verify a database or restored copy
 

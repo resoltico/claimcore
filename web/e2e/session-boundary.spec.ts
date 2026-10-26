@@ -9,7 +9,7 @@ import { login, logout } from "./session-helpers";
 test.use({ storageState: { cookies: [], origins: [] } });
 
 type SessionEnvelope = {
-  outcome: { tag: "SUCCEEDED"; data: { authenticated: boolean; antiforgeryToken: string } };
+  outcome: { kind: "SUCCEEDED"; data: { authenticated: boolean; antiforgeryToken: string } };
 };
 
 type HostFailure = { hostFailure: { code: string; phase: string | null } };
@@ -71,7 +71,7 @@ const expectAnonymousSessionBoundary = async (page: Page) => {
   expect(session).toMatchObject({
     status: 200,
     cacheControl: expect.stringContaining("no-store"),
-    payload: { outcome: { tag: "SUCCEEDED", data: { authenticated: false } } },
+    payload: { outcome: { kind: "SUCCEEDED", data: { authenticated: false } } },
   });
   return session.payload.outcome.data.antiforgeryToken;
 };
@@ -95,7 +95,7 @@ const expectAnonymousSession = async (page: Page) => {
   const session = await readSession(page);
   expect(session).toMatchObject({
     status: 200,
-    payload: { outcome: { tag: "SUCCEEDED", data: { authenticated: false } } },
+    payload: { outcome: { kind: "SUCCEEDED", data: { authenticated: false } } },
   });
 };
 
@@ -111,7 +111,7 @@ test("uses OIDC sign-in and the accessible actor-bound case workspace", async ({
   await expect(page.getByRole("heading", { name: "Cases" })).toBeVisible();
   await expect(readSession(page)).resolves.toMatchObject({
     status: 200,
-    payload: { outcome: { tag: "SUCCEEDED", data: { authenticated: true } } },
+    payload: { outcome: { kind: "SUCCEEDED", data: { authenticated: true } } },
   });
   await expect(new AxeBuilder({ page }).analyze()).resolves.toMatchObject({ violations: [] });
   await logout(page);

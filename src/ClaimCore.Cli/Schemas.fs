@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 /// Offline frame schemas derive endpoint payloads from the same registry as admission.
@@ -13,7 +14,7 @@ module CliSchemas =
                     member _.Visit endpoint =
                         Schema.Object(
                             [
-                                "endpoint", Schema.Const endpoint.Id
+                                "endpoint", Schema.Const endpoint.Token
                                 "input", endpoint.Input.Schema
                             ],
                             []
@@ -49,7 +50,9 @@ module CliSchemas =
                 endpoint.Accept
                     { new IEndpointVisitor<Schema> with
                         member _.Visit endpoint =
-                            frame (Schema.Const endpoint.Id) (endpoint.Output.Schema :: failures)
+                            frame
+                                (Schema.Const endpoint.Token)
+                                (endpoint.Output.Schema :: failures)
                     })
 
         Schema.OneOf(frame Schema.Null failures :: endpoints, None)

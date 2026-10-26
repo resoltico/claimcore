@@ -3,6 +3,7 @@ namespace ClaimCore.Cli
 open System.Text
 open System.Text.Json
 open ClaimCore.Contract
+open ClaimCore.Json
 
 module Discovery =
     let versionJson () =
@@ -18,23 +19,17 @@ module Discovery =
 
     let private selected =
         function
-        | CliDescription.Summary -> Some OperationCatalog.all
+        | CliDescription.Summary -> Some Catalog.document.Entries
         | CliDescription.Operation words ->
-            OperationCatalog.all
-            |> List.tryFind (fun entry -> OperationCatalog.words entry = words)
+            Catalog.document.Entries
+            |> List.tryFind (fun entry ->
+                OperationCatalog.words (OperationCatalog.operation entry) = words)
             |> Option.map List.singleton
 
     let describe selector =
         selected selector
         |> Option.map (fun operations ->
-            let values =
-                operations
-                |> List.map (fun operation ->
-                    OperationCatalog.entries
-                    |> List.find (fun entry ->
-                        entry.Endpoint = operation.Endpoint
-                        && entry.Synopsis = OperationCatalog.synopsis operation)
-                    |> CatalogCodecs.entry.Write)
+            let values = operations |> List.map CatalogCodecs.entry.Write
 
             (if selector = CliDescription.Summary then
                  JsonValue.Array values
@@ -46,7 +41,8 @@ module Discovery =
         selected selector
         |> Option.map (fun operations ->
             operations
-            |> List.map (fun operation ->
+            |> List.map (fun entry ->
+                let operation = OperationCatalog.operation entry
                 let inputs, _ = OperationCatalog.derive operation
 
                 let message key =
@@ -58,10 +54,10 @@ module Discovery =
                     CliIdentity.programName + " " + OperationCatalog.synopsis operation
                 ]
                 @ (inputs
-                   |> List.filter (fun input -> input.Spec.Argument <> CatalogArgument.Implicit)
+                   |> List.filter (fun input -> input.Argument <> CatalogArgument.Implicit)
                    |> List.map (fun input ->
                        let allowed =
-                           match input.Spec.Atom with
+                           match input.Atom with
                            | CatalogAtom.Choice values ->
                                " ["
                                + (values |> List.map OperationCatalog.kebab |> String.concat "|")

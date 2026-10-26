@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
@@ -23,7 +24,7 @@
     <Compile Include="IdentityServer.fs" />
     <Compile Include="PrivateTestPaths.fs" />
     <Compile Include="ProbeHttpsFixture.fs" />
-    <Compile Include="FacadeStub.fs" />
+    <Compile Include="HandlerStub.fs" />
     <Compile Include="TestServerFixture.fs" />
     <Compile Include="TestGuards.fs" />
   </ItemGroup>

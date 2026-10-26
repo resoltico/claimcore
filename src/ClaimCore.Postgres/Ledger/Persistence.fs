@@ -9,27 +9,27 @@ open ClaimCore.RecordFormat
 
 module internal Persistence =
     let entry connection (entry: EntryDraft) token =
-        let scope, subject, revision, act, date =
-            match entry.Scope with
-            | StoredScope.Authority(target, kind) ->
+        let subjectKind, subjectId, revision, act, date =
+            match entry.Subject with
+            | StoredSubject.Authority(target, kind) ->
                 "AUTHORITY", target, None, RecordedAuthorityActs.token kind, None
-            | StoredScope.Case(id, revision, kind, date) ->
+            | StoredSubject.Case(id, revision, kind, date) ->
                 "CASE", id, Some revision, CaseActKinds.token kind, Some date
 
         DatabaseSession.execute
             connection
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,scope,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)"
+            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)"
             [|
                 box entry.Sequence
                 box entry.PreviousHash
                 box entry.EntryHash
                 box (int16 RecordVersions.LedgerEntry)
-                box scope
+                box subjectKind
                 box act
                 box entry.OperationId
                 box entry.ActorId
                 box entry.RecordedAt
-                box subject
+                box subjectId
                 DatabaseSession.parameter revision
                 DatabaseSession.parameter date
                 box entry.PayloadCommitment

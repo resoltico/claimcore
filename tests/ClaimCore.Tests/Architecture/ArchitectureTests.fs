@@ -73,6 +73,7 @@ let private rejects rule (fixture: System.Type) =
 let private ambientEffects () =
     for name in
         [
+            "ClaimCore.Json"
             "ClaimCore.Contract"
             "ClaimCore.Domain"
             "ClaimCore.RecordFormat"
@@ -119,6 +120,10 @@ let private importedReference () =
     finally
         directory.Delete true
 
+let private jsonDependencies () =
+    let path = Path.Combine(root, "src", "ClaimCore.Json", "ClaimCore.Json.fsproj")
+    Expect.isEmpty (ProjectReferences.read path) "JSON has no product dependencies"
+
 let private postgres () =
     for path in projectPaths.Value do
         let name = Path.GetFileNameWithoutExtension path |> nonNull
@@ -144,7 +149,7 @@ let private postgres () =
     rejects "postgres" typeof<PostgresReference>
 
 let private serializer () =
-    for name in [ "ClaimCore.Contract"; "ClaimCore.RecordFormat" ] do
+    for name in [ "ClaimCore.Json"; "ClaimCore.Contract"; "ClaimCore.RecordFormat" ] do
         check "serializer" (Assembly.Load name)
 
     rejects "serializer" typeof<JsonSerializerCall>
@@ -154,6 +159,10 @@ let private serializer () =
         "serializer"
         "writer control"
         (Types().That().HaveFullName(typeof<JsonWriterCall>.FullName |> nonNull))
+
+let private durableCodecs () =
+    check "durable" (Assembly.Load "ClaimCore.RecordFormat")
+    rejects "durable" typeof<WireCodecCall>
 
 let private publishedClosure () =
     let directory = Directory.CreateTempSubdirectory("claimcore-client-closure-")
@@ -188,9 +197,11 @@ let tests =
             testCase
                 "pure projects reject ambient effects including timezone and resources"
                 ambientEffects
+            testCase "durable codecs reject wire codec dependencies" durableCodecs
+            testCase "JSON has no project dependencies" jsonDependencies
             testCase "only Web and Database may reference Postgres" postgres
             testCase
                 "published client closure rejects compiled server dependencies"
                 publishedClosure
-            testCase "Contract and RecordFormat avoid JsonSerializer" serializer
+            testCase "JSON, Contract and RecordFormat avoid JsonSerializer" serializer
         ]

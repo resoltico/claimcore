@@ -25,7 +25,7 @@ module internal CaseCorrections =
         | PaymentGroup.Keep -> Ok ValidatedPaymentCorrection.Keep
         | PaymentGroup.Clear -> Ok ValidatedPaymentCorrection.Clear
         | PaymentGroup.Replace value ->
-            Validation.date DateInput.PaymentDate value.PaymentDate
+            Validation.date BusinessField.PaymentDate value.PaymentDate
             |> Result.map ValidatedPaymentCorrection.Replace
 
     let parse (correction: Correction) : Result<ValidatedCaseCorrection, Refusal> =
@@ -64,14 +64,14 @@ module internal CaseCorrections =
     let availableActions progress group =
         let present =
             match group with
-            | CorrectionGroup.Registration -> true
-            | CorrectionGroup.Decision ->
+            | RecordGroup.Registration -> true
+            | RecordGroup.Decision ->
                 decisionChoice progress ValidatedDecisionCorrection.Clear |> Result.isOk
-            | CorrectionGroup.Payment ->
+            | RecordGroup.Payment ->
                 paymentChoice progress ValidatedPaymentCorrection.Clear |> Result.isOk
 
         if present then
-            ClaimCore.Contract.Protocol.RequestCodecs.correctionActions group
+            CorrectionActions.forGroup group
         else
             [ CorrectionGroupAction.Keep ]
 
@@ -80,11 +80,15 @@ module internal CaseCorrections =
         | PaymentProgress.Paid _, ValidatedDecisionCorrection.Clear, payment when
             payment <> ValidatedPaymentCorrection.Clear
             ->
-            Validation.invalid InputTarget.PaymentGroup Violation.PaymentClearRequired
+            Validation.invalid
+                (InputTarget.Group RecordGroup.Payment)
+                Violation.PaymentClearRequired
         | PaymentProgress.Paid _,
           ValidatedDecisionCorrection.Replace _,
           ValidatedPaymentCorrection.Keep ->
-            Validation.invalid InputTarget.PaymentGroup Violation.PaymentAcknowledgementRequired
+            Validation.invalid
+                (InputTarget.Group RecordGroup.Payment)
+                Violation.PaymentAcknowledgementRequired
         | _ -> Ok()
 
     let apply facts progress (correction: ValidatedCaseCorrection) =

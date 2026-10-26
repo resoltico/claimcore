@@ -42,7 +42,7 @@ export const useOperationObservation = (token: string, initialOperationId = "") 
     }
     controller.current = null;
     const found =
-      result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED"
+      result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED"
         ? result.value.outcome.data
         : null;
     setFeedback({

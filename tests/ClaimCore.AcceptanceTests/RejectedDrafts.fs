@@ -1,6 +1,7 @@
 module internal ClaimCore.AcceptanceTests.RejectedDrafts
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System.IO
 open System.Text.Json.Nodes
@@ -82,7 +83,7 @@ let private principalRefusals fixture =
                 fixture
                 "operation.execute"
                 {|
-                    scope = "AUTHORITY"
+                    kind = "AUTHORITY"
                     operationId = id ()
                     target =
                         {|

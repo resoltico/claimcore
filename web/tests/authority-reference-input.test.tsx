@@ -1,17 +1,19 @@
+import { catalogs as coreCatalogs } from "@contracts/messages";
 import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import enField from "@locales/en.json";
-import lvField from "@locales/lv.json";
-import arField from "@locales/ar.json";
-
+import enChrome from "@locales/en.json";
+import lvChrome from "@locales/lv.json";
+import arChrome from "@locales/ar.json";
 import { service } from "../src/api/service";
 import { useOperation } from "../src/hooks/operation/useOperation";
 import { initialOperationValues, refusalPath } from "../src/operation/operationForm";
 import { preferenceKey } from "../src/presentation/preferences";
 import { OperationForm } from "../src/views/operation/OperationForm";
 import { render, screen, waitFor } from "./presentation-test-support";
-
+const enField = { ...coreCatalogs.en, ...enChrome };
+const lvField = { ...coreCatalogs.lv, ...lvChrome };
+const arField = { ...coreCatalogs.ar, ...arChrome };
 const locales = [
   {
     language: "en",
@@ -42,7 +44,7 @@ type Locale = (typeof locales)[number];
 const noLockChange = () => undefined;
 const AuthorityForm = ({ kind }: { kind: "GRANT" | "REVOKE" }) => {
   const model = useOperation({
-    scope: "AUTHORITY",
+    subject: "AUTHORITY",
     kind,
     current: null,
     token: "synthetic-token",
@@ -58,7 +60,7 @@ const rejectedPreview = () =>
       value: {
         operationId: prepared.input.operationId,
         outcome: {
-          tag: "REJECTED",
+          kind: "REJECTED",
           data: {
             code: "INPUT_CASE_REFERENCE_FORMAT",
             action: "CORRECT_INPUT",
@@ -72,20 +74,28 @@ const rejectedPreview = () =>
   );
 const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale: Locale) => {
   await user.type(
-    screen.getByRole("textbox", { name: locale.authority["input.issuer.label"] }),
+    screen.getByRole("textbox", {
+      name: locale.authority["input.issuer.label"],
+    }),
     "https://synthetic.example/",
   );
   await user.type(
-    screen.getByRole("textbox", { name: locale.authority["input.subject.label"] }),
+    screen.getByRole("textbox", {
+      name: locale.authority["input.subject.label"],
+    }),
     "synthetic-target",
   );
   await user.selectOptions(
-    within(screen.getByRole("group", { name: locale.authority["input.scope.label"] })).getByRole(
-      "combobox",
-    ),
+    within(
+      screen.getByRole("group", {
+        name: locale.authority["input.scope.label"],
+      }),
+    ).getByRole("combobox"),
     "CASE",
   );
-  const reference = screen.getByRole("textbox", { name: locale.label });
+  const reference = screen.getByRole("textbox", {
+    name: locale.label,
+  });
   await user.type(reference, "bad reference");
   return reference;
 };
@@ -108,12 +118,31 @@ const expectReferenceDescription = (reference: HTMLElement, locale: Locale, inva
   expect(reference).toHaveAccessibleDescription(expected);
   expect(reference).toHaveAccessibleName(locale.label);
 };
-
 afterEach(() => vi.restoreAllMocks());
-
+const expectGrantReferencePath = (active: boolean) => {
+  const values = {
+    ...initialOperationValues("AUTHORITY", active ? "GRANT" : "REVOKE", null),
+  };
+  expect(
+    refusalPath("caseReference", {
+      ...values,
+      "act.scope.kind": "INSTALLATION",
+    }),
+  ).toBeNull();
+  expect(
+    refusalPath("caseReference", {
+      ...values,
+      "act.scope.kind": "CASE",
+    }),
+  ).toBe("act.scope.caseReference");
+};
 it.each(
   locales.flatMap((locale) =>
-    [true, false].map((active) => ({ language: locale.language, locale, active })),
+    [true, false].map((active) => ({
+      language: locale.language,
+      locale,
+      active,
+    })),
   ),
 )(
   "binds and focuses a case-scoped grant reference in $language with active=$active [CC-WEB-001]",
@@ -122,33 +151,43 @@ it.each(
     const preview = rejectedPreview();
     localStorage.setItem(
       preferenceKey,
-      JSON.stringify({ version: 1, language: locale.language, displayLocale: "en-GB" }),
+      JSON.stringify({
+        version: 1,
+        language: locale.language,
+        displayLocale: "en-GB",
+      }),
     );
-    const values = {
-      ...initialOperationValues("AUTHORITY", active ? "GRANT" : "REVOKE", null),
-    };
-    expect(
-      refusalPath("caseReference", { ...values, "act.scope.kind": "INSTALLATION" }),
-    ).toBeNull();
-    expect(refusalPath("caseReference", { ...values, "act.scope.kind": "CASE" })).toBe(
-      "act.scope.caseReference",
-    );
+    expectGrantReferencePath(active);
     render(<AuthorityForm kind={active ? "GRANT" : "REVOKE"} />);
-    expect(screen.queryByRole("textbox", { name: locale.label })).toBeNull();
+    expect(
+      screen.queryByRole("textbox", {
+        name: locale.label,
+      }),
+    ).toBeNull();
     const reference = await authorCaseGrant(user, locale);
     expect(reference).toHaveAttribute("name", "act.scope.caseReference");
     expectReferenceDescription(reference, locale, false);
-    await user.click(screen.getByRole("button", { name: locale.ui["ui.previewOperation"] }));
+    await user.click(
+      screen.getByRole("button", {
+        name: locale.ui["ui.previewOperation"],
+      }),
+    );
     await waitFor(() => {
       expect(reference).toHaveFocus();
     });
     expect(preview).toHaveBeenCalledOnce();
     expect(preview.mock.calls[0]![0].input).toMatchObject({
-      scope: "AUTHORITY",
-      target: { issuer: "https://synthetic.example/", subject: "synthetic-target" },
+      kind: "AUTHORITY",
+      target: {
+        issuer: "https://synthetic.example/",
+        subject: "synthetic-target",
+      },
       act: {
         kind: active ? "GRANT" : "REVOKE",
-        scope: { kind: "CASE", caseReference: "bad reference" },
+        scope: {
+          kind: "CASE",
+          caseReference: "bad reference",
+        },
       },
     });
     expect(reference).toHaveAttribute("aria-invalid", "true");

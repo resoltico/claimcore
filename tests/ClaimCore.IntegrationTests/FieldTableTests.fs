@@ -23,7 +23,7 @@ let private expected =
     FieldTable.rows
     |> List.map (fun row -> column row.Key)
     |> Set.ofList
-    |> Set.union (set [ "case_id"; "revision"; "disposition" ])
+    |> Set.union (set [ "case_id"; "revision"; "state" ])
 
 let private columns (source: NpgsqlDataSource) =
     task {

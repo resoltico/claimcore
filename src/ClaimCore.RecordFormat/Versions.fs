@@ -5,16 +5,16 @@ open ClaimCore.Contract
 /// A format number identifies one byte grammar and its admissible value set.
 module RecordVersions =
     [<Literal>]
-    let CaseRequest = 7
+    let CaseRequest = 1
 
     [<Literal>]
-    let Snapshot = 5
+    let Snapshot = 1
 
     [<Literal>]
-    let Authority = 4
+    let Authority = 1
 
     [<Literal>]
-    let LedgerEntry = 3
+    let LedgerEntry = 1
 
     [<Literal>]
-    let CaseReferenceIdentity = 2
+    let CaseReferenceIdentity = 1

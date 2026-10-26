@@ -71,21 +71,21 @@ let internal accepted (reply: ExecuteReply) =
 
 let internal acceptedAuthority outcome =
     match accepted outcome with
-    | { Scope = ReceiptScope.Authority _ } -> ()
+    | { Subject = ReceiptSubject.Authority _ } -> ()
     | _ -> failtest "Expected accepted authority operation."
 
 let internal caseReceipt (receipt: OperationReceipt) =
-    match receipt.Scope with
-    | ReceiptScope.Case value -> value
+    match receipt.Subject with
+    | ReceiptSubject.Case value -> value
     | _ -> failtest "Expected case receipt."
 
 let internal disclosedFields receipt =
     match (caseReceipt receipt).Snapshot with
-    | SnapshotDisclosure.Disclosed(CaseView.Live(fields, _)) -> fields
+    | SnapshotDisclosure.Disclosed((LiveCase.Active fields | LiveCase.Voided fields)) -> fields
     | _ -> failtest "Expected disclosed live fields."
 
 let internal core fixture principal =
-    Core.create fixture.InstallationId fixture.Store fixture.Calendar principal
+    Handlers.context fixture.InstallationId fixture.Store fixture.Calendar principal
 
 let internal bootstrap fixture =
     task {
@@ -100,15 +100,17 @@ let internal bootstrap fixture =
             )
 
         match result with
-        | Ok(LedgerWriteResult.Appended _) -> ()
+        | Ok(Decision.Proceed _) -> ()
         | _ -> failtest "Initial owner must be accepted."
 
         return core fixture fixture.Owner
     }
 
-let internal grant (actor: IActorClaimsCore) operationId target role scope active =
-    actor.Execute(
-        OperationInput.Authority(
+let internal grant (actor: HandlerContext) operationId target role scope active =
+    (Handlers.call
+        Api.operationExecute
+        actor
+        (OperationInput.Authority(
             authorityRequest
                 operationId
                 target
@@ -119,9 +121,8 @@ let internal grant (actor: IActorClaimsCore) operationId target role scope activ
                     role,
                     scope
                 ))
-        ),
-        CancellationToken.None
-    )
+        ))
+        (CancellationToken.None))
 
 let internal caseWorker fixture =
     task {

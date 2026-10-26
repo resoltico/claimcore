@@ -18,12 +18,13 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.Execute(
-                OperationInput.Authority(
+            (Handlers.call
+                Api.operationExecute
+                admin
+                (OperationInput.Authority(
                     authorityRequest (id 3) principal AdmittedAuthorityAct.Register
-                ),
-                CancellationToken.None
-            )
+                ))
+                (CancellationToken.None))
 
         acceptedAuthority registered
 
@@ -44,7 +45,13 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                                 ClaimantName = "Later Party"
                             })
 
-                let! amended = admin.Execute(OperationInput.Case amendment, CancellationToken.None)
+                let! amended =
+                    (Handlers.call
+                        Api.operationExecute
+                        admin
+                        (OperationInput.Case amendment)
+                        (CancellationToken.None))
+
                 accepted amended |> ignore
 
                 let! revoked =
@@ -56,10 +63,18 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let store = AfterCaseWriteStore(fixture.Store, afterWrite)
 
         let actor =
-            Core.create fixture.InstallationId (store :> ILedgerStore) fixture.Calendar principal
+            Handlers.context
+                fixture.InstallationId
+                (store :> ILedgerStore)
+                fixture.Calendar
+                principal
 
         let! result =
-            actor.Execute(OperationInput.Case(openRequest 10 "PROBE-1"), CancellationToken.None)
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(openRequest 10 "PROBE-1"))
+                (CancellationToken.None))
 
         let receipt = accepted result
         Expect.equal store.ReadCalls 0 "No state is fetched after commit to shape the receipt"
@@ -72,7 +87,11 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         Expect.equal receipt.RecordedBy (id 3) "Original executor"
 
         let! denied =
-            (core fixture principal).Get({ CaseReference = "PROBE-1" }, CancellationToken.None)
+            (Handlers.call
+                Api.caseGet
+                (core fixture principal)
+                ({ CaseReference = "PROBE-1" })
+                (CancellationToken.None))
 
         Expect.equal
             denied

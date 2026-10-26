@@ -3,7 +3,7 @@ import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { TextField } from "react-aria-components/TextField";
 
-type TextInputProps = {
+type LabeledTextInputProps = {
   id: string;
   label: string;
   value: string;
@@ -12,7 +12,14 @@ type TextInputProps = {
   type?: "text" | "password";
 };
 
-export const TextInput = ({ id, label, value, onChange, error, type = "text" }: TextInputProps) => (
+export const LabeledTextInput = ({
+  id,
+  label,
+  value,
+  onChange,
+  error,
+  type = "text",
+}: LabeledTextInputProps) => (
   <TextField
     className="text-field"
     isInvalid={error !== undefined}

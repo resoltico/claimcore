@@ -84,6 +84,15 @@ let rule name (subjects: IObjectProvider<IType>) =
     | "postgres" ->
         clauses.NotDependOnAny(Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Postgres"))
         :> IArchRule
+    | "durable" ->
+        clauses.NotDependOnAny(
+            Types()
+                .That()
+                .HaveFullNameMatching(
+                    @"^ClaimCore\.Contract\.Protocol\.(RequestCodecs|ResponseCodecs|ReceiptCodecs|ReplyCodecs)(\+|$)"
+                )
+        )
+        :> IArchRule
     | "serializer" ->
         clauses.NotDependOnAny(Types().That().HaveFullName("System.Text.Json.JsonSerializer"))
         :> IArchRule

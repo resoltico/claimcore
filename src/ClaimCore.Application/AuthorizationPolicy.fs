@@ -7,12 +7,12 @@ open ClaimCore.Domain
 
 module ActorAuthorization =
     // Application owns the one role-to-capability policy. Catalog owns spelling.
-    let private matrix =
-        [
-            Role.Owner, [ Capability.ManageAuthority; Capability.ReadAuthority ]
-            Role.CaseReader, [ Capability.ReadCase; Capability.ReadHistory ]
-            Role.CaseRegistrar, [ Capability.ReadCase; Capability.ReadHistory; Capability.Register ]
-            Role.CaseHandler,
+    let capabilities =
+        function
+        | Role.Owner -> [ Capability.ManageAuthority; Capability.ReadAuthority ]
+        | Role.CaseReader -> [ Capability.ReadCase; Capability.ReadHistory ]
+        | Role.CaseRegistrar -> [ Capability.ReadCase; Capability.ReadHistory; Capability.Register ]
+        | Role.CaseHandler ->
             [
                 Capability.ReadCase
                 Capability.ReadHistory
@@ -21,34 +21,38 @@ module ActorAuthorization =
                 Capability.Decide
                 Capability.Close
             ]
-            Role.PaymentRecorder,
+        | Role.PaymentRecorder ->
             [ Capability.ReadCase; Capability.ReadHistory; Capability.RecordPayment ]
-            Role.DataSteward, [ Capability.ReadCase; Capability.ReadHistory; Capability.Steward ]
-            Role.Auditor,
+        | Role.DataSteward -> [ Capability.ReadCase; Capability.ReadHistory; Capability.Steward ]
+        | Role.Auditor ->
             [
                 Capability.ReadCase
                 Capability.ReadHistory
                 Capability.ReadHistoryFull
                 Capability.ReadAuthority
             ]
-        ]
 
-    let roles = matrix |> List.map (fun (role, _) -> role)
-
-    let capabilities role =
-        matrix
-        |> List.find (fun (candidate, _) -> candidate = role)
-        |> fun (_, capabilities) -> capabilities
+    let roles = RoleTokens.all
 
     let rolesFor capability =
         roles |> List.filter (fun role -> List.contains capability (capabilities role))
 
-    /// Permanent role/principal invariant, separate from the evolving capability matrix.
-    let humanOnlyRole =
+    /// Principal restrictions follow the capabilities a role grants.
+    let humanOnlyCapability =
         function
-        | Role.Owner
-        | Role.DataSteward -> true
-        | _ -> false
+        | Capability.Steward
+        | Capability.ManageAuthority -> true
+        | Capability.ReadCase
+        | Capability.ReadHistory
+        | Capability.ReadHistoryFull
+        | Capability.Register
+        | Capability.Decide
+        | Capability.RecordPayment
+        | Capability.Close
+        | Capability.ReadAuthority -> false
+
+    let humanOnlyRole role =
+        capabilities role |> List.exists humanOnlyCapability
 
     let invalidRoles principal =
         if PrincipalKey.isHuman principal then
@@ -72,9 +76,6 @@ module ActorAuthorization =
             && (PrincipalKey.isHuman principal || loaded |> List.forall (humanOnlyRole >> not)))
 
     let can principal (view: AuthorityView) capability resource =
-        let humanOnly =
-            capability = Capability.Steward || capability = Capability.ManageAuthority
-
         let scoped =
             match resource with
             | ResourceScope.Installation -> Some view.Installation
@@ -87,7 +88,7 @@ module ActorAuthorization =
             | _ -> None
 
         validActor principal view
-        && (not humanOnly || PrincipalKey.isHuman principal)
+        && (not (humanOnlyCapability capability) || PrincipalKey.isHuman principal)
         && (scoped
             |> Option.exists (
                 List.exists (fun role -> List.contains capability (capabilities role))
@@ -111,16 +112,12 @@ module ActorAuthorization =
 
     let correctionCapability =
         function
-        | CorrectionGroup.Registration -> Capability.Register
-        | CorrectionGroup.Decision -> Capability.Decide
-        | CorrectionGroup.Payment -> Capability.RecordPayment
+        | RecordGroup.Registration -> Capability.Register
+        | RecordGroup.Decision -> Capability.Decide
+        | RecordGroup.Payment -> Capability.RecordPayment
 
     let correctionGroups =
-        [
-            CorrectionGroup.Registration
-            CorrectionGroup.Decision
-            CorrectionGroup.Payment
-        ]
+        [ RecordGroup.Registration; RecordGroup.Decision; RecordGroup.Payment ]
         |> List.map (fun group -> group, correctionCapability group)
 
     let private correctionCapabilities = correctionGroups |> List.map snd
@@ -132,13 +129,13 @@ module ActorAuthorization =
             [
                 match correction.Registration with
                 | RegistrationGroup.Keep -> ()
-                | _ -> yield correctionCapability CorrectionGroup.Registration
+                | _ -> yield correctionCapability RecordGroup.Registration
                 match correction.Decision with
                 | DecisionGroup.Keep -> ()
-                | _ -> yield correctionCapability CorrectionGroup.Decision
+                | _ -> yield correctionCapability RecordGroup.Decision
                 match correction.Payment with
                 | PaymentGroup.Keep -> ()
-                | _ -> yield correctionCapability CorrectionGroup.Payment
+                | _ -> yield correctionCapability RecordGroup.Payment
             ]
         | act -> [ ordinaryActs[CaseActs.kind act] ]
 

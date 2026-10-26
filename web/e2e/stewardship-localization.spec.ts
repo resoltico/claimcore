@@ -44,7 +44,7 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
       expect(await dialog.evaluate((element, previous) => element === previous, original)).toBe(
         true,
       );
-      await expect(dialog).toHaveAccessibleName(ui(language, "ui.reviewTitle"));
+      await expect(dialog).toHaveAccessibleName(ui(language, "label.reviewTitle"));
       await expect(dialog).toContainText(reason);
       await noHorizontalOverflow(steward, "narrow");
     }

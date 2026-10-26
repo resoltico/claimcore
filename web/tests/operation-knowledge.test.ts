@@ -36,7 +36,7 @@ it.each([false, true])(
 );
 it("exact preview replay accepts without executing and an observation never resolves a pending attempt", async () => {
   const accepted = wireReply("operation.execute");
-  if (accepted.outcome.tag !== "ACCEPTED") {
+  if (accepted.outcome.kind !== "ACCEPTED") {
     throw new Error("Missing acceptance fixture.");
   }
   vi.spyOn(service, "preview").mockResolvedValue({
@@ -44,7 +44,7 @@ it("exact preview replay accepts without executing and an observation never reso
     status: 200,
     value: {
       operationId: accepted.operationId,
-      outcome: { tag: "ALREADY_ACCEPTED", data: accepted.outcome.data },
+      outcome: { kind: "ALREADY_ACCEPTED", data: accepted.outcome.data },
     },
   });
   const execute = vi.spyOn(service, "execute");
@@ -58,7 +58,7 @@ it("exact preview replay accepts without executing and an observation never reso
 });
 it("preview conflict cannot execute or create uncertainty", async () => {
   const rejection = rejected(true);
-  if (rejection.kind !== "outcome" || rejection.value.outcome.tag !== "REJECTED") {
+  if (rejection.kind !== "outcome" || rejection.value.outcome.kind !== "REJECTED") {
     throw new Error("Missing refusal fixture.");
   }
   vi.spyOn(service, "preview").mockResolvedValue({

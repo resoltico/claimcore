@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.RedirectControl
 
+open ClaimCore.Json
+
 open System.IO
 open System.Text.Json
 open System.Text.Json.Nodes

@@ -20,7 +20,7 @@ type CaseListProps = {
 };
 
 const casePage = (response: ServiceResponse<"case.list">) =>
-  response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
+  response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 
 const CaseRow = ({
   caseView,
@@ -30,10 +30,6 @@ const CaseRow = ({
   onSelect: (reference: string) => void;
 }) => {
   const p = usePresentation();
-  let status = "ERASED";
-  if (caseView.state === "LIVE") {
-    status = caseView.disposition === "VOIDED" ? "VOIDED" : caseView.status;
-  }
   return (
     <li>
       <Button
@@ -46,9 +42,10 @@ const CaseRow = ({
       <CharacterWarning value={caseView.caseReference} />
       <span>
         {p.text("ui.caseRow", {
-          status: p.token(status),
+          status: p.token(caseView.state.kind),
           revision: p.integer(caseView.revision),
         })}
+        {caseView.state.kind === "ERASED" ? null : <> · {p.token(caseView.state.status)}</>}
       </span>
       <CopyValue label={p.fieldLabel("caseReference")} value={caseView.caseReference} />
     </li>

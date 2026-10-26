@@ -2,6 +2,7 @@ namespace ClaimCore.RecordFormat
 
 open System
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Domain
 
 type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
@@ -36,45 +37,46 @@ module RecordedAuthorityActs =
         all |> List.tryFind (token >> (=) value)
 
 module AuthorityRecord =
-    let private owner =
-        Codec.record ()
-        |> ClaimCore.Contract.Protocol.ResponseScalars.fixedField
-            "kind"
-            (AuthorityKinds.token AuthorityKind.ProvisionOwner)
-        |> Codec.build
-        |> Codec.named "ProvisionOwnerRecordAct"
+    let private operationVariant source =
+
+        {
+            Tag = source.Tag
+            ReadVariant =
+                fun path value ->
+                    source.ReadVariant path value |> Result.map RecordedAuthorityAct.Operation
+            TryWrite =
+                function
+                | RecordedAuthorityAct.Operation value -> source.TryWrite value
+                | _ -> None
+            VariantSchema = source.VariantSchema
+            VariantDefinitions = source.VariantDefinitions
+        }
 
     let private act =
-        Codec.choice
+        Codec.tagged
             "RecordedAuthorityAct"
-            [
-                Codec.branch
-                    RecordedAuthorityAct.Operation
-                    (function
-                    | RecordedAuthorityAct.Operation value -> Some value
-                    | _ -> None)
-                    (ClaimCore.Contract.Protocol.RequestCodecs.authorityActWith Codec.text)
-                Codec.branch
-                    (fun () -> RecordedAuthorityAct.ProvisionOwner)
-                    (function
-                    | RecordedAuthorityAct.ProvisionOwner -> Some()
-                    | _ -> None)
-                    owner
-            ]
+            ((RecordCodecs.authorityVariants Codec.text |> List.map operationVariant)
+             @ [ Codec.unitVariant "PROVISION_OWNER" RecordedAuthorityAct.ProvisionOwner ])
 
-    let private codec =
-        Codec.record (fun operationId target act ->
+    let private fields =
+        let version = int64 RecordVersions.Authority
+
+        Codec.record (fun operationId target act () ->
             {
                 OperationId = operationId
                 Target = target
                 Act = act
             })
         |> Codec.field "operationId" _.OperationId Codec.uuid
-        |> Codec.field "target" _.Target ClaimCore.Contract.Protocol.RequestCodecs.principal
+        |> Codec.field "target" _.Target RecordCodecs.principal
         |> Codec.field "act" _.Act act
-        |> Codec.build
-        |> Codec.withScope OperationScopes.Authority
-        |> Codec.withFormat (int64 RecordVersions.Authority)
+        |> Codec.field
+            "format"
+            (fun _ -> ())
+            (Codec.integer version version |> Codec.map (fun _ -> ()) (fun () -> version))
+
+    let private codec =
+        Codec.tagged "AuthorityRequestRecord.Subject" [ Codec.variant "AUTHORITY" id Some fields ]
         |> Codec.named "AuthorityRequestRecord"
 
     let private validScope =

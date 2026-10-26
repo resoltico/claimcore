@@ -29,8 +29,8 @@ const SessionContent = () => {
   if (state.kind === "authenticated") {
     return (
       <>
-        <UnresolvedNotice key={state.epoch} token={state.token} />
-        <Dashboard key={state.epoch} token={state.token} onLogout={logout} />
+        <UnresolvedNotice key={`notice:${state.epoch}`} token={state.token} />
+        <Dashboard key={`dashboard:${state.epoch}`} token={state.token} onLogout={logout} />
       </>
     );
   }

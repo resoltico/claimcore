@@ -56,6 +56,11 @@ const DashboardNav = ({
   navigate: (next: "cases" | "operations" | "authority") => void;
 }) => {
   const p = usePresentation();
+  const labels = {
+    cases: "ui.cases",
+    operations: "ui.operations",
+    authority: "ui.authority",
+  } as const;
   return (
     <nav aria-label={p.text("ui.primary")}>
       {(["cases", "operations", "authority"] as const)
@@ -69,7 +74,7 @@ const DashboardNav = ({
             isDisabled={locked}
             aria-pressed={active === item}
           >
-            {p.text(`ui.${item}`)}
+            {p.text(labels[item])}
           </Button>
         ))}
     </nav>
@@ -183,7 +188,7 @@ const useDashboardNavigation = () => {
   };
   const committed = (receipt: CaseReceipt): void => {
     setOperation(null);
-    setSelectedReference(receipt.scope.caseReference);
+    setSelectedReference(receipt.subject.caseReference);
     setRefresh((value) => value + 1);
   };
   return {
@@ -201,7 +206,7 @@ const useDashboardNavigation = () => {
 };
 
 const contextData = (reply: ServiceResponse<"context">) =>
-  reply.outcome.tag === "SUCCEEDED" ? reply.outcome.data : null;
+  reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
 
 const useNavigationFocus = (location: string) => {
   const content = useRef<HTMLDivElement>(null);

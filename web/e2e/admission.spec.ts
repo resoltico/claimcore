@@ -37,7 +37,7 @@ const requestBodyBoundary = async (page: Page, token: string): Promise<void> => 
   if (!isResponse("case.list", value)) {
     throw new Error("Expected a typed case list at the request byte boundary.");
   }
-  expect(value.outcome.tag).toBe("SUCCEEDED");
+  expect(value.outcome.kind).toBe("SUCCEEDED");
   const overLimitBody = `${admitted} `;
   expect(Buffer.byteLength(overLimitBody, "utf8")).toBe(maximumRequestBytes + 1);
   const oversized = await page.request.post(listUrl, {

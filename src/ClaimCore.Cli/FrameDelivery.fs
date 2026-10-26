@@ -5,7 +5,8 @@ open System.IO
 open ClaimCore.Contract
 
 /// The current request stays frozen until its complete reply is flushed.
-type FrameDelivery(output: Stream, errors: Stream, language: string) =
+type FrameDelivery(output: Stream, errors: Stream, language: string, render: CliReply -> byte array)
+    =
     let gate = obj ()
     let mutable interrupted = false
     let mutable potentiallyChanged = false
@@ -44,6 +45,9 @@ type FrameDelivery(output: Stream, errors: Stream, language: string) =
                 errors.WriteByte(byte '\n')
                 errors.Flush())
 
+    new(output, errors, language) =
+        new FrameDelivery(output, errors, language, (fun reply -> reply.Bytes))
+
     member _.BeginFrame() =
         advance (fun () ->
             potentiallyChanged <- false
@@ -63,7 +67,7 @@ type FrameDelivery(output: Stream, errors: Stream, language: string) =
 
     member _.Write(reply: CliReply) =
         advance ignore
-        output.Write reply.Bytes
+        output.Write(render reply)
         output.WriteByte(byte '\n')
         output.Flush()
 

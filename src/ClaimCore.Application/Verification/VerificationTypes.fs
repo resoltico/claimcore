@@ -27,7 +27,7 @@ type VerificationFinding =
     | PayloadFormat
     | RevisionSequence
     | HistoryStart
-    | DispositionSequence
+    | StateSequence
     | ErasureIncomplete
     | PayloadWithoutErasure
     | AuthorityFold
@@ -59,7 +59,7 @@ module VerificationFindings =
             VerificationFinding.PayloadFormat, "PAYLOAD_FORMAT"
             VerificationFinding.RevisionSequence, "REVISION_SEQUENCE"
             VerificationFinding.HistoryStart, "HISTORY_START"
-            VerificationFinding.DispositionSequence, "DISPOSITION_SEQUENCE"
+            VerificationFinding.StateSequence, "STATE_SEQUENCE"
             VerificationFinding.ErasureIncomplete, "ERASURE_INCOMPLETE"
             VerificationFinding.PayloadWithoutErasure, "PAYLOAD_WITHOUT_ERASURE"
             VerificationFinding.AuthorityFold, "AUTHORITY_FOLD"

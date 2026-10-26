@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliDisclosure
 
+open ClaimCore.Json
+
 open System
 open System.IO
 open System.Text
@@ -35,7 +37,7 @@ let private staleReview fixture input reference =
 
     let close =
         {|
-            scope = "CASE"
+            kind = "CASE"
             operationId = id ()
             caseReference = reference
             expectedRevision = 1L
@@ -57,16 +59,16 @@ let private staleReview fixture input reference =
 
 let private withheld expected reply =
     let receipt = require expected reply
-    let snapshot = receipt.GetProperty("scope").GetProperty("snapshot")
+    let snapshot = receipt.GetProperty("subject").GetProperty("snapshot")
 
     Expect.equal
-        (snapshot.GetProperty("disclosure").GetString())
+        (snapshot.GetProperty("kind").GetString())
         "WITHHELD"
         "Superseded business snapshot requires current full-history permission"
 
     Expect.equal
         (snapshot.EnumerateObject() |> Seq.map _.Name |> Seq.toList)
-        [ "disclosure" ]
+        [ "kind" ]
         "Withheld contains only its discriminator and no business payload"
 
 let private summaryHistory fixture reference =

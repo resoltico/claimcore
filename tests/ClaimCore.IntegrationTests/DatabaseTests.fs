@@ -48,22 +48,24 @@ let private populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! outcome =
-            actor.Execute(
-                OperationInput.Case(
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(
                     request 10 "synthetic-a" 0L (ClaimCore.Contract.CaseAct.Open registration)
-                ),
-                token
-            )
+                ))
+                (token))
 
         let receipt = accepted outcome
 
         let! second =
-            actor.Execute(
-                OperationInput.Case(
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(
                     request 11 "synthetic-b" 0L (ClaimCore.Contract.CaseAct.Open registration)
-                ),
-                token
-            )
+                ))
+                (token))
 
         accepted second |> ignore
 
@@ -90,11 +92,13 @@ let private erasureFixture (database: PostgresFixture.Database) =
         return actor
     }
 
-let private erased (actor: IActorClaimsCore) =
+let private erased (actor: HandlerContext) =
     task {
         let request = actRequest 13 "synthetic-a" 1L (ClaimCore.Contract.CaseAct.Erase)
 
-        let! result = actor.Execute(OperationInput.Case request, token)
+        let! result =
+            (Handlers.call Api.operationExecute actor (OperationInput.Case request) (token))
+
         return accepted result
     }
 
@@ -236,7 +240,8 @@ let tests =
                                 token
 
                         match first with
-                        | ProvisionOwnerOutcome.Accepted { Scope = ReceiptScope.Authority _ } -> ()
+                        | ProvisionOwnerOutcome.Accepted { Subject = ReceiptSubject.Authority _ } ->
+                            ()
                         | _ -> failtest "Expected accepted owner provisioning."
 
                         let! repeated =

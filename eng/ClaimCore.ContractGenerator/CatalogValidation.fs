@@ -1,8 +1,8 @@
 namespace ClaimCore.ContractGeneration
 
+open ClaimCore.Cli
 open ClaimCore.Contract
-open ClaimCore.Domain
-open ClaimCore.Application
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 /// Admit the single Template grammar, language parity and declared producer contracts before publication.
@@ -36,19 +36,19 @@ module CatalogValidation =
                 OperationCatalog.derive operation
                 |> fst
                 |> List.collect (fun input ->
-                    match input.Spec.Name, input.Spec.Atom with
+                    match input.Name, input.Atom with
                     | CatalogInputName.Technical TechnicalInput.Scope, CatalogAtom.Choice choices ->
                         choices
                     | _ -> []))
 
         let erased =
-            ResponseCodecs.caseState.Write CaseView.Erased |> JsonValue.tryMember "tag"
+            ResponseCodecs.caseState.Write CaseState.Erased |> JsonValue.tryMember "kind"
 
         [
             yield! CaseStatuses.all |> List.map CaseStatuses.token
             yield! ActKinds.all |> List.map ActKinds.token
             yield! RoleTokens.all |> List.map RoleTokens.token
-            yield! Dispositions.all |> List.map Dispositions.token
+            yield! CaseState.all |> List.map CaseState.token
             yield! CorrectionActions.all |> List.map CorrectionActions.token
             yield! PrincipalKinds.all
             yield! scopes
@@ -87,6 +87,12 @@ module CatalogValidation =
         for failure in HostFailures.all do
             matches ("host." + HostFailures.code failure) Set.empty
 
+    let validateReferences owner keys references =
+        let unused = Set.difference keys references
+
+        if not unused.IsEmpty then
+            invalidOp ("Unreferenced " + owner + " message keys: " + String.concat ", " unused)
+
     let validateCatalogs (authored: Map<string, (string * string) list>) =
         if (authored |> Map.keys |> Set.ofSeq) <> Set.ofList LocalizationPolicy.languages then
             invalidOp "Localization languages differ."
@@ -102,11 +108,31 @@ module CatalogValidation =
         let english = catalogs["en"]
         let keys = english |> Map.keys |> Set.ofSeq
 
+        let ui =
+            keys
+            |> Set.filter (fun key -> key.StartsWith("ui.", System.StringComparison.Ordinal))
+
+        let cli =
+            keys
+            |> Set.filter (fun key -> key.StartsWith("cli.", System.StringComparison.Ordinal))
+
+        validateReferences "browser" ui (AuthoredMessages.references "browser")
+
+        let cliReferences =
+            Set.union
+                (AuthoredMessages.references "cli")
+                (Frames.failureCodes
+                 |> List.map (fun code -> "cli.failure." + code)
+                 |> Set.ofList)
+
+        validateReferences "CLI" cli cliReferences
+
         let required = presentationIds ()
         let tokens = renderedTokens ()
 
         let families =
             [
+                "label"
                 "field"
                 "act"
                 "group"

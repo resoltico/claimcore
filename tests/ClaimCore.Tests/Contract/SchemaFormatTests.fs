@@ -4,6 +4,7 @@ open System
 open System.Text.Json
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 let private admits codec (value: string) =

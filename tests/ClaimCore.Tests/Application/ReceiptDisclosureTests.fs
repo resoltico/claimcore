@@ -16,10 +16,10 @@ let private disclosure () =
     let reader = actor owner (id 1) [ Role.CaseReader ] []
 
     Expect.isTrue
-        (match (receipt reader current entry).Scope with
-         | ReceiptScope.Case {
-                                 Snapshot = SnapshotDisclosure.Disclosed _
-                             } -> true
+        (match (receipt reader current entry).Subject with
+         | ReceiptSubject.Case {
+                                   Snapshot = SnapshotDisclosure.Disclosed _
+                               } -> true
          | _ -> false)
         "Current read discloses the current snapshot"
 
@@ -45,7 +45,7 @@ let private disclosure () =
     let view = locked registrar (Some superseded) (Some entry)
 
     match CaseDecisions.review installation calendar owner request view.Read with
-    | LedgerReviewDecision.Replay value ->
+    | Decision.Replay value ->
         Expect.equal
             (caseReceipt value).Snapshot
             SnapshotDisclosure.Withheld
@@ -60,7 +60,7 @@ let private erased () =
             Snapshot =
                 { current.Snapshot with
                     Revision = 2L
-                    View = CaseView.Erased
+                    State = CaseState.Erased
                 }
         }
 
@@ -96,8 +96,8 @@ let private foreignScope () =
     let read = (locked both (Some caseA) (Some entry)).Read
 
     match CaseDecisions.review installation calendar owner request read with
-    | LedgerReviewDecision.Refuse Refusal.IdempotencyConflict -> ()
-    | _ -> failtest "Visible existing-operation scope reveals only conflict"
+    | Decision.Refuse Refusal.IdempotencyConflict -> ()
+    | _ -> failtest "Visible existing-operation subject reveals only conflict"
 
     let narrowed =
         { read with
@@ -108,15 +108,15 @@ let private foreignScope () =
         }
 
     match CaseDecisions.review installation calendar owner request narrowed with
-    | LedgerReviewDecision.Refuse Refusal.ResourceUnavailable -> ()
-    | _ -> failtest "Missing accepted-operation scope must retain privacy"
+    | Decision.Refuse Refusal.ResourceUnavailable -> ()
+    | _ -> failtest "Missing accepted-operation subject must retain privacy"
 
 let private roles role readable full () =
     let _, entry, current, _ = created 204 "ROLE-DISCLOSURE"
     let authority = actor owner (id 1) [ role ] []
 
     Expect.equal
-        (LedgerEntries.canObserve owner authority entry.Scope)
+        (LedgerEntries.canObserve owner authority entry.Subject)
         readable
         "Current read authorization"
 
@@ -188,7 +188,7 @@ let private stewardship () =
         | _ -> failtest "Update"
 
     match decide request (locked steward (Some restored) (Some(LedgerEntries.stored draft))) with
-    | LedgerDecision.Replay replay ->
+    | Decision.Replay replay ->
         Expect.equal replay.RecordedBy first.RecordedBy "Original executor"
         Expect.equal replay.Position first.Position "Original position"
 

@@ -24,7 +24,7 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open ClaimCore.Application
 open ClaimCore.Web
-open ClaimCore.TestSupport.FacadeStub
+open ClaimCore.TestSupport.HandlerStub
 
 let origin = Uri "https://localhost:5443"
 
@@ -137,11 +137,11 @@ let private login (context: HttpContext) : Task =
         context.Response.StatusCode <- 200
     }
 
-type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
+type Host(ready: bool, ?forActor: PrincipalKey -> HandlerContext) =
     let assets = Directory.CreateTempSubdirectory("claimcore-host-").FullName
     let sink = new StringWriter()
     let certificate = ProbeHttpsFixture.certificate ()
-    let facade = Facade()
+    let facade = Stub()
 
     let builder =
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
@@ -163,6 +163,10 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
         HostRoutes.map
             assets
             (configuration certificate)
+            (if forActor.IsSome then
+                 ClaimCore.Application.Handlers.forActor
+             else
+                 facade.Handlers)
             (fun principal action ->
                 task {
                     if not facade.AdmissionOpen then
@@ -173,7 +177,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
                         let actor =
                             match forActor with
                             | Some factory -> factory principal
-                            | None -> facade.ActorCore
+                            | None -> facade.InvocationContext principal
 
                         let! result = action actor
                         return Some result
@@ -185,7 +189,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> IActorClaimsCore) =
     let client = application.GetTestClient()
     let mutable cookies = Map.empty<string, string>
     do client.BaseAddress <- origin
-    member _.Facade = facade
+    member _.HandlerStub = facade
     member _.Log = sink.ToString()
 
     member _.ClearLog() =

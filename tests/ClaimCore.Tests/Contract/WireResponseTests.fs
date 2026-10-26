@@ -3,6 +3,7 @@ module ClaimCore.Tests.WireResponseTests
 open ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.IO
@@ -38,7 +39,7 @@ let private examples () =
 
         let encoded =
             endpoint.Accept
-                { new IEndpointVisitor<Result<ClaimCore.Contract.JsonValue, Problem>> with
+                { new IEndpointVisitor<Result<ClaimCore.Json.JsonValue, Problem>> with
                     member _.Visit endpoint =
                         endpoint.Output.Read "$" value |> Result.map endpoint.Output.Write
                 }
@@ -123,7 +124,7 @@ let private frames () =
             Endpoint = Some "session.logout"
             OperationId = None
             Delivery = DeliveryState.Delivered
-            Result = FrameResult.Reply(Api.logout.Output.Write(ReadReply.Succeeded()))
+            Result = FrameResult.Reply(TypedReply.ofValue Api.logout (ReadReply.Succeeded()))
         }
 
     let roundTrip value =
@@ -152,7 +153,7 @@ let private frames () =
 let private checkDiscriminators (root: JsonElement) =
     let schemas = root.GetProperty("components").GetProperty "schemas"
 
-    for name, property, count in [ "ReceiptScope", "kind", 2; "CaseActOffer", "act", 12 ] do
+    for name, property, count in [ "ReceiptSubject", "kind", 2; "CaseActOffer", "kind", 2 ] do
         let union = schemas.GetProperty name
         let discriminator = union.GetProperty "discriminator"
 

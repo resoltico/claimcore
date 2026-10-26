@@ -14,19 +14,46 @@ const snapshot = (value: unknown): unknown => {
       : state,
   };
 };
-const responseData = (tag: string, data: unknown, request: Record<string, unknown>): unknown => {
-  if (tag === "OUTCOME_UNKNOWN") {
+const reviewData = (kind: string, data: unknown, request: Record<string, unknown>): unknown => {
+  if (
+    kind === "REVIEWED" &&
+    isObject(data) &&
+    isObject(data["review"]) &&
+    isObject(data["review"]["subject"])
+  ) {
+    const { subject } = data["review"];
+    return {
+      ...data,
+      review: {
+        subject: {
+          ...subject,
+          kind: request["kind"],
+          ...(subject["kind"] === "CASE"
+            ? { before: snapshot(subject["before"]), after: snapshot(subject["after"]) }
+            : {}),
+        },
+      },
+    };
+  }
+  return data;
+};
+const responseData = (kind: string, data: unknown, request: Record<string, unknown>): unknown => {
+  if (kind === "OUTCOME_UNKNOWN") {
     return null;
   }
-  if (isObject(data) && ["ACCEPTED", "ALREADY_ACCEPTED"].includes(tag) && isObject(data["scope"])) {
-    const { scope } = data;
+  if (
+    isObject(data) &&
+    ["ACCEPTED", "ALREADY_ACCEPTED"].includes(kind) &&
+    isObject(data["subject"])
+  ) {
+    const { subject } = data;
     return {
       ...data,
       operationId: request["operationId"],
-      scope: {
-        ...scope,
+      subject: {
+        ...subject,
         ...(isObject(request["act"]) ? { act: request["act"]["kind"] } : {}),
-        ...(scope["kind"] === "CASE" && request["scope"] === "CASE"
+        ...(subject["kind"] === "CASE" && request["kind"] === "CASE"
           ? {
               caseReference: request["caseReference"],
               revision: Number(request["expectedRevision"]) + 1,
@@ -35,21 +62,9 @@ const responseData = (tag: string, data: unknown, request: Record<string, unknow
       },
     };
   }
-  if (tag === "REVIEWED" && isObject(data) && isObject(data["review"])) {
-    const { review } = data;
-    return {
-      ...data,
-      review: {
-        ...review,
-        scope: request["scope"],
-        before: snapshot(review["before"]),
-        after: snapshot(review["after"]),
-      },
-    };
-  }
-  return data;
+  return reviewData(kind, data, request);
 };
-const envelope = (endpoint: string, tag: string, original: unknown) => {
+const envelope = (endpoint: string, kind: string, original: unknown) => {
   const body = vi.mocked(globalThis.fetch).mock?.calls.at(-1)?.[1]?.body;
   const request: unknown = typeof body === "string" ? JSON.parse(body) : null;
   let data = original;
@@ -60,17 +75,17 @@ const envelope = (endpoint: string, tag: string, original: unknown) => {
     ["operation.preview", "operation.execute"].includes(endpoint)
   ) {
     echo = { operationId: request["operationId"] };
-    data = responseData(tag, data, request);
+    data = responseData(kind, data, request);
   }
   return {
     ...echo,
-    outcome: { tag, data },
+    outcome: { kind, data },
   };
 };
 /** Synthetic replies are correlated with the bytes handed to the mocked platform transport. */
 export const transportResponse = (
   endpoint: string,
-  tag: string,
+  kind: string,
   original: unknown,
   status: number,
 ): Response =>
@@ -79,7 +94,7 @@ export const transportResponse = (
       {
         pull(controller) {
           controller.enqueue(
-            new TextEncoder().encode(JSON.stringify(envelope(endpoint, tag, original))),
+            new TextEncoder().encode(JSON.stringify(envelope(endpoint, kind, original))),
           );
           controller.close();
         },

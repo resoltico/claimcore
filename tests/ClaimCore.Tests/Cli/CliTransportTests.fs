@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CliTransportTests
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 
 open System
@@ -33,7 +34,7 @@ let private resultExits () =
             use document = JsonDocument.Parse(ReadOnlyMemory body)
 
             let tag =
-                document.RootElement.GetProperty("outcome").GetProperty("tag").GetString()
+                document.RootElement.GetProperty("outcome").GetProperty("kind").GetString()
                 |> Option.ofObj
                 |> Option.get
 
@@ -171,7 +172,7 @@ let private successfulBody endpoint invocation =
     |> List.find (fun body ->
         use document = JsonDocument.Parse(ReadOnlyMemory body)
 
-        document.RootElement.GetProperty("outcome").GetProperty("tag").GetString() = tag
+        document.RootElement.GetProperty("outcome").GetProperty("kind").GetString() = tag
         && (result invocation body |> Result.isOk))
 
 let private mediaVariants () =
@@ -275,7 +276,7 @@ let private mixedMediaCorrelation () =
     let receipt =
         node["outcome"]
         |> nonNull
-        |> fun value -> value["data"] |> nonNull |> fun value -> value["scope"] |> nonNull
+        |> fun value -> value["data"] |> nonNull |> fun value -> value["subject"] |> nonNull
 
     receipt["caseReference"] <- System.Text.Json.Nodes.JsonValue.Create("another")
     let body = node.ToJsonString() |> bytes
@@ -432,7 +433,9 @@ let private malformedBusinessInput () =
         samples "operation.execute"
         |> List.find (fun body ->
             use document = JsonDocument.Parse(ReadOnlyMemory<byte> body)
-            document.RootElement.GetProperty("outcome").GetProperty("tag").GetString() = "REJECTED")
+
+            document.RootElement.GetProperty("outcome").GetProperty("kind").GetString() =
+                "REJECTED")
 
     use handler =
         new Handler(fun request ->
@@ -455,7 +458,7 @@ let private malformedBusinessInput () =
     match frame.Result with
     | FrameResult.Reply value ->
         Expect.equal
-            (Frames.outcome value)
+            (Frames.outcome (TypedReply.json value))
             (Some "REJECTED")
             "Business refusal is an admitted result."
     | _ -> failtest "Expected a business refusal."
@@ -469,7 +472,7 @@ let private nearFrameLimitBody endpoint failure =
             |> List.find (fun body ->
                 use document = JsonDocument.Parse(ReadOnlyMemory<byte> body)
 
-                document.RootElement.GetProperty("outcome").GetProperty("tag").GetString() =
+                document.RootElement.GetProperty("outcome").GetProperty("kind").GetString() =
                     "REJECTED")
 
     let node = System.Text.Json.Nodes.JsonNode.Parse(original) |> nonNull

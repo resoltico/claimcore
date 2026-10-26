@@ -1,4 +1,5 @@
-import type { CurrentCase } from "../api/types";
+import { offerAct } from "../operation/metadata";
+import type { CurrentCase, FieldCatalogEntry } from "../api/types";
 import type { FormValues } from "../protocol/forms";
 import type { Notice } from "../api/notices";
 import { NoticeView } from "../presentation/Message";
@@ -20,7 +21,9 @@ const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<stri
   if (input.kind.kind !== "CHOICE" && input.kind.kind !== "GROUP") {
     return [];
   }
-  const offer = props.current?.advice.acts.find((item) => item.act === props.values["act.kind"]);
+  const offer = props.current?.advice.acts.find(
+    (item) => offerAct(item) === props.values["act.kind"],
+  );
   const group =
     offer !== undefined && "correction" in offer
       ? Object.entries(offer.correction).find(([name]) =>
@@ -64,7 +67,7 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
     <fieldset>
       {group ? <legend>{renderKey(p, input.labelId)}</legend> : null}
       <label>
-        {group ? p.text("ui.action") : renderKey(p, input.labelId)}
+        {group ? p.text("label.action") : renderKey(p, input.labelId)}
         <select
           name={path}
           id={
@@ -96,7 +99,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const path = bindingPath(input);
   const error = inputError(input, props);
   const field = [...productMetadata.catalog.fields, ...productMetadata.catalog.inputFields].find(
-    (item) => item.name === input.field,
+    (item): item is FieldCatalogEntry => item.scalar !== null && item.name === input.field,
   );
   if (field !== undefined) {
     return (

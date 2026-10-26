@@ -1,6 +1,8 @@
 namespace ClaimCore.Web
 
 open ClaimCore.Contract
+open ClaimCore.Application
+open ClaimCore.Json
 
 open ClaimCore.Contract.Protocol
 
@@ -131,8 +133,7 @@ module HostRoutes =
                         context
         }
 
-    let map assets configuration withActor (application: WebApplication) =
-        Dispatch.check ()
+    let map assets configuration handlers withActor (application: WebApplication) =
         let files = StaticFileOptions()
 
         files.OnPrepareResponse <-
@@ -143,10 +144,11 @@ module HostRoutes =
 
         for endpoint in Api.all do
             let handler =
-                match (Api.id endpoint) with
-                | "session" -> session configuration
-                | "session.logout" -> logout configuration
-                | _ -> ApiRoutes.handle endpoint configuration withActor
+                match Api.identity endpoint with
+                | EndpointId.Host HostEndpoint.Session -> session configuration
+                | EndpointId.Host HostEndpoint.Logout -> logout configuration
+                | EndpointId.Actor actor ->
+                    ApiRoutes.handle (handlers actor) configuration withActor
 
             let exact (context: HttpContext) =
                 if Option.ofObj context.Request.Path.Value <> Some(Api.path endpoint) then

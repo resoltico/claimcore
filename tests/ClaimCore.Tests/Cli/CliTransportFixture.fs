@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CliTransportFixture
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.IO
@@ -18,9 +19,9 @@ let bytes (text: string) = Encoding.UTF8.GetBytes text
 let samples endpoint = CliReplyFixtures.responses endpoint
 
 let frame endpoint =
-    ClaimCore.Contract.JsonValue.Object
+    ClaimCore.Json.JsonValue.Object
         [
-            "endpoint", ClaimCore.Contract.JsonValue.String endpoint
+            "endpoint", ClaimCore.Json.JsonValue.String endpoint
             "input", CliReplyFixtures.input endpoint
         ]
     |> WireWriter.bytes
@@ -28,9 +29,9 @@ let frame endpoint =
     |> Result.defaultWith (fun _ -> failwith "Fixture frame refused.")
 
 let authorityFrame () =
-    ClaimCore.Contract.JsonValue.Object
+    ClaimCore.Json.JsonValue.Object
         [
-            "endpoint", ClaimCore.Contract.JsonValue.String "operation.execute"
+            "endpoint", ClaimCore.Json.JsonValue.String "operation.execute"
             "input",
             Api.operationExecute.Input.Write(
                 OperationInput.Authority CliReplyFixtures.authorityRequest

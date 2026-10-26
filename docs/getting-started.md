@@ -146,10 +146,12 @@ accepted receipt at revision 1 and the case fields on return to the case. You no
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml down
 ```
 
-This removes this project's containers and network, retaining its two named PostgreSQL and identity volumes.
-Preserve its configuration and volumes if you intend to start it again. Never use host-wide prune commands to
-clean up an installation. To discard a wholly disposable installation, explicitly remove only its own volumes
-after confirming their project labels.
+This removes this project's containers and network while retaining its PostgreSQL, identity and Web key-ring
+volumes. The key-ring volume binds to `key-ring` inside the configuration directory. Preserve that directory
+and the database and identity volumes together if you intend to start the installation again. Never use
+host-wide prune commands to clean up an installation. To discard a wholly disposable installation, explicitly
+remove only its own volumes after confirming their project labels, and remove its configuration only when
+the retained keys and private inputs are no longer needed.
 
 If startup or login fails, inspect only this project's status and private diagnostics. Check ports,
 certificate trust and expiry, private-file permissions and the pinned tools. See [Support](../SUPPORT.md) for

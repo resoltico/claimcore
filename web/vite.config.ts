@@ -14,9 +14,7 @@ export default {
       { find: "@contracts", replacement: fileURLToPath(new URL("../contracts", import.meta.url)) },
       {
         find: "@locales",
-        replacement: fileURLToPath(
-          new URL("../src/ClaimCore.Contract/Localization", import.meta.url),
-        ),
+        replacement: fileURLToPath(new URL("./locales", import.meta.url)),
       },
     ],
   },

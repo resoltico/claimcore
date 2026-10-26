@@ -13,37 +13,79 @@ it("localizes generated enum tokens while preserving identical authored principa
   render(
     <ProtocolSummary
       document={document}
-      node={selectedSchema(document, document, "", { scope: "AUTHORITY" })}
+      node={selectedSchema(document, document, "", {
+        kind: "AUTHORITY",
+      })}
       value={{
         operationId: "10000000-0000-4000-8000-000000000001",
-        target: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "HUMAN" },
-        act: { kind: "REGISTER" },
+        target: {
+          kind: "HUMAN",
+          issuer: "https://issuer.example/",
+          subject: "HUMAN",
+        },
+        act: {
+          kind: "REGISTER",
+        },
       }}
     />,
   );
-  expect(screen.getByText("Human", { exact: true })).toBeVisible();
-  expect(screen.getAllByText("HUMAN", { exact: true })).toHaveLength(2);
-  expect(screen.getByText("Register actor", { exact: true })).toBeVisible();
+  expect(
+    screen.getByText("Human", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(
+    screen.getAllByText("HUMAN", {
+      exact: true,
+    }),
+  ).toHaveLength(2);
+  expect(
+    screen.getByText("Register actor", {
+      exact: true,
+    }),
+  ).toBeVisible();
 });
 it("uses schema membership rather than field spelling and preserves whitespace as authored input", () => {
   const document: SchemaDocument = {
     type: "object",
     properties: {
-      kind: { type: "string" },
-      subject: { type: "string" },
-      issuer: { type: "string" },
+      kind: {
+        type: "string",
+      },
+      subject: {
+        type: "string",
+      },
+      issuer: {
+        type: "string",
+      },
     },
   };
   const { container } = render(
     <ProtocolSummary
       document={document}
       node={document}
-      value={{ kind: "HUMAN", subject: " ", issuer: "" }}
+      value={{
+        kind: "HUMAN",
+        subject: " ",
+        issuer: "",
+      }}
     />,
   );
-  expect(screen.queryByText("Human", { exact: true })).toBeNull();
-  expect(screen.getByText("HUMAN", { exact: true })).toBeVisible();
-  expect(screen.getAllByText("Empty input", { exact: true })).toHaveLength(1);
+  expect(
+    screen.queryByText("Human", {
+      exact: true,
+    }),
+  ).toBeNull();
+  expect(
+    screen.getByText("HUMAN", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(
+    screen.getAllByText("Empty input", {
+      exact: true,
+    }),
+  ).toHaveLength(1);
   expect([...container.querySelectorAll("bdi")].some((node) => node.textContent === " ")).toBe(
     true,
   );
@@ -58,14 +100,16 @@ it("an empty short nonterminal page never claims the end of visible scope", () =
   rerender(<PageStatus empty cursor={null} emptyMessage="ui.noAccessibleCases" />);
   expect(screen.getByText("End of results in this visible scope.")).toBeVisible();
 });
-
 afterEach(() => {
   vi.restoreAllMocks();
 });
 it("a failed history read stops loading without inventing a successful empty page", async () => {
   vi.spyOn(service, "history").mockResolvedValue({
     kind: "deliveryFailure",
-    notice: { kind: "local", reason: "unreachable" },
+    notice: {
+      kind: "local",
+      reason: "unreachable",
+    },
     dispatched: false,
   });
   render(

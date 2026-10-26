@@ -1,30 +1,35 @@
 namespace ClaimCore.Cli
 
 open System
-open System.IO
+open System.Globalization
 open System.Text
 open ClaimCore.Contract
+open ClaimCore.Contract.Protocol
+open ClaimCore.Json
 
-/// Human output is a rendering of admitted replies, never an input or policy mechanism.
+/// Human output consumes decoded DTOs and the authoritative field readers.
 module internal TextReply =
-    let private memberValue name value =
-        JsonValue.tryMember name value |> Option.defaultValue JsonValue.Null
+    let private label language key =
+        MessageCatalogs.render language key Map.empty
 
-    let private scalar =
+    let private line language key value = label language key + ": " + value
+
+    let private number (value: int64) =
+        value.ToString(CultureInfo.InvariantCulture)
+
+    let private id (value: Guid) = value.ToString "D"
+    let private boolean value = if value then "true" else "false"
+
+    let private instant (value: DateTimeOffset) =
+        value.ToUniversalTime().ToString(JsonFormats.InstantFormat, CultureInfo.InvariantCulture)
+
+    let private json codec value =
+        Codec.encode codec value |> Encoding.UTF8.GetString
+
+    let private displayed language =
         function
-        | JsonValue.String value -> value
-        | JsonValue.Integer value -> string value
-        | JsonValue.Boolean value -> if value then "true" else "false"
-        | JsonValue.Null -> "—"
-        | value -> WireWriter.bytes value |> Encoding.UTF8.GetString
-
-    let private get name value = memberValue name value |> scalar
-
-    let private displayed language value =
-        let text = scalar value
-
-        match value with
-        | JsonValue.String _ ->
+        | None -> "—"
+        | Some text ->
             let warning = TextDisplay.warning text
 
             if warning.CodePoints.IsEmpty then
@@ -34,243 +39,207 @@ module internal TextReply =
                     warning.CodePoints @ (if warning.Truncated then [ "…" ] else [])
                     |> String.concat ", "
 
-                let annotation =
-                    MessageCatalogs.renderCli language (CliMessage.CharacterWarning points)
+                text
+                + " ["
+                + MessageCatalogs.renderCli language (CliMessage.CharacterWarning points)
+                + "]"
 
-                text + " [" + annotation + "]"
-        | _ -> text
-
-    let private items =
-        function
-        | JsonValue.Array values -> values
-        | _ -> []
-
-    let private label language key =
-        MessageCatalogs.render language key Map.empty
-
-    let private authorityFieldLabel name = ContractDiscovery.inputLabel name
-
-    let private line language key value = label language key + ": " + value
-
-    let private fieldValue (row: FieldRow) value =
-        let group =
-            match row.Group with
-            | FieldGroup.Identity
-            | FieldGroup.Status -> value
-            | group -> memberValue (FieldGroup.token group) value
-
-        memberValue row.Key group
-
-    let private fieldLines language value =
-        let rows group =
+    let private fieldLines language fields =
+        let rows placement =
             FieldTable.rows
-            |> List.filter (fun row -> row.Group = group)
+            |> List.filter (fun row -> row.Placement = placement)
             |> List.map (fun row ->
                 line
                     language
                     (FieldTable.labelId row.Field)
-                    (fieldValue row value |> displayed language))
+                    (displayed language (row.AcceptedValue fields)))
 
-        rows FieldGroup.Identity
-        @ rows FieldGroup.Status
-        @ ([ FieldGroup.Registration; FieldGroup.Decision; FieldGroup.Payment ]
+        rows FieldPlacement.TopLevel
+        @ (Vocabulary.all RecordGroup.vocabulary
            |> List.collect (fun group ->
-               (label language ("group." + FieldGroup.token group + ".label") + ":")
-               :: rows group))
+               (label language (Vocabulary.messageKey RecordGroup.vocabulary group "label")
+                + ":")
+               :: rows (FieldPlacement.Grouped group)))
 
-    let private stateFields state = memberValue "fields" state
+    let private offerAct =
+        function
+        | CaseActOffer.Act(act, _) -> CaseActKinds.token act
+        | CaseActOffer.Correct _ ->
+            CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct)
 
-    let private caseLines language value =
-        let state = memberValue "state" value
-
-        let status =
-            if get "tag" state = "LIVE" then
-                if get "disposition" state = "VOIDED" then
-                    "VOIDED"
-                else
-                    get (FieldTable.key BusinessField.Status) (stateFields state)
-            else
-                get "tag" state
-
-        let fields =
-            if get "tag" state = "LIVE" then
-                fieldLines language (stateFields state)
-            else
-                []
-
-        let advice = memberValue "advice" value |> memberValue "acts" |> items
-
+    let private caseLines language (value: CaseReadModel) =
         [
+            line language (FieldTable.labelId BusinessField.CaseReference) value.Snapshot.Reference
             line
                 language
-                (FieldTable.labelId BusinessField.CaseReference)
-                (get (FieldTable.key BusinessField.CaseReference) value)
-            line language (CliMessages.key CliMessage.RevisionLabel) (get "revision" value)
-            line language "cli.text.state" status
+                (CliMessages.key CliMessage.RevisionLabel)
+                (number value.Snapshot.Revision)
+            line language "cli.text.state" (CaseState.token value.Snapshot.State)
         ]
-        @ fields
+        @ (CaseState.fields value.Snapshot.State
+           |> Option.map (fieldLines language)
+           |> Option.defaultValue [])
         @ [
             line
                 language
                 (CliMessages.key CliMessage.AvailableActsLabel)
-                (advice |> List.map (get "act" >> OperationCatalog.kebab) |> String.concat ", ")
+                (value.Advice.Acts
+                 |> List.map (offerAct >> OperationCatalog.kebab)
+                 |> String.concat ", ")
         ]
 
-    let private receiptLines language tag value =
-        let scope = memberValue "scope" value
-        let token = get "act" scope
-
-        let verb = OperationCatalog.kebab token
-
-        let target =
-            if get "kind" scope = "CASE" then
-                get (FieldTable.key BusinessField.CaseReference) scope
-            else
-                get "targetActorId" scope
-
-        let revision =
-            if get "kind" scope = "CASE" then
+    let private receiptLines language outcome (receipt: OperationReceipt) =
+        let act, target, revision =
+            match receipt.Subject with
+            | ReceiptSubject.Case value ->
+                CaseActKinds.token value.Act,
+                value.Reference,
                 [
                     label language (CliMessages.key CliMessage.RevisionLabel)
-                    get "revision" scope
+                    number value.Revision
                 ]
-            else
-                []
+            | ReceiptSubject.Authority value ->
+                AuthorityKinds.token value.Act, id value.TargetActorId, []
 
         [
             String.concat
                 " "
-                ([ tag; verb; target ]
+                ([ outcome; OperationCatalog.kebab act; target ]
                  @ revision
-                 @ [ label language (authorityFieldLabel "operationId"); get "operationId" value ])
+                 @ [
+                     label language (ContractDiscovery.inputLabel "operationId")
+                     id receipt.OperationId
+                 ])
         ]
 
-    let private nextLines language value =
-        match memberValue "nextCursor" value with
-        | JsonValue.Null -> []
-        | cursor -> [ line language "cli.text.next" (scalar cursor) ]
+    let private nextLines language =
+        function
+        | None -> []
+        | Some value -> [ line language "cli.text.next" value ]
 
-    let private historyLines language value =
-        let entries =
-            memberValue "entries" value
-            |> items
-            |> List.collect (fun entry ->
-                let change =
-                    if get "tag" entry = "SUMMARY" then
-                        memberValue "change" entry
-                    else
-                        memberValue "receipt" entry
+    let private historyLines language (page: HistoryResultPage) =
+        (page.Entries
+         |> List.collect (function
+             | HistoryEntry.SummaryEntry change ->
+                 [
+                     String.concat
+                         "  "
+                         [
+                             number change.Revision
+                             OperationCatalog.kebab (CaseActKinds.token change.Act)
+                             instant change.RecordedAt
+                             id change.OperationId
+                         ]
+                 ]
+             | HistoryEntry.FullEntry receipt ->
+                 let revision, act, fields =
+                     match receipt.Subject with
+                     | ReceiptSubject.Case value ->
+                         let fields =
+                             match value.Snapshot with
+                             | SnapshotDisclosure.Disclosed live ->
+                                 LiveCase.toState live
+                                 |> CaseState.fields
+                                 |> Option.map (fieldLines language)
+                                 |> Option.defaultValue []
+                             | SnapshotDisclosure.Withheld
+                             | SnapshotDisclosure.Erased -> []
 
-                let scope =
-                    if get "tag" entry = "SUMMARY" then
-                        change
-                    else
-                        memberValue "scope" change
+                         number value.Revision, CaseActKinds.token value.Act, fields
+                     | ReceiptSubject.Authority value -> "—", AuthorityKinds.token value.Act, []
 
-                let summary =
-                    [
-                        get "revision" scope
-                        get "act" scope |> OperationCatalog.kebab
-                        get "recordedAt" change
-                        get "operationId" change
-                    ]
-                    |> String.concat "  "
+                 String.concat
+                     "  "
+                     [
+                         revision
+                         OperationCatalog.kebab act
+                         instant receipt.RecordedAt
+                         id receipt.OperationId
+                     ]
+                 :: (fields |> List.map ((+) "  "))))
+        @ nextLines language page.NextCursor
 
-                let snapshot = change |> memberValue "scope" |> memberValue "snapshot"
+    let private grantRow (grant: AuthorityGrant) =
+        let scope, reference =
+            match grant.Scope with
+            | GrantTarget.Installation -> "INSTALLATION", "—"
+            | GrantTarget.CaseReference reference -> "CASE", reference
 
-                let fields =
-                    if get "disclosure" snapshot = "DISCLOSED" then
-                        fieldLines language (memberValue "view" snapshot |> stateFields)
-                        |> List.map ((+) "  ")
-                    else
-                        []
+        String.concat "  " [ RoleTokens.token grant.Role; scope; reference ]
 
-                summary :: fields)
-
-        entries @ nextLines language value
-
-    let private authorityRow value =
-        match JsonValue.tryMember "principal" value with
-        | Some principal ->
+    let private actorRow (actor: ActorSummary) =
+        String.concat
+            "  "
             [
-                get "actorId" value
-                get "kind" principal
-                get "issuer" principal
-                get "subject" principal
-                get "enabled" value
+                id actor.ActorId
+                actor.Principal.Kind
+                actor.Principal.Issuer
+                actor.Principal.Subject
+                boolean actor.Enabled
             ]
-            |> String.concat "  "
-        | None ->
-            let scope = memberValue "scope" value
 
-            [
-                get "role" value
-                get "kind" scope
-                get (FieldTable.key BusinessField.CaseReference) scope
-            ]
-            |> String.concat "  "
+    let private casePage language (page: CaseSummaryPage) =
+        (page.Items
+         |> List.map (fun item ->
+             let status =
+                 match item.State with
+                 | CaseState.Active status
+                 | CaseState.Voided status -> CaseStatuses.token status
+                 | CaseState.Erased -> "—"
 
-    let private pageLines language value =
-        let rows =
-            memberValue "items" value
-            |> items
-            |> List.map (fun item ->
-                if
-                    JsonValue.tryMember (FieldTable.key BusinessField.CaseReference) item
-                    |> Option.isSome
-                then
-                    let status =
-                        if get "tag" item = "LIVE" then
-                            if get "disposition" item = "VOIDED" then
-                                "VOIDED"
-                            else
-                                get (FieldTable.key BusinessField.Status) item
-                        else
-                            get "tag" item
+             String.concat
+                 "  "
+                 [
+                     item.Reference
+                     number item.Revision
+                     CaseState.token item.State + "  " + status
+                 ]))
+        @ nextLines language page.NextCursor
 
-                    String.concat
-                        "  "
-                        [
-                            get (FieldTable.key BusinessField.CaseReference) item
-                            get "revision" item
-                            status
-                        ]
-                else
-                    authorityRow item)
+    let private actorPage language (page: ActorReviewPage) =
+        (page.Items |> List.map actorRow) @ nextLines language page.NextCursor
 
-        rows @ nextLines language value
+    let private grantPage language (page: AuthorityGrantPage) =
+        (page.Items |> List.map grantRow) @ nextLines language page.NextCursor
+
+    let private requestInput request =
+        request
+        |> Option.bind (fun invocation ->
+            RequestCodecs.operationInput.Read "$" (Frames.input invocation)
+            |> Result.toOption)
 
     let private reviewIdentity request review =
-        let input = request |> Option.map Frames.input |> Option.defaultValue JsonValue.Null
-        let act = memberValue "act" input
-        let token = get "kind" act
+        let input = requestInput request
 
-        let verb = OperationCatalog.kebab token
+        let act =
+            input
+            |> Option.map (function
+                | OperationInput.Case value -> CaseActKinds.token (CaseActs.kind value.Act)
+                | OperationInput.Authority value ->
+                    AuthorityKinds.token (AuthorityActs.kind value.Act))
+            |> Option.defaultValue "—"
 
         let target =
-            if get "scope" review = "AUTHORITY" then
+            match review with
+            | OperationReview.Case value -> value.Proposed.Reference
+            | OperationReview.Authority value ->
                 let principal =
-                    match JsonValue.tryMember "target" input with
-                    | Some target -> target
-                    | None -> memberValue "target" review |> memberValue "principal"
+                    match input with
+                    | Some(OperationInput.Authority value) -> Some value.Target
+                    | _ -> value.Target |> Option.map _.Principal
 
-                [ get "kind" principal; get "issuer" principal; get "subject" principal ]
-                |> String.concat " "
-            else
-                memberValue "after" review |> get (FieldTable.key BusinessField.CaseReference)
+                match principal with
+                | Some value -> String.concat " " [ value.Kind; value.Issuer; value.Subject ]
+                | None -> "— — —"
 
-        verb + " " + target
+        OperationCatalog.kebab act + " " + target
 
-    let private authorityChanges language before after =
-        let grants state =
-            memberValue "grants" state
-            |> items
-            |> List.map authorityRow
-            |> String.concat "; "
-
+    let private authorityChanges language (before: AuthorityState) (after: AuthorityState) =
         [
-            (CliMessages.key CliMessage.EnabledLabel), get "enabled" before, get "enabled" after
-            "cli.text.grants", grants before, grants after
+            (CliMessages.key CliMessage.EnabledLabel), boolean before.Enabled, boolean after.Enabled
+            "cli.text.grants",
+            (before.Grants |> List.map grantRow |> String.concat "; "),
+            (after.Grants |> List.map grantRow |> String.concat "; ")
         ]
         |> List.choose (fun (key, previous, next) ->
             if previous = next then
@@ -285,20 +254,20 @@ module internal TextReply =
                          + (if next = "" then "—" else next))
                 ))
 
-    let private reviewLines language request value =
-        let review = memberValue "review" value
-        let after = memberValue "after" review
-        let before = memberValue "before" review
-
+    let private reviewLines language request review =
         let changes =
-            if get "scope" review = "AUTHORITY" then
-                authorityChanges language before after
-            else
+            match review with
+            | OperationReview.Authority value -> authorityChanges language value.Before value.After
+            | OperationReview.Case value ->
+                let before =
+                    value.Before |> Option.bind (fun snapshot -> CaseState.fields snapshot.State)
+
+                let after = CaseState.fields value.Proposed.State
+
                 FieldTable.rows
                 |> List.choose (fun row ->
-                    let previous = before |> memberValue "state" |> stateFields |> fieldValue row
-
-                    let next = after |> memberValue "state" |> stateFields |> fieldValue row
+                    let previous = before |> Option.bind row.AcceptedValue
+                    let next = after |> Option.bind row.AcceptedValue
 
                     if previous = next then
                         None
@@ -316,145 +285,178 @@ module internal TextReply =
     let private diagnosticTargetIdentity =
         function
         | InputTarget.Field field -> FieldTable.labelId field
-        | InputTarget.OperationId -> (authorityFieldLabel "operationId")
-        | InputTarget.ExpectedRevision -> (authorityFieldLabel "expectedRevision")
-        | InputTarget.PaymentGroup ->
-            Vocabulary.messageKey CorrectionGroup.vocabulary CorrectionGroup.Payment "label"
+        | InputTarget.OperationId -> ContractDiscovery.inputLabel "operationId"
+        | InputTarget.ExpectedRevision -> ContractDiscovery.inputLabel "expectedRevision"
+        | InputTarget.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group "label"
         | InputTarget.Reason ->
             OperationCatalog.inputMessage (CatalogInputName.Technical TechnicalInput.Reason) "label"
-        | InputTarget.PrincipalIssuer -> (authorityFieldLabel "issuer")
-        | InputTarget.PrincipalSubject -> (authorityFieldLabel "subject")
+        | InputTarget.PrincipalIssuer -> ContractDiscovery.inputLabel "issuer"
+        | InputTarget.PrincipalSubject -> ContractDiscovery.inputLabel "subject"
         | InputTarget.Limit -> "input.limit.label"
         | InputTarget.Cursor -> "input.cursor.label"
 
-    let private diagnosticTarget language value =
-        match JsonValue.tryMember "target" value with
-        | Some(JsonValue.String _ as target) ->
-            let admitted =
-                (Codec.enumeration InputTargets.all).Read "$.target" target
-                |> Result.defaultWith (fun _ -> invalidOp "Invalid admitted diagnostic target.")
-
-            Some(label language (diagnosticTargetIdentity admitted))
-        | _ -> None
-
-    let private diagnostic language family value =
-        let code = get "code" value
+    let private refusalLines language refusal =
+        let row = Refusals.row refusal
 
         let arguments =
-            match memberValue "limits" value with
-            | JsonValue.Object fields ->
-                fields |> List.map (fun (key, value) -> key, scalar value) |> Map.ofList
-            | _ -> Map.empty
+            Refusals.parameters refusal
+            |> List.map (fun (name, value) -> name, number (int64 value))
+            |> Map.ofList
 
-        let message = MessageCatalogs.render language (family + code) arguments
+        let message = MessageCatalogs.render language ("diagnostic." + row.Code) arguments
 
         let message =
-            match diagnosticTarget language value with
-            | Some target -> target + ": " + message
+            match
+                Refusals.field refusal
+                |> Option.bind (Vocabulary.tryParse InputTargets.vocabulary)
+            with
             | None -> message
+            | Some target -> label language (diagnosticTargetIdentity target) + ": " + message
 
-        let action =
-            JsonValue.tryMember "action" value
-            |> Option.map (scalar >> line language (CliMessages.key CliMessage.ActionLabel))
-            |> Option.toList
+        [
+            message
+            line language "cli.text.code" row.Code
+            line
+                language
+                (CliMessages.key CliMessage.ActionLabel)
+                (RecommendedActions.token row.Action)
+        ]
 
-        message :: line language "cli.text.code" code :: action
+    let private faultLines language fault =
+        let code = CoreFaults.token fault
 
-    let private successful language endpoint value =
-        match endpoint with
-        | Some "case.get" -> caseLines language value
-        | Some "case.history" -> historyLines language value
-        | Some "case.list"
-        | Some "authority.list"
-        | Some "authority.grants" -> pageLines language value
-        | Some "operation.observe" -> receiptLines language "ACCEPTED" value
-        | _ ->
-            match value with
-            | JsonValue.Object fields ->
-                fields |> List.map (fun (key, value) -> key + ": " + scalar value)
-            | _ -> [ scalar value ]
+        [
+            label language ("fault." + code)
+            line language "cli.text.code" code
+            line
+                language
+                (CliMessages.key CliMessage.ActionLabel)
+                (RecommendedActions.token fault.Action)
+        ]
 
-    let private resultLines language request frame =
-        match frame.Result with
+    let private readLines language success =
+        function
+        | ReadReply.Succeeded value -> success value
+        | ReadReply.Rejected refusal -> refusalLines language refusal
+        | ReadReply.Failed fault -> faultLines language fault
+
+    let private contextLines (value: ActorContext) =
+        [
+            "productVersion: " + value.Runtime.ProductVersion
+            "businessDate: "
+            + value.Runtime.EffectiveBusinessDate.ToString(
+                Formats.CalendarDateFormat,
+                CultureInfo.InvariantCulture
+            )
+            "timeZone: " + value.Runtime.TimeZoneId
+            "offers: "
+            + json (Codec.list Int32.MaxValue ResponseCodecs.installationOffer) value.Offers
+            "capabilities: "
+            + json
+                (Codec.list Int32.MaxValue (VocabularyCodec.create Capabilities.vocabulary))
+                value.Capabilities
+            "views: "
+            + json (Codec.list Int32.MaxValue (VocabularyCodec.create Views.vocabulary)) value.Views
+        ]
+
+    let private sessionLines (value: Session) =
+        [
+            "authenticated: " + boolean value.Authenticated
+            "contractIdentity: " + value.ContractIdentity
+            "antiforgeryToken: " + Option.defaultValue "—" value.AntiforgeryToken
+        ]
+
+    let private previewLines language request (reply: TypedReply) =
+        match (TypedReply.value<PreviewReply> reply).Outcome with
+        | PreviewResult.Reviewed review -> reviewLines language request review
+        | PreviewResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
+        | PreviewResult.Rejected refusal -> refusalLines language refusal
+        | PreviewResult.Failed fault -> faultLines language fault
+
+    let private executeLines language (reply: TypedReply) =
+        match (TypedReply.value<ExecuteReply> reply).Outcome with
+        | ExecuteResult.Accepted receipt -> receiptLines language "ACCEPTED" receipt
+        | ExecuteResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
+        | ExecuteResult.Rejected refusal -> refusalLines language refusal
+        | ExecuteResult.Failed fault -> faultLines language fault
+        | ExecuteResult.OutcomeUnknown -> [ label language "cli.text.uncertain" ]
+
+    let private resolveLines language (reply: TypedReply) =
+        match TypedReply.value<ResolveReply> reply with
+        | ResolveReply.Accepted receipt -> receiptLines language "ACCEPTED" receipt
+        | ResolveReply.NotAccepted -> [ label language "cli.text.notAccepted" ]
+        | ResolveReply.Rejected refusal -> refusalLines language refusal
+        | ResolveReply.Failed fault -> faultLines language fault
+
+    let private actorLines language request actor (reply: TypedReply) =
+        match actor with
+        | ActorEndpoint.Context ->
+            TypedReply.value<ReadReply<ActorContext>> reply
+            |> readLines language contextLines
+        | ActorEndpoint.CaseGet ->
+            TypedReply.value<ReadReply<CaseReadModel>> reply
+            |> readLines language (caseLines language)
+        | ActorEndpoint.CaseList ->
+            TypedReply.value<ReadReply<CaseSummaryPage>> reply
+            |> readLines language (casePage language)
+        | ActorEndpoint.CaseHistory ->
+            TypedReply.value<ReadReply<HistoryResultPage>> reply
+            |> readLines language (historyLines language)
+        | ActorEndpoint.Observe ->
+            TypedReply.value<ReadReply<OperationReceipt>> reply
+            |> readLines language (receiptLines language "ACCEPTED")
+        | ActorEndpoint.AuthorityList ->
+            TypedReply.value<ReadReply<ActorReviewPage>> reply
+            |> readLines language (actorPage language)
+        | ActorEndpoint.AuthorityGrants ->
+            TypedReply.value<ReadReply<AuthorityGrantPage>> reply
+            |> readLines language (grantPage language)
+        | ActorEndpoint.Preview -> previewLines language request reply
+
+        | ActorEndpoint.Execute -> executeLines language reply
+
+        | ActorEndpoint.Resolve -> resolveLines language reply
+
+    let private replyLines language request (reply: TypedReply) =
+        match reply.Endpoint with
+        | EndpointId.Host HostEndpoint.Session ->
+            TypedReply.value<ReadReply<Session>> reply |> readLines language sessionLines
+        | EndpointId.Host HostEndpoint.Logout ->
+            TypedReply.value<ReadReply<unit>> reply
+            |> readLines language (fun () -> [ "—" ])
+        | EndpointId.Actor actor -> actorLines language request actor reply
+
+    let private resultLines language request =
+        function
+        | FrameResult.Reply reply -> replyLines language request reply
         | FrameResult.HostFailure failure ->
             [
                 label language ("host." + failure.Code)
                 line language "cli.text.code" failure.Code
             ]
+        | FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue)) ->
+            let setting = InputDiagnostics.settings |> List.find (fst >> (=) setting) |> snd
+
+            let issue =
+                InputDiagnostics.configurationIssues |> List.find (fst >> (=) issue) |> snd
+
+            [
+                MessageCatalogs.renderCli language (CliMessage.ConfigurationIssue(setting, issue))
+            ]
         | FrameResult.LocalFailure failure ->
-            let value = Frames.failureCodec.Write failure
+            let code = Frames.failureCode failure
+            [ label language ("cli.failure." + code); line language "cli.text.code" code ]
 
-            if JsonValue.tryMember "setting" value |> Option.isSome then
-                [
-                    MessageCatalogs.renderCli
-                        language
-                        (CliMessage.ConfigurationIssue(get "setting" value, get "issue" value))
-                ]
-            else
-                [
-                    label language ("cli.failure." + get "code" value)
-                    line language "cli.text.code" (get "code" value)
-                ]
-        | FrameResult.Reply reply ->
-            let outcome = memberValue "outcome" reply
-            let data = memberValue "data" outcome
-
-            match get "tag" outcome with
-            | "SUCCEEDED" -> successful language frame.Endpoint data
-            | "ACCEPTED"
-            | "ALREADY_ACCEPTED" as tag -> receiptLines language tag data
-            | "REVIEWED" -> reviewLines language request data
-            | "NOT_ACCEPTED" -> [ label language "cli.text.notAccepted" ]
-            | "REJECTED" -> diagnostic language "diagnostic." data
-            | "FAILED" -> diagnostic language "fault." data
-            | "OUTCOME_UNKNOWN" -> [ label language "cli.text.uncertain" ]
-            | _ -> invalidOp "Unsupported admitted result."
-
-    let bytesFor language request source =
-        let frame =
-            Frames.decode source
-            |> Result.defaultWith (fun _ -> invalidOp "Invalid CLI reply.")
-
-        let lines = resultLines language request frame
+    let bytesFor language request (frame: FrameReply) =
+        let lines = resultLines language request frame.Result
+        let warning = label language "cli.text.uncertain"
 
         let lines =
-            if frame.Delivery = DeliveryState.Uncertain then
-                let warning = label language "cli.text.uncertain"
-
-                if List.contains warning lines then
-                    lines
-                else
-                    lines @ [ warning ]
+            if frame.Delivery = DeliveryState.Uncertain && not (List.contains warning lines) then
+                lines @ [ warning ]
             else
                 lines
 
         lines |> String.concat "\n" |> fun text -> Encoding.UTF8.GetBytes(text + "\n")
 
-    let bytes language source = bytesFor language None source
-
-/// Preserve the delivery writer's failure handling while rendering a complete reply atomically.
-type internal TextReplySink(output: Stream, language: string, request: Invocation) =
-    inherit Stream()
-    override _.CanRead = false
-    override _.CanSeek = false
-    override _.CanWrite = true
-    override _.Length = raise (NotSupportedException())
-
-    override _.Position
-        with get () = raise (NotSupportedException())
-        and set _ = raise (NotSupportedException())
-
-    override _.Read(_, _, _) = raise (NotSupportedException())
-    override _.Seek(_, _) = raise (NotSupportedException())
-    override _.SetLength _ = raise (NotSupportedException())
-    override _.Flush() = output.Flush()
-
-    override _.Write(bytes, offset, count) =
-        let rendered =
-            TextReply.bytesFor language (Some request) bytes[offset .. offset + count - 1]
-
-        output.Write(rendered, 0, rendered.Length)
-
-    override _.WriteByte value =
-        if value <> byte '\n' then
-            output.WriteByte value
+    let bytes language frame = bytesFor language None frame

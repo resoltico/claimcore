@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Json
+
 open ClaimCore.Contract.Protocol
 
 module ReceiptCodecs =
@@ -9,7 +11,6 @@ module ReceiptCodecs =
     let disclosure =
         tagged
             "SnapshotDisclosure"
-            "disclosure"
             [
                 variant
                     "DISCLOSED"
@@ -50,48 +51,45 @@ module ReceiptCodecs =
 
     let private caseVariant =
         variant
-            OperationScopes.Case
-            ReceiptScope.Case
+            OperationSubjects.Case
+            ReceiptSubject.Case
             (function
-            | ReceiptScope.Case value -> Some value
+            | ReceiptSubject.Case value -> Some value
             | _ -> None)
             caseFields
 
-    let scope =
+    let subject =
         tagged
-            "ReceiptScope"
-            "kind"
+            "ReceiptSubject"
             [
                 caseVariant
                 variant
-                    OperationScopes.Authority
-                    ReceiptScope.Authority
+                    OperationSubjects.Authority
+                    ReceiptSubject.Authority
                     (function
-                    | ReceiptScope.Authority value -> Some value
+                    | ReceiptSubject.Authority value -> Some value
                     | _ -> None)
                     authorityFields
             ]
 
-    let private header scopeCodec =
-        (record (fun id position at by scope ->
+    let private header subjectCodec =
+        (record (fun id position at by subject ->
             {
                 OperationId = id
                 Position = position
                 RecordedAt = at
                 RecordedBy = by
-                Scope = scope
+                Subject = subject
             })
         : Fields<OperationReceipt, _>)
         |> field "operationId" _.OperationId Codec.uuid
         |> field "position" _.Position ResponseCodecs.position
         |> field "recordedAt" _.RecordedAt Codec.instant
         |> field "recordedBy" _.RecordedBy Codec.uuid
-        |> field "scope" _.Scope scopeCodec
+        |> field "subject" _.Subject subjectCodec
         |> build
 
-    let receipt = header scope |> named "OperationReceipt"
+    let receipt = header subject |> named "OperationReceipt"
 
     let caseReceipt =
-        tagged "CaseReceiptScope" "kind" [ caseVariant ]
-        |> header
-        |> named "CaseReceipt"
+        tagged "CaseReceiptSubject" [ caseVariant ] |> header |> named "CaseReceipt"

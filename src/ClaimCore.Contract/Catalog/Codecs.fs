@@ -1,8 +1,10 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Json
+open ClaimCore.Contract.Protocol
+
 open System
 open System.Globalization
-open ClaimCore.Contract.Protocol
 
 /// The catalog schema and its reader/writer share one typed codec.
 module CatalogCodecs =
@@ -11,23 +13,11 @@ module CatalogCodecs =
     let private count = integer 0L (int64 Int32.MaxValue) |> map int int64
     let private many codec = list Int32.MaxValue codec
 
-    let private fieldName = vocabulary FieldTable.vocabulary
+    let private fieldName = VocabularyCodec.create FieldTable.vocabulary
 
-    let private inputTarget = vocabulary InputTargets.vocabulary
+    let private inputTarget = VocabularyCodec.create InputTargets.vocabulary
 
-    let private caseStatus = vocabulary CaseStatuses.vocabulary
-
-    let private caseKind = vocabulary CaseActKinds.vocabulary
-
-    let private authorityKind =
-        AuthorityKinds.all
-        |> List.filter ((<>) AuthorityKind.ProvisionOwner)
-        |> List.map (fun value -> value, AuthorityKinds.token value)
-        |> enumeration
-
-    let private role = vocabulary RoleTokens.vocabulary
-
-    let private capability = vocabulary Capabilities.vocabulary
+    let private caseStatus = VocabularyCodec.create CaseStatuses.vocabulary
 
     let private date =
         ResponseScalars.date
@@ -111,7 +101,6 @@ module CatalogCodecs =
     let private scalar =
         tagged
             "Presentation.ScalarRule"
-            "kind"
             [
 
                 variant
@@ -156,157 +145,6 @@ module CatalogCodecs =
 
             ]
 
-    let private input =
-        tagged
-            "Presentation.FieldInput"
-            "prefill"
-            [
-                variant
-                    "BLANK"
-                    (fun value ->
-                        {
-                            FieldName = value
-                            Prefill = PrefillSource.Blank
-                        })
-                    (fun value ->
-                        match value.Prefill with
-                        | PrefillSource.Blank -> Some value.FieldName
-                        | _ -> None)
-                    (record id |> field "fieldName" id inputTarget)
-                variant
-                    "CURRENT_FIELD"
-                    (fun (field, current) ->
-                        {
-                            FieldName = field
-                            Prefill = PrefillSource.CurrentField current
-                        })
-                    (fun value ->
-                        match value.Prefill with
-                        | PrefillSource.CurrentField current -> Some(value.FieldName, current)
-                        | _ -> None)
-                    (record (fun field current -> field, current)
-                     |> field "fieldName" fst inputTarget
-                     |> field "currentField" snd fieldName)
-            ]
-
-    let private correctionGroup =
-        [
-            CorrectionGroup.Registration
-            CorrectionGroup.Decision
-            CorrectionGroup.Payment
-        ]
-        |> List.map (fun value -> value, CorrectionGroup.token value)
-        |> enumeration
-
-    let private correctionAction =
-        [
-            CorrectionGroupAction.Keep
-            CorrectionGroupAction.Replace
-            CorrectionGroupAction.Clear
-        ]
-        |> List.map (fun value -> value, CorrectionActions.token value)
-        |> enumeration
-
-    let private group =
-        (record (fun v0 v1 v2 v3 v4 ->
-            {
-                CorrectionGroupDefinition.Name = v0
-                LabelId = v1
-                MeaningId = v2
-                Actions = v3
-                ReplaceFields = v4
-            })
-        : Fields<CorrectionGroupDefinition, _>)
-        |> field "name" _.Name (correctionGroup)
-        |> field "labelId" _.LabelId (text)
-        |> field "meaningId" _.MeaningId (text)
-        |> field "actions" _.Actions (many correctionAction)
-        |> field "replaceFields" _.ReplaceFields (many input)
-        |> build
-        |> named "Presentation.CorrectionGroupDefinition"
-
-    let private inputs =
-        tagged
-            "Presentation.ActInputs"
-            "kind"
-            [
-                variant
-                    "FIELDS"
-                    ActInputShape.Fields
-                    (function
-                    | ActInputShape.Fields value -> Some value
-                    | _ -> None)
-                    (record id |> field "fields" id (many input))
-                variant
-                    "CORRECTION_GROUPS"
-                    ActInputShape.CorrectionGroups
-                    (function
-                    | ActInputShape.CorrectionGroups value -> Some value
-                    | _ -> None)
-                    (record id |> field "groups" id (many group))
-            ]
-
-    let private act =
-        (record (fun v0 v1 v2 v3 v4 ->
-            {
-                ActDefinition.Kind = v0
-                LabelId = v1
-                MeaningId = v2
-                ConfirmationId = v3
-                Inputs = v4
-            })
-        : Fields<ActDefinition, _>)
-        |> field "kind" _.Kind (caseKind)
-        |> field "labelId" _.LabelId (text)
-        |> field "meaningId" _.MeaningId (text)
-        |> field "confirmationId" _.ConfirmationId (text)
-        |> field "inputs" _.Inputs (inputs)
-        |> build
-        |> named "Presentation.ActDefinition"
-
-    let private primitive =
-        Vocabulary.define
-            "primitive"
-            [
-                AuthorityInputPrimitive.Principal, "PRINCIPAL"
-                AuthorityInputPrimitive.Role, "ROLE"
-                AuthorityInputPrimitive.Scope, "SCOPE"
-                AuthorityInputPrimitive.Boolean, "BOOLEAN"
-            ]
-        |> vocabulary
-
-    let private authorityInput =
-        (record (fun v0 v1 v2 ->
-            {
-                AuthorityInputDefinition.Name = v0
-                LabelId = v1
-                Primitive = v2
-            })
-        : Fields<AuthorityInputDefinition, _>)
-        |> field "fieldName" _.Name (text)
-        |> field "labelId" _.LabelId (text)
-        |> field "primitive" _.Primitive (primitive)
-        |> build
-        |> named "Presentation.AuthorityInputDefinition"
-
-    let private authorityCommand =
-        (record (fun v0 v1 v2 v3 v4 ->
-            {
-                AuthorityOperationDefinition.Kind = v0
-                LabelId = v1
-                MeaningId = v2
-                ConfirmationId = v3
-                Inputs = v4
-            })
-        : Fields<AuthorityOperationDefinition, _>)
-        |> field "kind" _.Kind (authorityKind)
-        |> field "labelId" _.LabelId (text)
-        |> field "meaningId" _.MeaningId (text)
-        |> field "confirmationId" _.ConfirmationId (text)
-        |> field "inputs" _.Inputs (many authorityInput)
-        |> build
-        |> named "Presentation.AuthorityOperationDefinition"
-
     let private businessField =
         (record (fun v0 v1 v2 v3 v4 v5 ->
             {
@@ -323,14 +161,7 @@ module CatalogCodecs =
         |> field "meaningId" _.MeaningId (text)
         |> field "scalar" _.Scalar (scalar)
         |> field "allowsAbsence" _.AllowsAbsence (boolean)
-        |> field
-            "group"
-            _.Group
-            (enumeration (
-                FieldTable.rows
-                |> List.map (fun row -> row.Group, FieldGroup.token row.Group)
-                |> List.distinct
-            ))
+        |> field "group" _.Group (nullable (VocabularyCodec.create RecordGroup.vocabulary))
         |> build
         |> named "Presentation.FieldPresentationDefinition"
 
@@ -343,24 +174,12 @@ module CatalogCodecs =
                 Scalar = v3
             })
         : Fields<InputPresentationDefinition, _>)
-        |> field "name" _.Name (inputTarget)
+        |> field "name" _.Name text
         |> field "labelId" _.LabelId (text)
-        |> field "meaningId" _.MeaningId (text)
-        |> field "scalar" _.Scalar (scalar)
+        |> field "meaningId" _.MeaningId (nullable text)
+        |> field "scalar" _.Scalar (nullable scalar)
         |> build
         |> named "Presentation.InputPresentationDefinition"
-
-    let private protocolField =
-        (record (fun v0 v1 ->
-            {
-                ProtocolFieldDefinition.Name = v0
-                LabelId = v1
-            })
-        : Fields<ProtocolFieldDefinition, _>)
-        |> field "name" _.Name (text)
-        |> field "labelId" _.LabelId (text)
-        |> build
-        |> named "Presentation.ProtocolFieldDefinition"
 
     let private warnings =
         (record (fun v0 v1 ->
@@ -373,44 +192,6 @@ module CatalogCodecs =
         |> field "categories" _.Categories (many text)
         |> build
         |> named "Presentation.CharacterWarningDefinition"
-
-    let private parameter =
-        (record (fun v0 v1 v2 ->
-            {
-                DiagnosticParameterDefinition.Name = v0
-                Minimum = v1
-                Maximum = v2
-            })
-        : Fields<DiagnosticParameterDefinition, _>)
-        |> field "name" _.Name (text)
-        |> field "minimum" _.Minimum (count)
-        |> field "maximum" _.Maximum (count)
-        |> build
-        |> named "Presentation.DiagnosticParameterDefinition"
-
-    let private diagnostic =
-        (record (fun v0 v1 ->
-            {
-                DiagnosticDefinition.Id = v0
-                Parameters = v1
-            })
-        : Fields<DiagnosticDefinition, _>)
-        |> field "id" _.Id (text)
-        |> field "parameters" _.Parameters (many parameter)
-        |> build
-        |> named "Presentation.DiagnosticDefinition"
-
-    let private roleDefinition =
-        (record (fun v0 v1 ->
-            {
-                RoleDefinition.Role = v0
-                Capabilities = v1
-            })
-        : Fields<RoleDefinition, _>)
-        |> field "role" _.Role (role)
-        |> field "capabilities" _.Capabilities (many capability)
-        |> build
-        |> named "Presentation.RoleDefinition"
 
     let private limits =
         (record (fun v0 v1 v2 ->
@@ -477,7 +258,6 @@ module CatalogCodecs =
     let private bindingKind =
         tagged
             "Presentation.BindingKind"
-            "kind"
             [
                 unitVariant "TEXT" BindingKind.Text
                 unitVariant "INTEGER" BindingKind.Integer
@@ -506,7 +286,7 @@ module CatalogCodecs =
                 InputSource.OperationIdentity, "OPERATION_IDENTITY"
                 InputSource.ExpectedRevision, "EXPECTED_REVISION"
             ]
-        |> vocabulary
+        |> VocabularyCodec.create
 
     let private binding =
         record
@@ -556,10 +336,10 @@ module CatalogCodecs =
         |> named "Presentation.CatalogInput"
 
     let entry =
-        record (fun endpoint scope kind label meaning confirmation synopsis inputs constants ->
+        record (fun endpoint subject kind label meaning confirmation synopsis inputs constants ->
             {
                 CatalogEntry.Endpoint = endpoint
-                Scope = scope
+                Subject = subject
                 Kind = kind
                 LabelId = label
                 MeaningId = meaning
@@ -569,7 +349,7 @@ module CatalogCodecs =
                 Constants = constants
             })
         |> field "endpoint" _.Endpoint text
-        |> field "scope" _.Scope text
+        |> field "subject" _.Subject text
         |> field "kind" _.Kind text
         |> field "labelId" _.LabelId text
         |> field "meaningId" _.MeaningId text
@@ -581,37 +361,21 @@ module CatalogCodecs =
         |> named "Presentation.CatalogEntry"
 
     let codec =
-        (record (fun v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 ->
+        (record (fun fields inputs warnings limits entries version ->
             {
-                CatalogDocument.Fields = v0
-                Acts = v1
-                InputFields = v2
-                AuthorityTarget = v3
-                AuthorityActs = v4
-                AuthorityFields = v5
-                CharacterWarnings = v6
-                Statuses = v7
-                RejectionDiagnostics = v8
-                FaultDiagnostics = v9
-                Roles = v10
-                Limits = v11
-                Entries = v12
-                ProductVersion = v13
+                CatalogDocument.Fields = fields
+                InputFields = inputs
+                CharacterWarnings = warnings
+                Limits = limits
+                Entries = entries
+                ProductVersion = version
             })
         : Fields<CatalogDocument, _>)
         |> field "fields" _.Fields (many businessField)
-        |> field "acts" _.Acts (many act)
         |> field "inputFields" _.InputFields (many inputField)
-        |> field "authorityTarget" _.AuthorityTarget (authorityInput)
-        |> field "authorityActs" _.AuthorityActs (many authorityCommand)
-        |> field "authorityFields" _.AuthorityFields (many protocolField)
-        |> field "characterWarnings" _.CharacterWarnings (warnings)
-        |> field "statuses" _.Statuses (many caseStatus)
-        |> field "rejectionDiagnostics" _.RejectionDiagnostics (many diagnostic)
-        |> field "faultDiagnostics" _.FaultDiagnostics (many diagnostic)
-        |> field "roles" _.Roles (many roleDefinition)
-        |> field "limits" _.Limits (limits)
+        |> field "characterWarnings" _.CharacterWarnings warnings
+        |> field "limits" _.Limits limits
         |> field "entries" _.Entries (many entry)
-        |> field "productVersion" _.ProductVersion (text)
+        |> field "productVersion" _.ProductVersion text
         |> build
         |> named "Presentation.CatalogDocument"

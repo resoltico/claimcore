@@ -35,7 +35,7 @@ test("authority input refusal preserves authored bytes and requires fresh review
   const response = await event;
   expect(response.status()).toBe(200);
   const reply: unknown = await response.json();
-  if (!isResponse("operation.preview", reply) || reply.outcome.tag !== "REJECTED") {
+  if (!isResponse("operation.preview", reply) || reply.outcome.kind !== "REJECTED") {
     throw new Error("Expected an Application principal refusal.");
   }
   expect(reply.outcome.data.code).toBe("INPUT_TEXT_REQUIRED");

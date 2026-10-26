@@ -38,18 +38,18 @@ module internal LedgerEntries =
             OperationId = entry.OperationId
             ActorId = entry.ActorId
             RecordedAt = entry.RecordedAt
-            Scope = entry.Scope
+            Subject = entry.Subject
             PayloadCommitment = entry.PayloadCommitment
             PayloadNonce = Some entry.PayloadNonce
             Payload = Some entry.Payload
         }
 
-    let private metadataScope =
+    let private metadataSubject =
         function
-        | StoredScope.Authority(target, act) ->
-            LedgerScope.Authority { TargetActorId = target; Act = act }
-        | StoredScope.Case(id, revision, act, date) ->
-            LedgerScope.Case
+        | StoredSubject.Authority(target, act) ->
+            LedgerSubject.Authority { TargetActorId = target; Act = act }
+        | StoredSubject.Case(id, revision, act, date) ->
+            LedgerSubject.Case
                 {
                     CaseId = id
                     Revision = revision
@@ -64,7 +64,7 @@ module internal LedgerEntries =
         nonce
         actorId
         operationId
-        scope
+        subject
         request
         snapshot
         : EntryDraft =
@@ -78,7 +78,7 @@ module internal LedgerEntries =
                     Snapshot = snapshot
                 }
 
-        if payload.Length > FormatLimits.MaximumPayloadBytes then
+        if payload.Length > Formats.MaximumPayloadBytes then
             invalidArg (nameof request) "Ledger payload exceeds its format bound."
 
         let commitment = LedgerEntry.commitment nonce payload
@@ -92,7 +92,7 @@ module internal LedgerEntries =
                 OperationId = operationId
                 ActorId = actorId
                 RecordedAt = instant
-                Scope = metadataScope scope
+                Subject = metadataSubject subject
                 PayloadCommitment = commitment
             }
 
@@ -103,7 +103,7 @@ module internal LedgerEntries =
             OperationId = operationId
             ActorId = actorId
             RecordedAt = instant
-            Scope = scope
+            Subject = subject
             PayloadCommitment = commitment
             PayloadNonce = Array.copy nonce
             Payload = payload
@@ -113,7 +113,7 @@ module internal LedgerEntries =
     let payload (entry: StoredEntry) =
         match entry.Payload, entry.PayloadNonce with
         | Some bytes, Some nonce when width 32 nonce && width 32 entry.PayloadCommitment ->
-            match LedgerEntry.decodePayload FormatLimits.MaximumPayloadBytes bytes with
+            match LedgerEntry.decodePayload Formats.MaximumPayloadBytes bytes with
             | Error _ -> Error CoreFault.StoreIntegrityError
             | Ok value ->
                 if
@@ -129,9 +129,9 @@ module internal LedgerEntries =
 
     let canObserve principal actor =
         function
-        | StoredScope.Case(id, _, _, _) ->
+        | StoredSubject.Case(id, _, _, _) ->
             ActorAuthorization.can principal actor Capability.ReadHistory (ResourceScope.Case id)
-        | StoredScope.Authority _ ->
+        | StoredSubject.Authority _ ->
             ActorAuthorization.can
                 principal
                 actor
@@ -139,14 +139,14 @@ module internal LedgerEntries =
                 ResourceScope.Installation
 
     let private validMetadata (entry: StoredEntry) =
-        let scope =
-            match entry.Scope with
-            | StoredScope.Case(id, revision, act, _) ->
+        let subject =
+            match entry.Subject with
+            | StoredSubject.Case(id, revision, act, _) ->
                 id <> Guid.Empty
                 && revision >= 1L
                 && revision <= Revision.Maximum
                 && ((revision = 1L) = (act = (CaseActKind.Business BusinessActKind.Open)))
-            | StoredScope.Authority(id, _) -> id <> Guid.Empty
+            | StoredSubject.Authority(id, _) -> id <> Guid.Empty
 
         entry.Sequence >= 1L
         && entry.Sequence <= Revision.Maximum
@@ -155,7 +155,7 @@ module internal LedgerEntries =
         && entry.OperationId <> Guid.Empty
         && entry.ActorId <> Guid.Empty
         && entry.RecordedAt.UtcTicks % 10L = 0L
-        && scope
+        && subject
 
     let private caseContent
         installationId
@@ -165,7 +165,7 @@ module internal LedgerEntries =
         act
         (data: LedgerPayload)
         =
-        match RequestRecord.decode ServiceLimits.RequestByteLimit data.Request with
+        match RequestRecord.decode Limits.MaximumRequestBytes data.Request with
         | Ok request when
             request.OperationId = entry.OperationId
             && request.ExpectedRevision = revision - 1L
@@ -189,7 +189,7 @@ module internal LedgerEntries =
         | _ -> Error CoreFault.StoreIntegrityError
 
     let private authorityContent (entry: StoredEntry) target act (data: LedgerPayload) =
-        match AuthorityRecord.decode ServiceLimits.RequestByteLimit data.Request with
+        match AuthorityRecord.decode Limits.MaximumRequestBytes data.Request with
         | Ok request when
             request.OperationId = entry.OperationId
             && RecordedAuthorityActs.kind request.Act = act
@@ -214,15 +214,15 @@ module internal LedgerEntries =
             Error CoreFault.StoreIntegrityError
         else
             let content =
-                match entry.Scope, entry.Payload, entry.PayloadNonce with
-                | StoredScope.Case _, None, None -> Ok EntryContent.ErasedCase
+                match entry.Subject, entry.Payload, entry.PayloadNonce with
+                | StoredSubject.Case _, None, None -> Ok EntryContent.ErasedCase
                 | _ ->
                     payload entry
                     |> Result.bind (fun data ->
-                        match entry.Scope with
-                        | StoredScope.Case(id, revision, act, _) ->
+                        match entry.Subject with
+                        | StoredSubject.Case(id, revision, act, _) ->
                             caseContent installationId entry id revision act data
-                        | StoredScope.Authority(target, act) ->
+                        | StoredSubject.Authority(target, act) ->
                             authorityContent entry target act data)
 
             content
@@ -282,29 +282,24 @@ module internal LedgerEntries =
             Error CoreFault.StoreIntegrityError
         | Some record ->
             let shown =
-                match record.Snapshot.View, content with
-                | CaseView.Erased, EntryContent.ErasedCase -> Ok SnapshotDisclosure.Erased
-                | CaseView.Erased, EntryContent.Case(_, None) when
+                match record.Snapshot.State, content with
+                | CaseState.Erased, EntryContent.ErasedCase -> Ok SnapshotDisclosure.Erased
+                | CaseState.Erased, EntryContent.Case(_, None) when
                     act = (CaseActKind.Stewardship StewardshipActKind.Erase)
                     ->
                     Ok SnapshotDisclosure.Erased
-                | CaseView.Live _, EntryContent.Case(_, Some snapshot) when
+                | (CaseState.Active _ | CaseState.Voided _), EntryContent.Case(_, Some snapshot) when
                     snapshot.Reference = record.Snapshot.Reference
                     ->
-                    Ok(
-                        disclosure
-                            principal
-                            actor
-                            id
-                            record.Snapshot.Revision
-                            revision
-                            snapshot.View
-                    )
+                    match LiveCase.ofState snapshot.State with
+                    | None -> Error CoreFault.StoreIntegrityError
+                    | Some live ->
+                        Ok(disclosure principal actor id record.Snapshot.Revision revision live)
                 | _ -> Error CoreFault.StoreIntegrityError
 
             shown
             |> Result.map (fun snapshot ->
-                ReceiptScope.Case
+                ReceiptSubject.Case
                     {
                         Reference = record.Snapshot.Reference
                         Revision = revision
@@ -315,27 +310,27 @@ module internal LedgerEntries =
     let receipt principal actor current (validated: ValidatedEntry) =
         let entry = validated.Entry
 
-        let scope =
-            match entry.Scope, validated.Content with
-            | StoredScope.Case(id, revision, act, _), content ->
+        let subject =
+            match entry.Subject, validated.Content with
+            | StoredSubject.Case(id, revision, act, _), content ->
                 caseReceipt validated.InstallationId principal actor current id revision act content
-            | StoredScope.Authority(target, act), EntryContent.Authority _ ->
-                Ok(ReceiptScope.Authority { TargetActorId = target; Act = act })
+            | StoredSubject.Authority(target, act), EntryContent.Authority _ ->
+                Ok(ReceiptSubject.Authority { TargetActorId = target; Act = act })
             | _ -> Error CoreFault.StoreIntegrityError
 
-        scope
-        |> Result.map (fun scope ->
+        subject
+        |> Result.map (fun subject ->
             {
                 OperationId = entry.OperationId
                 Position = position entry.Sequence entry.EntryHash
-                Scope = scope
+                Subject = subject
                 RecordedAt = entry.RecordedAt
                 RecordedBy = entry.ActorId
             })
 
     let summary (current: StoredCase) (entry: StoredEntry) =
-        match entry.Scope with
-        | StoredScope.Case(id, revision, act, _) when
+        match entry.Subject with
+        | StoredSubject.Case(id, revision, act, _) when
             validMetadata entry
             && id = current.CaseId
             && revision <= current.Snapshot.Revision
@@ -352,26 +347,30 @@ module internal LedgerEntries =
         | _ -> Error CoreFault.StoreIntegrityError
 
 
-[<RequireQualifiedAccess>]
-type internal IdentityDecision =
-    | Fresh
-    | Replay of ValidatedEntry
-    | Refuse of Refusal
-    | Fail of CoreFault
-
 module internal OperationIdentity =
-    let decide installationId principal actor operationId bytes (existing: StoredEntry option) =
+    let decide
+        installationId
+        principal
+        actor
+        operationId
+        bytes
+        (existing: StoredEntry option)
+        receipt
+        =
         match existing with
-        | None -> IdentityDecision.Fresh
-        | Some entry when not (LedgerEntries.canObserve principal actor entry.Scope) ->
-            IdentityDecision.Refuse Refusal.ResourceUnavailable
+        | None -> Decision.Proceed()
+        | Some entry when not (LedgerEntries.canObserve principal actor entry.Subject) ->
+            Decision.Refuse Refusal.ResourceUnavailable
         | Some entry when entry.OperationId <> operationId ->
-            IdentityDecision.Fail CoreFault.StoreIntegrityError
+            Decision.Fail CoreFault.StoreIntegrityError
         | Some entry ->
             match LedgerEntries.validate installationId entry with
-            | Error fault -> IdentityDecision.Fail fault
+            | Error fault -> Decision.Fail fault
             | Ok validated ->
                 match LedgerEntries.identityBytes validated with
-                | None -> IdentityDecision.Refuse Refusal.ResourceUnavailable
-                | Some accepted when accepted = bytes -> IdentityDecision.Replay validated
-                | Some _ -> IdentityDecision.Refuse Refusal.IdempotencyConflict
+                | None -> Decision.Refuse Refusal.ResourceUnavailable
+                | Some accepted when accepted = bytes ->
+                    receipt validated
+                    |> Result.map Decision.Replay
+                    |> Result.defaultWith Decision.Fail
+                | Some _ -> Decision.Refuse Refusal.IdempotencyConflict

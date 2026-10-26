@@ -55,8 +55,8 @@ let private stepGenerator =
 let private initial: CaseSnapshot =
     {
         Reference = "UNIT-001"
-        View =
-            CaseView.Live(
+        State =
+            CaseState.Active(
                 {
                     CaseReference = "UNIT-001"
                     Status = CaseStatus.Opened
@@ -72,8 +72,7 @@ let private initial: CaseSnapshot =
                         }
                     Decision = None
                     Payment = None
-                },
-                Disposition.Active
+                }
             )
         Revision = 1L
     }
@@ -157,8 +156,7 @@ let private negativeControls () =
             Some paid,
             Ok
                 { paid with
-                    View =
-                        CaseView.Live({ viewFields paid with Payment = None }, Disposition.Active)
+                    State = CaseState.Active({ viewFields paid with Payment = None })
                 }
             Some paid,
             Ok
@@ -168,12 +166,11 @@ let private negativeControls () =
             Some closed,
             Ok
                 { closed with
-                    View =
-                        CaseView.Live(
+                    State =
+                        CaseState.Active(
                             { viewFields closed with
                                 Payment = None
-                            },
-                            Disposition.Active
+                            }
                         )
                 }
             None, Ok paid

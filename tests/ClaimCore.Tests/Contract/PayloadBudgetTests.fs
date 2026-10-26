@@ -1,6 +1,7 @@
 module ClaimCore.Tests.PayloadBudgetTests
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open Expecto
@@ -35,7 +36,7 @@ let private snapshot length : CaseSnapshot =
     {
         Reference = reference
         Revision = maximum
-        View = CaseView.Live(fields length, Disposition.Voided)
+        State = CaseState.Voided(fields length)
     }
 
 let private receipt disclosure : OperationReceipt =
@@ -48,8 +49,8 @@ let private receipt disclosure : OperationReceipt =
             }
         RecordedAt = instant
         RecordedBy = id
-        Scope =
-            ReceiptScope.Case
+        Subject =
+            ReceiptSubject.Case
                 {
                     Reference = reference
                     Revision = maximum
@@ -69,7 +70,12 @@ let private encodedHistory count disclosure =
 
 let private fullHistoryBudget () =
     let accepted = snapshot Formats.MaximumFreeTextBytes
-    let bytes = encodedHistory 50 (SnapshotDisclosure.Disclosed accepted.View)
+
+    let bytes =
+        encodedHistory
+            50
+            (SnapshotDisclosure.Disclosed(LiveCase.ofState accepted.State |> Option.get))
+
     let perEntry = 2 * 6 * Formats.MaximumFreeTextBytes + 6 * 80 + 2048
     let bound = 50 * perEntry + 1024
 
@@ -89,10 +95,14 @@ let private fullHistoryBudget () =
 
     Expect.equal ClaimCore.Contract.Limits.MaximumResponseBytes 4194304 "Public response limit"
 
-    Expect.equal FormatLimits.MaximumPayloadBytes 32768 "Permanent framed payload bound"
+    Expect.equal Formats.MaximumPayloadBytes 32768 "Permanent framed payload bound"
 
     Expect.throws
-        (fun () -> encodedHistory 51 (SnapshotDisclosure.Disclosed accepted.View) |> ignore)
+        (fun () ->
+            encodedHistory
+                51
+                (SnapshotDisclosure.Disclosed(LiveCase.ofState accepted.State |> Option.get))
+            |> ignore)
         "Overproduction refuses"
 
 let private authorityFixture () =

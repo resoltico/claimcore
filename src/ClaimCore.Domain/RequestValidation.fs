@@ -9,7 +9,9 @@ open ClaimCore.Domain.ResultFlow
 module internal RequestValidation =
     let controls operationId reference expectedRevision =
         result {
-            do! Validation.text TextInput.CaseReference reference |> Result.map ignore
+            do!
+                Validation.text (InputTarget.Field BusinessField.CaseReference) reference
+                |> Result.map ignore
 
             if operationId = Guid.Empty then
                 return! Validation.invalid InputTarget.OperationId Violation.OperationIdRequired
@@ -30,7 +32,7 @@ module internal RequestValidation =
             CaseCorrections.parse correction |> Result.map ValidatedAct.Correct
         | CaseAct.Decide input -> Validation.decision input |> Result.map ValidatedAct.Decide
         | CaseAct.RecordPayment value ->
-            Validation.date DateInput.PaymentDate value.PaymentDate
+            Validation.date BusinessField.PaymentDate value.PaymentDate
             |> Result.map ValidatedAct.RecordPayment
         | CaseAct.WithdrawDecision -> Ok ValidatedAct.WithdrawDecision
         | CaseAct.ClearPayment -> Ok ValidatedAct.ClearPayment
@@ -48,7 +50,7 @@ module internal RequestValidation =
             match request.Act with
             | CaseAct.Void reason
             | CaseAct.Reinstate reason ->
-                return! Validation.text TextInput.Reason reason |> Result.map ignore
+                return! Validation.text InputTarget.Reason reason |> Result.map ignore
             | CaseAct.Erase -> return ()
             | act -> return! business act |> Result.map ignore
         }

@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open System.Globalization
 open ClaimCore.Contract
+open ClaimCore.Json
 
 [<RequireQualifiedAccess>]
 type UsageError =
@@ -137,9 +138,18 @@ module Grammar =
         scan arguments
         options, List.ofSeq operands
 
+    let private booleanAtom name value (problems: ResizeArray<UsageError>) =
+        match value with
+        | "true" -> JsonValue.Boolean true
+        | "false" -> JsonValue.Boolean false
+        | _ ->
+            problems.Add(UsageError.InvalidChoice(name, value, [ "true"; "false" ]))
+            JsonValue.Null
+
     let private atom name kind value (problems: ResizeArray<UsageError>) =
         match kind with
         | CatalogAtom.Text -> JsonValue.String value
+        | CatalogAtom.Boolean -> booleanAtom name value problems
         | CatalogAtom.Integer ->
             match Int64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
             | true, number when number <= JsonValue.MaximumInteger -> JsonValue.Integer number
@@ -168,39 +178,76 @@ module Grammar =
         operands
         (problems: ResizeArray<UsageError>)
         =
-        let derived, _ = OperationCatalog.derive entry
+        let derived, constants = OperationCatalog.derive entry
         let used = HashSet<string>()
         let selectors = Dictionary<string, string>()
         let mutable position = 0
+        let mutable body = JsonValue.Object []
+
+        let rec at path value =
+            match path with
+            | [] -> Some value
+            | key :: rest -> JsonValue.tryMember key value |> Option.bind (at rest)
+
+        let rec insert path value current =
+            match path, current with
+            | [], _ -> value
+            | key :: rest, JsonValue.Object fields ->
+                let previous =
+                    fields
+                    |> List.tryFind (fst >> (=) key)
+                    |> Option.map snd
+                    |> Option.defaultValue (JsonValue.Object [])
+
+                let next = insert rest value previous
+
+                JsonValue.Object(
+                    if fields |> List.exists (fst >> (=) key) then
+                        fields
+                        |> List.map (fun (name, old) -> name, if name = key then next else old)
+                    else
+                        fields @ [ key, next ]
+                )
+            | _ -> invalidOp "A catalog path must traverse objects."
+
+        let applies (branches: BindingCondition list) =
+            branches
+            |> List.forall (fun branch -> at branch.Path body = Some(JsonValue.String branch.Value))
+
+        let assign path value = body <- insert path value body
+
+        let fixedValues () =
+            for item in constants do
+                if applies item.Branches then
+                    assign item.Path (constant item.Value)
+
+        fixedValues ()
 
         let option name =
             match options.TryGetValue name with
             | true, value -> value
             | _ -> None
 
-        let input spec =
+        let input (item: CatalogDerivedInput) =
             let name, raw =
-                match spec.Argument with
+                match item.Argument with
                 | CatalogArgument.Operand ->
-                    let raw = List.tryItem position operands
+                    let value = List.tryItem position operands
                     position <- position + 1
-                    operand spec.Name, raw
+                    operand item.Name, value
                 | _ ->
-                    let name = flag spec.Name in
+                    let name = flag item.Name
                     used.Add name |> ignore
                     name, option name
 
             match raw with
-            | Some value -> Some(atom name spec.Atom value problems)
-            | None when
-                spec.Name = CatalogInputName.Technical TechnicalInput.OperationId
-                && entry.Act.IsSome
-                ->
+            | Some value -> Some(atom name item.Atom value problems)
+            | None when item.Binding.Source = InputSource.OperationIdentity ->
                 Some(JsonValue.String(newId ()))
-            | None when spec.Default.IsSome -> Some(constant spec.Default.Value)
-            | None when spec.Required ->
+            | None when item.Binding.Default.IsSome -> Some(constant item.Binding.Default.Value)
+            | None when item.Binding.Required ->
                 problems.Add(
-                    if spec.Argument = CatalogArgument.Operand then
+                    if item.Argument = CatalogArgument.Operand then
                         UsageError.MissingOperand name
                     else
                         UsageError.MissingOption name
@@ -208,78 +255,54 @@ module Grammar =
 
                 Some JsonValue.Null
             | None ->
-                match spec.Atom with
+                match item.Atom with
                 | CatalogAtom.Switch(off, _) -> Some(JsonValue.String off)
                 | _ -> None
 
-        let rec supplied shape =
-            match shape with
-            | CatalogShape.Input spec ->
-                spec.Argument = CatalogArgument.Named && options.ContainsKey(flag spec.Name)
-            | CatalogShape.Object fields -> fields |> List.exists (snd >> supplied)
-            | CatalogShape.Variants(_, _, cases) -> cases |> List.exists (snd >> supplied)
-            | CatalogShape.Const _ -> false
+        for item in derived do
+            if applies item.Binding.Branches then
+                let value =
+                    match item.Binding.Kind with
+                    | BindingKind.Group choices when item.Argument = CatalogArgument.Implicit ->
+                        let supplied choice =
+                            derived
+                            |> List.exists (fun child ->
+                                child.Argument = CatalogArgument.Named
+                                && options.ContainsKey(flag child.Name)
+                                && child.Binding.Branches
+                                   |> List.exists (fun branch ->
+                                       branch.Path = item.Binding.Path && branch.Value = choice))
 
-        let rec walk path =
-            function
-            | CatalogShape.Const value -> Some(constant value)
-            | CatalogShape.Input spec -> input spec
-            | CatalogShape.Object members ->
-                members
-                |> List.choose (fun (name, shape) ->
-                    walk (path @ [ name ]) shape |> Option.map (fun value -> name, value))
-                |> JsonValue.Object
-                |> Some
-            | CatalogShape.Variants(tag, selection, cases) ->
-                let name, value =
-                    match selection with
-                    | CatalogSelection.ByChoice name ->
-                        let key = flag name
-                        used.Add key |> ignore
+                        choices
+                        |> List.tryFind supplied
+                        |> Option.defaultValue choices.Head
+                        |> JsonValue.String
+                        |> Some
+                    | BindingKind.Group choices ->
+                        match input item with
+                        | Some(JsonValue.String value) -> Some(JsonValue.String value)
+                        | _ -> Some(JsonValue.String choices.Head)
+                    | _ -> input item
 
-                        let chosen =
-                            match option key with
-                            | None ->
-                                problems.Add(UsageError.MissingOption key)
-                                fst cases.Head
-                            | Some value ->
-                                match
-                                    atom key (CatalogAtom.Choice(List.map fst cases)) value problems
-                                with
-                                | JsonValue.String tag -> tag
-                                | _ -> fst cases.Head
+                value
+                |> Option.iter (fun value ->
+                    assign item.Binding.Path value
 
-                        name, chosen
-                    | CatalogSelection.ByPresence name ->
-                        name,
-                        (cases
-                         |> List.tryFind (snd >> supplied)
-                         |> Option.defaultValue cases.Head
-                         |> fst)
+                    match item.Binding.Kind, value with
+                    | BindingKind.Group _, JsonValue.String token ->
+                        selectors[String.concat "." item.Binding.Path] <- token
+                    | _ -> ())
 
-                selectors[String.concat "." (path @ [ tag ])] <- value
-                let body = cases |> List.find (fst >> (=) value) |> snd |> walk path
-
-                match body with
-                | Some(JsonValue.Object fields) ->
-                    Some(JsonValue.Object((tag, JsonValue.String value) :: fields))
-                | _ ->
-                    invalidOp (
-                        "A catalog variant must be an object: " + OperationCatalog.inputKey name
-                    )
-
-        let body =
-            walk [] entry.Body
-            |> Option.defaultWith (fun () -> invalidOp "A catalog body must be an object")
+                fixedValues ()
 
         for value in operands |> List.skip (min position operands.Length) do
             problems.Add(UsageError.ExtraOperand value)
 
         for item in derived do
-            let name = flag item.Spec.Name
+            let name = flag item.Name
 
             if
-                item.Spec.Argument = CatalogArgument.Named
+                item.Argument = CatalogArgument.Named
                 && options.ContainsKey name
                 && not (used.Contains name)
             then
@@ -291,7 +314,7 @@ module Grammar =
                             derived
                             |> List.tryFind (fun selector -> selector.Binding.Path = branch.Path)
                             |> Option.map (fun selector ->
-                                flag selector.Spec.Name + " " + OperationCatalog.kebab value)
+                                flag selector.Name + " " + OperationCatalog.kebab value)
                         | _ -> None)
                     |> Option.defaultValue "the selected command"
 
@@ -301,7 +324,7 @@ module Grammar =
 
     let prepare newId arguments =
         let found =
-            OperationCatalog.all
+            (Catalog.document.Entries |> List.map OperationCatalog.operation)
             |> List.tryPick (fun entry ->
                 let words = OperationCatalog.words entry
 
@@ -320,7 +343,7 @@ module Grammar =
                         value,
                         suggestions
                             value
-                            (OperationCatalog.all
+                            ((Catalog.document.Entries |> List.map OperationCatalog.operation)
                              |> List.map (OperationCatalog.words >> String.concat " "))
                     )
                 ]
@@ -329,15 +352,15 @@ module Grammar =
             let inputs, _ = OperationCatalog.derive entry
 
             let named =
-                inputs |> List.filter (fun input -> input.Spec.Argument = CatalogArgument.Named)
+                inputs |> List.filter (fun input -> input.Argument = CatalogArgument.Named)
 
-            let flags = named |> List.map (fun input -> flag input.Spec.Name)
+            let flags = named |> List.map (fun input -> flag input.Name)
 
             let switches =
                 named
                 |> List.choose (fun input ->
-                    match input.Spec.Atom with
-                    | CatalogAtom.Switch _ -> Some(flag input.Spec.Name)
+                    match input.Atom with
+                    | CatalogAtom.Switch _ -> Some(flag input.Name)
                     | _ -> None)
 
             let options, operands =
@@ -351,7 +374,7 @@ module Grammar =
 
             let endpoint =
                 if options.ContainsKey "--preview" && entry.Act.IsSome then
-                    Api.operationPreview.Id
+                    Api.operationPreview.Token
                 else
                     entry.Endpoint
 
@@ -402,10 +425,10 @@ module Grammar =
                     let name =
                         input
                         |> Option.map (fun input ->
-                            if input.Spec.Argument = CatalogArgument.Operand then
-                                operand input.Spec.Name
+                            if input.Argument = CatalogArgument.Operand then
+                                operand input.Name
                             else
-                                flag input.Spec.Name)
+                                flag input.Name)
                         |> Option.defaultValue path
 
                     let raw =
@@ -425,7 +448,7 @@ module Grammar =
 
                     let issue =
                         match input with
-                        | Some input when input.Spec.Atom = CatalogAtom.Integer ->
+                        | Some input when input.Atom = CatalogAtom.Integer ->
                             UsageError.InvalidInteger(name, raw)
                         | _ -> UsageError.InvalidChoice(name, raw, [])
 

@@ -49,7 +49,7 @@ module internal CaseDecisions =
 
     let private admission installationId principal request bytes (view: CaseReadView) =
         match permission principal view.Actor request view.Case with
-        | Error refusal -> IdentityDecision.Refuse refusal
+        | Error refusal -> Decision.Refuse refusal
         | Ok() ->
             OperationIdentity.decide
                 installationId
@@ -58,6 +58,7 @@ module internal CaseDecisions =
                 request.OperationId
                 bytes
                 view.ExistingOperation
+                (LedgerEntries.receipt principal view.Actor view.Case)
 
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseReadView) =
         let before =
@@ -66,11 +67,11 @@ module internal CaseDecisions =
             | Some record -> current installationId record |> Result.map Some
 
         match before with
-        | Error fault -> LedgerReviewDecision.Fail fault
+        | Error fault -> Decision.Fail fault
         | Ok before ->
             match Case.decide (calendar.DateAt view.ObservedAt) request before with
-            | Error refusal -> LedgerReviewDecision.Refuse(refusal)
-            | Ok after -> LedgerReviewDecision.Proposed(before, after)
+            | Error refusal -> Decision.Refuse(refusal)
+            | Ok after -> Decision.Proceed(before, after)
 
     let private project
         installationId
@@ -88,16 +89,16 @@ module internal CaseDecisions =
                 CaseReferenceId.encode installationId snapshot.Reference)
 
         let projection =
-            match snapshot.View, view.Case with
-            | CaseView.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision)
+            match snapshot.State, view.Case with
+            | CaseState.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision)
             | _, None -> CaseProjection.Insert(id, snapshot)
             | _ -> CaseProjection.Update(id, snapshot)
 
         {
             ObservedAt = view.ObservedAt
             ActorId = LedgerEnvelope.actorId view.Actor
-            Scope =
-                StoredScope.Case(
+            Subject =
+                StoredSubject.Case(
                     id,
                     snapshot.Revision,
                     CaseActs.kind request.Act,
@@ -108,7 +109,7 @@ module internal CaseDecisions =
             Projection = projection
         }
 
-    let private scope installationId calendar principal request =
+    let private subject installationId calendar principal request =
         {
             Encode = fun () -> RequestRecord.encode request
             Canonical = fun () -> Case.canonical request |> RequestRecord.encode
@@ -125,13 +126,13 @@ module internal CaseDecisions =
         }
 
     let review installationId calendar principal request (view: CaseReadView) =
-        LedgerEnvelope.review (scope installationId calendar principal request) view
+        LedgerEnvelope.review (subject installationId calendar principal request) view
 
     let execute installationId calendar principal (request: CaseRequest) (view: CaseLockedView) =
         LedgerEnvelope.execute
             installationId
             request.OperationId
-            (scope installationId calendar principal request)
+            (subject installationId calendar principal request)
             view.Head
             view.IsFenced
             view.PayloadNonce

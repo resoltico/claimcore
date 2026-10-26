@@ -109,7 +109,7 @@ let private wrongIssuerToken issuer (identity: HttpClient) (credentials: JsonEle
 let private serviceAuthority issuer identity local (credentials: JsonElement) token first =
     task {
         let tag (value: JsonElement option) =
-            value |> Option.map (fun value -> value.GetProperty("tag").GetString())
+            value |> Option.map (fun value -> value.GetProperty("kind").GetString())
 
         if tag first <> Some "SUCCEEDED" then
             invalidOp "Registered service could not read its case."

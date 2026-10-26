@@ -17,11 +17,11 @@ it("assembles all thirty captured frames including reads and selected correction
       input: Record<string, unknown>;
     };
     const act = atPath(expected.input, ["act", "kind"]);
-    const { scope } = expected.input;
+    const subject = expected.input["kind"];
     const entry = productMetadata.catalog.entries.find((item) =>
       act === undefined
         ? item.endpoint === expected.endpoint
-        : item.scope === scope && item.kind === act,
+        : item.subject === subject && item.kind === act,
     )!;
     const values: FormValues = Object.fromEntries(
       entry.inputs.flatMap((input) => {

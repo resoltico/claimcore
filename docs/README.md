@@ -1,16 +1,24 @@
 # Documentation
 
-Choose a guide by the work you need to do:
+## Evaluate
 
-| Task | Guide |
-| --- | --- |
-| Evaluate a fresh local installation | [Getting started](getting-started.md) |
-| Understand case facts, corrections and stewardship | [Case work](domain.md) |
-| Look up CLI verbs, flags and choices | [Generated CLI reference](cli.md) |
-| Call the service or use CLI frames | [Service and CLI](api.md), [examples](../examples/README.md) |
-| Use or host the browser | [Browser and HTTPS host](web.md) |
-| Initialize, provision or verify a database | [Database administration](database.md) |
-| Plan access, sessions, erasure, backup or restore | [Operations](operations.md) |
-| Build, test or change the system | [Development](development.md), [Architecture](architecture.md) |
+Start a [fresh local installation](getting-started.md), then use the [case work guide](domain.md)
+for facts, decisions, corrections and stewardship.
 
-[Contributing](../CONTRIBUTING.md) describes change delivery; the owner reviews and merges.
+## Operate
+
+Use [operations](operations.md) for access, sessions, erasure, backups and restore;
+[database administration](database.md) for initialization, owner provisioning and verification;
+and the [browser and HTTPS host guide](web.md) for hosting.
+
+## Integrate
+
+The [service and CLI guide](api.md) explains authentication, requests and delivery outcomes.
+Use the [generated CLI reference](cli.md) and [examples](../examples/README.md) for command syntax,
+and the [OpenAPI contract](../contracts/openapi.json) for wire shapes.
+
+## Contribute
+
+Read [development](development.md) for setup and verification, [architecture](architecture.md) for
+component ownership and invariants, and [contributing](../CONTRIBUTING.md) for delivery.
+The owner reviews and merges changes.

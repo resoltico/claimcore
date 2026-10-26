@@ -108,10 +108,10 @@ module internal LedgerAdministration =
 
     let private provisionResult operationId result =
         match result with
-        | Ok(LedgerWriteResult.Appended receipt) -> ProvisionOwnerOutcome.Accepted receipt
-        | Ok(LedgerWriteResult.Replayed receipt) -> ProvisionOwnerOutcome.AlreadyAccepted receipt
-        | Ok(LedgerWriteResult.Refused reason) -> ProvisionOwnerOutcome.Rejected reason
-        | Ok(LedgerWriteResult.Failed fault) -> ProvisionOwnerOutcome.Failed fault
+        | Ok(Decision.Proceed receipt) -> ProvisionOwnerOutcome.Accepted receipt
+        | Ok(Decision.Replay receipt) -> ProvisionOwnerOutcome.AlreadyAccepted receipt
+        | Ok(Decision.Refuse reason) -> ProvisionOwnerOutcome.Rejected reason
+        | Ok(Decision.Fail fault) -> ProvisionOwnerOutcome.Failed fault
         | Error StoreFailure.Cancelled -> ProvisionOwnerOutcome.Cancelled
         | Error StoreFailure.CommitOutcomeUnknown ->
             ProvisionOwnerOutcome.OutcomeUnknown operationId

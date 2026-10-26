@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CanonicalRecordTests
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.IO
@@ -66,8 +67,8 @@ let private snapshot () =
         Expect.equal observed.Reference "Demo-0001" "Independent reference"
         Expect.equal observed.Revision 1L "Independent revision"
 
-        match observed.View with
-        | CaseView.Live(fields, Disposition.Active) ->
+        match observed.State with
+        | CaseState.Active(fields) ->
             Expect.equal fields.Registration.ClaimedAmount "1000" "Canonical monetary spelling"
             Expect.equal fields.Registration.IncidentCountry "LV" "Country syntax"
 
@@ -125,18 +126,6 @@ let private formats () =
         let authority =
             root.GetProperty "authorityRecord" |> fun item -> text item "canonicalUtf8"
 
-        let retained = root.GetProperty "ledgerPayloads"
-
-        Expect.isError
-            (RequestRecord.decode 65536 (text retained "caseRequest" |> Encoding.UTF8.GetBytes))
-            "Format-5 requests are unsupported"
-
-        Expect.isError
-            (AuthorityRecord.decode
-                65536
-                (text retained "authorityRequest" |> Encoding.UTF8.GetBytes))
-            "Format-2 authority records are unsupported"
-
         Expect.equal
             [
                 RecordVersions.CaseRequest
@@ -145,26 +134,26 @@ let private formats () =
                 RecordVersions.LedgerEntry
                 RecordVersions.CaseReferenceIdentity
             ]
-            [ 7; 4; 5; 3; 2 ]
+            [ 1; 1; 1; 1; 1 ]
             "Each retained grammar has its adopted format number"
 
-        for format in [ "0"; "1"; "99"; "5"; "6.0"; "6e0"; "\"6\"" ] do
+        for format in [ "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
             Expect.isError
                 (RequestRecord.decode
                     65536
-                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":7", "\"format\":" + format))))
+                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":1", "\"format\":" + format))))
                 "Unknown or noninteger format refuses"
 
         Expect.isError
             (CaseRecord.decodeSnapshot (
-                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":5", "\"format\":2"))
+                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":1", "\"format\":2"))
             ))
             "No old snapshot reinterpretation"
 
         Expect.isError
             (AuthorityRecord.decode
                 65536
-                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":4", "\"format\":1"))))
+                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":1", "\"format\":4"))))
             "No old authority reinterpretation")
 
 let private operationIdentity () =
@@ -174,30 +163,24 @@ let private operationIdentity () =
             let request = RequestRecord.decode 65536 encoded |> Fixtures.accepted
             let tree = StrictJson.read 65536 encoded |> Fixtures.accepted
 
-            let withoutFormat =
-                match tree with
-                | JsonValue.Object fields ->
-                    JsonValue.Object(fields |> List.filter (fst >> (<>) "format"))
-                | _ -> failtest "Record object required"
-
-            let operation =
-                ClaimCore.Contract.Protocol.RequestCodecs.operationInput.Write(
-                    OperationInput.Case request
-                )
+            Expect.equal
+                (JsonValue.tryMember "kind" tree)
+                (Some(JsonValue.String "CASE"))
+                "The durable request declares its subject"
 
             Expect.equal
-                (CanonicalWriter.bytes operation)
-                (CanonicalWriter.bytes withoutFormat)
-                "Request record equals canonical operation input plus format"
+                (RequestRecord.encode request)
+                encoded
+                "Durable bytes match the independent oracle"
 
             Expect.isError
                 (RequestRecord.decode
                     65536
                     (Encoding.UTF8.GetBytes(
                         (Encoding.UTF8.GetString encoded)
-                            .Replace("\"scope\":\"CASE\"", "\"scope\":\"AUTHORITY\"")
+                            .Replace("\"kind\":\"CASE\"", "\"kind\":\"AUTHORITY\"")
                     )))
-                "The record scope must agree with the case record grammar")
+                "The durable subject must agree with the case record grammar")
 
 let private identityForms () =
     withVectors (fun root ->
@@ -208,7 +191,7 @@ let private identityForms () =
             let normalize (side: string) =
                 let source = bytes (vector.GetProperty side)
 
-                match text vector "scope" with
+                match text vector "subject" with
                 | "CASE" ->
                     RequestRecord.decode 65536 source
                     |> Fixtures.accepted
@@ -219,7 +202,7 @@ let private identityForms () =
                     |> Fixtures.accepted
                     |> AuthorityRequests.canonical
                     |> AuthorityRecord.encode
-                | _ -> failtest "Unexpected oracle scope"
+                | _ -> failtest "Unexpected oracle subject"
 
             let left, right = normalize "left", normalize "right"
             Expect.equal left (bytes (vector.GetProperty "canonicalLeft")) (text vector "name")
@@ -256,7 +239,7 @@ let tests =
         [
             testCase "canonical identities match independent Python vectors" identityForms
             testCase "malformed amount spelling is preserved for diagnostics" malformedIdentity
-            testCase "durable requests are canonical operation inputs" operationIdentity
+            testCase "durable requests retain their own subject envelope" operationIdentity
             testCase "case requests reproduce independent bytes and meaning" requests
             testCase "snapshots reproduce independent bytes and meaning" snapshot
             testCase "authority requests reproduce independent bytes and meaning" authority

@@ -5,7 +5,7 @@ open ClaimCore.Contract
 open System
 open System.Globalization
 open System.Text
-open System.Text.Json
+open ClaimCore.Json
 open System.Security.Cryptography
 open ClaimCore.Application
 open ClaimCore.Postgres
@@ -73,31 +73,21 @@ module Inputs =
         finally
             CryptographicOperations.ZeroMemory value
 
+    let private ownerInput =
+        Codec.record (fun operationId issuer subject -> operationId, issuer, subject)
+        |> Codec.field "operationId" (fun (id, _, _) -> id) Codec.uuid
+        |> Codec.field "issuer" (fun (_, issuer, _) -> issuer) Codec.text
+        |> Codec.field "subject" (fun (_, _, subject) -> subject) Codec.text
+        |> Codec.build
+
     let decodeOwner (value: byte array) =
-        use document = JsonDocument.Parse(ReadOnlyMemory value)
-        let root = document.RootElement
-        let names = root.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
+        let operationId, issuer, subject =
+            Codec.decode 8192 ownerInput value
+            |> Result.defaultWith (fun _ -> invalidOp "Owner input is invalid.")
 
-        if names <> [ "issuer"; "operationId"; "subject" ] then
-            invalidOp "Owner input properties differ."
-
-        let text name =
-            root.GetProperty(name: string).GetString()
-            |> Option.ofObj
-            |> Option.defaultWith (fun () -> invalidOp "Owner value is absent.")
-
-        let operationText = text "operationId"
-        let mutable operationId = Guid.Empty
-
-        if
-            not (Guid.TryParseExact(operationText, "D", &operationId))
-            || operationId = Guid.Empty
-            || operationId.ToString("D") <> operationText
-        then
-            invalidOp "Owner operation identifier is invalid."
-
+        // The input format denotes a human principal; PrincipalKey owns its admission rules.
         let principal =
-            PrincipalKey.human (text "issuer") (text "subject")
+            PrincipalKey.human issuer subject
             |> Result.defaultWith (fun _ -> invalidOp "Owner principal is invalid.")
 
         operationId, principal

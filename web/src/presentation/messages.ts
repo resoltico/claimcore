@@ -1,11 +1,23 @@
-import { catalogs as generatedCatalogs, messageShapes } from "@contracts/messages";
+import { catalogs as coreCatalogs, messageShapes as coreShapes } from "@contracts/messages";
+import {
+  catalogs as chromeCatalogs,
+  messageShapes as chromeShapes,
+} from "../generated/chrome-messages";
 import { presentationPseudolanguage, presentationDefaults } from "@contracts/client";
 import { languageDirection } from "./preferences";
 import { templateParts, pseudolocalizeLiteral, type TemplatePart } from "./templates";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
-const catalogs: Readonly<Record<string, Readonly<Record<string, string>>>> = generatedCatalogs;
+const chrome: Readonly<Record<string, Readonly<Record<string, string>>>> = chromeCatalogs;
+export const catalogs: Readonly<Record<string, Readonly<Record<string, string>>>> =
+  Object.fromEntries(
+    Object.entries(coreCatalogs).map(([language, core]) => [
+      language,
+      { ...core, ...chrome[language] },
+    ]),
+  );
+export const messageShapes = { ...coreShapes, ...chromeShapes };
 const shapes: Readonly<Record<string, Readonly<Record<string, string>>>> = messageShapes;
 const cache = new Map<string, ReadonlyArray<TemplatePart>>();
 const message = (key: string, preferences: Preferences): ReadonlyArray<TemplatePart> => {

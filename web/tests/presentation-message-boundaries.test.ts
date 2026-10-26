@@ -1,9 +1,9 @@
+import type { Language } from "../src/presentation/preferences";
 import { expect, it } from "vitest";
-import { renderKey, renderIsolatedValue } from "../src/presentation/messages";
+import { catalogs, renderKey, renderIsolatedValue } from "../src/presentation/messages";
 import { templateParts, pseudolocalizeLiteral } from "../src/presentation/templates";
 import vectors from "../../tests/fixtures/message-template-vectors.json";
 import rendered from "../../tests/fixtures/rendered-messages.json";
-import { catalogs } from "@contracts/messages";
 
 it("matches independent quoting vectors and every frozen F# rendering [CC-WEB-001]", () => {
   for (const row of vectors.accepted) {
@@ -14,9 +14,9 @@ it("matches independent quoting vectors and every frozen F# rendering [CC-WEB-00
         .join(""),
     ).toBe(row.expected);
   }
-  for (const row of rendered) {
-    const language = row.language as keyof typeof catalogs;
-    const catalog: Readonly<Record<string, string>> = catalogs[language];
+  for (const row of rendered.filter((message) => !message.key.startsWith("cli."))) {
+    const language = row.language as Language;
+    const catalog: Readonly<Record<string, string>> = catalogs[language]!;
     const supplied: Readonly<Record<string, string>> = row.arguments;
     expect(
       templateParts(catalog[row.key]!)
@@ -39,21 +39,23 @@ it("pseudolocalizes only literal text while preserving authored argument values 
 
 it("isolates technical revision holes in Arabic reference summaries and preserves literal word order [CC-WEB-001]", () => {
   const reference = { exact: "A\u2069\u202E العربية" };
-  const values = { reference: reference.exact, revision: "12" };
+  const values = { status: reference.exact, revision: "12" };
   expect(
     renderIsolatedValue(
       { language: "en", displayLocale: "en-GB" },
-      "ui.reviewTarget",
+      "ui.caseRow",
       values,
       reference,
+      "status",
     ),
-  ).toEqual(["Target ", reference, " · expected revision 12"]);
+  ).toEqual([reference, " · revision 12"]);
   expect(
     renderIsolatedValue(
       { language: "ar", displayLocale: "en-GB" },
-      "ui.reviewTarget",
+      "ui.caseRow",
       values,
       reference,
+      "status",
     ),
-  ).toEqual(["الهدف ", reference, " · المراجعة المتوقعة \u206812\u2069"]);
+  ).toEqual([reference, " · المراجعة \u206812\u2069"]);
 });

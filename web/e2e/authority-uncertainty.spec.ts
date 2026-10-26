@@ -13,7 +13,7 @@ import {
 const ownerGrant = async (page: Page, active: boolean) => {
   const source = await syntheticPrincipals();
   await applyAuthority(page, {
-    scope: "AUTHORITY",
+    kind: "AUTHORITY",
     operationId: randomUUID(),
     target: { kind: "HUMAN", issuer: source.issuer, subject: source.stewardSubject },
     act: { kind: active ? "GRANT" : "REVOKE", role: "OWNER", scope: { kind: "INSTALLATION" } },
@@ -34,7 +34,7 @@ const uncertainRegistration = async (page: Page) => {
   const pending = await pauseJsonReply(page, "operation.execute", true);
   await page.getByRole("button", { name: ui("en", "ui.submitExact"), exact: true }).click();
   const captured = await pending.ready;
-  expect(captured.reply.outcome.tag).toBe("ACCEPTED");
+  expect(captured.reply.outcome.kind).toBe("ACCEPTED");
   pending.release();
   await expect(
     page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }),
@@ -46,7 +46,7 @@ const refusedRetry = async (page: Page, bytes: Buffer) => {
   await page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }).click();
   const captured = await pending.ready;
   expect(captured.bytes.equals(bytes)).toBe(true);
-  expect(captured.reply.outcome.tag).toBe("REJECTED");
+  expect(captured.reply.outcome.kind).toBe("REJECTED");
   pending.release();
   await expect(
     page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }),
