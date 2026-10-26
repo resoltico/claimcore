@@ -12,7 +12,7 @@ module OperationSubjects =
 [<RequireQualifiedAccess>]
 type OperationInput =
     | Case of UnvalidatedCaseRequest
-    | Authority of ClaimCore.Contract.AuthorityRequest
+    | Authority of ClaimCore.Domain.AuthorityRequest
 
 module OperationInput =
     let operationId =

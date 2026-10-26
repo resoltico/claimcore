@@ -15,7 +15,7 @@ look up an act. The sections below explain the business meaning and the limits o
 A case has thirteen business fields: incident date, this handler's first notification date, incident country,
 claimant, responsible insurer, claimed amount/currency, case reference, decision date, payable amount/currency,
 payment date and open/closed status. Technical IDs, revisions, timestamps and advice stay outside this record.
-The [field table](../src/ClaimCore.Domain/Fields/FieldTable.fs) owns JSON keys and labels.
+The [field table](../src/ClaimCore.Domain/Record.fs) owns JSON keys and labels.
 
 Opening supplies the seven registration values and top-level reference. Decision and payment groups begin as
 null; status begins OPENED. The view places the seven registration members in `registration`, the three

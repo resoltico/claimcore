@@ -5,10 +5,10 @@ open System.Globalization
 open ClaimCore.Contract
 open ClaimCore.Domain
 
-/// One positional layout for case projection reads, bindings and payload erasure.
+/// Column names derive from record keys; reads identify cells by name and bindings share the column sequence.
 module internal CaseProjectionLayout =
-    let private column (row: FieldRow) =
-        row.Key
+    let name field =
+        Record.key field
         |> Seq.collect (fun character ->
             if Char.IsAsciiLetterUpper character then
                 [ '_'; Char.ToLowerInvariant character ]
@@ -17,19 +17,9 @@ module internal CaseProjectionLayout =
         |> Array.ofSeq
         |> String
 
-    let private retained, payload =
-        FieldTable.rows |> List.partition (fun row -> row.RetainedOnErasure)
-
-    let revisionOrdinal = 1 + retained.Length
-    let stateOrdinal = revisionOrdinal + 1
-    let payloadOrdinal = stateOrdinal + 1
-
-    let private positioned =
-        (retained |> List.mapi (fun index row -> row, index + 1))
-        @ (payload |> List.mapi (fun index row -> row, index + payloadOrdinal))
-
-    let ordinal field =
-        positioned |> List.find (fun (row, _) -> row.Field = field) |> snd
+    let private column (field: FieldDeclaration) = name field.Field
+    let private retained, payload = Record.fields |> List.partition _.RetainedOnErasure
+    let payloadColumns = payload |> List.map column
 
     let private columns =
         [ "case_id" ]
@@ -37,10 +27,11 @@ module internal CaseProjectionLayout =
         @ [ "revision"; "state" ]
         @ (payload |> List.map column)
 
-    let private selected (row: FieldRow) =
-        match row.Scalar with
-        | ScalarRule.CalendarDate _ -> DatabaseSession.dateExpression (column row)
-        | ScalarRule.Amount _ -> column row + "::text"
+    let private selected (row: FieldDeclaration) =
+        match row.Kind with
+        | FieldValueKind.CalendarDate ->
+            DatabaseSession.dateExpression (column row) + " AS " + column row
+        | FieldValueKind.Amount -> column row + "::text AS " + column row
         | _ -> column row
 
     let select =
@@ -115,7 +106,7 @@ module internal CaseProjectionLayout =
             | CaseState.Voided(fields) -> fields, "VOIDED"
             | CaseState.Erased -> invalidArg (nameof snapshot) "Use the erasure projection."
 
-        let bind (row: FieldRow) = parameter fields row.Field
+        let bind (row: FieldDeclaration) = parameter fields row.Field
 
         [ box id ]
         @ (retained |> List.map bind)

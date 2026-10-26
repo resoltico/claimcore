@@ -81,7 +81,7 @@ let receipt id (reference: string) =
         RecordedBy = operationId
     }
 
-let authorityReceipt (request: ClaimCore.Contract.AuthorityRequest) =
+let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
     { receipt request.OperationId "WEB-001" with
         Subject =
             ReceiptSubject.Authority
@@ -118,7 +118,7 @@ type Stub() =
                 ExecuteResult.Accepted(receipt request.OperationId request.CaseReference)
             )) with get, set
 
-    member val ExecuteAuthority: ClaimCore.Contract.AuthorityRequest * CancellationToken
+    member val ExecuteAuthority: ClaimCore.Domain.AuthorityRequest * CancellationToken
         -> Task<ExecuteResult> =
         (fun (request, _) -> Task.FromResult(ExecuteResult.Accepted(authorityReceipt request))) with get, set
 

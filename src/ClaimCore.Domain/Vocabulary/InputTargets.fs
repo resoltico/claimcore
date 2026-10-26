@@ -2,7 +2,7 @@ namespace ClaimCore.Domain
 
 module InputTargets =
     let private definitions =
-        (FieldTable.rows
+        (Record.fields
          |> List.filter (fun row -> row.Field <> BusinessField.Status)
          |> List.map (fun row -> InputTarget.Field row.Field, row.Key))
         @ [
@@ -19,7 +19,7 @@ module InputTargets =
 
     let vocabulary =
         Vocabulary.define "field" (List.map fst definitions) (function
-            | InputTarget.Field field -> FieldTable.key field
+            | InputTarget.Field field -> Record.key field
             | InputTarget.OperationId -> "operationId"
             | InputTarget.ExpectedRevision -> "expectedRevision"
             | InputTarget.Group group -> RecordGroup.token group

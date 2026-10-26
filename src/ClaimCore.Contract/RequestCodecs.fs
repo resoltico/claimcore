@@ -15,50 +15,9 @@ module RequestCodecs =
     let tokens values =
         values |> List.map (fun value -> value, value) |> enumeration
 
-    let registration =
-        (record (fun v0 v1 v2 v3 v4 v5 v6 ->
-            {
-                RegistrationInput.IncidentDate = v0
-                IncidentNotificationDate = v1
-                IncidentCountry = v2
-                ClaimantName = v3
-                InsurerName = v4
-                ClaimedAmount = v5
-                ClaimedCurrency = v6
-            })
-        : Fields<RegistrationInput, _>)
-        |> field (FieldTable.key BusinessField.IncidentDate) _.IncidentDate (text)
-        |> field
-            (FieldTable.key BusinessField.IncidentNotificationDate)
-            _.IncidentNotificationDate
-            (text)
-        |> field (FieldTable.key BusinessField.IncidentCountry) _.IncidentCountry (text)
-        |> field (FieldTable.key BusinessField.ClaimantName) _.ClaimantName (text)
-        |> field (FieldTable.key BusinessField.InsurerName) _.InsurerName (text)
-        |> field (FieldTable.key BusinessField.ClaimedAmount) _.ClaimedAmount (text)
-        |> field (FieldTable.key BusinessField.ClaimedCurrency) _.ClaimedCurrency (text)
-        |> build
-        |> named "Registration"
-
-    let decision =
-        (record (fun v0 v1 v2 ->
-            {
-                DecisionInput.PaymentDecisionDate = v0
-                PayableAmount = v1
-                PayableCurrency = v2
-            })
-        : Fields<DecisionInput, _>)
-        |> field (FieldTable.key BusinessField.PaymentDecisionDate) _.PaymentDecisionDate (text)
-        |> field (FieldTable.key BusinessField.PayableAmount) _.PayableAmount (text)
-        |> field (FieldTable.key BusinessField.PayableCurrency) _.PayableCurrency (text)
-        |> build
-        |> named "Decision"
-
-    let payment =
-        (record (fun v0 -> { PaymentInput.PaymentDate = v0 }): Fields<PaymentInput, _>)
-        |> field (FieldTable.key BusinessField.PaymentDate) _.PaymentDate (text)
-        |> build
-        |> named "Payment"
+    let registration = Record.registration.Codec text
+    let decision = Record.decision.Codec text
+    let payment = Record.payment.Codec text
 
     let private correctionVariants group variants =
         CorrectionActions.forGroup group
@@ -139,79 +98,7 @@ module RequestCodecs =
         |> build
         |> named "Correction"
 
-    let private businessActs =
-        [
-            variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
-                UnvalidatedCaseAct.Open
-                (function
-                | UnvalidatedCaseAct.Open value -> Some value
-                | _ -> None)
-                (record id |> field "values" id registration)
-            variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
-                UnvalidatedCaseAct.AmendRegistration
-                (function
-                | UnvalidatedCaseAct.AmendRegistration value -> Some value
-                | _ -> None)
-                (record id |> field "values" id registration)
-            variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct))
-                UnvalidatedCaseAct.Correct
-                (function
-                | UnvalidatedCaseAct.Correct value -> Some value
-                | _ -> None)
-                (record id |> field "groups" id correction)
-            variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
-                UnvalidatedCaseAct.Decide
-                (function
-                | UnvalidatedCaseAct.Decide value -> Some value
-                | _ -> None)
-                (record id |> field "values" id decision)
-            unitVariant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
-                UnvalidatedCaseAct.WithdrawDecision
-            variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
-                UnvalidatedCaseAct.RecordPayment
-                (function
-                | UnvalidatedCaseAct.RecordPayment value -> Some value
-                | _ -> None)
-                (record id |> field "values" id payment)
-            unitVariant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
-                UnvalidatedCaseAct.ClearPayment
-            unitVariant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
-                UnvalidatedCaseAct.Close
-            unitVariant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
-                UnvalidatedCaseAct.Reopen
-        ]
-
-    let private stewardshipActs =
-        [
-            variant
-                (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
-                UnvalidatedCaseAct.Void
-                (function
-                | UnvalidatedCaseAct.Void value -> Some value
-                | _ -> None)
-                (record id |> field "reason" id text)
-            variant
-                (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
-                UnvalidatedCaseAct.Reinstate
-                (function
-                | UnvalidatedCaseAct.Reinstate value -> Some value
-                | _ -> None)
-                (record id |> field "reason" id text)
-            unitVariant
-                (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
-                UnvalidatedCaseAct.Erase
-        ]
-
-    let caseAct = tagged "CaseAct" (businessActs @ stewardshipActs)
+    let caseAct = Record.caseCodec text correction
 
     let caseRequestFields =
         (record (fun v0 v1 v2 v3 ->
@@ -223,7 +110,7 @@ module RequestCodecs =
             })
         : Fields<UnvalidatedCaseRequest, _>)
         |> field "operationId" _.OperationId (uuid)
-        |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference (text)
+        |> field (Record.key BusinessField.CaseReference) _.CaseReference (text)
         |> field "expectedRevision" _.ExpectedRevision (revision)
         |> field "act" _.Act (caseAct)
 
@@ -254,41 +141,11 @@ module RequestCodecs =
                     (function
                     | GrantTarget.CaseReference value -> Some value
                     | _ -> None)
-                    (record id |> field (FieldTable.key BusinessField.CaseReference) id text)
+                    (record id |> field (Record.key BusinessField.CaseReference) id text)
             ]
 
     let authorityActWith role =
-        let grant =
-            (record (fun role scope ->
-                {
-                    GrantChange.Role = role
-                    Scope = scope
-                })
-            : Fields<GrantChange, _>)
-            |> field "role" _.Role role
-            |> field "scope" _.Scope scope
-
-        tagged
-            "AuthorityAct"
-            [
-                unitVariant (AuthorityKinds.token AuthorityKind.Register) AuthorityAct.Register
-                variant
-                    (AuthorityKinds.token AuthorityKind.Grant)
-                    AuthorityAct.Grant
-                    (function
-                    | AuthorityAct.Grant value -> Some value
-                    | _ -> None)
-                    grant
-                variant
-                    (AuthorityKinds.token AuthorityKind.Revoke)
-                    AuthorityAct.Revoke
-                    (function
-                    | AuthorityAct.Revoke value -> Some value
-                    | _ -> None)
-                    grant
-                unitVariant (AuthorityKinds.token AuthorityKind.Enable) AuthorityAct.Enable
-                unitVariant (AuthorityKinds.token AuthorityKind.Disable) AuthorityAct.Disable
-            ]
+        Record.authorityVariants role scope |> tagged "AuthorityAct"
 
     let authorityAct =
         authorityActWith (tokens (RoleTokens.all |> List.map RoleTokens.token))
@@ -327,58 +184,17 @@ module RequestCodecs =
 
     let operationInput = tagged "OperationInput" [ caseVariant; authorityVariant ]
 
-    let pageRequest =
-        (record (fun v0 v1 ->
-            {
-                PageRequest.AfterCursor = v0
-                Limit = v1
-            })
-        : Fields<PageRequest, _>)
-        |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
-        |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize) |> map int int64)
-        |> build
-        |> named "PageRequest"
+    let readProfile =
+        {
+            ReadProfile.Text = text
+            Cursor = boundedText 1 512
+            Limit = integer 1L (int64 Limits.MaximumPageSize) |> map int int64
+            Detail = VocabularyCodec.create HistoryDetails.vocabulary
+        }
 
-    let caseGetRequest =
-        (record (fun v0 -> { CaseGetRequest.CaseReference = v0 }): Fields<CaseGetRequest, _>)
-        |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference (text)
-        |> build
-        |> named "CaseGetRequest"
-
-    let historyRequest =
-        (record (fun v0 v1 v2 v3 ->
-            {
-                HistoryRequest.CaseReference = v0
-                Detail = v1
-                AfterCursor = v2
-                Limit = v3
-            })
-        : Fields<HistoryRequest, _>)
-        |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference (text)
-        |> field "detail" _.Detail (VocabularyCodec.create HistoryDetails.vocabulary)
-        |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
-        |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize) |> map int int64)
-        |> build
-        |> named "HistoryRequest"
-
-    let grantsRequest =
-        (record (fun v0 v1 v2 ->
-            {
-                GrantsRequest.ActorId = v0
-                AfterCursor = v1
-                Limit = v2
-            })
-        : Fields<GrantsRequest, _>)
-        |> field "actorId" _.ActorId (uuid)
-        |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
-        |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize) |> map int int64)
-        |> build
-        |> named "GrantsRequest"
-
-    let observeRequest =
-        (record (fun v0 -> { ObserveRequest.OperationId = v0 }): Fields<ObserveRequest, _>)
-        |> field "operationId" _.OperationId (uuid)
-        |> build
-        |> named "ObserveRequest"
-
-    let empty = record () |> build |> named "Empty"
+    let pageRequest = Record.caseList.Codec readProfile
+    let caseGetRequest = Record.caseGet.Codec readProfile
+    let historyRequest = Record.caseHistory.Codec readProfile
+    let grantsRequest = Record.authorityGrants.Codec readProfile
+    let observeRequest = Record.observe.Codec readProfile
+    let empty = Record.context.Codec readProfile

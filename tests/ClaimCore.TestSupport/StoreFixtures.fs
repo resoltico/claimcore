@@ -39,7 +39,7 @@ let internal actRequest n reference revision act : UnvalidatedCaseRequest =
         Act = act
     }
 
-let internal authorityRequest operationId target act : ClaimCore.Contract.AuthorityRequest =
+let internal authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest =
     {
         OperationId = operationId
         Target = target

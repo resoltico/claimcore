@@ -22,11 +22,6 @@ type InstallationOffer =
     | Open
     | AuthorityAct of AuthorityKind
 
-[<RequireQualifiedAccess>]
-type HistoryDetail =
-    | Summary
-    | Full
-
 type CorrectionChoices =
     {
         Registration: CorrectionGroupAction list
@@ -73,12 +68,6 @@ type AdvisoryReview =
         Changes: FieldDiff list
         Context: RuntimeContext
     }
-
-module HistoryDetails =
-    let vocabulary =
-        Vocabulary.define "historyDetail" [ HistoryDetail.Summary; HistoryDetail.Full ] (function
-            | HistoryDetail.Summary -> "SUMMARY"
-            | HistoryDetail.Full -> "FULL")
 
 module Views =
     let vocabulary =

@@ -210,7 +210,7 @@ let private authorityChecks =
                 {
                     OperationId = id
                     Target = PrincipalKey.describe human
-                    Act = RecordedAuthorityAct.Operation(ClaimCore.Contract.AuthorityAct.Register)
+                    Act = RecordedAuthorityAct.Operation(ClaimCore.Domain.AuthorityAct.Register)
                 }
 
             AuthorityFold.apply

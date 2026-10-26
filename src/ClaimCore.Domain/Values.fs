@@ -5,6 +5,62 @@ open System.Globalization
 open System.Text
 open System.Text.RegularExpressions
 
+/// The two case statuses requested by the operator. Payment never changes this implicitly.
+[<RequireQualifiedAccess>]
+type CaseStatus =
+    | Opened
+    | Closed
+
+/// Permanent text representability and syntax. Policy is never a generic schema assertion.
+type TextFormatConstraints =
+    {
+        MinimumCharacters: int
+        Grammar: string option
+    }
+
+type ScalarTextConstraints =
+    {
+        Format: TextFormatConstraints
+        MaximumCharacters: int option
+    }
+
+/// Exact Gregorian calendar-date input rules.
+type CalendarDateScalarRule =
+    {
+        ExactFormat: string
+        Minimum: DateOnly
+        Maximum: DateOnly
+    }
+
+/// Exact non-negative decimal-text input rules.
+type AmountScalarRule =
+    {
+        Text: ScalarTextConstraints
+        Grammar: string
+        MaximumIntegerDigits: int
+        MaximumFractionalDigits: int
+    }
+
+/// Exact uppercase ASCII currency-token input rules.
+type CurrencyScalarRule =
+    {
+        Text: ScalarTextConstraints
+        Grammar: string
+        ExactCharacters: int
+    }
+
+/// Catalog supplies closed status vocabulary; Domain owns transitions.
+type CaseStatusScalarRule = { AllowedValues: CaseStatus list }
+
+/// Typed scalar rules are the Domain authority for adapter-visible field constraints.
+[<RequireQualifiedAccess>]
+type ScalarRule =
+    | CalendarDate of CalendarDateScalarRule
+    | Text of ScalarTextConstraints
+    | Amount of AmountScalarRule
+    | Currency of CurrencyScalarRule
+    | CaseStatus of CaseStatusScalarRule
+
 /// Permanent Unicode interchange rules are shared by scalar and JSON boundaries.
 module UnicodeText =
     let isInterchange (value: string) =
@@ -303,9 +359,3 @@ module CaseReference =
         |> Result.map (fun value -> CaseReference(value, key value))
 
     let admit (value: CaseReference) : Result<CaseReference, Violation> = Ok value
-
-    let validate value =
-        parse value
-        |> Result.map ignore
-        |> Result.mapError (fun violation ->
-            Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation))

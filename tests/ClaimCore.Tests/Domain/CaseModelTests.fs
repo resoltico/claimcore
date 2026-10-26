@@ -313,10 +313,28 @@ let private identifiers =
         "ASCII references fold identity and retain initial spelling; countries are syntax only"
         (fun () ->
             for reference in [ "!"; "~"; String.replicate 80 "a"; "<a>&'" ] do
-                Expect.isOk (CaseReference.validate reference) "Printable ASCII profile"
+                Expect.isOk
+                    ((CaseReference.parse
+                      >> Result.map ignore
+                      >> Result.mapError (fun violation ->
+                          Refusal.InvalidInput(
+                              InputTarget.Field BusinessField.CaseReference,
+                              violation
+                          )))
+                        reference)
+                    "Printable ASCII profile"
 
             for reference in [ ""; "a b"; "Rīga"; String.replicate 81 "a"; "a\n" ] do
-                Expect.isError (CaseReference.validate reference) "Reference format refusal"
+                Expect.isError
+                    ((CaseReference.parse
+                      >> Result.map ignore
+                      >> Result.mapError (fun violation ->
+                          Refusal.InvalidInput(
+                              InputTarget.Field BusinessField.CaseReference,
+                              violation
+                          )))
+                        reference)
+                    "Reference format refusal"
 
             Expect.equal (CaseReference.key "i-Demo") "I-DEMO" "ASCII folding"
             let current = retained 1L (live CaseStatus.Opened false false)

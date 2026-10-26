@@ -1,6 +1,5 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Contract
 
 open System
 open System.Buffers.Binary

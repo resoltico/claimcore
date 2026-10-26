@@ -131,7 +131,7 @@ let private unicodeAndPolicy (database: PostgresFixture.Database) =
                 let! _ = DatabaseSession.execute connection "SET DateStyle='SQL, DMY'" [||] token
 
                 return!
-                    DatabaseSession.rows
+                    DatabaseSession.namedRows
                         connection
                         ($"SELECT {Projections.caseColumns} FROM claimcore.cases")
                         [||]

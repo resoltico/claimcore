@@ -56,7 +56,13 @@ module internal Cursors =
             | :? InvalidOperationException -> Error Refusal.InvalidCursor
 
     let private reference value =
-        CaseReference.validate value |> Result.isOk && CaseReference.key value = value
+        (CaseReference.parse
+         >> Result.map ignore
+         >> Result.mapError (fun violation ->
+             Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
+            value
+        |> Result.isOk
+        && CaseReference.key value = value
 
     let private uuid value =
         match Guid.TryParseExact((value: string), "D") with

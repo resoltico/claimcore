@@ -15,7 +15,7 @@ module CatalogCodecs =
     let private count = integer 0L (int64 Int32.MaxValue) |> map int int64
     let private many codec = list Int32.MaxValue codec
 
-    let private fieldName = VocabularyCodec.create FieldTable.vocabulary
+    let private fieldName = VocabularyCodec.create RecordFields.vocabulary
 
     let private inputTarget = VocabularyCodec.create InputTargets.vocabulary
 
@@ -354,7 +354,7 @@ module CatalogCodecs =
                 Inputs = inputs
                 Constants = constants
             })
-        |> field "endpoint" _.Endpoint text
+        |> field "endpoint" (fun (value: CatalogEntry) -> value.Endpoint) text
         |> field "subject" _.Subject text
         |> field "kind" _.Kind text
         |> field "labelId" _.LabelId text

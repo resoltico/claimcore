@@ -1,6 +1,5 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -14,47 +13,9 @@ module internal RecordCodecs =
     let tokens values =
         values |> List.map (fun value -> value, value) |> enumeration
 
-    let registration =
-        (record (fun v0 v1 v2 v3 v4 v5 v6 ->
-            {
-                RegistrationInput.IncidentDate = v0
-                IncidentNotificationDate = v1
-                IncidentCountry = v2
-                ClaimantName = v3
-                InsurerName = v4
-                ClaimedAmount = v5
-                ClaimedCurrency = v6
-            })
-        : Fields<RegistrationInput, _>)
-        |> field "incidentDate" _.IncidentDate (text)
-        |> field "incidentNotificationDate" _.IncidentNotificationDate (text)
-        |> field "incidentCountry" _.IncidentCountry (text)
-        |> field "claimantName" _.ClaimantName (text)
-        |> field "insurerName" _.InsurerName (text)
-        |> field "claimedAmount" _.ClaimedAmount (text)
-        |> field "claimedCurrency" _.ClaimedCurrency (text)
-        |> build
-        |> named "Registration"
-
-    let decision =
-        (record (fun v0 v1 v2 ->
-            {
-                DecisionInput.PaymentDecisionDate = v0
-                PayableAmount = v1
-                PayableCurrency = v2
-            })
-        : Fields<DecisionInput, _>)
-        |> field "paymentDecisionDate" _.PaymentDecisionDate (text)
-        |> field "payableAmount" _.PayableAmount (text)
-        |> field "payableCurrency" _.PayableCurrency (text)
-        |> build
-        |> named "Decision"
-
-    let payment =
-        (record (fun v0 -> { PaymentInput.PaymentDate = v0 }): Fields<PaymentInput, _>)
-        |> field "paymentDate" _.PaymentDate (text)
-        |> build
-        |> named "Payment"
+    let registration = Record.registration.Codec text
+    let decision = Record.decision.Codec text
+    let payment = Record.payment.Codec text
 
     let registrationGroup =
         tagged
@@ -118,79 +79,7 @@ module internal RecordCodecs =
         |> build
         |> named "Correction"
 
-    let private businessActs =
-        [
-            variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
-                UnvalidatedCaseAct.Open
-                (function
-                | UnvalidatedCaseAct.Open value -> Some value
-                | _ -> None)
-                (record id |> field "values" id registration)
-            variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
-                UnvalidatedCaseAct.AmendRegistration
-                (function
-                | UnvalidatedCaseAct.AmendRegistration value -> Some value
-                | _ -> None)
-                (record id |> field "values" id registration)
-            variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct))
-                UnvalidatedCaseAct.Correct
-                (function
-                | UnvalidatedCaseAct.Correct value -> Some value
-                | _ -> None)
-                (record id |> field "groups" id correction)
-            variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
-                UnvalidatedCaseAct.Decide
-                (function
-                | UnvalidatedCaseAct.Decide value -> Some value
-                | _ -> None)
-                (record id |> field "values" id decision)
-            unitVariant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
-                UnvalidatedCaseAct.WithdrawDecision
-            variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
-                UnvalidatedCaseAct.RecordPayment
-                (function
-                | UnvalidatedCaseAct.RecordPayment value -> Some value
-                | _ -> None)
-                (record id |> field "values" id payment)
-            unitVariant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
-                UnvalidatedCaseAct.ClearPayment
-            unitVariant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
-                UnvalidatedCaseAct.Close
-            unitVariant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
-                UnvalidatedCaseAct.Reopen
-        ]
-
-    let private stewardshipActs =
-        [
-            variant
-                (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
-                UnvalidatedCaseAct.Void
-                (function
-                | UnvalidatedCaseAct.Void value -> Some value
-                | _ -> None)
-                (record id |> field "reason" id text)
-            variant
-                (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
-                UnvalidatedCaseAct.Reinstate
-                (function
-                | UnvalidatedCaseAct.Reinstate value -> Some value
-                | _ -> None)
-                (record id |> field "reason" id text)
-            unitVariant
-                (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
-                UnvalidatedCaseAct.Erase
-        ]
-
-    let caseAct = tagged "CaseAct" (businessActs @ stewardshipActs)
+    let caseAct = Record.caseCodec text correction
 
     let caseRequestFields =
         (record (fun v0 v1 v2 v3 () ->
@@ -234,37 +123,7 @@ module internal RecordCodecs =
                     (record id |> field "caseReference" id text)
             ]
 
-    let authorityVariants role =
-        let grant =
-            (record (fun role scope ->
-                {
-                    GrantChange.Role = role
-                    Scope = scope
-                })
-            : Fields<GrantChange, _>)
-            |> field "role" _.Role role
-            |> field "scope" _.Scope scope
-
-        [
-            unitVariant (AuthorityKinds.token AuthorityKind.Register) AuthorityAct.Register
-            variant
-                (AuthorityKinds.token AuthorityKind.Grant)
-                AuthorityAct.Grant
-                (function
-                | AuthorityAct.Grant value -> Some value
-                | _ -> None)
-                grant
-            variant
-                (AuthorityKinds.token AuthorityKind.Revoke)
-                AuthorityAct.Revoke
-                (function
-                | AuthorityAct.Revoke value -> Some value
-                | _ -> None)
-                grant
-            unitVariant (AuthorityKinds.token AuthorityKind.Enable) AuthorityAct.Enable
-            unitVariant (AuthorityKinds.token AuthorityKind.Disable) AuthorityAct.Disable
-        ]
-
+    let authorityVariants role = Record.authorityVariants role scope
 
     let caseOperation =
         let version = int64 RecordVersions.CaseRequest

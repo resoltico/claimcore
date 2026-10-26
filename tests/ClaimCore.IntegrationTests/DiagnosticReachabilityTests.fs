@@ -408,7 +408,7 @@ let private principalEvidence (actor: HandlerContext) =
                     "invalid", "valid"
                     "https://issuer.example/", String('x', 513)
                 ] do
-            let request: ClaimCore.Contract.AuthorityRequest =
+            let request: ClaimCore.Domain.AuthorityRequest =
                 {
                     OperationId = id (60 + index)
                     Target =
@@ -417,7 +417,7 @@ let private principalEvidence (actor: HandlerContext) =
                             Issuer = issuer
                             Subject = subject
                         }
-                    Act = ClaimCore.Contract.AuthorityAct.Register
+                    Act = ClaimCore.Domain.AuthorityAct.Register
                 }
 
             let! outcome =

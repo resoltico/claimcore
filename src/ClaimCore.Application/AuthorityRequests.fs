@@ -7,7 +7,7 @@ open ClaimCore.RecordFormat
 
 /// Shared conversion between the primitive record codec and admitted application identities.
 module AuthorityRequests =
-    type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
+    type private SharedAuthorityAct = ClaimCore.Domain.AuthorityAct
 
     /// Only a case-scope reference has alternate identity spellings; principals stay exact.
     let canonical (request: AuthorityRequestRecord) =
@@ -101,7 +101,7 @@ module AuthorityRequests =
             Act = RecordedAuthorityAct.ProvisionOwner
         }
 
-    let toInput (request: AdmittedAuthorityRequest) : ClaimCore.Contract.AuthorityRequest =
+    let toInput (request: AdmittedAuthorityRequest) : ClaimCore.Domain.AuthorityRequest =
         let record = toRecord request
 
         {
@@ -115,7 +115,7 @@ module AuthorityRequests =
         }
 
     let admit
-        (request: ClaimCore.Contract.AuthorityRequest)
+        (request: ClaimCore.Domain.AuthorityRequest)
         : Result<AdmittedAuthorityRequest, Refusal> =
         match
             PrincipalKey.admit request.Target.Kind request.Target.Issuer request.Target.Subject,
@@ -154,5 +154,11 @@ module AuthorityRequests =
             Error((Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)))
         else
             targetCase request
-            |> Option.map (CaseReference.validate >> Result.mapError (fun value -> value))
+            |> Option.map (
+                (CaseReference.parse
+                 >> Result.map ignore
+                 >> Result.mapError (fun violation ->
+                     Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
+                >> Result.mapError (fun value -> value)
+            )
             |> Option.defaultValue (Ok())

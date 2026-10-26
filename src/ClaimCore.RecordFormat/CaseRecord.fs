@@ -1,6 +1,5 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Contract
 open ClaimCore.Json
 open ClaimCore.Domain
 

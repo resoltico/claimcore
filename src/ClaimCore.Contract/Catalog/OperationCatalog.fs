@@ -91,17 +91,6 @@ type CatalogOperation =
         Act: ActKind option
     }
 
-type CatalogAnnotations =
-    {
-        Operands: string list list
-        Prefill: string list list
-        Fixed: (string list * BindingValue) list
-        Presence: string list list
-        Switches: (string list * (string * string)) list
-        Defaults: (string list * BindingValue) list
-        Minted: string list list
-    }
-
 /// CLI argument presentation is derived alongside the published binding, never authored as a second shape.
 type CatalogDerivedInput =
     {
@@ -114,56 +103,47 @@ type CatalogDerivedInput =
 module OperationCatalog =
     let inputKey =
         function
-        | CatalogInputName.Field field -> FieldTable.key field
+        | CatalogInputName.Field field -> Record.key field
         | CatalogInputName.Group group -> RecordGroup.token group
         | CatalogInputName.Technical input -> TechnicalInputs.token input
 
     let inputMessage name part =
         match name with
-        | CatalogInputName.Field field -> Vocabulary.messageKey FieldTable.vocabulary field part
+        | CatalogInputName.Field field -> Vocabulary.messageKey RecordFields.vocabulary field part
         | CatalogInputName.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group part
         | CatalogInputName.Technical input ->
             Vocabulary.messageKey TechnicalInputs.vocabulary input part
 
-    let private actorActs =
-        let codec = Api.operationExecute.Input
+    [<NoEquality; NoComparison>]
+    type private Declaration =
+        | Case of CaseActDeclaration
+        | Authority of AuthorityActDeclaration
+        | Read of ReadDeclaration
 
-        let rec resolve =
-            function
-            | Schema.Ref name -> resolve codec.Definitions[name]
-            | schema -> schema
-
-        let variants schema =
-            match resolve schema with
-            | Schema.OneOf(_, Some(_, mapping)) ->
-                mapping |> List.map (fun (token, name) -> token, codec.Definitions[name])
-            | _ -> invalidOp "Operation input requires tagged subject and act codecs."
-
-        variants codec.Schema
-        |> List.collect (fun (_, subject) ->
-            match resolve subject with
-            | Schema.Object(properties, _) ->
-                properties
-                |> List.find (fst >> (=) "act")
-                |> snd
-                |> variants
-                |> List.map (fun (token, _) ->
-                    Vocabulary.tryParse ActKinds.vocabulary token
-                    |> Option.defaultWith (fun () -> invalidOp ("Unknown request act: " + token)))
-            | _ -> invalidOp "An operation subject must be an object.")
-
-    let all =
-        (actorActs
-         |> List.map (fun act ->
+    let private declarations =
+        (Record.caseActs
+         |> List.map (fun declaration ->
              {
                  Endpoint = Api.operationExecute.Token
-                 Act = Some act
-             }))
-        @ (ActorEndpoints.all
-           |> List.map (Api.forActor >> Api.id)
-           |> List.filter (fun id ->
-               not (List.contains id [ Api.operationExecute.Token; Api.operationPreview.Token ]))
-           |> List.map (fun endpoint -> { Endpoint = endpoint; Act = None }))
+                 Act = Some(ActKind.Case declaration.Kind)
+             },
+             Case declaration))
+        @ (Record.authorityActs
+           |> List.map (fun declaration ->
+               {
+                   Endpoint = Api.operationExecute.Token
+                   Act = Some(ActKind.Authority declaration.Kind)
+               },
+               Authority declaration))
+        @ (Record.reads
+           |> List.map (fun declaration ->
+               {
+                   Endpoint = Vocabulary.token ActorEndpoints.vocabulary declaration.Endpoint
+                   Act = None
+               },
+               Read declaration))
+
+    let all = declarations |> List.map fst
 
     let mutations = all |> List.filter (fun operation -> operation.Act.IsSome)
 
@@ -209,7 +189,7 @@ module OperationCatalog =
 
     let private diagnostics =
         function
-        | CatalogInputName.Field field -> [ FieldTable.key field ]
+        | CatalogInputName.Field field -> [ Record.key field ]
         | CatalogInputName.Group group -> [ RecordGroup.token group ]
         | CatalogInputName.Technical TechnicalInput.OperationId -> [ "operationId" ]
         | CatalogInputName.Technical TechnicalInput.ExpectedRevision -> [ "expectedRevision" ]
@@ -219,323 +199,300 @@ module OperationCatalog =
         | _ -> []
 
 
-    let annotations operation =
-        let caseScoped =
-            match operation.Act with
-            | Some(ActKind.Case _) -> true
-            | _ -> List.contains operation.Endpoint [ Api.caseGet.Token; Api.caseHistory.Token ]
+    let private actPath tail = "act" :: tail
 
-        let paged =
-            List.contains
-                operation.Endpoint
-                [
-                    Api.caseList.Token
-                    Api.caseHistory.Token
-                    Api.authorityList.Token
-                    Api.authorityGrants.Token
-                ]
+    let private input operation name path kind argument branches required defaultValue prefill =
+        let atom =
+            match kind with
+            | BindingKind.Text -> CatalogAtom.Text
+            | BindingKind.Integer -> CatalogAtom.Integer
+            | BindingKind.Boolean -> CatalogAtom.Boolean
+            | BindingKind.Choice values
+            | BindingKind.Group values -> CatalogAtom.Choice values
 
         {
-            Operands =
-                [
-                    if caseScoped then
-                        [ "caseReference" ]
-                    if
-                        List.contains
-                            operation.Endpoint
-                            [ Api.operationObserve.Token; Api.operationResolve.Token ]
-                    then
-                        [ "operationId" ]
-                    if operation.Endpoint = Api.authorityGrants.Token then
-                        [ "actorId" ]
-                ]
-            Prefill =
-                [
-                    if caseScoped then
-                        [ "caseReference" ]
-                    match operation.Act with
-                    | Some(ActKind.Case(CaseActKind.Business(BusinessActKind.AmendRegistration | BusinessActKind.Decide))) ->
-                        [ "act"; "values" ]
-                    | Some(ActKind.Case(CaseActKind.Business BusinessActKind.Correct)) ->
-                        for group in Vocabulary.all RecordGroup.vocabulary do
-                            [ "act"; "groups"; RecordGroup.token group; "values" ]
-                    | _ -> ()
-                ]
-            Fixed =
-                match operation.Act with
-                | Some(ActKind.Case(CaseActKind.Business BusinessActKind.Open)) ->
-                    [ [ "expectedRevision" ], BindingValue.Integer 0L ]
-                | _ -> []
-            Presence =
-                match operation.Act with
-                | Some(ActKind.Authority(AuthorityKind.Grant | AuthorityKind.Revoke)) ->
-                    [ [ "act"; "scope"; "kind" ] ]
-                | _ -> []
-            Switches =
-                if operation.Endpoint = Api.caseHistory.Token then
-                    [
-                        [ "detail" ],
-                        (Vocabulary.token HistoryDetails.vocabulary HistoryDetail.Summary,
-                         Vocabulary.token HistoryDetails.vocabulary HistoryDetail.Full)
-                    ]
-                else
-                    []
-            Defaults =
-                if paged then
-                    [ [ "limit" ], BindingValue.Integer(int64 Limits.DefaultPageSize) ]
-                else
-                    []
-            Minted =
-                if operation.Endpoint = Api.operationExecute.Token then
-                    [ [ "operationId" ] ]
-                else
-                    []
+            Name = name
+            Atom = atom
+            Argument = argument
+            Binding =
+                {
+                    Identity = String.concat "." path
+                    Field = targetFor name
+                    Path = path
+                    Kind = kind
+                    Branches = branches
+                    LabelId = inputMessage name "label"
+                    MeaningId = Some(inputMessage name "meaning")
+                    Order = 0
+                    Prefill = prefill
+                    Required = required
+                    Default = defaultValue
+                    DiagnosticTargets = diagnostics name
+                    Source = source operation name
+                }
         }
 
-    let private selected operation =
-        match operation.Act with
-        | Some act ->
-            [
-                ActKinds.token act
-                match act with
-                | ActKind.Case _ -> OperationSubjects.Case
-                | ActKind.Authority _ -> OperationSubjects.Authority
-            ]
-        | None -> []
+    let private named operation technical path kind required =
+        input
+            operation
+            (CatalogInputName.Technical technical)
+            path
+            kind
+            CatalogArgument.Named
+            []
+            required
+            None
+            None
 
-    let private schemaOf operation =
-        (Api.tryFind operation.Endpoint
-         |> Option.defaultWith (fun () -> invalidArg (nameof operation) "Unknown catalog endpoint."))
-            .Accept
-            { new IEndpointVisitor<Map<string, Schema> * Schema> with
-                member _.Visit endpoint =
-                    endpoint.Input.Definitions, endpoint.Input.Schema
-            }
+    let private caseOperand operation =
+        let path = [ Record.key BusinessField.CaseReference ]
 
-    let rec private resolve definitions =
-        function
-        | Schema.Ref name -> resolve definitions (Map.find name definitions)
-        | schema -> schema
+        input
+            operation
+            (CatalogInputName.Field BusinessField.CaseReference)
+            path
+            BindingKind.Text
+            CatalogArgument.Operand
+            []
+            true
+            None
+            (Some path)
 
-    let private exists operation definitions path root =
-        let selected = selected operation
+    let private operationIdentity operation =
+        named operation TechnicalInput.OperationId [ "operationId" ] BindingKind.Text false
 
-        let rec walk path schema =
-            match resolve definitions schema with
-            | _ when List.isEmpty path -> true
-            | Schema.OneOf(cases, Some(_, mapping)) ->
-                match mapping |> List.tryFind (fun (token, _) -> List.contains token selected) with
-                | Some(_, name) -> walk path definitions[name]
-                | None -> cases |> List.exists (walk path)
-            | Schema.Object(properties, _) ->
-                properties
-                |> List.tryFind (fst >> (=) path.Head)
-                |> Option.exists (snd >> walk path.Tail)
-            | _ -> false
-
-        walk path root
-
-    let validateAnnotations operation notes =
-        let definitions, root = schemaOf operation
-
-        let paths =
-            notes.Operands
-            @ notes.Prefill
-            @ notes.Presence
-            @ notes.Minted
-            @ (notes.Fixed |> List.map fst)
-            @ (notes.Switches |> List.map fst)
-            @ (notes.Defaults |> List.map fst)
-
-        let missing =
-            paths
-            |> List.distinct
-            |> List.filter (fun path -> not (exists operation definitions path root))
-
-        if missing.IsEmpty then Ok() else Error missing
-
-    let private nameFor path =
-        match List.rev path with
-        | "kind" :: group :: "groups" :: _ ->
-            CatalogInputName.Group(
-                Vocabulary.tryParse RecordGroup.vocabulary group
-                |> Option.defaultWith (fun () -> invalidOp "Unknown record group in request codec.")
-            )
-        | "kind" :: "scope" :: _ -> CatalogInputName.Technical TechnicalInput.Scope
-        | "detail" :: _ -> CatalogInputName.Technical TechnicalInput.Full
-        | key :: _ ->
-            match Vocabulary.tryParse FieldTable.vocabulary key with
-            | Some field -> CatalogInputName.Field field
-            | None ->
-                CatalogInputName.Technical(
-                    Vocabulary.tryParse TechnicalInputs.vocabulary key
-                    |> Option.defaultWith (fun () ->
-                        invalidOp (
-                            "Unknown catalog input in request codec: " + String.concat "." path
-                        ))
-                )
-        | [] -> invalidOp "A catalog input requires a member path."
-
-    let private construct operation =
-        let notes = annotations operation
-
-        validateAnnotations operation notes
-        |> Result.defaultWith (fun paths ->
-            invalidOp (
-                "Unknown catalog annotation path: "
-                + (paths |> List.map (String.concat ".") |> String.concat ", ")
-            ))
-
-        let definitions, root = schemaOf operation
-        let selected = selected operation
-
-        let argument path =
-            if List.contains path notes.Operands then
-                CatalogArgument.Operand
-            elif List.contains path notes.Presence then
-                CatalogArgument.Implicit
-            else
+    let private values operation group prefix branches prefill =
+        Record.fieldsOf group
+        |> List.map (fun field ->
+            input
+                operation
+                (CatalogInputName.Field field)
+                (prefix @ [ Record.key field ])
+                BindingKind.Text
                 CatalogArgument.Named
+                branches
+                true
+                None
+                (if prefill then
+                     Some [ RecordGroup.token group; Record.key field ]
+                 else
+                     None))
 
-        let binding path branches required kind =
-            let name = nameFor path
-            let switch = notes.Switches |> List.tryFind (fst >> (=) path) |> Option.map snd
+    let private correction operation =
+        Vocabulary.all RecordGroup.vocabulary
+        |> List.collect (fun group ->
+            let prefix = actPath ("groups" :: [ RecordGroup.token group ])
+            let tag = prefix @ [ "kind" ]
+            let choices = CorrectionActions.forGroup group |> List.map CorrectionActions.token
 
-            let defaultValue =
-                notes.Defaults |> List.tryFind (fst >> (=) path) |> Option.map snd
+            let selector =
+                input
+                    operation
+                    (CatalogInputName.Group group)
+                    tag
+                    (BindingKind.Group choices)
+                    CatalogArgument.Named
+                    []
+                    true
+                    None
+                    None
 
-            let atom =
-                match switch, kind with
-                | Some(off, on), _ -> CatalogAtom.Switch(off, on)
-                | _, BindingKind.Integer -> CatalogAtom.Integer
-                | _, BindingKind.Boolean -> CatalogAtom.Boolean
-                | _, (BindingKind.Group values | BindingKind.Choice values) ->
-                    CatalogAtom.Choice values
-                | _ -> CatalogAtom.Text
-
-            let prefill =
-                match name with
-                | CatalogInputName.Field field when
-                    notes.Prefill
-                    |> List.exists (fun prefix -> List.truncate prefix.Length path = prefix)
-                    ->
-                    let row = FieldTable.forField field
-
-                    Some(
-                        match row.Placement with
-                        | FieldPlacement.TopLevel -> [ row.Key ]
-                        | FieldPlacement.Grouped group -> [ RecordGroup.token group; row.Key ]
-                    )
-                | _ -> None
-
-            {
-                Name = name
-                Atom = atom
-                Argument = argument path
-                Binding =
+            selector
+            :: values
+                operation
+                group
+                (prefix @ [ "values" ])
+                [
                     {
-                        Identity = String.concat "." path
-                        Field = targetFor name
-                        Path = path
-                        Kind = kind
-                        Branches = branches
-                        LabelId = inputMessage name "label"
-                        MeaningId = Some(inputMessage name "meaning")
-                        Order = 0
-                        Prefill = prefill
-                        Required =
-                            required
-                            && defaultValue.IsNone
-                            && switch.IsNone
-                            && not (List.contains path notes.Minted)
-                            && not (List.contains path notes.Presence)
-                        Default = defaultValue
-                        DiagnosticTargets = diagnostics name
-                        Source = source operation name
+                        Path = tag
+                        Value = CorrectionActions.token CorrectionGroupAction.Replace
                     }
-            }
+                ]
+                true)
 
-        let constant path branches value =
-            {
-                Path = path
-                Value = value
-                Branches = branches
-            }
+    let caseInputs operation (declaration: CaseActDeclaration) =
+        let payload =
+            match declaration.Payload with
+            | CasePayload.NoPayload _ -> []
+            | CasePayload.Registration shape ->
+                values operation RecordGroup.Registration (actPath [ "values" ]) [] shape.Prefill
+            | CasePayload.Decision shape ->
+                values operation RecordGroup.Decision (actPath [ "values" ]) [] shape.Prefill
+            | CasePayload.Payment shape ->
+                values operation RecordGroup.Payment (actPath [ "values" ]) [] shape.Prefill
+            | CasePayload.Reason _ ->
+                [
+                    named
+                        operation
+                        TechnicalInput.Reason
+                        (actPath [ "reason" ])
+                        BindingKind.Text
+                        true
+                ]
+            | CasePayload.Correction _ -> correction operation
 
-        let combine values =
-            values |> List.fold (fun (i, c) (i2, c2) -> i @ i2, c @ c2) ([], [])
+        let revision =
+            match declaration.RevisionMode with
+            | RevisionInput.New -> []
+            | RevisionInput.Expected ->
+                [
+                    named
+                        operation
+                        TechnicalInput.ExpectedRevision
+                        [ "expectedRevision" ]
+                        BindingKind.Integer
+                        true
+                ]
 
-        let rec walk path branches required schema =
-            match resolve definitions schema with
-            | Schema.Object(properties, optional) ->
-                properties
-                |> List.map (fun (name, child) ->
-                    walk
-                        (path @ [ name ])
-                        branches
-                        (required && not (List.contains name optional))
-                        child)
-                |> combine
-            | Schema.OneOf(_, Some(tag, mapping)) ->
-                let tagPath = path @ [ tag ]
+        let constants =
+            [
+                yield
+                    {
+                        Path = [ "kind" ]
+                        Value = BindingValue.Text OperationSubjects.Case
+                        Branches = []
+                    }
+                match declaration.RevisionMode with
+                | RevisionInput.New ->
+                    yield
+                        {
+                            Path = [ "expectedRevision" ]
+                            Value = BindingValue.Integer 0L
+                            Branches = []
+                        }
+                | RevisionInput.Expected -> ()
+                yield
+                    {
+                        Path = actPath [ "kind" ]
+                        Value = BindingValue.Text(CaseActKinds.token declaration.Kind)
+                        Branches = []
+                    }
+            ]
 
-                match mapping |> List.tryFind (fun (token, _) -> List.contains token selected) with
-                | Some(token, name) ->
-                    let inputs, constants = variant path branches required tag definitions[name]
-                    inputs, constant tagPath branches (BindingValue.Text token) :: constants
-                | None ->
-                    let selector =
-                        binding tagPath branches required (BindingKind.Group(List.map fst mapping))
+        operationIdentity operation :: caseOperand operation :: (revision @ payload), constants
 
-                    let inputs, constants =
-                        mapping
-                        |> List.map (fun (token, name) ->
-                            variant
-                                path
-                                (branches @ [ { Path = tagPath; Value = token } ])
-                                required
-                                tag
-                                definitions[name])
-                        |> combine
+    let private authorityInputs operation (declaration: AuthorityActDeclaration) =
+        let target =
+            [
+                named
+                    operation
+                    TechnicalInput.PrincipalKind
+                    [ "target"; "kind" ]
+                    (BindingKind.Choice PrincipalKinds.all)
+                    true
+                named operation TechnicalInput.Issuer [ "target"; "issuer" ] BindingKind.Text true
+                named operation TechnicalInput.Subject [ "target"; "subject" ] BindingKind.Text true
+            ]
 
-                    selector :: inputs, constants
-            | leaf ->
-                match notes.Fixed |> List.tryFind (fst >> (=) path), leaf with
-                | Some(_, value), _ -> [], [ constant path branches value ]
-                | None, Schema.Const value ->
-                    [], [ constant path branches (BindingValue.Text value) ]
-                | None, _ ->
-                    let kind =
-                        match leaf with
-                        | Schema.Integer _ -> BindingKind.Integer
-                        | Schema.Boolean -> BindingKind.Boolean
-                        | Schema.String _ -> BindingKind.Text
-                        | Schema.OneOf(values, None) ->
-                            BindingKind.Choice(
-                                values
-                                |> List.map (function
-                                    | Schema.Const value -> value
-                                    | _ ->
-                                        invalidOp "A catalog choice must contain string constants.")
-                            )
-                        | _ ->
-                            invalidOp (
-                                "Unsupported catalog input schema: " + String.concat "." path
-                            )
+        let grant =
+            match declaration.Payload with
+            | AuthorityPayload.Target _ -> []
+            | AuthorityPayload.Grant _ ->
+                let scope = actPath ("scope" :: [ "kind" ])
 
-                    [ binding path branches required kind ], []
+                [
+                    named
+                        operation
+                        TechnicalInput.Role
+                        (actPath [ "role" ])
+                        (BindingKind.Choice(RoleTokens.all |> List.map RoleTokens.token))
+                        true
+                    input
+                        operation
+                        (CatalogInputName.Technical TechnicalInput.Scope)
+                        scope
+                        (BindingKind.Group [ "INSTALLATION"; "CASE" ])
+                        CatalogArgument.Implicit
+                        []
+                        false
+                        None
+                        None
+                    input
+                        operation
+                        (CatalogInputName.Field BusinessField.CaseReference)
+                        (actPath ("scope" :: [ Record.key BusinessField.CaseReference ]))
+                        BindingKind.Text
+                        CatalogArgument.Named
+                        [ { Path = scope; Value = "CASE" } ]
+                        true
+                        None
+                        None
+                ]
 
-        and variant path branches required tag schema =
-            match resolve definitions schema with
-            | Schema.Object(properties, optional) ->
-                walk
-                    path
-                    branches
-                    required
-                    (Schema.Object(properties |> List.filter (fst >> (<>) tag), optional))
-            | _ -> invalidOp "A tagged request branch must be an object."
+        let constants =
+            [
+                {
+                    Path = [ "kind" ]
+                    Value = BindingValue.Text OperationSubjects.Authority
+                    Branches = []
+                }
+                {
+                    Path = actPath [ "kind" ]
+                    Value = BindingValue.Text(AuthorityKinds.token declaration.Kind)
+                    Branches = []
+                }
+            ]
 
-        let inputs, constants = walk [] [] true root
+        operationIdentity operation :: (target @ grant), constants
+
+    let private readInputs operation (declaration: ReadDeclaration) =
+        let operand technical path =
+            input
+                operation
+                (CatalogInputName.Technical technical)
+                path
+                BindingKind.Text
+                CatalogArgument.Operand
+                []
+                true
+                None
+                None
+
+        declaration.Inputs
+        |> List.collect (function
+            | ReadInput.CaseOperand -> [ caseOperand operation ]
+            | ReadInput.OperationOperand -> [ operand TechnicalInput.OperationId [ "operationId" ] ]
+            | ReadInput.ActorOperand -> [ operand TechnicalInput.ActorId [ "actorId" ] ]
+            | ReadInput.Detail ->
+                let off, on =
+                    Vocabulary.token HistoryDetails.vocabulary HistoryDetail.Summary,
+                    Vocabulary.token HistoryDetails.vocabulary HistoryDetail.Full
+
+                let binding =
+                    named
+                        operation
+                        TechnicalInput.Full
+                        [ "detail" ]
+                        (BindingKind.Choice [ off; on ])
+                        false
+
+                [
+                    { binding with
+                        Atom = CatalogAtom.Switch(off, on)
+                    }
+                ]
+            | ReadInput.Page ->
+                [
+                    named operation TechnicalInput.Cursor [ "cursor" ] BindingKind.Text false
+                    input
+                        operation
+                        (CatalogInputName.Technical TechnicalInput.Limit)
+                        [ "limit" ]
+                        BindingKind.Integer
+                        CatalogArgument.Named
+                        []
+                        false
+                        (Some(BindingValue.Integer(int64 Limits.DefaultPageSize)))
+                        None
+                ]),
+        []
+
+    let private construct operation declaration =
+        let inputs, constants =
+            match declaration with
+            | Case declaration -> caseInputs operation declaration
+            | Authority declaration -> authorityInputs operation declaration
+            | Read declaration -> readInputs operation declaration
 
         inputs
         |> List.mapi (fun order input ->
@@ -545,7 +502,9 @@ module OperationCatalog =
         constants
 
     let private derived =
-        all |> List.map (fun operation -> operation, construct operation) |> Map.ofList
+        declarations
+        |> List.map (fun (operation, declaration) -> operation, construct operation declaration)
+        |> Map.ofList
 
     let derive operation = Map.find operation derived
 

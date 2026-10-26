@@ -47,20 +47,20 @@ module internal TextReply =
 
     let private fieldLines language fields =
         let rows placement =
-            FieldTable.rows
-            |> List.filter (fun row -> row.Placement = placement)
+            Record.fields
+            |> List.filter (fun row -> row.Group = placement)
             |> List.map (fun row ->
                 line
                     language
-                    (FieldTable.labelId row.Field)
-                    (displayed language (row.AcceptedValue fields)))
+                    (RecordFields.labelId row.Field)
+                    (displayed language (RecordFields.value fields row.Field)))
 
-        rows FieldPlacement.TopLevel
+        rows None
         @ (Vocabulary.all RecordGroup.vocabulary
            |> List.collect (fun group ->
                (label language (Vocabulary.messageKey RecordGroup.vocabulary group "label")
                 + ":")
-               :: rows (FieldPlacement.Grouped group)))
+               :: rows (Some group)))
 
     let private offerAct =
         function
@@ -72,7 +72,7 @@ module internal TextReply =
         [
             line
                 language
-                (FieldTable.labelId BusinessField.CaseReference)
+                (RecordFields.labelId BusinessField.CaseReference)
                 (CaseReference.format value.Snapshot.Reference)
             line
                 language
@@ -269,10 +269,13 @@ module internal TextReply =
 
                 let after = CaseState.fields value.Proposed.State
 
-                FieldTable.rows
+                Record.fields
                 |> List.choose (fun row ->
-                    let previous = before |> Option.bind row.AcceptedValue
-                    let next = after |> Option.bind row.AcceptedValue
+                    let previous =
+                        before |> Option.bind (fun fields -> RecordFields.value fields row.Field)
+
+                    let next =
+                        after |> Option.bind (fun fields -> RecordFields.value fields row.Field)
 
                     if previous = next then
                         None
@@ -280,7 +283,7 @@ module internal TextReply =
                         Some(
                             line
                                 language
-                                (FieldTable.labelId row.Field)
+                                (RecordFields.labelId row.Field)
                                 (displayed language previous + " → " + displayed language next)
                         ))
 
@@ -289,7 +292,7 @@ module internal TextReply =
 
     let private diagnosticTargetIdentity =
         function
-        | InputTarget.Field field -> FieldTable.labelId field
+        | InputTarget.Field field -> RecordFields.labelId field
         | InputTarget.OperationId -> ContractDiscovery.inputLabel "operationId"
         | InputTarget.ExpectedRevision -> ContractDiscovery.inputLabel "expectedRevision"
         | InputTarget.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group "label"

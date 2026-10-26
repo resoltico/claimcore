@@ -1,4 +1,4 @@
-module ClaimCore.IntegrationTests.FieldTableTests
+module ClaimCore.IntegrationTests.ProjectionSchemaTests
 
 open ClaimCore.TestSupport
 
@@ -21,7 +21,7 @@ let private column (key: string) =
     |> String
 
 let private expected =
-    FieldTable.rows
+    Record.fields
     |> List.map (fun row -> column row.Key)
     |> Set.ofList
     |> Set.union (set [ "case_id"; "revision"; "state" ])
@@ -74,5 +74,5 @@ let private projection () =
 [<Tests>]
 let tests =
     testCaseAsync
-        "[CC-DOM-001] SQL column coverage follows the field table and rejects extras"
+        "[CC-DOM-001] SQL column coverage follows the record declaration and rejects extras"
         (projection ())

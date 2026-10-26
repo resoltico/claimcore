@@ -1,4 +1,4 @@
-module ClaimCore.Tests.FieldTableTests
+module ClaimCore.Tests.RecordDeclarationTests
 
 open ClaimCore.ContractGeneration
 
@@ -13,9 +13,7 @@ open ClaimCore.Domain
 open ClaimCore.TestSupport
 
 let private keys group =
-    FieldTable.rows
-    |> List.filter (fun row -> row.Placement = group)
-    |> List.map _.Key
+    Record.fields |> List.filter (fun row -> row.Group = group) |> List.map _.Key
 
 let rec private members definitions =
     function
@@ -28,12 +26,12 @@ let private expectGroup group (codec: Codec<'T>) =
     Expect.equal
         (members codec.Definitions codec.Schema)
         (keys group)
-        "Codec members follow the field table"
+        "Codec members follow the record declaration"
 
 let private codecs () =
-    expectGroup (FieldPlacement.Grouped RecordGroup.Registration) RequestCodecs.registration
-    expectGroup (FieldPlacement.Grouped RecordGroup.Decision) RequestCodecs.decision
-    expectGroup (FieldPlacement.Grouped RecordGroup.Payment) RequestCodecs.payment
+    expectGroup (Some RecordGroup.Registration) RequestCodecs.registration
+    expectGroup (Some RecordGroup.Decision) RequestCodecs.decision
+    expectGroup (Some RecordGroup.Payment) RequestCodecs.payment
 
     let actual =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema
@@ -48,14 +46,14 @@ let private codecs () =
 
     for group, name in
         [
-            (FieldPlacement.Grouped RecordGroup.Registration), "registration"
-            (FieldPlacement.Grouped RecordGroup.Decision), "decision"
-            (FieldPlacement.Grouped RecordGroup.Payment), "payment"
+            (Some RecordGroup.Registration), "registration"
+            (Some RecordGroup.Decision), "decision"
+            (Some RecordGroup.Payment), "payment"
         ] do
         Expect.equal
             (members ResponseCodecs.caseFields.Definitions properties[name])
             (keys group)
-            "Group members follow the authoritative field table"
+            "Group members follow the authoritative record declaration"
 
     let renamed =
         actual
@@ -64,7 +62,7 @@ let private codecs () =
     Expect.notEqual renamed expected "A renamed group is detectable"
 
 let private domain () =
-    let fields = FieldTable.rows |> List.map _.Field
+    let fields = Record.fields |> List.map _.Field
     Expect.equal (Set.ofList fields |> Set.count) fields.Length "No repeated field rows"
 
     Expect.equal
@@ -76,8 +74,7 @@ let private domain () =
          |> Set.ofArray)
         "Every business field has a table row"
 
-    let retained =
-        FieldTable.rows |> List.filter _.RetainedOnErasure |> List.map _.Field
+    let retained = Record.fields |> List.filter _.RetainedOnErasure |> List.map _.Field
 
     Expect.equal retained [ BusinessField.CaseReference ] "Only the reference survives erasure"
 
@@ -95,8 +92,8 @@ let private diagnosticGroups () =
 
 let private actGroups () =
     let expected group =
-        FieldTable.rows
-        |> List.filter (fun row -> row.Placement = FieldPlacement.Grouped group)
+        Record.fields
+        |> List.filter (fun row -> row.Group = Some group)
         |> List.map _.Field
 
     let entry kind =
@@ -120,7 +117,7 @@ let private actGroups () =
         Expect.equal
             (fields (entry kind).Inputs)
             (expected group)
-            "Schema-derived act fields retain the authoritative order"
+            "Declared act fields retain the authoritative order"
 
     for group in Vocabulary.all RecordGroup.vocabulary do
         let inputs =
@@ -141,8 +138,8 @@ let private locales () =
         use document =
             JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, language + ".json")))
 
-        for row in FieldTable.rows do
-            for key in [ FieldTable.labelId row.Field; FieldTable.meaningId row.Field ] do
+        for row in Record.fields do
+            for key in [ RecordFields.labelId row.Field; RecordFields.meaningId row.Field ] do
                 Expect.isTrue
                     (document.RootElement.TryGetProperty key |> fst)
                     "Locale has both field messages"
@@ -150,7 +147,7 @@ let private locales () =
 [<Tests>]
 let tests =
     testList
-        "authoritative field table"
+        "authoritative record declaration"
         [
             testCase "diagnostic groups admit only produced targets" diagnosticGroups
             testCase "codecs and snapshot agree" codecs

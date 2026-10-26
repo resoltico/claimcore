@@ -242,6 +242,30 @@ let private projectionRow id : objnull array =
     |]
 
 
+// This header is authored independently of the production declaration and SQL builder.
+let private namedProjectionRow values =
+    let names =
+        [|
+            "case_id"
+            "case_reference"
+            "revision"
+            "state"
+            "incident_date"
+            "incident_notification_date"
+            "incident_country"
+            "claimant_name"
+            "insurer_name"
+            "claimed_amount"
+            "claimed_currency"
+            "payment_decision_date"
+            "payable_amount"
+            "payable_currency"
+            "payment_date"
+            "status"
+        |]
+
+    Array.zip names (Array.map nonNull values) |> Map.ofArray
+
 let private projectionBindings () =
     let fields = projectionFields
 
@@ -258,7 +282,7 @@ let private projectionBindings () =
     let row = projectionRow id
 
     Expect.equal
-        (Projections.caseRow (Array.map nonNull row))
+        (Projections.caseRow (namedProjectionRow row))
         { CaseId = id; Snapshot = snapshot }
         "Every decoded field has its own value"
 
@@ -290,7 +314,7 @@ let private projectionBindings () =
     swapped[8] <- row[7]
 
     Expect.notEqual
-        (Projections.caseRow (Array.map nonNull swapped)).Snapshot
+        (Projections.caseRow (namedProjectionRow swapped)).Snapshot
         snapshot
         "Swapped text bindings are observable"
 

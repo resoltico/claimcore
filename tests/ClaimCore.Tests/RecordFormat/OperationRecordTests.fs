@@ -75,19 +75,19 @@ let private authorityProperty =
         let! action =
             Gen.item
                 [
-                    RecordedAuthorityAct.Operation(ClaimCore.Contract.AuthorityAct.Register)
+                    RecordedAuthorityAct.Operation(ClaimCore.Domain.AuthorityAct.Register)
                     RecordedAuthorityAct.Operation(
                         (if active then
-                             ClaimCore.Contract.AuthorityAct.Grant
+                             ClaimCore.Domain.AuthorityAct.Grant
                          else
-                             ClaimCore.Contract.AuthorityAct.Revoke)
+                             ClaimCore.Domain.AuthorityAct.Revoke)
                             { Role = role; Scope = scope }
                     )
                     RecordedAuthorityAct.Operation(
                         (if active then
-                             ClaimCore.Contract.AuthorityAct.Enable
+                             ClaimCore.Domain.AuthorityAct.Enable
                          else
-                             ClaimCore.Contract.AuthorityAct.Disable)
+                             ClaimCore.Domain.AuthorityAct.Disable)
                     )
                 ]
 
@@ -111,7 +111,7 @@ let private decoderProperty =
             steward (UnvalidatedCaseAct.Void "Reason") |> CaseFixtures.encode
             authority (
                 RecordedAuthorityAct.Operation(
-                    ClaimCore.Contract.AuthorityAct.Grant
+                    ClaimCore.Domain.AuthorityAct.Grant
                         {
                             Role = "CASE_HANDLER"
                             Scope = GrantTarget.Installation
@@ -170,7 +170,7 @@ let private strictRecords () =
     let grant =
         authority (
             RecordedAuthorityAct.Operation(
-                ClaimCore.Contract.AuthorityAct.Grant
+                ClaimCore.Domain.AuthorityAct.Grant
                     {
                         Role = "CASE_HANDLER"
                         Scope = GrantTarget.Installation
@@ -215,7 +215,7 @@ let tests =
 
                 Expect.equal
                     (authority (
-                        RecordedAuthorityAct.Operation(ClaimCore.Contract.AuthorityAct.Register)
+                        RecordedAuthorityAct.Operation(ClaimCore.Domain.AuthorityAct.Register)
                      )
                      |> AuthorityRecord.encode
                      |> Encoding.UTF8.GetString)

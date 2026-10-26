@@ -33,6 +33,13 @@ module internal DatabaseSession =
             return! statement.ExecuteNonQueryAsync(token)
         }
 
+    let row (reader: NpgsqlDataReader) =
+        Array.init reader.FieldCount reader.GetValue
+
+    let namedRow (reader: NpgsqlDataReader) =
+        Array.init reader.FieldCount (fun index -> reader.GetName index, reader.GetValue index)
+        |> Map.ofArray
+
     let rows connection sql parameters (token: CancellationToken) =
         task {
             use statement = statement connection sql parameters
@@ -43,15 +50,38 @@ module internal DatabaseSession =
             while reading do
                 let! found = reader.ReadAsync(token)
 
+                if found then rows.Add(row reader) else reading <- false
+
+            return List.ofSeq rows
+        }
+
+    let namedRows connection sql parameters (token: CancellationToken) =
+        task {
+            use statement = statement connection sql parameters
+            use! reader = statement.ExecuteReaderAsync(token)
+            let rows = ResizeArray<Map<string, obj>>()
+            let mutable reading = true
+
+            while reading do
+                let! found = reader.ReadAsync(token)
+
                 if found then
-                    let row = Array.zeroCreate<obj> reader.FieldCount
-                    reader.GetValues(row) |> ignore
-                    rows.Add row
+                    rows.Add(namedRow reader)
                 else
                     reading <- false
 
             return List.ofSeq rows
         }
+
+    let namedValue<'T> name (row: Map<string, obj>) =
+        match Map.tryFind name row with
+        | Some(:? 'T as value) -> value
+        | _ -> raise (RecordCorruptException "Invalid stored column type or name.")
+
+    let namedOptional<'T> name (row: Map<string, obj>) =
+        match Map.tryFind name row with
+        | Some value when Convert.IsDBNull value -> None
+        | _ -> Some(namedValue<'T> name row)
 
     let value<'T> index (row: obj array) =
         match row[index] with
@@ -79,8 +109,7 @@ module internal DatabaseSession =
     let instantExpression column =
         $"CASE WHEN NOT isfinite({column}) THEN 'invalid' ELSE to_char({column} AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\" AD') END"
 
-    let calendarDate index row =
-        let text = value<string> index row
+    let private parsedCalendarDate (text: string) =
 
         match
             DateOnly.TryParseExact(
@@ -96,6 +125,12 @@ module internal DatabaseSession =
             ->
             parsed
         | _ -> raise (RecordCorruptException "Invalid stored calendar date.")
+
+    let calendarDate index row =
+        parsedCalendarDate (value<string> index row)
+
+    let namedCalendarDate name row =
+        parsedCalendarDate (namedValue<string> name row)
 
     let recordedInstant index row =
         let text = value<string> index row

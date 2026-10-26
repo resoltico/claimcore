@@ -5,6 +5,7 @@
     <Compile Include="BuildIdentity.fsi" />
     <Compile Include="BuildIdentity.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
+    <Compile Include="RecordFields.fs" />
     <Compile Include="Vocabulary/FaultDiagnosticIds.fs" />
     <Compile Include="Refusals/Faults.fs" />
     <Compile Include="Localization/LocalizationPolicy.fs" />
@@ -18,9 +19,7 @@
     <Compile Include="Model/Advice.fs" />
     <Compile Include="Model/Receipts.fs" />
     <Compile Include="Model/History.fs" />
-    <Compile Include="Model/Queries.fs" />
     <Compile Include="Model/CasePages.fs" />
-    <Compile Include="Model/AuthorityModel.fs" />
     <Compile Include="Model/AuthorityPages.fs" />
     <Compile Include="Model/Replies.fs" />
     <Compile Include="Model/Operations.fs" />

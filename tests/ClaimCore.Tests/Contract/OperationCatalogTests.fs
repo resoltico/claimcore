@@ -47,58 +47,100 @@ let tests =
                     |> Set.ofList
 
                 Expect.equal actual expected "Session bootstrap and logout belong to the host")
-            testCase "annotation paths exist in their selected endpoint and act" (fun () ->
-                for operation in OperationCatalog.all do
+            testCase "typed payload declarations select only their own fields" (fun () ->
+                let fields kind =
+                    let operation = find [ "case"; kind ]
+                    let inputs, _ = OperationCatalog.derive operation
+
+                    inputs
+                    |> List.choose (fun input ->
+                        match input.Name with
+                        | CatalogInputName.Field field when field <> BusinessField.CaseReference ->
+                            Some(Record.key field)
+                        | _ -> None)
+
+                Expect.equal
+                    (fields "open")
+                    [
+                        "incidentDate"
+                        "incidentNotificationDate"
+                        "incidentCountry"
+                        "claimantName"
+                        "insurerName"
+                        "claimedAmount"
+                        "claimedCurrency"
+                    ]
+                    "Opening is the registration group"
+
+                Expect.equal (fields "void") [] "A reason act cannot borrow registration values")
+            testCase "declared prefill has a wrong-value negative control" (fun () ->
+                let original =
+                    Record.caseActs
+                    |> List.find (fun item ->
+                        item.Kind = CaseActKind.Business BusinessActKind.Decide)
+
+                let operation = find [ "case"; "decide" ]
+
+                let check declaration =
+                    let inputs, _ = OperationCatalog.caseInputs operation declaration
+
+                    let date =
+                        inputs
+                        |> List.find (fun input ->
+                            input.Name = CatalogInputName.Field BusinessField.PaymentDecisionDate)
+
                     Expect.equal
-                        (OperationCatalog.validateAnnotations
-                            operation
-                            (OperationCatalog.annotations operation))
-                        (Ok())
-                        "The annotation names a real selected path")
-            testCase "a missing annotation path is rejected with a positive control" (fun () ->
-                let original = find [ "case"; "open" ]
-                let notes = OperationCatalog.annotations original
+                        date.Binding.Prefill
+                        (Some [ "decision"; "paymentDecisionDate" ])
+                        "Decision values prefill from the accepted decision"
 
-                Expect.equal
-                    (OperationCatalog.validateAnnotations original notes)
-                    (Ok())
-                    "Positive control"
+                check original
 
-                let bad =
-                    { notes with
-                        Operands = [ [ "missingMember" ] ] @ notes.Operands
-                    }
+                let wrong =
+                    match original.Payload with
+                    | CasePayload.Decision shape ->
+                        { original with
+                            Payload = CasePayload.Decision { shape with Prefill = false }
+                        }
+                    | _ -> failtest "The DECIDE declaration must carry decision values"
 
-                Expect.equal
-                    (OperationCatalog.validateAnnotations original bad)
-                    (Error [ [ "missingMember" ] ])
-                    "The negative control is detected")
+                Expect.throws (fun () -> check wrong) "A wrong prefill declaration is detected")
             testCase
-                "annotation validation selects the act rather than another union branch"
+                "new-case revision is a constant with an existing-case negative control"
                 (fun () ->
-                    let opened = find [ "case"; "open" ]
-                    let voided = find [ "case"; "void" ]
-                    let path = [ "act"; "values" ]
+                    let original =
+                        Record.caseActs
+                        |> List.find (fun item ->
+                            item.Kind = CaseActKind.Business BusinessActKind.Open)
 
-                    let opening =
-                        { OperationCatalog.annotations opened with
-                            Prefill = [ path ]
-                        }
+                    let operation = find [ "case"; "open" ]
 
-                    let voiding =
-                        { OperationCatalog.annotations voided with
-                            Prefill = [ path ]
-                        }
+                    let check declaration =
+                        let inputs, constants = OperationCatalog.caseInputs operation declaration
 
-                    Expect.equal
-                        (OperationCatalog.validateAnnotations opened opening)
-                        (Ok())
-                        "OPEN has values"
+                        Expect.isFalse
+                            (inputs
+                             |> List.exists (fun input ->
+                                 input.Name =
+                                     CatalogInputName.Technical TechnicalInput.ExpectedRevision))
+                            "Opening has no authored revision flag"
 
-                    Expect.equal
-                        (OperationCatalog.validateAnnotations voided voiding)
-                        (Error [ path ])
-                        "VOID cannot borrow OPEN's values")
+                        Expect.isTrue
+                            (constants
+                             |> List.exists (fun item ->
+                                 item.Path = [ "expectedRevision" ]
+                                 && item.Value = BindingValue.Integer 0L))
+                            "Opening fixes revision zero"
+
+                    check original
+
+                    Expect.throws
+                        (fun () ->
+                            check
+                                { original with
+                                    RevisionMode = RevisionInput.Expected
+                                })
+                        "An existing-case revision declaration is detected")
             testCase
                 "every entry and input has authored labels and meanings in all languages"
                 (fun () ->

@@ -12,7 +12,7 @@
     <Compile Include="SessionCapRace.fs" />
     <Compile Include="SessionHosts.fs" />
     <Compile Include="SessionTests.fs" />
-    <Compile Include="FieldTableTests.fs" />
+    <Compile Include="ProjectionSchemaTests.fs" />
     <Compile Include="FixtureDisposalTests.fs" />
     <Compile Include="PostgresReadinessTests.fs" />
     <Compile Include="StoreTests.fs" />

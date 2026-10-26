@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 [<NoEquality; NoComparison>]
 type Handler<'Input, 'Output> =

@@ -9,7 +9,7 @@ open ClaimCore.Application.VerificationChecks
 
 /// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
-    type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
+    type private SharedAuthorityAct = ClaimCore.Domain.AuthorityAct
 
     let private ownerGrant: ActorGrant =
         {

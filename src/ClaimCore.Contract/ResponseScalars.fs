@@ -64,7 +64,7 @@ module ResponseScalars =
     let countryCode = parsed CountryCode.parse CountryCode.format country
     let partyName = parsed PartyName.parse PartyName.format nonempty
 
-    let businessField = Vocabulary.tokens FieldTable.vocabulary |> tokens
+    let businessField = Vocabulary.tokens RecordFields.vocabulary |> tokens
 
     let capability = Capabilities.all |> List.map Capabilities.token |> tokens
 

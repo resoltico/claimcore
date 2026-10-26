@@ -94,7 +94,7 @@ module internal ReadOperations =
                         |> List.toArray
 
                     let! rows =
-                        DatabaseSession.rows
+                        DatabaseSession.namedRows
                             connection
                             ($"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE ($1::text IS NULL OR upper(case_reference COLLATE \"C\") > $1 COLLATE \"C\") AND ($2 OR c.case_id IN (SELECT g.case_id FROM claimcore.grants g WHERE g.actor_id=$3 AND g.role=ANY($4::text[]) AND g.case_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=g.actor_id AND bad.case_id=g.case_id AND bad.role=ANY($5::text[])))) ORDER BY upper(case_reference COLLATE \"C\") LIMIT $6")
                             [|

@@ -33,7 +33,7 @@
     <Compile Include="Domain/DomainValidationTests.fs" />
     <Compile Include="Application/AvailabilityTests.fs" />
     <Compile Include="Domain/ScalarRuleTests.fs" />
-    <Compile Include="Contract/FieldTableTests.fs" />
+    <Compile Include="Contract/RecordDeclarationTests.fs" />
     <Compile Include="Domain/StewardshipTests.fs" />
     <Compile Include="RecordFormat/CanonicalJsonTests.fs" />
     <Compile Include="RecordFormat/CanonicalRecordTests.fs" />

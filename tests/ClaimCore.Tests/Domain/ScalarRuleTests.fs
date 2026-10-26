@@ -10,7 +10,7 @@ open System
 open Expecto
 open ClaimCore.Domain
 
-let private scalar name = (FieldTable.forField name).Scalar
+let private scalar name = RecordFields.descriptor name
 
 let private expectText name maximum =
     match scalar name with
@@ -19,7 +19,7 @@ let private expectText name maximum =
         Expect.isNone constraints.Format.Grammar "Business text has no admission grammar"
 
         Expect.equal constraints.MaximumCharacters (Some maximum) "Text character bound"
-    | _ -> failtest (FieldTable.key name + " must be a text scalar.")
+    | _ -> failtest (Record.key name + " must be a text scalar.")
 
 let private textAndDateRuleTests =
     testList
@@ -57,7 +57,7 @@ let private textAndDateRuleTests =
                         Expect.equal rule.ExactFormat "yyyy-MM-dd" "Exact format"
                         Expect.equal rule.Minimum DateOnly.MinValue "Lower bound"
                         Expect.equal rule.Maximum DateOnly.MaxValue "Upper bound"
-                    | _ -> failtest (FieldTable.key name + " must be a calendar-date scalar."))
+                    | _ -> failtest (Record.key name + " must be a calendar-date scalar."))
         ]
 
 let private numericAndStatusRuleTests =
@@ -77,7 +77,7 @@ let private numericAndStatusRuleTests =
                         Expect.equal rule.Grammar "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?" "Grammar"
                         Expect.equal rule.MaximumIntegerDigits 18 "Whole-digit bound"
                         Expect.equal rule.MaximumFractionalDigits 4 "Fractional-digit bound"
-                    | _ -> failtest (FieldTable.key name + " must be an amount scalar.")
+                    | _ -> failtest (Record.key name + " must be an amount scalar.")
 
                 for name in [ BusinessField.ClaimedCurrency; BusinessField.PayableCurrency ] do
                     match scalar name with
@@ -93,7 +93,7 @@ let private numericAndStatusRuleTests =
 
                         Expect.equal rule.Grammar "[A-Z]{3}" "Grammar"
                         Expect.equal rule.ExactCharacters 3 "Exact length"
-                    | _ -> failtest (FieldTable.key name + " must be a currency scalar."))
+                    | _ -> failtest (Record.key name + " must be a currency scalar."))
             testCase "case status admits only opened and closed" (fun () ->
                 match scalar BusinessField.Status with
                 | ScalarRule.CaseStatus rule ->

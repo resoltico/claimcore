@@ -34,54 +34,11 @@ type HostEndpoint =
     | Session
     | Logout
 
-[<RequireQualifiedAccess>]
-type ActorEndpoint =
-    | Preview
-    | Execute
-    | CaseGet
-    | CaseList
-    | CaseHistory
-    | Observe
-    | Resolve
-    | AuthorityList
-    | AuthorityGrants
-    | Context
-
 module HostEndpoints =
     let vocabulary =
         Vocabulary.define "endpoint" [ HostEndpoint.Session; HostEndpoint.Logout ] (function
             | HostEndpoint.Session -> "session"
             | HostEndpoint.Logout -> "session.logout")
-
-    let all = Vocabulary.all vocabulary
-
-module ActorEndpoints =
-    let vocabulary =
-        Vocabulary.define
-            "endpoint"
-            [
-                ActorEndpoint.Preview
-                ActorEndpoint.Execute
-                ActorEndpoint.CaseGet
-                ActorEndpoint.CaseList
-                ActorEndpoint.CaseHistory
-                ActorEndpoint.Observe
-                ActorEndpoint.Resolve
-                ActorEndpoint.AuthorityList
-                ActorEndpoint.AuthorityGrants
-                ActorEndpoint.Context
-            ]
-            (function
-             | ActorEndpoint.Preview -> "operation.preview"
-             | ActorEndpoint.Execute -> "operation.execute"
-             | ActorEndpoint.CaseGet -> "case.get"
-             | ActorEndpoint.CaseList -> "case.list"
-             | ActorEndpoint.CaseHistory -> "case.history"
-             | ActorEndpoint.Observe -> "operation.observe"
-             | ActorEndpoint.Resolve -> "operation.resolve"
-             | ActorEndpoint.AuthorityList -> "authority.list"
-             | ActorEndpoint.AuthorityGrants -> "authority.grants"
-             | ActorEndpoint.Context -> "context")
 
     let all = Vocabulary.all vocabulary
 

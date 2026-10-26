@@ -139,7 +139,7 @@ module ResponseCodecs =
                 State = view
             })
         : Fields<CaseSnapshot, _>)
-        |> field (FieldTable.key BusinessField.CaseReference) _.Reference caseReference
+        |> field (Record.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision sequence
         |> field "state" _.State caseState
         |> build
@@ -247,7 +247,7 @@ module ResponseCodecs =
                 Advice = advice
             })
         : Fields<CaseReadModel, _>)
-        |> field (FieldTable.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
+        |> field (Record.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
         |> field "revision" _.Snapshot.Revision sequence
         |> field "state" _.Snapshot.State caseState
         |> field "advice" _.Advice caseAdvice
@@ -361,7 +361,7 @@ module ResponseCodecs =
                 After = after
             })
         : Fields<FieldDiff, _>)
-        |> field "field" _.FieldName (enumeration (Vocabulary.entries FieldTable.vocabulary))
+        |> field "field" _.FieldName (enumeration (Vocabulary.entries RecordFields.vocabulary))
         |> field "before" _.Before (nullable nonempty)
         |> field "after" _.After (nullable nonempty)
         |> build
@@ -378,7 +378,7 @@ module ResponseCodecs =
         : Fields<AdvisoryReview, _>)
         |> field "before" _.Before (nullable caseSnapshot)
         |> field "after" _.Proposed caseSnapshot
-        |> field "changes" _.Changes (list FieldTable.rows.Length fieldChange)
+        |> field "changes" _.Changes (list Record.fields.Length fieldChange)
         |> field "context" _.Context runtimeContext
 
     let actorSummary =

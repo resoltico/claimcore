@@ -70,7 +70,7 @@ module internal Core =
         | None -> Map.empty
         | Some {
                    State = (CaseState.Active(fields) | CaseState.Voided(fields))
-               } -> FieldTable.values fields |> Map.ofList
+               } -> RecordFields.values fields |> Map.ofList
         | Some { State = CaseState.Erased } -> Map.empty
 
     let private changes act before after =
@@ -82,7 +82,7 @@ module internal Core =
             let previous = businessFields before
             let next = businessFields (Some after)
 
-            FieldTable.rows
+            Record.fields
             |> List.choose (fun field ->
                 let before = Map.tryFind field.Field previous |> Option.flatten
                 let after = Map.tryFind field.Field next |> Option.flatten

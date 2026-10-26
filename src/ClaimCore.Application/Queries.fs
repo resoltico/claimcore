@@ -67,7 +67,13 @@ module internal Queries =
         ct
         : Task<ReadReply<CaseReadModel>> =
         task {
-            match CaseReference.validate reference with
+            match
+                (CaseReference.parse
+                 >> Result.map ignore
+                 >> Result.mapError (fun violation ->
+                     Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
+                    reference
+            with
             | Error error -> return rejected (error)
             | Ok() ->
                 let! read = store.ReadCase(principal, None, reference, ct)
@@ -247,7 +253,13 @@ module internal Queries =
         ct
         : Task<ReadReply<HistoryResultPage>> =
         task {
-            match CaseReference.validate request.CaseReference with
+            match
+                (CaseReference.parse
+                 >> Result.map ignore
+                 >> Result.mapError (fun violation ->
+                     Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
+                    request.CaseReference
+            with
             | Error error -> return rejected (error)
             | Ok() when not (validLimit request.Limit) -> return invalidLimit ()
             | Ok() ->
