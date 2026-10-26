@@ -583,8 +583,8 @@ let tests =
             testCase "authored positive alternatives seed every endpoint and direction" seedCases
             for endpoint in Api.all do
                 testCase (Api.id endpoint + " request DTO property") (fun () ->
-                    run (wireId endpoint false) (requestProperty endpoint))
+                    run (wireName endpoint false) (requestProperty endpoint))
 
                 testCase (Api.id endpoint + " reply DTO property") (fun () ->
-                    run (wireId endpoint true) (replyProperty endpoint))
+                    run (wireName endpoint true) (replyProperty endpoint))
         ]

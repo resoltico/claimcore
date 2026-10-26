@@ -183,12 +183,10 @@ let tests =
     testList
         "OIDC authentication foundation"
         [
-            testCase "[CC-WEB-001] production issuer requires HTTPS and exact URI" issuerPolicy
-            testCase "[CC-WEB-001] human and service principals remain distinct" principalIdentity
-            testCase "[CC-WEB-001] metadata pins issuer and secure endpoints" metadataValidation
-            testCase
-                "[CC-WEB-001] bearer principal uses explicit client classification"
-                accessTokenIdentity
-            testCase "[CC-WEB-001] middleware pins OIDC and JWT validation policy" middlewarePolicy
-            testCase "[CC-WEB-001] browser and bearer credentials never mix" exclusiveCredentialMode
+            testCase "production issuer requires HTTPS and exact URI" issuerPolicy
+            testCase "human and service principals remain distinct" principalIdentity
+            testCase "metadata pins issuer and secure endpoints" metadataValidation
+            testCase "bearer principal uses explicit client classification" accessTokenIdentity
+            testCase "middleware pins OIDC and JWT validation policy" middlewarePolicy
+            testCase "browser and bearer credentials never mix" exclusiveCredentialMode
         ]

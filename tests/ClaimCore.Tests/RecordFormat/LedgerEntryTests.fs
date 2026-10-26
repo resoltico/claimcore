@@ -304,9 +304,9 @@ let tests =
                         (fun () -> LedgerEntry.hash invalid |> ignore)
                         "Subject required"))
             testCase "payload framing round trips arbitrary bytes" (fun () ->
-                PropertyHarness.run "CC-PROP-LEDGER-PAYLOAD-001" framingProperty)
+                PropertyHarness.run "ledger payload framing" framingProperty)
             testCase "commitment changes affect hashes across the sequence range" (fun () ->
-                PropertyHarness.run "CC-PROP-LEDGER-HASH-001" hashProperty)
+                PropertyHarness.run "ledger hash" hashProperty)
             testCase "erasure leaves recomputation independent of payload and nonce" (fun () ->
                 withVectors (fun vectors ->
                     for vector in vectors do

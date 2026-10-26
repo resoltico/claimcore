@@ -35,9 +35,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
   }
 };
 
-test("owner-only workspace renders without inventing case authority [CC-AUTH-001]", async ({
-  page,
-}) => {
+test("owner-only workspace renders without inventing case authority", async ({ page }) => {
   const fixture = await prepareRoleFixture(page);
   await ownerGrants(page, false);
   try {
@@ -50,7 +48,7 @@ test("owner-only workspace renders without inventing case authority [CC-AUTH-001
   }
 });
 
-test("disabled actor keeps authenticated public bootstrap but cannot read cases [CC-AUTH-001]", async ({
+test("disabled actor keeps authenticated public bootstrap but cannot read cases", async ({
   page,
   browser,
 }) => {
@@ -96,7 +94,7 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
   }
 });
 
-test("unregistered human authenticates without gaining a wider grant [CC-AUTH-001]", async ({
+test("unregistered human authenticates without gaining a wider grant", async ({
   page,
   browser,
 }) => {

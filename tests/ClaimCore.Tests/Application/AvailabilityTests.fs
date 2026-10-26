@@ -32,7 +32,7 @@ let private candidates =
     ]
 
 let private stateActions =
-    testCase "[CC-DOM-002] each state advertises and enforces the specified act set" (fun () ->
+    testCase "each state advertises and enforces the specified act set" (fun () ->
         let zero =
             opened ()
             |> apply (UnvalidatedCaseAct.Decide { decision with PayableAmount = "0" })

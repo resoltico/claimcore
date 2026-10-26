@@ -4,7 +4,6 @@ open System
 open System.IO
 open Expecto
 
-let private token = "CC-" + "EXAMPLE-999"
 let private path = Path.GetFullPath("documentation-control.md")
 
 [<Tests>]
@@ -12,7 +11,7 @@ let tests =
     testList
         "documentation"
         [
-            testCase "current relative links and contract ownership are complete" (fun () ->
+            testCase "current relative files and anchors resolve" (fun () ->
                 let failures =
                     DocumentationChecks.repository (ClaimCore.TestSupport.RepositoryRoot.find ())
 
@@ -52,31 +51,4 @@ let tests =
                         .Length
                     1
                     "A code example is not an anchor")
-            testCase "contract headings require valid unique owner tokens" (fun () ->
-                let heading = "### " + token + " — Example"
-
-                Expect.isEmpty
-                    (DocumentationChecks.contracts [ path, heading ])
-                    "Valid owner token"
-
-                Expect.equal
-                    (DocumentationChecks.contracts [ path, heading; path + "-other", heading ])
-                        .Length
-                    1
-                    "Duplicate refuses"
-
-                for value in
-                    [
-                        "### CC-EXAMPLE-1 — Bad"
-                        "### CC-example-999 — Bad"
-                        "### CC-EXAMPLE-9999 — Bad"
-                    ] do
-                    Expect.equal
-                        (DocumentationChecks.contracts [ path, value ]).Length
-                        1
-                        "Malformed refuses"
-
-                Expect.isEmpty
-                    (DocumentationChecks.contracts [ path, "```markdown\n" + heading + "\n```" ])
-                    "Fenced example ignored")
         ]

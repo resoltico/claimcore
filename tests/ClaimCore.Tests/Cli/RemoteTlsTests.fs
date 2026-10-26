@@ -94,9 +94,7 @@ let tests =
     testList
         "CLI TLS trust"
         [
-            testCase
-                "[CC-WEB-001] private TLS root validity has exact boundaries"
-                rootValidityBoundaries
+            testCase "private TLS root validity has exact boundaries" rootValidityBoundaries
             testCase "private test trust root is confined to loopback" trustRootScope
-            testCase "[CC-WEB-001] issuer TLS leaf requires server purpose" leafPurpose
+            testCase "issuer TLS leaf requires server purpose" leafPurpose
         ]

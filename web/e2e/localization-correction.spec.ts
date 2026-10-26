@@ -106,7 +106,7 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
 for (const status of ["CLOSED"] as const) {
   for (const language of ["en", "lv", "ar"] as const) {
     for (const [registration, decision, payment, refusal] of outcomes) {
-      test(`submits literal CORRECT ${registration}/${decision}/${payment} in ${language} while ${status} with authoritative outcome [CC-DOM-002]`, async ({
+      test(`submits literal CORRECT ${registration}/${decision}/${payment} in ${language} while ${status} with authoritative outcome`, async ({
         page,
       }) => {
         const reference = `GROUP-${randomUUID()}-A`;

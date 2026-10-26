@@ -128,7 +128,7 @@ it("retains local, accepted and uncertain notices as language-neutral data", () 
   );
 });
 
-it("refuses reference message parts with missing, wrong-role or foreign holes [CC-WEB-001]", () => {
+it("refuses reference message parts with missing, wrong-role or foreign holes", () => {
   const preferences = { language: "en" as const, displayLocale: "en-GB" as const };
   const fallback = [renderKey(preferences, "notice.unknownDiagnostic")];
   const reference = { exact: "Synthetic reference" };

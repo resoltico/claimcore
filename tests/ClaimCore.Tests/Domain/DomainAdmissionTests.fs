@@ -12,7 +12,7 @@ let private chronology field =
     RecordViolation.InvalidScalar(field, Violation.ChronologicalOrder)
 
 let private snapshots =
-    testCase "[CC-DOM-001] restoration refuses invalid paid and chronological states" (fun () ->
+    testCase "restoration refuses invalid paid and chronological states" (fun () ->
         let original = paid () |> Case.snapshot
 
         let variants =
@@ -52,28 +52,26 @@ let private snapshots =
                 "No invalid opaque Claim")
 
 let private payload =
-    testCase
-        "[CC-DOM-002] malformed payload admission precedes stale revision and eligibility"
-        (fun () ->
-            let malformed =
-                UnvalidatedCaseAct.Decide
-                    { decision with
-                        PaymentDecisionDate = "not-a-date"
-                    }
+    testCase "malformed payload admission precedes stale revision and eligibility" (fun () ->
+        let malformed =
+            UnvalidatedCaseAct.Decide
+                { decision with
+                    PaymentDecisionDate = "not-a-date"
+                }
 
-            let rejected =
-                CaseFixtures.decide today (request 0L malformed) (Some(paid ()))
-                |> Result.map ignore
+        let rejected =
+            CaseFixtures.decide today (request 0L malformed) (Some(paid ()))
+            |> Result.map ignore
 
-            Expect.equal
-                rejected
-                (Error(
-                    Refusal.InvalidInput(
-                        (InputTarget.Field BusinessField.PaymentDecisionDate),
-                        Violation.CalendarDateRequired
-                    )
-                ))
-                "Same admission ordering for parsed acts")
+        Expect.equal
+            rejected
+            (Error(
+                Refusal.InvalidInput(
+                    (InputTarget.Field BusinessField.PaymentDecisionDate),
+                    Violation.CalendarDateRequired
+                )
+            ))
+            "Same admission ordering for parsed acts")
 
 [<Tests>]
 let tests = testList "domain accepted-state admission" [ snapshots; payload ]

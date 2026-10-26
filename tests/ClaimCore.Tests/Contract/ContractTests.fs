@@ -627,5 +627,5 @@ let tests =
             testCase "strict frames reject hostile shapes and preserve original bytes" rejectFrames
             testCase "wire integers enforce lexemes and safe boundaries" integerLexemes
             testCase "all frame and HTTP decoders are total for bounded hostile bytes" (fun () ->
-                PropertyHarness.run "CC-FUZZ-INVOCATION-001" decoderProperty)
+                PropertyHarness.run "invocation byte decoder" decoderProperty)
         ]

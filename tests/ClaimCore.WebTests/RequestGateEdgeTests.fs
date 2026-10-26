@@ -182,18 +182,14 @@ let tests =
     testList
         "HTTP request gates"
         [
-            testCase "[CC-WEB-001] admits only the exact local JSON shape" jsonShapeTests
+            testCase "admits only the exact local JSON shape" jsonShapeTests
+            testCase "keeps the mutable browser session registry server-side" sessionTests
+            testCase "returns typed CSRF gate refusal" antiforgeryTests
+            testCase "rejects absent and remote peers or wrong host authority" connectionRefusals
             testCase
-                "[CC-WEB-001] keeps the mutable browser session registry server-side"
-                sessionTests
-            testCase "[CC-WEB-001] returns typed CSRF gate refusal" antiforgeryTests
-            testCase
-                "[CC-WEB-001] rejects absent and remote peers or wrong host authority"
-                connectionRefusals
-            testCase
-                "[CC-WEB-001] requires one exact browser origin and same-origin metadata"
+                "requires one exact browser origin and same-origin metadata"
                 browserOriginRefusals
             testCase
-                "[CC-WEB-001] distinguishes media and exact declared body-size boundaries"
+                "distinguishes media and exact declared body-size boundaries"
                 mediaAndLengthBoundaries
         ]

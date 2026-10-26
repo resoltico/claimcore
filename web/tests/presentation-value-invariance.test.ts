@@ -23,7 +23,7 @@ const dateOracle = (year: string, month: string, day: string, locale: string) =>
   return locale === "lv-LV" ? `${day}.${month}.${year}` : `${day}/${month}/${year}`;
 };
 
-it("preserves canonical values and frozen request identity over 500 seeded display vectors [CC-WEB-001]", () => {
+it("preserves canonical values and frozen request identity over 500 seeded display vectors", () => {
   let seed = 739101;
   const next = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;

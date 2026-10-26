@@ -266,22 +266,14 @@ let tests =
     testList
         "Web actor gate after synthetic authentication"
         [
+            testCase "bearer actor gate binds verified client and subject" bearerIdentity
+            testCase "failed or malformed bearer identities never select an actor" bearerRefusals
             testCase
-                "[CC-WEB-001] bearer actor gate binds verified client and subject"
-                bearerIdentity
-            testCase
-                "[CC-WEB-001] failed or malformed bearer identities never select an actor"
-                bearerRefusals
-            testCase
-                "[CC-WEB-001] bearer transport refuses unsafe shapes before authentication"
+                "bearer transport refuses unsafe shapes before authentication"
                 bearerShapeRefusals
+            testCase "browser cookie gate binds and rechecks a human actor" browserIdentity
             testCase
-                "[CC-WEB-001] browser cookie gate binds and rechecks a human actor"
-                browserIdentity
-            testCase
-                "[CC-WEB-001] browser cookie refuses unsafe transport before actor lookup"
+                "browser cookie refuses unsafe transport before actor lookup"
                 browserShapeRefusals
-            testCase
-                "[CC-WEB-001] bearer GET rejects unsafe transport before actor lookup"
-                getShapeRefusals
+            testCase "bearer GET rejects unsafe transport before actor lookup" getShapeRefusals
         ]

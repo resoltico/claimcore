@@ -14,7 +14,7 @@ let tests =
     testList
         "runtime lifetime"
         [
-            testCase "[CC-RUN-001] shutdown closes admission and disposes exactly once" (fun () ->
+            testCase "shutdown closes admission and disposes exactly once" (fun () ->
                 let mutable closes = 0
                 let gate = RuntimeLeases(fun () -> closes <- closes + 1)
                 let lease = gate.Acquire() |> Option.defaultWith (fun () -> failtest "Admission")

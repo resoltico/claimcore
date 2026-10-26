@@ -1,4 +1,4 @@
-# Operations and trust
+# Operating an installation
 
 Plan identity, access, backup/restore and retention before using real data. The supplied Compose setup is an
 evaluation environment. Operators own deployment, TLS, least privilege, monitoring and incident response.
@@ -9,7 +9,7 @@ backup operator are trusted. Hashes detect inconsistency against retained truste
 real-world facts, independent freshness or honesty of an administrator rewriting everything.
 
 For a local evaluation, follow [getting started](getting-started.md). For an existing installation,
-review access and session custody first, preserve exact frames when delivery is uncertain, and verify a
+review access and session custody first, follow [delivery recovery](integrating.md#delivery-recovery) when needed, and verify a
 restore before reopening access. Owner administration uses `claimcore-database`; actor work uses
 `claimcore` or the browser.
 
@@ -40,7 +40,7 @@ be managed independently.
 Before registering a SERVICE actor, restrict its confidential IdP client to client credentials and disable user
 flows. The public human CLI client uses authorization code/PKCE with service accounts disabled. Put API audience
 in access tokens only. azp/client_id classification cannot establish grant type; operators must enforce these
-restrictions. [Web admission](web.md#cc-web-001) checks the technical token claims.
+restrictions. [Identity and hosting](#identity-and-hosting) checks the technical token claims.
 
 Protected tickets live in PostgreSQL; cookies carry protected random lookup keys. Two Web instances sharing
 the database and key ring can share sessions under the qualified clock conditions. Logout deletes the row;
@@ -55,14 +55,6 @@ Protect the key-ring directory with 0700 directory access. Local Linux key XML i
 live tickets and protected backups, and back up the database and key ring together under controlled custody.
 Unprotectable sessions invalidate with OIDC_SESSION_UNREADABLE; storage failure closes authentication with
 OIDC_SESSION_UNAVAILABLE. Diagnostics exclude payloads, credentials and provider text.
-
-## Uncertain operation delivery
-
-Preserve the exact frame and original ID. Resend unchanged or use operation.resolve. Resolve returns the
-author's receipt with current disclosure, or installs a permanent actor-scoped fence and returns NOT_ACCEPTED.
-That ID then cannot accept delayed work by the same actor. A foreign acceptance is neither revealed nor changed.
-Fences contain no business payload and remain indefinitely. Disabled actors need re-enabling before resolving.
-Observation is a read whose absence is not final. [CLI delivery](api.md#cc-cli-003) explains exits and frames.
 
 ## Private configuration
 
@@ -94,8 +86,55 @@ Accepted writes serialize on one ledger head. Adding writers does not remove tha
 entries but retains folded case/actor/grant state; its same-snapshot duplicate prepass can sort/spill in SQL.
 Streaming therefore promises no constant total-system memory.
 
-Run [synthetic growth qualification](development.md#synthetic-growth-qualification) before release and on demand,
+Run [synthetic growth qualification](contributing.md#growth) before release and on demand,
 then qualify actual storage, workloads and concurrency. Those measurements establish neither an SLA nor a
 production capacity guarantee. Timeout/cancellation guards remain enforced.
 
-See the [glossary](glossary.md) for project terminology.
+
+
+## Database administration
+
+Use the separate `claimcore-database` tool with owner credentials. Offline help/version do not connect.
+
+| Command | Purpose |
+| --- | --- |
+| `initialize ZONE` | Atomically initialize the exact supported baseline and canonical IANA business zone. |
+| `provision-owner` | Bootstrap an empty authority installation with one human owner. |
+| `head` | Inspect the admitted installation's ledger position. |
+| `verify` | Reconstruct retained ledger and projections under permanent invariants. |
+| `verify --expect SEQUENCE:ENTRY_HASH` | Also compare an independently retained checkpoint. |
+
+Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to the private owner connection file. Provisioning additionally needs
+`CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE` with operationId, issuer and subject. Keep those inputs stable for
+an unchanged repeated invocation. Private-input validation precedes database access. Runtime credentials
+have no schema-owner authority. Remote database connections require verified TLS.
+
+The exact [SQL baseline](../db/baseline.sql), its checksum, installation identity and immutable zone are
+checked on opening. Partial, unknown or incompatible schemas refuse untouched. Preserve incompatible
+installations with matching software. Supported PostgreSQL majors, minimum minors and image pins are owned
+by [postgresql-baseline.json](../db/postgresql-baseline.json).
+
+Verification checks chain hashes, commitments, revisions, retained/erased payload shape, authority history,
+projections and head. It does not reapply today's capability policy. VERIFIED and DIVERGED are structured
+results; provider failures remain failures. Checkpoint sequences are canonical nonnegative exact integers
+and hashes are lowercase hexadecimal. A checkpoint must belong to the verified chain; the ledger may extend
+beyond it. The same-snapshot duplicate prepass can sort/spill, and folded resource state grows with cardinality.
+
+## Identity and hosting
+
+Configure the HTTPS origin, OIDC issuer/audience and key-ring directory as described by
+[getting started](getting-started.md) and the deployed process's configuration guidance. Use the supplied
+[Compose definition](../deployment/compose.yaml) and [image build](../deployment/Dockerfile) as evaluation
+inputs. Keep the service, browser and CLI on a matching build.
+
+Bearer verification checks issuer, audience and JWT type. Human CLI tokens identify an immutable subject;
+service clients identify their admitted client identity. Blank, repeated or conflicting identity claims
+refuse. Provider client-flow restrictions above are an independent operator responsibility.
+
+Request gates check connection, origin, credentials, media type, size and antiforgery before Application work.
+Runtime leases keep resources alive through provider cleanup. Readiness checks installation/schema access
+with bounded probe ownership; a deadline does not prove a hard response-time bound or freshness. Liveness
+is separate. Request logs contain technical endpoint/outcome/status/duration and actor/operation identifiers,
+not submitted business values, credentials or provider exception text.
+
+See [Integrating](integrating.md) for request/result handling and the [glossary](glossary.md) for terminology.

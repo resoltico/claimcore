@@ -128,55 +128,51 @@ let private checkChoice
             "Complete canonical result, reference and status"
 
 let private matrix =
-    testCase
-        "[CC-DOM-002] all correction choices match an independent eight-state matrix"
-        (fun () ->
-            let mutable cases = 0
+    testCase "all correction choices match an independent eight-state matrix" (fun () ->
+        let mutable cases = 0
 
-            for before in states () do
-                for registration in registrationChoices do
-                    for decision in decisionChoices do
-                        for payment in paymentChoices do
-                            checkChoice before registration decision payment
-                            cases <- cases + 1
+        for before in states () do
+            for registration in registrationChoices do
+                for decision in decisionChoices do
+                    for payment in paymentChoices do
+                        checkChoice before registration decision payment
+                        cases <- cases + 1
 
-            Expect.equal cases 144 "Every group choice across closure and payment axes")
+        Expect.equal cases 144 "Every group choice across closure and payment axes")
 
 let private zeroPaid =
-    testCase
-        "[CC-DOM-001] explicit paid reaffirmation cannot retain a zero replacement decision"
-        (fun () ->
-            let act =
+    testCase "explicit paid reaffirmation cannot retain a zero replacement decision" (fun () ->
+        let act =
+            UnvalidatedCaseAct.Correct
+                {
+                    Registration = RegistrationGroup.Keep
+                    Decision = DecisionGroup.Replace { decision with PayableAmount = "0" }
+                    Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
+                }
+
+        Expect.equal
+            (paid () |> apply act)
+            (Error Refusal.ZeroDecisionCannotBePaid)
+            "No zero payment assertion"
+
+        let cleared =
+            match act with
+            | UnvalidatedCaseAct.Correct value ->
                 UnvalidatedCaseAct.Correct
-                    {
-                        Registration = RegistrationGroup.Keep
-                        Decision = DecisionGroup.Replace { decision with PayableAmount = "0" }
-                        Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
+                    { value with
+                        Payment = PaymentGroup.Clear
                     }
+            | _ -> failtest "Synthetic correction shape"
 
-            Expect.equal
-                (paid () |> apply act)
-                (Error Refusal.ZeroDecisionCannotBePaid)
-                "No zero payment assertion"
+        let after = paid () |> apply cleared |> accepted |> Case.snapshot
 
-            let cleared =
-                match act with
-                | UnvalidatedCaseAct.Correct value ->
-                    UnvalidatedCaseAct.Correct
-                        { value with
-                            Payment = PaymentGroup.Clear
-                        }
-                | _ -> failtest "Synthetic correction shape"
-
-            let after = paid () |> apply cleared |> accepted |> Case.snapshot
-
-            Expect.isTrue
-                (((viewFields after).Decision
-                  |> Option.map (fun value -> Money.format value.PayableAmount))
-                    =
-                    Some "0"
-                 && (viewFields after).Payment.IsNone)
-                "An unpaid zero decision is valid")
+        Expect.isTrue
+            (((viewFields after).Decision
+              |> Option.map (fun value -> Money.format value.PayableAmount))
+                =
+                Some "0"
+             && (viewFields after).Payment.IsNone)
+            "An unpaid zero decision is valid")
 
 [<Tests>]
 let tests = testList "correction group invariants" [ matrix; zeroPaid ]

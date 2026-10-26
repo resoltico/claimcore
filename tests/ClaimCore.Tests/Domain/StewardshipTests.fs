@@ -153,19 +153,13 @@ let tests =
         "case stewardship"
         [
             testCase
-                "[CC-LIFE-001] every stewardship transition matches its independent expectation"
+                "every stewardship transition matches its independent expectation"
                 transitionTest
+            testCase "reasons reject null malformed Unicode and unsafe text" reasonTest
+            testCase "reason bounds count Unicode scalars without rewriting them" reasonBounds
+            testCase "stale revision is refused before admission and state" staleRevision
             testCase
-                "[CC-LIFE-001] reasons reject null malformed Unicode and unsafe text"
-                reasonTest
-            testCase
-                "[CC-LIFE-001] reason bounds count Unicode scalars without rewriting them"
-                reasonBounds
-            testCase
-                "[CC-LIFE-001] stale revision is refused before admission and state"
-                staleRevision
-            testCase
-                "[CC-LIFE-001] accepted erasure advances exactly one revision across the full range"
-                (fun () -> PropertyHarness.run "CC-PROP-STEWARDSHIP-001" revisionProperty)
+                "accepted erasure advances exactly one revision across the full range"
+                (fun () -> PropertyHarness.run "stewardship revision" revisionProperty)
             testCase "stewardship action kinds retain their separate vocabulary" vocabulary
         ]

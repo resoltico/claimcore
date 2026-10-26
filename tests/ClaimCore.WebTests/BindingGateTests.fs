@@ -68,8 +68,6 @@ let tests =
     testList
         "listener and public authority"
         [
-            testCase
-                "[CC-WEB-001] explicit container binding retains Host and origin refusal"
-                peerBoundary
-            testCase "[CC-WEB-001] listener rejects invalid address and port" invalidBindings
+            testCase "explicit container binding retains Host and origin refusal" peerBoundary
+            testCase "listener rejects invalid address and port" invalidBindings
         ]

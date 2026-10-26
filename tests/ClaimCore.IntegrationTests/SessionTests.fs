@@ -360,5 +360,5 @@ let private suite () =
 [<Tests>]
 let tests =
     testCaseAsync
-        "[CC-WEB-001] PostgreSQL sessions restart, deadlines and cross-instance concurrency"
+        "PostgreSQL sessions restart, deadlines and cross-instance concurrency"
         (async { do! suite () |> Async.AwaitTask })

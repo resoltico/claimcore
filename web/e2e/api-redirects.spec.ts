@@ -7,7 +7,7 @@ import type { ServiceResponse } from "../src/protocol/types";
 import { openAuthenticated } from "./session-helpers";
 
 for (const status of [301, 302, 303, 307, 308]) {
-  test(`refuses ordinary API ${status} after original acceptance without redirect dispatch [CC-WEB-001]`, async ({
+  test(`refuses ordinary API ${status} after original acceptance without redirect dispatch`, async ({
     page,
     redirectResponse,
   }) => {
@@ -33,7 +33,7 @@ for (const status of [301, 302, 303, 307, 308]) {
     expect((await redirectResponse.evidence()).destinations).toBe(0);
   });
 
-  test(`detects a followed ${status} redirect at the same-origin destination [CC-WEB-001]`, async ({
+  test(`detects a followed ${status} redirect at the same-origin destination`, async ({
     page,
     redirectResponse,
   }) => {

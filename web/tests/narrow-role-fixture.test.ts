@@ -24,7 +24,7 @@ const fixture: RoleFixture = {
 const page = {} as Page;
 beforeEach(() => vi.mocked(applyAuthority).mockReset());
 
-it("restores only the confirmed baseline grant when narrow setup fails [CC-AUTH-001]", async () => {
+it("restores only the confirmed baseline grant when narrow setup fails", async () => {
   const failed = new Error("Synthetic grant response unavailable");
   let registered = false;
   vi.mocked(applyAuthority)
@@ -55,7 +55,7 @@ it("restores only the confirmed baseline grant when narrow setup fails [CC-AUTH-
   expect(bodies.some((body) => body.kind === "REVOKE" && body.role === "CASE_READER")).toBe(false);
 });
 
-it("does not invent rollback after the first authority action is unconfirmed [CC-AUTH-001]", async () => {
+it("does not invent rollback after the first authority action is unconfirmed", async () => {
   const failed = new Error("Synthetic initial transition unconfirmed");
   vi.mocked(applyAuthority).mockRejectedValueOnce(failed);
   let restore: () => Promise<void> = () => Promise.resolve();

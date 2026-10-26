@@ -233,7 +233,7 @@ let tests =
         "Hedgehog canonical records"
         [
             testCase "all act and correction group shapes retain external meaning" (fun () ->
-                run "CC-PROP-RECORD-001" requestRoundTripProperty)
+                run "case request record" requestRoundTripProperty)
             testCase "layout is insignificant but semantic changes affect identity" (fun () ->
-                run "CC-PROP-FINGERPRINT-001" fingerprintProperty)
+                run "operation identity fingerprint" fingerprintProperty)
         ]

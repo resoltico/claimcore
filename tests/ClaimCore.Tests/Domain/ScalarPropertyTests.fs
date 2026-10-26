@@ -215,12 +215,10 @@ let tests =
     testList
         "Hedgehog scalar boundaries"
         [
-            testCase "Gregorian date grammar and range" (fun () ->
-                run "CC-PROP-DATE-001" dateProperty)
-            testCase "amount precision and magnitude" (fun () ->
-                run "CC-PROP-AMOUNT-001" amountProperty)
+            testCase "Gregorian date grammar and range" (fun () -> run "calendar date" dateProperty)
+            testCase "amount precision and magnitude" (fun () -> run "money amount" amountProperty)
             testCase "uppercase ASCII currency grammar" (fun () ->
-                run "CC-PROP-CURRENCY-001" currencyProperty)
+                run "currency code" currencyProperty)
             testCase "Unicode text and length boundaries" (fun () ->
                 let invalidValues =
                     [
@@ -242,5 +240,5 @@ let tests =
                 |> List.iter (fun value ->
                     Expect.isError (validateText Claimant value) "Exact Domain text boundary")
 
-                run "CC-PROP-TEXT-001" textProperty)
+                run "business text" textProperty)
         ]

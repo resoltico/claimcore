@@ -8,14 +8,12 @@ look up an act. The sections below explain the business meaning and the limits o
 
 ## Business record
 
-<a id="cc-dom-001"></a>
-
-### CC-DOM-001 — Exact public business record
+### Exact public business record
 
 A case has thirteen business fields: incident date, this handler's first notification date, incident country,
 claimant, responsible insurer, claimed amount/currency, case reference, decision date, payable amount/currency,
 payment date and open/closed status. Technical IDs, revisions, timestamps and advice stay outside this record.
-The [field table](../src/ClaimCore.Domain/Record.fs) owns JSON keys and labels.
+The [typed record declaration](../src/ClaimCore.Domain/Record.fs) owns the field structure; the generated catalog supplies input guidance.
 
 Opening supplies the seven registration values and top-level reference. Decision and payment groups begin as
 null; status begins OPENED. The view places the seven registration members in `registration`, the three
@@ -31,9 +29,7 @@ There are no policy, coverage, reserve, banking, address, notes or attachment fi
 
 ## State and acts
 
-<a id="cc-dom-002"></a>
-
-### CC-DOM-002 — Core-owned act availability and revalidation
+### Core-owned act availability and revalidation
 
 A case may be OPENED or CLOSED independently of its payment progress. Payment does not close a case; closing
 needs no decision or payment. Use `claimcore describe` for current inputs and correction choices.
@@ -59,9 +55,7 @@ Current core advice filters eligible work by the actor's resource rights. Unauth
 KEEP. Case-scoped handling does not grant installation creation. Execution rechecks rights, state and expected
 revision; an offered act or preview grants no commit authority.
 
-<a id="cc-life-001"></a>
-
-### CC-LIFE-001 — Case stewardship
+### Case stewardship
 
 Lifecycle state is ACTIVE, VOIDED or ERASED. Active and voided cases retain separate open/closed status
 and payment progress; erased cases carry no business fields.
@@ -72,11 +66,11 @@ Reasons use the same current text admission profile as names.
 A human DATA_STEWARD may void, reinstate or erase; CASE_HANDLER alone cannot. Each acceptance advances one
 revision. ERASE clears the case's business projection and complete live payload history, retaining reference,
 revision and ledger metadata. It is final: the reference cannot be opened again and erased request content
-cannot replay. [Operations](operations.md#erasure-limits) explains the physical limits.
+cannot replay. [Operations](operating.md#erasure-limits) explains the physical limits.
 
 ## Scalars
 
-Permanent syntax and current admission live in [Domain value modules](../src/ClaimCore.Domain/Values.fs). The [request validation adapter](../src/ClaimCore.Domain/Validation.fs) assigns their diagnostics to input targets.
+Permanent syntax and current admission live in [Domain value modules](../src/ClaimCore.Domain/Values.fs). The [validation adapter](../src/ClaimCore.Domain/Validation.fs) assigns their diagnostics to input targets.
 Retained reads and verification enforce permanent format/state invariants, without applying today's admission
 to old assertions. Unchanged retained names and dates may be reaffirmed.
 
@@ -99,10 +93,18 @@ exposes bounded suspicious-scalar warnings without rewriting raw values.
 ## Revisions and history
 
 Execution compares expected revision with locked current state. Retained exact replay preserves original
-acceptance without another entry, subject to [current disclosure](architecture.md#cc-auth-001). Different
+acceptance without another entry, subject to [current disclosure](integrating.md#disclosure-and-cursors). Different
 content under a used ID refuses. Rejection changes no accepted state.
 
 Retained revisions and sequences use the exact-integer format bound defined by
 [Revision](../src/ClaimCore.Domain/CaseModel.fs). SQL and durable decoding enforce that format.
 
 See the [glossary](glossary.md) for project terminology.
+
+## Use the browser
+
+Sign in and choose a view offered by current grants. Review shows a proposal; confirmation submits the prepared
+change, and execution checks current state and rights again. Language, display formats and navigation are
+independent preferences. Suspicious-Unicode warnings preserve authored values.
+
+For interrupted submission or reload, use the [delivery recovery guide](integrating.md#delivery-recovery).

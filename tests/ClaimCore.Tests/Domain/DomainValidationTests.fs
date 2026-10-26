@@ -261,7 +261,7 @@ let tests =
         "domain validation"
         [
             testCase
-                "[CC-DOM-001] business Unicode preserves joining and authored orthographic selectors through restoration"
+                "business Unicode preserves joining and authored orthographic selectors through restoration"
                 authoredUnicodeRoundTrip
             chronologyTests
             restorationTests

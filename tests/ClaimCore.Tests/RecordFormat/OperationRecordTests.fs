@@ -222,9 +222,9 @@ let tests =
                     expected
                     "Canonical field order")
             testCase "all stewardship records round trip" (fun () ->
-                PropertyHarness.run "CC-PROP-STEWARDSHIP-RECORD-001" stewardshipProperty)
+                PropertyHarness.run "stewardship durable record" stewardshipProperty)
             testCase "all authority action and scope records round trip" (fun () ->
-                PropertyHarness.run "CC-PROP-AUTHORITY-RECORD-001" authorityProperty)
+                PropertyHarness.run "authority durable record" authorityProperty)
             testCase "strict record decoders reject hostile shapes" strictRecords
             testCase "record limits and malformed bytes are refused" (fun () ->
                 let encoded = steward UnvalidatedCaseAct.Erase |> CaseFixtures.encode
@@ -241,5 +241,5 @@ let tests =
                     Expect.isError (AuthorityRecord.decode 65536 bytes) "Typed authority refusal")
             testCase
                 "all durable decoders are total on arbitrary and mutated valid bytes"
-                (fun () -> PropertyHarness.run "CC-FUZZ-RECORD-001" decoderProperty)
+                (fun () -> PropertyHarness.run "durable record byte decoder" decoderProperty)
         ]

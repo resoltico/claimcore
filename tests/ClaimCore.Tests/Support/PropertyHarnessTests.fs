@@ -19,7 +19,7 @@ let private configurationTests =
                         return true
                     }
 
-                run "CC-PROP-TEXT-001" counted
+                run "business text" counted
                 Expect.equal executions 200 "Every case executes"
                 Expect.equal (sequenceMaximum ()) 20 "Stateful sequence bound"
 
@@ -41,7 +41,7 @@ let private configurationTests =
                     }
 
                 Expect.throws
-                    (fun () -> run "CC-PROP-TEXT-001" rejected)
+                    (fun () -> run "business text" rejected)
                     "A bounded failing property still fails"
 
                 Expect.equal evaluations 101 "Initial failure plus 100 shrinking steps")
@@ -56,7 +56,7 @@ let private configurationTests =
                             return true
                         }
 
-                    run "CC-PROP-AMOUNT-001" sampled
+                    run "money amount" sampled
                     List.ofSeq values
 
                 Expect.isTrue (samples () = samples ()) "Deterministic property seed"
@@ -68,7 +68,7 @@ let private configurationTests =
                     }
 
                 Expect.throws
-                    (fun () -> run "CC-PROP-TEXT-001" rejected)
+                    (fun () -> run "business text" rejected)
                     "A false property cannot be counted as passing")
         ]
 
@@ -86,7 +86,7 @@ let private diagnosticTests =
                     }
 
                 let report = Property.reportBool unsafeProperty
-                let rendered = failureText "CC-PROP-TEXT-001" report
+                let rendered = failureText "business text" report
                 Expect.isFalse (rendered.Contains(canary)) "No generated payload"
                 Expect.isFalse (rendered.Contains('\u0000')) "No control character"
                 Expect.stringContains rendered "recheck=" "Safe replay material remains")

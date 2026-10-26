@@ -87,6 +87,6 @@ let tests =
         "Web synthetic issuer transport trust"
         [
             testCase
-                "[CC-WEB-001] synthetic issuer TLS refuses absent wrong-host and unrelated certificates"
+                "synthetic issuer TLS refuses absent wrong-host and unrelated certificates"
                 syntheticIssuerTrust
         ]

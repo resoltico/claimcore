@@ -67,7 +67,7 @@ const expectUnknownOperation = async (page: Page) => {
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toHaveCount(1);
 };
 
-test("retries one lost accepted reply with the exact reviewed operation and bytes [CC-WEB-001]", async ({
+test("retries one lost accepted reply with the exact reviewed operation and bytes", async ({
   page,
 }) => {
   await openAuthenticated(page);

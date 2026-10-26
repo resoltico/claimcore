@@ -339,5 +339,5 @@ let private producerRoundtrip () =
 [<Tests>]
 let tests =
     testCaseAsync
-        "local configuration producer emits an admitted owner input [CC-DB-002]"
+        "local configuration producer emits an admitted owner input"
         (producerRoundtrip ())

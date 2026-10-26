@@ -5,7 +5,7 @@ import { templateParts, pseudolocalizeLiteral } from "../src/presentation/templa
 import vectors from "../../tests/fixtures/message-template-vectors.json";
 import rendered from "../../tests/fixtures/rendered-messages.json";
 
-it("matches independent quoting vectors and every frozen F# rendering [CC-WEB-001]", () => {
+it("matches independent quoting vectors and every frozen F# rendering", () => {
   for (const row of vectors.accepted) {
     const supplied: Readonly<Record<string, string>> = row.arguments;
     expect(
@@ -27,7 +27,7 @@ it("matches independent quoting vectors and every frozen F# rendering [CC-WEB-00
   }
 });
 
-it("pseudolocalizes only literal text while preserving authored argument values [CC-WEB-001]", () => {
+it("pseudolocalizes only literal text while preserving authored argument values", () => {
   expect(pseudolocalizeLiteral("aeiouAEIOU")).toBe("ààëëïïööüüÀÀËËÏÏÖÖÜÜ");
   expect(
     renderKey({ language: "en-XA", displayLocale: "en-GB" }, "ui.reference", {
@@ -37,7 +37,7 @@ it("pseudolocalizes only literal text while preserving authored argument values 
   ).toBe("⟦EXACT-A: EXACT-B⟧");
 });
 
-it("isolates technical revision holes in Arabic reference summaries and preserves literal word order [CC-WEB-001]", () => {
+it("isolates technical revision holes in Arabic reference summaries and preserves literal word order", () => {
   const reference = { exact: "A\u2069\u202E العربية" };
   const values = { status: reference.exact, revision: "12" };
   expect(

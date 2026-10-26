@@ -117,9 +117,7 @@ let tests =
     testList
         "CLI token lifetimes"
         [
-            testCase "[CC-CLI-003] rollback cannot extend elapsed token reuse" rollbackBudget
-            testCase "[CC-CLI-003] forward wall jumps retain conservative UTC expiry" forwardWall
-            testCase
-                "[CC-CLI-003] delayed token delivery cannot create fresh reuse lifetime"
-                delayedDelivery
+            testCase "rollback cannot extend elapsed token reuse" rollbackBudget
+            testCase "forward wall jumps retain conservative UTC expiry" forwardWall
+            testCase "delayed token delivery cannot create fresh reuse lifetime" delayedDelivery
         ]

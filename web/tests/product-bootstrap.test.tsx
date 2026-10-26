@@ -6,7 +6,7 @@ import { response } from "./service-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
-it("admits matching public session metadata without protected definition access [CC-WEB-001]", async () => {
+it("admits matching public session metadata without protected definition access", async () => {
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
     response("session", "SUCCEEDED", { authenticated: true, antiforgeryToken: "synthetic-token" }),
   );
@@ -25,7 +25,7 @@ it("admits matching public session metadata without protected definition access 
   expect(productMetadata.productVersion).not.toBe("");
 });
 
-it("refuses a host fingerprint mismatch without claiming an invalid actor session [CC-WEB-001]", async () => {
+it("refuses a host fingerprint mismatch without claiming an invalid actor session", async () => {
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
     response("session", "SUCCEEDED", {
       authenticated: true,
@@ -42,7 +42,7 @@ it("refuses a host fingerprint mismatch without claiming an invalid actor sessio
   });
 });
 
-it("keeps newer session admission when an older fingerprint reply arrives [CC-WEB-001]", async () => {
+it("keeps newer session admission when an older fingerprint reply arrives", async () => {
   let complete: (value: Response) => void = () => undefined;
   const first = new Promise<Response>((resolve) => {
     complete = resolve;

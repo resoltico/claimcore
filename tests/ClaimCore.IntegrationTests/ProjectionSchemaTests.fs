@@ -74,5 +74,5 @@ let private projection () =
 [<Tests>]
 let tests =
     testCaseAsync
-        "[CC-DOM-001] SQL column coverage follows the record declaration and rejects extras"
+        "SQL column coverage follows the record declaration and rejects extras"
         (projection ())

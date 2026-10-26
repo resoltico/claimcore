@@ -390,5 +390,5 @@ let private qualify () =
 [<Tests>]
 let tests =
     testCaseAsync
-        "[CC-CLI-001][CC-AUTH-001] published walkthrough, exact replay, roles, stewardship, Unicode and checkpoint"
+        "published walkthrough, exact replay, roles, stewardship, Unicode and checkpoint"
         (async { do! qualify () |> Async.AwaitTask })

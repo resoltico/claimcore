@@ -1,66 +1,41 @@
 # ClaimCore
 
-ClaimCore is a claims case register for people and automation. Record incident facts, payment decisions and
-payment dates in a browser or CLI. Both use the same authenticated HTTPS service and current actor permissions.
-One PostgreSQL database stores accepted operations and the current case records.
+ClaimCore is a claims case register for people and automation. It records incident facts, payment
+decisions and payment dates through a browser or CLI, backed by one authenticated HTTPS service and
+PostgreSQL database. It records assertions about a claim; it does not adjudicate coverage or transfer money.
 
-[Start a local evaluation](docs/getting-started.md) · [Documentation](docs/README.md) ·
-[CLI examples](examples/README.md) · [Operations](docs/operations.md) ·
-[Releases](https://github.com/resoltico/claimcore/releases)
+## Try it
 
-## Work with cases
+Follow [Getting started](docs/getting-started.md) to create a fresh synthetic installation, sign in and
+record a case. The walkthrough includes isolated certificate trust and owner setup.
 
-Open or amend a case, record a decision or payment date, close or reopen it, and correct existing facts
-atomically. Payment progress and open/closed status are independent. These are recorded assertions;
-ClaimCore transfers no money. The [domain guide](docs/domain.md) explains the business record and corrections.
+For a source checkout with the [declared toolchains](docs/contributing.md#first-checkout) installed:
 
-A human data steward can void an entry error, reinstate a voided case or erase its live payload history.
-Erasure retains the reference, revision and ledger metadata. Copies, WAL and backups require separate
-operator action; read the [erasure limits](docs/operations.md#erasure-limits).
+```sh
+bash eng/verify.sh --fast
+```
 
-The browser offers English, Latvian and Arabic, right-to-left layout and separate display preferences.
-Business dates follow the installation's immutable IANA time zone. Case roles and scoped grants control
-work; an installation owner administers authority and needs separate grants for case work.
+The [contribution guide](docs/contributing.md) distinguishes fast checks, complete qualification and growth.
 
-## Integrate through the service and CLI
+## Find your task
 
-| Application | Use |
+| Task | Guide |
 | --- | --- |
-| claimcore-server | HTTPS service and browser, with OIDC sign-in and bearer API authentication |
-| claimcore | Human commands and structured JSON calls, using PKCE or client credentials |
-| claimcore-database | Separate owner-only initialization, provisioning and verification |
+| Record and correct case facts | [Case work](docs/case-work.md) |
+| Host, administer, back up or restore an installation | [Operating](docs/operating.md) |
+| Connect a client or automate work | [Integrating](docs/integrating.md) |
+| Find a CLI verb or flag | [Generated CLI reference](docs/cli.md) |
+| Build or change the source | [Contributing](docs/contributing.md) |
+| Understand project terms | [Glossary](docs/glossary.md) |
 
-Try `claimcore case open ... --dry-run` to inspect a request without signing in. Human commands and JSON
-frames share the [service contract](docs/api.md). Service, browser and CLI must be deployed together.
+The browser offers English, Latvian and Arabic, with right-to-left layout and separate display preferences.
+The [synthetic examples](examples/README.md) demonstrate equivalent human commands and JSON calls.
+Operators manage identity, access and data custody; start with the operating guide before using real data.
 
-Every mutation checks current permissions, state and expected revision under the ledger lock. Resending the
-same retained accepted request returns its original acceptance without another entry. If delivery is
-uncertain, preserve the exact frame and operation ID. Resend it unchanged or use `claimcore operation resolve`
-for an accepted receipt or final non-acceptance. A browser reload keeps only the unresolved ID, subject and act;
-it retains no submitted body.
-
-## Evaluate
-
-[Getting started](docs/getting-started.md) creates a fresh synthetic Compose installation. Existing incompatible
-installations are refused untouched; preserve them with matching software. No conversion is supplied.
-Private configuration files support .NET-supported Unix platforms, including musl; Windows refuses them.
-
-## Operate
-
-Operators own identity, TLS, deployment, backups and retention. Ledger verification detects inconsistency
-against trusted checkpoints; it cannot establish independent freshness or defeat an administrator rewriting
-all evidence. The supplied setup is for evaluation, with no production qualification or support SLA.
-
-## Contribute
-
-[Development](docs/development.md) explains the required gate and separate growth qualification.
-[Architecture](docs/architecture.md#cc-arch-001) explains component ownership. Read
-[Contributing](CONTRIBUTING.md), [Support](SUPPORT.md) and [Security](SECURITY.md) before submitting work or reports.
-The owner reviews and merges changes; a green check records execution evidence.
+ClaimCore is pre-1.0 software supplied for evaluation, without production qualification or a support SLA.
+See [Support](SUPPORT.md), [Security](SECURITY.md) and [Contributing](CONTRIBUTING.md) for reports and changes.
+The owner reviews and merges work. Releases distribute source through
+[GitHub Releases](https://github.com/resoltico/claimcore/releases).
 
 Original code and documentation use the [Mozilla Public License 2.0](LICENSE). Third-party components retain
 their licenses and notices. [CHANGELOG.md](CHANGELOG.md) records release changes.
-
-See the [generated CLI reference](docs/cli.md) for verbs, inputs and choices.
-
-See the [glossary](docs/glossary.md) for project terminology.

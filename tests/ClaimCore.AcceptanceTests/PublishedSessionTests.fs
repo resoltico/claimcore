@@ -145,5 +145,5 @@ let private qualify () =
 [<Tests>]
 let tests =
     testCaseAsync
-        "[CC-WEB-001][CC-RUN-001] concurrent published Web instances share OIDC tickets and logout survives stale cookies"
+        "concurrent published Web instances share OIDC tickets and logout survives stale cookies"
         (async { do! qualify () |> Async.AwaitTask })

@@ -281,10 +281,10 @@ let tests =
         [
             testCase "accepted and rejected sequences match complete independent state" (fun () ->
                 Expect.isTrue (checkSequence acceptingPath) "Complete fixed acceptance path"
-                run "CC-PROP-TRANSITION-001" sequenceProperty)
+                run "case transition sequence" sequenceProperty)
             testCase
                 "sequence oracle rejects refusal-only and corrupt accepted outcomes"
                 negativeControls
             testCase "reachable states match the independent availability matrix" (fun () ->
-                run "CC-PROP-AVAILABILITY-001" availabilityProperty)
+                run "state act eligibility" availabilityProperty)
         ]
