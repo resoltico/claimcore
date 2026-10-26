@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.SchemaTests
 
 open ClaimCore.Json
+open ClaimCore.Domain
 
 open ClaimCore.TestSupport
 
@@ -140,7 +141,7 @@ let private unicodeAndPolicy (database: PostgresFixture.Database) =
         let record = Projections.caseRow rows.Head
 
         Expect.equal
-            record.Snapshot.Reference
+            (CaseReference.format record.Snapshot.Reference)
             "synthetic-a"
             "Projection dates parse independently of server DateStyle"
     }

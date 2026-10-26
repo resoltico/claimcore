@@ -11,9 +11,9 @@ let private availableActs record =
 
 let private candidates =
     [
-        CaseAct.Open registration
-        CaseAct.AmendRegistration registration
-        CaseAct.Correct
+        UnvalidatedCaseAct.Open registration
+        UnvalidatedCaseAct.AmendRegistration registration
+        UnvalidatedCaseAct.Correct
             {
                 Registration =
                     RegistrationGroup.Replace
@@ -23,19 +23,19 @@ let private candidates =
                 Decision = DecisionGroup.Keep
                 Payment = PaymentGroup.Keep
             }
-        CaseAct.Decide decision
-        CaseAct.WithdrawDecision
-        CaseAct.RecordPayment { PaymentDate = "2026-08-20" }
-        CaseAct.ClearPayment
-        CaseAct.Close
-        CaseAct.Reopen
+        UnvalidatedCaseAct.Decide decision
+        UnvalidatedCaseAct.WithdrawDecision
+        UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
+        UnvalidatedCaseAct.ClearPayment
+        UnvalidatedCaseAct.Close
+        UnvalidatedCaseAct.Reopen
     ]
 
 let private stateActions =
     testCase "[CC-DOM-002] each state advertises and enforces the specified act set" (fun () ->
         let zero =
             opened ()
-            |> apply (CaseAct.Decide { decision with PayableAmount = "0" })
+            |> apply (UnvalidatedCaseAct.Decide { decision with PayableAmount = "0" })
             |> accepted
 
         let cases =
@@ -61,10 +61,10 @@ let private stateActions =
 
                 Expect.equal
                     (Result.isOk result)
-                    (Set.contains (CaseActs.name act) actions)
+                    (Set.contains (UnvalidatedCaseActs.name act) actions)
                     "No separately invented UI state machine")
 
-            let closed = apply CaseAct.Close state |> accepted
+            let closed = apply UnvalidatedCaseAct.Close state |> accepted
 
             Expect.equal
                 (availableActs closed)
@@ -93,7 +93,7 @@ let private edgeActions =
                 Expect.contains (availableActs state) "DECIDE" "State eligibility"
 
                 let invalid =
-                    CaseAct.Decide
+                    UnvalidatedCaseAct.Decide
                         { decision with
                             PaymentDecisionDate = "2027-01-01"
                         }

@@ -28,7 +28,9 @@ let private seedCases (admin: HandlerContext) target =
                 (Handlers.call
                     Api.operationExecute
                     admin
-                    (OperationInput.Case(request (300 + n) reference 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request (300 + n) reference 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (token))
 
             accepted opened |> ignore
@@ -66,7 +68,7 @@ let private eraseCase (database: PostgresFixture.Database) (admin: HandlerContex
                 OperationId = id 605
                 CaseReference = "GRANT-1"
                 ExpectedRevision = 1L
-                Act = (CaseAct.Erase)
+                Act = (UnvalidatedCaseAct.Erase)
             }
 
         let! erased =

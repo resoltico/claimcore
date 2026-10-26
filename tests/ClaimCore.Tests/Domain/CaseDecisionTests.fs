@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CaseDecisionTests
 
+open ClaimCore.TestSupport
+
 open System
 open Expecto
 open ClaimCore.Contract
@@ -26,7 +28,7 @@ let private replay () =
             }
             { request with
                 Act =
-                    CaseAct.Open
+                    UnvalidatedCaseAct.Open
                         { registration with
                             ClaimedAmount = "1000"
                         }
@@ -49,7 +51,14 @@ let private replay () =
         (Decision.Replay receipt)
         "Replay precedes current revision checks"
 
-    match CaseDecisions.review installation calendar owner request laterView.Read with
+    match
+        CaseDecisions.review
+            installation
+            calendar
+            owner
+            (CaseFixtures.command request)
+            laterView.Read
+    with
     | Decision.Replay accepted -> Expect.equal accepted receipt "Preview observes exact acceptance"
     | _ -> failtest "Preview must find the accepted identity"
 
@@ -83,7 +92,9 @@ let private reviewAndTime () =
     let request = opening 13 "PURE-REVIEW"
     let view = locked worker None None
 
-    match CaseDecisions.review installation calendar owner request view.Read with
+    match
+        CaseDecisions.review installation calendar owner (CaseFixtures.command request) view.Read
+    with
     | Decision.Proceed(None, after) ->
         Expect.equal (Case.snapshot after).Revision 1L "Pure review proposes without append"
     | _ -> failtest "Expected a pure proposed state"
@@ -109,11 +120,14 @@ let private reviewAndTime () =
     let _, _, current, _ = created 14 "PURE-REVIEW-CURRENT"
 
     Expect.equal
-        (decide (opening 13 current.Snapshot.Reference) (locked worker (Some current) None))
+        (decide
+            (opening 13 (CaseReference.format current.Snapshot.Reference))
+            (locked worker (Some current) None))
         (Decision.Refuse Refusal.CaseAlreadyExists)
         "An earlier preview cannot authorize opening after another acceptance"
 
-    let stale = actRequest 15 current.Snapshot.Reference 0L CaseAct.Close
+    let stale =
+        actRequest 15 (CaseReference.format current.Snapshot.Reference) 0L UnvalidatedCaseAct.Close
 
     Expect.equal
         (decide stale (locked worker (Some current) None))
@@ -138,9 +152,9 @@ let private integrityAndPrivacy () =
 
     let different =
         { original with
-            CaseReference = readable.Snapshot.Reference
+            CaseReference = (CaseReference.format readable.Snapshot.Reference)
             ExpectedRevision = 1L
-            Act = CaseAct.Close
+            Act = UnvalidatedCaseAct.Close
         }
 
     Expect.equal
@@ -196,7 +210,11 @@ let private capacityAndFence () =
 
     Expect.equal
         (decide
-            (actRequest 21 current.Snapshot.Reference Revision.Maximum CaseAct.Close)
+            (actRequest
+                21
+                (CaseReference.format current.Snapshot.Reference)
+                Revision.Maximum
+                UnvalidatedCaseAct.Close)
             (locked worker (Some maxRevision) None))
         (Decision.Refuse Refusal.RevisionExhausted)
         "Revision exhaustion is checked without overflow"

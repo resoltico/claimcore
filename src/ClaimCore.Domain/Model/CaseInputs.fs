@@ -2,7 +2,7 @@ namespace ClaimCore.Domain
 
 open System
 
-type Registration =
+type RegistrationInput =
     {
         IncidentDate: string
         IncidentNotificationDate: string
@@ -13,33 +13,33 @@ type Registration =
         ClaimedCurrency: string
     }
 
-type Decision =
+type DecisionInput =
     {
         PaymentDecisionDate: string
         PayableAmount: string
         PayableCurrency: string
     }
 
-type Payment = { PaymentDate: string }
+type PaymentInput = { PaymentDate: string }
 
 [<RequireQualifiedAccess>]
 type RegistrationGroup =
     | Keep
-    | Replace of Registration
+    | Replace of RegistrationInput
 
 [<RequireQualifiedAccess>]
 type DecisionGroup =
     | Keep
-    | Replace of Decision
+    | Replace of DecisionInput
     | Clear
 
 [<RequireQualifiedAccess>]
 type PaymentGroup =
     | Keep
-    | Replace of Payment
+    | Replace of PaymentInput
     | Clear
 
-type Correction =
+type CorrectionInput =
     {
         Registration: RegistrationGroup
         Decision: DecisionGroup
@@ -47,13 +47,13 @@ type Correction =
     }
 
 [<RequireQualifiedAccess>]
-type CaseAct =
-    | Open of Registration
-    | AmendRegistration of Registration
-    | Correct of Correction
-    | Decide of Decision
+type UnvalidatedCaseAct =
+    | Open of RegistrationInput
+    | AmendRegistration of RegistrationInput
+    | Correct of CorrectionInput
+    | Decide of DecisionInput
     | WithdrawDecision
-    | RecordPayment of Payment
+    | RecordPayment of PaymentInput
     | ClearPayment
     | Close
     | Reopen
@@ -66,23 +66,25 @@ type UnvalidatedCaseRequest =
         OperationId: Guid
         CaseReference: string
         ExpectedRevision: int64
-        Act: CaseAct
+        Act: UnvalidatedCaseAct
     }
 
-module CaseActs =
+module UnvalidatedCaseActs =
     let kind =
         function
-        | CaseAct.Open _ -> CaseActKind.Business BusinessActKind.Open
-        | CaseAct.AmendRegistration _ -> CaseActKind.Business BusinessActKind.AmendRegistration
-        | CaseAct.Correct _ -> CaseActKind.Business BusinessActKind.Correct
-        | CaseAct.Decide _ -> CaseActKind.Business BusinessActKind.Decide
-        | CaseAct.WithdrawDecision -> CaseActKind.Business BusinessActKind.WithdrawDecision
-        | CaseAct.RecordPayment _ -> CaseActKind.Business BusinessActKind.RecordPayment
-        | CaseAct.ClearPayment -> CaseActKind.Business BusinessActKind.ClearPayment
-        | CaseAct.Close -> CaseActKind.Business BusinessActKind.Close
-        | CaseAct.Reopen -> CaseActKind.Business BusinessActKind.Reopen
-        | CaseAct.Void _ -> CaseActKind.Stewardship StewardshipActKind.Void
-        | CaseAct.Reinstate _ -> CaseActKind.Stewardship StewardshipActKind.Reinstate
-        | CaseAct.Erase -> CaseActKind.Stewardship StewardshipActKind.Erase
+        | UnvalidatedCaseAct.Open _ -> CaseActKind.Business BusinessActKind.Open
+        | UnvalidatedCaseAct.AmendRegistration _ ->
+            CaseActKind.Business BusinessActKind.AmendRegistration
+        | UnvalidatedCaseAct.Correct _ -> CaseActKind.Business BusinessActKind.Correct
+        | UnvalidatedCaseAct.Decide _ -> CaseActKind.Business BusinessActKind.Decide
+        | UnvalidatedCaseAct.WithdrawDecision ->
+            CaseActKind.Business BusinessActKind.WithdrawDecision
+        | UnvalidatedCaseAct.RecordPayment _ -> CaseActKind.Business BusinessActKind.RecordPayment
+        | UnvalidatedCaseAct.ClearPayment -> CaseActKind.Business BusinessActKind.ClearPayment
+        | UnvalidatedCaseAct.Close -> CaseActKind.Business BusinessActKind.Close
+        | UnvalidatedCaseAct.Reopen -> CaseActKind.Business BusinessActKind.Reopen
+        | UnvalidatedCaseAct.Void _ -> CaseActKind.Stewardship StewardshipActKind.Void
+        | UnvalidatedCaseAct.Reinstate _ -> CaseActKind.Stewardship StewardshipActKind.Reinstate
+        | UnvalidatedCaseAct.Erase -> CaseActKind.Stewardship StewardshipActKind.Erase
 
     let name act = kind act |> CaseActKinds.token

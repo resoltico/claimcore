@@ -7,12 +7,13 @@ open System.Security.Cryptography
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
-[<RequireQualifiedAccess>]
+[<RequireQualifiedAccess; NoComparison>]
 type internal EntryContent =
-    | Case of request: UnvalidatedCaseRequest * snapshot: CaseSnapshot option
+    | Case of request: CaseCommand * snapshot: CaseSnapshot option
     | Authority of AuthorityRequestRecord
     | ErasedCase
 
+[<NoComparison>]
 type internal ValidatedEntry =
     private
         {
@@ -170,7 +171,7 @@ module internal LedgerEntries =
             request.OperationId = entry.OperationId
             && request.ExpectedRevision = revision - 1L
             && CaseActs.kind request.Act = act
-            && CaseReferenceId.encode installationId request.CaseReference = id
+            && CaseReferenceId.encode installationId (CaseReference.format request.Reference) = id
             ->
             if act = (CaseActKind.Stewardship StewardshipActKind.Erase) then
                 if Array.isEmpty data.Snapshot then
@@ -181,8 +182,8 @@ module internal LedgerEntries =
                 match ClaimCore.RecordFormat.CaseRecord.decodeSnapshot data.Snapshot with
                 | Ok snapshot when
                     snapshot.Revision = revision
-                    && CaseReference.key snapshot.Reference =
-                        CaseReference.key request.CaseReference
+                    && CaseReference.identity snapshot.Reference =
+                        CaseReference.identity request.Reference
                     ->
                     Ok(EntryContent.Case(request, Some snapshot))
                 | _ -> Error CoreFault.StoreIntegrityError
@@ -278,7 +279,10 @@ module internal LedgerEntries =
             || (Case.ofAccepted record.Snapshot |> Result.isError)
             ->
             Error CoreFault.StoreIntegrityError
-        | Some record when CaseReferenceId.encode installationId record.Snapshot.Reference <> id ->
+        | Some record when
+            CaseReferenceId.encode installationId (CaseReference.format record.Snapshot.Reference)
+            <> id
+            ->
             Error CoreFault.StoreIntegrityError
         | Some record ->
             let shown =

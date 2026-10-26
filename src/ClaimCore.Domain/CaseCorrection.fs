@@ -7,27 +7,26 @@ open ClaimCore.Domain.ResultFlow
 module internal CaseCorrections =
     let private registrationInput =
         function
-        | RegistrationGroup.Keep -> Ok ValidatedRegistrationCorrection.Keep
+        | RegistrationGroup.Keep -> Ok RegistrationChange.Keep
         | RegistrationGroup.Replace value ->
-            Validation.registration value
-            |> Result.map ValidatedRegistrationCorrection.Replace
+            Validation.registration value |> Result.map RegistrationChange.Replace
 
     let private decisionInput =
         function
-        | DecisionGroup.Keep -> Ok ValidatedDecisionCorrection.Keep
-        | DecisionGroup.Clear -> Ok ValidatedDecisionCorrection.Clear
+        | DecisionGroup.Keep -> Ok DecisionChange.Keep
+        | DecisionGroup.Clear -> Ok DecisionChange.Clear
         | DecisionGroup.Replace value ->
-            Validation.decision value |> Result.map ValidatedDecisionCorrection.Replace
+            Validation.decision value |> Result.map DecisionChange.Replace
 
     let private paymentInput =
         function
-        | PaymentGroup.Keep -> Ok ValidatedPaymentCorrection.Keep
-        | PaymentGroup.Clear -> Ok ValidatedPaymentCorrection.Clear
+        | PaymentGroup.Keep -> Ok PaymentChange.Keep
+        | PaymentGroup.Clear -> Ok PaymentChange.Clear
         | PaymentGroup.Replace value ->
             Validation.date BusinessField.PaymentDate value.PaymentDate
-            |> Result.map ValidatedPaymentCorrection.Replace
+            |> Result.map PaymentChange.Replace
 
-    let parse (correction: Correction) : Result<ValidatedCaseCorrection, Refusal> =
+    let parse (correction: CorrectionInput) : Result<CaseCorrection, Refusal> =
         result {
             let! registration = registrationInput correction.Registration
             let! decision = decisionInput correction.Decision
@@ -45,57 +44,51 @@ module internal CaseCorrections =
         let current = PaymentProgress.decision progress
 
         match choice, current with
-        | ValidatedDecisionCorrection.Keep, _ -> Ok current
+        | DecisionChange.Keep, _ -> Ok current
         | _, None -> Error Refusal.CorrectionRequiresExistingValue
-        | ValidatedDecisionCorrection.Replace replacement, Some _ -> Ok(Some replacement)
-        | ValidatedDecisionCorrection.Clear, Some _ -> Ok None
+        | DecisionChange.Replace replacement, Some _ -> Ok(Some replacement)
+        | DecisionChange.Clear, Some _ -> Ok None
 
     let private paymentChoice progress choice =
         let current = PaymentProgress.paymentDate progress
 
         match choice, current with
-        | ValidatedPaymentCorrection.Keep, _ -> Ok current
+        | PaymentChange.Keep, _ -> Ok current
         | _, None -> Error Refusal.CorrectionRequiresExistingValue
-        | ValidatedPaymentCorrection.Replace replacement, Some _ -> Ok(Some replacement)
-        | ValidatedPaymentCorrection.Clear, Some _ -> Ok None
+        | PaymentChange.Replace replacement, Some _ -> Ok(Some replacement)
+        | PaymentChange.Clear, Some _ -> Ok None
 
     /// Unary presence advice shares the execution guards; combinations are still decided by apply.
     let availableActions progress group =
         let present =
             match group with
             | RecordGroup.Registration -> true
-            | RecordGroup.Decision ->
-                decisionChoice progress ValidatedDecisionCorrection.Clear |> Result.isOk
-            | RecordGroup.Payment ->
-                paymentChoice progress ValidatedPaymentCorrection.Clear |> Result.isOk
+            | RecordGroup.Decision -> decisionChoice progress DecisionChange.Clear |> Result.isOk
+            | RecordGroup.Payment -> paymentChoice progress PaymentChange.Clear |> Result.isOk
 
         if present then
             CorrectionActions.forGroup group
         else
             [ CorrectionGroupAction.Keep ]
 
-    let private paidAcknowledgement progress (correction: ValidatedCaseCorrection) =
+    let private paidAcknowledgement progress (correction: CaseCorrection) =
         match progress, correction.Decision, correction.Payment with
-        | PaymentProgress.Paid _, ValidatedDecisionCorrection.Clear, payment when
-            payment <> ValidatedPaymentCorrection.Clear
-            ->
+        | PaymentProgress.Paid _, DecisionChange.Clear, payment when payment <> PaymentChange.Clear ->
             Validation.invalid
                 (InputTarget.Group RecordGroup.Payment)
                 Violation.PaymentClearRequired
-        | PaymentProgress.Paid _,
-          ValidatedDecisionCorrection.Replace _,
-          ValidatedPaymentCorrection.Keep ->
+        | PaymentProgress.Paid _, DecisionChange.Replace _, PaymentChange.Keep ->
             Validation.invalid
                 (InputTarget.Group RecordGroup.Payment)
                 Violation.PaymentAcknowledgementRequired
         | _ -> Ok()
 
-    let apply facts progress (correction: ValidatedCaseCorrection) =
+    let apply facts progress (correction: CaseCorrection) =
         result {
             let nextFacts =
                 match correction.Registration with
-                | ValidatedRegistrationCorrection.Keep -> facts
-                | ValidatedRegistrationCorrection.Replace replacement -> replacement
+                | RegistrationChange.Keep -> facts
+                | RegistrationChange.Replace replacement -> replacement
 
             let! nextDecision = decisionChoice progress correction.Decision
             let! nextPayment = paymentChoice progress correction.Payment

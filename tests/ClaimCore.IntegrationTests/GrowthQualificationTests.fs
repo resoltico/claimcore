@@ -80,7 +80,7 @@ let private openCases (actor: HandlerContext) count =
                             (1000 + index)
                             ("synthetic-growth-" + string index)
                             0L
-                            (CaseAct.Open registration)
+                            (UnvalidatedCaseAct.Open registration)
                     ))
                     (token))
 
@@ -95,26 +95,26 @@ let private act revision =
         }
 
     match (revision - 1L) % 8L with
-    | 0L -> CaseAct.AmendRegistration amended
+    | 0L -> UnvalidatedCaseAct.AmendRegistration amended
     | 1L ->
-        CaseAct.Decide
+        UnvalidatedCaseAct.Decide
             {
                 PaymentDecisionDate = "2026-08-04"
                 PayableAmount = "100.00"
                 PayableCurrency = "EUR"
             }
-    | 2L -> CaseAct.RecordPayment { PaymentDate = "2026-08-05" }
-    | 3L -> CaseAct.ClearPayment
+    | 2L -> UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-05" }
+    | 3L -> UnvalidatedCaseAct.ClearPayment
     | 4L ->
-        CaseAct.Correct
+        UnvalidatedCaseAct.Correct
             {
                 Registration = RegistrationGroup.Replace amended
                 Decision = DecisionGroup.Keep
                 Payment = PaymentGroup.Keep
             }
-    | 5L -> CaseAct.WithdrawDecision
-    | 6L -> CaseAct.Close
-    | _ -> CaseAct.Reopen
+    | 5L -> UnvalidatedCaseAct.WithdrawDecision
+    | 6L -> UnvalidatedCaseAct.Close
+    | _ -> UnvalidatedCaseAct.Reopen
 
 let private writeLane (actor: HandlerContext) workload lane =
     task {

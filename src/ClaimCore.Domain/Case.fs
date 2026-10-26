@@ -5,10 +5,25 @@ open System
 open ClaimCore.Domain.ResultFlow
 
 [<NoComparison>]
+type CaseCommand =
+    private
+        {
+            Source: UnvalidatedCaseRequest
+            ParsedReference: CaseReference
+            ParsedAct: CaseAct
+        }
+
+    member this.Authored = this.Source
+    member this.Reference = this.ParsedReference
+    member this.Act = this.ParsedAct
+    member this.OperationId = this.Source.OperationId
+    member this.ExpectedRevision = this.Source.ExpectedRevision
+
+[<NoComparison>]
 type CaseRecord =
     private
         {
-            Reference: string
+            Reference: CaseReference
             Revision: int64
             State: CaseState<Claim>
         }
@@ -18,31 +33,11 @@ module private BusinessState =
         {
             CaseReference = reference
             Status = claim.Status
-            Registration =
-                {
-                    IncidentDate = Validation.dateText claim.Facts.IncidentDate
-                    IncidentNotificationDate =
-                        Validation.dateText claim.Facts.IncidentNotificationDate
-                    IncidentCountry = claim.Facts.IncidentCountry
-                    ClaimantName = claim.Facts.ClaimantName
-                    InsurerName = claim.Facts.InsurerName
-                    ClaimedAmount = Validation.amountText claim.Facts.ClaimedAmount
-                    ClaimedCurrency = claim.Facts.ClaimedAmount.Currency
-                }
-            Decision =
-                PaymentProgress.decision claim.Progress
-                |> Option.map (fun value ->
-                    {
-                        PaymentDecisionDate = Validation.dateText value.PaymentDecisionDate
-                        PayableAmount = Validation.amountText value.PayableAmount
-                        PayableCurrency = value.PayableAmount.Currency
-                    })
+            Registration = claim.Facts
+            Decision = PaymentProgress.decision claim.Progress
             Payment =
                 PaymentProgress.paymentDate claim.Progress
-                |> Option.map (fun value ->
-                    {
-                        PaymentDate = Validation.dateText value
-                    })
+                |> Option.map (fun date -> { PaymentDate = date })
         }
 
     let private retained value =
@@ -52,44 +47,25 @@ module private BusinessState =
                 RecordViolation.InvalidScalar(field, violation)
             | _ -> RecordViolation.InvalidProgress)
 
-    let private restoreProgress (fields: CaseFields) =
-        result {
-            let! decision =
-                match fields.Decision with
-                | None -> Ok None
-                | Some value -> Validation.decision value |> retained |> Result.map Some
-
-            let! paid =
-                match fields.Payment with
-                | None -> Ok None
-                | Some value ->
-                    Validation.date BusinessField.PaymentDate value.PaymentDate
-                    |> retained
-                    |> Result.map Some
-
-            return! PaymentProgress.fromGroups decision paid |> retained
-        }
-
     let restore (accepted: CaseFields) =
         result {
-            let! facts = accepted.Registration |> Validation.registration |> retained
-            let! progress = restoreProgress accepted
-            do! StateValidation.progress facts progress |> retained
+            let! progress =
+                PaymentProgress.fromGroups
+                    accepted.Decision
+                    (accepted.Payment |> Option.map _.PaymentDate)
+                |> retained
 
-            let claim =
+            do! StateValidation.progress accepted.Registration progress |> retained
+
+            return
                 {
-                    Facts = facts
+                    Facts = accepted.Registration
                     Progress = progress
                     Status = accepted.Status
                 }
-
-            if fields accepted.CaseReference claim <> accepted then
-                return! Error RecordViolation.NonCanonicalFields
-            else
-                return claim
         }
 
-    let openCase (today: DateOnly) (facts: Validation.Facts) =
+    let openCase (today: DateOnly) (facts: Registration) =
         result {
             do!
                 Validation.notFuture
@@ -115,43 +91,43 @@ module private BusinessState =
 
     let private change act (claim: Claim) =
         match act with
-        | ValidatedAct.Open _ -> invalidOp "An existing case cannot be opened."
-        | ValidatedAct.Reopen ->
+        | BusinessAct.Open _ -> invalidOp "An existing case cannot be opened."
+        | BusinessAct.Reopen ->
             Ok
                 { claim with
                     Status = CaseStatus.Opened
                 }
-        | ValidatedAct.Close ->
+        | BusinessAct.Close ->
             Ok
                 { claim with
                     Status = CaseStatus.Closed
                 }
-        | ValidatedAct.AmendRegistration facts -> Ok { claim with Facts = facts }
-        | ValidatedAct.Correct correction ->
+        | BusinessAct.AmendRegistration facts -> Ok { claim with Facts = facts }
+        | BusinessAct.Correct correction ->
             CaseCorrections.apply claim.Facts claim.Progress correction
             |> Result.map (fun (facts, progress) ->
                 { claim with
                     Facts = facts
                     Progress = progress
                 })
-        | ValidatedAct.Decide decision ->
+        | BusinessAct.Decide decision ->
             Ok
                 { claim with
                     Progress = PaymentProgress.Decided decision
                 }
-        | ValidatedAct.WithdrawDecision ->
+        | BusinessAct.WithdrawDecision ->
             Ok
                 { claim with
                     Progress = PaymentProgress.Undecided
                 }
-        | ValidatedAct.RecordPayment date ->
+        | BusinessAct.RecordPayment date ->
             let decision = PaymentProgress.decision claim.Progress |> Option.get
 
             Ok
                 { claim with
                     Progress = PaymentProgress.Paid(decision, date)
                 }
-        | ValidatedAct.ClearPayment ->
+        | BusinessAct.ClearPayment ->
             let decision = PaymentProgress.decision claim.Progress |> Option.get
 
             Ok
@@ -178,53 +154,92 @@ module private BusinessState =
 
 module Case =
     /// Identity normalization never rewrites authored payloads or free text.
-    let canonical (request: UnvalidatedCaseRequest) =
-        let registration (value: Registration) =
-            { value with
-                ClaimedAmount = Validation.canonicalAmount value.ClaimedAmount
+    let private canonicalInput (command: CaseCommand) =
+        let registration (value: Registration) : RegistrationInput =
+            {
+                IncidentDate = CalendarDate.format value.IncidentDate
+                IncidentNotificationDate = CalendarDate.format value.IncidentNotificationDate
+                IncidentCountry = CountryCode.format value.IncidentCountry
+                ClaimantName = PartyName.format value.ClaimantName
+                InsurerName = PartyName.format value.InsurerName
+                ClaimedAmount = Money.format value.ClaimedAmount
+                ClaimedCurrency = Money.currency value.ClaimedAmount
             }
 
-        let decision (value: ClaimCore.Domain.Decision) =
-            { value with
-                PayableAmount = Validation.canonicalAmount value.PayableAmount
+        let decision (value: Decision) : DecisionInput =
+            {
+                PaymentDecisionDate = CalendarDate.format value.PaymentDecisionDate
+                PayableAmount = Money.format value.PayableAmount
+                PayableCurrency = Money.currency value.PayableAmount
             }
 
         let registrationGroup =
             function
-            | RegistrationGroup.Keep -> RegistrationGroup.Keep
-            | RegistrationGroup.Replace value -> RegistrationGroup.Replace(registration value)
+            | RegistrationChange.Keep -> RegistrationGroup.Keep
+            | RegistrationChange.Replace value -> RegistrationGroup.Replace(registration value)
 
         let decisionGroup =
             function
-            | DecisionGroup.Keep -> DecisionGroup.Keep
-            | DecisionGroup.Clear -> DecisionGroup.Clear
-            | DecisionGroup.Replace value -> DecisionGroup.Replace(decision value)
+            | DecisionChange.Keep -> DecisionGroup.Keep
+            | DecisionChange.Clear -> DecisionGroup.Clear
+            | DecisionChange.Replace value -> DecisionGroup.Replace(decision value)
 
-        let act =
-            match request.Act with
-            | CaseAct.Open value -> CaseAct.Open(registration value)
-            | CaseAct.AmendRegistration value -> CaseAct.AmendRegistration(registration value)
-            | CaseAct.Decide value -> CaseAct.Decide(decision value)
-            | CaseAct.Correct value ->
-                CaseAct.Correct
-                    { value with
+        let payment date : PaymentInput =
+            {
+                PaymentDate = CalendarDate.format date
+            }
+
+        let paymentGroup =
+            function
+            | PaymentChange.Keep -> PaymentGroup.Keep
+            | PaymentChange.Clear -> PaymentGroup.Clear
+            | PaymentChange.Replace value -> PaymentGroup.Replace(payment value)
+
+        let business =
+            function
+            | BusinessAct.Open value -> UnvalidatedCaseAct.Open(registration value)
+            | BusinessAct.AmendRegistration value ->
+                UnvalidatedCaseAct.AmendRegistration(registration value)
+            | BusinessAct.Correct value ->
+                UnvalidatedCaseAct.Correct
+                    {
                         Registration = registrationGroup value.Registration
                         Decision = decisionGroup value.Decision
+                        Payment = paymentGroup value.Payment
                     }
-            | act -> act
+            | BusinessAct.Decide value -> UnvalidatedCaseAct.Decide(decision value)
+            | BusinessAct.WithdrawDecision -> UnvalidatedCaseAct.WithdrawDecision
+            | BusinessAct.RecordPayment date -> UnvalidatedCaseAct.RecordPayment(payment date)
+            | BusinessAct.ClearPayment -> UnvalidatedCaseAct.ClearPayment
+            | BusinessAct.Close -> UnvalidatedCaseAct.Close
+            | BusinessAct.Reopen -> UnvalidatedCaseAct.Reopen
 
-        let reference =
-            if System.String.IsNullOrEmpty request.CaseReference then
-                request.CaseReference
-            else
-                CaseReference.key request.CaseReference
+        let act =
+            match command.Act with
+            | CaseAct.Business value -> business value
+            | CaseAct.Void reason -> UnvalidatedCaseAct.Void(Reason.format reason)
+            | CaseAct.Reinstate reason -> UnvalidatedCaseAct.Reinstate(Reason.format reason)
+            | CaseAct.Erase -> UnvalidatedCaseAct.Erase
 
-        { request with
+        { command.Authored with
             Act = act
-            CaseReference = reference
+            CaseReference = CaseReference.identity command.Reference
         }
 
-    let validateRequest request = RequestValidation.parse request
+    let parse request =
+        RequestValidation.parse request
+        |> Result.map (fun (reference, act) ->
+            {
+                Source = request
+                ParsedReference = reference
+                ParsedAct = act
+            })
+
+    let canonical (command: CaseCommand) =
+        { command with
+            Source = canonicalInput command
+            ParsedReference = CaseReference.canonical command.Reference
+        }
 
     let snapshot (record: CaseRecord) : CaseSnapshot =
         {
@@ -235,10 +250,6 @@ module Case =
 
     let ofAccepted (accepted: CaseSnapshot) =
         result {
-            do!
-                CaseReference.validate accepted.Reference
-                |> Result.mapError (fun _ -> RecordViolation.ReferenceMismatch)
-
             if accepted.Revision < 1L || accepted.Revision > Revision.Maximum then
                 return! Error RecordViolation.RevisionOutOfRange
             else
@@ -262,56 +273,58 @@ module Case =
                     }
         }
 
-    let private steward act claim =
-        match act with
-        | CaseAct.Void reason ->
-            Validation.admission InputTarget.Reason reason
-            |> Result.map (fun () -> CaseState.Voided claim)
-        | CaseAct.Reinstate reason ->
-            Validation.admission InputTarget.Reason reason
-            |> Result.map (fun () -> CaseState.Active claim)
-        | CaseAct.Erase -> Ok CaseState.Erased
-        | _ -> invalidArg (nameof act) "Expected a stewardship act."
-
     let private transition today act state =
         result {
             do! Transitions.check state (CaseActs.kind act)
             let claim = CaseState.fields state |> Option.get
 
             match act with
-            | CaseAct.Void _
-            | CaseAct.Reinstate _
-            | CaseAct.Erase -> return! steward act claim
-            | _ ->
-                let! parsed = RequestValidation.business act
-                let! next = BusinessState.transition today parsed claim
+            | CaseAct.Void reason ->
+                do!
+                    Reason.admit reason
+                    |> Result.map ignore
+                    |> Result.mapError (fun violation ->
+                        Refusal.InvalidInput(InputTarget.Reason, violation))
+
+                return CaseState.Voided claim
+            | CaseAct.Reinstate reason ->
+                do!
+                    Reason.admit reason
+                    |> Result.map ignore
+                    |> Result.mapError (fun violation ->
+                        Refusal.InvalidInput(InputTarget.Reason, violation))
+
+                return CaseState.Active claim
+            | CaseAct.Erase -> return CaseState.Erased
+            | CaseAct.Business act ->
+                let! next = BusinessState.transition today act claim
                 return CaseState.Active next
         }
 
-    let private create today (request: UnvalidatedCaseRequest) =
-        match request.Act with
-        | (CaseAct.Open _) when request.ExpectedRevision <> 0L -> Error(Refusal.RevisionConflict 0L)
-        | (CaseAct.Open values) ->
-            result {
-                let! facts = Validation.registration values
-                let! claim = BusinessState.openCase today facts
-
-                return
-                    {
-                        Reference = request.CaseReference
-                        Revision = 1L
-                        State = CaseState.Active claim
-                    }
-            }
+    let private create today (command: CaseCommand) =
+        match command.Act with
+        | CaseAct.Business(BusinessAct.Open _) when command.ExpectedRevision <> 0L ->
+            Error(Refusal.RevisionConflict 0L)
+        | CaseAct.Business(BusinessAct.Open facts) ->
+            BusinessState.openCase today facts
+            |> Result.map (fun claim ->
+                {
+                    Reference = command.Reference
+                    Revision = 1L
+                    State = CaseState.Active claim
+                })
         | _ -> Error Refusal.ResourceUnavailable
 
-    let private existing today (request: UnvalidatedCaseRequest) (record: CaseRecord) =
-        if CaseReference.key record.Reference <> CaseReference.key request.CaseReference then
+    let private existing today (request: CaseCommand) (record: CaseRecord) =
+        if
+            CaseReference.identity record.Reference
+            <> CaseReference.identity request.Reference
+        then
             invalidArg "record" "The authoritative case does not match the request target."
         else
             match record.State, request.Act with
             | CaseState.Erased, _ -> Error Refusal.CaseErased
-            | _, (CaseAct.Open _) -> Error Refusal.CaseAlreadyExists
+            | _, CaseAct.Business(BusinessAct.Open _) -> Error Refusal.CaseAlreadyExists
             | _ when record.Revision <> request.ExpectedRevision ->
                 Error(Refusal.RevisionConflict record.Revision)
             | _ when record.Revision = Revision.Maximum -> Error Refusal.RevisionExhausted
@@ -323,14 +336,10 @@ module Case =
                         State = state
                     })
 
-    let decide today request current =
-        result {
-            do! validateRequest request
-
-            match current with
-            | None -> return! create today request
-            | Some record -> return! existing today request record
-        }
+    let decide today command current =
+        match current with
+        | None -> create today command
+        | Some record -> existing today command record
 
     let eligibleActs (record: CaseRecord) =
         if record.Revision = Revision.Maximum then

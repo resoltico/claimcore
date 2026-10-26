@@ -33,7 +33,7 @@ let private receipt: ClaimCore.Contract.OperationReceipt =
         Subject =
             ClaimCore.Contract.ReceiptSubject.Case
                 {
-                    Reference = "UNIT-001"
+                    Reference = CaseFixtures.reference "UNIT-001"
                     Revision = 1L
                     Act = (CaseActKind.Business BusinessActKind.Open)
                     Snapshot =
@@ -71,7 +71,7 @@ let private caseRequest values : ClaimCore.Domain.UnvalidatedCaseRequest =
         OperationId = id
         CaseReference = "UNIT-001"
         ExpectedRevision = 0L
-        Act = ClaimCore.Domain.CaseAct.Open values
+        Act = ClaimCore.Domain.UnvalidatedCaseAct.Open values
     }
 
 let private contextCodec () =
@@ -185,7 +185,7 @@ let private disclosures () =
                 Subject =
                     ClaimCore.Contract.ReceiptSubject.Case
                         {
-                            Reference = "UNIT-001"
+                            Reference = CaseFixtures.reference "UNIT-001"
                             Revision = 1L
                             Act = CaseActKind.Business BusinessActKind.Open
                             Snapshot = snapshot
@@ -404,7 +404,7 @@ let private retainedText () =
             { viewFields original with
                 Registration =
                     { (viewFields original).Registration with
-                        ClaimantName = name
+                        ClaimantName = CaseFixtures.name name
                     }
             }
 
@@ -431,12 +431,12 @@ let private retainedText () =
                 InsurerName = "Changed insurer"
             }
 
-        let reaffirm = request 1L (CaseAct.AmendRegistration values)
+        let reaffirm = request 1L (UnvalidatedCaseAct.AmendRegistration values)
 
         let input =
             { caseRequest values with
                 ExpectedRevision = 1L
-                Act = ClaimCore.Domain.CaseAct.AmendRegistration values
+                Act = ClaimCore.Domain.UnvalidatedCaseAct.AmendRegistration values
             }
 
         Codec.decode
@@ -446,19 +446,19 @@ let private retainedText () =
         |> accepted
         |> ignore
 
-        Case.decide today reaffirm (Some prior) |> accepted |> ignore
+        CaseFixtures.decide today reaffirm (Some prior) |> accepted |> ignore
 
         let changed =
             { reaffirm with
                 Act =
-                    (CaseAct.AmendRegistration
+                    (UnvalidatedCaseAct.AmendRegistration
                         { values with
                             ClaimantName = name + "B"
                         })
             }
 
         Expect.isError
-            (Case.decide today changed (Some prior))
+            (CaseFixtures.decide today changed (Some prior))
             "New assertions follow current admission"
 
 let private authorityWire kind issuer subject =

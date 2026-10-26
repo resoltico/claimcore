@@ -40,7 +40,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         11
                         "PROBE-1"
                         1L
-                        (CaseAct.AmendRegistration
+                        (UnvalidatedCaseAct.AmendRegistration
                             { registration with
                                 ClaimantName = "Later Party"
                             })
@@ -80,7 +80,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         Expect.equal store.ReadCalls 0 "No state is fetched after commit to shape the receipt"
 
         Expect.equal
-            (disclosedFields receipt).Registration.ClaimantName
+            (PartyName.format (disclosedFields receipt).Registration.ClaimantName)
             registration.ClaimantName
             "Disclosure uses the write's locked context"
 

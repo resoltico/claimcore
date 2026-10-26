@@ -89,14 +89,13 @@ module private ScalarText =
             MaximumCharacters = maximum
         }
 
-[<Struct>]
-type CalendarDate =
-    private
-    | CalendarDate of DateOnly
+[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
+type CalendarDate = private CalendarDate of DateOnly
 
-    member this.Value = let (CalendarDate value) = this in value
 
 module CalendarDate =
+    let value (CalendarDate date) = date
+
     [<Literal>]
     let ExactFormat = "yyyy-MM-dd"
 
@@ -132,7 +131,7 @@ module CalendarDate =
         else
             Error Violation.FutureDate
 
-[<Struct>]
+[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type CountryCode = private CountryCode of string
 
 module CountryCode =
@@ -148,7 +147,7 @@ module CountryCode =
 
     let admit (value: CountryCode) : Result<CountryCode, Violation> = Ok value
 
-[<Struct>]
+[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type PartyName = private PartyName of string
 
 module PartyName =
@@ -168,7 +167,7 @@ module PartyName =
     let admit (PartyName value) =
         ScalarText.admit MaximumCharacters value |> Result.map PartyName
 
-[<Struct>]
+[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type Reason = private Reason of PartyName
 
 module Reason =
@@ -181,13 +180,9 @@ module Reason =
     let admit (Reason value) =
         PartyName.admit value |> Result.map Reason
 
-[<Struct>]
-type Money =
-    private
-    | Money of decimal * string
+[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
+type Money = private Money of decimal * string
 
-    member this.Value = let (Money(value, _)) = this in value
-    member this.Currency = let (Money(_, currency)) = this in currency
 
 type MoneyDescriptor =
     {
@@ -201,6 +196,8 @@ type MoneyViolation =
     | Currency of Violation
 
 module Money =
+    let value (Money(amount, _)) = amount
+
     [<Literal>]
     let MaximumIntegerDigits = 18
 
@@ -257,9 +254,6 @@ module Money =
     let format (Money(value, _)) = amountText value
     let currency (Money(_, value)) = value
 
-    let canonicalAmount value =
-        amount value |> Option.map amountText |> Option.defaultValue value
-
     let parse rawAmount rawCurrency =
         // Both permanent text checks precede either grammar, preserving diagnostic order.
         ScalarText.parse None 0 rawAmount
@@ -281,7 +275,7 @@ module Money =
 
     let admit (value: Money) : Result<Money, Violation> = Ok value
 
-[<Struct>]
+[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type CaseReference = private CaseReference of authored: string * key: string
 
 module CaseReference =
@@ -302,6 +296,7 @@ module CaseReference =
 
     let format (CaseReference(authored, _)) = authored
     let identity (CaseReference(_, key)) = key
+    let canonical (CaseReference(_, key)) = CaseReference(key, key)
 
     let parse value =
         ScalarText.token Grammar Violation.ReferenceFormat value

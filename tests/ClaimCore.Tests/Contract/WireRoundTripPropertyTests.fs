@@ -380,7 +380,32 @@ let private choose (source: Seeds) context kind =
 
     values |> Seq.toArray |> Gen.item
 
+let private domainValue (kind: Type) =
+    if kind = typeof<CaseReference> then
+        Some(reference |> Gen.map (CaseFixtures.reference >> box))
+    elif kind = typeof<CalendarDate> then
+        Some(date |> Gen.map (CaseFixtures.date >> box))
+    elif kind = typeof<CountryCode> then
+        Some(uppercase 2 |> Gen.map (CaseFixtures.country >> box))
+    elif kind = typeof<PartyName> then
+        Some(scalarText |> Gen.map (CaseFixtures.name >> box))
+    elif kind = typeof<Money> then
+        Some(
+            gen {
+                let! amount = amount
+                let! currency = uppercase 3
+                return box (CaseFixtures.money amount currency)
+            }
+        )
+    else
+        None
+
 let rec private fresh response source context (kind: Type) (value: obj | null) =
+    match domainValue kind with
+    | Some generator -> generator
+    | None -> freshRepresentation response source context kind value
+
+and private freshRepresentation response source context (kind: Type) (value: obj | null) =
     if kind = typeof<string> then
         generatedString response source context |> Gen.map box
     elif kind = typeof<Guid> then

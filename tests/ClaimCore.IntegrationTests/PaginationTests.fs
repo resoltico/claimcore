@@ -21,7 +21,7 @@ let private page (outcome: ReadReply<CaseSummaryPage>) =
     | ReadReply.Succeeded value -> value
     | _ -> failtest "Expected authorized page"
 
-let private reference (summary: CaseSummary) = summary.Reference
+let private reference (summary: CaseSummary) = CaseReference.format summary.Reference
 
 let private setup (database: PostgresFixture.Database) =
     task {
@@ -32,7 +32,9 @@ let private setup (database: PostgresFixture.Database) =
                 (Handlers.call
                     Api.operationExecute
                     admin
-                    (OperationInput.Case(request n reference 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request n reference 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (token))
 
             accepted result |> ignore
@@ -184,7 +186,9 @@ let private snapshot (database: PostgresFixture.Database) =
                 (Handlers.call
                     Api.operationExecute
                     admin
-                    (OperationInput.Case(request 13 "CASE-AFTER" 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request 13 "CASE-AFTER" 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (token))
 
             accepted later |> ignore

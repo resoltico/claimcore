@@ -9,15 +9,10 @@ open ClaimCore.Contract.Protocol
 
 /// Typed request/reply consistency checks run after schema admission.
 module Correlation =
-    let private reference (expected: string) (actual: string) =
-        let valid (value: string) =
-            value.Length >= 1
-            && value.Length <= Formats.ReferenceMaximumCharacters
-            && value |> Seq.forall (fun character -> character >= '!' && character <= '~')
-
-        valid expected
-        && valid actual
-        && String.Equals(expected, actual, StringComparison.OrdinalIgnoreCase)
+    let private reference expected actual =
+        match CaseReference.parse expected with
+        | Ok reference -> CaseReference.identity reference = CaseReference.identity actual
+        | Error _ -> false
 
     let private successor expected actual =
         expected >= 0L && expected < JsonValue.MaximumInteger && actual = expected + 1L

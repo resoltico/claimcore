@@ -18,7 +18,6 @@ module Revision =
 type RecordViolation =
     | InvalidScalar of InputTarget * Violation
     | InvalidProgress
-    | NonCanonicalFields
     | RevisionOutOfRange
     | ReferenceMismatch
 

@@ -56,7 +56,9 @@ let createFor issuer subject =
                 (Handlers.call
                     Api.operationExecute
                     owner
-                    (OperationInput.Case(request 10 "SYNTHETIC-001" 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request 10 "SYNTHETIC-001" 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted opened |> ignore

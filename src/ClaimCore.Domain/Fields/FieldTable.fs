@@ -32,84 +32,91 @@ module FieldTable =
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.CalendarDate FieldRules.calendarDate)
                 false
-                (fun fields -> Some fields.Registration.IncidentDate)
+                (fun fields -> Some(CalendarDate.format fields.Registration.IncidentDate))
             row
                 BusinessField.IncidentNotificationDate
                 "incidentNotificationDate"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.CalendarDate FieldRules.calendarDate)
                 false
-                (fun fields -> Some fields.Registration.IncidentNotificationDate)
+                (fun fields ->
+                    Some(CalendarDate.format fields.Registration.IncidentNotificationDate))
             row
                 BusinessField.IncidentCountry
                 "incidentCountry"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.Text(FieldRules.token Formats.country))
                 false
-                (fun fields -> Some fields.Registration.IncidentCountry)
+                (fun fields -> Some(CountryCode.format fields.Registration.IncidentCountry))
             row
                 BusinessField.ClaimantName
                 "claimantName"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.Text FieldRules.freeText)
                 false
-                (fun fields -> Some fields.Registration.ClaimantName)
+                (fun fields -> Some(PartyName.format fields.Registration.ClaimantName))
             row
                 BusinessField.InsurerName
                 "insurerName"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.Text FieldRules.freeText)
                 false
-                (fun fields -> Some fields.Registration.InsurerName)
+                (fun fields -> Some(PartyName.format fields.Registration.InsurerName))
             row
                 BusinessField.ClaimedAmount
                 "claimedAmount"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.Amount FieldRules.amount)
                 false
-                (fun fields -> Some fields.Registration.ClaimedAmount)
+                (fun fields -> Some(Money.format fields.Registration.ClaimedAmount))
             row
                 BusinessField.ClaimedCurrency
                 "claimedCurrency"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.Currency FieldRules.currency)
                 false
-                (fun fields -> Some fields.Registration.ClaimedCurrency)
+                (fun fields -> Some(Money.currency fields.Registration.ClaimedAmount))
             row
                 BusinessField.CaseReference
                 "caseReference"
                 FieldPlacement.TopLevel
                 (ScalarRule.Text(FieldRules.token Formats.reference))
                 false
-                (fun fields -> Some fields.CaseReference)
+                (fun fields -> Some(CaseReference.format fields.CaseReference))
             row
                 BusinessField.PaymentDecisionDate
                 "paymentDecisionDate"
                 (FieldPlacement.Grouped RecordGroup.Decision)
                 (ScalarRule.CalendarDate FieldRules.calendarDate)
                 true
-                (fun fields -> fields.Decision |> Option.map _.PaymentDecisionDate)
+                (fun fields ->
+                    fields.Decision
+                    |> Option.map (fun value -> CalendarDate.format value.PaymentDecisionDate))
             row
                 BusinessField.PayableAmount
                 "payableAmount"
                 (FieldPlacement.Grouped RecordGroup.Decision)
                 (ScalarRule.Amount FieldRules.amount)
                 true
-                (fun fields -> fields.Decision |> Option.map _.PayableAmount)
+                (fun fields ->
+                    fields.Decision |> Option.map (fun value -> Money.format value.PayableAmount))
             row
                 BusinessField.PayableCurrency
                 "payableCurrency"
                 (FieldPlacement.Grouped RecordGroup.Decision)
                 (ScalarRule.Currency FieldRules.currency)
                 true
-                (fun fields -> fields.Decision |> Option.map _.PayableCurrency)
+                (fun fields ->
+                    fields.Decision |> Option.map (fun value -> Money.currency value.PayableAmount))
             row
                 BusinessField.PaymentDate
                 "paymentDate"
                 (FieldPlacement.Grouped RecordGroup.Payment)
                 (ScalarRule.CalendarDate FieldRules.calendarDate)
                 true
-                (fun fields -> fields.Payment |> Option.map _.PaymentDate)
+                (fun fields ->
+                    fields.Payment
+                    |> Option.map (fun value -> CalendarDate.format value.PaymentDate))
             row
                 BusinessField.Status
                 "status"

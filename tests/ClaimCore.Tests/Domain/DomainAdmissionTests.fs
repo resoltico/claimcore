@@ -1,5 +1,7 @@
 module ClaimCore.Tests.DomainAdmissionTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open Expecto
@@ -18,7 +20,10 @@ let private snapshots =
                 { (viewFields original) with
                     Decision =
                         (viewFields original).Decision
-                        |> Option.map (fun value -> { value with PayableAmount = "0" })
+                        |> Option.map (fun value ->
+                            { value with
+                                PayableAmount = CaseFixtures.money "0" "EUR"
+                            })
                 },
                 RecordViolation.InvalidProgress
                 { (viewFields original) with
@@ -26,12 +31,16 @@ let private snapshots =
                         (viewFields original).Decision
                         |> Option.map (fun value ->
                             { value with
-                                PaymentDecisionDate = "2026-08-02"
+                                PaymentDecisionDate = CaseFixtures.date "2026-08-02"
                             })
                 },
                 chronology (InputTarget.Field BusinessField.PaymentDecisionDate)
                 { (viewFields original) with
-                    Payment = Some { PaymentDate = "2026-08-14" }
+                    Payment =
+                        Some
+                            {
+                                PaymentDate = CaseFixtures.date "2026-08-14"
+                            }
                 },
                 chronology (InputTarget.Field BusinessField.PaymentDate)
             ]
@@ -47,13 +56,14 @@ let private payload =
         "[CC-DOM-002] malformed payload admission precedes stale revision and eligibility"
         (fun () ->
             let malformed =
-                CaseAct.Decide
+                UnvalidatedCaseAct.Decide
                     { decision with
                         PaymentDecisionDate = "not-a-date"
                     }
 
             let rejected =
-                Case.decide today (request 0L malformed) (Some(paid ())) |> Result.map ignore
+                CaseFixtures.decide today (request 0L malformed) (Some(paid ()))
+                |> Result.map ignore
 
             Expect.equal
                 rejected

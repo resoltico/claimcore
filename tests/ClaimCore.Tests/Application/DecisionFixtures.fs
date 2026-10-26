@@ -1,5 +1,7 @@
 module internal ClaimCore.Tests.DecisionFixtures
 
+open ClaimCore.TestSupport
+
 open System
 open Expecto
 open ClaimCore.Contract
@@ -55,7 +57,7 @@ let head =
 let nonce = Array.init 32 (fun index -> byte (index + 1))
 
 let opening n reference =
-    request n reference 0L (CaseAct.Open registration)
+    request n reference 0L (UnvalidatedCaseAct.Open registration)
 
 let locked authority current existing : CaseLockedView =
     {
@@ -72,7 +74,12 @@ let locked authority current existing : CaseLockedView =
     }
 
 let decide request view =
-    CaseDecisions.execute installation calendar owner request view
+    CaseDecisions.execute
+        installation
+        calendar
+        owner
+        (ClaimCore.TestSupport.CaseFixtures.command request)
+        view
 
 let appended =
     function

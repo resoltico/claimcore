@@ -120,7 +120,9 @@ let private lostResolution drop (database: PostgresFixture.Database) =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 140 "LOST-RESOLUTION" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 140 "LOST-RESOLUTION" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (token))
 
         Expect.equal
@@ -270,7 +272,7 @@ let tests =
                                     20
                                     "synthetic-commit"
                                     0L
-                                    (ClaimCore.Domain.CaseAct.Open registration)
+                                    (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
 
                             let! result =
                                 (Handlers.call

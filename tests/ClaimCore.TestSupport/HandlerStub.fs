@@ -46,7 +46,7 @@ let view reference =
             CaseReference = reference
             ExpectedRevision = 0L
             Act =
-                (CaseAct.Open
+                (UnvalidatedCaseAct.Open
                     {
                         IncidentDate = "2026-08-01"
                         IncidentNotificationDate = "2026-08-03"
@@ -58,18 +58,18 @@ let view reference =
                     })
         }
 
-    Case.decide (DateOnly(2026, 10, 13)) request None
+    CaseFixtures.decide (DateOnly(2026, 10, 13)) request None
     |> Result.map Case.snapshot
     |> Result.defaultWith (fun _ -> invalidOp "Synthetic case failed admission.")
 
-let receipt id reference =
+let receipt id (reference: string) =
     {
         OperationId = id
         Position = position
         Subject =
             ReceiptSubject.Case
                 {
-                    Reference = reference
+                    Reference = CaseFixtures.reference reference
                     Revision = 1L
                     Act = (CaseActKind.Business BusinessActKind.Open)
                     Snapshot =

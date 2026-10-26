@@ -3,17 +3,24 @@ namespace ClaimCore.Domain
 
 open System
 
+[<Sealed; NoComparison>]
+type CaseCommand =
+    member Authored: UnvalidatedCaseRequest
+    member Reference: CaseReference
+    member Act: CaseAct
+    member OperationId: Guid
+    member ExpectedRevision: int64
+
 [<NoComparison>]
 type CaseRecord
 
 module Case =
-    val canonical: UnvalidatedCaseRequest -> UnvalidatedCaseRequest
-    val validateRequest: UnvalidatedCaseRequest -> Result<unit, Refusal>
+    val canonical: CaseCommand -> CaseCommand
+    val parse: UnvalidatedCaseRequest -> Result<CaseCommand, Refusal>
     val ofAccepted: CaseSnapshot -> Result<CaseRecord, RecordViolation>
     val snapshot: CaseRecord -> CaseSnapshot
 
-    val decide:
-        DateOnly -> UnvalidatedCaseRequest -> CaseRecord option -> Result<CaseRecord, Refusal>
+    val decide: DateOnly -> CaseCommand -> CaseRecord option -> Result<CaseRecord, Refusal>
 
     val eligibleActs: CaseRecord -> CaseActKind list
     val correctionActions: CaseRecord -> RecordGroup -> CorrectionGroupAction list

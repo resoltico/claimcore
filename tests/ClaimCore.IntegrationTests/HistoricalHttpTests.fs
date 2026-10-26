@@ -93,7 +93,8 @@ let private retainedHistory (database: PostgresFixture.Database) =
                 InsurerName = "Corrected insurer"
             }
 
-        let reaffirm = request 11 "HISTORICAL-1" 1L (CaseAct.AmendRegistration values)
+        let reaffirm =
+            request 11 "HISTORICAL-1" 1L (UnvalidatedCaseAct.AmendRegistration values)
 
         let! status, response = host.Call("operation.execute", httpRequest reaffirm, csrf)
 
@@ -109,7 +110,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
                 12
                 "HISTORICAL-1"
                 2L
-                (CaseAct.AmendRegistration
+                (UnvalidatedCaseAct.AmendRegistration
                     { values with
                         ClaimantName = name + "B"
                     })
@@ -181,7 +182,7 @@ let private absentRevision (database: PostgresFixture.Database) =
         let! _ = host.Login()
         let! csrf = host.Token()
         let! before = verified database
-        let pending = request 31 "ABSENT-REVISION" 1L (CaseAct.Open registration)
+        let pending = request 31 "ABSENT-REVISION" 1L (UnvalidatedCaseAct.Open registration)
         let responses = ResizeArray<_>()
 
         for name in [ Api.operationPreview.Token; Api.operationExecute.Token ] do

@@ -322,6 +322,15 @@ module Codec =
             Definitions = codec.Definitions
         }
 
+    /// Preserve an admitted representation while its typed interpretation can still refuse.
+    let mapResult read write (codec: Codec<'T>) : Codec<'U> =
+        {
+            Read = fun path element -> codec.Read path element |> Result.bind (read path)
+            Write = fun value -> codec.Write(write value)
+            Schema = codec.Schema
+            Definitions = codec.Definitions
+        }
+
     let constrained schema accepts (codec: Codec<'T>) =
         { codec with
             Read =
@@ -428,6 +437,19 @@ module Codec =
             Schema = Schema.Object(fields.Properties, fields.OptionalMembers)
             Definitions = fields.PropertyDefinitions
         }
+
+    /// A record constructor may validate relationships between separately encoded members.
+    let buildResult describe (fields: Fields<'Whole, Result<'Whole, 'Error>>) : Codec<'Whole> =
+        {
+            ReadFields =
+                fun path element ->
+                    fields.ReadFields path element |> Result.bind (Result.mapError (describe path))
+            WriteFields = fields.WriteFields
+            Properties = fields.Properties
+            PropertyDefinitions = fields.PropertyDefinitions
+            OptionalMembers = fields.OptionalMembers
+        }
+        |> build
 
     // ----- tagged unions ------------------------------------------------------------------
 

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.AuthorizationPolicyTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -196,22 +198,23 @@ let private invalidActors () =
 let private ordinaryActs () =
     let cases =
         [
-            CaseAct.Open registration, Capability.Register
-            CaseAct.AmendRegistration registration, Capability.Register
-            CaseAct.Decide decision, Capability.Decide
-            CaseAct.WithdrawDecision, Capability.Decide
-            CaseAct.RecordPayment { PaymentDate = "2026-08-20" }, Capability.RecordPayment
-            CaseAct.ClearPayment, Capability.RecordPayment
-            CaseAct.Close, Capability.Close
-            CaseAct.Reopen, Capability.Close
-            CaseAct.Void "Reason", Capability.Steward
-            CaseAct.Reinstate "Reason", Capability.Steward
-            CaseAct.Erase, Capability.Steward
+            UnvalidatedCaseAct.Open registration, Capability.Register
+            UnvalidatedCaseAct.AmendRegistration registration, Capability.Register
+            UnvalidatedCaseAct.Decide decision, Capability.Decide
+            UnvalidatedCaseAct.WithdrawDecision, Capability.Decide
+            UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" },
+            Capability.RecordPayment
+            UnvalidatedCaseAct.ClearPayment, Capability.RecordPayment
+            UnvalidatedCaseAct.Close, Capability.Close
+            UnvalidatedCaseAct.Reopen, Capability.Close
+            UnvalidatedCaseAct.Void "Reason", Capability.Steward
+            UnvalidatedCaseAct.Reinstate "Reason", Capability.Steward
+            UnvalidatedCaseAct.Erase, Capability.Steward
         ]
 
     for act, capability in cases do
         Expect.equal
-            (ActorAuthorization.requiredCapabilities act)
+            (ActorAuthorization.requiredCapabilities (CaseFixtures.act act))
             [ capability ]
             "Independent act capability"
 
@@ -227,7 +230,11 @@ let private correctionMasks =
         true, true, true, [ Capability.Register; Capability.Decide; Capability.RecordPayment ]
     ]
 
-let private replacementCorrection registrationChanged decisionChanged paymentChanged : Correction =
+let private replacementCorrection
+    registrationChanged
+    decisionChanged
+    paymentChanged
+    : CorrectionInput =
     {
         Registration =
             (if registrationChanged then
@@ -251,10 +258,10 @@ let private corrections () =
         let correction =
             replacementCorrection registrationChanged decisionChanged paymentChanged
 
-        let act = (CaseAct.Correct correction)
+        let act = (UnvalidatedCaseAct.Correct correction)
 
         Expect.equal
-            (ActorAuthorization.requiredCapabilities act)
+            (ActorAuthorization.requiredCapabilities (CaseFixtures.act act))
             expected
             "Seven selected masks and all-KEEP"
 
@@ -277,7 +284,9 @@ let private corrections () =
             }
 
         Expect.equal
-            (ActorAuthorization.requiredCapabilities ((CaseAct.Correct cleared)))
+            (ActorAuthorization.requiredCapabilities (
+                CaseFixtures.act (UnvalidatedCaseAct.Correct cleared)
+            ))
             expected
             "CLEAR selects the same capability"
 
@@ -293,7 +302,7 @@ let private reaffirmations () =
             ]
 
     let paymentReaffirmation =
-        (CaseAct.Correct
+        (UnvalidatedCaseAct.Correct
             {
                 Registration = RegistrationGroup.Keep
                 Decision = DecisionGroup.Keep
@@ -305,11 +314,11 @@ let private reaffirmations () =
             human
             (AuthorityView.ofActor (Some handler))
             (ResourceScope.Case caseId)
-            paymentReaffirmation)
+            (CaseFixtures.act paymentReaffirmation))
         "An unchanged payment assertion still requires payment authority"
 
     let keep =
-        (CaseAct.Correct
+        (UnvalidatedCaseAct.Correct
             {
                 Registration = RegistrationGroup.Keep
                 Decision = DecisionGroup.Keep
@@ -317,7 +326,10 @@ let private reaffirmations () =
             })
 
     Expect.isError
-        (Case.decide today (actRequest ((Case.snapshot (paid ())).Revision) keep) (Some(paid ())))
+        (CaseFixtures.decide
+            today
+            (actRequest ((Case.snapshot (paid ())).Revision) keep)
+            (Some(paid ())))
         "All-KEEP never creates a revision"
 
 let private scopedAdvice () =
@@ -325,7 +337,9 @@ let private scopedAdvice () =
     let snapshot = Case.snapshot (paid ())
 
     let target =
-        ClaimCore.RecordFormat.CaseReferenceId.encode installation snapshot.Reference
+        ClaimCore.RecordFormat.CaseReferenceId.encode
+            installation
+            (CaseReference.format snapshot.Reference)
 
     let record: StoredCase = { CaseId = target; Snapshot = snapshot }
 
@@ -396,10 +410,14 @@ let private absentCorrectionValues () =
 
 let private noUsableCorrectionOffer () =
     let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
-    let snapshot = opened () |> apply CaseAct.Close |> accepted |> Case.snapshot
+
+    let snapshot =
+        opened () |> apply UnvalidatedCaseAct.Close |> accepted |> Case.snapshot
 
     let target =
-        ClaimCore.RecordFormat.CaseReferenceId.encode installation snapshot.Reference
+        ClaimCore.RecordFormat.CaseReferenceId.encode
+            installation
+            (CaseReference.format snapshot.Reference)
 
     let record: StoredCase = { CaseId = target; Snapshot = snapshot }
 

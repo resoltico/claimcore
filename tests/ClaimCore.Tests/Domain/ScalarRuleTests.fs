@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ScalarRuleTests
 
+open ClaimCore.TestSupport
+
 
 
 open ClaimCore.Contract
@@ -140,10 +142,24 @@ let grammarDiagnostics =
 
             check parse
 
-            Expect.equal
-                (Validation.text target invalid)
-                (Error(Refusal.InvalidInput(target, expected)))
-                "The request adapter retains the target and value-module diagnostic"
+            let candidate value =
+                let request = Fixtures.request 0L (UnvalidatedCaseAct.Open Fixtures.registration)
 
-            Expect.equal (Validation.text target valid) (Ok valid) "Valid control is admitted"
+                if field = BusinessField.CaseReference then
+                    { request with CaseReference = value }
+                else
+                    { request with
+                        Act =
+                            UnvalidatedCaseAct.Open
+                                { Fixtures.registration with
+                                    IncidentCountry = value
+                                }
+                    }
+
+            Expect.equal
+                (CaseFixtures.validate (candidate invalid))
+                (Error(Refusal.InvalidInput(target, expected)))
+                "The request parser retains the target and value-module diagnostic"
+
+            Expect.isOk (CaseFixtures.validate (candidate valid)) "Valid control is admitted"
             Expect.throws (fun () -> check wrongParser) "Using the other value parser is detected")

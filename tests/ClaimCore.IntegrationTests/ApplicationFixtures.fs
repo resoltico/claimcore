@@ -40,7 +40,7 @@ let run action =
     }
 
 let openRequest n reference =
-    request n reference 0L (CaseAct.Open registration)
+    request n reference 0L (UnvalidatedCaseAct.Open registration)
 
 /// A write can finish before another accepted change is observed by its caller.
 type AfterCaseWriteStore(inner: ILedgerStore, afterWrite: unit -> Task<unit>) =

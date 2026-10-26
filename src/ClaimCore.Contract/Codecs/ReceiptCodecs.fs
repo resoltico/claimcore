@@ -34,7 +34,7 @@ module ReceiptCodecs =
                 Snapshot = snapshot
             })
         : Fields<CaseReceipt, _>)
-        |> field (FieldTable.key BusinessField.CaseReference) _.Reference reference
+        |> field (FieldTable.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision sequence
         |> field
             "act"

@@ -1,5 +1,6 @@
 module ClaimCore.Tests.TransitionOracle
 
+open ClaimCore.TestSupport
 open ClaimCore.Contract
 
 open ClaimCore.Domain
@@ -10,28 +11,29 @@ let private activeEligible (fields: CaseFields) =
     let paid = fields.Payment.IsSome
 
     function
-    | CaseAct.Close -> true
-    | CaseAct.AmendRegistration _ -> not decided
-    | CaseAct.Decide _ -> not paid
-    | CaseAct.WithdrawDecision -> decided && not paid
-    | CaseAct.RecordPayment _ ->
+    | UnvalidatedCaseAct.Close -> true
+    | UnvalidatedCaseAct.AmendRegistration _ -> not decided
+    | UnvalidatedCaseAct.Decide _ -> not paid
+    | UnvalidatedCaseAct.WithdrawDecision -> decided && not paid
+    | UnvalidatedCaseAct.RecordPayment _ ->
         decided
         && not paid
-        && (fields.Decision |> Option.map _.PayableAmount) <> Some "0"
-    | CaseAct.ClearPayment -> paid
+        && (fields.Decision |> Option.map (fun value -> Money.value value.PayableAmount))
+           <> Some 0M
+    | UnvalidatedCaseAct.ClearPayment -> paid
     | _ -> false
 
 let private eligible (fields: CaseFields) act =
     match act with
-    | CaseAct.Open _ -> false
-    | CaseAct.Reopen -> fields.Status = CaseStatus.Closed
-    | CaseAct.Correct _ -> fields.Status = CaseStatus.Closed || fields.Decision.IsSome
+    | UnvalidatedCaseAct.Open _ -> false
+    | UnvalidatedCaseAct.Reopen -> fields.Status = CaseStatus.Closed
+    | UnvalidatedCaseAct.Correct _ -> fields.Status = CaseStatus.Closed || fields.Decision.IsSome
     | _ when fields.Status = CaseStatus.Closed -> false
     | _ -> activeEligible fields act
 
-let private registration (value: Registration) (fields: CaseFields) =
+let private registration (value: RegistrationInput) (fields: CaseFields) =
     { fields with
-        Registration = { value with ClaimedAmount = "1000" }
+        Registration = CaseFixtures.registration { value with ClaimedAmount = "1000" }
     }
 
 let private correctedRegistration fields =
@@ -41,38 +43,43 @@ let private correctedRegistration fields =
 
 let private changed fields act =
     match act with
-    | CaseAct.AmendRegistration value -> registration value fields
-    | CaseAct.Correct value -> correctedRegistration fields value.Registration
-    | CaseAct.Decide value ->
+    | UnvalidatedCaseAct.AmendRegistration value -> registration value fields
+    | UnvalidatedCaseAct.Correct value -> correctedRegistration fields value.Registration
+    | UnvalidatedCaseAct.Decide value ->
         { fields with
             Decision =
-                Some
-                    { value with
-                        PayableAmount = if value.PayableAmount = "0" then "0" else "750"
-                    }
+                Some(
+                    CaseFixtures.decision
+                        { value with
+                            PayableAmount = if value.PayableAmount = "0" then "0" else "750"
+                        }
+                )
         }
-    | CaseAct.WithdrawDecision -> { fields with Decision = None }
-    | CaseAct.RecordPayment payment -> { fields with Payment = Some payment }
-    | CaseAct.ClearPayment -> { fields with Payment = None }
-    | CaseAct.Close ->
+    | UnvalidatedCaseAct.WithdrawDecision -> { fields with Decision = None }
+    | UnvalidatedCaseAct.RecordPayment payment ->
+        { fields with
+            Payment = Some(CaseFixtures.payment payment)
+        }
+    | UnvalidatedCaseAct.ClearPayment -> { fields with Payment = None }
+    | UnvalidatedCaseAct.Close ->
         { fields with
             Status = CaseStatus.Closed
         }
-    | CaseAct.Reopen ->
+    | UnvalidatedCaseAct.Reopen ->
         { fields with
             Status = CaseStatus.Opened
         }
-    | CaseAct.Open _
-    | CaseAct.Void _
-    | CaseAct.Reinstate _
-    | CaseAct.Erase -> fields
+    | UnvalidatedCaseAct.Open _
+    | UnvalidatedCaseAct.Void _
+    | UnvalidatedCaseAct.Reinstate _
+    | UnvalidatedCaseAct.Erase -> fields
 
 let private business (before: CaseSnapshot) fields stale act =
     let nextFields = changed fields act
 
     let noOpCorrection =
         match act with
-        | CaseAct.Correct _ -> nextFields = fields
+        | UnvalidatedCaseAct.Correct _ -> nextFields = fields
         | _ -> false
 
     if stale || not (eligible fields act) || noOpCorrection then
@@ -97,10 +104,12 @@ let advance (before: CaseSnapshot) stale act =
 
         match before.State, act with
         | CaseState.Erased, _ -> None
-        | CaseState.Active(fields), CaseAct.Void _ -> changed (CaseState.Voided(fields))
-        | CaseState.Voided(fields), CaseAct.Reinstate _ -> changed (CaseState.Active(fields))
-        | (CaseState.Active _ | CaseState.Voided _), CaseAct.Erase -> changed CaseState.Erased
-        | _, (CaseAct.Void _ | CaseAct.Reinstate _) -> None
+        | CaseState.Active(fields), UnvalidatedCaseAct.Void _ -> changed (CaseState.Voided(fields))
+        | CaseState.Voided(fields), UnvalidatedCaseAct.Reinstate _ ->
+            changed (CaseState.Active(fields))
+        | (CaseState.Active _ | CaseState.Voided _), UnvalidatedCaseAct.Erase ->
+            changed CaseState.Erased
+        | _, (UnvalidatedCaseAct.Void _ | UnvalidatedCaseAct.Reinstate _) -> None
         | CaseState.Active(fields), act -> business before fields stale act
         | CaseState.Voided(_), _ -> None
 

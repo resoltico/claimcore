@@ -14,7 +14,7 @@ type SnapshotDisclosure =
 
 type CaseReceipt =
     {
-        Reference: string
+        Reference: CaseReference
         Revision: int64
         Act: CaseActKind
         Snapshot: SnapshotDisclosure

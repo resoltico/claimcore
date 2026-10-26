@@ -15,12 +15,18 @@ module internal CaseDecisions =
         Case.ofAccepted record.Snapshot
         |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
         |> Result.bind (fun value ->
-            if CaseReferenceId.encode installationId record.Snapshot.Reference = record.CaseId then
+            if
+                CaseReferenceId.encode
+                    installationId
+                    (CaseReference.format record.Snapshot.Reference)
+                    =
+                    record.CaseId
+            then
                 Ok value
             else
                 Error CoreFault.StoreIntegrityError)
 
-    let permission principal actor (request: UnvalidatedCaseRequest) (record: StoredCase option) =
+    let permission principal actor (request: CaseCommand) (record: StoredCase option) =
         if CaseActs.kind request.Act = (CaseActKind.Business BusinessActKind.Open) then
             if ActorAuthorization.canAct principal actor ResourceScope.Installation request.Act then
                 Ok()
@@ -76,7 +82,7 @@ module internal CaseDecisions =
     let private project
         installationId
         (calendar: IBusinessCalendar)
-        (request: UnvalidatedCaseRequest)
+        (request: CaseCommand)
         (view: CaseReadView)
         after
         =
@@ -86,7 +92,7 @@ module internal CaseDecisions =
             view.Case
             |> Option.map _.CaseId
             |> Option.defaultWith (fun () ->
-                CaseReferenceId.encode installationId snapshot.Reference)
+                CaseReferenceId.encode installationId (CaseReference.format snapshot.Reference))
 
         let projection =
             match snapshot.State, view.Case with
@@ -128,13 +134,7 @@ module internal CaseDecisions =
     let review installationId calendar principal request (view: CaseReadView) =
         LedgerEnvelope.review (subject installationId calendar principal request) view
 
-    let execute
-        installationId
-        calendar
-        principal
-        (request: UnvalidatedCaseRequest)
-        (view: CaseLockedView)
-        =
+    let execute installationId calendar principal (request: CaseCommand) (view: CaseLockedView) =
         LedgerEnvelope.execute
             installationId
             request.OperationId

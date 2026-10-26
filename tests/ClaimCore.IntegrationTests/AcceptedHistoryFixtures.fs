@@ -13,7 +13,9 @@ open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private snapshot reference claimant : CaseSnapshot =
+let private snapshot (reference: string) claimant : CaseSnapshot =
+    let reference = CaseFixtures.reference reference
+
     {
         Reference = reference
         Revision = 1L
@@ -23,15 +25,16 @@ let private snapshot reference claimant : CaseSnapshot =
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration =
-                        {
-                            IncidentDate = registration.IncidentDate
-                            IncidentNotificationDate = registration.IncidentNotificationDate
-                            IncidentCountry = "LV"
-                            ClaimantName = claimant
-                            InsurerName = registration.InsurerName
-                            ClaimedAmount = "1000"
-                            ClaimedCurrency = "EUR"
-                        }
+                        CaseFixtures.registration
+                            {
+                                IncidentDate = registration.IncidentDate
+                                IncidentNotificationDate = registration.IncidentNotificationDate
+                                IncidentCountry = "LV"
+                                ClaimantName = claimant
+                                InsurerName = registration.InsurerName
+                                ClaimedAmount = "1000"
+                                ClaimedCurrency = "EUR"
+                            }
                     Decision = None
                     Payment = None
                 }
@@ -48,7 +51,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             10
             "HISTORICAL-1"
             0L
-            (CaseAct.Open
+            (UnvalidatedCaseAct.Open
                 { registration with
                     ClaimantName = claimant
                 })
@@ -62,7 +65,9 @@ let internal seed (database: PostgresFixture.Database) claimant =
     let decide (view: CaseLockedView) =
         Expect.isNone view.Read.Case "Fixture reference is fresh"
         Expect.isNone view.Read.ExistingOperation "Fixture operation is fresh"
-        let id = CaseReferenceId.encode fixture.InstallationId snapshot.Reference
+
+        let id =
+            CaseReferenceId.encode fixture.InstallationId (CaseReference.format snapshot.Reference)
 
         let actor =
             view.Read.Actor.Actor
@@ -85,7 +90,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                 actor.ActorId
                 request.OperationId
                 scope
-                (RequestRecord.encode request)
+                (CaseFixtures.encode request)
                 (ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot)
 
         let current: StoredCase = { CaseId = id; Snapshot = snapshot }
@@ -129,7 +134,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                                              }
                               } ->
             Expect.equal
-                fields.Registration.ClaimantName
+                (PartyName.format fields.Registration.ClaimantName)
                 name
                 "Retained record renders without admission"
         | _ -> failtest "Historical record could not be read"
@@ -145,7 +150,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                 Api.operationExecute
                 actor
                 (OperationInput.Case(
-                    request 11 "HISTORICAL-1" 1L (CaseAct.AmendRegistration values)
+                    request 11 "HISTORICAL-1" 1L (UnvalidatedCaseAct.AmendRegistration values)
                 ))
                 (token))
 
@@ -160,7 +165,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                         12
                         "HISTORICAL-1"
                         2L
-                        (CaseAct.AmendRegistration
+                        (UnvalidatedCaseAct.AmendRegistration
                             { values with
                                 ClaimantName = name + "B"
                             })
@@ -184,7 +189,11 @@ let private grandfathering (database: PostgresFixture.Database) =
 let private appendTransitions (actor: HandlerContext) =
     task {
         for revision in 1L .. 59L do
-            let act = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
+            let act =
+                if revision % 2L = 1L then
+                    UnvalidatedCaseAct.Close
+                else
+                    UnvalidatedCaseAct.Reopen
 
             let! result =
                 (Handlers.call
@@ -206,7 +215,7 @@ let private assertRetained name entries =
                                                                    }
                                  } ->
             Expect.equal
-                fields.Registration.ClaimantName
+                (PartyName.format fields.Registration.ClaimantName)
                 name
                 "Accepted history is never re-admitted or truncated"
         | _ -> failtest "Expected disclosed retained fields"

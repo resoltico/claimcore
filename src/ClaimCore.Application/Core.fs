@@ -21,8 +21,7 @@ module internal Core =
         | StoreFailure.CommitOutcomeUnknown -> ExecuteResult.OutcomeUnknown
         | failure -> ExecuteResult.Failed(Queries.fault failure)
 
-    let private admitCase request =
-        Case.validateRequest request |> Result.map (fun () -> request)
+    let private admitCase request = Case.parse request
 
     let private admitAuthority input =
         AuthorityRequests.admit input
@@ -46,11 +45,11 @@ module internal Core =
         }
 
     let private caseWrite (store: ILedgerStore) installationId calendar principal request ct =
-        write ct (fun () -> admitCase request) (fun (admitted: UnvalidatedCaseRequest) ->
+        write ct (fun () -> admitCase request) (fun (admitted: CaseCommand) ->
             store.WriteCase(
                 principal,
                 admitted.OperationId,
-                admitted.CaseReference,
+                (CaseReference.format admitted.Reference),
                 CaseDecisions.execute installationId calendar principal admitted,
                 ct
             ))
@@ -147,8 +146,13 @@ module internal Core =
         review
             ct
             (fun () -> admitCase request)
-            (fun (admitted: UnvalidatedCaseRequest) ->
-                store.ReadCase(principal, Some admitted.OperationId, admitted.CaseReference, ct))
+            (fun (admitted: CaseCommand) ->
+                store.ReadCase(
+                    principal,
+                    Some admitted.OperationId,
+                    (CaseReference.format admitted.Reference),
+                    ct
+                ))
             (CaseDecisions.review installationId calendar principal)
             (fun admitted (view: CaseReadView) (before, after) ->
                 advisory calendar view.ObservedAt admitted.Act before after

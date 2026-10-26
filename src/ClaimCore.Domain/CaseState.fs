@@ -5,7 +5,7 @@ namespace ClaimCore.Domain
 type Claim =
     internal
         {
-            Facts: Validation.Facts
+            Facts: Registration
             Progress: PaymentProgress
             Status: CaseStatus
         }

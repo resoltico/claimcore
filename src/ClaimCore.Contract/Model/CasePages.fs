@@ -4,7 +4,7 @@ open ClaimCore.Domain
 
 type CaseSummary =
     {
-        Reference: string
+        Reference: CaseReference
         Revision: int64
         State: CaseState<CaseStatus>
     }

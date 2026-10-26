@@ -7,7 +7,7 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private correct registration decision payment =
-    CaseAct.Correct
+    UnvalidatedCaseAct.Correct
         {
             Registration = registration
             Decision = decision
@@ -39,20 +39,26 @@ let private paidCorrectionTests =
 
                 Expect.equal after.Revision ((Case.snapshot before).Revision + 1L) "One revision"
                 Expect.equal (viewFields after).Status CaseStatus.Opened "Status is retained"
-                Expect.equal (viewFields after).CaseReference "UNIT-001" "Case target is retained"
 
                 Expect.equal
-                    (viewFields after).Registration.ClaimantName
+                    (CaseReference.format (viewFields after).CaseReference)
+                    "UNIT-001"
+                    "Case target is retained"
+
+                Expect.equal
+                    (PartyName.format (viewFields after).Registration.ClaimantName)
                     changedRegistration.ClaimantName
                     "Registration replaced"
 
                 Expect.equal
-                    ((viewFields after).Decision |> Option.map _.PayableAmount)
+                    ((viewFields after).Decision
+                     |> Option.map (fun value -> Money.format value.PayableAmount))
                     (Some "650")
                     "Decision replaced"
 
                 Expect.equal
-                    ((viewFields after).Payment |> Option.map _.PaymentDate)
+                    ((viewFields after).Payment
+                     |> Option.map (fun value -> CalendarDate.format value.PaymentDate))
                     (Some "2026-08-21")
                     "Payment reaffirmed")
             testCase "paid decision replacement requires explicit payment action" (fun () ->
@@ -78,7 +84,7 @@ let private closedCorrectionTests =
         "closed correction"
         [
             testCase "closed cases may correct facts while retaining CLOSED status" (fun () ->
-                let closed = paid () |> apply CaseAct.Close |> accepted
+                let closed = paid () |> apply UnvalidatedCaseAct.Close |> accepted
 
                 let after =
                     closed
@@ -97,7 +103,7 @@ let private closedCorrectionTests =
                     "Correction does not reopen"
 
                 Expect.equal
-                    (viewFields after).Registration.ClaimantName
+                    (PartyName.format (viewFields after).Registration.ClaimantName)
                     changedRegistration.ClaimantName
                     "Fact corrected")
             testCase "all-keep correction is refused without changing the accepted case" (fun () ->

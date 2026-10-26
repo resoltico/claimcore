@@ -32,7 +32,7 @@ let private serviceCases (admin: HandlerContext) principal =
                     Api.operationExecute
                     admin
                     (OperationInput.Case(
-                        request (410 + number) reference 0L (CaseAct.Open registration)
+                        request (410 + number) reference 0L (UnvalidatedCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 
@@ -104,7 +104,9 @@ let private serviceScopeCorruption () =
             match visible with
             | ReadReply.Succeeded page ->
                 Expect.equal
-                    (page.Items |> List.map (fun (summary: CaseSummary) -> summary.Reference))
+                    (page.Items
+                     |> List.map (fun (summary: CaseSummary) ->
+                         CaseReference.format summary.Reference))
                     [ "SERVICE-2" ]
                     "Assigned SQL cannot disclose through a corrupt human-only row"
             | _ -> failtest "Valid independent case must remain readable"

@@ -66,7 +66,11 @@ let private malformed () =
                         OperationId = Guid.Empty
                     }
                 OperationInput.Case(
-                    actRequest 471 "BOUNDARY" 1L (CaseAct.Void Unchecked.defaultof<string>)
+                    actRequest
+                        471
+                        "BOUNDARY"
+                        1L
+                        (UnvalidatedCaseAct.Void Unchecked.defaultof<string>)
                 )
                 OperationInput.Authority(
                     authorityRequest Guid.Empty other AdmittedAuthorityAct.Register

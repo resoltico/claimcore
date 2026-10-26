@@ -5,60 +5,18 @@ open ClaimCore.Domain.ResultFlow
 
 /// Request parsing adapts value-module failures to the field-specific diagnostic target.
 module internal Validation =
-    type Facts =
-        {
-            IncidentDate: DateOnly
-            IncidentNotificationDate: DateOnly
-            IncidentCountry: string
-            ClaimantName: string
-            InsurerName: string
-            ClaimedAmount: Money
-        }
-
-    type Decision =
-        {
-            PaymentDecisionDate: DateOnly
-            PayableAmount: Money
-        }
-
     let invalid field violation =
         Error(Refusal.InvalidInput(field, violation))
 
     let private at target =
         Result.mapError (fun violation -> Refusal.InvalidInput(target, violation))
 
-    let text target value =
-        let parsed =
-            match target with
-            | InputTarget.Field BusinessField.IncidentCountry ->
-                CountryCode.parse value |> Result.map CountryCode.format
-            | InputTarget.Field BusinessField.CaseReference ->
-                CaseReference.parse value |> Result.map CaseReference.format
-            | InputTarget.Field BusinessField.ClaimantName
-            | InputTarget.Field BusinessField.InsurerName ->
-                PartyName.parse value |> Result.map PartyName.format
-            | InputTarget.Reason -> Reason.parse value |> Result.map Reason.format
-            | _ -> invalidArg (nameof target) "Expected a text field or reason."
-
-        parsed |> at target
-
-    let admission target value =
-        let admitted =
-            match target with
-            | InputTarget.Reason ->
-                Reason.parse value |> Result.bind Reason.admit |> Result.map ignore
-            | InputTarget.Field BusinessField.ClaimantName
-            | InputTarget.Field BusinessField.InsurerName ->
-                PartyName.parse value |> Result.bind PartyName.admit |> Result.map ignore
-            | InputTarget.Field BusinessField.CaseReference
-            | InputTarget.Field BusinessField.IncidentCountry -> Ok()
-            | _ -> invalidArg (nameof target) "Expected a text field or reason."
-
-        admitted |> at target
-
-    let assertedText previous (facts: Facts) =
+    let assertedText previous (facts: Registration) =
         let changed field before after =
-            if before = Some after then Ok() else admission field after
+            if before = Some after then
+                Ok()
+            else
+                PartyName.admit after |> Result.map ignore |> at field
 
         result {
             do!
@@ -75,21 +33,17 @@ module internal Validation =
         }
 
     let date input value =
-        CalendarDate.parse value |> Result.map _.Value |> at (InputTarget.Field input)
+        CalendarDate.parse value |> at (InputTarget.Field input)
 
-    let onOrBefore field (first: DateOnly) (last: DateOnly) =
+    let onOrBefore field (first: CalendarDate) (last: CalendarDate) =
         if first <= last then
             Ok()
         else
             invalid field (Violation.ChronologicalOrder)
 
     let notFuture field today value =
-        if value <= today then
-            Ok()
-        else
-            invalid field (Violation.FutureDate)
+        CalendarDate.admit today value |> Result.map ignore |> at field
 
-    let canonicalAmount = Money.canonicalAmount
 
     let amount input currencyInput rawAmount rawCurrency =
         Money.parse rawAmount rawCurrency
@@ -99,7 +53,7 @@ module internal Validation =
             | MoneyViolation.Currency violation ->
                 Refusal.InvalidInput(InputTarget.Field currencyInput, violation))
 
-    let registration (input: Registration) =
+    let registration (input: RegistrationInput) : Result<Registration, Refusal> =
         result {
             let! incident = date BusinessField.IncidentDate input.IncidentDate
 
@@ -113,12 +67,16 @@ module internal Validation =
                     notification
 
             let! country =
-                text (InputTarget.Field BusinessField.IncidentCountry) input.IncidentCountry
+                CountryCode.parse input.IncidentCountry
+                |> at (InputTarget.Field BusinessField.IncidentCountry)
 
             let! claimant =
-                text (InputTarget.Field BusinessField.ClaimantName) input.ClaimantName
+                PartyName.parse input.ClaimantName
+                |> at (InputTarget.Field BusinessField.ClaimantName)
 
-            let! insurer = text (InputTarget.Field BusinessField.InsurerName) input.InsurerName
+            let! insurer =
+                PartyName.parse input.InsurerName
+                |> at (InputTarget.Field BusinessField.InsurerName)
 
             let! claimed =
                 amount
@@ -138,7 +96,7 @@ module internal Validation =
                 }
         }
 
-    let decision (input: ClaimCore.Domain.Decision) =
+    let decision (input: DecisionInput) : Result<Decision, Refusal> =
         result {
             let! decisionDate = date BusinessField.PaymentDecisionDate input.PaymentDecisionDate
 
@@ -155,8 +113,3 @@ module internal Validation =
                     PayableAmount = payable
                 }
         }
-
-    let amountText = Money.format
-
-    let dateText value =
-        CalendarDate.ofDate value |> CalendarDate.format

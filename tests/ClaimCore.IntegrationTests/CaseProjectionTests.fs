@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.CaseProjectionTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -12,6 +14,8 @@ open ClaimCore.RecordFormat
 let private installation = Guid.Parse "80000000-0000-4000-8000-000000000001"
 
 let private snapshot (reference: string) : CaseSnapshot =
+    let reference = CaseFixtures.reference reference
+
     {
         Reference = reference
         Revision = 1L
@@ -21,15 +25,16 @@ let private snapshot (reference: string) : CaseSnapshot =
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration =
-                        {
-                            IncidentDate = "2026-08-01"
-                            IncidentNotificationDate = "2026-08-03"
-                            IncidentCountry = "LV"
-                            ClaimantName = "Synthetic Party"
-                            InsurerName = "Synthetic Insurer"
-                            ClaimedAmount = "1000.00"
-                            ClaimedCurrency = "EUR"
-                        }
+                        CaseFixtures.registration
+                            {
+                                IncidentDate = "2026-08-01"
+                                IncidentNotificationDate = "2026-08-03"
+                                IncidentCountry = "LV"
+                                ClaimantName = "Synthetic Party"
+                                InsurerName = "Synthetic Insurer"
+                                ClaimedAmount = "1000.00"
+                                ClaimedCurrency = "EUR"
+                            }
                     Decision = None
                     Payment = None
                 }
@@ -38,7 +43,7 @@ let private snapshot (reference: string) : CaseSnapshot =
 
 let private stored (snapshot: CaseSnapshot) : StoredCase =
     {
-        CaseId = CaseReferenceId.encode installation snapshot.Reference
+        CaseId = CaseReferenceId.encode installation (CaseReference.format snapshot.Reference)
         Snapshot = snapshot
     }
 
@@ -95,7 +100,7 @@ let private liveState () =
             { a with
                 Snapshot =
                     { a.Snapshot with
-                        Reference = "another"
+                        Reference = CaseFixtures.reference "another"
                     }
             }
             { a with
@@ -121,7 +126,7 @@ let private liveState () =
                                 { fields with
                                     Registration =
                                         { fields.Registration with
-                                            ClaimedAmount = "2000.00"
+                                            ClaimedAmount = CaseFixtures.money "2000.00" "EUR"
                                         }
                                 }
                             )
@@ -163,7 +168,10 @@ let private erasedState () =
         [
             { row with CaseId = Guid.Empty }
             { row with
-                Snapshot = { erased with Reference = "another" }
+                Snapshot =
+                    { erased with
+                        Reference = CaseFixtures.reference "another"
+                    }
             }
             { row with
                 Snapshot = { erased with Revision = 1L }
@@ -185,26 +193,30 @@ let private erasedState () =
 
 let private projectionFields: CaseFields =
     {
-        CaseReference = "synthetic-layout"
+        CaseReference = CaseFixtures.reference "synthetic-layout"
         Status = CaseStatus.Closed
         Registration =
-            {
-                IncidentDate = "2026-08-01"
-                IncidentNotificationDate = "2026-08-03"
-                IncidentCountry = "LV"
-                ClaimantName = "Synthetic claimant"
-                InsurerName = "Synthetic insurer"
-                ClaimedAmount = "1234.5678"
-                ClaimedCurrency = "EUR"
-            }
+            CaseFixtures.registration
+                {
+                    IncidentDate = "2026-08-01"
+                    IncidentNotificationDate = "2026-08-03"
+                    IncidentCountry = "LV"
+                    ClaimantName = "Synthetic claimant"
+                    InsurerName = "Synthetic insurer"
+                    ClaimedAmount = "1234.5678"
+                    ClaimedCurrency = "EUR"
+                }
         Decision =
             Some
                 {
-                    PaymentDecisionDate = "2026-08-04"
-                    PayableAmount = "987.6543"
-                    PayableCurrency = "USD"
+                    Decision.PaymentDecisionDate = CaseFixtures.date "2026-08-04"
+                    PayableAmount = CaseFixtures.money "987.6543" "USD"
                 }
-        Payment = Some { PaymentDate = "2026-08-05" }
+        Payment =
+            Some
+                {
+                    PaymentDate = CaseFixtures.date "2026-08-05"
+                }
     }
 
 
@@ -240,7 +252,9 @@ let private projectionBindings () =
             State = CaseState.Voided(fields)
         }
 
-    let id = CaseReferenceId.encode installation fields.CaseReference
+    let id =
+        CaseReferenceId.encode installation (CaseReference.format fields.CaseReference)
+
     let row = projectionRow id
 
     Expect.equal

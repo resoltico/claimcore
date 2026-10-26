@@ -1,5 +1,7 @@
 module ClaimCore.Tests.TransitionCharacterizationTests
 
+open ClaimCore.TestSupport
+
 open System
 open Expecto
 open ClaimCore.Contract
@@ -7,7 +9,7 @@ open ClaimCore.Domain
 
 let today = DateOnly(2026, 10, 26)
 
-let registration claimant : Registration =
+let registration claimant : RegistrationInput =
     {
         IncidentDate = "2026-09-01"
         IncidentNotificationDate = "2026-09-02"
@@ -18,14 +20,14 @@ let registration claimant : Registration =
         ClaimedCurrency = "EUR"
     }
 
-let decision amount : ClaimCore.Domain.Decision =
+let decision amount : ClaimCore.Domain.DecisionInput =
     {
         PaymentDecisionDate = "2026-09-03"
         PayableAmount = amount
         PayableCurrency = "EUR"
     }
 
-let payment: Payment = { PaymentDate = "2026-09-04" }
+let payment: PaymentInput = { PaymentDate = "2026-09-04" }
 
 type Progress =
     | Undecided
@@ -41,28 +43,32 @@ let snapshot status progress state : CaseSnapshot =
         | _ -> Some(decision "50")
 
     {
-        Reference = "DEMO-1"
+        Reference = CaseFixtures.reference "DEMO-1"
         Revision = 3L
         State =
             state
                 {
-                    CaseReference = "DEMO-1"
+                    CaseReference = CaseFixtures.reference "DEMO-1"
                     Status = status
-                    Registration = registration "Synthetic claimant"
-                    Decision = decided
-                    Payment = (if progress = Paid then Some payment else None)
+                    Registration = registration "Synthetic claimant" |> CaseFixtures.registration
+                    Decision = decided |> Option.map CaseFixtures.decision
+                    Payment =
+                        (if progress = Paid then
+                             Some(CaseFixtures.payment payment)
+                         else
+                             None)
                 }
     }
 
 let erased: CaseSnapshot =
     {
-        Reference = "DEMO-1"
+        Reference = CaseFixtures.reference "DEMO-1"
         Revision = 3L
         State = CaseState.Erased
     }
 
 let correction =
-    CaseAct.Correct
+    UnvalidatedCaseAct.Correct
         {
             Registration = RegistrationGroup.Replace(registration "Corrected claimant")
             Decision = DecisionGroup.Keep
@@ -71,18 +77,18 @@ let correction =
 
 let acts =
     [
-        "OPEN", CaseAct.Open(registration "Synthetic claimant")
-        "AMEND_REGISTRATION", CaseAct.AmendRegistration(registration "Amended claimant")
+        "OPEN", UnvalidatedCaseAct.Open(registration "Synthetic claimant")
+        "AMEND_REGISTRATION", UnvalidatedCaseAct.AmendRegistration(registration "Amended claimant")
         "CORRECT", correction
-        "DECIDE", CaseAct.Decide(decision "60")
-        "WITHDRAW_DECISION", CaseAct.WithdrawDecision
-        "RECORD_PAYMENT", CaseAct.RecordPayment payment
-        "CLEAR_PAYMENT", CaseAct.ClearPayment
-        "CLOSE", CaseAct.Close
-        "REOPEN", CaseAct.Reopen
-        "VOID", CaseAct.Void "Entry error"
-        "REINSTATE", CaseAct.Reinstate "Restored"
-        "ERASE", CaseAct.Erase
+        "DECIDE", UnvalidatedCaseAct.Decide(decision "60")
+        "WITHDRAW_DECISION", UnvalidatedCaseAct.WithdrawDecision
+        "RECORD_PAYMENT", UnvalidatedCaseAct.RecordPayment payment
+        "CLEAR_PAYMENT", UnvalidatedCaseAct.ClearPayment
+        "CLOSE", UnvalidatedCaseAct.Close
+        "REOPEN", UnvalidatedCaseAct.Reopen
+        "VOID", UnvalidatedCaseAct.Void "Entry error"
+        "REINSTATE", UnvalidatedCaseAct.Reinstate "Restored"
+        "ERASE", UnvalidatedCaseAct.Erase
     ]
 
 let request act revision : UnvalidatedCaseRequest =
@@ -127,8 +133,8 @@ let matrix () =
 
         for token, act in acts do
             let revision = if record.IsNone then 0L else 3L
-            let decided = Case.decide today (request act revision) record
-            let stale = Case.decide today (request act 2L) record
+            let decided = CaseFixtures.decide today (request act revision) record
+            let stale = CaseFixtures.decide today (request act 2L) record
             let isOffered = List.contains token offered
 
             lines.Add(

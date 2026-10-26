@@ -7,14 +7,14 @@
     <Compile Include="Fields/FieldKinds.fs" />
     <Compile Include="Vocabulary/CaseVocabulary.fs" />
     <Compile Include="Vocabulary/CaseTokens.fs" />
-    <Compile Include="Model/CaseInputs.fs" />
-    <Compile Include="Model/CaseFields.fs" />
     <Compile Include="Fields/ScalarRules.fs" />
     <Compile Include="Refusals/Violations.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />
     <Compile Include="Values.fs" />
     <Compile Include="Formats.fs" />
     <Compile Include="Admission.fs" />
+    <Compile Include="Model/CaseInputs.fs" />
+    <Compile Include="Model/CaseFields.fs" />
     <Compile Include="Fields/FieldRules.fs" />
     <Compile Include="Fields/FieldTable.fs" />
     <Compile Include="Vocabulary/InputTargets.fs" />
@@ -29,7 +29,7 @@
     <Compile Include="PaymentProgress.fs" />
     <Compile Include="CaseState.fs" />
     <Compile Include="Transitions.fs" />
-    <Compile Include="ValidatedActs.fs" />
+    <Compile Include="CaseActs.fs" />
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />
     <Compile Include="RequestValidation.fs" />

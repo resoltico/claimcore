@@ -59,8 +59,8 @@ let private sameCase database (actor: HandlerContext) =
             | (CaseState.Active(fields) | CaseState.Voided(fields)) when
                 fields.Status = CaseStatus.Closed
                 ->
-                CaseAct.Reopen
-            | _ -> CaseAct.Close
+                UnvalidatedCaseAct.Reopen
+            | _ -> UnvalidatedCaseAct.Close
 
         let! replies =
             Task.WhenAll
@@ -70,7 +70,11 @@ let private sameCase database (actor: HandlerContext) =
                             Api.operationExecute
                             actor
                             (OperationInput.Case(
-                                request (710000 + index) snapshot.Reference snapshot.Revision act
+                                request
+                                    (710000 + index)
+                                    (CaseReference.format snapshot.Reference)
+                                    snapshot.Revision
+                                    act
                             ))
                             (token))
                 |]
@@ -116,14 +120,16 @@ let private revocation (database: PostgresFixture.Database) owner principal =
             | (CaseState.Active(fields) | CaseState.Voided(fields)) when
                 fields.Status = CaseStatus.Closed
                 ->
-                CaseAct.Reopen
-            | _ -> CaseAct.Close
+                UnvalidatedCaseAct.Reopen
+            | _ -> UnvalidatedCaseAct.Close
 
         let write =
             (Handlers.call
                 Api.operationExecute
                 writer
-                (OperationInput.Case(request 710010 snapshot.Reference snapshot.Revision act))
+                (OperationInput.Case(
+                    request 710010 (CaseReference.format snapshot.Reference) snapshot.Revision act
+                ))
                 (token))
 
         let revoke =
@@ -169,13 +175,23 @@ let private longCase database (actor: HandlerContext) =
         let watch = Stopwatch.StartNew()
 
         for index in 0..999 do
-            let act = if closed then CaseAct.Reopen else CaseAct.Close
+            let act =
+                if closed then
+                    UnvalidatedCaseAct.Reopen
+                else
+                    UnvalidatedCaseAct.Close
 
             let! reply =
                 (Handlers.call
                     Api.operationExecute
                     actor
-                    (OperationInput.Case(request (720000 + index) snapshot.Reference revision act))
+                    (OperationInput.Case(
+                        request
+                            (720000 + index)
+                            (CaseReference.format snapshot.Reference)
+                            revision
+                            act
+                    ))
                     (token))
 
             accepted reply |> ignore
@@ -183,7 +199,7 @@ let private longCase database (actor: HandlerContext) =
             revision <- revision + 1L
             closed <- not closed
 
-        let! final = current database snapshot.Reference
+        let! final = current database (CaseReference.format snapshot.Reference)
 
         Expect.equal
             final.Revision
@@ -218,12 +234,16 @@ let private erase (database: PostgresFixture.Database) (actor: HandlerContext) =
                 Api.operationExecute
                 actor
                 (OperationInput.Case(
-                    request 730001 snapshot.Reference snapshot.Revision CaseAct.Erase
+                    request
+                        730001
+                        (CaseReference.format snapshot.Reference)
+                        snapshot.Revision
+                        UnvalidatedCaseAct.Erase
                 ))
                 (token))
 
         accepted erased |> ignore
-        let! final = current database snapshot.Reference
+        let! final = current database (CaseReference.format snapshot.Reference)
         Expect.equal final.State CaseState.Erased "Erasure clears the final projection"
 
         let! revoked =

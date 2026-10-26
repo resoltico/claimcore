@@ -70,7 +70,10 @@ module internal TextReply =
 
     let private caseLines language (value: CaseReadModel) =
         [
-            line language (FieldTable.labelId BusinessField.CaseReference) value.Snapshot.Reference
+            line
+                language
+                (FieldTable.labelId BusinessField.CaseReference)
+                (CaseReference.format value.Snapshot.Reference)
             line
                 language
                 (CliMessages.key CliMessage.RevisionLabel)
@@ -94,7 +97,7 @@ module internal TextReply =
             match receipt.Subject with
             | ReceiptSubject.Case value ->
                 CaseActKinds.token value.Act,
-                value.Reference,
+                CaseReference.format value.Reference,
                 [
                     label language (CliMessages.key CliMessage.RevisionLabel)
                     number value.Revision
@@ -191,7 +194,7 @@ module internal TextReply =
              String.concat
                  "  "
                  [
-                     item.Reference
+                     CaseReference.format item.Reference
                      number item.Revision
                      CaseState.token item.State + "  " + status
                  ]))
@@ -215,14 +218,15 @@ module internal TextReply =
         let act =
             input
             |> Option.map (function
-                | OperationInput.Case value -> CaseActKinds.token (CaseActs.kind value.Act)
+                | OperationInput.Case value ->
+                    CaseActKinds.token (UnvalidatedCaseActs.kind value.Act)
                 | OperationInput.Authority value ->
                     AuthorityKinds.token (AuthorityActs.kind value.Act))
             |> Option.defaultValue "—"
 
         let target =
             match review with
-            | OperationReview.Case value -> value.Proposed.Reference
+            | OperationReview.Case value -> CaseReference.format value.Proposed.Reference
             | OperationReview.Authority value ->
                 let principal =
                     match input with

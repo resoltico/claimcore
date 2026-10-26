@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliFrameTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
@@ -283,7 +285,7 @@ let private exampleFrames () =
             | _ -> failtest "Example must be a case request"
 
         let next =
-            ClaimCore.Domain.Case.decide (DateOnly(2026, 10, 15)) request current
+            CaseFixtures.decide (DateOnly(2026, 10, 15)) request current
             |> Fixtures.accepted
 
         Expect.equal
@@ -294,7 +296,7 @@ let private exampleFrames () =
         current <- Some next
 
     let final = current |> Option.get |> ClaimCore.Domain.Case.snapshot
-    Expect.equal final.Reference "DEMO-0001" "Original reference retained"
+    Expect.equal (CaseReference.format final.Reference) "DEMO-0001" "Original reference retained"
 
     Expect.equal final.State ClaimCore.Domain.CaseState.Erased "Examples end with explicit erasure"
 

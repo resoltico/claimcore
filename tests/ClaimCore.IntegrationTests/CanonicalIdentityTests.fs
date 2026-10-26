@@ -27,6 +27,7 @@ let private encoded (vector: JsonElement) (side: string) =
 let private caseInput vector side =
     RequestRecord.decode Limits.MaximumRequestBytes (encoded vector side)
     |> Result.defaultWith (fun _ -> failtest "The independent request vector must decode")
+    |> _.Authored
 
 let private authorityInput vector side =
     let record =
@@ -62,7 +63,7 @@ let private casePairs (database: PostgresFixture.Database) =
                 let left = caseInput vector "left"
 
                 match left.Act with
-                | CaseAct.Open _ -> Some(vector, left, caseInput vector "right")
+                | UnvalidatedCaseAct.Open _ -> Some(vector, left, caseInput vector "right")
                 | _ -> None)
             |> Seq.toList
 
@@ -240,7 +241,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 922 left.CaseReference 1L CaseAct.Erase))
+                (OperationInput.Case(request 922 left.CaseReference 1L UnvalidatedCaseAct.Erase))
                 (token))
 
         accepted erased |> ignore

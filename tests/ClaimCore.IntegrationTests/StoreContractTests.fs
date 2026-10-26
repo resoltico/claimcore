@@ -1,5 +1,7 @@
 module ClaimCore.TestSupport.StoreContractTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 open System
 open System.Threading
@@ -92,7 +94,7 @@ let private genesis fixture =
 let private replayAndRefusal fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (CaseAct.Open registration)
+        let original = request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
 
         let! result =
             (Handlers.call
@@ -121,7 +123,7 @@ let private replayAndRefusal fixture =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 11 "CONTRACT-001" 0L CaseAct.Close))
+                (OperationInput.Case(request 11 "CONTRACT-001" 0L UnvalidatedCaseAct.Close))
                 (CancellationToken.None))
 
         Expect.equal
@@ -147,7 +149,7 @@ let private replayAndRefusal fixture =
 let private lockedView fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (CaseAct.Open registration)
+        let original = request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
 
         let! opened =
             (Handlers.call
@@ -182,7 +184,7 @@ let private lockedView fixture =
                 fixture.InstallationId
                 fixture.Calendar
                 fixture.Owner
-                original
+                (CaseFixtures.command original)
                 view
 
         let! result =
@@ -209,7 +211,9 @@ let private caseUpdate fixture =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 10 "CONTRACT-001" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (CancellationToken.None))
 
         accepted opened |> ignore
@@ -218,7 +222,7 @@ let private caseUpdate fixture =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 11 "CONTRACT-001" 1L CaseAct.Close))
+                (OperationInput.Case(request 11 "CONTRACT-001" 1L UnvalidatedCaseAct.Close))
                 (CancellationToken.None))
 
         let receipt = accepted closed
@@ -280,7 +284,9 @@ let private erasureReadback fixture (actor: HandlerContext) =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 10 "CONTRACT-001" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (CancellationToken.None))
 
         Expect.equal
@@ -292,7 +298,9 @@ let private erasureReadback fixture (actor: HandlerContext) =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 13 "contract-001" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 13 "contract-001" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (CancellationToken.None))
 
         Expect.equal
@@ -315,12 +323,14 @@ let private caseErasure fixture =
                 (Handlers.call
                     Api.operationExecute
                     actor
-                    (OperationInput.Case(request n reference 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request n reference 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted opened |> ignore
 
-        let erase = actRequest 12 "CONTRACT-001" 1L (CaseAct.Erase)
+        let erase = actRequest 12 "CONTRACT-001" 1L (UnvalidatedCaseAct.Erase)
 
         let! result =
             (Handlers.call
@@ -382,7 +392,9 @@ let private caseVisibility fixture =
                 (Handlers.call
                     Api.operationExecute
                     actor
-                    (OperationInput.Case(request n reference 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request n reference 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -391,7 +403,8 @@ let private caseVisibility fixture =
         let first = storedPage first
 
         Expect.equal
-            (first.Items |> List.map (fun record -> record.Snapshot.Reference))
+            (first.Items
+             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
             [ "A"; "B" ]
             "Reference-key order"
 
@@ -414,14 +427,16 @@ let private caseVisibility fixture =
             )
 
         Expect.equal
-            ((storedPage only).Items |> List.map (fun record -> record.Snapshot.Reference))
+            ((storedPage only).Items
+             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
             [ "C" ]
             "Visibility precedes limit"
 
         let! next = listCases fixture CaseVisibility.Every (Some "B") 2
 
         Expect.equal
-            ((storedPage next).Items |> List.map (fun record -> record.Snapshot.Reference))
+            ((storedPage next).Items
+             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
             [ "C" ]
             "Continuation"
     }
@@ -497,7 +512,9 @@ let private foldedOrdering fixture =
                 (Handlers.call
                     Api.operationExecute
                     actor
-                    (OperationInput.Case(request n reference 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request n reference 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -506,7 +523,8 @@ let private foldedOrdering fixture =
         let first = storedPage first
 
         Expect.equal
-            (first.Items |> List.map (fun record -> record.Snapshot.Reference))
+            (first.Items
+             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
             [ "ref-A" ]
             "Authored spelling with ASCII-key order"
 
@@ -514,7 +532,8 @@ let private foldedOrdering fixture =
         let! second = listCases fixture CaseVisibility.Every first.NextAfterReference 1
 
         Expect.equal
-            ((storedPage second).Items |> List.map (fun record -> record.Snapshot.Reference))
+            ((storedPage second).Items
+             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
             [ "Ref-b" ]
             "Continuation uses the same order"
     }
@@ -582,7 +601,7 @@ let private advisedCase fixture reference =
             (Handlers.call
                 Api.operationExecute
                 admin
-                (OperationInput.Case(request 20 reference 0L (CaseAct.Open registration)))
+                (OperationInput.Case(request 20 reference 0L (UnvalidatedCaseAct.Open registration)))
                 (CancellationToken.None))
 
         accepted opened |> ignore
@@ -598,7 +617,7 @@ let private advisedCase fixture reference =
             (Handlers.call
                 Api.operationExecute
                 admin
-                (OperationInput.Case(request 21 reference 1L (CaseAct.Decide decision)))
+                (OperationInput.Case(request 21 reference 1L (UnvalidatedCaseAct.Decide decision)))
                 (CancellationToken.None))
 
         accepted decided |> ignore
@@ -660,7 +679,7 @@ let private revokedAdvice fixture =
         let! target, actor = scopedHandler fixture admin reference
         do! checkScopedAdvice actor reference
 
-        let correction: Correction =
+        let correction: CorrectionInput =
             {
                 Registration =
                     RegistrationGroup.Replace
@@ -671,7 +690,7 @@ let private revokedAdvice fixture =
                 Payment = PaymentGroup.Keep
             }
 
-        let pending = request 35 reference 2L (CaseAct.Correct correction)
+        let pending = request 35 reference 2L (UnvalidatedCaseAct.Correct correction)
 
         let! preview =
             (Handlers.call
@@ -728,7 +747,7 @@ let private scopedWorker fixture =
                     Api.operationExecute
                     admin
                     (OperationInput.Case(
-                        request (100 + number) reference 0L (CaseAct.Open registration)
+                        request (100 + number) reference 0L (UnvalidatedCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 
@@ -784,7 +803,8 @@ let private scopedAuthority fixture =
         Expect.isEmpty context.Actor.Cases "Context never enumerates assigned grants"
         Expect.isTrue context.Actor.HasAssignedCases "EXISTS reports assigned visibility"
 
-        let pending = request 102 "SCOPE-1" 1L (CaseAct.AmendRegistration registration)
+        let pending =
+            request 102 "SCOPE-1" 1L (UnvalidatedCaseAct.AmendRegistration registration)
 
         let! conflict =
             (Handlers.call
@@ -1005,7 +1025,9 @@ let private grantReviewTarget fixture =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 10 "REVIEW-CASE" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 10 "REVIEW-CASE" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (CancellationToken.None))
 
         accepted opened |> ignore

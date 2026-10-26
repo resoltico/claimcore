@@ -59,7 +59,10 @@ let private delayedExecute (database: PostgresFixture.Database) =
         // Queue resolve first so lock acquisition order is deterministic, while execute also waits.
         let resolving = resolve actor (id 101)
         do! waiters database 1L
-        let input = OperationInput.Case(request 101 "FENCED" 0L (CaseAct.Open registration))
+
+        let input =
+            OperationInput.Case(request 101 "FENCED" 0L (UnvalidatedCaseAct.Open registration))
+
         let executing = (Handlers.call Api.operationExecute actor (input) (token))
         do! waiters database 2L
         do! transaction.CommitAsync()
@@ -97,7 +100,9 @@ let private receipts (database: PostgresFixture.Database) =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 110 "RESOLVED" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 110 "RESOLVED" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (token))
 
         let receipt = accepted created
@@ -135,7 +140,7 @@ let private receipts (database: PostgresFixture.Database) =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 113 "RESOLVED" 1L CaseAct.Erase))
+                (OperationInput.Case(request 113 "RESOLVED" 1L UnvalidatedCaseAct.Erase))
                 (token))
 
         accepted erased |> ignore
@@ -171,7 +176,7 @@ let private foreign (database: PostgresFixture.Database) =
         let other = core database.Fixture principal
 
         let input =
-            OperationInput.Case(request 121 "FOREIGN" 0L (CaseAct.Open registration))
+            OperationInput.Case(request 121 "FOREIGN" 0L (UnvalidatedCaseAct.Open registration))
 
         let! created = (Handlers.call Api.operationExecute actor (input) (token))
         let receipt = accepted created
@@ -195,7 +200,9 @@ let private foreign (database: PostgresFixture.Database) =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 122 "OTHER-FENCE" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 122 "OTHER-FENCE" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (token))
 
         accepted acceptedOtherId |> ignore

@@ -125,16 +125,16 @@ module ActorAuthorization =
     /// Reaffirmation is still a requested replacement and requires its group's capability.
     let requiredCapabilities =
         function
-        | (CaseAct.Correct correction) ->
+        | (CaseAct.Business(BusinessAct.Correct correction)) ->
             [
                 match correction.Registration with
-                | RegistrationGroup.Keep -> ()
+                | RegistrationChange.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Registration
                 match correction.Decision with
-                | DecisionGroup.Keep -> ()
+                | DecisionChange.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Decision
                 match correction.Payment with
-                | PaymentGroup.Keep -> ()
+                | PaymentChange.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Payment
             ]
         | act -> [ ordinaryActs[CaseActs.kind act] ]

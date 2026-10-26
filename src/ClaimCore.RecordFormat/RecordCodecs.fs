@@ -17,7 +17,7 @@ module internal RecordCodecs =
     let registration =
         (record (fun v0 v1 v2 v3 v4 v5 v6 ->
             {
-                Registration.IncidentDate = v0
+                RegistrationInput.IncidentDate = v0
                 IncidentNotificationDate = v1
                 IncidentCountry = v2
                 ClaimantName = v3
@@ -25,7 +25,7 @@ module internal RecordCodecs =
                 ClaimedAmount = v5
                 ClaimedCurrency = v6
             })
-        : Fields<Registration, _>)
+        : Fields<RegistrationInput, _>)
         |> field "incidentDate" _.IncidentDate (text)
         |> field "incidentNotificationDate" _.IncidentNotificationDate (text)
         |> field "incidentCountry" _.IncidentCountry (text)
@@ -39,11 +39,11 @@ module internal RecordCodecs =
     let decision =
         (record (fun v0 v1 v2 ->
             {
-                Decision.PaymentDecisionDate = v0
+                DecisionInput.PaymentDecisionDate = v0
                 PayableAmount = v1
                 PayableCurrency = v2
             })
-        : Fields<Decision, _>)
+        : Fields<DecisionInput, _>)
         |> field "paymentDecisionDate" _.PaymentDecisionDate (text)
         |> field "payableAmount" _.PayableAmount (text)
         |> field "payableCurrency" _.PayableCurrency (text)
@@ -51,7 +51,7 @@ module internal RecordCodecs =
         |> named "Decision"
 
     let payment =
-        (record (fun v0 -> { Payment.PaymentDate = v0 }): Fields<Payment, _>)
+        (record (fun v0 -> { PaymentInput.PaymentDate = v0 }): Fields<PaymentInput, _>)
         |> field "paymentDate" _.PaymentDate (text)
         |> build
         |> named "Payment"
@@ -107,11 +107,11 @@ module internal RecordCodecs =
     let correction =
         (record (fun v0 v1 v2 ->
             {
-                Correction.Registration = v0
+                CorrectionInput.Registration = v0
                 Decision = v1
                 Payment = v2
             })
-        : Fields<Correction, _>)
+        : Fields<CorrectionInput, _>)
         |> field "registration" _.Registration (registrationGroup)
         |> field "decision" _.Decision (decisionGroup)
         |> field "payment" _.Payment (paymentGroup)
@@ -122,72 +122,72 @@ module internal RecordCodecs =
         [
             variant
                 (CaseActKinds.token (CaseActKind.Business BusinessActKind.Open))
-                CaseAct.Open
+                UnvalidatedCaseAct.Open
                 (function
-                | CaseAct.Open value -> Some value
+                | UnvalidatedCaseAct.Open value -> Some value
                 | _ -> None)
                 (record id |> field "values" id registration)
             variant
                 (CaseActKinds.token (CaseActKind.Business BusinessActKind.AmendRegistration))
-                CaseAct.AmendRegistration
+                UnvalidatedCaseAct.AmendRegistration
                 (function
-                | CaseAct.AmendRegistration value -> Some value
+                | UnvalidatedCaseAct.AmendRegistration value -> Some value
                 | _ -> None)
                 (record id |> field "values" id registration)
             variant
                 (CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct))
-                CaseAct.Correct
+                UnvalidatedCaseAct.Correct
                 (function
-                | CaseAct.Correct value -> Some value
+                | UnvalidatedCaseAct.Correct value -> Some value
                 | _ -> None)
                 (record id |> field "groups" id correction)
             variant
                 (CaseActKinds.token (CaseActKind.Business BusinessActKind.Decide))
-                CaseAct.Decide
+                UnvalidatedCaseAct.Decide
                 (function
-                | CaseAct.Decide value -> Some value
+                | UnvalidatedCaseAct.Decide value -> Some value
                 | _ -> None)
                 (record id |> field "values" id decision)
             unitVariant
                 (CaseActKinds.token (CaseActKind.Business BusinessActKind.WithdrawDecision))
-                CaseAct.WithdrawDecision
+                UnvalidatedCaseAct.WithdrawDecision
             variant
                 (CaseActKinds.token (CaseActKind.Business BusinessActKind.RecordPayment))
-                CaseAct.RecordPayment
+                UnvalidatedCaseAct.RecordPayment
                 (function
-                | CaseAct.RecordPayment value -> Some value
+                | UnvalidatedCaseAct.RecordPayment value -> Some value
                 | _ -> None)
                 (record id |> field "values" id payment)
             unitVariant
                 (CaseActKinds.token (CaseActKind.Business BusinessActKind.ClearPayment))
-                CaseAct.ClearPayment
+                UnvalidatedCaseAct.ClearPayment
             unitVariant
                 (CaseActKinds.token (CaseActKind.Business BusinessActKind.Close))
-                CaseAct.Close
+                UnvalidatedCaseAct.Close
             unitVariant
                 (CaseActKinds.token (CaseActKind.Business BusinessActKind.Reopen))
-                CaseAct.Reopen
+                UnvalidatedCaseAct.Reopen
         ]
 
     let private stewardshipActs =
         [
             variant
                 (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Void))
-                CaseAct.Void
+                UnvalidatedCaseAct.Void
                 (function
-                | CaseAct.Void value -> Some value
+                | UnvalidatedCaseAct.Void value -> Some value
                 | _ -> None)
                 (record id |> field "reason" id text)
             variant
                 (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Reinstate))
-                CaseAct.Reinstate
+                UnvalidatedCaseAct.Reinstate
                 (function
-                | CaseAct.Reinstate value -> Some value
+                | UnvalidatedCaseAct.Reinstate value -> Some value
                 | _ -> None)
                 (record id |> field "reason" id text)
             unitVariant
                 (CaseActKinds.token (CaseActKind.Stewardship StewardshipActKind.Erase))
-                CaseAct.Erase
+                UnvalidatedCaseAct.Erase
         ]
 
     let caseAct = tagged "CaseAct" (businessActs @ stewardshipActs)
@@ -278,6 +278,80 @@ module internal RecordCodecs =
 
         tagged "CaseRequestRecord.Subject" [ variant "CASE" id Some fields ]
 
+    let private scalar parse format =
+        text
+        |> mapResult
+            (fun path raw ->
+                parse raw
+                |> Result.mapError (fun _ ->
+                    {
+                        Path = path
+                        Reason = "Invalid accepted scalar format."
+                    }))
+            format
+
+    let private acceptedDate = scalar CalendarDate.parse CalendarDate.format
+    let private acceptedReference = scalar CaseReference.parse CaseReference.format
+    let private acceptedCountry = scalar CountryCode.parse CountryCode.format
+    let private acceptedName = scalar PartyName.parse PartyName.format
+
+    let private moneyProblem amountField currencyField path =
+        function
+        | MoneyViolation.Amount _ ->
+            {
+                Path = path + "." + amountField
+                Reason = "Invalid accepted amount."
+            }
+        | MoneyViolation.Currency _ ->
+            {
+                Path = path + "." + currencyField
+                Reason = "Invalid accepted currency."
+            }
+
+    let private acceptedRegistration =
+        (record (fun incident notification country claimant insurer amount currency ->
+            Money.parse amount currency
+            |> Result.map (fun money ->
+                {
+                    Registration.IncidentDate = incident
+                    IncidentNotificationDate = notification
+                    IncidentCountry = country
+                    ClaimantName = claimant
+                    InsurerName = insurer
+                    ClaimedAmount = money
+                }))
+        : Fields<Registration, _>)
+        |> field "incidentDate" _.IncidentDate acceptedDate
+        |> field "incidentNotificationDate" _.IncidentNotificationDate acceptedDate
+        |> field "incidentCountry" _.IncidentCountry acceptedCountry
+        |> field "claimantName" _.ClaimantName acceptedName
+        |> field "insurerName" _.InsurerName acceptedName
+        |> field "claimedAmount" (fun value -> Money.format value.ClaimedAmount) text
+        |> field "claimedCurrency" (fun value -> Money.currency value.ClaimedAmount) text
+        |> buildResult (moneyProblem "claimedAmount" "claimedCurrency")
+        |> named "Registration"
+
+    let private acceptedDecision =
+        (record (fun date amount currency ->
+            Money.parse amount currency
+            |> Result.map (fun money ->
+                {
+                    Decision.PaymentDecisionDate = date
+                    PayableAmount = money
+                }))
+        : Fields<Decision, _>)
+        |> field "paymentDecisionDate" _.PaymentDecisionDate acceptedDate
+        |> field "payableAmount" (fun value -> Money.format value.PayableAmount) text
+        |> field "payableCurrency" (fun value -> Money.currency value.PayableAmount) text
+        |> buildResult (moneyProblem "payableAmount" "payableCurrency")
+        |> named "Decision"
+
+    let private acceptedPayment =
+        (record (fun date -> { Payment.PaymentDate = date }): Fields<Payment, _>)
+        |> field "paymentDate" _.PaymentDate acceptedDate
+        |> build
+        |> named "Payment"
+
     let caseFields =
         (record (fun reference status registration decision payment ->
             {
@@ -288,11 +362,11 @@ module internal RecordCodecs =
                 Payment = payment
             })
         : Fields<CaseFields, _>)
-        |> field "caseReference" _.CaseReference text
+        |> field "caseReference" _.CaseReference acceptedReference
         |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatuses.vocabulary))
-        |> field "registration" _.Registration registration
-        |> field "decision" _.Decision (nullable decision)
-        |> field "payment" _.Payment (nullable payment)
+        |> field "registration" _.Registration acceptedRegistration
+        |> field "decision" _.Decision (nullable acceptedDecision)
+        |> field "payment" _.Payment (nullable acceptedPayment)
         |> build
 
     let liveState =

@@ -114,7 +114,7 @@ module internal ReadOperations =
                             items
                             |> List.tryLast
                             |> Option.map (fun record ->
-                                CaseReference.key record.Snapshot.Reference)
+                                CaseReference.identity record.Snapshot.Reference)
                         else
                             None
 

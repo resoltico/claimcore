@@ -1,5 +1,7 @@
 module ClaimCore.Tests.Fixtures
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -40,17 +42,18 @@ let accepted result =
     | Error _ -> failtest "Expected acceptance."
 
 let opened () =
-    Case.decide today (request 0L (CaseAct.Open registration)) None |> accepted
+    CaseFixtures.decide today (request 0L (UnvalidatedCaseAct.Open registration)) None
+    |> accepted
 
 let apply act claim =
-    Case.decide today (request (Case.snapshot claim).Revision act) (Some claim)
+    CaseFixtures.decide today (request (Case.snapshot claim).Revision act) (Some claim)
 
 let decided () =
-    opened () |> apply (CaseAct.Decide decision) |> accepted
+    opened () |> apply (UnvalidatedCaseAct.Decide decision) |> accepted
 
 let paid () =
     decided ()
-    |> apply (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+    |> apply (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
     |> accepted
 
 let isInvalid result =
@@ -59,7 +62,7 @@ let isInvalid result =
     | _ -> false
 
 let actRequest revision act =
-    { request revision CaseAct.Close with
+    { request revision UnvalidatedCaseAct.Close with
         Act = act
     }
 

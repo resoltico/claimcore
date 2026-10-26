@@ -17,48 +17,22 @@ module internal Projections =
         | Ok value -> value
         | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
-    let private amount index row =
-        let text = required<string> index row
-
-        let grammar = FieldRules.amount.Grammar
-
-        if
-            not (
-                Regex.IsMatch(
-                    text,
-                    "\\A" + grammar + "\\z",
-                    RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
-                )
-            )
-        then
-            raise (RecordCorruptException "Invalid stored amount.")
-
-        match
-            Decimal.TryParse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture)
-        with
-        | true, amount -> amount.ToString("0.####", CultureInfo.InvariantCulture)
-        | _ -> raise (RecordCorruptException "Invalid stored amount.")
-
     let private date index row =
-        (DatabaseSession.calendarDate index row)
-            .ToString(Formats.CalendarDateFormat, CultureInfo.InvariantCulture)
+        DatabaseSession.calendarDate index row |> CalendarDate.ofDate
 
-    let private optionalText formatter index (row: obj array) =
+    let private optionalDate index (row: obj array) =
         if Convert.IsDBNull row[index] then
             None
         else
-            Some(formatter index row)
+            Some(date index row)
 
     let caseColumns = CaseProjectionLayout.select
 
     let private fields reference row : CaseFields =
         let decision =
             match
-                optionalText
-                    date
-                    (CaseProjectionLayout.ordinal BusinessField.PaymentDecisionDate)
-                    row,
-                optionalText amount (CaseProjectionLayout.ordinal BusinessField.PayableAmount) row,
+                optionalDate (CaseProjectionLayout.ordinal BusinessField.PaymentDecisionDate) row,
+                optional<string> (CaseProjectionLayout.ordinal BusinessField.PayableAmount) row,
                 optional<string> (CaseProjectionLayout.ordinal BusinessField.PayableCurrency) row
             with
             | None, None, None -> None
@@ -66,8 +40,7 @@ module internal Projections =
                 Some
                     {
                         PaymentDecisionDate = date
-                        PayableAmount = amount
-                        PayableCurrency = currency
+                        PayableAmount = Money.parse amount currency |> parsed
                     }
             | _ -> raise (RecordCorruptException "Incomplete stored decision.")
 
@@ -88,25 +61,44 @@ module internal Projections =
                             (CaseProjectionLayout.ordinal BusinessField.IncidentNotificationDate)
                             row
                     IncidentCountry =
-                        required (CaseProjectionLayout.ordinal BusinessField.IncidentCountry) row
+                        required<string>
+                            (CaseProjectionLayout.ordinal BusinessField.IncidentCountry)
+                            row
+                        |> CountryCode.parse
+                        |> parsed
                     ClaimantName =
-                        required (CaseProjectionLayout.ordinal BusinessField.ClaimantName) row
+                        required<string>
+                            (CaseProjectionLayout.ordinal BusinessField.ClaimantName)
+                            row
+                        |> PartyName.parse
+                        |> parsed
                     InsurerName =
-                        required (CaseProjectionLayout.ordinal BusinessField.InsurerName) row
+                        required<string>
+                            (CaseProjectionLayout.ordinal BusinessField.InsurerName)
+                            row
+                        |> PartyName.parse
+                        |> parsed
                     ClaimedAmount =
-                        amount (CaseProjectionLayout.ordinal BusinessField.ClaimedAmount) row
-                    ClaimedCurrency =
-                        required (CaseProjectionLayout.ordinal BusinessField.ClaimedCurrency) row
+                        Money.parse
+                            (required<string>
+                                (CaseProjectionLayout.ordinal BusinessField.ClaimedAmount)
+                                row)
+                            (required<string>
+                                (CaseProjectionLayout.ordinal BusinessField.ClaimedCurrency)
+                                row)
+                        |> parsed
                 }
             Decision = decision
             Payment =
-                optionalText date (CaseProjectionLayout.ordinal BusinessField.PaymentDate) row
-                |> Option.map (fun value -> { PaymentDate = value })
+                optionalDate (CaseProjectionLayout.ordinal BusinessField.PaymentDate) row
+                |> Option.map (fun date -> { PaymentDate = date })
         }
 
     let caseRow (row: obj array) : StoredCase =
         let reference =
             required<string> (CaseProjectionLayout.ordinal BusinessField.CaseReference) row
+            |> CaseReference.parse
+            |> parsed
 
         let view =
             match required<string> CaseProjectionLayout.stateOrdinal row with

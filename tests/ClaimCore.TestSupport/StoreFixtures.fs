@@ -47,7 +47,7 @@ let internal authorityRequest operationId target act : ClaimCore.Contract.Author
     }
     |> AuthorityRequests.toInput
 
-let internal registration: Registration =
+let internal registration: RegistrationInput =
     {
         IncidentDate = "2026-08-01"
         IncidentNotificationDate = "2026-08-03"

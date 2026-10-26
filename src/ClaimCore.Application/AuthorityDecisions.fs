@@ -99,7 +99,8 @@ module internal AuthorityDecisions =
                 CaseDecisions.current installationId record
                 |> Result.bind (fun _ ->
                     if
-                        CaseReference.key record.Snapshot.Reference = CaseReference.key reference
+                        CaseReference.identity record.Snapshot.Reference =
+                            CaseReference.key reference
                     then
                         Ok()
                     else

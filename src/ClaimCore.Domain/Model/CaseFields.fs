@@ -1,9 +1,28 @@
 namespace ClaimCore.Domain
 
+/// Accepted registration values retain their validated structure.
+type Registration =
+    {
+        IncidentDate: CalendarDate
+        IncidentNotificationDate: CalendarDate
+        IncidentCountry: CountryCode
+        ClaimantName: PartyName
+        InsurerName: PartyName
+        ClaimedAmount: Money
+    }
+
+type Decision =
+    {
+        PaymentDecisionDate: CalendarDate
+        PayableAmount: Money
+    }
+
+type Payment = { PaymentDate: CalendarDate }
+
 /// Accepted facts share the authored group types; a decision is complete or absent.
 type CaseFields =
     {
-        CaseReference: string
+        CaseReference: CaseReference
         Status: CaseStatus
         Registration: Registration
         Decision: Decision option
@@ -64,7 +83,7 @@ module LiveCase =
 
 type CaseSnapshot =
     {
-        Reference: string
+        Reference: CaseReference
         Revision: int64
         State: CaseState<CaseFields>
     }

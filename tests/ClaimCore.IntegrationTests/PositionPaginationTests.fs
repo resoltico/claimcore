@@ -31,7 +31,7 @@ let private succeeded =
     | ReadReply.Succeeded page -> page
     | _ -> failtest "Missing case page"
 
-let private reference (summary: CaseSummary) = summary.Reference
+let private reference (summary: CaseSummary) = CaseReference.format summary.Reference
 
 let private cursor =
     function
@@ -168,7 +168,7 @@ let private createHistory (actor: HandlerContext) =
                     Api.operationExecute
                     actor
                     (OperationInput.Case(
-                        request n "HISTORY-1" revision (CaseAct.AmendRegistration values)
+                        request n "HISTORY-1" revision (UnvalidatedCaseAct.AmendRegistration values)
                     ))
                     (CancellationToken.None))
 
@@ -497,7 +497,11 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
 let private appendHistory (actor: HandlerContext) =
     task {
         for revision in 1L .. 52L do
-            let act = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
+            let act =
+                if revision % 2L = 1L then
+                    UnvalidatedCaseAct.Close
+                else
+                    UnvalidatedCaseAct.Reopen
 
             let! result =
                 (Handlers.call

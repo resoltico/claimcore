@@ -1,5 +1,6 @@
 module ClaimCore.Tests.VerificationFoldTests
 
+open ClaimCore.TestSupport
 open ClaimCore.Contract
 
 open System
@@ -80,7 +81,7 @@ let private history: CaseHistory =
     {
         Revision = 1L
         Snapshot = None
-        Reference = Some "SYNTHETIC"
+        Reference = Some(CaseFixtures.reference "SYNTHETIC")
         State = CaseState.Active()
         MissingPayloadAt = None
         PresentPayloadAt = None

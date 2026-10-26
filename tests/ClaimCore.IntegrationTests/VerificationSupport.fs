@@ -67,7 +67,9 @@ let populated (database: PostgresFixture.Database) =
             (Handlers.call
                 Api.operationExecute
                 actor
-                (OperationInput.Case(request 10 "synthetic-a" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 10 "synthetic-a" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (token))
 
         accepted opened |> ignore

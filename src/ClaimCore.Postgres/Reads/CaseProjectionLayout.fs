@@ -75,21 +75,38 @@ module internal CaseProjectionLayout =
 
         $"UPDATE claimcore.cases SET revision=$2,state='ERASED',{assignments} WHERE case_id=$1"
 
-    let private parameter (row: FieldRow) value =
-        match value with
-        | None -> box DBNull.Value
-        | Some text ->
-            match row.Scalar with
-            | ScalarRule.CalendarDate _ ->
-                box (
-                    DateOnly.ParseExact(
-                        text,
-                        Formats.CalendarDateFormat,
-                        CultureInfo.InvariantCulture
-                    )
-                )
-            | ScalarRule.Amount _ -> box (Decimal.Parse(text, CultureInfo.InvariantCulture))
-            | _ -> box text
+    // This is an exhaustive conversion of named fields, not conditional business policy.
+    // fsharplint:disable-next-line CyclomaticComplexity
+    let private parameter (fields: CaseFields) =
+        function
+        | BusinessField.CaseReference -> box (CaseReference.format fields.CaseReference)
+        | BusinessField.Status -> box (CaseStatuses.token fields.Status)
+        | BusinessField.IncidentDate -> box (CalendarDate.value fields.Registration.IncidentDate)
+        | BusinessField.IncidentNotificationDate ->
+            box (CalendarDate.value fields.Registration.IncidentNotificationDate)
+        | BusinessField.IncidentCountry ->
+            box (CountryCode.format fields.Registration.IncidentCountry)
+        | BusinessField.ClaimantName -> box (PartyName.format fields.Registration.ClaimantName)
+        | BusinessField.InsurerName -> box (PartyName.format fields.Registration.InsurerName)
+        | BusinessField.ClaimedAmount -> box (Money.value fields.Registration.ClaimedAmount)
+        | BusinessField.ClaimedCurrency -> box (Money.currency fields.Registration.ClaimedAmount)
+        | BusinessField.PaymentDecisionDate ->
+            DatabaseSession.parameter (
+                fields.Decision
+                |> Option.map (fun value -> CalendarDate.value value.PaymentDecisionDate)
+            )
+        | BusinessField.PayableAmount ->
+            DatabaseSession.parameter (
+                fields.Decision |> Option.map (fun value -> Money.value value.PayableAmount)
+            )
+        | BusinessField.PayableCurrency ->
+            DatabaseSession.parameter (
+                fields.Decision |> Option.map (fun value -> Money.currency value.PayableAmount)
+            )
+        | BusinessField.PaymentDate ->
+            DatabaseSession.parameter (
+                fields.Payment |> Option.map (fun value -> CalendarDate.value value.PaymentDate)
+            )
 
     let parameters id (snapshot: CaseSnapshot) =
         let fields, state =
@@ -98,10 +115,7 @@ module internal CaseProjectionLayout =
             | CaseState.Voided(fields) -> fields, "VOIDED"
             | CaseState.Erased -> invalidArg (nameof snapshot) "Use the erasure projection."
 
-        let values = FieldTable.values fields |> Map.ofList
-
-        let bind row =
-            parameter row (Map.find row.Field values)
+        let bind (row: FieldRow) = parameter fields row.Field
 
         [ box id ]
         @ (retained |> List.map bind)

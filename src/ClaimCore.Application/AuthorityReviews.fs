@@ -12,7 +12,7 @@ module internal AuthorityReviews =
             | Some id ->
                 let record = view.TargetCase |> Option.get
 
-                GrantTarget.CaseReference record.Snapshot.Reference,
+                GrantTarget.CaseReference(CaseReference.format record.Snapshot.Reference),
                 (view.Target.Cases |> Map.tryFind id |> Option.defaultValue [])
 
         let value: AuthorityGrant = { Role = role; Scope = scope }

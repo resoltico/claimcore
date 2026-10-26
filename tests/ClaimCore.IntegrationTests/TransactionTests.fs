@@ -111,7 +111,10 @@ let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandle
             hasHandler
             "Authority belongs to this snapshot"
 
-        Expect.equal fields.Registration.ClaimantName name "Data belongs to this snapshot"
+        Expect.equal
+            (PartyName.format fields.Registration.ClaimantName)
+            name
+            "Data belongs to this snapshot"
     | _ -> failtest "Expected a coherent read"
 
 [<Tests>]
@@ -136,7 +139,8 @@ let tests =
                                                 (100 + index)
                                                 ($"synthetic-{index}")
                                                 0L
-                                                (ClaimCore.Domain.CaseAct.Open registration)
+                                                (ClaimCore.Domain.UnvalidatedCaseAct.Open
+                                                    registration)
                                         ))
                                         (token))
                             |]
@@ -320,7 +324,7 @@ let tests =
                                 20
                                 "synthetic-deferred"
                                 0L
-                                (ClaimCore.Domain.CaseAct.Open registration)
+                                (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
 
                         let! failed =
                             (Handlers.call
@@ -396,7 +400,7 @@ let tests =
                                         20
                                         "synthetic-snapshot"
                                         0L
-                                        (ClaimCore.Domain.CaseAct.Open registration)
+                                        (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
                                 ))
                                 (token))
 
