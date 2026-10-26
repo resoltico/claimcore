@@ -24,9 +24,9 @@
       "claimcore": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Contract": "[0.11.0, )",
-          "ClaimCore.HostSecurity": "[0.11.0, )",
-          "ClaimCore.Json": "[0.11.0, )",
+          "ClaimCore.Contract": "[0.12.0, )",
+          "ClaimCore.HostSecurity": "[0.12.0, )",
+          "ClaimCore.Json": "[0.12.0, )",
           "Duende.IdentityModel": "[8.1.0, )",
           "Duende.IdentityModel.OidcClient": "[7.1.1, )",
           "FSharp.Core": "[10.1.402, )"
@@ -35,7 +35,7 @@
       "claimcore.contract": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Json": "[0.11.0, )",
+          "ClaimCore.Json": "[0.12.0, )",
           "FSharp.Core": "[10.1.402, )"
         }
       },
