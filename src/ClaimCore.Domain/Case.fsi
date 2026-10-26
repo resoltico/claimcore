@@ -4,15 +4,6 @@ open ClaimCore.Contract
 
 open System
 
-/// Accepted business state is constructed only by the Domain.
-[<NoComparison>]
-type Claim
-
-[<RequireQualifiedAccess; NoComparison>]
-type CaseState =
-    | Live of claim: Claim * disposition: Disposition
-    | Erased
-
 [<NoComparison>]
 type CaseRecord
 

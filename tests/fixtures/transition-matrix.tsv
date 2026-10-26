@@ -1,0 +1,217 @@
+class	act	offered	outcome	staleRevisionOutcome
+Opened/Undecided/Active	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Opened/Undecided/Active	AMEND_REGISTRATION	true	ACCEPTED	RevisionConflict 3L
+Opened/Undecided/Active	CORRECT	false	CorrectionRequiresExistingValue	RevisionConflict 3L
+Opened/Undecided/Active	DECIDE	true	ACCEPTED	RevisionConflict 3L
+Opened/Undecided/Active	WITHDRAW_DECISION	false	DecisionRequired	RevisionConflict 3L
+Opened/Undecided/Active	RECORD_PAYMENT	false	DecisionRequired	RevisionConflict 3L
+Opened/Undecided/Active	CLEAR_PAYMENT	false	PaymentNotRecorded	RevisionConflict 3L
+Opened/Undecided/Active	CLOSE	true	ACCEPTED	RevisionConflict 3L
+Opened/Undecided/Active	REOPEN	false	AlreadyOpened	RevisionConflict 3L
+Opened/Undecided/Active	VOID	true	ACCEPTED	RevisionConflict 3L
+Opened/Undecided/Active	REINSTATE	false	NotVoided	RevisionConflict 3L
+Opened/Undecided/Active	ERASE	true	ACCEPTED	RevisionConflict 3L
+Opened/Undecided/Voided	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Opened/Undecided/Voided	AMEND_REGISTRATION	false	CaseVoided	RevisionConflict 3L
+Opened/Undecided/Voided	CORRECT	false	CaseVoided	RevisionConflict 3L
+Opened/Undecided/Voided	DECIDE	false	CaseVoided	RevisionConflict 3L
+Opened/Undecided/Voided	WITHDRAW_DECISION	false	CaseVoided	RevisionConflict 3L
+Opened/Undecided/Voided	RECORD_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Opened/Undecided/Voided	CLEAR_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Opened/Undecided/Voided	CLOSE	false	CaseVoided	RevisionConflict 3L
+Opened/Undecided/Voided	REOPEN	false	CaseVoided	RevisionConflict 3L
+Opened/Undecided/Voided	VOID	false	AlreadyVoided	RevisionConflict 3L
+Opened/Undecided/Voided	REINSTATE	true	ACCEPTED	RevisionConflict 3L
+Opened/Undecided/Voided	ERASE	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedPositive/Active	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Opened/DecidedPositive/Active	AMEND_REGISTRATION	false	AmendmentRequiresUndecided	RevisionConflict 3L
+Opened/DecidedPositive/Active	CORRECT	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedPositive/Active	DECIDE	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedPositive/Active	WITHDRAW_DECISION	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedPositive/Active	RECORD_PAYMENT	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedPositive/Active	CLEAR_PAYMENT	false	PaymentNotRecorded	RevisionConflict 3L
+Opened/DecidedPositive/Active	CLOSE	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedPositive/Active	REOPEN	false	AlreadyOpened	RevisionConflict 3L
+Opened/DecidedPositive/Active	VOID	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedPositive/Active	REINSTATE	false	NotVoided	RevisionConflict 3L
+Opened/DecidedPositive/Active	ERASE	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedPositive/Voided	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Opened/DecidedPositive/Voided	AMEND_REGISTRATION	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedPositive/Voided	CORRECT	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedPositive/Voided	DECIDE	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedPositive/Voided	WITHDRAW_DECISION	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedPositive/Voided	RECORD_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedPositive/Voided	CLEAR_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedPositive/Voided	CLOSE	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedPositive/Voided	REOPEN	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedPositive/Voided	VOID	false	AlreadyVoided	RevisionConflict 3L
+Opened/DecidedPositive/Voided	REINSTATE	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedPositive/Voided	ERASE	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedZero/Active	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Opened/DecidedZero/Active	AMEND_REGISTRATION	false	AmendmentRequiresUndecided	RevisionConflict 3L
+Opened/DecidedZero/Active	CORRECT	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedZero/Active	DECIDE	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedZero/Active	WITHDRAW_DECISION	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedZero/Active	RECORD_PAYMENT	false	ZeroDecisionCannotBePaid	RevisionConflict 3L
+Opened/DecidedZero/Active	CLEAR_PAYMENT	false	PaymentNotRecorded	RevisionConflict 3L
+Opened/DecidedZero/Active	CLOSE	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedZero/Active	REOPEN	false	AlreadyOpened	RevisionConflict 3L
+Opened/DecidedZero/Active	VOID	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedZero/Active	REINSTATE	false	NotVoided	RevisionConflict 3L
+Opened/DecidedZero/Active	ERASE	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedZero/Voided	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Opened/DecidedZero/Voided	AMEND_REGISTRATION	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedZero/Voided	CORRECT	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedZero/Voided	DECIDE	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedZero/Voided	WITHDRAW_DECISION	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedZero/Voided	RECORD_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedZero/Voided	CLEAR_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedZero/Voided	CLOSE	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedZero/Voided	REOPEN	false	CaseVoided	RevisionConflict 3L
+Opened/DecidedZero/Voided	VOID	false	AlreadyVoided	RevisionConflict 3L
+Opened/DecidedZero/Voided	REINSTATE	true	ACCEPTED	RevisionConflict 3L
+Opened/DecidedZero/Voided	ERASE	true	ACCEPTED	RevisionConflict 3L
+Opened/Paid/Active	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Opened/Paid/Active	AMEND_REGISTRATION	false	AmendmentRequiresUndecided	RevisionConflict 3L
+Opened/Paid/Active	CORRECT	true	ACCEPTED	RevisionConflict 3L
+Opened/Paid/Active	DECIDE	false	DecisionAlreadyPaid	RevisionConflict 3L
+Opened/Paid/Active	WITHDRAW_DECISION	false	DecisionAlreadyPaid	RevisionConflict 3L
+Opened/Paid/Active	RECORD_PAYMENT	false	PaymentAlreadyRecorded	RevisionConflict 3L
+Opened/Paid/Active	CLEAR_PAYMENT	true	ACCEPTED	RevisionConflict 3L
+Opened/Paid/Active	CLOSE	true	ACCEPTED	RevisionConflict 3L
+Opened/Paid/Active	REOPEN	false	AlreadyOpened	RevisionConflict 3L
+Opened/Paid/Active	VOID	true	ACCEPTED	RevisionConflict 3L
+Opened/Paid/Active	REINSTATE	false	NotVoided	RevisionConflict 3L
+Opened/Paid/Active	ERASE	true	ACCEPTED	RevisionConflict 3L
+Opened/Paid/Voided	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Opened/Paid/Voided	AMEND_REGISTRATION	false	CaseVoided	RevisionConflict 3L
+Opened/Paid/Voided	CORRECT	false	CaseVoided	RevisionConflict 3L
+Opened/Paid/Voided	DECIDE	false	CaseVoided	RevisionConflict 3L
+Opened/Paid/Voided	WITHDRAW_DECISION	false	CaseVoided	RevisionConflict 3L
+Opened/Paid/Voided	RECORD_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Opened/Paid/Voided	CLEAR_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Opened/Paid/Voided	CLOSE	false	CaseVoided	RevisionConflict 3L
+Opened/Paid/Voided	REOPEN	false	CaseVoided	RevisionConflict 3L
+Opened/Paid/Voided	VOID	false	AlreadyVoided	RevisionConflict 3L
+Opened/Paid/Voided	REINSTATE	true	ACCEPTED	RevisionConflict 3L
+Opened/Paid/Voided	ERASE	true	ACCEPTED	RevisionConflict 3L
+Closed/Undecided/Active	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Closed/Undecided/Active	AMEND_REGISTRATION	false	CaseClosed	RevisionConflict 3L
+Closed/Undecided/Active	CORRECT	true	ACCEPTED	RevisionConflict 3L
+Closed/Undecided/Active	DECIDE	false	CaseClosed	RevisionConflict 3L
+Closed/Undecided/Active	WITHDRAW_DECISION	false	CaseClosed	RevisionConflict 3L
+Closed/Undecided/Active	RECORD_PAYMENT	false	CaseClosed	RevisionConflict 3L
+Closed/Undecided/Active	CLEAR_PAYMENT	false	CaseClosed	RevisionConflict 3L
+Closed/Undecided/Active	CLOSE	false	AlreadyClosed	RevisionConflict 3L
+Closed/Undecided/Active	REOPEN	true	ACCEPTED	RevisionConflict 3L
+Closed/Undecided/Active	VOID	true	ACCEPTED	RevisionConflict 3L
+Closed/Undecided/Active	REINSTATE	false	NotVoided	RevisionConflict 3L
+Closed/Undecided/Active	ERASE	true	ACCEPTED	RevisionConflict 3L
+Closed/Undecided/Voided	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Closed/Undecided/Voided	AMEND_REGISTRATION	false	CaseVoided	RevisionConflict 3L
+Closed/Undecided/Voided	CORRECT	false	CaseVoided	RevisionConflict 3L
+Closed/Undecided/Voided	DECIDE	false	CaseVoided	RevisionConflict 3L
+Closed/Undecided/Voided	WITHDRAW_DECISION	false	CaseVoided	RevisionConflict 3L
+Closed/Undecided/Voided	RECORD_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Closed/Undecided/Voided	CLEAR_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Closed/Undecided/Voided	CLOSE	false	CaseVoided	RevisionConflict 3L
+Closed/Undecided/Voided	REOPEN	false	CaseVoided	RevisionConflict 3L
+Closed/Undecided/Voided	VOID	false	AlreadyVoided	RevisionConflict 3L
+Closed/Undecided/Voided	REINSTATE	true	ACCEPTED	RevisionConflict 3L
+Closed/Undecided/Voided	ERASE	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedPositive/Active	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Closed/DecidedPositive/Active	AMEND_REGISTRATION	false	CaseClosed	RevisionConflict 3L
+Closed/DecidedPositive/Active	CORRECT	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedPositive/Active	DECIDE	false	CaseClosed	RevisionConflict 3L
+Closed/DecidedPositive/Active	WITHDRAW_DECISION	false	CaseClosed	RevisionConflict 3L
+Closed/DecidedPositive/Active	RECORD_PAYMENT	false	CaseClosed	RevisionConflict 3L
+Closed/DecidedPositive/Active	CLEAR_PAYMENT	false	CaseClosed	RevisionConflict 3L
+Closed/DecidedPositive/Active	CLOSE	false	AlreadyClosed	RevisionConflict 3L
+Closed/DecidedPositive/Active	REOPEN	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedPositive/Active	VOID	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedPositive/Active	REINSTATE	false	NotVoided	RevisionConflict 3L
+Closed/DecidedPositive/Active	ERASE	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedPositive/Voided	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Closed/DecidedPositive/Voided	AMEND_REGISTRATION	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedPositive/Voided	CORRECT	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedPositive/Voided	DECIDE	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedPositive/Voided	WITHDRAW_DECISION	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedPositive/Voided	RECORD_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedPositive/Voided	CLEAR_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedPositive/Voided	CLOSE	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedPositive/Voided	REOPEN	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedPositive/Voided	VOID	false	AlreadyVoided	RevisionConflict 3L
+Closed/DecidedPositive/Voided	REINSTATE	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedPositive/Voided	ERASE	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedZero/Active	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Closed/DecidedZero/Active	AMEND_REGISTRATION	false	CaseClosed	RevisionConflict 3L
+Closed/DecidedZero/Active	CORRECT	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedZero/Active	DECIDE	false	CaseClosed	RevisionConflict 3L
+Closed/DecidedZero/Active	WITHDRAW_DECISION	false	CaseClosed	RevisionConflict 3L
+Closed/DecidedZero/Active	RECORD_PAYMENT	false	CaseClosed	RevisionConflict 3L
+Closed/DecidedZero/Active	CLEAR_PAYMENT	false	CaseClosed	RevisionConflict 3L
+Closed/DecidedZero/Active	CLOSE	false	AlreadyClosed	RevisionConflict 3L
+Closed/DecidedZero/Active	REOPEN	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedZero/Active	VOID	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedZero/Active	REINSTATE	false	NotVoided	RevisionConflict 3L
+Closed/DecidedZero/Active	ERASE	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedZero/Voided	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Closed/DecidedZero/Voided	AMEND_REGISTRATION	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedZero/Voided	CORRECT	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedZero/Voided	DECIDE	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedZero/Voided	WITHDRAW_DECISION	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedZero/Voided	RECORD_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedZero/Voided	CLEAR_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedZero/Voided	CLOSE	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedZero/Voided	REOPEN	false	CaseVoided	RevisionConflict 3L
+Closed/DecidedZero/Voided	VOID	false	AlreadyVoided	RevisionConflict 3L
+Closed/DecidedZero/Voided	REINSTATE	true	ACCEPTED	RevisionConflict 3L
+Closed/DecidedZero/Voided	ERASE	true	ACCEPTED	RevisionConflict 3L
+Closed/Paid/Active	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Closed/Paid/Active	AMEND_REGISTRATION	false	CaseClosed	RevisionConflict 3L
+Closed/Paid/Active	CORRECT	true	ACCEPTED	RevisionConflict 3L
+Closed/Paid/Active	DECIDE	false	CaseClosed	RevisionConflict 3L
+Closed/Paid/Active	WITHDRAW_DECISION	false	CaseClosed	RevisionConflict 3L
+Closed/Paid/Active	RECORD_PAYMENT	false	CaseClosed	RevisionConflict 3L
+Closed/Paid/Active	CLEAR_PAYMENT	false	CaseClosed	RevisionConflict 3L
+Closed/Paid/Active	CLOSE	false	AlreadyClosed	RevisionConflict 3L
+Closed/Paid/Active	REOPEN	true	ACCEPTED	RevisionConflict 3L
+Closed/Paid/Active	VOID	true	ACCEPTED	RevisionConflict 3L
+Closed/Paid/Active	REINSTATE	false	NotVoided	RevisionConflict 3L
+Closed/Paid/Active	ERASE	true	ACCEPTED	RevisionConflict 3L
+Closed/Paid/Voided	OPEN	false	CaseAlreadyExists	CaseAlreadyExists
+Closed/Paid/Voided	AMEND_REGISTRATION	false	CaseVoided	RevisionConflict 3L
+Closed/Paid/Voided	CORRECT	false	CaseVoided	RevisionConflict 3L
+Closed/Paid/Voided	DECIDE	false	CaseVoided	RevisionConflict 3L
+Closed/Paid/Voided	WITHDRAW_DECISION	false	CaseVoided	RevisionConflict 3L
+Closed/Paid/Voided	RECORD_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Closed/Paid/Voided	CLEAR_PAYMENT	false	CaseVoided	RevisionConflict 3L
+Closed/Paid/Voided	CLOSE	false	CaseVoided	RevisionConflict 3L
+Closed/Paid/Voided	REOPEN	false	CaseVoided	RevisionConflict 3L
+Closed/Paid/Voided	VOID	false	AlreadyVoided	RevisionConflict 3L
+Closed/Paid/Voided	REINSTATE	true	ACCEPTED	RevisionConflict 3L
+Closed/Paid/Voided	ERASE	true	ACCEPTED	RevisionConflict 3L
+ERASED	OPEN	false	CaseErased	CaseErased
+ERASED	AMEND_REGISTRATION	false	CaseErased	CaseErased
+ERASED	CORRECT	false	CaseErased	CaseErased
+ERASED	DECIDE	false	CaseErased	CaseErased
+ERASED	WITHDRAW_DECISION	false	CaseErased	CaseErased
+ERASED	RECORD_PAYMENT	false	CaseErased	CaseErased
+ERASED	CLEAR_PAYMENT	false	CaseErased	CaseErased
+ERASED	CLOSE	false	CaseErased	CaseErased
+ERASED	REOPEN	false	CaseErased	CaseErased
+ERASED	VOID	false	CaseErased	CaseErased
+ERASED	REINSTATE	false	CaseErased	CaseErased
+ERASED	ERASE	false	CaseErased	CaseErased
+ABSENT	OPEN	false	ACCEPTED	RevisionConflict 0L
+ABSENT	AMEND_REGISTRATION	false	ResourceUnavailable	ResourceUnavailable
+ABSENT	CORRECT	false	ResourceUnavailable	ResourceUnavailable
+ABSENT	DECIDE	false	ResourceUnavailable	ResourceUnavailable
+ABSENT	WITHDRAW_DECISION	false	ResourceUnavailable	ResourceUnavailable
+ABSENT	RECORD_PAYMENT	false	ResourceUnavailable	ResourceUnavailable
+ABSENT	CLEAR_PAYMENT	false	ResourceUnavailable	ResourceUnavailable
+ABSENT	CLOSE	false	ResourceUnavailable	ResourceUnavailable
+ABSENT	REOPEN	false	ResourceUnavailable	ResourceUnavailable
+ABSENT	VOID	false	ResourceUnavailable	ResourceUnavailable
+ABSENT	REINSTATE	false	ResourceUnavailable	ResourceUnavailable
+ABSENT	ERASE	false	ResourceUnavailable	ResourceUnavailable

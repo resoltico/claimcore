@@ -7,7 +7,9 @@
     <Compile Include="CaseModel.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="CaseReference.fs" />
-    <Compile Include="Eligibility.fs" />
+    <Compile Include="PaymentProgress.fs" />
+    <Compile Include="CaseState.fs" />
+    <Compile Include="Transitions.fs" />
     <Compile Include="ValidatedActs.fs" />
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />

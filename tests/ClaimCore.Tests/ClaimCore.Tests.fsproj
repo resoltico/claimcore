@@ -22,6 +22,7 @@
     <Compile Include="Domain/ScalarPropertyTests.fs" />
     <Compile Include="Domain/TransitionOracle.fs" />
     <Compile Include="Domain/TransitionPropertyTests.fs" />
+    <Compile Include="Domain/TransitionCharacterizationTests.fs" />
     <Compile Include="Domain/DomainTests.fs" />
     <Compile Include="Domain/CaseModelTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />

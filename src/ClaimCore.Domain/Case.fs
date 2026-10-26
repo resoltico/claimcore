@@ -6,20 +6,6 @@ open System
 open ClaimCore.Domain.ResultFlow
 
 [<NoComparison>]
-type Claim =
-    private
-        {
-            Facts: Validation.Facts
-            Progress: PaymentProgress
-            Status: CaseStatus
-        }
-
-[<RequireQualifiedAccess; NoComparison>]
-type CaseState =
-    | Live of claim: Claim * disposition: Disposition
-    | Erased
-
-[<NoComparison>]
 type CaseRecord =
     private
         {
@@ -29,7 +15,7 @@ type CaseRecord =
         }
 
 module private BusinessState =
-    let fields reference claim : CaseFields =
+    let fields reference (claim: Claim) : CaseFields =
         {
             CaseReference = reference
             Status = claim.Status
@@ -128,21 +114,9 @@ module private BusinessState =
                 }
         }
 
-    let private recordPayment date progress =
-        match progress with
-        | PaymentProgress.Decided decision -> Ok(PaymentProgress.Paid(decision, date))
-        | PaymentProgress.Undecided -> Error Refusal.DecisionRequired
-        | PaymentProgress.Paid _ -> Error Refusal.PaymentAlreadyRecorded
-
-    let private clearPayment progress =
-        match progress with
-        | PaymentProgress.Paid(decision, _) -> Ok(PaymentProgress.Decided decision)
-        | PaymentProgress.Undecided
-        | PaymentProgress.Decided _ -> Error Refusal.PaymentNotRecorded
-
     let private change act (claim: Claim) =
         match act with
-        | ValidatedAct.Open _ -> Error Refusal.CaseAlreadyExists
+        | ValidatedAct.Open _ -> invalidOp "An existing case cannot be opened."
         | ValidatedAct.Reopen ->
             Ok
                 { claim with
@@ -172,15 +146,22 @@ module private BusinessState =
                     Progress = PaymentProgress.Undecided
                 }
         | ValidatedAct.RecordPayment date ->
-            recordPayment date claim.Progress
-            |> Result.map (fun progress -> { claim with Progress = progress })
-        | ValidatedAct.ClearPayment ->
-            clearPayment claim.Progress
-            |> Result.map (fun progress -> { claim with Progress = progress })
+            let decision = PaymentProgress.decision claim.Progress |> Option.get
 
-    let transition today kind act claim =
+            Ok
+                { claim with
+                    Progress = PaymentProgress.Paid(decision, date)
+                }
+        | ValidatedAct.ClearPayment ->
+            let decision = PaymentProgress.decision claim.Progress |> Option.get
+
+            Ok
+                { claim with
+                    Progress = PaymentProgress.Decided decision
+                }
+
+    let transition today act claim =
         result {
-            do! Eligibility.check kind claim.Status claim.Progress
             let! next = change act claim
             do! StateValidation.progress next.Facts next.Progress
 
@@ -284,33 +265,30 @@ module Case =
                     }
         }
 
-    let private steward act claim disposition =
-        match act, disposition with
-        | CaseAct.Void _, Disposition.Voided -> Error Refusal.AlreadyVoided
-        | CaseAct.Reinstate _, Disposition.Active -> Error Refusal.NotVoided
-        | CaseAct.Void reason, Disposition.Active ->
+    let private steward act claim =
+        match act with
+        | CaseAct.Void reason ->
             Validation.admission InputTarget.Reason reason
             |> Result.map (fun () -> CaseState.Live(claim, Disposition.Voided))
-        | CaseAct.Reinstate reason, Disposition.Voided ->
+        | CaseAct.Reinstate reason ->
             Validation.admission InputTarget.Reason reason
             |> Result.map (fun () -> CaseState.Live(claim, Disposition.Active))
-        | CaseAct.Erase, _ -> Ok CaseState.Erased
+        | CaseAct.Erase -> Ok CaseState.Erased
         | _ -> invalidArg (nameof act) "Expected a stewardship act."
 
     let private transition today act claim disposition =
-        match act with
-        | CaseAct.Void _
-        | CaseAct.Reinstate _
-        | CaseAct.Erase -> steward act claim disposition
-        | _ when disposition = Disposition.Voided -> Error Refusal.CaseVoided
-        | act ->
-            result {
+        result {
+            do! Transitions.check (CaseState.Live(claim, disposition)) (CaseActs.kind act)
+
+            match act with
+            | CaseAct.Void _
+            | CaseAct.Reinstate _
+            | CaseAct.Erase -> return! steward act claim
+            | _ ->
                 let! parsed = RequestValidation.business act
-
-                let! next = BusinessState.transition today (ValidatedActs.kind parsed) parsed claim
-
+                let! next = BusinessState.transition today parsed claim
                 return CaseState.Live(next, disposition)
-            }
+        }
 
     let private create today (request: CaseRequest) =
         match request.Act with
@@ -360,27 +338,7 @@ module Case =
         if record.Revision = Revision.Maximum then
             []
         else
-            match record.State with
-            | CaseState.Erased -> []
-            | CaseState.Live(_, Disposition.Voided) ->
-                [
-                    (CaseActKind.Stewardship StewardshipActKind.Reinstate)
-                    (CaseActKind.Stewardship StewardshipActKind.Erase)
-                ]
-            | CaseState.Live(claim, Disposition.Active) ->
-                let business =
-                    CaseActKinds.business
-                    |> List.filter (fun kind ->
-                        match kind with
-                        | CaseActKind.Business business ->
-                            Eligibility.check business claim.Status claim.Progress |> Result.isOk
-                        | CaseActKind.Stewardship _ -> false)
-
-                business
-                @ [
-                    (CaseActKind.Stewardship StewardshipActKind.Void)
-                    (CaseActKind.Stewardship StewardshipActKind.Erase)
-                ]
+            CaseActKinds.all |> List.filter (Transitions.check record.State >> Result.isOk)
 
     let correctionActions (record: CaseRecord) group =
         match record.State with
