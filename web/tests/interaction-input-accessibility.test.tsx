@@ -5,7 +5,7 @@ import { CatalogInputs } from "../src/components/CatalogInputs";
 import { initialOperationValues } from "../src/operation/operationForm";
 import { catalogs } from "@contracts/messages";
 import { preferenceKey } from "../src/presentation/preferences";
-import type { Notice } from "../src/api/notices";
+import type { Notice } from "../src/protocol/notices";
 
 const error: Notice = {
   kind: "diagnostic",

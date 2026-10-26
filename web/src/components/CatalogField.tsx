@@ -5,7 +5,7 @@ import { Label } from "react-aria-components/Label";
 import { Text } from "react-aria-components/Text";
 import { TextField } from "react-aria-components/TextField";
 import type { FieldCatalogEntry } from "../api/service";
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import { usePresentation } from "../presentation/context";
 
 type CatalogFieldProps = {

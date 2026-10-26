@@ -5,7 +5,7 @@ import { isDisclosureRefused } from "../api/outcomes";
 import { resultNotice, service, type ServiceResponse, type OperationReceipt } from "../api/service";
 import { AuthorityGrants } from "./AuthorityGrants";
 import { AuthorityListing } from "./AuthorityListing";
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { useRead } from "../hooks/useRead";

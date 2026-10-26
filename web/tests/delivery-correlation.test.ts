@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { mutationAccepted, mutationUncertain } from "../src/protocol/delivery";
 import { correlateReply } from "../src/protocol/client";
 import { corpusCases, wireReply } from "./contract-corpus.fixtures";
-import type { EndpointOutcome } from "../src/api/types";
+import type { EndpointOutcome } from "../src/protocol/types";
 const accepted = wireReply("operation.execute");
 const receipt = () => {
   if (accepted.outcome.kind !== "ACCEPTED" || accepted.outcome.data.subject.kind !== "CASE") {

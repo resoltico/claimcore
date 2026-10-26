@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { ApiResult, CaseSummary, ServiceResponse } from "../src/api/service";
 import { isDisclosureRefused } from "../src/api/outcomes";
-import { localNotice } from "../src/api/notices";
+import { localNotice } from "../src/protocol/notices";
 import { useRetryablePage } from "../src/hooks/useRead";
 type ListResponse = ServiceResponse<"case.list">;
 const initial: ApiResult<ListResponse> = {

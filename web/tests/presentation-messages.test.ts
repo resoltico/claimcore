@@ -1,5 +1,9 @@
 import { expect, it } from "vitest";
-import { localNotice, type DiagnosticNotice, type LocalNoticeReason } from "../src/api/notices";
+import {
+  localNotice,
+  type DiagnosticNotice,
+  type LocalNoticeReason,
+} from "../src/protocol/notices";
 import {
   hasMessage,
   messageShapes as shapes,

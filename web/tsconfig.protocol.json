@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.protocol.tsbuildinfo",
+    "rootDir": "..",
+    "lib": ["ES2024"],
+    "types": [],
+    "resolveJsonModule": true,
+    "noResolve": true
+  },
+  "include": ["src/protocol/**/*.ts", "../contracts/*.ts", "../contracts/*.json"],
+  "files": [
+    "../src/ClaimCore.Contract/Localization/en.json",
+    "../src/ClaimCore.Contract/Localization/lv.json",
+    "../src/ClaimCore.Contract/Localization/ar.json"
+  ]
+}

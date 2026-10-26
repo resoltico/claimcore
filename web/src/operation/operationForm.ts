@@ -2,7 +2,7 @@ import { productMetadata } from "../protocol/productMetadata";
 import { wireSchemas } from "../protocol/documents";
 import { buildRequest } from "../protocol/client";
 import type { FormValues } from "../protocol/forms";
-import type { CurrentCase } from "../api/types";
+import type { CurrentCase } from "../protocol/types";
 import type { CatalogDocument } from "@contracts/client";
 import {
   atPath,

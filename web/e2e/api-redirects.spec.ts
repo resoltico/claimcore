@@ -3,7 +3,7 @@ import { expect } from "@playwright/test";
 import { test } from "./redirect-response";
 import { openCase, startAct, reviewDraft } from "./case-workflow";
 import { isResponse } from "../src/protocol/client";
-import type { ServiceResponse } from "../src/api/types";
+import type { ServiceResponse } from "../src/protocol/types";
 import { openAuthenticated } from "./session-helpers";
 
 for (const status of [301, 302, 303, 307, 308]) {

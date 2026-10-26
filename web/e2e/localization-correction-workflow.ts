@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { CaseFields, OperationDraft, CaseReceipt } from "../src/api/types";
+import type { CaseFields, OperationDraft, CaseReceipt } from "../src/protocol/types";
 import { expect, type Page } from "@playwright/test";
 import { startAct } from "./case-workflow";
 import { browserRequest, sessionToken } from "./session-helpers";

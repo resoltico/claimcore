@@ -1,5 +1,5 @@
 import type { OperationReceipt, OperationReview } from "@contracts/client";
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import type { FormValues } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import { refusalPath } from "./operationForm";

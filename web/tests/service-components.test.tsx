@@ -1,4 +1,4 @@
-import { localNotice } from "../src/api/notices";
+import { localNotice } from "../src/protocol/notices";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";

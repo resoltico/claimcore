@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { openCase, startAct, reviewDraft } from "./case-workflow";
 import { isResponse } from "../src/protocol/client";
-import type { ServiceResponse } from "../src/api/types";
+import type { ServiceResponse } from "../src/protocol/types";
 
 const dropFirstReply = async (
   page: Page,

@@ -2,7 +2,7 @@ import { transportResponse } from "./transport-response.fixtures";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { EndpointId } from "@contracts/client";
-import type { ServiceResponse } from "../src/api/types";
+import type { ServiceResponse } from "../src/protocol/types";
 import { isResponse } from "../src/protocol/client";
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);

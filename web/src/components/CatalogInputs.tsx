@@ -1,7 +1,7 @@
 import { offerAct } from "../operation/metadata";
-import type { CurrentCase, FieldCatalogEntry } from "../api/types";
+import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
 import type { FormValues } from "../protocol/forms";
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { renderKey } from "../presentation/messages";
 import { usePresentation } from "../presentation/context";

@@ -1,7 +1,7 @@
 import { languageDirection } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
 import { correctionTargets } from "@contracts/messages";
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import type { FieldCatalogEntry } from "../api/service";
 import { calendarDate, displayField, exactAmount, exactInteger } from "./format";
 import { hasMessage, renderKey, translate } from "./messages";

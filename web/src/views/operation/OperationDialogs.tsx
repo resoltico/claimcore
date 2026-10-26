@@ -1,7 +1,7 @@
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useEffect, useRef } from "react";
-import type { Notice } from "../../api/notices";
+import type { Notice } from "../../protocol/notices";
 import { NoticeView } from "../../presentation/Message";
 import type { ProductMetadata, CaseReceipt } from "../../api/service";
 import { ReceiptFields } from "../../components/ReceiptFields";

@@ -1,6 +1,6 @@
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 
 type LoginScreenProps = {
   message: Notice | null;

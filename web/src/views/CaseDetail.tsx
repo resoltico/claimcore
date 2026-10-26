@@ -1,6 +1,6 @@
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import { Button } from "react-aria-components/Button";
 import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";

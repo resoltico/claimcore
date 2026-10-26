@@ -7,7 +7,7 @@ import { productMetadata } from "../../protocol/productMetadata";
 import { operationDocument } from "../../operation/operationForm";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import { resolveSchema, selectedSchema } from "../../protocol/forms";
-import type { OperationReview as Review, CaseReview } from "../../api/types";
+import type { OperationReview as Review, CaseReview } from "../../protocol/types";
 import { renderKey } from "../../presentation/messages";
 type ReviewModel = Pick<
   OperationModel,

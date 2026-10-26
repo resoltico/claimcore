@@ -1,4 +1,4 @@
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import { Button } from "react-aria-components/Button";

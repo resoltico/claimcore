@@ -163,7 +163,7 @@ lint() {
   dotnet fantomas --check src tests eng
   bash eng/Check-FSharpLint.sh
   restore_node
-  npm --prefix web run boundaries:check
+  npm --prefix web run typecheck
 }
 
 unit() {

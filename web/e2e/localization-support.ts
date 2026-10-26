@@ -1,7 +1,7 @@
 import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
 import type { EndpointId } from "@contracts/client";
 import { endpoints } from "@contracts/client";
-import type { ServiceResponse } from "../src/api/types";
+import type { ServiceResponse } from "../src/protocol/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import { preferenceKey } from "../src/presentation/preferences";

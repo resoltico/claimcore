@@ -22,7 +22,7 @@ import {
   type OperationAction,
   type EffectIdentity,
 } from "../../operation/operationState";
-import type { Notice } from "../../api/notices";
+import type { Notice } from "../../protocol/notices";
 type Options = {
   subject: "CASE" | "AUTHORITY";
   kind: string;

@@ -6,7 +6,7 @@ import type {
   CaseView,
   OperationReview as Review,
 } from "@contracts/client";
-import type { productMetadata } from "../protocol/productMetadata";
+import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
 export type {
   CaseFields,

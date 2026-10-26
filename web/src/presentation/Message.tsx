@@ -1,4 +1,4 @@
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import { usePresentation } from "./context";
 import type { MessageArgs, MessageKey, Values } from "./types";
 

@@ -1,6 +1,6 @@
 import { PageStatus } from "../components/PageStatus";
 import { useCallback } from "react";
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import { service, type ServiceResponse } from "../api/service";
 import { useRetryablePage } from "../hooks/useRead";
 import { NoticeView } from "../presentation/Message";

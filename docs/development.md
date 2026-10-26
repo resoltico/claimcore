@@ -103,7 +103,7 @@ Diagnostics exclude payloads, credentials and provider exception text.
 Find the owning contract and read its behavior tests before editing. Keep endpoints in the typed registry and fields in
 the field table, Domain admission and Contract codecs. RecordFormat owns durable encodings. Update affected consumers,
 SQL, tests, source locales and docs together. The current build admits one exact source-bound baseline. There is no
-in-place upgrade or conversion; preserve incompatible installations with matching software. Lint policy is defined in [FSharpLint settings](../config/fsharplint.json) and the browser lint configuration.
+in-place upgrade or conversion; preserve incompatible installations with matching software. Lint policy is defined in [FSharpLint settings](../eng/fsharplint.json) and the browser lint configuration.
 Only inline named rule exceptions with reasons are allowed. [PropertyHarness](../tests/ClaimCore.Tests/Support/PropertyHarness.fs)
 owns deterministic case counts, sequence bounds and shrinking controls; decoder fuzz properties own byte bounds
 and hostile cases. Negative controls demonstrate that guards reject broken properties. There is no separate

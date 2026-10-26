@@ -1,4 +1,4 @@
-import type { CaseView } from "../api/types";
+import type { CaseView } from "../protocol/types";
 import { usePresentation } from "../presentation/context";
 export const lifecycleLabels = {
   ACTIVE: "ui.lifecycleActive",

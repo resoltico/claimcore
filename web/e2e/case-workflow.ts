@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
 import { isResponse } from "../src/protocol/client";
-import type { ServiceResponse } from "../src/api/types";
+import type { ServiceResponse } from "../src/protocol/types";
 import { progress } from "./session-helpers";
 
 export type ReviewIdentity = Readonly<{ operationId: string }>;

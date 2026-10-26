@@ -1,5 +1,5 @@
-import type { ApiResult } from "./types";
-import { localNotice } from "./notices";
+import type { ApiResult } from "../protocol/types";
+import { localNotice } from "../protocol/notices";
 
 const responseDeadlineMs = 20_000;
 
