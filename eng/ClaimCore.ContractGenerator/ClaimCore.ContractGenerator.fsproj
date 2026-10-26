@@ -15,7 +15,5 @@
     <Compile Include="Artifacts.fs" />
     <Compile Include="Program.fs" />
     <EmbeddedResource Include="../../src/ClaimCore.Contract/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
-    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
   </ItemGroup>
 </Project>

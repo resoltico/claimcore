@@ -8,7 +8,11 @@ import { wireResponse } from "./contract-corpus.fixtures";
 describe("core act metadata", () => {
   it("prefills registration from catalog and builds scoped input from the root schema", () => {
     expect(definition.catalog.fields).toHaveLength(13);
-    expect(definition.catalog.acts).toHaveLength(12);
+    expect(
+      definition.catalog.entries.filter(
+        (entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE",
+      ),
+    ).toHaveLength(12);
     const current = {
       caseReference: fields.caseReference,
       revision: 1,

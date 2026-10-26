@@ -156,16 +156,16 @@ module Api =
         [
             boxed session
             boxed logout
-            boxed context
+            boxed operationPreview
+            boxed operationExecute
             boxed caseGet
             boxed caseList
             boxed caseHistory
-            boxed operationPreview
-            boxed operationExecute
-            boxed operationResolve
             boxed operationObserve
+            boxed operationResolve
             boxed authorityList
             boxed authorityGrants
+            boxed context
         ]
 
     let id (endpoint: AnyEndpoint) =

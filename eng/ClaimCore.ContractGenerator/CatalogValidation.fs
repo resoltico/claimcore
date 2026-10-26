@@ -2,8 +2,6 @@ namespace ClaimCore.ContractGeneration
 
 open ClaimCore.Contract
 open ClaimCore.Json
-open ClaimCore.Domain
-open ClaimCore.Application
 open ClaimCore.Contract.Protocol
 
 /// Admit the single Template grammar, language parity and declared producer contracts before publication.
@@ -37,7 +35,7 @@ module CatalogValidation =
                 OperationCatalog.derive operation
                 |> fst
                 |> List.collect (fun input ->
-                    match input.Spec.Name, input.Spec.Atom with
+                    match input.Name, input.Atom with
                     | CatalogInputName.Technical TechnicalInput.Scope, CatalogAtom.Choice choices ->
                         choices
                     | _ -> []))

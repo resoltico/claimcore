@@ -1,3 +1,4 @@
+import type { FieldCatalogEntry } from "../api/types";
 import { offerAct } from "../operation/metadata";
 import type { CurrentCase } from "../api/types";
 import type { FormValues } from "../protocol/forms";
@@ -99,7 +100,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const path = bindingPath(input);
   const error = inputError(input, props);
   const field = [...productMetadata.catalog.fields, ...productMetadata.catalog.inputFields].find(
-    (item) => item.name === input.field,
+    (item): item is FieldCatalogEntry => item.scalar !== null && item.name === input.field,
   );
   if (field !== undefined) {
     return (

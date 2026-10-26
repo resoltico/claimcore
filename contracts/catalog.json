@@ -205,316 +205,85 @@
       "group": null
     }
   ],
-  "acts": [
-    {
-      "kind": "OPEN",
-      "labelId": "act.OPEN.label",
-      "meaningId": "act.OPEN.meaning",
-      "confirmationId": "act.OPEN.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": [
-          {
-            "kind": "BLANK",
-            "fieldName": "incidentDate"
-          },
-          {
-            "kind": "BLANK",
-            "fieldName": "incidentNotificationDate"
-          },
-          {
-            "kind": "BLANK",
-            "fieldName": "incidentCountry"
-          },
-          {
-            "kind": "BLANK",
-            "fieldName": "claimantName"
-          },
-          {
-            "kind": "BLANK",
-            "fieldName": "insurerName"
-          },
-          {
-            "kind": "BLANK",
-            "fieldName": "claimedAmount"
-          },
-          {
-            "kind": "BLANK",
-            "fieldName": "claimedCurrency"
-          }
-        ]
-      }
-    },
-    {
-      "kind": "AMEND_REGISTRATION",
-      "labelId": "act.AMEND_REGISTRATION.label",
-      "meaningId": "act.AMEND_REGISTRATION.meaning",
-      "confirmationId": "act.AMEND_REGISTRATION.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": [
-          {
-            "kind": "CURRENT_FIELD",
-            "fieldName": "incidentDate",
-            "currentField": "incidentDate"
-          },
-          {
-            "kind": "CURRENT_FIELD",
-            "fieldName": "incidentNotificationDate",
-            "currentField": "incidentNotificationDate"
-          },
-          {
-            "kind": "CURRENT_FIELD",
-            "fieldName": "incidentCountry",
-            "currentField": "incidentCountry"
-          },
-          {
-            "kind": "CURRENT_FIELD",
-            "fieldName": "claimantName",
-            "currentField": "claimantName"
-          },
-          {
-            "kind": "CURRENT_FIELD",
-            "fieldName": "insurerName",
-            "currentField": "insurerName"
-          },
-          {
-            "kind": "CURRENT_FIELD",
-            "fieldName": "claimedAmount",
-            "currentField": "claimedAmount"
-          },
-          {
-            "kind": "CURRENT_FIELD",
-            "fieldName": "claimedCurrency",
-            "currentField": "claimedCurrency"
-          }
-        ]
-      }
-    },
-    {
-      "kind": "CORRECT",
-      "labelId": "act.CORRECT.label",
-      "meaningId": "act.CORRECT.meaning",
-      "confirmationId": "act.CORRECT.confirmation",
-      "inputs": {
-        "kind": "CORRECTION_GROUPS",
-        "groups": [
-          {
-            "name": "registration",
-            "labelId": "group.registration.label",
-            "meaningId": "group.registration.meaning",
-            "actions": [
-              "KEEP",
-              "REPLACE"
-            ],
-            "replaceFields": [
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "incidentDate",
-                "currentField": "incidentDate"
-              },
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "incidentNotificationDate",
-                "currentField": "incidentNotificationDate"
-              },
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "incidentCountry",
-                "currentField": "incidentCountry"
-              },
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "claimantName",
-                "currentField": "claimantName"
-              },
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "insurerName",
-                "currentField": "insurerName"
-              },
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "claimedAmount",
-                "currentField": "claimedAmount"
-              },
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "claimedCurrency",
-                "currentField": "claimedCurrency"
-              }
-            ]
-          },
-          {
-            "name": "decision",
-            "labelId": "group.decision.label",
-            "meaningId": "group.decision.meaning",
-            "actions": [
-              "KEEP",
-              "REPLACE",
-              "CLEAR"
-            ],
-            "replaceFields": [
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "paymentDecisionDate",
-                "currentField": "paymentDecisionDate"
-              },
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "payableAmount",
-                "currentField": "payableAmount"
-              },
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "payableCurrency",
-                "currentField": "payableCurrency"
-              }
-            ]
-          },
-          {
-            "name": "payment",
-            "labelId": "group.payment.label",
-            "meaningId": "group.payment.meaning",
-            "actions": [
-              "KEEP",
-              "REPLACE",
-              "CLEAR"
-            ],
-            "replaceFields": [
-              {
-                "kind": "CURRENT_FIELD",
-                "fieldName": "paymentDate",
-                "currentField": "paymentDate"
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "kind": "DECIDE",
-      "labelId": "act.DECIDE.label",
-      "meaningId": "act.DECIDE.meaning",
-      "confirmationId": "act.DECIDE.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": [
-          {
-            "kind": "CURRENT_FIELD",
-            "fieldName": "paymentDecisionDate",
-            "currentField": "paymentDecisionDate"
-          },
-          {
-            "kind": "CURRENT_FIELD",
-            "fieldName": "payableAmount",
-            "currentField": "payableAmount"
-          },
-          {
-            "kind": "CURRENT_FIELD",
-            "fieldName": "payableCurrency",
-            "currentField": "payableCurrency"
-          }
-        ]
-      }
-    },
-    {
-      "kind": "WITHDRAW_DECISION",
-      "labelId": "act.WITHDRAW_DECISION.label",
-      "meaningId": "act.WITHDRAW_DECISION.meaning",
-      "confirmationId": "act.WITHDRAW_DECISION.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": []
-      }
-    },
-    {
-      "kind": "RECORD_PAYMENT",
-      "labelId": "act.RECORD_PAYMENT.label",
-      "meaningId": "act.RECORD_PAYMENT.meaning",
-      "confirmationId": "act.RECORD_PAYMENT.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": [
-          {
-            "kind": "BLANK",
-            "fieldName": "paymentDate"
-          }
-        ]
-      }
-    },
-    {
-      "kind": "CLEAR_PAYMENT",
-      "labelId": "act.CLEAR_PAYMENT.label",
-      "meaningId": "act.CLEAR_PAYMENT.meaning",
-      "confirmationId": "act.CLEAR_PAYMENT.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": []
-      }
-    },
-    {
-      "kind": "CLOSE",
-      "labelId": "act.CLOSE.label",
-      "meaningId": "act.CLOSE.meaning",
-      "confirmationId": "act.CLOSE.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": []
-      }
-    },
-    {
-      "kind": "REOPEN",
-      "labelId": "act.REOPEN.label",
-      "meaningId": "act.REOPEN.meaning",
-      "confirmationId": "act.REOPEN.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": []
-      }
-    },
-    {
-      "kind": "VOID",
-      "labelId": "act.VOID.label",
-      "meaningId": "act.VOID.meaning",
-      "confirmationId": "act.VOID.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": [
-          {
-            "kind": "BLANK",
-            "fieldName": "reason"
-          }
-        ]
-      }
-    },
-    {
-      "kind": "REINSTATE",
-      "labelId": "act.REINSTATE.label",
-      "meaningId": "act.REINSTATE.meaning",
-      "confirmationId": "act.REINSTATE.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": [
-          {
-            "kind": "BLANK",
-            "fieldName": "reason"
-          }
-        ]
-      }
-    },
-    {
-      "kind": "ERASE",
-      "labelId": "act.ERASE.label",
-      "meaningId": "act.ERASE.meaning",
-      "confirmationId": "act.ERASE.confirmation",
-      "inputs": {
-        "kind": "FIELDS",
-        "fields": []
-      }
-    }
-  ],
   "inputFields": [
+    {
+      "name": "operationId",
+      "labelId": "input.operationId.label",
+      "meaningId": "input.operationId.meaning",
+      "scalar": null
+    },
+    {
+      "name": "expectedRevision",
+      "labelId": "input.expectedRevision.label",
+      "meaningId": "input.expectedRevision.meaning",
+      "scalar": null
+    },
+    {
+      "name": "kind",
+      "labelId": "input.kind.label",
+      "meaningId": "input.kind.meaning",
+      "scalar": null
+    },
+    {
+      "name": "issuer",
+      "labelId": "input.issuer.label",
+      "meaningId": "input.issuer.meaning",
+      "scalar": null
+    },
+    {
+      "name": "subject",
+      "labelId": "input.subject.label",
+      "meaningId": "input.subject.meaning",
+      "scalar": null
+    },
+    {
+      "name": "role",
+      "labelId": "input.role.label",
+      "meaningId": "input.role.meaning",
+      "scalar": null
+    },
+    {
+      "name": "scope",
+      "labelId": "input.scope.label",
+      "meaningId": "input.scope.meaning",
+      "scalar": null
+    },
+    {
+      "name": "target",
+      "labelId": "input.target.label",
+      "meaningId": null,
+      "scalar": null
+    },
+    {
+      "name": "act",
+      "labelId": "input.act.label",
+      "meaningId": null,
+      "scalar": null
+    },
+    {
+      "name": "actorId",
+      "labelId": "input.actorId.label",
+      "meaningId": "input.actorId.meaning",
+      "scalar": null
+    },
+    {
+      "name": "cursor",
+      "labelId": "input.cursor.label",
+      "meaningId": "input.cursor.meaning",
+      "scalar": null
+    },
+    {
+      "name": "limit",
+      "labelId": "input.limit.label",
+      "meaningId": "input.limit.meaning",
+      "scalar": null
+    },
+    {
+      "name": "full",
+      "labelId": "input.full.label",
+      "meaningId": "input.full.meaning",
+      "scalar": null
+    },
     {
       "name": "reason",
       "labelId": "input.reason.label",
@@ -529,128 +298,6 @@
       }
     }
   ],
-  "authorityTarget": {
-    "fieldName": "target",
-    "labelId": "input.target.label",
-    "primitive": "PRINCIPAL"
-  },
-  "authorityActs": [
-    {
-      "kind": "REGISTER",
-      "labelId": "act.REGISTER.label",
-      "meaningId": "act.REGISTER.meaning",
-      "confirmationId": "act.REGISTER.confirmation",
-      "inputs": []
-    },
-    {
-      "kind": "GRANT",
-      "labelId": "act.GRANT.label",
-      "meaningId": "act.GRANT.meaning",
-      "confirmationId": "act.GRANT.confirmation",
-      "inputs": [
-        {
-          "fieldName": "role",
-          "labelId": "input.role.label",
-          "primitive": "ROLE"
-        },
-        {
-          "fieldName": "scope",
-          "labelId": "input.scope.label",
-          "primitive": "SCOPE"
-        }
-      ]
-    },
-    {
-      "kind": "REVOKE",
-      "labelId": "act.REVOKE.label",
-      "meaningId": "act.REVOKE.meaning",
-      "confirmationId": "act.REVOKE.confirmation",
-      "inputs": [
-        {
-          "fieldName": "role",
-          "labelId": "input.role.label",
-          "primitive": "ROLE"
-        },
-        {
-          "fieldName": "scope",
-          "labelId": "input.scope.label",
-          "primitive": "SCOPE"
-        }
-      ]
-    },
-    {
-      "kind": "ENABLE",
-      "labelId": "act.ENABLE.label",
-      "meaningId": "act.ENABLE.meaning",
-      "confirmationId": "act.ENABLE.confirmation",
-      "inputs": []
-    },
-    {
-      "kind": "DISABLE",
-      "labelId": "act.DISABLE.label",
-      "meaningId": "act.DISABLE.meaning",
-      "confirmationId": "act.DISABLE.confirmation",
-      "inputs": []
-    }
-  ],
-  "authorityFields": [
-    {
-      "name": "operationId",
-      "labelId": "input.operationId.label"
-    },
-    {
-      "name": "expectedRevision",
-      "labelId": "input.expectedRevision.label"
-    },
-    {
-      "name": "kind",
-      "labelId": "input.kind.label"
-    },
-    {
-      "name": "issuer",
-      "labelId": "input.issuer.label"
-    },
-    {
-      "name": "subject",
-      "labelId": "input.subject.label"
-    },
-    {
-      "name": "role",
-      "labelId": "input.role.label"
-    },
-    {
-      "name": "scope",
-      "labelId": "input.scope.label"
-    },
-    {
-      "name": "target",
-      "labelId": "input.target.label"
-    },
-    {
-      "name": "act",
-      "labelId": "input.act.label"
-    },
-    {
-      "name": "actorId",
-      "labelId": "input.actorId.label"
-    },
-    {
-      "name": "cursor",
-      "labelId": "input.cursor.label"
-    },
-    {
-      "name": "limit",
-      "labelId": "input.limit.label"
-    },
-    {
-      "name": "full",
-      "labelId": "input.full.label"
-    },
-    {
-      "name": "reason",
-      "labelId": "input.reason.label"
-    }
-  ],
   "characterWarnings": {
     "maximumCodePoints": 8,
     "categories": [
@@ -660,305 +307,6 @@
       "Zp"
     ]
   },
-  "statuses": [
-    "OPENED",
-    "CLOSED"
-  ],
-  "rejectionDiagnostics": [
-    {
-      "id": "INPUT_TEXT_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_MALFORMED_UNICODE",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_SURROUNDING_WHITESPACE",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_TEXT_TOO_LONG",
-      "parameters": [
-        {
-          "name": "maximumCharacters",
-          "minimum": 0,
-          "maximum": 2147483647
-        }
-      ]
-    },
-    {
-      "id": "INPUT_CONTROL_CHARACTERS",
-      "parameters": []
-    },
-    {
-      "id": "TEXT_FORMATTING_CHARACTER",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_CASE_REFERENCE_FORMAT",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_COUNTRY_FORMAT",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_PRINCIPAL_FORMAT",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_CALENDAR_DATE_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_DATE_ORDER",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_FUTURE_DATE",
-      "parameters": []
-    },
-    {
-      "id": "INPUT_DECIMAL_FORMAT",
-      "parameters": [
-        {
-          "name": "maximumIntegerDigits",
-          "minimum": 1,
-          "maximum": 2147483647
-        },
-        {
-          "name": "maximumFractionalDigits",
-          "minimum": 0,
-          "maximum": 2147483647
-        }
-      ]
-    },
-    {
-      "id": "INPUT_CURRENCY_FORMAT",
-      "parameters": []
-    },
-    {
-      "id": "COMMAND_OPERATION_ID_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "COMMAND_EXPECTED_REVISION_RANGE",
-      "parameters": []
-    },
-    {
-      "id": "QUERY_PAGE_LIMIT_RANGE",
-      "parameters": [
-        {
-          "name": "maximumPageSize",
-          "minimum": 1,
-          "maximum": 2147483647
-        }
-      ]
-    },
-    {
-      "id": "CORRECTION_PAYMENT_CLEAR_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_REVISION_CONFLICT",
-      "parameters": []
-    },
-    {
-      "id": "CASE_ALREADY_EXISTS",
-      "parameters": []
-    },
-    {
-      "id": "CASE_ERASED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_VOIDED",
-      "parameters": []
-    },
-    {
-      "id": "ALREADY_VOIDED",
-      "parameters": []
-    },
-    {
-      "id": "NOT_VOIDED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_CLOSED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_ALREADY_CLOSED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_ALREADY_OPENED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_AMENDMENT_REQUIRES_UNDECIDED",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_NO_CHANGES",
-      "parameters": []
-    },
-    {
-      "id": "CORRECTION_EXISTING_VALUE_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_DECISION_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_PAYMENT_ALREADY_RECORDED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_PAYMENT_NOT_RECORDED",
-      "parameters": []
-    },
-    {
-      "id": "CASE_DECISION_ALREADY_PAID",
-      "parameters": []
-    },
-    {
-      "id": "CASE_ZERO_DECISION_CANNOT_BE_PAID",
-      "parameters": []
-    },
-    {
-      "id": "REVISION_EXHAUSTED",
-      "parameters": []
-    },
-    {
-      "id": "LEDGER_SEQUENCE_EXHAUSTED",
-      "parameters": []
-    },
-    {
-      "id": "OPERATION_RESOLVED",
-      "parameters": []
-    },
-    {
-      "id": "OPERATION_CONTENT_CONFLICT",
-      "parameters": []
-    },
-    {
-      "id": "ACCESS_RESOURCE_UNAVAILABLE",
-      "parameters": []
-    },
-    {
-      "id": "ACT_NOT_PERMITTED",
-      "parameters": []
-    },
-    {
-      "id": "LAST_OWNER",
-      "parameters": []
-    },
-    {
-      "id": "ACTOR_ALREADY_REGISTERED",
-      "parameters": []
-    },
-    {
-      "id": "ACTOR_UNKNOWN",
-      "parameters": []
-    },
-    {
-      "id": "HUMAN_PRINCIPAL_REQUIRED",
-      "parameters": []
-    },
-    {
-      "id": "QUERY_CURSOR_INVALID",
-      "parameters": []
-    }
-  ],
-  "faultDiagnostics": [
-    {
-      "id": "CORE_INTERNAL_ERROR",
-      "parameters": []
-    },
-    {
-      "id": "CORE_STORE_UNAVAILABLE",
-      "parameters": []
-    },
-    {
-      "id": "CORE_STORE_INTEGRITY_ERROR",
-      "parameters": []
-    },
-    {
-      "id": "CORE_SCHEMA_MISMATCH",
-      "parameters": []
-    },
-    {
-      "id": "CORE_OPERATION_CONTENT_CONFLICT",
-      "parameters": []
-    }
-  ],
-  "roles": [
-    {
-      "role": "OWNER",
-      "capabilities": [
-        "MANAGE_AUTHORITY",
-        "READ_AUTHORITY"
-      ]
-    },
-    {
-      "role": "CASE_READER",
-      "capabilities": [
-        "READ_CASE",
-        "READ_HISTORY"
-      ]
-    },
-    {
-      "role": "CASE_REGISTRAR",
-      "capabilities": [
-        "READ_CASE",
-        "READ_HISTORY",
-        "REGISTER"
-      ]
-    },
-    {
-      "role": "CASE_HANDLER",
-      "capabilities": [
-        "READ_CASE",
-        "READ_HISTORY",
-        "READ_HISTORY_FULL",
-        "REGISTER",
-        "DECIDE",
-        "CLOSE"
-      ]
-    },
-    {
-      "role": "PAYMENT_RECORDER",
-      "capabilities": [
-        "READ_CASE",
-        "READ_HISTORY",
-        "RECORD_PAYMENT"
-      ]
-    },
-    {
-      "role": "DATA_STEWARD",
-      "capabilities": [
-        "READ_CASE",
-        "READ_HISTORY",
-        "STEWARD"
-      ]
-    },
-    {
-      "role": "AUDITOR",
-      "capabilities": [
-        "READ_CASE",
-        "READ_HISTORY",
-        "READ_HISTORY_FULL",
-        "READ_AUTHORITY"
-      ]
-    }
-  ],
   "limits": {
     "defaultPageSize": 50,
     "maximumPageSize": 50,

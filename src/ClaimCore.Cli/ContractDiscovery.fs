@@ -21,15 +21,14 @@ module ContractDiscovery =
     let entries () = OperationCatalog.entries
 
     let inputLabel name =
-        OperationCatalog.technicalFields
+        Catalog.document.InputFields
         |> List.find (fun input -> input.Name = name)
         |> _.LabelId
 
     let helpTopic language topic =
         if topic = "verbs" then
-            OperationCatalog.all
-            |> List.map (fun entry ->
-                CliIdentity.programName + " " + OperationCatalog.synopsis entry)
+            Catalog.document.Entries
+            |> List.map (fun entry -> CliIdentity.programName + " " + entry.Synopsis)
             |> String.concat "\n"
             |> fun value -> value + "\n"
         elif topic = "overview" then

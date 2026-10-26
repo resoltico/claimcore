@@ -163,9 +163,9 @@
         }
       }
     },
-    "/api/context": {
+    "/api/operation.preview": {
       "post": {
-        "operationId": "context",
+        "operationId": "operation.preview",
         "x-claimcore-effect": "READ_ONLY",
         "parameters": [
           {
@@ -205,7 +205,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContextReply"
+                  "$ref": "#/components/schemas/PreviewReply"
                 }
               }
             }
@@ -246,7 +246,97 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Empty"
+                "$ref": "#/components/schemas/OperationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operation.execute": {
+      "post": {
+        "operationId": "operation.execute",
+        "x-claimcore-effect": "LEDGER_EXECUTION",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecuteReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationInput"
               }
             }
           }
@@ -523,9 +613,9 @@
         }
       }
     },
-    "/api/operation.preview": {
+    "/api/operation.observe": {
       "post": {
-        "operationId": "operation.preview",
+        "operationId": "operation.observe",
         "x-claimcore-effect": "READ_ONLY",
         "parameters": [
           {
@@ -565,7 +655,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreviewReply"
+                  "$ref": "#/components/schemas/ObservationReply"
                 }
               }
             }
@@ -606,97 +696,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OperationInput"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/operation.execute": {
-      "post": {
-        "operationId": "operation.execute",
-        "x-claimcore-effect": "LEDGER_EXECUTION",
-        "parameters": [
-          {
-            "name": "ClaimCore-Contract",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
-              "minLength": 64,
-              "maxLength": 64
-            }
-          },
-          {
-            "name": "X-ClaimCore-Antiforgery",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 2147483647
-            }
-          }
-        ],
-        "security": [
-          {
-            "cookieAuth": [],
-            "antiforgery": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "HTTP 200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExecuteReply"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/Host400"
-          },
-          "401": {
-            "$ref": "#/components/responses/Host401"
-          },
-          "403": {
-            "$ref": "#/components/responses/Host403"
-          },
-          "404": {
-            "$ref": "#/components/responses/Host404"
-          },
-          "405": {
-            "$ref": "#/components/responses/Host405"
-          },
-          "409": {
-            "$ref": "#/components/responses/Host409"
-          },
-          "413": {
-            "$ref": "#/components/responses/Host413"
-          },
-          "415": {
-            "$ref": "#/components/responses/Host415"
-          },
-          "429": {
-            "$ref": "#/components/responses/Host429"
-          },
-          "500": {
-            "$ref": "#/components/responses/Host500"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OperationInput"
+                "$ref": "#/components/schemas/ObserveRequest"
               }
             }
           }
@@ -787,96 +787,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ResolveRequest"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/operation.observe": {
-      "post": {
-        "operationId": "operation.observe",
-        "x-claimcore-effect": "READ_ONLY",
-        "parameters": [
-          {
-            "name": "ClaimCore-Contract",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
-              "minLength": 64,
-              "maxLength": 64
-            }
-          },
-          {
-            "name": "X-ClaimCore-Antiforgery",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 2147483647
-            }
-          }
-        ],
-        "security": [
-          {
-            "cookieAuth": [],
-            "antiforgery": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "HTTP 200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ObservationReply"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/Host400"
-          },
-          "401": {
-            "$ref": "#/components/responses/Host401"
-          },
-          "403": {
-            "$ref": "#/components/responses/Host403"
-          },
-          "404": {
-            "$ref": "#/components/responses/Host404"
-          },
-          "405": {
-            "$ref": "#/components/responses/Host405"
-          },
-          "409": {
-            "$ref": "#/components/responses/Host409"
-          },
-          "413": {
-            "$ref": "#/components/responses/Host413"
-          },
-          "415": {
-            "$ref": "#/components/responses/Host415"
-          },
-          "429": {
-            "$ref": "#/components/responses/Host429"
-          },
-          "500": {
-            "$ref": "#/components/responses/Host500"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ObserveRequest"
               }
             }
           }
@@ -1057,6 +967,96 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/GrantsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/context": {
+      "post": {
+        "operationId": "context",
+        "x-claimcore-effect": "READ_ONLY",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
               }
             }
           }

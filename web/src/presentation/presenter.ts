@@ -13,7 +13,6 @@ type CatalogText = Readonly<{ labelId: string; meaningId?: string | null }>;
 export type PresentationDefinitions = Readonly<{
   fields: ReadonlyArray<CatalogText & { name: string }>;
   inputFields: ReadonlyArray<CatalogText & { name: string }>;
-  authorityFields: ReadonlyArray<CatalogText & { name: string }>;
   entries: ReadonlyArray<
     CatalogText & {
       subject: string;
@@ -34,11 +33,9 @@ const metadata = (
   let definition: CatalogText | undefined;
   switch (owner) {
     case "field":
-      definition = [
-        ...definitions.fields,
-        ...definitions.inputFields,
-        ...definitions.authorityFields,
-      ].find((candidate) => candidate.name === name);
+      definition = [...definitions.fields, ...definitions.inputFields].find(
+        (candidate) => candidate.name === name,
+      );
       break;
     case "act":
       definition = definitions.entries.find(

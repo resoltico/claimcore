@@ -542,7 +542,7 @@ let private policyHints () =
 let private authorityFieldPresentation () =
     use document = artifact "catalog.json"
     let root = document.RootElement
-    let fields = root.GetProperty("authorityFields").EnumerateArray() |> Seq.toList
+    let fields = root.GetProperty("inputFields").EnumerateArray() |> Seq.toList
 
     let names =
         fields

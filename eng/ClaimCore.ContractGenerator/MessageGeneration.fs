@@ -69,12 +69,13 @@ module MessageGeneration =
             |> String.concat "\n"
 
         let corrections =
-            OperationCatalog.caseDefinitions
-            |> List.collect (fun act ->
-                match act.Inputs with
-                | ActInputShape.CorrectionGroups groups ->
-                    groups |> List.map (fun group -> RecordGroup.token group.Name)
-                | _ -> [])
+            Catalog.document.Entries
+            |> List.collect _.Inputs
+            |> List.filter (fun input ->
+                match input.Kind with
+                | BindingKind.Group _ -> true
+                | _ -> false)
+            |> List.collect _.DiagnosticTargets
             |> List.distinct
             |> List.map (fun name -> name + ".action", JsonValue.String name)
             |> JsonValue.Object

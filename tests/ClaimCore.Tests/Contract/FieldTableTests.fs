@@ -96,43 +96,42 @@ let private diagnosticGroups () =
 let private actGroups () =
     let expected group =
         FieldTable.rows
-        |> List.filter (fun row -> row.Placement = group)
-        |> List.map (fun row -> InputTarget.Field row.Field)
+        |> List.filter (fun row -> row.Placement = FieldPlacement.Grouped group)
+        |> List.map _.Field
 
-    let actual kind =
-        match (OperationCatalog.forCase (CaseActKind.Business kind)).Inputs with
-        | ActInputShape.Fields fields -> fields |> List.map _.FieldName
-        | _ -> failtest "Expected flat act fields"
+    let entry kind =
+        Catalog.document.Entries
+        |> List.find (fun entry -> entry.Endpoint = Api.operationExecute.Id && entry.Kind = kind)
 
-    for act, group in
+    let fields inputs =
+        inputs
+        |> List.choose (fun (input: CatalogInput) ->
+            match input.Field with
+            | Some(InputTarget.Field field) when field <> BusinessField.CaseReference -> Some field
+            | _ -> None)
+
+    for kind, group in
         [
-            BusinessActKind.Open, (FieldPlacement.Grouped RecordGroup.Registration)
-            BusinessActKind.AmendRegistration, (FieldPlacement.Grouped RecordGroup.Registration)
-            BusinessActKind.Decide, (FieldPlacement.Grouped RecordGroup.Decision)
-            BusinessActKind.RecordPayment, (FieldPlacement.Grouped RecordGroup.Payment)
+            "OPEN", RecordGroup.Registration
+            "AMEND_REGISTRATION", RecordGroup.Registration
+            "DECIDE", RecordGroup.Decision
+            "RECORD_PAYMENT", RecordGroup.Payment
         ] do
-        Expect.equal (actual act) (expected group) "Act fields follow their source group's order"
+        Expect.equal
+            (fields (entry kind).Inputs)
+            (expected group)
+            "Schema-derived act fields retain the authoritative order"
 
-    let correction =
-        OperationCatalog.forCase (CaseActKind.Business BusinessActKind.Correct)
+    for group in Vocabulary.all RecordGroup.vocabulary do
+        let inputs =
+            (entry "CORRECT").Inputs
+            |> List.filter (fun input ->
+                List.truncate 3 input.Path = [ "act"; "groups"; RecordGroup.token group ])
 
-    match correction.Inputs with
-    | ActInputShape.CorrectionGroups groups ->
-        for group in groups do
-            let fields = group.ReplaceFields |> List.map _.FieldName
-
-            let kind = FieldPlacement.Grouped group.Name
-
-            Expect.equal
-                fields
-                (expected kind)
-                "Correction replacements use the same field group order"
-    | _ -> failtest "Expected grouped correction fields"
-
-    Expect.notEqual
-        (actual BusinessActKind.Open |> List.rev)
-        (expected (FieldPlacement.Grouped RecordGroup.Registration))
-        "A reordered dependent inventory is detectable"
+        Expect.equal
+            (fields inputs)
+            (expected group)
+            "Correction replacements retain their field order"
 
 let private locales () =
     let directory =

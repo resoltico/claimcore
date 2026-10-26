@@ -23,13 +23,15 @@ let private descriptions () =
             let inputs, _ = OperationCatalog.derive operation
 
             for input in inputs do
-                if input.Spec.Argument <> CatalogArgument.Implicit then
+                if input.Argument <> CatalogArgument.Implicit then
                     Expect.stringContains
                         output
                         (ContractDiscovery.localized language (input.Binding.LabelId))
                         "Every admitted input has its localized label"
 
-            Expect.isFalse (output.Contains "CatalogShape") "Internal types do not leak into help"
+            Expect.isFalse
+                (output.Contains "CatalogDerivedInput")
+                "Internal types do not leak into help"
 
 [<Tests>]
 let tests =

@@ -18,8 +18,11 @@ export type HistoryEntry = HistoryEntries[number];
 export type { OperationReceipt } from "@contracts/client";
 export type CatalogDocument = typeof productMetadata.catalog;
 export type ProductMetadata = typeof productMetadata;
-export type FieldCatalogEntry =
-  CatalogDocument["fields"][number] | CatalogDocument["inputFields"][number];
+export type FieldCatalogEntry = (
+  CatalogDocument["fields"][number] | CatalogDocument["inputFields"][number]
+) & {
+  readonly scalar: NonNullable<CatalogDocument["inputFields"][number]["scalar"]>;
+};
 export type OperationDraft = Extract<RequestByEndpoint["operation.execute"], { kind: "CASE" }>;
 export type ServiceResponse<K extends keyof ResponseByEndpoint> = ResponseByEndpoint[K];
 export type EndpointOutcome = ResponseByEndpoint[keyof ResponseByEndpoint];

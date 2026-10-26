@@ -33,7 +33,12 @@ type Dispatch<T> = {
   bytes: string;
   input: T;
 };
-const { acts, authorityActs } = productMetadata.catalog;
+const acts = productMetadata.catalog.entries
+  .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE")
+  .map((entry) => ({ ...entry, kind: entry.kind as ActKind }));
+const authorityActs = productMetadata.catalog.entries
+  .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "AUTHORITY")
+  .map((entry) => ({ ...entry, kind: entry.kind as AuthorityInput["act"]["kind"] }));
 const runtime = {
   productVersion: "0.10.0",
   businessDate: "2026-09-09",

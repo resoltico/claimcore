@@ -6,24 +6,21 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Contract
 
-let private invoke (fixture: PublishedFixture.Fixture) arguments source =
-    ProcessRunner.dotnet 8_000 fixture.Cli arguments (Dictionary<string, string>()) source
+let private invoke cli arguments source =
+    ProcessRunner.dotnet 8_000 cli arguments (Dictionary<string, string>()) source
 
-let private description fixture language arguments =
+let private description cli language arguments =
     let result =
-        invoke
-            fixture
-            ("describe" :: arguments @ [ "--format"; "text"; "--language"; language ])
-            None
+        invoke cli ("describe" :: arguments @ [ "--format"; "text"; "--language"; language ]) None
 
     Expect.equal result.ExitCode 0 "Published selected human description"
     Expect.equal result.StandardError.Length 0 "No prose on stderr"
     Encoding.UTF8.GetString result.StandardOutput
 
-let private selectedInputs fixture =
+let private selectedInputs cli =
     for language in LocalizationPolicy.languages do
         for operation in OperationCatalog.all do
-            let output = description fixture language (OperationCatalog.words operation)
+            let output = description cli language (OperationCatalog.words operation)
 
             Expect.stringContains
                 output
@@ -33,13 +30,13 @@ let private selectedInputs fixture =
             let inputs, _ = OperationCatalog.derive operation
 
             for input in inputs do
-                if input.Spec.Argument <> CatalogArgument.Implicit then
+                if input.Argument <> CatalogArgument.Implicit then
                     Expect.stringContains
                         output
                         (ClaimCore.Cli.ContractDiscovery.localized language input.Binding.LabelId)
                         "Published input labels survive"
 
-let private frameOracle fixture =
+let private frameOracle cli =
     let rows =
         System.IO.File.ReadAllLines(
             System.IO.Path.Combine(
@@ -57,7 +54,7 @@ let private frameOracle fixture =
             cells[0].Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
             |> List.ofArray
 
-        let result = invoke fixture (arguments @ [ "--dry-run" ]) None
+        let result = invoke cli (arguments @ [ "--dry-run" ]) None
         Expect.equal result.ExitCode 0 cells[0]
         Expect.equal result.StandardError.Length 0 "Offline preparation emits only the frame"
 
@@ -68,9 +65,8 @@ let private frameOracle fixture =
             ))
             cells[0]
 
-let private diagnosticRoute fixture =
-    let result =
-        invoke fixture [ "call" ] (Some(Encoding.UTF8.GetBytes "{invalid-frame"))
+let private diagnosticRoute cli =
+    let result = invoke cli [ "call" ] (Some(Encoding.UTF8.GetBytes "{invalid-frame"))
 
     Expect.equal result.ExitCode 2 "Malformed input preserves protocol refusal"
     Expect.equal result.StandardError.Length 0 "Exactly one machine frame, no prose"
@@ -86,7 +82,7 @@ let private diagnosticRoute fixture =
     let id = InputDiagnostics.protocolId
 
     for language in LocalizationPolicy.languages do
-        let help = invoke fixture [ "help"; id; "--language"; language ] None
+        let help = invoke cli [ "help"; id; "--language"; language ] None
         Expect.equal help.ExitCode 0 "Returned ID is an admitted core help route"
         let guidance = Encoding.UTF8.GetString help.StandardOutput
 
@@ -102,7 +98,7 @@ let private diagnosticRoute fixture =
             Expect.stringContains guidance route "Repairable framing and schema guidance"
 
 
-let qualify fixture =
-    selectedInputs fixture
-    frameOracle fixture
-    diagnosticRoute fixture
+let qualify cli =
+    selectedInputs cli
+    frameOracle cli
+    diagnosticRoute cli

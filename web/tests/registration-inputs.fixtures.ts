@@ -3,10 +3,9 @@ import { productMetadata } from "../src/protocol/productMetadata";
 import { caseFields } from "./service-foundation.fixtures";
 /** Supplies wire-valid authored registration; individual tests override current business admission. */
 export const fillRegistrationInputs = (overrides: Readonly<Record<string, string>> = {}): void => {
-  const definition = productMetadata.catalog.acts.find((act) => act.kind === "OPEN")!;
-  if (definition.inputs.kind !== "FIELDS") {
-    throw new Error("Registration requires scalar fields.");
-  }
+  const definition = productMetadata.catalog.entries.find(
+    (entry) => entry.endpoint === "operation.execute" && entry.kind === "OPEN",
+  )!;
   const authored = new Map(
     Object.entries({
       ...caseFields.registration,
@@ -14,7 +13,7 @@ export const fillRegistrationInputs = (overrides: Readonly<Record<string, string
       ...overrides,
     }),
   );
-  const names = ["caseReference", ...definition.inputs.fields.map((input) => input.fieldName)];
+  const names = definition.inputs.flatMap((input) => (input.field === null ? [] : [input.field]));
   for (const name of names) {
     const input = document.querySelector<HTMLInputElement>(`input[data-field-name="${name}"]`);
     if (input !== null) {
