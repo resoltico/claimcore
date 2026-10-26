@@ -123,14 +123,14 @@ let interactiveEnvironment (fixture: PublishedFixture.Fixture) username mode =
 let human fixture username endpoint input code =
     run fixture (interactiveEnvironment fixture username "valid") (frame endpoint input) code
 
-let tag (reply: JsonElement) =
+let outcomeKind (reply: JsonElement) =
     reply.GetProperty("result").GetProperty("outcome").GetProperty("kind").GetString()
 
 let data (reply: JsonElement) =
     reply.GetProperty("result").GetProperty("outcome").GetProperty("data")
 
 let require expected reply =
-    Expect.equal (tag reply) expected "Published outcome"
+    Expect.equal (outcomeKind reply) expected "Published outcome"
     data reply
 
 let id () = Guid.NewGuid().ToString("D")
@@ -148,7 +148,7 @@ let private grantFrame target role =
     frame
         "operation.execute"
         {|
-            scope = "AUTHORITY"
+            kind = "AUTHORITY"
             operationId = id ()
             target = target
             act =
@@ -164,7 +164,7 @@ let setGrant fixture target role active =
         frame
             "operation.execute"
             {|
-                scope = "AUTHORITY"
+                kind = "AUTHORITY"
                 operationId = id ()
                 target = target
                 act =
@@ -195,7 +195,7 @@ let private setupFrames fixture =
             frame
                 "operation.execute"
                 {|
-                    scope = "AUTHORITY"
+                    kind = "AUTHORITY"
                     operationId = id ()
                     target = target
                     act = {| kind = "REGISTER" |}

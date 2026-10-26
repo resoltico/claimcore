@@ -7,18 +7,18 @@ open Expecto
 open CliCalls
 
 let private verifyReceipt reference operationId (current: JsonElement) (receipt: JsonElement) =
-    let scope = receipt.GetProperty("scope")
-    Expect.equal (scope.GetProperty("kind").GetString()) "CASE" "Browser case receipt"
-    Expect.equal (scope.GetProperty("act").GetString()) "OPEN" "Browser opening act"
-    Expect.equal (scope.GetProperty("revision").GetInt64()) 1L "One browser acceptance"
+    let subject = receipt.GetProperty("subject")
+    Expect.equal (subject.GetProperty("kind").GetString()) "CASE" "Browser case receipt"
+    Expect.equal (subject.GetProperty("act").GetString()) "OPEN" "Browser opening act"
+    Expect.equal (subject.GetProperty("revision").GetInt64()) 1L "One browser acceptance"
 
     Expect.isTrue
-        (scope.GetProperty("caseReference").GetString() = reference)
+        (subject.GetProperty("caseReference").GetString() = reference)
         "Exact browser reference"
 
     Expect.isTrue (receipt.GetProperty("operationId").GetString() = operationId) "Browser operation"
 
-    let snapshot = scope.GetProperty("snapshot")
+    let snapshot = subject.GetProperty("snapshot")
 
     Expect.equal
         (snapshot.GetProperty("kind").GetString())

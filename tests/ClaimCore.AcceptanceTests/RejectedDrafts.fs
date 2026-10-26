@@ -83,7 +83,7 @@ let private principalRefusals fixture =
                 fixture
                 "operation.execute"
                 {|
-                    scope = "AUTHORITY"
+                    kind = "AUTHORITY"
                     operationId = id ()
                     target =
                         {|

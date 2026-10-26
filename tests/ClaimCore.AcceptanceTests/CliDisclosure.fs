@@ -37,7 +37,7 @@ let private staleReview fixture input reference =
 
     let close =
         {|
-            scope = "CASE"
+            kind = "CASE"
             operationId = id ()
             caseReference = reference
             expectedRevision = 1L
@@ -59,7 +59,7 @@ let private staleReview fixture input reference =
 
 let private withheld expected reply =
     let receipt = require expected reply
-    let snapshot = receipt.GetProperty("scope").GetProperty("snapshot")
+    let snapshot = receipt.GetProperty("subject").GetProperty("snapshot")
 
     Expect.equal
         (snapshot.GetProperty("kind").GetString())

@@ -94,7 +94,7 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         let receipt = verb fixture fixture.Environment arguments 0 |> require "ACCEPTED"
 
         Expect.equal
-            (receipt.GetProperty("scope").GetProperty("revision").GetInt64())
+            (receipt.GetProperty("subject").GetProperty("revision").GetInt64())
             (int64 (index + 1))
             "Example revision"
 
@@ -146,7 +146,7 @@ let private erasedHistory fixture =
             "Requested receipt detail remains explicit"
 
         let receipt = entry.GetProperty("receipt")
-        let snapshot = receipt.GetProperty("scope").GetProperty("snapshot")
+        let snapshot = receipt.GetProperty("subject").GetProperty("snapshot")
 
         Expect.equal
             (snapshot.GetProperty("kind").GetString())
@@ -162,7 +162,7 @@ let private erasedHistory fixture =
 
         Expect.equal
             names
-            [ "operationId"; "position"; "recordedAt"; "recordedBy"; "scope" ]
+            [ "operationId"; "position"; "recordedAt"; "recordedBy"; "subject" ]
             "Receipt retains identity and ledger metadata"
 
 let private erasedView (tombstone: JsonElement) =
@@ -207,7 +207,7 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
     let blocked =
         verb fixture (interactiveEnvironment fixture "synthetic-editor" "valid") arguments 2
 
-    Expect.equal (tag blocked) "REJECTED" "Editor cannot steward"
+    Expect.equal (outcomeKind blocked) "REJECTED" "Editor cannot steward"
 
     verb fixture (interactiveEnvironment fixture "synthetic-steward" "valid") arguments 0
     |> require "ACCEPTED"
@@ -291,7 +291,7 @@ let private inputBoundaries fixture =
     let refused =
         run fixture (interactiveEnvironment fixture "synthetic-reader" "valid") authored 2
 
-    Expect.equal (tag refused) "REJECTED" "Reader cannot execute"
+    Expect.equal (outcomeKind refused) "REJECTED" "Reader cannot execute"
     let after = fixture.Administration [ "head" ]
     Expect.equal after.ExitCode 0 "Accepted state after unauthorized input"
     Expect.equal before.StandardOutput after.StandardOutput "Unauthorized input appends nothing"
@@ -322,7 +322,7 @@ let private supplementary fixture =
 
     let input =
         {|
-            scope = "CASE"
+            kind = "CASE"
             operationId = id ()
             caseReference = reference
             expectedRevision = 0L
@@ -356,7 +356,7 @@ let private supplementary fixture =
 
     let actualName =
         replay
-            .GetProperty("scope")
+            .GetProperty("subject")
             .GetProperty("snapshot")
             .GetProperty("view")
             .GetProperty("fields")

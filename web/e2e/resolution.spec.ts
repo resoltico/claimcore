@@ -34,7 +34,7 @@ for (const reload of [false, true]) {
       () =>
         JSON.parse(sessionStorage.getItem("claimcore.unresolvedOperation") ?? "null") as unknown,
     );
-    expect(stored).toEqual({ operationId, kind: "CASE", act: "CLOSE" });
+    expect(stored).toEqual({ operationId, subject: "CASE", act: "CLOSE" });
     if (reload) {
       await page.reload();
       await expect(
