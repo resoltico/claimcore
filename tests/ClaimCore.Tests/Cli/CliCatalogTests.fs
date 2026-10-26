@@ -2,6 +2,7 @@ module ClaimCore.Tests.CliCatalogTests
 
 open System
 open System.IO
+open System.Text
 open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Cli
@@ -29,9 +30,10 @@ let private oracle () =
 
         Expect.isOk (Frames.admit actual.Bytes) "Prepared request passes the actual endpoint codec"
 
-        Expect.isTrue
-            (JsonNode.DeepEquals(JsonNode.Parse cells[1], JsonNode.Parse actual.Bytes))
-            cells[0]
+        Expect.equal
+            (Encoding.UTF8.GetString actual.Bytes)
+            cells[1]
+            "The independently authored frame bytes are exact"
 
 let private byteLimits () =
     let operationId = "11111111-2222-4333-8444-555555555555"

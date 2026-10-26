@@ -124,7 +124,7 @@ let private frames () =
             Endpoint = Some "session.logout"
             OperationId = None
             Delivery = DeliveryState.Delivered
-            Result = FrameResult.Reply(Api.logout.Output.Write(ReadReply.Succeeded()))
+            Result = FrameResult.Reply(TypedReply.ofValue Api.logout (ReadReply.Succeeded()))
         }
 
     let roundTrip value =

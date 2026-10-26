@@ -24,17 +24,6 @@ module RemoteServiceCall =
 
     let private readReply frame bytes =
         StrictJson.read MaximumResponseBytes bytes
-        |> Result.bind (fun reply ->
-            Api.admitOutput (Frames.endpoint frame) reply
-            |> Result.bind (fun () ->
-                if Correlation.matches (Frames.endpoint frame) (Frames.input frame) reply then
-                    Ok reply
-                else
-                    Error
-                        {
-                            Path = "$"
-                            Reason = "reply echo does not match"
-                        }))
         |> Result.map (fun reply -> encode frame (fun () -> CliReply.result frame reply))
         |> Result.defaultWith (fun _ -> invalid frame)
 

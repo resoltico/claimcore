@@ -32,3 +32,12 @@ type AuthorityRequest =
         Target: Principal
         Act: AuthorityAct
     }
+
+module AuthorityActs =
+    let kind =
+        function
+        | AuthorityAct.Register -> AuthorityKind.Register
+        | AuthorityAct.Grant _ -> AuthorityKind.Grant
+        | AuthorityAct.Revoke _ -> AuthorityKind.Revoke
+        | AuthorityAct.Enable -> AuthorityKind.Enable
+        | AuthorityAct.Disable -> AuthorityKind.Disable

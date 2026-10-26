@@ -458,7 +458,7 @@ let private malformedBusinessInput () =
     match frame.Result with
     | FrameResult.Reply value ->
         Expect.equal
-            (Frames.outcome value)
+            (Frames.outcome (TypedReply.json value))
             (Some "REJECTED")
             "Business refusal is an admitted result."
     | _ -> failtest "Expected a business refusal."

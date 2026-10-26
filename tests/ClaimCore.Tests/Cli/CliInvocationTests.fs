@@ -246,13 +246,36 @@ let private localizedReplyRendering () =
                     Endpoint = Some(example.GetProperty("endpoint").GetString() |> nonNull)
                     OperationId = None
                     Delivery = DeliveryState.Delivered
-                    Result = FrameResult.Reply reply
+                    Result =
+                        FrameResult.Reply(
+                            TypedReply.read
+                                (Api.tryFind (
+                                    example.GetProperty("endpoint").GetString() |> nonNull
+                                 )
+                                 |> Option.get)
+                                reply
+                            |> Result.defaultWith (fun _ -> failtest "Frozen DTO")
+                        )
                 }
+
+            let expected =
+                JsonValue.Object
+                    [
+                        "endpoint", JsonValue.String frame.Endpoint.Value
+                        "operationId", JsonValue.Null
+                        "delivery", JsonValue.String "DELIVERED"
+                        "result", reply
+                    ]
+                |> WireWriter.bytes
+
+            Expect.equal
+                (Frames.encode frame)
+                expected
+                "Typed admission preserves the authored JSON member order and byte representation"
 
             for language in LocalizationPolicy.languages do
                 let rendered =
-                    ClaimCore.Cli.TextReply.bytes language (Frames.encode frame)
-                    |> Encoding.UTF8.GetString
+                    ClaimCore.Cli.TextReply.bytes language frame |> Encoding.UTF8.GetString
 
                 Expect.isTrue
                     (rendered.EndsWith("\n", StringComparison.Ordinal))
@@ -340,7 +363,7 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
             Endpoint = Some "operation.preview"
             OperationId = Some response.OperationId
             Delivery = DeliveryState.Delivered
-            Result = FrameResult.Reply(Api.operationPreview.Output.Write response)
+            Result = FrameResult.Reply(TypedReply.ofValue Api.operationPreview response)
         }
 
     frame
@@ -351,7 +374,7 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
 
     for language in LocalizationPolicy.languages do
         let rendered =
-            ClaimCore.Cli.TextReply.bytesFor language (Some invocation) (Frames.encode frame)
+            ClaimCore.Cli.TextReply.bytesFor language (Some invocation) frame
             |> Encoding.UTF8.GetString
 
         Expect.stringContains

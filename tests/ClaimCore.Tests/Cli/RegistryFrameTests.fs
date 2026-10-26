@@ -159,7 +159,8 @@ let private results () =
         )
 
     let output =
-        ReplyCodecs.execute.Write
+        TypedReply.ofValue
+            Api.operationExecute
             {
 
                 ExecuteReply.OperationId = id
@@ -198,7 +199,8 @@ let private exits () =
         "Protocol refusal retains its exit."
 
     let output =
-        ReplyCodecs.execute.Write
+        TypedReply.ofValue
+            Api.operationExecute
             {
 
                 ExecuteReply.OperationId = id
@@ -222,18 +224,34 @@ let private refusingFrames () =
             (Frames.admit (bytes input))
             "Unknown, extra and duplicate frame members refuse."
 
-    let invalid = reply (FrameResult.Reply(JsonValue.Object [])) DeliveryState.Delivered
+    Expect.isError
+        (TypedReply.read (Api.forActor ActorEndpoint.Execute) (JsonValue.Object []))
+        "A malformed raw reply cannot construct a typed value."
+
+    let typed =
+        TypedReply.ofValue
+            Api.operationExecute
+            {
+                ExecuteReply.OperationId = id
+                Outcome = ExecuteResult.OutcomeUnknown
+            }
+
+    let invalid =
+        { reply (FrameResult.Reply typed) DeliveryState.Delivered with
+            Endpoint = Some Api.context.Token
+        }
 
     Expect.throws
         (fun () -> Frames.encode invalid |> ignore)
-        "A frame cannot carry an invalid endpoint reply."
+        "A frame cannot retag a typed value for another endpoint."
 
 let private operationEcho () =
     let prepared = Frames.admit (bytes source) |> accepted
 
     for actual, expected in [ id, true; other, false ] do
         let output =
-            ReplyCodecs.execute.Write
+            TypedReply.ofValue
+                Api.operationExecute
                 {
 
                     ExecuteReply.OperationId = actual
@@ -241,7 +259,10 @@ let private operationEcho () =
                 }
 
         Expect.equal
-            (Correlation.matches (Frames.endpoint prepared) (Frames.input prepared) output)
+            (Correlation.matches
+                (Frames.endpoint prepared)
+                (Frames.input prepared)
+                (TypedReply.json output))
             expected
             "Only the frozen operation ID settles a mutation."
 

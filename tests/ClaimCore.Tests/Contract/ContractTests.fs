@@ -164,7 +164,7 @@ let private executeOutcomes () =
                             DeliveryState.Uncertain
                         else
                             DeliveryState.Delivered
-                    Result = FrameResult.Reply(Api.operationExecute.Output.Write reply)
+                    Result = FrameResult.Reply(TypedReply.ofValue Api.operationExecute reply)
                 }
 
             Expect.equal

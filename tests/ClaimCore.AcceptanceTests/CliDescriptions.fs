@@ -58,12 +58,8 @@ let private frameOracle cli =
         Expect.equal result.ExitCode 0 cells[0]
         Expect.equal result.StandardError.Length 0 "Offline preparation emits only the frame"
 
-        Expect.isTrue
-            (System.Text.Json.Nodes.JsonNode.DeepEquals(
-                System.Text.Json.Nodes.JsonNode.Parse cells[1],
-                System.Text.Json.Nodes.JsonNode.Parse result.StandardOutput
-            ))
-            cells[0]
+        Expect.equal ((Encoding.UTF8.GetString result.StandardOutput).TrimEnd('\r', '\n')) cells[1] "Published frame bytes match the authored vector"
+
 
 let private diagnosticRoute cli =
     let result = invoke cli [ "call" ] (Some(Encoding.UTF8.GetBytes "{invalid-frame"))

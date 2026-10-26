@@ -134,14 +134,18 @@ let private rendered exampleName customize verify =
             Endpoint = Some endpoint
             OperationId = None
             Delivery = DeliveryState.Delivered
-            Result = FrameResult.Reply value
+            Result =
+                FrameResult.Reply(
+                    TypedReply.read (Api.tryFind endpoint |> Option.get) value
+                    |> Result.defaultWith (fun _ -> failtest "Frozen DTO")
+                )
         }
 
     let bytes = Frames.encode frame
     let original = Array.copy bytes
 
     for language in LocalizationPolicy.languages do
-        let text = TextReply.bytes language bytes |> Encoding.UTF8.GetString
+        let text = TextReply.bytes language frame |> Encoding.UTF8.GetString
         verify language text
         Expect.isTrue (bytes = original) "Human annotations never mutate the structured reply bytes"
 

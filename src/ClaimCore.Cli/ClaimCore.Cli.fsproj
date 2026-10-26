@@ -6,6 +6,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="CliIdentity.fs" />
     <Compile Include="CliCommands.fs" />
+    <Compile Include="TypedReply.fs" />
     <Compile Include="Frames.fs" />
     <Compile Include="Schemas.fs" />
     <Compile Include="Grammar.fs" />
