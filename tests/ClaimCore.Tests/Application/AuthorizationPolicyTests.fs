@@ -424,11 +424,43 @@ let private noUsableCorrectionOffer () =
              | _ -> false))
         "An all-KEEP form is never offered"
 
+let private humanOnlyCapabilities () =
+    let derived policy =
+        RoleTokens.all
+        |> List.filter (fun role ->
+            policy role |> List.exists ActorAuthorization.humanOnlyCapability)
+
+    Expect.equal
+        (derived ActorAuthorization.capabilities)
+        [ Role.Owner; Role.DataSteward ]
+        "Current human-only roles"
+
+    Expect.equal
+        (RoleTokens.all |> List.filter ActorAuthorization.humanOnlyRole)
+        [ Role.Owner; Role.DataSteward ]
+        "Production roles derive from capabilities"
+
+    let withSteward role =
+        let granted = ActorAuthorization.capabilities role
+
+        if role = Role.CaseReader then
+            Capability.Steward :: granted
+        else
+            granted
+
+    Expect.equal
+        (derived withSteward)
+        [ Role.Owner; Role.CaseReader; Role.DataSteward ]
+        "Negative control: granting Steward changes the principal restriction"
+
 [<Tests>]
 let tests =
     testList
         "actor authorization policy"
         [
+            testCase
+                "human-only roles derive from capabilities with a Steward-grant negative control"
+                humanOnlyCapabilities
             testCase
                 "all role, capability, principal and scope combinations match independent expectations"
                 matrix
