@@ -14,6 +14,7 @@ COPY tests/fixtures/message-template-vectors.json tests/fixtures/rendered-messag
 COPY contracts ./contracts
 COPY src/ClaimCore.Contract/Localization ./src/ClaimCore.Contract/Localization
 COPY web ./web
+COPY config/oxlint.json ./config/
 COPY prettier.config.mjs LICENSE ./
 RUN npm --prefix web run build
 
