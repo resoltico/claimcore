@@ -90,7 +90,7 @@ let private fullHistoryBudget () =
 
     Expect.equal ClaimCore.Contract.Limits.MaximumResponseBytes 4194304 "Public response limit"
 
-    Expect.equal FormatLimits.MaximumPayloadBytes 32768 "Permanent framed payload bound"
+    Expect.equal Formats.MaximumPayloadBytes 32768 "Permanent framed payload bound"
 
     Expect.throws
         (fun () -> encodedHistory 51 (SnapshotDisclosure.Disclosed accepted.View) |> ignore)

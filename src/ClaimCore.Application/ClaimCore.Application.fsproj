@@ -7,7 +7,6 @@
     <Compile Include="AuthorizationTypes.fs" />
     <Compile Include="AuthorizationPolicy.fs" />
     <Compile Include="CoreModels.fs" />
-    <Compile Include="ServiceLimits.fs" />
     <Compile Include="AuthorityRequests.fs" />
     <Compile Include="LedgerStorePort.fs" />
     <Compile Include="Cursors.fs" />

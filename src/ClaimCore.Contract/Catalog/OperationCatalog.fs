@@ -99,9 +99,6 @@ type CatalogDerivedInput =
 
 /// The actor-facing operation catalog. Bootstrap/session and owner administration belong to their hosts.
 module OperationCatalog =
-    [<Literal>]
-    let DefaultPageSize = 50
-
     let inputKey =
         function
         | CatalogInputName.Field field -> FieldTable.key field
@@ -327,7 +324,7 @@ module OperationCatalog =
                 CatalogAtom.Integer
                 CatalogArgument.Named
                 false
-                (Some(BindingValue.Integer(int64 DefaultPageSize)))
+                (Some(BindingValue.Integer(int64 Limits.DefaultPageSize)))
                 None
         ]
 

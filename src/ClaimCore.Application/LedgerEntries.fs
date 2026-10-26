@@ -78,7 +78,7 @@ module internal LedgerEntries =
                     Snapshot = snapshot
                 }
 
-        if payload.Length > FormatLimits.MaximumPayloadBytes then
+        if payload.Length > Formats.MaximumPayloadBytes then
             invalidArg (nameof request) "Ledger payload exceeds its format bound."
 
         let commitment = LedgerEntry.commitment nonce payload
@@ -113,7 +113,7 @@ module internal LedgerEntries =
     let payload (entry: StoredEntry) =
         match entry.Payload, entry.PayloadNonce with
         | Some bytes, Some nonce when width 32 nonce && width 32 entry.PayloadCommitment ->
-            match LedgerEntry.decodePayload FormatLimits.MaximumPayloadBytes bytes with
+            match LedgerEntry.decodePayload Formats.MaximumPayloadBytes bytes with
             | Error _ -> Error CoreFault.StoreIntegrityError
             | Ok value ->
                 if
@@ -165,7 +165,7 @@ module internal LedgerEntries =
         act
         (data: LedgerPayload)
         =
-        match RequestRecord.decode ServiceLimits.RequestByteLimit data.Request with
+        match RequestRecord.decode Limits.MaximumRequestBytes data.Request with
         | Ok request when
             request.OperationId = entry.OperationId
             && request.ExpectedRevision = revision - 1L
@@ -189,7 +189,7 @@ module internal LedgerEntries =
         | _ -> Error CoreFault.StoreIntegrityError
 
     let private authorityContent (entry: StoredEntry) target act (data: LedgerPayload) =
-        match AuthorityRecord.decode ServiceLimits.RequestByteLimit data.Request with
+        match AuthorityRecord.decode Limits.MaximumRequestBytes data.Request with
         | Ok request when
             request.OperationId = entry.OperationId
             && RecordedAuthorityActs.kind request.Act = act

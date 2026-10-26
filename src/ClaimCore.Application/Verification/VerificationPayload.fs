@@ -24,8 +24,7 @@ module internal VerificationPayload =
     let private case installationId (entry: StoredEntry) id revision act (payload: LedgerPayload) =
         result {
             let! request =
-                RequestRecord.decode ServiceLimits.RequestByteLimit payload.Request
-                |> decoded entry
+                RequestRecord.decode Limits.MaximumRequestBytes payload.Request |> decoded entry
 
             do!
                 require
@@ -63,7 +62,7 @@ module internal VerificationPayload =
     let private authority (entry: StoredEntry) kind (payload: LedgerPayload) =
         result {
             let! request =
-                AuthorityRecord.decode ServiceLimits.RequestByteLimit payload.Request
+                AuthorityRecord.decode Limits.MaximumRequestBytes payload.Request
                 |> decoded entry
 
             do!
@@ -93,8 +92,7 @@ module internal VerificationPayload =
                         (commitment = entry.PayloadCommitment)
 
                 let! payload =
-                    LedgerEntry.decodePayload FormatLimits.MaximumPayloadBytes bytes
-                    |> decoded entry
+                    LedgerEntry.decodePayload Formats.MaximumPayloadBytes bytes |> decoded entry
 
                 return!
                     match entry.Scope with

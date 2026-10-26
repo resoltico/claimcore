@@ -72,9 +72,9 @@ module ContractCatalog =
                     })
             Limits =
                 {
-                    DefaultPageSize = ServiceLimits.DefaultPageSize
-                    MaximumPageSize = ServiceLimits.MaximumPageSize
-                    RequestByteLimit = ServiceLimits.RequestByteLimit
+                    DefaultPageSize = Limits.DefaultPageSize
+                    MaximumPageSize = Limits.MaximumPageSize
+                    RequestByteLimit = Limits.MaximumRequestBytes
                 }
             Entries = OperationCatalog.entries
             ProductVersion = BuildIdentity.current.Version

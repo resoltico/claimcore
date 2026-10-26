@@ -25,12 +25,12 @@ let private encoded (vector: JsonElement) (side: string) =
     |> Convert.FromHexString
 
 let private caseInput vector side =
-    RequestRecord.decode ServiceLimits.RequestByteLimit (encoded vector side)
+    RequestRecord.decode Limits.MaximumRequestBytes (encoded vector side)
     |> Result.defaultWith (fun _ -> failtest "The independent request vector must decode")
 
 let private authorityInput vector side =
     let record =
-        AuthorityRecord.decode ServiceLimits.RequestByteLimit (encoded vector side)
+        AuthorityRecord.decode Limits.MaximumRequestBytes (encoded vector side)
         |> Result.defaultWith (fun _ -> failtest "The independent authority vector must decode")
 
     AuthorityRequests.fromRecord record
@@ -45,7 +45,7 @@ let private retainedRequest database (receipt: OperationReceipt) =
             |> Option.defaultWith (fun () -> failtest "Expected retained payload")
 
         return
-            LedgerEntry.decodePayload FormatLimits.MaximumPayloadBytes bytes
+            LedgerEntry.decodePayload Formats.MaximumPayloadBytes bytes
             |> Result.defaultWith (fun _ -> failtest "Expected a framed payload")
             |> _.Request
     }

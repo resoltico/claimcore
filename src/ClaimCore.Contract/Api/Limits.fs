@@ -2,6 +2,9 @@ namespace ClaimCore.Contract
 
 module Limits =
     [<Literal>]
+    let DefaultPageSize = 50
+
+    [<Literal>]
     let MaximumRequestBytes = 65536
 
     [<Literal>]
