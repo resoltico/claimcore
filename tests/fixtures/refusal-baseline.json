@@ -227,11 +227,6 @@
       "target": null
     },
     {
-      "code": "LEDGER_SEQUENCE_EXHAUSTED",
-      "action": "StopAndInvestigate",
-      "target": null
-    },
-    {
       "code": "NOT_VOIDED",
       "action": "NoneRequired",
       "target": null
@@ -250,11 +245,6 @@
       "code": "QUERY_PAGE_LIMIT_RANGE",
       "action": "CorrectInput",
       "target": "limit"
-    },
-    {
-      "code": "REVISION_EXHAUSTED",
-      "action": "NoneRequired",
-      "target": null
     },
     {
       "code": "TEXT_FORMATTING_CHARACTER",

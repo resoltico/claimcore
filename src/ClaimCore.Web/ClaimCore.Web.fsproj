@@ -13,6 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="AuthenticationFailure.fs" />
     <Compile Include="Composition/AuthenticatedSubject.fs" />
     <Compile Include="Composition/BusinessCalendar.fs" />
     <Compile Include="Composition/AdmissionGate.fs" />

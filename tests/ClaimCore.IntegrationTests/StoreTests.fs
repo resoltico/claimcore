@@ -55,7 +55,7 @@ let private serviceScopeCorruption () =
         try
             let principal =
                 PrincipalKey.service "https://issuer.example/" "scoped-service"
-                |> Result.defaultWith failtest
+                |> Result.defaultWith (string >> failtest)
 
             let! admin = caseWorker database.Fixture |> Async.AwaitTask
             do! serviceCases admin principal |> Async.AwaitTask

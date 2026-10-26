@@ -69,7 +69,7 @@ module internal LedgerEntries =
         request
         snapshot
         : EntryDraft =
-        if head.Sequence < 0L || head.Sequence >= Revision.Maximum then
+        if head.Sequence < 0L then
             invalidArg (nameof head) "Ledger head cannot advance."
 
         let payload =
@@ -83,7 +83,7 @@ module internal LedgerEntries =
             invalidArg (nameof request) "Ledger payload exceeds its format bound."
 
         let commitment = LedgerEntry.commitment nonce payload
-        let sequence = head.Sequence + 1L
+        let sequence = Revision.successor head.Sequence
 
         let metadata =
             {

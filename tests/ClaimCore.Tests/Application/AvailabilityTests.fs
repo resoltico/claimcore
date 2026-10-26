@@ -75,19 +75,6 @@ let private edgeActions =
     testList
         "availability edge conditions"
         [
-            testCase "no action is advertised at the exhausted revision" (fun () ->
-                let state = Case.snapshot (opened ())
-
-                let exhausted =
-                    Case.ofAccepted
-                        { state with
-                            Revision = Revision.Maximum
-                        }
-                    |> accepted
-
-                Expect.isEmpty
-                    (availableActs exhausted)
-                    "No action can produce an unrepresentable next revision")
             testCase "availability does not substitute for payload validation" (fun () ->
                 let state = opened ()
                 Expect.contains (availableActs state) "DECIDE" "State eligibility"

@@ -146,8 +146,6 @@ type RefusalCode =
     | PaymentNotRecorded
     | DecisionAlreadyPaid
     | ZeroDecisionCannotBePaid
-    | RevisionExhausted
-    | LedgerExhausted
     | OperationResolved
     | IdempotencyConflict
     | ResourceUnavailable
@@ -183,8 +181,6 @@ module RefusalCodes =
                  RefusalCode.PaymentNotRecorded
                  RefusalCode.DecisionAlreadyPaid
                  RefusalCode.ZeroDecisionCannotBePaid
-                 RefusalCode.RevisionExhausted
-                 RefusalCode.LedgerExhausted
                  RefusalCode.OperationResolved
                  RefusalCode.IdempotencyConflict
                  RefusalCode.ResourceUnavailable
@@ -214,8 +210,6 @@ module RefusalCodes =
              | RefusalCode.PaymentNotRecorded -> "CASE_PAYMENT_NOT_RECORDED"
              | RefusalCode.DecisionAlreadyPaid -> "CASE_DECISION_ALREADY_PAID"
              | RefusalCode.ZeroDecisionCannotBePaid -> "CASE_ZERO_DECISION_CANNOT_BE_PAID"
-             | RefusalCode.RevisionExhausted -> "REVISION_EXHAUSTED"
-             | RefusalCode.LedgerExhausted -> "LEDGER_SEQUENCE_EXHAUSTED"
              | RefusalCode.OperationResolved -> "OPERATION_RESOLVED"
              | RefusalCode.IdempotencyConflict -> "OPERATION_CONTENT_CONFLICT"
              | RefusalCode.ResourceUnavailable -> "ACCESS_RESOURCE_UNAVAILABLE"
@@ -252,8 +246,6 @@ module RefusalCodes =
         | RefusalCode.PaymentNotRecorded -> RecommendedAction.NoneRequired
         | RefusalCode.DecisionAlreadyPaid -> RecommendedAction.NoneRequired
         | RefusalCode.ZeroDecisionCannotBePaid -> RecommendedAction.NoneRequired
-        | RefusalCode.RevisionExhausted -> RecommendedAction.NoneRequired
-        | RefusalCode.LedgerExhausted -> RecommendedAction.StopAndInvestigate
         | RefusalCode.OperationResolved -> RecommendedAction.ReadCurrent
         | RefusalCode.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
         | RefusalCode.ResourceUnavailable -> RecommendedAction.NoneRequired
@@ -286,8 +278,6 @@ module RefusalCodes =
         | RefusalCode.PaymentNotRecorded
         | RefusalCode.DecisionAlreadyPaid
         | RefusalCode.ZeroDecisionCannotBePaid
-        | RefusalCode.RevisionExhausted
-        | RefusalCode.LedgerExhausted
         | RefusalCode.OperationResolved
         | RefusalCode.IdempotencyConflict
         | RefusalCode.ResourceUnavailable
@@ -322,8 +312,6 @@ module Refusals =
         | Refusal.PaymentNotRecorded -> RefusalCode.PaymentNotRecorded
         | Refusal.DecisionAlreadyPaid -> RefusalCode.DecisionAlreadyPaid
         | Refusal.ZeroDecisionCannotBePaid -> RefusalCode.ZeroDecisionCannotBePaid
-        | Refusal.RevisionExhausted -> RefusalCode.RevisionExhausted
-        | Refusal.LedgerExhausted -> RefusalCode.LedgerExhausted
         | Refusal.OperationResolved -> RefusalCode.OperationResolved
         | Refusal.IdempotencyConflict -> RefusalCode.IdempotencyConflict
         | Refusal.ResourceUnavailable -> RefusalCode.ResourceUnavailable
@@ -431,8 +419,6 @@ module Refusals =
         | RefusalCode.PaymentNotRecorded -> Refusal.PaymentNotRecorded
         | RefusalCode.DecisionAlreadyPaid -> Refusal.DecisionAlreadyPaid
         | RefusalCode.ZeroDecisionCannotBePaid -> Refusal.ZeroDecisionCannotBePaid
-        | RefusalCode.RevisionExhausted -> Refusal.RevisionExhausted
-        | RefusalCode.LedgerExhausted -> Refusal.LedgerExhausted
         | RefusalCode.OperationResolved -> Refusal.OperationResolved
         | RefusalCode.IdempotencyConflict -> Refusal.IdempotencyConflict
         | RefusalCode.ResourceUnavailable -> Refusal.ResourceUnavailable

@@ -28,13 +28,19 @@ type Fixture(database: PostgresFixture.Database) =
 
 let createFor issuer subject =
     task {
-        let principal = PrincipalKey.human issuer subject |> Result.defaultWith invalidOp
+        let principal =
+            PrincipalKey.human issuer subject
+            |> Result.defaultWith (AuthorityInputFailures.token >> invalidOp)
+
         let! database = PostgresFixture.createFor principal
         let fixture = database.Fixture
 
         try
             let! owner = caseWorker fixture
-            let service = PrincipalKey.service issuer "service" |> Result.defaultWith invalidOp
+
+            let service =
+                PrincipalKey.service issuer "service"
+                |> Result.defaultWith (AuthorityInputFailures.token >> invalidOp)
 
             let! registered =
                 (Core.execute

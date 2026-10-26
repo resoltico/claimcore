@@ -48,9 +48,10 @@ module AuthMiddleware =
         match context.Principal |> Option.ofObj with
         | Some principal ->
             match PrincipalIdentity.fromBrowserSession configuration.Issuer principal with
-            | Error _ -> context.Fail("OIDC_SUBJECT_INVALID")
+            | Error _ ->
+                context.Fail(AuthenticationFailures.token AuthenticationFailure.SubjectInvalid)
             | Ok _ -> ()
-        | None -> context.Fail("OIDC_SUBJECT_INVALID")
+        | None -> context.Fail(AuthenticationFailures.token AuthenticationFailure.SubjectInvalid)
 
         Task.CompletedTask
 

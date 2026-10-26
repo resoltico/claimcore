@@ -154,7 +154,7 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
 
         let target =
             PrincipalKey.human "https://issuer.example/" "authority-commit"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let request = authorityRequest (id 145) target AdmittedAuthorityAct.Register
 

@@ -44,7 +44,7 @@ let private updateAuthority request value =
 
 let private target subject =
     PrincipalKey.human "https://issuer.example/" subject
-    |> Result.defaultWith failtest
+    |> Result.defaultWith (string >> failtest)
 
 let private register (actor: HandlerContext) n principal =
     task {
@@ -271,7 +271,7 @@ let private human (database: PostgresFixture.Database) =
 
         let service =
             PrincipalKey.service "https://issuer.example/" "service"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         do! register actor 3 service
 
@@ -434,7 +434,7 @@ let private serviceGrantTarget (database: PostgresFixture.Database) =
 
         let service =
             PrincipalKey.service "https://issuer.example/" "service"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         do! register actor 3 service
 

@@ -58,10 +58,11 @@ type RemoteTls private (handler: HttpClientHandler, root: X509Certificate2 optio
                     None
                 )
             )
-        | Some _ when not (HttpsOrigins.isLocal endpoint) -> Error "TLS_TRUST_ROOT_SCOPE_INVALID"
+        | Some _ when not (HttpsOrigins.isLocal endpoint) ->
+            Error AccessFailure.TlsTrustRootScopeInvalid
         | Some location ->
             match PrivateFile.read CliConfigurationLimits.MaximumTrustRootBytes location with
-            | Error _ -> Error "TLS_TRUST_ROOT_UNAVAILABLE"
+            | Error _ -> Error AccessFailure.TlsTrustRootUnavailable
             | Ok bytes ->
                 try
                     try
@@ -69,6 +70,6 @@ type RemoteTls private (handler: HttpClientHandler, root: X509Certificate2 optio
                     with
                     | :? System.Security.Cryptography.CryptographicException
                     | :? ArgumentException
-                    | :? InvalidOperationException -> Error "TLS_TRUST_ROOT_INVALID"
+                    | :? InvalidOperationException -> Error AccessFailure.TlsTrustRootInvalid
                 finally
                     System.Security.Cryptography.CryptographicOperations.ZeroMemory bytes

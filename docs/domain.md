@@ -102,7 +102,5 @@ Execution compares expected revision with locked current state. Retained exact r
 acceptance without another entry, subject to [current disclosure](architecture.md#cc-auth-001). Different
 content under a used ID refuses. Rejection changes no accepted state.
 
-The maximum safe revision/sequence is defined by [Revision](../src/ClaimCore.Domain/CaseModel.fs).
-The last available value may be reached once; new work then refuses before arithmetic. Authorized exact replay
-remains possible at capacity. Read current state before preparing a different operation. If delivery is
-uncertain, preserve the original frame and use the [resolution flow](api.md#cc-cli-003).
+Retained revisions and sequences use the exact-integer format bound defined by
+[Revision](../src/ClaimCore.Domain/CaseModel.fs). SQL and durable decoding enforce that format.

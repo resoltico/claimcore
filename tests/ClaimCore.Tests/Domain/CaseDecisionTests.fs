@@ -162,11 +162,11 @@ let private integrityAndPrivacy () =
         (Verdict.Refuse Refusal.ResourceUnavailable)
         "An inaccessible existing operation does not leak through another readable case"
 
-let private capacityAndFence () =
-    let request, entry, current, receipt = created 18 "PURE-CAPACITY"
+let private boundsAndFence () =
+    let _, _, current, _ = created 18 "PURE-BOUND"
 
     let full =
-        { locked worker (Some current) None with
+        { locked worker None None with
             Head =
                 { head with
                     Sequence = Revision.Maximum
@@ -174,21 +174,9 @@ let private capacityAndFence () =
         }
 
     Expect.equal
-        (decide { request with OperationId = id 19 } full)
-        (Verdict.Refuse Refusal.LedgerExhausted)
-        "Fresh work stops before arithmetic"
-
-    Expect.equal
-        (decide
-            request
-            { full with
-                Read =
-                    { full.Read with
-                        ExistingOperation = Some entry
-                    }
-            })
-        (Verdict.Replay receipt)
-        "Exact replay remains possible at capacity"
+        (decide (opening 19 "BOUND-LEDGER") full)
+        (Verdict.Fail CoreFault.InternalError)
+        "An unrepresentable ledger successor is an internal fault"
 
     let fenced =
         { locked worker None None with
@@ -216,8 +204,8 @@ let private capacityAndFence () =
                 Revision.Maximum
                 UnvalidatedCaseAct.Close)
             (locked worker (Some maxRevision) None))
-        (Verdict.Refuse Refusal.RevisionExhausted)
-        "Revision exhaustion is checked without overflow"
+        (Verdict.Fail CoreFault.InternalError)
+        "A format-valid record at the bound yields CORE_INTERNAL_ERROR"
 
 let private rawOpening =
     """{"kind":"CASE","operationId":"80000000-0000-4000-8000-000000000010","caseReference":"UNIT-001","expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"LV","claimantName":"Synthetic Party","insurerName":"Synthetic Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}"""
@@ -282,5 +270,7 @@ let tests =
             testCase
                 "corruption faults and foreign identity privacy remain distinct"
                 integrityAndPrivacy
-            testCase "head revision and operation fences retain refusal precedence" capacityAndFence
+            testCase
+                "unrepresentable successors are internal faults and fences prevent append"
+                boundsAndFence
         ]

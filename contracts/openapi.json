@@ -4065,9 +4065,6 @@
                     "const": "CASE_ZERO_DECISION_CANNOT_BE_PAID"
                   },
                   {
-                    "const": "REVISION_EXHAUSTED"
-                  },
-                  {
                     "const": "ACCESS_RESOURCE_UNAVAILABLE"
                   },
                   {
@@ -4121,9 +4118,6 @@
             "properties": {
               "code": {
                 "oneOf": [
-                  {
-                    "const": "LEDGER_SEQUENCE_EXHAUSTED"
-                  },
                   {
                     "const": "OPERATION_CONTENT_CONFLICT"
                   }

@@ -748,13 +748,6 @@
   },
   {
     "arguments": {},
-    "expected": "The ledger has reached its final sequence.",
-    "isolated": "The ledger has reached its final sequence.",
-    "key": "diagnostic.LEDGER_SEQUENCE_EXHAUSTED",
-    "language": "en"
-  },
-  {
-    "arguments": {},
     "expected": "This case is not voided.",
     "isolated": "This case is not voided.",
     "key": "diagnostic.NOT_VOIDED",
@@ -788,13 +781,6 @@
     "expected": "Use a value from 1 through «maximumPageSize».",
     "isolated": "Use a value from 1 through «maximumPageSize».",
     "key": "diagnostic.QUERY_PAGE_LIMIT_RANGE",
-    "language": "en"
-  },
-  {
-    "arguments": {},
-    "expected": "The case has reached its final revision.",
-    "isolated": "The case has reached its final revision.",
-    "key": "diagnostic.REVISION_EXHAUSTED",
     "language": "en"
   },
   {
@@ -3866,13 +3852,6 @@
   },
   {
     "arguments": {},
-    "expected": "Ir sasniegts pēdējais virsgrāmatas kārtas numurs.",
-    "isolated": "Ir sasniegts pēdējais virsgrāmatas kārtas numurs.",
-    "key": "diagnostic.LEDGER_SEQUENCE_EXHAUSTED",
-    "language": "lv"
-  },
-  {
-    "arguments": {},
     "expected": "Šī lieta nav anulēta.",
     "isolated": "Šī lieta nav anulēta.",
     "key": "diagnostic.NOT_VOIDED",
@@ -3906,13 +3885,6 @@
     "expected": "Izmantojiet vērtību no 1 līdz «maximumPageSize».",
     "isolated": "Izmantojiet vērtību no 1 līdz «maximumPageSize».",
     "key": "diagnostic.QUERY_PAGE_LIMIT_RANGE",
-    "language": "lv"
-  },
-  {
-    "arguments": {},
-    "expected": "Lieta ir sasniegusi savu pēdējo redakciju.",
-    "isolated": "Lieta ir sasniegusi savu pēdējo redakciju.",
-    "key": "diagnostic.REVISION_EXHAUSTED",
     "language": "lv"
   },
   {
@@ -6984,13 +6956,6 @@
   },
   {
     "arguments": {},
-    "expected": "وصل السجل إلى رقم التسلسل الأخير.",
-    "isolated": "وصل السجل إلى رقم التسلسل الأخير.",
-    "key": "diagnostic.LEDGER_SEQUENCE_EXHAUSTED",
-    "language": "ar"
-  },
-  {
-    "arguments": {},
     "expected": "هذا الملف غير ملغى.",
     "isolated": "هذا الملف غير ملغى.",
     "key": "diagnostic.NOT_VOIDED",
@@ -7024,13 +6989,6 @@
     "expected": "استخدم قيمة من 1 إلى «maximumPageSize».",
     "isolated": "استخدم قيمة من 1 إلى ⁨«maximumPageSize»⁩.",
     "key": "diagnostic.QUERY_PAGE_LIMIT_RANGE",
-    "language": "ar"
-  },
-  {
-    "arguments": {},
-    "expected": "وصلت الحالة إلى مراجعتها الأخيرة.",
-    "isolated": "وصلت الحالة إلى مراجعتها الأخيرة.",
-    "key": "diagnostic.REVISION_EXHAUSTED",
     "language": "ar"
   },
   {

@@ -20,8 +20,6 @@ type Refusal =
     | PaymentNotRecorded
     | DecisionAlreadyPaid
     | ZeroDecisionCannotBePaid
-    | RevisionExhausted
-    | LedgerExhausted
     | OperationResolved
     | IdempotencyConflict
     | ResourceUnavailable

@@ -238,7 +238,6 @@ let private diagnostics () =
 
     for value in
         [
-            ClaimCore.Domain.Refusal.LedgerExhausted
             ClaimCore.Domain.Refusal.InvalidCursor
             ClaimCore.Domain.Refusal.LastOwner
             ClaimCore.Domain.Refusal.ActNotPermitted

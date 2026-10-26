@@ -395,7 +395,7 @@ let private assignedReader (actor: HandlerContext) =
     task {
         let principal =
             PrincipalKey.human "https://issuer.example/" "assigned-reader"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -481,7 +481,7 @@ let private authorityChanges fixture =
 
         let target =
             PrincipalKey.human "https://issuer.example/" "reader"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         do! registerReader owner target
         let! read = inspectAuthority fixture (target) (CancellationToken.None)
@@ -554,7 +554,7 @@ let private scopedHandler fixture (admin: HandlerContext) reference =
     task {
         let target =
             PrincipalKey.service "https://issuer.example/" "scoped-handler"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -717,7 +717,7 @@ let private scopedWorker fixture =
 
         let principal =
             PrincipalKey.human "https://issuer.example/" "many-scopes"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -900,7 +900,7 @@ let private authorityReadIsNotManage fixture =
 
         let auditor =
             PrincipalKey.human "https://issuer.example/" "preview-auditor"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -949,7 +949,7 @@ let private authorityReviewReplay fixture =
 
         let target =
             PrincipalKey.human "https://issuer.example/" "preview-target"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let input = authorityRequest (id 2) target AdmittedAuthorityAct.Register
         let! before = ledgerHead fixture
@@ -1011,7 +1011,7 @@ let private grantReviewTarget fixture =
 
         let target =
             PrincipalKey.human "https://issuer.example/" "grant-preview-target"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -1120,7 +1120,7 @@ let private authorityReviewRechecks fixture =
 
         let other =
             PrincipalKey.human "https://issuer.example/" "other-preview-owner"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute

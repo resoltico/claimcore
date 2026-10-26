@@ -41,7 +41,7 @@ let private reader fixture (admin: HandlerContext) =
     task {
         let target =
             PrincipalKey.human "https://issuer.example/" "reader"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -159,7 +159,7 @@ let private registerActors (actor: HandlerContext) =
         for n in 10..12 do
             let target =
                 PrincipalKey.human "https://issuer.example/" ("actor-" + string n)
-                |> Result.defaultWith failtest
+                |> Result.defaultWith (string >> failtest)
 
             let! registered =
                 (Core.execute

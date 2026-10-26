@@ -15,7 +15,7 @@ let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
 
 let owner =
     PrincipalKey.human "https://issuer.example/" "owner"
-    |> Result.defaultWith failtest
+    |> Result.defaultWith (string >> failtest)
 
 let calendar =
     { new IBusinessCalendar with

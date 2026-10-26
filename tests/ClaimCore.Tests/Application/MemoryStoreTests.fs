@@ -19,7 +19,7 @@ let private fixture () =
             InstallationId = id 500
             Owner =
                 PrincipalKey.human "https://issuer.example/" "owner"
-                |> Result.defaultWith failtest
+                |> Result.defaultWith (string >> failtest)
             Calendar =
                 { new IBusinessCalendar with
                     member _.TimeZoneId = "Etc/UTC"
@@ -37,7 +37,7 @@ let private rollback () =
 
         let principal =
             PrincipalKey.human "https://issuer.example/" "rollback"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         for verdict in
             [

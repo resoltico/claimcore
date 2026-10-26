@@ -15,7 +15,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
 
         let principal =
             PrincipalKey.human "https://issuer.example/" "registrar"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute

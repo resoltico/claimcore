@@ -2654,23 +2654,6 @@
       }
     },
     {
-      "name": "refusal-45",
-      "endpoint": "context",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "LEDGER_SEQUENCE_EXHAUSTED",
-            "action": "STOP_AND_INVESTIGATE",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
-          }
-        }
-      }
-    },
-    {
       "name": "refusal-46",
       "endpoint": "context",
       "valid": true,
@@ -2736,23 +2719,6 @@
             "limits": {
               "maximumPageSize": 50
             }
-          }
-        }
-      }
-    },
-    {
-      "name": "refusal-50",
-      "endpoint": "context",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "REVISION_EXHAUSTED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
           }
         }
       }

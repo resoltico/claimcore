@@ -240,12 +240,11 @@ module Case =
             | _, CaseAct.Business(BusinessAct.Open _) -> Error Refusal.CaseAlreadyExists
             | _ when record.Revision <> request.ExpectedRevision ->
                 Error(Refusal.RevisionConflict record.Revision)
-            | _ when record.Revision = Revision.Maximum -> Error Refusal.RevisionExhausted
             | (CaseState.Active _ | CaseState.Voided _) as state, act ->
                 transition today act state
                 |> Result.map (fun state ->
                     { record with
-                        Revision = record.Revision + 1L
+                        Revision = Revision.successor record.Revision
                         State = state
                     })
 
@@ -255,11 +254,8 @@ module Case =
         | Some record -> existing today command record
 
     let eligibleActs (record: CaseRecord) =
-        if record.Revision = Revision.Maximum then
-            []
-        else
-            CaseActKinds.all
-            |> List.filter (Transitions.applicable record.State >> Result.isOk)
+        CaseActKinds.all
+        |> List.filter (Transitions.applicable record.State >> Result.isOk)
 
     let correctionActions (record: CaseRecord) group =
         match record.State with

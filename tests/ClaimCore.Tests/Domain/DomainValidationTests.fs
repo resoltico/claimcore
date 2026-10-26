@@ -103,35 +103,22 @@ let private restorationTests =
                     Expect.isError
                         (Protocol.ResponseCodecs.caseFields.Read "$" (candidate mask))
                         "A decision object requires all three members")
-            testCase
-                "safe-integer terminal snapshots remain readable and refuse a successor"
-                (fun () ->
-                    let original = Case.snapshot (opened ())
+            testCase "retained snapshots keep the exact-integer format bound" (fun () ->
+                let original = Case.snapshot (opened ())
 
-                    let terminal =
+                let terminal =
+                    { original with
+                        Revision = Revision.Maximum
+                    }
+
+                Expect.isOk (Case.ofAccepted terminal) "The format boundary remains readable"
+
+                Expect.isError
+                    (Case.ofAccepted
                         { original with
-                            Revision = Revision.Maximum
-                        }
-
-                    let current = Case.ofAccepted terminal |> accepted
-                    Expect.isEmpty (availableActs current) "No successor can be represented"
-
-                    Expect.isTrue
-                        ((CaseFixtures.decide
-                            today
-                            (request Revision.Maximum UnvalidatedCaseAct.Close)
-                            (Some current)
-                          |> Result.map Case.snapshot)
-                            =
-                            Error Refusal.RevisionExhausted)
-                        "Terminal state refuses without arithmetic"
-
-                    Expect.isError
-                        (Case.ofAccepted
-                            { original with
-                                Revision = Revision.Maximum + 1L
-                            })
-                        "Beyond safe range")
+                            Revision = Revision.Maximum + 1L
+                        })
+                    "Beyond safe range")
         ]
 
 let private precisionAndRoundTripTests =

@@ -67,17 +67,20 @@ module internal CaseExecution =
                 (LedgerEntries.receipt principal view.Actor view.Case)
 
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseFacts) =
-        let before =
-            match view.Case with
-            | None -> Ok None
-            | Some record -> current installationId record |> Result.map Some
+        try
+            let before =
+                match view.Case with
+                | None -> Ok None
+                | Some record -> current installationId record |> Result.map Some
 
-        match before with
-        | Error fault -> Verdict.Fail fault
-        | Ok before ->
-            match Case.decide (calendar.DateAt view.ObservedAt) request before with
-            | Error refusal -> Verdict.Refuse(refusal)
-            | Ok after -> Verdict.Proceed(before, after)
+            match before with
+            | Error fault -> Verdict.Fail fault
+            | Ok before ->
+                match Case.decide (calendar.DateAt view.ObservedAt) request before with
+                | Error refusal -> Verdict.Refuse(refusal)
+                | Ok after -> Verdict.Proceed(before, after)
+        with :? System.OverflowException ->
+            Verdict.Fail CoreFault.InternalError
 
     let private project
         installationId
@@ -134,7 +137,7 @@ module internal CaseExecution =
         let identity = Case.canonical command |> RequestRecord.encode
 
         admission installationId principal command identity view
-        |> Verdict.bind (fun () -> LedgerEnvelope.guard head fenced)
+        |> Verdict.bind (fun () -> LedgerEnvelope.guard fenced)
         |> Verdict.bind (fun () -> propose installationId calendar command view)
         |> Verdict.bind (fun (_, after) ->
             let plan = project installationId calendar command view after

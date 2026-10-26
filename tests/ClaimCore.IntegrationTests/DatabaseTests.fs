@@ -266,7 +266,7 @@ let tests =
 
                         let other =
                             PrincipalKey.human "https://issuer.example/" "other"
-                            |> Result.defaultWith failtest
+                            |> Result.defaultWith (string >> failtest)
 
                         let! otherResult =
                             LedgerAdministration.provisionOwner

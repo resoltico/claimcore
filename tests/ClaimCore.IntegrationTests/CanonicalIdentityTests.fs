@@ -186,7 +186,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
 
         let outsider =
             PrincipalKey.human "https://issuer.example/" "canonical-outsider"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute

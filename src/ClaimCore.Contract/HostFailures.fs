@@ -1,62 +1,114 @@
 namespace ClaimCore.Contract.Protocol
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
-/// Fixed transport policy; presentation belongs to client catalogs.
+[<RequireQualifiedAccess>]
+type HostFailureCode =
+    | ContractMismatch
+    | ConnectionRejected
+    | OriginRejected
+    | MediaTypeRejected
+    | BodyTooLarge
+    | SessionRejected
+    | SessionForbidden
+    | MethodRejected
+    | AntiforgeryRejected
+    | EndpointMissing
+    | RateLimited
+    | InputInvalid
+    | Internal
+    | ResponseFailed
+
+/// Fixed transport policy; each reason owns its code, status and dispatch phase together.
 module HostFailures =
-    let private policies =
+    // Flat exhaustive transport policy; compiler coverage replaces a partial table lookup.
+    // fsharplint:disable-next-line CyclomaticComplexity
+    let private policy =
+        function
+        | HostFailureReason.ContractMismatch ->
+            HostFailureCode.ContractMismatch, 409, Some ExecutionPhase.NotStarted
+        | HostFailureReason.ConnectionRejected ->
+            HostFailureCode.ConnectionRejected, 403, Some ExecutionPhase.NotStarted
+        | HostFailureReason.OriginRejected ->
+            HostFailureCode.OriginRejected, 403, Some ExecutionPhase.NotStarted
+        | HostFailureReason.MediaTypeRejected ->
+            HostFailureCode.MediaTypeRejected, 415, Some ExecutionPhase.NotStarted
+        | HostFailureReason.BodyTooLarge ->
+            HostFailureCode.BodyTooLarge, 413, Some ExecutionPhase.NotStarted
+        | HostFailureReason.SessionRejected ->
+            HostFailureCode.SessionRejected, 401, Some ExecutionPhase.NotStarted
+        | HostFailureReason.SessionForbidden ->
+            HostFailureCode.SessionForbidden, 403, Some ExecutionPhase.NotStarted
+        | HostFailureReason.MethodRejected ->
+            HostFailureCode.MethodRejected, 405, Some ExecutionPhase.NotStarted
+        | HostFailureReason.AntiforgeryRejected ->
+            HostFailureCode.AntiforgeryRejected, 403, Some ExecutionPhase.NotStarted
+        | HostFailureReason.EndpointMissing ->
+            HostFailureCode.EndpointMissing, 404, Some ExecutionPhase.NotStarted
+        | HostFailureReason.RateLimited ->
+            HostFailureCode.RateLimited, 429, Some ExecutionPhase.NotStarted
+        | HostFailureReason.InputInvalid ->
+            HostFailureCode.InputInvalid, 400, Some ExecutionPhase.NotStarted
+        | HostFailureReason.BeforeDispatchFailed ->
+            HostFailureCode.Internal, 500, Some ExecutionPhase.NotStarted
+        | HostFailureReason.DispatchUnconfirmed ->
+            HostFailureCode.Internal, 500, Some ExecutionPhase.StartedUnconfirmed
+        | HostFailureReason.CompletedResponseFailed -> HostFailureCode.ResponseFailed, 500, None
+
+    let private reasons =
         [
-            HostFailureReason.ContractMismatch,
-            "CONTRACT_MISMATCH",
-            409,
-            Some ExecutionPhase.NotStarted
-            HostFailureReason.ConnectionRejected,
-            "CONNECTION_REJECTED",
-            403,
-            Some ExecutionPhase.NotStarted
-            HostFailureReason.OriginRejected, "ORIGIN_REJECTED", 403, Some ExecutionPhase.NotStarted
-            HostFailureReason.MediaTypeRejected,
-            "MEDIA_TYPE_REJECTED",
-            415,
-            Some ExecutionPhase.NotStarted
-            HostFailureReason.BodyTooLarge, "BODY_TOO_LARGE", 413, Some ExecutionPhase.NotStarted
-            HostFailureReason.SessionRejected,
-            "SESSION_REJECTED",
-            401,
-            Some ExecutionPhase.NotStarted
-            HostFailureReason.SessionForbidden,
-            "SESSION_FORBIDDEN",
-            403,
-            Some ExecutionPhase.NotStarted
-            HostFailureReason.MethodRejected, "METHOD_REJECTED", 405, Some ExecutionPhase.NotStarted
-            HostFailureReason.AntiforgeryRejected,
-            "ANTIFORGERY_REJECTED",
-            403,
-            Some ExecutionPhase.NotStarted
-            HostFailureReason.EndpointMissing,
-            "ENDPOINT_MISSING",
-            404,
-            Some ExecutionPhase.NotStarted
-            HostFailureReason.RateLimited, "RATE_LIMITED", 429, Some ExecutionPhase.NotStarted
-            HostFailureReason.InputInvalid, "INPUT_INVALID", 400, Some ExecutionPhase.NotStarted
-            HostFailureReason.BeforeDispatchFailed, "INTERNAL", 500, Some ExecutionPhase.NotStarted
-            HostFailureReason.DispatchUnconfirmed,
-            "INTERNAL",
-            500,
-            Some ExecutionPhase.StartedUnconfirmed
-            HostFailureReason.CompletedResponseFailed, "RESPONSE_FAILED", 500, None
+            HostFailureReason.ContractMismatch
+            HostFailureReason.ConnectionRejected
+            HostFailureReason.OriginRejected
+            HostFailureReason.MediaTypeRejected
+            HostFailureReason.BodyTooLarge
+            HostFailureReason.SessionRejected
+            HostFailureReason.SessionForbidden
+            HostFailureReason.MethodRejected
+            HostFailureReason.AntiforgeryRejected
+            HostFailureReason.EndpointMissing
+            HostFailureReason.RateLimited
+            HostFailureReason.InputInvalid
+            HostFailureReason.BeforeDispatchFailed
+            HostFailureReason.DispatchUnconfirmed
+            HostFailureReason.CompletedResponseFailed
         ]
 
-    let all = policies |> List.map (fun (reason, _, _, _) -> reason)
+    let private codeKind reason = let code, _, _ = policy reason in code
 
-    let private policy reason =
-        policies |> List.find (fun (value, _, _, _) -> value = reason)
+    // Flat exhaustive code spelling; union coverage and token uniqueness use the shared mechanism.
+    // fsharplint:disable-next-line CyclomaticComplexity
+    let vocabulary =
+        Vocabulary.define "host" (reasons |> List.map codeKind |> List.distinct) (function
+            | HostFailureCode.ContractMismatch -> "CONTRACT_MISMATCH"
+            | HostFailureCode.ConnectionRejected -> "CONNECTION_REJECTED"
+            | HostFailureCode.OriginRejected -> "ORIGIN_REJECTED"
+            | HostFailureCode.MediaTypeRejected -> "MEDIA_TYPE_REJECTED"
+            | HostFailureCode.BodyTooLarge -> "BODY_TOO_LARGE"
+            | HostFailureCode.SessionRejected -> "SESSION_REJECTED"
+            | HostFailureCode.SessionForbidden -> "SESSION_FORBIDDEN"
+            | HostFailureCode.MethodRejected -> "METHOD_REJECTED"
+            | HostFailureCode.AntiforgeryRejected -> "ANTIFORGERY_REJECTED"
+            | HostFailureCode.EndpointMissing -> "ENDPOINT_MISSING"
+            | HostFailureCode.RateLimited -> "RATE_LIMITED"
+            | HostFailureCode.InputInvalid -> "INPUT_INVALID"
+            | HostFailureCode.Internal -> "INTERNAL"
+            | HostFailureCode.ResponseFailed -> "RESPONSE_FAILED")
+
+    // Two dispatch reasons share INTERNAL, distinguished by their phase in the wire contract.
+    let private reasonVocabulary =
+        Vocabulary.define "host-reason" reasons (fun reason ->
+            let code, status, phase = policy reason
+            Vocabulary.token vocabulary code + ":" + string status + ":" + string phase)
+
+    let all = Vocabulary.all reasonVocabulary
 
     let code reason =
-        let _, code, _, _ = policy reason in code
+        codeKind reason |> Vocabulary.token vocabulary
 
     let status reason =
-        let _, _, status, _ = policy reason in status
+        let _, value, _ = policy reason in value
 
     let phase reason =
-        let _, _, _, phase = policy reason in phase
+        let _, _, value = policy reason in value

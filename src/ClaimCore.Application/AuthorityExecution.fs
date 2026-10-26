@@ -207,7 +207,7 @@ module internal AuthorityExecution =
         let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
         admit bytes
-        |> Verdict.bind (fun () -> LedgerEnvelope.guard head fenced)
+        |> Verdict.bind (fun () -> LedgerEnvelope.guard fenced)
         |> Verdict.bind (fun () -> propose installationId operationId target action view)
         |> Verdict.bind (fun proposed ->
             let plan = project action record view proposed

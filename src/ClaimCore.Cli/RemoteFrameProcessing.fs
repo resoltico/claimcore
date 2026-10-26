@@ -42,7 +42,7 @@ module private FrameInvocation =
                     match! access.Token cancelled with
                     | Error _ when cancelled.IsCancellationRequested ->
                         return CliReply.local ClientFailure.Cancelled
-                    | Error "OIDC_CREDENTIAL_UNAVAILABLE" ->
+                    | Error AccessFailure.OidcCredentialUnavailable ->
                         return
                             CliReply.local (
                                 ClientFailure.ConfigurationIssue(

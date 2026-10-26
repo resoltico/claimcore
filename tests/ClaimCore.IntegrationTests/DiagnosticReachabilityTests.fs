@@ -340,7 +340,7 @@ let private authorityEvidence actor =
     task {
         let service =
             PrincipalKey.service "https://issuer.example/" "synthetic"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let send n target act =
             (Core.execute
@@ -370,7 +370,7 @@ let private identityEvidence actor =
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "reader"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -443,66 +443,7 @@ let private boundaryEvidence () =
 
         Expect.equal resolved ResolveReply.NotAccepted "Resolve installs a fence"
         let! fenced = execute actor (request 42 "REACH-1" 1L UnvalidatedCaseAct.Close)
-        let! loaded = inspectCase fixture (fixture.Owner) (None) ("REACH-1") (ct)
-
-        let read =
-            loaded |> Result.defaultWith (fun _ -> failtest "Read locked-view fixture")
-
-        let current = read.Case |> Option.get
-
-        let head =
-            {
-                LedgerHead.Sequence = 10L
-                EntryHash = Array.zeroCreate 32
-            }
-
-        let revisionFacts =
-            { read with
-                Case =
-                    Some
-                        { current with
-                            Snapshot =
-                                { current.Snapshot with
-                                    Revision = Revision.Maximum
-                                }
-                        }
-            }
-
-        let decisionEvidence request head facts =
-            match
-                CaseExecution.execute
-                    fixture.InstallationId
-                    fixture.Calendar
-                    fixture.Owner
-                    (CaseFixtures.command request)
-                    head
-                    false
-                    (Array.create 32 1uy)
-                    facts
-            with
-            | Verdict.Refuse reason -> reason
-            | _ -> failtest "Expected boundary refusal"
-
-        let revision =
-            decisionEvidence
-                (request 40 "REACH-1" Revision.Maximum UnvalidatedCaseAct.Close)
-                head
-                revisionFacts
-
-        let ledger =
-            decisionEvidence
-                (request 41 "REACH-1" 1L UnvalidatedCaseAct.Close)
-                { head with
-                    Sequence = Revision.Maximum
-                }
-                read
-
-        return
-            identity
-            @ [ refused denied; diagnostic revision; diagnostic ledger; refused fenced ]
-            @ queries
-            @ authority
-            @ principals
+        return identity @ [ refused denied; refused fenced ] @ queries @ authority @ principals
     }
 
 let private completeVocabulary () =

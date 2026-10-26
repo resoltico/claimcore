@@ -242,7 +242,7 @@ type Stub() =
             Route.read Api.authorityGrants (fun _ request _ ->
                 let principal =
                     PrincipalKey.human "https://identity.example/" "synthetic-target"
-                    |> Result.defaultWith failwith
+                    |> Result.defaultWith (AuthorityInputFailures.token >> failwith)
 
                 this.Invoke
                     "authority.grants"

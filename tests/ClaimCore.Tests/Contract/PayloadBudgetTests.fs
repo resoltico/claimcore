@@ -113,7 +113,7 @@ let private authorityFixture () =
 
     let principal =
         PrincipalKey.human (prefix + String('+', 2048 - prefix.Length)) (String(char 1, 512))
-        |> Result.defaultWith failwith
+        |> Result.defaultWith (AuthorityInputFailures.token >> failwith)
 
     let actor: ActorSummary =
         {

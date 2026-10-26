@@ -29,7 +29,7 @@ let private subjects count =
     [
         for index in 1..count ->
             PrincipalKey.human "https://issuer.example/" ("synthetic-growth-" + string index)
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
     ]
 
 let private authority (actor: HandlerContext) principals =

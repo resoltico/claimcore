@@ -81,7 +81,7 @@ let private prepare (database: PostgresFixture.Database) =
 
         let target =
             PrincipalKey.service "https://issuer.example/" "grant-target"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -149,7 +149,7 @@ let private changedTarget (admin: HandlerContext) targetId cursor =
     task {
         let target =
             PrincipalKey.service "https://issuer.example/" "grant-target"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! removed =
             grant admin (id 610) target Role.PaymentRecorder GrantTarget.Installation false
@@ -179,7 +179,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
 
         let target =
             PrincipalKey.service "https://issuer.example/" "reviewer"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -331,7 +331,7 @@ let private changeTarget (admin: HandlerContext) =
     task {
         let target =
             PrincipalKey.service "https://issuer.example/" "grant-target"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! enabled =
             (Core.execute

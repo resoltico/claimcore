@@ -20,9 +20,9 @@ module OidcAuthority =
             then
                 Ok uri
             else
-                Error "OIDC_URI_INVALID"
+                Error AuthenticationFailure.UriInvalid
         with :? UriFormatException ->
-            Error "OIDC_URI_INVALID"
+            Error AuthenticationFailure.UriInvalid
 
     let parse value = exactHttpsUri value
 
@@ -61,9 +61,9 @@ module OidcAuthority =
                     |> List.forall (fun value -> Result.isOk (exactHttpsUri value)))
                 ->
                 Ok()
-            | _ -> Error "OIDC_METADATA_INVALID"
+            | _ -> Error AuthenticationFailure.MetadataInvalid
         with :? JsonException ->
-            Error "OIDC_METADATA_INVALID"
+            Error AuthenticationFailure.MetadataInvalid
 
 module PrincipalIdentity =
     let private nonBlank (value: string) =
@@ -73,13 +73,13 @@ module PrincipalIdentity =
         if nonBlank subject then
             AuthenticatedSubjects.human issuer.AbsoluteUri subject
         else
-            Error "OIDC_SUBJECT_INVALID"
+            Error AuthenticationFailure.SubjectInvalid
 
     let service (issuer: Uri) clientId =
         if nonBlank clientId then
             AuthenticatedSubjects.service issuer.AbsoluteUri clientId
         else
-            Error "OIDC_CLIENT_INVALID"
+            Error AuthenticationFailure.ClientInvalid
 
     let private authenticatedIdentity (principal: ClaimsPrincipal) =
         match principal.Identities |> Seq.toList with
@@ -98,7 +98,7 @@ module PrincipalIdentity =
     let fromBrowserSession issuer principal =
         match authenticatedIdentity principal |> Option.bind (singleClaim "sub") with
         | Some subject -> human issuer subject
-        | None -> Error "OIDC_SUBJECT_INVALID"
+        | None -> Error AuthenticationFailure.SubjectInvalid
 
     let private optionalClaim name (identity: ClaimsIdentity) =
         match
@@ -108,20 +108,20 @@ module PrincipalIdentity =
         with
         | [] -> Ok None
         | [ claim ] when nonBlank claim.Value -> Ok(Some claim.Value)
-        | _ -> Error "OIDC_CLAIM_AMBIGUOUS"
+        | _ -> Error AuthenticationFailure.ClaimAmbiguous
 
     let private clientIdentity identity =
         match optionalClaim "azp" identity, optionalClaim "client_id" identity with
         | Ok(Some first), Ok(Some second) when first = second -> Ok first
         | Ok(Some value), Ok None
         | Ok None, Ok(Some value) -> Ok value
-        | _ -> Error "OIDC_CLIENT_INVALID"
+        | _ -> Error AuthenticationFailure.ClientInvalid
 
     let fromAccessToken issuer cliClient principal =
         match authenticatedIdentity principal with
-        | None -> Error "OIDC_PRINCIPAL_UNAUTHENTICATED"
+        | None -> Error AuthenticationFailure.PrincipalUnauthenticated
         | Some identity ->
             match clientIdentity identity, optionalClaim "sub" identity with
             | Ok client, Ok(Some subject) when client = cliClient -> human issuer subject
             | Ok client, Ok _ when client <> cliClient -> service issuer client
-            | _ -> Error "OIDC_PRINCIPAL_INVALID"
+            | _ -> Error AuthenticationFailure.PrincipalInvalid

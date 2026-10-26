@@ -21,11 +21,9 @@ module internal LedgerEnvelope =
         |> Option.map _.ActorId
         |> Option.defaultWith (fun () -> invalidArg (nameof view) "Authorized actor is missing.")
 
-    let guard (head: LedgerHead) fenced =
+    let guard fenced =
         if fenced then
             Verdict.Refuse Refusal.OperationResolved
-        elif head.Sequence = Revision.Maximum then
-            Verdict.Refuse Refusal.LedgerExhausted
         else
             Verdict.Proceed()
 
@@ -39,19 +37,22 @@ module internal LedgerEnvelope =
         (plan: LedgerAppend<'Projection>)
         bytes
         =
-        let entry =
-            LedgerEntries.create
-                installationId
-                head
-                plan.ObservedAt
-                nonce
-                plan.ActorId
-                operationId
-                plan.Subject
-                bytes
-                plan.Snapshot
+        try
+            let entry =
+                LedgerEntries.create
+                    installationId
+                    head
+                    plan.ObservedAt
+                    nonce
+                    plan.ActorId
+                    operationId
+                    plan.Subject
+                    bytes
+                    plan.Snapshot
 
-        LedgerEntries.validate installationId (LedgerEntries.stored entry)
-        |> Result.bind (LedgerEntries.receipt principal actor plan.Current)
-        |> Result.map (fun receipt -> Verdict.Proceed(entry, plan.Projection, receipt))
-        |> Result.defaultWith Verdict.Fail
+            LedgerEntries.validate installationId (LedgerEntries.stored entry)
+            |> Result.bind (LedgerEntries.receipt principal actor plan.Current)
+            |> Result.map (fun receipt -> Verdict.Proceed(entry, plan.Projection, receipt))
+            |> Result.defaultWith Verdict.Fail
+        with :? OverflowException ->
+            Verdict.Fail CoreFault.InternalError

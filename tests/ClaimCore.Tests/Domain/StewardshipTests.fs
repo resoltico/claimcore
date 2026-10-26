@@ -134,17 +134,6 @@ let private staleRevision () =
         ((outcome |> Result.map Case.snapshot) = Error(Refusal.RevisionConflict 7L))
         "Revision check precedes admission and state"
 
-let private exhausted () =
-    let outcome =
-        CaseFixtures.decide
-            today
-            (request Revision.Maximum UnvalidatedCaseAct.Erase)
-            (Some(current Revision.Maximum (CaseState.Active())))
-
-    Expect.isTrue
-        ((outcome |> Result.map Case.snapshot) = Error Refusal.RevisionExhausted)
-        "No overflow at terminal revision"
-
 let private vocabulary () =
     for action, expected in
         [
@@ -175,7 +164,6 @@ let tests =
             testCase
                 "[CC-LIFE-001] stale revision is refused before admission and state"
                 staleRevision
-            testCase "[CC-LIFE-001] exhausted revisions cannot overflow or accept an act" exhausted
             testCase
                 "[CC-LIFE-001] accepted erasure advances exactly one revision across the full range"
                 (fun () -> PropertyHarness.run "CC-PROP-STEWARDSHIP-001" revisionProperty)

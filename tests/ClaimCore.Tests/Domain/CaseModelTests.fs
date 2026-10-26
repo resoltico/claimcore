@@ -192,10 +192,6 @@ let private allKeepStates =
         Some(retained 1L (CaseState.Voided(fields CaseStatus.Opened true false))),
         1L,
         Refusal.CaseVoided
-        "terminal",
-        Some(retained Revision.Maximum (live CaseStatus.Opened true false)),
-        Revision.Maximum,
-        Refusal.RevisionExhausted
         "ineligible",
         Some(retained 1L (live CaseStatus.Opened false false)),
         1L,
@@ -277,28 +273,7 @@ let private grandfathering =
                 "Request format does not preempt state-aware admission")
 
 let private revisionBounds =
-    testCase "M minus one advances to terminal M and all fresh acts refuse there" (fun () ->
-        let prior = retained (Revision.Maximum - 1L) (live CaseStatus.Opened false false)
-
-        let next =
-            CaseFixtures.decide
-                today
-                (request (Revision.Maximum - 1L) (UnvalidatedCaseAct.Close))
-                (Some prior)
-            |> accepted
-
-        Expect.equal
-            (Case.snapshot next).Revision
-            Revision.Maximum
-            "Last successor is representable"
-
-        Expect.isEmpty (Case.eligibleActs next) "Terminal advice"
-
-        for _, act in acts do
-            Expect.isError
-                (CaseFixtures.decide today (request Revision.Maximum act) (Some next))
-                "Terminal state refuses all fresh acts"
-
+    testCase "expected revisions retain their permanent exact-integer format bound" (fun () ->
         for value in [ -1L; Revision.Maximum + 1L; Int64.MaxValue ] do
             Expect.isError
                 (CaseFixtures.validate (request value (UnvalidatedCaseAct.Erase)))

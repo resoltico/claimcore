@@ -40,7 +40,7 @@ let private setup (database: PostgresFixture.Database) =
 
         let principal =
             PrincipalKey.human "https://issuer.example/" "reader"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute

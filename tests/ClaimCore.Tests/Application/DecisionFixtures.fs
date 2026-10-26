@@ -15,15 +15,15 @@ let installation = id 500
 
 let owner =
     PrincipalKey.human "https://issuer.example/" "owner"
-    |> Result.defaultWith failtest
+    |> Result.defaultWith (string >> failtest)
 
 let other =
     PrincipalKey.human "https://issuer.example/" "other"
-    |> Result.defaultWith failtest
+    |> Result.defaultWith (string >> failtest)
 
 let service =
     PrincipalKey.service "https://issuer.example/" "service"
-    |> Result.defaultWith failtest
+    |> Result.defaultWith (string >> failtest)
 
 let calendar =
     { new IBusinessCalendar with

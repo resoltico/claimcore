@@ -21,6 +21,7 @@
     <Compile Include="ContractDiscovery.fs" />
     <Compile Include="Discovery.fs" />
     <Compile Include="RemoteConfiguration.fs" />
+    <Compile Include="AccessFailure.fs" />
     <Compile Include="RemoteTls.fs" />
     <Compile Include="HttpRequestDeadline.fs" />
     <Compile Include="AccessTokens.fs" />

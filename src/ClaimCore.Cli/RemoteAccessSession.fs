@@ -25,7 +25,7 @@ module private RemoteTokenRequest =
                 | Error reason -> return Error reason
                 | Ok metadata ->
                     match Option.ofObj metadata.TokenEndpoint with
-                    | None -> return Error "OIDC_METADATA_INVALID"
+                    | None -> return Error AccessFailure.OidcMetadataInvalid
                     | Some address ->
                         return!
                             OAuthTokenClient.acquire
@@ -34,7 +34,7 @@ module private RemoteTokenRequest =
                                 configuration.ClientId
                                 secret
                                 cancelled
-            | _ -> return Error "OIDC_GRANT_INVALID"
+            | _ -> return Error AccessFailure.OidcGrantInvalid
         }
 
 /// Tokens remain process-local and are reacquired before expiry. No refresh token is persisted.
@@ -75,10 +75,10 @@ type RemoteAccessSession
 
     static member private ConfigurationFailure setting reason =
         match reason with
-        | "TLS_TRUST_ROOT_UNAVAILABLE" ->
+        | AccessFailure.TlsTrustRootUnavailable ->
             ClientFailure.ConfigurationIssue(setting, ConfigurationIssue.PrivateInputRefused)
-        | "TLS_TRUST_ROOT_INVALID"
-        | "TLS_TRUST_ROOT_SCOPE_INVALID" ->
+        | AccessFailure.TlsTrustRootInvalid
+        | AccessFailure.TlsTrustRootScopeInvalid ->
             ClientFailure.ConfigurationIssue(setting, ConfigurationIssue.Invalid)
         | _ -> ClientFailure.Configuration
 

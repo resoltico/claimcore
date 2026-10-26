@@ -149,40 +149,6 @@ let private reviewAndFences () =
         (Verdict.Refuse Refusal.OperationResolved)
         "Operational fence precedes append"
 
-    Expect.equal
-        (executeAuthority
-            installation
-            owner
-            request
-            { view with
-                Head =
-                    { head with
-                        Sequence = Revision.Maximum
-                    }
-            })
-        (Verdict.Refuse Refusal.LedgerExhausted)
-        "Capacity refuses fresh work"
-
-    let registered = admitted 106 owner AdmittedAuthorityAct.Register
-
-    let full =
-        { authorityView worker worker None with
-            Head =
-                { head with
-                    Sequence = Revision.Maximum
-                }
-        }
-
-    Expect.equal
-        (AuthorityExecution.review installation owner registered full.Read)
-        (Verdict.Refuse Refusal.ActorAlreadyRegistered)
-        "Preview applies target rules without a head"
-
-    Expect.equal
-        (executeAuthority installation owner registered full)
-        (Verdict.Refuse Refusal.LedgerExhausted)
-        "Execution capacity precedes target projection refusal"
-
     let scoped = actor owner (id 1) [] [ id 77, [ Role.Owner ] ]
 
     Expect.isEmpty
@@ -204,7 +170,5 @@ let tests =
                 "authority replay preserves attribution conflicts and current permissions"
                 replay
             testCase "owner provisioning has explicit idempotent identity" provision
-            testCase
-                "review fences capacity and installation offers use current authority"
-                reviewAndFences
+            testCase "review fences and installation offers use current authority" reviewAndFences
         ]

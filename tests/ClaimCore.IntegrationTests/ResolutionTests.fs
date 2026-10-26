@@ -159,7 +159,7 @@ let private foreign (database: PostgresFixture.Database) =
 
         let principal =
             PrincipalKey.human "https://issuer.example/" "another"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -211,7 +211,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
 
         let principal =
             PrincipalKey.human "https://issuer.example/" "disabled"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
             (Core.execute
@@ -256,7 +256,7 @@ let private authorityFence (database: PostgresFixture.Database) =
 
         let target =
             PrincipalKey.human "https://issuer.example/" "fenced-authority"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! resolved = resolve actor (id 130)
         Expect.equal resolved ResolveReply.NotAccepted "Authority identity is fenced"

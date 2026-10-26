@@ -100,6 +100,23 @@ module DiagnosticCodecs =
                 Refusals.actualRevision reason,
                 Refusals.parameters reason |> Map.ofList)
 
+    // Published shape order must survive removal of a shape's first diagnostic code.
+    let private shapeOrder ((names, action, hasRevision, location), _) =
+        let priority =
+            match action with
+            | RecommendedAction.CorrectInput -> 0
+            | RecommendedAction.ReadCurrent ->
+                if hasRevision then 1
+                elif location = 3 then 4
+                else 5
+            | RecommendedAction.NoneRequired -> 2
+            | RecommendedAction.StopAndInvestigate -> 3
+            | RecommendedAction.RetrySafe -> 6
+            | RecommendedAction.ReplayExact -> 7
+            | RecommendedAction.Reauthenticate -> 8
+
+        priority, names
+
     let diagnostic =
         RefusalCodes.all
         |> List.groupBy (fun code ->
@@ -107,6 +124,7 @@ module DiagnosticCodecs =
             RefusalCodes.action code,
             code = RefusalCode.RevisionConflict,
             targetKind code)
+        |> List.sortBy shapeOrder
         |> List.map (fun (key, rows) ->
             let codes = rows |> List.map RefusalCodes.token
 

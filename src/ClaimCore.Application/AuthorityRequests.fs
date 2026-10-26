@@ -35,34 +35,32 @@ module AuthorityRequests =
 
         { request with Act = act }
 
-    let toRecord (request: AdmittedAuthorityRequest) : AuthorityRequestRecord =
+    let private recordAct =
         let grant role target =
             {
                 Role = RoleTokens.token role
                 Scope = target
             }
 
-        let act =
-            match request.Act with
-            | AdmittedAuthorityAct.Register -> SharedAuthorityAct.Register
-            | AdmittedAuthorityAct.Grant(role, target) ->
-                SharedAuthorityAct.Grant(grant role target)
-            | AdmittedAuthorityAct.Revoke(role, target) ->
-                SharedAuthorityAct.Revoke(grant role target)
-            | AdmittedAuthorityAct.Enable -> SharedAuthorityAct.Enable
-            | AdmittedAuthorityAct.Disable -> SharedAuthorityAct.Disable
+        function
+        | AdmittedAuthorityAct.Register -> SharedAuthorityAct.Register
+        | AdmittedAuthorityAct.Grant(role, target) -> SharedAuthorityAct.Grant(grant role target)
+        | AdmittedAuthorityAct.Revoke(role, target) -> SharedAuthorityAct.Revoke(grant role target)
+        | AdmittedAuthorityAct.Enable -> SharedAuthorityAct.Enable
+        | AdmittedAuthorityAct.Disable -> SharedAuthorityAct.Disable
 
+    let toRecord (request: AdmittedAuthorityRequest) : AuthorityRequestRecord =
         {
             OperationId = request.OperationId
             Target = PrincipalKey.describe request.Target
-            Act = RecordedAuthorityAct.Operation act
+            Act = RecordedAuthorityAct.Operation(recordAct request.Act)
         }
 
     let private admittedAct =
         let grant make (value: GrantChange) =
             match RoleTokens.parse value.Role with
             | Some role -> Ok(make (role, value.Scope))
-            | None -> Error "AUTHORITY_ROLE_INVALID"
+            | None -> Error AuthorityInputFailure.RoleInvalid
 
         function
         | RecordedAuthorityAct.Operation SharedAuthorityAct.Register ->
@@ -74,9 +72,11 @@ module AuthorityRequests =
         | RecordedAuthorityAct.Operation SharedAuthorityAct.Enable -> Ok AdmittedAuthorityAct.Enable
         | RecordedAuthorityAct.Operation SharedAuthorityAct.Disable ->
             Ok AdmittedAuthorityAct.Disable
-        | RecordedAuthorityAct.ProvisionOwner -> Error "AUTHORITY_ACT_INVALID"
+        | RecordedAuthorityAct.ProvisionOwner -> Error AuthorityInputFailure.ActInvalid
 
-    let fromRecord (request: AuthorityRequestRecord) : Result<AdmittedAuthorityRequest, string> =
+    let fromRecord
+        (request: AuthorityRequestRecord)
+        : Result<AdmittedAuthorityRequest, AuthorityInputFailure> =
         match
             PrincipalKey.fromStorage
                 request.Target.Kind
@@ -91,7 +91,7 @@ module AuthorityRequests =
                     Target = target
                     Act = act
                 }
-        | Error _, _ -> Error "ACTOR_PRINCIPAL_INVALID"
+        | Error _, _ -> Error AuthorityInputFailure.PrincipalInvalid
         | _, Error error -> Error error
 
     let internal provisionRecord operationId target : AuthorityRequestRecord =
@@ -102,16 +102,10 @@ module AuthorityRequests =
         }
 
     let toInput (request: AdmittedAuthorityRequest) : ClaimCore.Domain.AuthorityRequest =
-        let record = toRecord request
-
         {
-            OperationId = record.OperationId
-            Target = record.Target
-            Act =
-                match record.Act with
-                | RecordedAuthorityAct.Operation act -> act
-                | RecordedAuthorityAct.ProvisionOwner ->
-                    invalidOp "Owner provisioning is administrative."
+            OperationId = request.OperationId
+            Target = PrincipalKey.describe request.Target
+            Act = recordAct request.Act
         }
 
     let admit

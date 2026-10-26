@@ -24,7 +24,10 @@ let private trustRootScope () =
         (value :> IDisposable).Dispose()
         failtest "A local test root must not authorize a remote production endpoint"
     | Error reason ->
-        Expect.equal reason "TLS_TRUST_ROOT_SCOPE_INVALID" "No remote custom trust root"
+        Expect.equal
+            (AccessFailures.token reason)
+            "TLS_TRUST_ROOT_SCOPE_INVALID"
+            "No remote custom trust root"
 
 let private leafPurpose () =
     use rsa = RSA.Create(2048)
