@@ -38,7 +38,7 @@ const lint = () =>
     [
       join(web, "node_modules/oxlint/bin/oxlint"),
       "--config",
-      ".oxlintrc.json",
+      "oxlint.config.ts",
       "--tsconfig",
       "tsconfig.app.json",
       resolve(work, "src"),
@@ -49,9 +49,15 @@ const lint = () =>
 try {
   mkdirSync(work);
   cpSync(join(checkout, "config"), join(temporary, "config"), { recursive: true });
-  for (const file of ["tsconfig.app.json", "tsconfig.base.json"]) {
+  for (const file of [
+    "tsconfig.app.json",
+    "tsconfig.base.json",
+    "oxlint.config.ts",
+    "package.json",
+  ]) {
     cpSync(join(web, file), join(work, file), { recursive: true });
   }
+  cpSync(join(web, "lint"), join(work, "lint"), { recursive: true });
   mkdirSync(join(temporary, "src/ClaimCore.Contract"), { recursive: true });
   cpSync(
     join(checkout, "src/ClaimCore.Contract/Localization"),
@@ -59,6 +65,7 @@ try {
     { recursive: true },
   );
   symlinkSync(join(web, "node_modules"), join(work, "node_modules"), "dir");
+  writeFileSync(join(temporary, "config/oxlint.json"), "{}");
   // Ported controls exercise the delivered boundary rules; full type-aware lint is a separate gate.
   const delivered = JSON.parse(readFileSync(join(web, ".oxlintrc.json"), "utf8"));
   const rules = new Set([
@@ -74,6 +81,7 @@ try {
     join(work, ".oxlintrc.json"),
     JSON.stringify({
       plugins: ["eslint", "import"],
+      jsPlugins: ["./lint/claimcore-plugin.mjs"],
       categories: {
         correctness: "off",
         suspicious: "off",
@@ -155,6 +163,76 @@ try {
         append("../contracts/client.ts", "export const cryptoControl = () => crypto.randomUUID();"),
     ],
   ];
+  const helper = () => {
+    mkdirSync(join(work, "src/other"), { recursive: true });
+    writeFileSync(join(work, "src/other/helper.ts"), "export const x = Date.now();");
+  };
+  controls.push(
+    [
+      "global Date",
+      "no-restricted-globals",
+      () => append(schema, "export const x = new globalThis.Date();"),
+    ],
+    [
+      "global random",
+      "no-restricted-globals",
+      () => append(schema, "export const x = globalThis.Math.random();"),
+    ],
+    [
+      "global timer",
+      "no-restricted-globals",
+      () => append(schema, "globalThis.setTimeout(() => {}, 0);"),
+    ],
+    [
+      "external dependency",
+      "no-restricted-paths",
+      () => prepend(schema, 'import Decimal from "decimal.js"; void Decimal;'),
+    ],
+    [
+      "sibling helper",
+      "no-restricted-paths",
+      () => {
+        helper();
+        prepend(schema, 'import { x } from "../other/helper"; void x;');
+      },
+    ],
+    [
+      "re-export helper",
+      "no-restricted-paths",
+      () => {
+        helper();
+        append(schema, 'export * from "../other/helper";');
+      },
+    ],
+    [
+      "dynamic helper",
+      "no-restricted-paths",
+      () => {
+        helper();
+        append(schema, 'export const x = import("../other/helper");');
+      },
+    ],
+    [
+      "computed import",
+      "no-restricted-syntax",
+      () => append(schema, "export const x = (path: string) => import(path);"),
+    ],
+    [
+      "protocol locale import",
+      "no-restricted-paths",
+      () => prepend(schema, 'import "../../../src/ClaimCore.Contract/Localization/en.json";'),
+    ],
+    ["unresolved import", "no-unresolved", () => prepend(schema, 'import "./nonexistent";')],
+    ["bare builtin", "no-nodejs-modules", () => prepend(schema, 'import "fs";')],
+  );
+  // The baseline includes the real protocol, type-only API and generated locale imports.
+  append(schema, 'export { isResponse as boundaryPositive } from "@contracts/client";');
+  append(schema, 'export const boundaryImportPositive = () => import("./strictJson");');
+  const positive = lint();
+  if (positive.status !== 0) {
+    throw new Error(`Positive controls failed:\n${positive.stdout}\n${positive.stderr}`);
+  }
+  reset("PASS allowed pure and type-only imports");
   for (const [name, rule, mutate] of controls) {
     mutate();
     const result = lint();
@@ -165,7 +243,7 @@ try {
     }
     reset(`PASS ${name} (${rule})`);
   }
-  process.stdout.write("PASS all 11 boundary controls\n");
+  process.stdout.write(`PASS all ${controls.length} boundary controls\n`);
 } finally {
   rmSync(temporary, { recursive: true, force: true });
 }

@@ -5,6 +5,6 @@ export const lintProjects = [
   { tsconfig: "tsconfig.test.json", paths: ["tests", "e2e"] },
   {
     tsconfig: "tsconfig.node.json",
-    paths: ["scripts", "lint", "vite.config.ts", "playwright.config.ts"],
+    paths: ["scripts", "lint", "oxlint.config.ts", "vite.config.ts", "playwright.config.ts"],
   },
 ];

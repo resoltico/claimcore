@@ -443,22 +443,30 @@
         ],
         "no-restricted-globals": [
           "error",
-          "fetch",
-          "XMLHttpRequest",
-          "WebSocket",
-          "EventSource",
-          "setTimeout",
-          "setInterval",
-          "require",
-          "Intl",
-          "crypto",
-          "process",
-          "window",
-          "navigator",
-          "localStorage",
-          "sessionStorage",
-          "performance",
-          "Date"
+          {
+            "globals": [
+              "fetch",
+              "XMLHttpRequest",
+              "WebSocket",
+              "EventSource",
+              "setTimeout",
+              "setInterval",
+              "require",
+              "Intl",
+              "crypto",
+              "process",
+              "window",
+              "navigator",
+              "localStorage",
+              "sessionStorage",
+              "performance",
+              "Date",
+              "globalThis",
+              "global",
+              "self"
+            ],
+            "checkGlobalObject": true
+          }
         ],
         "no-restricted-properties": [
           "error",
