@@ -118,6 +118,7 @@ module CliInvocations =
             )
             ->
             schemaSelector tail |> Result.map CliInvocation.Schema
+        | "schema" :: _ -> Error CliUsageIssue.Options
         | family :: _ when List.contains family [ "case"; "authority"; "operation"; "context" ] ->
             Ok(CliInvocation.Verb arguments)
         | head :: _ when List.contains head CliCommands.acts -> Error CliUsageIssue.Invocation

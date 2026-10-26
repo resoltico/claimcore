@@ -453,7 +453,6 @@
   "cli.usage.duplicateOption": "Opcija norādīta vairākas reizes: {flag}.",
   "cli.usage.missingValue": "Trūkst vērtības opcijai {flag}.",
   "cli.usage.synopsis": "Lietojums: {synopsis}",
-  "cli.usage.host": "Nederīgs {issue}. Skatiet komandas palīdzību.",
   "cli.family.case": "Lasīt un mainīt lietas.",
   "cli.family.authority": "Pārvaldīt dalībniekus un pilnvaras.",
   "cli.family.operation": "Novērot vai atrisināt identificētus pieprasījumus.",
@@ -464,5 +463,13 @@
   "cli.family.schema": "Lasīt protokola shēmas.",
   "cli.family.help": "Lasīt palīdzības tēmas.",
   "cli.delivery.unresolved": "Iznākums nav zināms. Atkārtojiet precīzo pieprasījumu ar {retryCommand} vai pārbaudiet galīgo iznākumu ar {resolveCommand}.",
-  "cli.usage.requestTooLarge": "Sagatavotais pieprasījums nedrīkst pārsniegt {maximumBytes} UTF-8 baitus."
+  "cli.usage.requestTooLarge": "Sagatavotais pieprasījums nedrīkst pārsniegt {maximumBytes} UTF-8 baitus.",
+  "cli.usage.helpTopic": "Nezināma palīdzības tēma.",
+  "cli.usage.helpOptions": "Palīdzībai norādiet vienu tēmu un vienu atbalstītu valodu; --format nav pieejams.",
+  "cli.usage.describeSelector": "Nezināma aprakstāmā darbība. Nenorādiet atlasi, lai redzētu visas darbības.",
+  "cli.usage.describeOptions": "Nederīgas describe opcijas. Izmantojiet --format text|json; --language ir pieejama tikai teksta izvadei.",
+  "cli.usage.schemaSelector": "Nezināma shēmas atlase. Norādiet shēmas nosaukumu vai galapunktu un request vai response.",
+  "cli.usage.schemaOptions": "Schema pieņem nosaukumu vai galapunktu un virzienu bez opcijām.",
+  "cli.usage.versionOptions": "Version pieņem tikai --json.",
+  "cli.usage.invocation": "Nederīgs {command} izsaukums. Šī komanda nepieņem opcijas vai operandus."
 }

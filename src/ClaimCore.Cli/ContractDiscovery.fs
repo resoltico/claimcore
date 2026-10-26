@@ -57,15 +57,18 @@ module ContractDiscovery =
         else
             let syntax =
                 match topic with
-                | "describe" ->
-                    [ "describe [family verb] [--format text|json] [--language en|lv|ar]" ]
-                | "schema" -> [ "schema name"; "schema endpoint request|response" ]
-                | "version" -> [ "version [--json]" ]
-                | "help" -> [ "help [topic] [--language en|lv|ar]" ]
+                | "describe"
+                | "schema"
+                | "version"
+                | "help" -> CliCommands.synopses topic
                 | "call"
                 | "session"
                 | "CLI_PROTOCOL_GUIDANCE" ->
-                    [ "schema invocation"; "schema response"; "help call"; "help session" ]
+                    (if topic = "CLI_PROTOCOL_GUIDANCE" then
+                         []
+                     else
+                         CliCommands.synopses topic)
+                    @ [ "schema invocation"; "schema response"; "help call"; "help session" ]
                 | "examples" ->
                     [ "describe case open"; "case get REF"; "schema operation.execute request" ]
                 | _ -> []

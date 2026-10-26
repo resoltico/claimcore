@@ -453,7 +453,6 @@
   "cli.usage.duplicateOption": "Option supplied more than once: {flag}.",
   "cli.usage.missingValue": "Missing value for {flag}.",
   "cli.usage.synopsis": "Usage: {synopsis}",
-  "cli.usage.host": "Invalid {issue}. See help for this command.",
   "cli.family.case": "Read and change cases.",
   "cli.family.authority": "Manage actors and grants.",
   "cli.family.operation": "Observe or resolve identified requests.",
@@ -464,5 +463,13 @@
   "cli.family.schema": "Read protocol schemas.",
   "cli.family.help": "Read help topics.",
   "cli.delivery.unresolved": "Outcome unresolved. Retry the exact request with {retryCommand}, or check its final outcome with {resolveCommand}.",
-  "cli.usage.requestTooLarge": "The prepared request must not exceed {maximumBytes} UTF-8 bytes."
+  "cli.usage.requestTooLarge": "The prepared request must not exceed {maximumBytes} UTF-8 bytes.",
+  "cli.usage.helpTopic": "Unknown help topic.",
+  "cli.usage.helpOptions": "Help accepts one topic and one supported language; --format is not available.",
+  "cli.usage.describeSelector": "Unknown operation to describe. Omit the selector to list operations.",
+  "cli.usage.describeOptions": "Invalid describe options. Use --format text|json; --language is available only with text output.",
+  "cli.usage.schemaSelector": "Unknown schema selection. Use a schema name or an endpoint followed by request or response.",
+  "cli.usage.schemaOptions": "Schema accepts a name or an endpoint and direction, without options.",
+  "cli.usage.versionOptions": "Version accepts only --json.",
+  "cli.usage.invocation": "Invalid invocation of {command}. This command accepts no options or operands."
 }

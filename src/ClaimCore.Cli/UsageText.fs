@@ -66,3 +66,24 @@ module UsageText =
                         (CliMessage.Suggestion(CliIdentity.programName + " " + suggestion)))
 
         String.concat "\n" ((errors |> List.map (line language)) @ hints) + "\n"
+
+    let renderHost language arguments issue =
+        let command = List.tryHead arguments |> Option.defaultValue "help"
+
+        let problem =
+            match command, issue with
+            | "help", CliUsageIssue.Topic -> CliMessage.UnknownHelpTopic
+            | "help", _ -> CliMessage.InvalidHelpOptions
+            | "describe", CliUsageIssue.Selector -> CliMessage.InvalidDescribeSelector
+            | "describe", _ -> CliMessage.InvalidDescribeOptions
+            | "schema", CliUsageIssue.Selector -> CliMessage.InvalidSchemaSelector
+            | "schema", _ -> CliMessage.InvalidSchemaOptions
+            | "version", _ -> CliMessage.InvalidVersionOptions
+            | _ -> CliMessage.InvalidInvocation command
+
+        let hints =
+            CliCommands.synopses command
+            |> List.map (fun syntax ->
+                message language (CliMessage.Synopsis(CliIdentity.programName + " " + syntax)))
+
+        String.concat "\n" (message language problem :: hints) + "\n"

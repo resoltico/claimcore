@@ -453,7 +453,6 @@
   "cli.usage.duplicateOption": "تم تقديم الخيار أكثر من مرة: {flag}.",
   "cli.usage.missingValue": "قيمة الخيار {flag} مفقودة.",
   "cli.usage.synopsis": "الاستخدام: {synopsis}",
-  "cli.usage.host": "{issue} غير صالح. راجع مساعدة هذا الأمر.",
   "cli.family.case": "قراءة القضايا وتغييرها.",
   "cli.family.authority": "إدارة الجهات والصلاحيات.",
   "cli.family.operation": "مراقبة الطلبات المعرّفة أو حسمها.",
@@ -464,5 +463,13 @@
   "cli.family.schema": "قراءة مخططات البروتوكول.",
   "cli.family.help": "قراءة مواضيع المساعدة.",
   "cli.delivery.unresolved": "النتيجة غير محسومة. أعد الطلب نفسه باستخدام {retryCommand} أو تحقق من نتيجته النهائية باستخدام {resolveCommand}.",
-  "cli.usage.requestTooLarge": "يجب ألا يتجاوز الطلب المجهز {maximumBytes} بايت بترميز UTF-8."
+  "cli.usage.requestTooLarge": "يجب ألا يتجاوز الطلب المجهز {maximumBytes} بايت بترميز UTF-8.",
+  "cli.usage.helpTopic": "موضوع المساعدة غير معروف.",
+  "cli.usage.helpOptions": "تقبل المساعدة موضوعًا واحدًا ولغة مدعومة واحدة؛ الخيار --format غير متاح.",
+  "cli.usage.describeSelector": "العملية المطلوب وصفها غير معروفة. احذف المحدد لعرض العمليات.",
+  "cli.usage.describeOptions": "خيارات describe غير صالحة. استخدم --format text|json؛ يتاح --language مع الإخراج النصي فقط.",
+  "cli.usage.schemaSelector": "اختيار المخطط غير معروف. استخدم اسم مخطط أو نقطة نهاية تتبعها request أو response.",
+  "cli.usage.schemaOptions": "يقبل schema اسمًا أو نقطة نهاية واتجاهًا، دون خيارات.",
+  "cli.usage.versionOptions": "يقبل version الخيار --json فقط.",
+  "cli.usage.invocation": "استدعاء {command} غير صالح. لا يقبل هذا الأمر خيارات أو معاملات."
 }

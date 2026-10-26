@@ -3343,15 +3343,6 @@
     "language": "en"
   },
   {
-    "arguments": {
-      "issue": "\u00ABissue\u00BB"
-    },
-    "expected": "Invalid \u00ABissue\u00BB. See help for this command.",
-    "isolated": "Invalid \u00ABissue\u00BB. See help for this command.",
-    "key": "cli.usage.host",
-    "language": "en"
-  },
-  {
     "arguments": {},
     "expected": "Read and change cases.",
     "isolated": "Read and change cases.",
@@ -6774,15 +6765,6 @@
     "expected": "Lietojums: \u00ABsynopsis\u00BB",
     "isolated": "Lietojums: \u00ABsynopsis\u00BB",
     "key": "cli.usage.synopsis",
-    "language": "lv"
-  },
-  {
-    "arguments": {
-      "issue": "\u00ABissue\u00BB"
-    },
-    "expected": "Neder\u012Bgs \u00ABissue\u00BB. Skatiet komandas pal\u012Bdz\u012Bbu.",
-    "isolated": "Neder\u012Bgs \u00ABissue\u00BB. Skatiet komandas pal\u012Bdz\u012Bbu.",
-    "key": "cli.usage.host",
     "language": "lv"
   },
   {
@@ -10211,15 +10193,6 @@
     "language": "ar"
   },
   {
-    "arguments": {
-      "issue": "\u00ABissue\u00BB"
-    },
-    "expected": "\u00ABissue\u00BB \u063A\u064A\u0631 \u0635\u0627\u0644\u062D. \u0631\u0627\u062C\u0639 \u0645\u0633\u0627\u0639\u062F\u0629 \u0647\u0630\u0627 \u0627\u0644\u0623\u0645\u0631.",
-    "isolated": "\u2068\u00ABissue\u00BB\u2069 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D. \u0631\u0627\u062C\u0639 \u0645\u0633\u0627\u0639\u062F\u0629 \u0647\u0630\u0627 \u0627\u0644\u0623\u0645\u0631.",
-    "key": "cli.usage.host",
-    "language": "ar"
-  },
-  {
     "arguments": {},
     "expected": "\u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0642\u0636\u0627\u064A\u0627 \u0648\u062A\u063A\u064A\u064A\u0631\u0647\u0627.",
     "isolated": "\u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0642\u0636\u0627\u064A\u0627 \u0648\u062A\u063A\u064A\u064A\u0631\u0647\u0627.",
@@ -10299,6 +10272,180 @@
     "expected": "\u064A\u062C\u0628 \u0623\u0644\u0627 \u064A\u062A\u062C\u0627\u0648\u0632 \u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0645\u062C\u0647\u0632 \u00ABmaximumBytes\u00BB \u0628\u0627\u064A\u062A \u0628\u062A\u0631\u0645\u064A\u0632 UTF-8.",
     "isolated": "\u064A\u062C\u0628 \u0623\u0644\u0627 \u064A\u062A\u062C\u0627\u0648\u0632 \u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0645\u062C\u0647\u0632 \u2068\u00ABmaximumBytes\u00BB\u2069 \u0628\u0627\u064A\u062A \u0628\u062A\u0631\u0645\u064A\u0632 UTF-8.",
     "key": "cli.usage.requestTooLarge",
+    "language": "ar"
+  },
+  {
+    "arguments": {},
+    "expected": "Unknown help topic.",
+    "isolated": "Unknown help topic.",
+    "key": "cli.usage.helpTopic",
+    "language": "en"
+  },
+  {
+    "arguments": {},
+    "expected": "Help accepts one topic and one supported language; --format is not available.",
+    "isolated": "Help accepts one topic and one supported language; --format is not available.",
+    "key": "cli.usage.helpOptions",
+    "language": "en"
+  },
+  {
+    "arguments": {},
+    "expected": "Unknown operation to describe. Omit the selector to list operations.",
+    "isolated": "Unknown operation to describe. Omit the selector to list operations.",
+    "key": "cli.usage.describeSelector",
+    "language": "en"
+  },
+  {
+    "arguments": {},
+    "expected": "Invalid describe options. Use --format text|json; --language is available only with text output.",
+    "isolated": "Invalid describe options. Use --format text|json; --language is available only with text output.",
+    "key": "cli.usage.describeOptions",
+    "language": "en"
+  },
+  {
+    "arguments": {},
+    "expected": "Unknown schema selection. Use a schema name or an endpoint followed by request or response.",
+    "isolated": "Unknown schema selection. Use a schema name or an endpoint followed by request or response.",
+    "key": "cli.usage.schemaSelector",
+    "language": "en"
+  },
+  {
+    "arguments": {},
+    "expected": "Schema accepts a name or an endpoint and direction, without options.",
+    "isolated": "Schema accepts a name or an endpoint and direction, without options.",
+    "key": "cli.usage.schemaOptions",
+    "language": "en"
+  },
+  {
+    "arguments": {},
+    "expected": "Version accepts only --json.",
+    "isolated": "Version accepts only --json.",
+    "key": "cli.usage.versionOptions",
+    "language": "en"
+  },
+  {
+    "arguments": {
+      "command": "«command»"
+    },
+    "expected": "Invalid invocation of «command». This command accepts no options or operands.",
+    "isolated": "Invalid invocation of «command». This command accepts no options or operands.",
+    "key": "cli.usage.invocation",
+    "language": "en"
+  },
+  {
+    "arguments": {},
+    "expected": "Nezināma palīdzības tēma.",
+    "isolated": "Nezināma palīdzības tēma.",
+    "key": "cli.usage.helpTopic",
+    "language": "lv"
+  },
+  {
+    "arguments": {},
+    "expected": "Palīdzībai norādiet vienu tēmu un vienu atbalstītu valodu; --format nav pieejams.",
+    "isolated": "Palīdzībai norādiet vienu tēmu un vienu atbalstītu valodu; --format nav pieejams.",
+    "key": "cli.usage.helpOptions",
+    "language": "lv"
+  },
+  {
+    "arguments": {},
+    "expected": "Nezināma aprakstāmā darbība. Nenorādiet atlasi, lai redzētu visas darbības.",
+    "isolated": "Nezināma aprakstāmā darbība. Nenorādiet atlasi, lai redzētu visas darbības.",
+    "key": "cli.usage.describeSelector",
+    "language": "lv"
+  },
+  {
+    "arguments": {},
+    "expected": "Nederīgas describe opcijas. Izmantojiet --format text|json; --language ir pieejama tikai teksta izvadei.",
+    "isolated": "Nederīgas describe opcijas. Izmantojiet --format text|json; --language ir pieejama tikai teksta izvadei.",
+    "key": "cli.usage.describeOptions",
+    "language": "lv"
+  },
+  {
+    "arguments": {},
+    "expected": "Nezināma shēmas atlase. Norādiet shēmas nosaukumu vai galapunktu un request vai response.",
+    "isolated": "Nezināma shēmas atlase. Norādiet shēmas nosaukumu vai galapunktu un request vai response.",
+    "key": "cli.usage.schemaSelector",
+    "language": "lv"
+  },
+  {
+    "arguments": {},
+    "expected": "Schema pieņem nosaukumu vai galapunktu un virzienu bez opcijām.",
+    "isolated": "Schema pieņem nosaukumu vai galapunktu un virzienu bez opcijām.",
+    "key": "cli.usage.schemaOptions",
+    "language": "lv"
+  },
+  {
+    "arguments": {},
+    "expected": "Version pieņem tikai --json.",
+    "isolated": "Version pieņem tikai --json.",
+    "key": "cli.usage.versionOptions",
+    "language": "lv"
+  },
+  {
+    "arguments": {
+      "command": "«command»"
+    },
+    "expected": "Nederīgs «command» izsaukums. Šī komanda nepieņem opcijas vai operandus.",
+    "isolated": "Nederīgs «command» izsaukums. Šī komanda nepieņem opcijas vai operandus.",
+    "key": "cli.usage.invocation",
+    "language": "lv"
+  },
+  {
+    "arguments": {},
+    "expected": "موضوع المساعدة غير معروف.",
+    "isolated": "موضوع المساعدة غير معروف.",
+    "key": "cli.usage.helpTopic",
+    "language": "ar"
+  },
+  {
+    "arguments": {},
+    "expected": "تقبل المساعدة موضوعًا واحدًا ولغة مدعومة واحدة؛ الخيار --format غير متاح.",
+    "isolated": "تقبل المساعدة موضوعًا واحدًا ولغة مدعومة واحدة؛ الخيار --format غير متاح.",
+    "key": "cli.usage.helpOptions",
+    "language": "ar"
+  },
+  {
+    "arguments": {},
+    "expected": "العملية المطلوب وصفها غير معروفة. احذف المحدد لعرض العمليات.",
+    "isolated": "العملية المطلوب وصفها غير معروفة. احذف المحدد لعرض العمليات.",
+    "key": "cli.usage.describeSelector",
+    "language": "ar"
+  },
+  {
+    "arguments": {},
+    "expected": "خيارات describe غير صالحة. استخدم --format text|json؛ يتاح --language مع الإخراج النصي فقط.",
+    "isolated": "خيارات describe غير صالحة. استخدم --format text|json؛ يتاح --language مع الإخراج النصي فقط.",
+    "key": "cli.usage.describeOptions",
+    "language": "ar"
+  },
+  {
+    "arguments": {},
+    "expected": "اختيار المخطط غير معروف. استخدم اسم مخطط أو نقطة نهاية تتبعها request أو response.",
+    "isolated": "اختيار المخطط غير معروف. استخدم اسم مخطط أو نقطة نهاية تتبعها request أو response.",
+    "key": "cli.usage.schemaSelector",
+    "language": "ar"
+  },
+  {
+    "arguments": {},
+    "expected": "يقبل schema اسمًا أو نقطة نهاية واتجاهًا، دون خيارات.",
+    "isolated": "يقبل schema اسمًا أو نقطة نهاية واتجاهًا، دون خيارات.",
+    "key": "cli.usage.schemaOptions",
+    "language": "ar"
+  },
+  {
+    "arguments": {},
+    "expected": "يقبل version الخيار --json فقط.",
+    "isolated": "يقبل version الخيار --json فقط.",
+    "key": "cli.usage.versionOptions",
+    "language": "ar"
+  },
+  {
+    "arguments": {
+      "command": "«command»"
+    },
+    "expected": "استدعاء «command» غير صالح. لا يقبل هذا الأمر خيارات أو معاملات.",
+    "isolated": "استدعاء \\u2068«command»\\u2069 غير صالح. لا يقبل هذا الأمر خيارات أو معاملات.",
+    "key": "cli.usage.invocation",
     "language": "ar"
   }
 ]

@@ -190,3 +190,83 @@ let tests =
     |> List.map (fun example -> testCase example.Name (qualify example))
     |> testList "published CLI usage errors"
     |> testSequenced
+
+let private hostExamples =
+    [
+        "help topic", [ "help"; "unknown-topic" ], "helpTopic", "help [topic]"
+        "help options", [ "help"; "--format"; "json" ], "helpOptions", "help [topic]"
+        "describe selector",
+        [ "describe"; "case"; "bad" ],
+        "describeSelector",
+        "describe [family verb]"
+        "describe options",
+        [ "describe"; "--format"; "json" ],
+        "describeOptions",
+        "describe [family verb]"
+        "schema selector", [ "schema"; "unknown-schema" ], "schemaSelector", "schema name"
+        "schema options", [ "schema"; "invocation" ], "schemaOptions", "schema name"
+        "version options", [ "version"; "--bad" ], "versionOptions", "version [--json]"
+        "call invocation", [ "call"; "--retry" ], "invocation", "call"
+        "session invocation", [ "session"; "extra" ], "invocation", "session"
+    ]
+
+let private qualifyHost (arguments, key, syntax) () =
+    let directory = Directory.CreateTempSubdirectory("claimcore-cli-host-usage-")
+
+    try
+        let root = RepositoryRoot.find ()
+        let cli = PublishedProcesses.publish root directory.FullName "ClaimCore.Cli"
+
+        use expected =
+            JsonDocument.Parse(
+                File.ReadAllBytes(Path.Combine(root, "tests/fixtures/rendered-messages.json"))
+            )
+
+        for language in
+            (if key = "schemaSelector" then
+                 [ "en" ]
+             else
+                 LocalizationPolicy.languages) do
+            let result =
+                ProcessRunner.dotnet
+                    8_000
+                    cli
+                    (if key = "schemaSelector" then
+                         arguments
+                     else
+                         arguments @ [ "--language"; language ])
+                    (Dictionary<string, string>())
+                    None
+
+            Expect.equal result.ExitCode 64 "Offline refusal before configuration or stdin"
+            Expect.isEmpty result.StandardOutput "No request or reply is emitted"
+            let text = Encoding.UTF8.GetString result.StandardError
+
+            let values =
+                if key = "invocation" then
+                    [ "command", List.head arguments ]
+                else
+                    []
+
+            Expect.stringContains
+                text
+                (frozen expected.RootElement language key values)
+                "Specific localized problem"
+
+            Expect.stringContains text ("claimcore " + syntax) "Correct host-owned syntax"
+            Expect.isLessThanOrEqual (text.TrimEnd().Split('\n').Length) 3 "Concise host guidance"
+
+            for leaked in [ "Invalid Topic"; "Nederīgs Topic"; "Selector"; "Options"; "Invocation" ] do
+                Expect.isFalse
+                    (text.Contains(leaked, StringComparison.Ordinal))
+                    "No internal enum names"
+    finally
+        directory.Delete true
+
+[<Tests>]
+let hostTests =
+    hostExamples
+    |> List.map (fun (name, arguments, key, syntax) ->
+        testCase name (qualifyHost (arguments, key, syntax)))
+    |> testList "published CLI host usage errors"
+    |> testSequenced

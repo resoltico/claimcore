@@ -20,19 +20,17 @@ let private writeText (output: System.IO.Stream) (value: string) =
     output.Write(Encoding.UTF8.GetBytes value)
     output.Flush()
 
-let private unsupported errors language issue =
-    writeText
-        errors
-        (MessageCatalogs.renderCli language (CliMessage.HostUsage(string issue)) + "\n")
+let private unsupported errors language arguments issue =
+    writeText errors (UsageText.renderHost language arguments issue)
 
     64
 
-let private writeDiscovery output errors language response =
+let private writeDiscovery output errors language command response =
     match response with
     | Some bytes ->
         writeBytes output bytes
         0
-    | None -> unsupported errors language CliUsageIssue.Selector
+    | None -> unsupported errors language [ command ] CliUsageIssue.Selector
 
 let private discovery output errors =
     function
@@ -46,13 +44,13 @@ let private discovery output errors =
         Discovery.versionJson () |> writeBytes output
         0
     | CliInvocation.Describe(selector, false, _) ->
-        Discovery.describe selector |> writeDiscovery output errors "en"
+        Discovery.describe selector |> writeDiscovery output errors "en" "describe"
     | CliInvocation.Describe(selector, true, language) ->
         Discovery.describeText language selector
-        |> writeDiscovery output errors language
+        |> writeDiscovery output errors language "describe"
     | CliInvocation.Schema selection ->
-        Discovery.schema selection |> writeDiscovery output errors "en"
-    | _ -> unsupported errors "en" CliUsageIssue.Invocation
+        Discovery.schema selection |> writeDiscovery output errors "en" "schema"
+    | _ -> unsupported errors "en" [] CliUsageIssue.Invocation
 
 let private remote input output errors session language =
     use processor = new RemoteFrameProcessor(input, output, errors, language)
@@ -120,7 +118,12 @@ let private dispatch output errors argv =
             remote input output errors true "en"
         | Ok(CliInvocation.Verb arguments) -> verb output errors arguments
         | Ok invocation -> discovery output errors invocation
-        | Error issue -> unsupported errors (CliInvocations.usageLanguage (Array.toList argv)) issue
+        | Error issue ->
+            unsupported
+                errors
+                (CliInvocations.usageLanguage (Array.toList argv))
+                (Array.toList argv)
+                issue
     with _ ->
         try
             writeText

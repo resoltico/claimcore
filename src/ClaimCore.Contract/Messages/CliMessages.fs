@@ -33,7 +33,14 @@ type CliMessage =
     | [<MessageKey("cli.usage.duplicateOption")>] DuplicateOption of flag: string
     | [<MessageKey("cli.usage.missingValue")>] MissingValue of flag: string
     | [<MessageKey("cli.usage.synopsis")>] Synopsis of synopsis: string
-    | [<MessageKey("cli.usage.host")>] HostUsage of issue: string
+    | [<MessageKey("cli.usage.helpTopic")>] UnknownHelpTopic
+    | [<MessageKey("cli.usage.helpOptions")>] InvalidHelpOptions
+    | [<MessageKey("cli.usage.describeSelector")>] InvalidDescribeSelector
+    | [<MessageKey("cli.usage.describeOptions")>] InvalidDescribeOptions
+    | [<MessageKey("cli.usage.schemaSelector")>] InvalidSchemaSelector
+    | [<MessageKey("cli.usage.schemaOptions")>] InvalidSchemaOptions
+    | [<MessageKey("cli.usage.versionOptions")>] InvalidVersionOptions
+    | [<MessageKey("cli.usage.invocation")>] InvalidInvocation of command: string
     | [<MessageKey("cli.usage.requestTooLarge")>] RequestTooLarge of maximumBytes: string
     | [<MessageKey("cli.delivery.unresolved")>] UnresolvedDelivery of
         retryCommand: string *
