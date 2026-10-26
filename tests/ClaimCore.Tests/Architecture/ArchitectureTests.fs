@@ -160,6 +160,10 @@ let private serializer () =
         "writer control"
         (Types().That().HaveFullName(typeof<JsonWriterCall>.FullName |> nonNull))
 
+let private durableCodecs () =
+    check "durable" (Assembly.Load "ClaimCore.RecordFormat")
+    rejects "durable" typeof<WireCodecCall>
+
 let private publishedClosure () =
     let directory = Directory.CreateTempSubdirectory("claimcore-client-closure-")
 
@@ -193,6 +197,7 @@ let tests =
             testCase
                 "pure projects reject ambient effects including timezone and resources"
                 ambientEffects
+            testCase "durable codecs reject wire codec dependencies" durableCodecs
             testCase "JSON has no project dependencies" jsonDependencies
             testCase "only Web and Database may reference Postgres" postgres
             testCase

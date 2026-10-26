@@ -15,7 +15,7 @@
 -- later policy change never invalidates accepted rows.
 --
 -- Permanent byte bounds and scalar grammars: src/ClaimCore.Contract/Formats.fs.
--- Retained byte bounds (RecordFormat FormatLimits): free business text is at most 1024 UTF-8
+-- Retained byte bounds (Contract Formats): free business text is at most 1024 UTF-8
 -- bytes; a ledger payload (framed request plus snapshot) is at most 32768 bytes.
 
 CREATE SCHEMA claimcore;
@@ -63,8 +63,8 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
-    entry_format smallint NOT NULL CHECK (entry_format = 3),
-    scope text NOT NULL CHECK (scope IN ('CASE', 'AUTHORITY')),
+    entry_format smallint NOT NULL CHECK (entry_format = 1),
+    subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY')),
     act text NOT NULL,
     -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
     operation_id uuid NOT NULL UNIQUE
@@ -85,14 +85,14 @@ CREATE TABLE claimcore.ledger (
     payload bytea,
     payload_nonce bytea,
 
-    CONSTRAINT ledger_scope_shape CHECK (
-        (scope = 'CASE'
+    CONSTRAINT ledger_subject_shape CHECK (
+        (subject_kind = 'CASE'
             AND case_revision IS NOT NULL
             AND business_date IS NOT NULL
             AND act IN ('OPEN', 'AMEND_REGISTRATION', 'CORRECT', 'DECIDE',
                         'WITHDRAW_DECISION', 'RECORD_PAYMENT', 'CLEAR_PAYMENT', 'CLOSE',
                         'REOPEN', 'VOID', 'REINSTATE', 'ERASE'))
-        OR (scope = 'AUTHORITY'
+        OR (subject_kind = 'AUTHORITY'
             AND case_revision IS NULL
             AND business_date IS NULL
             AND payload IS NOT NULL
@@ -184,14 +184,14 @@ BEGIN
         RAISE EXCEPTION 'ledger rows are never removed' USING ERRCODE = 'CC003';
     END IF;
 
-    IF OLD.scope <> 'CASE'
+    IF OLD.subject_kind <> 'CASE'
        OR NEW.payload IS NOT NULL
        OR NEW.payload_nonce IS NOT NULL
-       OR (NEW.sequence, NEW.previous_hash, NEW.entry_hash, NEW.entry_format, NEW.scope,
+       OR (NEW.sequence, NEW.previous_hash, NEW.entry_hash, NEW.entry_format, NEW.subject_kind,
            NEW.act, NEW.operation_id, NEW.actor_id, NEW.recorded_at, NEW.subject_id,
            NEW.case_revision, NEW.business_date, NEW.payload_commitment)
           IS DISTINCT FROM
-          (OLD.sequence, OLD.previous_hash, OLD.entry_hash, OLD.entry_format, OLD.scope,
+          (OLD.sequence, OLD.previous_hash, OLD.entry_hash, OLD.entry_format, OLD.subject_kind,
            OLD.act, OLD.operation_id, OLD.actor_id, OLD.recorded_at, OLD.subject_id,
            OLD.case_revision, OLD.business_date, OLD.payload_commitment)
     THEN
@@ -223,7 +223,7 @@ DECLARE
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM claimcore.ledger
-         WHERE scope = 'CASE' AND subject_id = target_case_id AND act = 'ERASE'
+         WHERE subject_kind = 'CASE' AND subject_id = target_case_id AND act = 'ERASE'
     ) THEN
         RAISE EXCEPTION 'case has no accepted ERASE entry'
             USING ERRCODE = 'CC002';
@@ -231,7 +231,7 @@ BEGIN
 
     UPDATE claimcore.ledger
        SET payload = NULL, payload_nonce = NULL
-     WHERE scope = 'CASE' AND subject_id = target_case_id AND payload IS NOT NULL;
+     WHERE subject_kind = 'CASE' AND subject_id = target_case_id AND payload IS NOT NULL;
 
     GET DIAGNOSTICS erased = ROW_COUNT;
     RETURN erased;
@@ -248,7 +248,7 @@ CREATE TABLE claimcore.cases (
     -- Authored spelling; immutable, never reused, retained after erasure.
     case_reference text COLLATE "C" NOT NULL,
     revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
-    disposition text NOT NULL CHECK (disposition IN ('ACTIVE', 'VOIDED', 'ERASED')),
+    state text NOT NULL CHECK (state IN ('ACTIVE', 'VOIDED', 'ERASED')),
 
     -- Business payload columns follow Contract FieldTable; case_reference above survives erasure.
     incident_date date CHECK (incident_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
@@ -267,11 +267,11 @@ CREATE TABLE claimcore.cases (
     -- Printable ASCII without space: PRECIS IdentifierClass's ASCII subset (RFC 8264 4.2).
     CONSTRAINT reference_shape CHECK (case_reference ~ '^[!-~]{1,80}$'),
     CONSTRAINT erased_shape CHECK (
-        (disposition = 'ERASED' AND num_nonnulls(
+        (state = 'ERASED' AND num_nonnulls(
             incident_date, incident_notification_date, incident_country, claimant_name,
             insurer_name, claimed_amount, claimed_currency, payment_decision_date,
             payable_amount, payable_currency, payment_date, status) = 0)
-        OR (disposition <> 'ERASED' AND num_nulls(
+        OR (state <> 'ERASED' AND num_nulls(
             incident_date, incident_notification_date, incident_country, claimant_name,
             insurer_name, claimed_amount, claimed_currency, status) = 0)
     ),

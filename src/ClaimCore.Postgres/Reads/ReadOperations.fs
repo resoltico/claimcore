@@ -143,7 +143,7 @@ module internal ReadOperations =
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE scope='CASE' AND subject_id=$1 AND case_revision>$2 ORDER BY case_revision LIMIT $3")
+                        ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 AND case_revision>$2 ORDER BY case_revision LIMIT $3")
                         [| box record.CaseId; box after; box (limit + 1) |]
                         token
 

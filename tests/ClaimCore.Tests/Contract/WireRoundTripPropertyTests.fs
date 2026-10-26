@@ -498,7 +498,14 @@ let private closedUnionCoverage (source: Seeds) =
                             FSharpValue.GetUnionFields(value, kind) |> fst |> _.Tag)
                         |> Set.ofSeq
 
-                    for case in FSharpType.GetUnionCases kind do
+                    // RecordGroup is shared with corrections; diagnostic targets admit
+                    // only Payment. Its other cases are not values of this wire codec.
+                    let cases =
+                        FSharpType.GetUnionCases kind
+                        |> Array.filter (fun case ->
+                            kind <> typeof<RecordGroup> || case.Name = "Payment")
+
+                    for case in cases do
                         if not (Set.contains case.Tag actual) then
                             yield kind.Name + "." + case.Name
         ]

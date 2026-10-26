@@ -62,9 +62,9 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 7,
+        "format": 1,
         "operationId": "10000000-0000-4000-8000-000000000001",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
@@ -73,7 +73,7 @@
         "act": {
           "groups": {
             "decision": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "payableAmount": "750.5",
                 "payableCurrency": "EUR",
@@ -81,19 +81,19 @@
               }
             },
             "payment": {
-              "mode": "CLEAR"
+              "kind": "CLEAR"
             },
             "registration": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             }
           },
           "kind": "CORRECT"
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 5,
-        "format": 7,
+        "format": 1,
         "operationId": "10000000-0000-4000-8000-000000000006",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
@@ -105,9 +105,9 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 6,
-        "format": 7,
+        "format": 1,
         "operationId": "10000000-0000-4000-8000-000000000007",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
@@ -118,33 +118,35 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 9007199254740990,
-        "format": 7,
+        "format": 1,
         "operationId": "10000000-0000-4000-8000-000000000009",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     }
   ],
   "snapshot": {
     "name": "ACTIVE OPENED snapshot at revision 1",
     "value": {
-      "disposition": "ACTIVE",
-      "fields": {
-        "caseReference": "Demo-0001",
-        "status": "OPENED",
-        "registration": {
-          "incidentDate": "2026-08-01",
-          "incidentNotificationDate": "2026-08-03",
-          "incidentCountry": "LV",
-          "claimantName": "Rīgas Tulkojumu Birojs SIA",
-          "insurerName": "شركة التأمين المثال",
-          "claimedAmount": "1000",
-          "claimedCurrency": "EUR"
-        },
-        "decision": null,
-        "payment": null
-      },
-      "format": 5,
-      "revision": 1
+      "format": 1,
+      "revision": 1,
+      "state": {
+        "kind": "ACTIVE",
+        "fields": {
+          "caseReference": "Demo-0001",
+          "status": "OPENED",
+          "registration": {
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "incidentCountry": "LV",
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "insurerName": "شركة التأمين المثال",
+            "claimedAmount": "1000",
+            "claimedCurrency": "EUR"
+          },
+          "decision": null,
+          "payment": null
+        }
+      }
     }
   },
   "authorityRecord": {
@@ -158,14 +160,14 @@
           "kind": "CASE"
         }
       },
-      "format": 4,
+      "format": 1,
       "operationId": "20000000-0000-4000-8000-000000000002",
       "target": {
         "issuer": "https://issuer.example/",
         "kind": "HUMAN",
         "subject": "handler-1"
       },
-      "scope": "AUTHORITY"
+      "kind": "AUTHORITY"
     }
   },
   "caseReferenceIds": {
@@ -212,67 +214,6 @@
       "subjectId": "b0000000-0000-4000-8000-000000000002"
     }
   ],
-  "ledgerPayloads": {
-    "case": {
-      "request": {
-        "act": {
-          "kind": "OPEN",
-          "values": {
-            "claimantName": "Rīgas Tulkojumu Birojs SIA",
-            "claimedAmount": "1000.00",
-            "claimedCurrency": "EUR",
-            "incidentCountry": "LV",
-            "incidentDate": "2026-08-01",
-            "incidentNotificationDate": "2026-08-03",
-            "insurerName": "شركة التأمين المثال"
-          }
-        },
-        "caseReference": "Demo-0001",
-        "expectedRevision": 0,
-        "format": 5,
-        "operationId": "10000000-0000-4000-8000-000000000001"
-      },
-      "snapshot": {
-        "disposition": "ACTIVE",
-        "fields": {
-          "caseReference": "Demo-0001",
-          "claimantName": "Rīgas Tulkojumu Birojs SIA",
-          "claimedAmount": "1000",
-          "claimedCurrency": "EUR",
-          "incidentCountry": "LV",
-          "incidentDate": "2026-08-01",
-          "incidentNotificationDate": "2026-08-03",
-          "insurerName": "شركة التأمين المثال",
-          "payableAmount": null,
-          "payableCurrency": null,
-          "paymentDate": null,
-          "paymentDecisionDate": null,
-          "status": "OPENED"
-        },
-        "format": 4,
-        "revision": 1
-      }
-    },
-    "authority": {
-      "request": {
-        "act": {
-          "kind": "GRANT",
-          "role": "CASE_HANDLER",
-          "scope": {
-            "caseReference": "Demo-0001",
-            "kind": "CASE"
-          }
-        },
-        "format": 2,
-        "operationId": "20000000-0000-4000-8000-000000000002",
-        "target": {
-          "issuer": "https://issuer.example/",
-          "kind": "HUMAN",
-          "subject": "handler-1"
-        }
-      }
-    }
-  },
   "canonicalIdentity": [
     {
       "name": "equal amount",
@@ -292,9 +233,9 @@
         },
         "caseReference": "CANONICAL-AMOUNT",
         "expectedRevision": 0,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000001",
-        "scope": "CASE"
+        "kind": "CASE"
       },
       "right": {
         "act": {
@@ -311,9 +252,9 @@
         },
         "caseReference": "CANONICAL-AMOUNT",
         "expectedRevision": 0,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000001",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
@@ -334,9 +275,9 @@
         },
         "caseReference": "r-1",
         "expectedRevision": 0,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000002",
-        "scope": "CASE"
+        "kind": "CASE"
       },
       "right": {
         "act": {
@@ -353,9 +294,9 @@
         },
         "caseReference": "R-1",
         "expectedRevision": 0,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000002",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
@@ -376,9 +317,9 @@
         },
         "caseReference": "CANONICAL-VALUE",
         "expectedRevision": 0,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000003",
-        "scope": "CASE"
+        "kind": "CASE"
       },
       "right": {
         "act": {
@@ -395,9 +336,9 @@
         },
         "caseReference": "CANONICAL-VALUE",
         "expectedRevision": 0,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000003",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
@@ -418,9 +359,9 @@
         },
         "caseReference": "CANONICAL-NAME",
         "expectedRevision": 0,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000004",
-        "scope": "CASE"
+        "kind": "CASE"
       },
       "right": {
         "act": {
@@ -437,9 +378,9 @@
         },
         "caseReference": "CANONICAL-NAME",
         "expectedRevision": 0,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000004",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
@@ -460,9 +401,9 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000005",
-        "scope": "CASE"
+        "kind": "CASE"
       },
       "right": {
         "act": {
@@ -479,9 +420,9 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000005",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
@@ -498,9 +439,9 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000006",
-        "scope": "CASE"
+        "kind": "CASE"
       },
       "right": {
         "act": {
@@ -513,9 +454,9 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000006",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
@@ -526,7 +467,7 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "claimantName": "Ann",
                 "claimedAmount": "10.50",
@@ -538,25 +479,25 @@
               }
             },
             "decision": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             },
             "payment": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             }
           }
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000007",
-        "scope": "CASE"
+        "kind": "CASE"
       },
       "right": {
         "act": {
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "claimantName": "Ann",
                 "claimedAmount": "10.5",
@@ -568,18 +509,18 @@
               }
             },
             "decision": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             },
             "payment": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             }
           }
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000007",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
@@ -590,10 +531,10 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             },
             "decision": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "paymentDecisionDate": "2026-08-15",
                 "payableAmount": "10.50",
@@ -601,25 +542,25 @@
               }
             },
             "payment": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             }
           }
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000008",
-        "scope": "CASE"
+        "kind": "CASE"
       },
       "right": {
         "act": {
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             },
             "decision": {
-              "mode": "REPLACE",
+              "kind": "REPLACE",
               "values": {
                 "paymentDecisionDate": "2026-08-15",
                 "payableAmount": "10.5",
@@ -627,23 +568,23 @@
               }
             },
             "payment": {
-              "mode": "KEEP"
+              "kind": "KEEP"
             }
           }
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 7,
+        "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000008",
-        "scope": "CASE"
+        "kind": "CASE"
       }
     },
     {
       "name": "grant reference",
       "same": true,
       "left": {
-        "format": 4,
-        "scope": "AUTHORITY",
+        "format": 1,
+        "kind": "AUTHORITY",
         "operationId": "30000000-0000-4000-8000-000000000009",
         "target": {
           "kind": "HUMAN",
@@ -660,8 +601,8 @@
         }
       },
       "right": {
-        "format": 4,
-        "scope": "AUTHORITY",
+        "format": 1,
+        "kind": "AUTHORITY",
         "operationId": "30000000-0000-4000-8000-000000000009",
         "target": {
           "kind": "HUMAN",
@@ -682,8 +623,8 @@
       "name": "revoke reference",
       "same": true,
       "left": {
-        "format": 4,
-        "scope": "AUTHORITY",
+        "format": 1,
+        "kind": "AUTHORITY",
         "operationId": "30000000-0000-4000-8000-000000000010",
         "target": {
           "kind": "HUMAN",
@@ -700,8 +641,8 @@
         }
       },
       "right": {
-        "format": 4,
-        "scope": "AUTHORITY",
+        "format": 1,
+        "kind": "AUTHORITY",
         "operationId": "30000000-0000-4000-8000-000000000010",
         "target": {
           "kind": "HUMAN",

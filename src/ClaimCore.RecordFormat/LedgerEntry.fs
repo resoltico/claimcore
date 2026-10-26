@@ -183,7 +183,9 @@ module LedgerEntry =
 
         Array.concat
             [
-                Encoding.ASCII.GetBytes "claimcore/ledger-entry/3\n"
+                Encoding.ASCII.GetBytes(
+                    sprintf "claimcore/ledger-entry/%d\n" RecordVersions.LedgerEntry
+                )
                 metadata.InstallationId.ToByteArray(bigEndian = true)
                 u64 (uint64 metadata.Sequence)
                 metadata.PreviousHash

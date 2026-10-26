@@ -81,6 +81,18 @@ let private domain () =
 
     Expect.equal retained [ BusinessField.CaseReference ] "Only the reference survives erasure"
 
+let private diagnosticGroups () =
+    let actual =
+        InputTargets.all
+        |> List.choose (function
+            | InputTarget.Group group, token -> Some(group, token)
+            | _ -> None)
+
+    Expect.equal
+        actual
+        [ RecordGroup.Payment, "payment" ]
+        "Only payment has a group diagnostic producer"
+
 let private actGroups () =
     let expected group =
         FieldTable.rows
@@ -141,6 +153,7 @@ let tests =
     testList
         "authoritative field table"
         [
+            testCase "diagnostic groups admit only produced targets" diagnosticGroups
             testCase "codecs and snapshot agree" codecs
             testCase "Domain coverage and ownership agree" domain
             testCase "act and correction groups follow field-table order" actGroups

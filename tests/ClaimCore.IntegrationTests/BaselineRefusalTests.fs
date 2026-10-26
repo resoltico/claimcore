@@ -127,8 +127,8 @@ let tests =
         "prior installations refuse untouched"
         [
             testCaseAsync
-                "exact catalog-redesign starting baseline 0d6f68a2"
-                (previousInstallation "baseline.0d6f68a2.sql" true)
+                "exact catalog-redesign starting baseline 03a5a72e"
+                (previousInstallation "baseline.03a5a72e.sql" true)
             testCaseAsync
                 "published 0.11.0 baseline"
                 (previousInstallation "0001_baseline.v0.11.0.sql" false)

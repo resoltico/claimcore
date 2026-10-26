@@ -15,7 +15,7 @@ type internal LedgerRow =
 
 module internal StoredEntries =
     let columns =
-        "sequence,previous_hash,entry_hash,entry_format,scope,act,operation_id,actor_id,"
+        "sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,"
         + DatabaseSession.instantExpression "recorded_at"
         + ",subject_id,case_revision,"
         + DatabaseSession.dateExpression "business_date"

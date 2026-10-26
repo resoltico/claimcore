@@ -46,3 +46,8 @@ type FileReaderCall =
     static member Read() =
         use reader = new IO.StreamReader("synthetic")
         reader.ReadToEnd()
+
+/// A compiled wire-codec dependency must never enter a durable grammar.
+type WireCodecCall =
+    static member Read() =
+        ClaimCore.Contract.Protocol.RequestCodecs.caseRequest.Schema

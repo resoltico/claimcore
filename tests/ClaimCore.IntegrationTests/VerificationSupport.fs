@@ -100,7 +100,7 @@ let private scope =
         "AUTHORITY", RecordedAuthorityActs.token value.Act, value.TargetActorId, None, None
 
 let private updateSql =
-    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,scope=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14 WHERE sequence=$1"
+    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14 WHERE sequence=$1"
 
 let private parameters (value: LedgerRow) =
     let metadata = value.Metadata

@@ -2,14 +2,10 @@ namespace ClaimCore.RecordFormat
 
 open ClaimCore.Contract
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 open ClaimCore.Domain
 
 module RequestRecord =
-    let private codec =
-        RequestCodecs.caseOperation
-        |> Codec.withFormat (int64 RecordVersions.CaseRequest)
-        |> Codec.named "CaseRequestRecord"
+    let private codec = RecordCodecs.caseOperation |> Codec.named "CaseRequestRecord"
 
     let private validate request =
         match Case.validateRequest request with

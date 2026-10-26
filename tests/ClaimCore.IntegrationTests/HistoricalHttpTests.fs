@@ -17,12 +17,7 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private httpRequest request =
-    // The shared operation input is the durable request grammar without its format number.
-    let node =
-        System.Text.Json.Nodes.JsonNode.Parse(RequestRecord.encode request) |> nonNull
-
-    node.AsObject().Remove("format") |> ignore
-    System.Text.Encoding.UTF8.GetBytes(node.ToJsonString())
+    Codec.encode Api.operationExecute.Input (OperationInput.Case request)
 
 let private outcome (bytes: byte array) =
     use document = JsonDocument.Parse bytes

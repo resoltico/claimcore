@@ -14,7 +14,11 @@ module CaseReferenceId =
         then
             invalidArg (nameof reference) "Use a nonempty installation and valid case reference."
 
-        let prefix = Encoding.ASCII.GetBytes "claimcore/case-reference-id/2\n"
+        let prefix =
+            Encoding.ASCII.GetBytes(
+                sprintf "claimcore/case-reference-id/%d\n" RecordVersions.CaseReferenceIdentity
+            )
+
         let key = CaseReference.key reference |> Encoding.ASCII.GetBytes
 
         let digest =

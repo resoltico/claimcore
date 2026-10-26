@@ -34,7 +34,7 @@ module internal CaseProjectionLayout =
     let private columns =
         [ "case_id" ]
         @ (retained |> List.map column)
-        @ [ "revision"; "disposition" ]
+        @ [ "revision"; "state" ]
         @ (payload |> List.map column)
 
     let private selected (row: FieldRow) =
@@ -46,7 +46,7 @@ module internal CaseProjectionLayout =
     let select =
         [ "case_id" ]
         @ (retained |> List.map selected)
-        @ [ "revision"; "disposition" ]
+        @ [ "revision"; "state" ]
         @ (payload |> List.map selected)
         |> String.concat ","
 
@@ -73,7 +73,7 @@ module internal CaseProjectionLayout =
         let assignments =
             payload |> List.map (fun row -> column row + "=NULL") |> String.concat ","
 
-        $"UPDATE claimcore.cases SET revision=$2,disposition='ERASED',{assignments} WHERE case_id=$1"
+        $"UPDATE claimcore.cases SET revision=$2,state='ERASED',{assignments} WHERE case_id=$1"
 
     let private parameter (row: FieldRow) value =
         match value with

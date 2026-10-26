@@ -5,7 +5,7 @@ derives RFC 8785 canonical bytes, case-reference identities (UUIDv8), framed led
 salted commitments, the 183-byte entry preimage and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 7 --snapshot 5 --authority 4
+  python3 -I generate_vectors.py --request 1 --snapshot 1 --authority 1
 
 Writes JSON to standard output.
 """
@@ -27,8 +27,8 @@ ACT_CODES = {
     "REINSTATE": 11, "ERASE": 12, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
     "ENABLE": 36, "DISABLE": 37,
 }
-ENTRY_TAG = b"claimcore/ledger-entry/3\n"
-REFERENCE_TAG = b"claimcore/case-reference-id/2\n"
+ENTRY_TAG = b"claimcore/ledger-entry/1\n"
+REFERENCE_TAG = b"claimcore/case-reference-id/1\n"
 
 
 def string(value):
@@ -95,7 +95,7 @@ def canonical_identity(request):
         text = format(decimal.Decimal(values[key]), "f")
         values[key] = text.rstrip("0").rstrip(".") if "." in text else text
     act = result["act"]
-    if result["scope"] == "CASE":
+    if result["kind"] == "CASE":
         result["caseReference"] = fold_reference(result["caseReference"])
         if act["kind"] in ("OPEN", "AMEND_REGISTRATION"):
             amount(act["values"], "claimedAmount")
@@ -103,7 +103,7 @@ def canonical_identity(request):
             amount(act["values"], "payableAmount")
         elif act["kind"] == "CORRECT":
             for group, key in (("registration", "claimedAmount"), ("decision", "payableAmount")):
-                if act["groups"][group]["mode"] == "REPLACE":
+                if act["groups"][group]["kind"] == "REPLACE":
                     amount(act["groups"][group]["values"], key)
     elif act["kind"] in ("GRANT", "REVOKE") and act["scope"]["kind"] == "CASE":
         act["scope"]["caseReference"] = fold_reference(act["scope"]["caseReference"])
@@ -113,14 +113,14 @@ def canonical_identity(request):
 def identity_vectors(sources, case_format, authority_format):
     result = []
     for item in sources["canonicalIdentity"]:
-        version = case_format if item["left"]["scope"] == "CASE" else authority_format
+        version = case_format if item["left"]["kind"] == "CASE" else authority_format
         authored_left = with_format(item["left"], version)
         authored_right = with_format(item["right"], version)
         left = canonical_identity(authored_left)
         right = canonical_identity(authored_right)
         same = canonical(left) == canonical(right)
         assert same == item["same"], item["name"]
-        result.append({"name": item["name"], "scope": item["left"]["scope"], "same": same,
+        result.append({"name": item["name"], "scope": item["left"]["kind"], "same": same,
                        "left": vector("authored left", authored_left), "right": vector("authored right", authored_right),
                        "canonicalLeft": vector("identity left", left), "canonicalRight": vector("identity right", right)})
     return result
@@ -239,13 +239,13 @@ def main():
             "refused": sources["caseReferenceIds"]["refused"],
         },
         "ledgerPayloads": {
-            "caseRequest": canonical(sources["ledgerPayloads"]["case"]["request"]),
-            "caseSnapshot": canonical(sources["ledgerPayloads"]["case"]["snapshot"]),
-            "authorityRequest": canonical(sources["ledgerPayloads"]["authority"]["request"]),
+            "caseRequest": canonical(requests[0]),
+            "caseSnapshot": canonical(snapshot),
+            "authorityRequest": canonical(authority),
         },
-        "ledgerEntries": ledger(sources, [sources["ledgerPayloads"]["case"]["request"]],
-                                sources["ledgerPayloads"]["case"]["snapshot"],
-                                sources["ledgerPayloads"]["authority"]["request"]),
+        "ledgerEntries": ledger(sources, [requests[0]],
+                                snapshot,
+                                authority),
     }
     print(json.dumps(document, ensure_ascii=False, indent=2))
 

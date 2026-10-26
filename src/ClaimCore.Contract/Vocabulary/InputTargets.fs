@@ -17,11 +17,10 @@ module InputTargets =
         (FieldTable.rows
          |> List.filter (fun row -> row.Field <> BusinessField.Status)
          |> List.map (fun row -> InputTarget.Field row.Field, row.Key))
-        @ (Vocabulary.entries RecordGroup.vocabulary
-           |> List.map (fun (group, token) -> InputTarget.Group group, token))
         @ [
             InputTarget.OperationId, "operationId"
             InputTarget.ExpectedRevision, "expectedRevision"
+            InputTarget.Group RecordGroup.Payment, "payment"
 
             InputTarget.Reason, "reason"
             InputTarget.PrincipalIssuer, "principal.issuer"

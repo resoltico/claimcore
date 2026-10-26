@@ -2,7 +2,6 @@ namespace ClaimCore.RecordFormat
 
 open ClaimCore.Contract
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 open ClaimCore.Domain
 
 module CaseRecord =
@@ -12,7 +11,7 @@ module CaseRecord =
         | CaseView.Erased -> invalidArg (nameof snapshot) "A payload requires live case fields."
 
     let private codec: Codec<ClaimCore.Contract.CaseSnapshot> =
-        Codec.record (fun revision disposition (fields: CaseFields) ->
+        Codec.record (fun revision ((fields: CaseFields), disposition) ->
             {
                 Reference = fields.CaseReference
                 Revision = revision
@@ -21,12 +20,8 @@ module CaseRecord =
         |> Codec.field
             "revision"
             (fun (snapshot: CaseSnapshot) -> snapshot.Revision)
-            RequestCodecs.sequence
-        |> Codec.field
-            "disposition"
-            (live >> snd)
-            (Codec.enumeration (Vocabulary.entries Dispositions.vocabulary))
-        |> Codec.field "fields" (live >> fst) ResponseCodecs.caseFields
+            (Codec.integer 1L JsonValue.MaximumInteger)
+        |> Codec.field "state" live RecordCodecs.liveState
         |> Codec.build
         |> Codec.withFormat (int64 RecordVersions.Snapshot)
         |> Codec.named "CaseSnapshotRecord"

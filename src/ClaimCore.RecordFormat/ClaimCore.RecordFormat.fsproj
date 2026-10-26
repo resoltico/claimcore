@@ -4,6 +4,7 @@
     <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="Versions.fs" />
     <Compile Include="DecodeProblem.fs" />
+    <Compile Include="RecordCodecs.fs" />
     <Compile Include="RequestRecord.fs" />
     <Compile Include="CaseRecord.fs" />
     <Compile Include="AuthorityRecord.fs" />

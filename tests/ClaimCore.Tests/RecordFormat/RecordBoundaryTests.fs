@@ -131,12 +131,28 @@ let private envelope () =
         (Ok owner)
         "Provisioning is retained history"
 
-    let wire =
-        Encoding.UTF8.GetString durable
-        |> fun value -> value.Replace("\"format\":3,", "") |> Encoding.UTF8.GetBytes
+    let asWire bytes =
+        Encoding.UTF8.GetString(bytes: byte array)
+        |> fun value ->
+            value
+                .Replace("\"format\":1,", "")
+                .Replace("\"kind\":\"AUTHORITY\"", "\"scope\":\"AUTHORITY\"")
+        |> Encoding.UTF8.GetBytes
+
+    let ordinary =
+        { owner with
+            Act = RecordedAuthorityAct.Operation AuthorityAct.Register
+        }
+
+    Expect.isOk
+        (Codec.decode
+            Limits.MaximumRequestBytes
+            Api.operationExecute.Input
+            (AuthorityRecord.encode ordinary |> asWire))
+        "The control envelope is otherwise valid wire input"
 
     Expect.isError
-        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input wire)
+        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input (asWire durable))
         "Provisioning is never case-work authority API input"
 
     let case = request 0L (CaseAct.Open registration) |> RequestRecord.encode
