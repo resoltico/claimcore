@@ -89,69 +89,6 @@ module private BusinessState =
                 }
         }
 
-    let private change act (claim: Claim) =
-        match act with
-        | BusinessAct.Open _ -> invalidOp "An existing case cannot be opened."
-        | BusinessAct.Reopen ->
-            Ok
-                { claim with
-                    Status = CaseStatus.Opened
-                }
-        | BusinessAct.Close ->
-            Ok
-                { claim with
-                    Status = CaseStatus.Closed
-                }
-        | BusinessAct.AmendRegistration facts -> Ok { claim with Facts = facts }
-        | BusinessAct.Correct correction ->
-            CaseCorrections.apply claim.Facts claim.Progress correction
-            |> Result.map (fun (facts, progress) ->
-                { claim with
-                    Facts = facts
-                    Progress = progress
-                })
-        | BusinessAct.Decide decision ->
-            Ok
-                { claim with
-                    Progress = PaymentProgress.Decided decision
-                }
-        | BusinessAct.WithdrawDecision ->
-            Ok
-                { claim with
-                    Progress = PaymentProgress.Undecided
-                }
-        | BusinessAct.RecordPayment date ->
-            let decision = PaymentProgress.decision claim.Progress |> Option.get
-
-            Ok
-                { claim with
-                    Progress = PaymentProgress.Paid(decision, date)
-                }
-        | BusinessAct.ClearPayment ->
-            let decision = PaymentProgress.decision claim.Progress |> Option.get
-
-            Ok
-                { claim with
-                    Progress = PaymentProgress.Decided decision
-                }
-
-    let transition today act claim =
-        result {
-            let! next = change act claim
-            do! StateValidation.progress next.Facts next.Progress
-
-            do!
-                StateValidation.newlyAssertedDates
-                    today
-                    claim.Facts
-                    claim.Progress
-                    next.Facts
-                    next.Progress
-
-            do! Validation.assertedText (Some claim.Facts) next.Facts
-            return next
-        }
-
 module Case =
     /// Identity normalization never rewrites authored payloads or free text.
     let private canonicalInput (command: CaseCommand) =
@@ -274,32 +211,8 @@ module Case =
         }
 
     let private transition today act state =
-        result {
-            do! Transitions.check state (CaseActs.kind act)
-            let claim = CaseState.fields state |> Option.get
-
-            match act with
-            | CaseAct.Void reason ->
-                do!
-                    Reason.admit reason
-                    |> Result.map ignore
-                    |> Result.mapError (fun violation ->
-                        Refusal.InvalidInput(InputTarget.Reason, violation))
-
-                return CaseState.Voided claim
-            | CaseAct.Reinstate reason ->
-                do!
-                    Reason.admit reason
-                    |> Result.map ignore
-                    |> Result.mapError (fun violation ->
-                        Refusal.InvalidInput(InputTarget.Reason, violation))
-
-                return CaseState.Active claim
-            | CaseAct.Erase -> return CaseState.Erased
-            | CaseAct.Business act ->
-                let! next = BusinessState.transition today act claim
-                return CaseState.Active next
-        }
+        Transitions.applicable state (CaseActs.kind act)
+        |> Result.bind (fun evidence -> Transitions.apply today evidence act)
 
     let private create today (command: CaseCommand) =
         match command.Act with
@@ -345,7 +258,8 @@ module Case =
         if record.Revision = Revision.Maximum then
             []
         else
-            CaseActKinds.all |> List.filter (Transitions.check record.State >> Result.isOk)
+            CaseActKinds.all
+            |> List.filter (Transitions.applicable record.State >> Result.isOk)
 
     let correctionActions (record: CaseRecord) group =
         match record.State with

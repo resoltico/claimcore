@@ -28,10 +28,10 @@
     <Compile Include="Validation.fs" />
     <Compile Include="PaymentProgress.fs" />
     <Compile Include="CaseState.fs" />
-    <Compile Include="Transitions.fs" />
     <Compile Include="CaseActs.fs" />
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />
+    <Compile Include="Transitions.fs" />
     <Compile Include="RequestValidation.fs" />
     <Compile Include="Case.fsi" />
     <Compile Include="Case.fs" />
