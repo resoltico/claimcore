@@ -6,6 +6,14 @@ Use concise bullets without category labels or subheadings, grouping related cha
 
 ## [Unreleased]
 
+- Deploy matching service, CLI and browser: remove `REVISION_EXHAUSTED` and `LEDGER_SEQUENCE_EXHAUSTED`; the diagnostic enum changes contract identity.
+- Catalog message keys change from `label.read.<endpoint>.*` to `endpoint.<endpoint>.*`; update integrations that reference them.
+- Typed Domain values and one record declaration now drive wire inputs, catalog metadata and projection names; internal APIs have breaking type and naming changes.
+- Closure-bound routes, typed CLI replies and transaction primitives replace erased dispatch and use-case store callbacks; authorization and delivery behavior remain unchanged.
+- Durable bytes, record format numbers and the SQL baseline remain unchanged; this redesign supplies no migration or compatibility reader.
+- A strict protocol compiler project and one browser lint policy replace local lint plugins; task guides and the glossary replace documentation owner tokens.
+- Keep one released previous-baseline fixture and a checksum refusal control; PostgreSQL fixture readiness now verifies an authenticated query through the mapped host port.
+
 ## [0.12.0] - 2026-10-26
 
 - Initialize a separate installation; the new database baseline refuses earlier installations untouched. Preserve them with matching software; no conversion is supplied.

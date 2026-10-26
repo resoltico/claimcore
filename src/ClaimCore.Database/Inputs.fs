@@ -59,11 +59,13 @@ module Inputs =
         | _ -> None
 
     let private bytes setting maximum =
-        match Environment.GetEnvironmentVariable setting with
-        | null -> invalidOp "Required private input is absent."
-        | path ->
+        Environment.GetEnvironmentVariable setting
+        |> Option.ofObj
+        |> Option.map (fun path ->
             PrivateFile.read maximum path
-            |> Result.defaultWith (fun _ -> invalidOp "Private input was refused.")
+            |> Result.mapError (fun _ -> "Private input was refused."))
+        |> Option.defaultValue (Error "Required private input is absent.")
+        |> Result.defaultWith invalidOp
 
     let connection () =
         let value = bytes "CLAIMCORE_ADMIN_CONNECTION_FILE" 16384
@@ -81,16 +83,14 @@ module Inputs =
         |> Codec.build
 
     let decodeOwner (value: byte array) =
-        let operationId, issuer, subject =
-            Codec.decode 8192 ownerInput value
-            |> Result.defaultWith (fun _ -> invalidOp "Owner input is invalid.")
-
-        // The input format denotes a human principal; PrincipalKey owns its admission rules.
-        let principal =
+        Codec.decode 8192 ownerInput value
+        |> Result.mapError (fun _ -> "Owner input is invalid.")
+        |> Result.bind (fun (operationId, issuer, subject) ->
+            // This format denotes a human principal; PrincipalKey owns its admission.
             PrincipalKey.human issuer subject
-            |> Result.defaultWith (fun _ -> invalidOp "Owner principal is invalid.")
-
-        operationId, principal
+            |> Result.mapError (fun _ -> "Owner principal is invalid.")
+            |> Result.map (fun principal -> operationId, principal))
+        |> Result.defaultWith invalidOp
 
     let owner () =
         let value = bytes "CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE" 8192

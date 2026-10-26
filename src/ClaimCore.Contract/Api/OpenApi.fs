@@ -13,15 +13,6 @@ module OpenApi =
     let private array = JsonValue.Array
     let private schema = SchemaJson.value prefix
 
-    let private merge left right =
-        Map.fold
-            (fun state key value ->
-                match Map.tryFind key state with
-                | Some existing when existing <> value -> invalidOp "OpenAPI definitions disagree."
-                | _ -> Map.add key value state)
-            left
-            right
-
     let private content shape =
         object [ "application/json", object [ "schema", schema shape ] ]
 
@@ -139,7 +130,7 @@ module OpenApi =
         endpoint.Token,
         endpoint.Method.Method.ToLowerInvariant(),
         operation endpoint,
-        merge endpoint.InputDefinitions endpoint.OutputDefinitions
+        SchemaDefinitions.merge endpoint.InputDefinitions endpoint.OutputDefinitions
 
     let private securitySchemes =
         object
@@ -170,7 +161,7 @@ module OpenApi =
 
         endpoints
         |> List.fold
-            (fun state (_, _, _, definitions) -> merge state definitions)
+            (fun state (_, _, _, definitions) -> SchemaDefinitions.merge state definitions)
             HostFailureCodecs.reply.Definitions
         |> fun definitions ->
             SchemaJson.reachable definitions (HostFailureCodecs.reply.Schema :: roots)

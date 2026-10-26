@@ -13,6 +13,9 @@
     <Compile Include="Architecture/NegativeFixtures.fs" />
     <Compile Include="Architecture/ApiRules.fs" />
     <Compile Include="Architecture/ArchitectureTests.fs" />
+    <Compile Include="Json/CodecDefinitionTests.fs" />
+    <Compile Include="Contract/BuildIdentityTests.fs" />
+    <Compile Include="Database/OwnerInputTests.fs" />
     <Compile Include="Contract/VocabularyTests.fs" />
     <Compile Include="Contract/WireCodecTests.fs" />
     <Compile Include="Contract/WireRequestTests.fs" />
