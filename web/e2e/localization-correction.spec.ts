@@ -54,7 +54,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
     for (const group of ["registration", "decision", "payment"] as const) {
       const control = page.locator(`[name="act.groups.${group}.kind"]`);
       await expect(control).toHaveValue(modes[group]);
-      await expect(control).toHaveAccessibleName(ui(language, "ui.action"));
+      await expect(control).toHaveAccessibleName(ui(language, "label.action"));
       await expect(control).toHaveAccessibleDescription(
         inputMessage(language, `group.${group}.meaning`),
       );
@@ -93,7 +93,7 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
   ] as const) {
     await selectLanguage(page, language);
     await expect(description).toContainText(text);
-    await expect(payment).toHaveAccessibleName(ui(language, "ui.action"));
+    await expect(payment).toHaveAccessibleName(ui(language, "label.action"));
     await expect(payment).toHaveAccessibleDescription(
       `${inputMessage(language, "group.payment.meaning")} ${inputMessage(language, "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED")}`,
     );

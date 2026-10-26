@@ -122,7 +122,13 @@ let private golden () =
 
     Expect.equal actual.Length expected.Count "Every rendering occurs exactly once"
 
-    for row in rows do
+    for row in
+        rows
+        |> Array.filter (fun row ->
+            not (
+                (row.GetProperty("key").GetString() |> nonNull)
+                    .StartsWith("ui.", System.StringComparison.Ordinal)
+            )) do
         let language = row.GetProperty("language").GetString() |> nonNull
         let key = row.GetProperty("key").GetString() |> nonNull
 
@@ -148,5 +154,20 @@ let tests =
                 invalidCatalogs
             testCase "identical all-language producer mutations stop generation" producerMutations
             testCase "actual CLI producers render with their own argument contracts" actualProducers
-            testCase "CLI Template engine reproduces every frozen renamed message" golden
+            testCase "CLI Template engine reproduces every owned frozen message" golden
         ]
+
+[<Tests>]
+let unreferencedChrome =
+    testCase "renderer catalogs reject unreferenced keys with positive controls" (fun () ->
+        let good = AuthoredMessages.all ()
+        CatalogValidation.validateCatalogs good |> ignore
+
+        for prefix in [ "ui."; "cli." ] do
+            let bad =
+                good
+                |> Map.map (fun _ entries -> (prefix + "unreferencedControl", "Unused") :: entries)
+
+            Expect.throws
+                (fun () -> CatalogValidation.validateCatalogs bad |> ignore)
+                "The unused-key negative control is detected")

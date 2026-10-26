@@ -6,9 +6,16 @@ import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
-import en from "../../src/ClaimCore.Contract/Localization/en.json" with { type: "json" };
-import lv from "../../src/ClaimCore.Contract/Localization/lv.json" with { type: "json" };
-import ar from "../../src/ClaimCore.Contract/Localization/ar.json" with { type: "json" };
+import enCore from "../../src/ClaimCore.Contract/Localization/en.json" with { type: "json" };
+import lvCore from "../../src/ClaimCore.Contract/Localization/lv.json" with { type: "json" };
+import arCore from "../../src/ClaimCore.Contract/Localization/ar.json" with { type: "json" };
+
+import enChrome from "../locales/en.json" with { type: "json" };
+const en = { ...enCore, ...enChrome };
+import lvChrome from "../locales/lv.json" with { type: "json" };
+const lv = { ...lvCore, ...lvChrome };
+import arChrome from "../locales/ar.json" with { type: "json" };
+const ar = { ...arCore, ...arChrome };
 
 import type { ReviewIdentity } from "./case-workflow";
 

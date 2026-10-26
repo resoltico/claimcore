@@ -129,20 +129,15 @@ const AuthorityReceipt = ({ identity }: { identity: string }) => {
     </>
   );
 };
-const AuthorityLayout = ({
-  token,
-  model,
-  disclosure,
-  recorded,
-}: {
+type RecordedAuthority = { token: string; id: string } | null;
+type AuthorityActions = { invalidate: () => void; restore: () => void; reset: () => void } | null;
+type AuthorityLayoutProps = {
   token: string;
   model: OperationModel;
   disclosure: Disclosure;
-  recorded: {
-    token: string;
-    id: string;
-  } | null;
-}) => {
+  recorded: RecordedAuthority;
+};
+const AuthorityLayout = ({ token, model, disclosure, recorded }: AuthorityLayoutProps) => {
   const p = usePresentation();
   const { invalidate } = disclosure;
   return (
@@ -187,18 +182,11 @@ type AuthorityPanelProps = {
   token: string;
   onLockChange: (locked: boolean) => void;
 };
-export const AuthorityPanel = ({ token, onLockChange }: AuthorityPanelProps) => {
+const useAuthorityOperation = ({ token, onLockChange }: AuthorityPanelProps) => {
   const disclosure = useAuthorityDisclosure();
   const { refused: refuseDisclosure, invalidate, ready } = disclosure;
-  const [recorded, setRecorded] = useState<{
-    token: string;
-    id: string;
-  } | null>(null);
-  const actions = useRef<{
-    invalidate: () => void;
-    restore: () => void;
-    reset: () => void;
-  } | null>(null);
+  const [recorded, setRecorded] = useState<RecordedAuthority>(null);
+  const actions = useRef<AuthorityActions>(null);
   const refused = useCallback(
     (notice?: Notice) => {
       actions.current?.invalidate();
@@ -236,15 +224,9 @@ export const AuthorityPanel = ({ token, onLockChange }: AuthorityPanelProps) => 
       actions.current?.restore();
     }
   }, [ready]);
-  return (
-    <AuthorityLayout
-      token={token}
-      model={model}
-      disclosure={{
-        ...disclosure,
-        refused,
-      }}
-      recorded={recorded}
-    />
-  );
+  return { model, disclosure: { ...disclosure, refused }, recorded };
+};
+export const AuthorityPanel = (props: AuthorityPanelProps) => {
+  const state = useAuthorityOperation(props);
+  return <AuthorityLayout token={props.token} {...state} />;
 };

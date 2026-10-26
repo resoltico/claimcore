@@ -148,19 +148,43 @@ const HistoryPageStatus = ({
   );
 };
 const summaryModes: ReadonlyArray<HistoryMode> = ["SUMMARY"];
+type CaseHistoryProps = {
+  modes?: ReadonlyArray<HistoryMode>;
+  onDisclosureRefused?: () => void;
+  token: string;
+  caseReference: string;
+  fields: CatalogDocument["fields"];
+};
+const HistoryPageActions = ({
+  cursor,
+  loading,
+  load,
+}: {
+  cursor: string | null;
+  loading: boolean;
+  load: (cursor: string | null) => Promise<void>;
+}) => {
+  const p = usePresentation();
+  return (
+    <>
+      <Button onPress={() => void load(null)} isDisabled={loading}>
+        {p.text("ui.reloadHistory")}
+      </Button>
+      {cursor === null ? null : (
+        <Button onPress={() => void load(cursor)} isDisabled={loading}>
+          {p.text("ui.moreHistory")}
+        </Button>
+      )}
+    </>
+  );
+};
 export const CaseHistory = ({
   token,
   caseReference,
   fields,
   modes = summaryModes,
   onDisclosureRefused,
-}: {
-  modes?: ReadonlyArray<HistoryMode>;
-  onDisclosureRefused?: () => void;
-  token: string;
-  caseReference: string;
-  fields: CatalogDocument["fields"];
-}) => {
+}: CaseHistoryProps) => {
   const p = usePresentation();
   const [detail, setDetail] = useState<"SUMMARY" | "FULL">("SUMMARY");
   const requestedDetail = modes.includes(detail) ? detail : (modes[0] ?? "SUMMARY");
@@ -195,14 +219,7 @@ export const CaseHistory = ({
         empty={items.length === 0}
         cursor={cursor}
       />
-      <Button onPress={() => void load(null)} isDisabled={loading}>
-        {p.text("ui.reloadHistory")}
-      </Button>
-      {cursor === null ? null : (
-        <Button onPress={() => void load(cursor)} isDisabled={loading}>
-          {p.text("ui.moreHistory")}
-        </Button>
-      )}
+      <HistoryPageActions cursor={cursor} loading={loading} load={load} />
     </section>
   );
 };

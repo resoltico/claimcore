@@ -1,15 +1,19 @@
+import { catalogs as coreCatalogs } from "@contracts/messages";
 import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import enField from "@locales/en.json";
-import lvField from "@locales/lv.json";
-import arField from "@locales/ar.json";
+import enChrome from "@locales/en.json";
+import lvChrome from "@locales/lv.json";
+import arChrome from "@locales/ar.json";
 import { service } from "../src/api/service";
 import { useOperation } from "../src/hooks/operation/useOperation";
 import { initialOperationValues, refusalPath } from "../src/operation/operationForm";
 import { preferenceKey } from "../src/presentation/preferences";
 import { OperationForm } from "../src/views/operation/OperationForm";
 import { render, screen, waitFor } from "./presentation-test-support";
+const enField = { ...coreCatalogs.en, ...enChrome };
+const lvField = { ...coreCatalogs.lv, ...lvChrome };
+const arField = { ...coreCatalogs.ar, ...arChrome };
 const locales = [
   {
     language: "en",

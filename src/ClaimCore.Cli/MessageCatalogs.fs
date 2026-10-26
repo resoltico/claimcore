@@ -74,7 +74,12 @@ module internal MessageCatalogs =
         | "CLI_CONFIGURATION_ISSUE" ->
             renderCli language (CliMessage.HelpConfigurationIssue(secret, trust))
         | "delivery" -> renderCli language (CliMessage.HelpDelivery(retry, resolve))
-        | _ -> render language ("cli.help." + topic) Map.empty
+        | "describe" -> render language "cli.help.describe" Map.empty
+        | "examples" -> render language "cli.help.examples" Map.empty
+        | "help" -> render language "cli.help.help" Map.empty
+        | "schema" -> render language "cli.help.schema" Map.empty
+        | "version" -> render language "cli.help.version" Map.empty
+        | _ -> invalidArg (nameof topic) "Unknown help topic."
 
     let help language (topic: string) =
         let topic =

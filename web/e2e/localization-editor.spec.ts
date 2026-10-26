@@ -37,8 +37,8 @@ const reviewLanguage = async (page: Page) => {
   const confirmation = dialog.getByRole("checkbox");
   for (const language of ["en", "ar", "lv"] as const) {
     await selectLanguage(page, language);
-    await expect(dialog).toHaveAccessibleName(ui(language, "ui.reviewTitle"));
-    await expect(confirmation).toHaveAccessibleName(ui(language, "ui.reviewConfirmation"));
+    await expect(dialog).toHaveAccessibleName(ui(language, "label.reviewTitle"));
+    await expect(confirmation).toHaveAccessibleName(ui(language, "act.OPEN.confirmation"));
     await expect(
       dialog.getByRole("button", { name: ui(language, "ui.submitExact"), exact: true }),
     ).toBeVisible();

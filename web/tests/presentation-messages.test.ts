@@ -2,13 +2,14 @@ import { expect, it } from "vitest";
 import { localNotice, type DiagnosticNotice, type LocalNoticeReason } from "../src/api/notices";
 import {
   hasMessage,
+  messageShapes as shapes,
   renderKey,
   renderIsolatedValue,
   translate,
 } from "../src/presentation/messages";
 import { renderNotice } from "../src/presentation/notice";
 import { defaults, languages } from "../src/presentation/preferences";
-import { messageShapes as shapes, diagnosticParameters as requirements } from "@contracts/messages";
+import { diagnosticParameters as requirements } from "@contracts/messages";
 
 it("renders every catalog key in every language and preserves typed interpolation contracts", () => {
   for (const language of languages) {
@@ -127,9 +128,9 @@ it("refuses reference message parts with missing, wrong-role or foreign holes [C
   const preferences = { language: "en" as const, displayLocale: "en-GB" as const };
   const fallback = [renderKey(preferences, "notice.unknownDiagnostic")];
   const reference = { exact: "Synthetic reference" };
-  expect(renderIsolatedValue(preferences, "ui.reviewTarget", {}, reference)).toEqual(fallback);
+  expect(renderIsolatedValue(preferences, "ui.caseRow", {}, reference, "status")).toEqual(fallback);
   expect(
-    renderIsolatedValue(preferences, "ui.reviewTarget", { reference: 1, revision: 1 }, reference),
+    renderIsolatedValue(preferences, "ui.caseRow", { status: 1, revision: 1 }, reference, "status"),
   ).toEqual(fallback);
   expect(
     renderIsolatedValue(
@@ -139,7 +140,7 @@ it("refuses reference message parts with missing, wrong-role or foreign holes [C
       reference,
     ),
   ).toEqual(fallback);
-  expect(renderIsolatedValue(preferences, "ui.action", {}, reference)).toEqual(fallback);
+  expect(renderIsolatedValue(preferences, "label.action", {}, reference)).toEqual(fallback);
 });
 
 it("requires every supplied message argument to be an exact own property", () => {

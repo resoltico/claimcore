@@ -44,7 +44,7 @@ const entryLabel = (name: string, p: ReturnType<typeof usePresentation>): string
   if (isCorrectionGroup(name)) {
     return p.groupLabel(name);
   }
-  return name === "kind" ? p.text("ui.action") : p.fieldLabel(name);
+  return name === "kind" ? p.text("label.action") : p.fieldLabel(name);
 };
 const primitiveText = (value: unknown, p: ReturnType<typeof usePresentation>): string => {
   if (typeof value === "boolean") {

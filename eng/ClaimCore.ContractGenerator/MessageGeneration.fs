@@ -36,7 +36,7 @@ module MessageGeneration =
         |> Map.toList
         |> JsonValue.Object
 
-    let source (catalogs: Map<string, Map<string, Template>>) =
+    let private generate importPath includeMetadata (catalogs: Map<string, Map<string, Template>>) =
         let english = catalogs["en"]
 
         let shapes =
@@ -85,19 +85,34 @@ module MessageGeneration =
             yield!
                 LocalizationPolicy.languages
                 |> List.map (fun language ->
-                    "import "
-                    + language
-                    + " from \"../src/ClaimCore.Contract/Localization/"
-                    + language
-                    + ".json\";")
+                    "import " + language + " from \"" + importPath + language + ".json\";")
             "export const catalogs = { "
             + String.concat ", " LocalizationPolicy.languages
             + " } as const;"
             "export type MessageArgs = {\n" + declarations + "\n};"
             "export type MessageKey = keyof MessageArgs;"
             "export const messageShapes = " + json shapes + " as const;"
-            "export const diagnosticParameters = " + json requirements + " as const;"
-            "export const correctionTargets = " + json corrections + " as const;"
+            if includeMetadata then
+                "export const diagnosticParameters = " + json requirements + " as const;"
+                "export const correctionTargets = " + json corrections + " as const;"
         ]
         |> String.concat "\n"
         |> fun text -> Encoding.UTF8.GetBytes(text + "\n")
+
+    let private select (predicate: string -> bool) (catalogs: Map<string, Map<string, Template>>) =
+        catalogs
+        |> Map.map (fun _ templates -> templates |> Map.filter (fun key _ -> predicate key))
+
+    let source catalogs =
+        catalogs
+        |> select (fun key ->
+            not (
+                key.StartsWith("ui.", System.StringComparison.Ordinal)
+                || key.StartsWith("cli.", System.StringComparison.Ordinal)
+            ))
+        |> generate "../src/ClaimCore.Contract/Localization/" true
+
+    let chromeSource catalogs =
+        catalogs
+        |> select (fun key -> key.StartsWith("ui.", System.StringComparison.Ordinal))
+        |> generate "../../locales/" false

@@ -56,6 +56,11 @@ const DashboardNav = ({
   navigate: (next: "cases" | "operations" | "authority") => void;
 }) => {
   const p = usePresentation();
+  const labels = {
+    cases: "ui.cases",
+    operations: "ui.operations",
+    authority: "ui.authority",
+  } as const;
   return (
     <nav aria-label={p.text("ui.primary")}>
       {(["cases", "operations", "authority"] as const)
@@ -69,7 +74,7 @@ const DashboardNav = ({
             isDisabled={locked}
             aria-pressed={active === item}
           >
-            {p.text(`ui.${item}`)}
+            {p.text(labels[item])}
           </Button>
         ))}
     </nav>

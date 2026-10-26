@@ -1,5 +1,6 @@
 namespace ClaimCore.ContractGeneration
 
+open ClaimCore.Cli
 open ClaimCore.Contract
 open ClaimCore.Json
 open ClaimCore.Contract.Protocol
@@ -86,6 +87,12 @@ module CatalogValidation =
         for failure in HostFailures.all do
             matches ("host." + HostFailures.code failure) Set.empty
 
+    let validateReferences owner keys references =
+        let unused = Set.difference keys references
+
+        if not unused.IsEmpty then
+            invalidOp ("Unreferenced " + owner + " message keys: " + String.concat ", " unused)
+
     let validateCatalogs (authored: Map<string, (string * string) list>) =
         if (authored |> Map.keys |> Set.ofSeq) <> Set.ofList LocalizationPolicy.languages then
             invalidOp "Localization languages differ."
@@ -101,11 +108,31 @@ module CatalogValidation =
         let english = catalogs["en"]
         let keys = english |> Map.keys |> Set.ofSeq
 
+        let ui =
+            keys
+            |> Set.filter (fun key -> key.StartsWith("ui.", System.StringComparison.Ordinal))
+
+        let cli =
+            keys
+            |> Set.filter (fun key -> key.StartsWith("cli.", System.StringComparison.Ordinal))
+
+        validateReferences "browser" ui (AuthoredMessages.references "browser")
+
+        let cliReferences =
+            Set.union
+                (AuthoredMessages.references "cli")
+                (Frames.failureCodes
+                 |> List.map (fun code -> "cli.failure." + code)
+                 |> Set.ofList)
+
+        validateReferences "CLI" cli cliReferences
+
         let required = presentationIds ()
         let tokens = renderedTokens ()
 
         let families =
             [
+                "label"
                 "field"
                 "act"
                 "group"

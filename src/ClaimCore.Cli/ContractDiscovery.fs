@@ -34,24 +34,22 @@ module ContractDiscovery =
         elif topic = "overview" then
             let families =
                 [
-                    "case"
-                    "authority"
-                    "operation"
-                    "context"
-                    "call"
-                    "session"
-                    "describe"
-                    "schema"
-                    "help"
+                    "case", "cli.family.case"
+                    "authority", "cli.family.authority"
+                    "operation", "cli.family.operation"
+                    "context", "cli.family.context"
+                    "call", "cli.family.call"
+                    "session", "cli.family.session"
+                    "describe", "cli.family.describe"
+                    "schema", "cli.family.schema"
+                    "help", "cli.family.help"
                 ]
 
             CliIdentity.programName
             + "\n"
             + (families
-               |> List.map (fun family ->
-                   family
-                   + " — "
-                   + MessageCatalogs.render language ("cli.family." + family) Map.empty)
+               |> List.map (fun (family, key) ->
+                   family + " — " + MessageCatalogs.render language key Map.empty)
                |> String.concat "\n")
             + "\n"
         else

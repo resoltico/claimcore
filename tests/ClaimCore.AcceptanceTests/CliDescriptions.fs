@@ -58,7 +58,10 @@ let private frameOracle cli =
         Expect.equal result.ExitCode 0 cells[0]
         Expect.equal result.StandardError.Length 0 "Offline preparation emits only the frame"
 
-        Expect.equal ((Encoding.UTF8.GetString result.StandardOutput).TrimEnd('\r', '\n')) cells[1] "Published frame bytes match the authored vector"
+        Expect.equal
+            ((Encoding.UTF8.GetString result.StandardOutput).TrimEnd('\r', '\n'))
+            cells[1]
+            "Published frame bytes match the authored vector"
 
 
 let private diagnosticRoute cli =

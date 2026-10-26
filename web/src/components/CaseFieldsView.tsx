@@ -22,7 +22,7 @@ const acceptedSummary = (
   fields: ReadonlyArray<FieldCatalogEntry>,
 ): string =>
   [
-    `${p.text("ui.revisionLabel")}: ${revision}`,
+    `${p.text("label.revisionLabel")}: ${revision}`,
     ...fields.map(
       (field) => `${p.fieldLabel(field.name)}: ${caseFieldValue(values, field.name) ?? "null"}`,
     ),

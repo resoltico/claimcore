@@ -1,4 +1,3 @@
-import { offerAct } from "../operation/metadata";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../api/notices";
@@ -8,7 +7,7 @@ import { isCurrentCase } from "../api/service";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { ReferenceSummary } from "../components/ReferenceSummary";
 import { CopyValue } from "../components/CopyValue";
-import { isCaseAct, type ActKind } from "../operation/metadata";
+import { isCaseAct, offerAct, type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
@@ -33,7 +32,7 @@ const AvailableActs = ({
   const p = usePresentation();
   return (
     <section aria-labelledby="acts-title">
-      <h2 id="acts-title">{p.text("ui.availableActs")}</h2>
+      <h2 id="acts-title">{p.text("label.availableActs")}</h2>
       <div className="actions">
         {current.advice.acts
           .map(offerAct)

@@ -1,5 +1,6 @@
 import rendered from "../../tests/fixtures/rendered-messages.json" with { type: "json" };
-import type { catalogs, MessageKey } from "../../contracts/messages";
+import type { catalogs } from "../../contracts/messages";
+import type { MessageKey } from "../src/presentation/types";
 
 // Expected labels come from frozen F# renderings, independent of the browser formatter.
 export const inputMessage = (language: keyof typeof catalogs, key: MessageKey): string => {

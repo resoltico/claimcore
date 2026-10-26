@@ -153,11 +153,7 @@ const UnavailableDisclosure = ({ model }: { model: OperationModel }) => {
 };
 export const OperationPanel = (props: Props) => {
   const { model, onClose } = props;
-  const setPending = model.requestDiscard;
   const p = usePresentation();
-  const requestDiscard = () => {
-    setPending("LEAVE");
-  };
   if (model.phase === "ACCEPTED") {
     return (
       <button
@@ -178,14 +174,14 @@ export const OperationPanel = (props: Props) => {
   }
   const requestChange = (kind: string) => {
     if (model.dirty || model.prepared !== null) {
-      setPending(kind);
+      model.requestDiscard(kind);
     } else {
       model.discard(false, kind);
     }
   };
   const leave = () => {
     if (model.dirty || model.prepared !== null) {
-      requestDiscard();
+      model.requestDiscard("LEAVE");
     } else {
       onClose?.();
     }

@@ -8,13 +8,27 @@
         "resolved": "10.1.402",
         "contentHash": "kfttzFL9uArPkhlhvoH99RZOOFpJnxOAZkGLqgfG+Wnc4FO2L+HnwradMgX1ubMjzhajuNzPTTcW1Yk8D1rGEg=="
       },
-      "claimcore.application": {
+      "Microsoft.Extensions.DependencyInjection.Abstractions": {
+        "type": "Transitive",
+        "resolved": "10.0.13",
+        "contentHash": "G2GrGWNAPZBsii2F6AU8n+JT2tC1/I0Ml/e9ZyNCgPjf3hZqronP7o0X91aAynCmVeae8KkSIUNXXeXCNRmdVQ=="
+      },
+      "Microsoft.Extensions.Logging.Abstractions": {
+        "type": "Transitive",
+        "resolved": "10.0.13",
+        "contentHash": "aSZEhEig4fvNiw2zs8Z6NyDlniKtq6YjcF3DyHuqTEHcZ2VKA/6itMPZ+dW+yWABWExlDcQwwdbqX1Rcb7W8WQ==",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.13"
+        }
+      },
+      "claimcore": {
         "type": "Project",
         "dependencies": {
           "ClaimCore.Contract": "[0.11.0, )",
-          "ClaimCore.Domain": "[0.11.0, )",
+          "ClaimCore.HostSecurity": "[0.11.0, )",
           "ClaimCore.Json": "[0.11.0, )",
-          "ClaimCore.RecordFormat": "[0.11.0, )",
+          "Duende.IdentityModel": "[8.1.0, )",
+          "Duende.IdentityModel.OidcClient": "[7.1.1, )",
           "FSharp.Core": "[10.1.402, )"
         }
       },
@@ -25,11 +39,9 @@
           "FSharp.Core": "[10.1.402, )"
         }
       },
-      "claimcore.domain": {
+      "claimcore.hostsecurity": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Contract": "[0.11.0, )",
-          "ClaimCore.Json": "[0.11.0, )",
           "FSharp.Core": "[10.1.402, )"
         }
       },
@@ -39,13 +51,20 @@
           "FSharp.Core": "[10.1.402, )"
         }
       },
-      "claimcore.recordformat": {
-        "type": "Project",
+      "Duende.IdentityModel": {
+        "type": "CentralTransitive",
+        "requested": "[8.1.0, )",
+        "resolved": "8.1.0",
+        "contentHash": "ncmC2ISg0efTqY74xI6gaLKlv4mErT5ruYK262dkSnAv07g9qYC2++q7AWWs1FyP2c0YZ6LvUtcoJmxZqYyVrA=="
+      },
+      "Duende.IdentityModel.OidcClient": {
+        "type": "CentralTransitive",
+        "requested": "[7.1.1, )",
+        "resolved": "7.1.1",
+        "contentHash": "YyuyW1KaCotSTuEBMt5NTXecuKwX2kU0FmaJ+X39QdQvYGAlOv2Yfp8Vo2vVihw6+3EEcpbDKgfiaoJ3EyI8Fg==",
         "dependencies": {
-          "ClaimCore.Contract": "[0.11.0, )",
-          "ClaimCore.Domain": "[0.11.0, )",
-          "ClaimCore.Json": "[0.11.0, )",
-          "FSharp.Core": "[10.1.402, )"
+          "Duende.IdentityModel": "8.1.0",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.13"
         }
       }
     }

@@ -114,7 +114,7 @@ let private annotated language value points =
     let annotation =
         MessageCatalogs.render
             language
-            "ui.characterWarning"
+            "label.characterWarning"
             (Map.ofList [ "characters", String.concat ", " points ])
 
     value + " [" + annotation + "]"

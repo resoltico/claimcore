@@ -63,7 +63,7 @@ const AuthorityValues = ({
         <section key={label}>
           <h4>{p.text(label, { value: p.text("ui.actor") })}</h4>
           <dl>
-            <dt>{p.text("ui.enabled")}</dt>
+            <dt>{p.text("label.enabled")}</dt>
             <dd>{p.text(state.enabled ? "ui.yes" : "ui.no")}</dd>
           </dl>
           <h5>{p.text("ui.actorGrants")}</h5>
@@ -122,7 +122,7 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
   )!;
   return (
     <AccessibleModal
-      title={p.text("ui.reviewTitle")}
+      title={p.text("label.reviewTitle")}
       closeLabel={p.text("ui.returnToEdit")}
       description={p.text("ui.reviewDescription")}
       isOpen={model.phase === "REVIEWING" || model.phase === "SUBMITTING"}

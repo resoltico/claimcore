@@ -20,6 +20,13 @@ let main arguments =
     let output, checking = invocation arguments
     let artifacts = ContractArtifacts.all ()
     let documentation = CliDocumentation.source ()
+    let chrome = MessageGeneration.chromeSource (CatalogValidation.validate ())
+
+    let chromePath =
+        if output = Path.GetFullPath "contracts" then
+            Some(Path.GetFullPath "web/src/generated/chrome-messages.ts")
+        else
+            None
     // Normal checkout generation owns this reference; custom contract directories stay self-contained.
     let documentationPath =
         if output = Path.GetFullPath "contracts" then
@@ -33,7 +40,11 @@ let main arguments =
             |> Option.forall (fun path ->
                 File.Exists path && File.ReadAllBytes path = documentation)
 
-        if ArtifactPublication.check output artifacts && referenceMatches then
+        let chromeMatches =
+            chromePath
+            |> Option.forall (fun path -> File.Exists path && File.ReadAllBytes path = chrome)
+
+        if ArtifactPublication.check output artifacts && referenceMatches && chromeMatches then
             0
         else
             eprintfn
@@ -42,6 +53,11 @@ let main arguments =
             1
     else
         ArtifactPublication.publish output artifacts
+
+        chromePath
+        |> Option.iter (fun path ->
+            Directory.CreateDirectory(Path.GetDirectoryName path |> nonNull) |> ignore
+            File.WriteAllBytes(path, chrome))
 
         documentationPath
         |> Option.iter (fun path ->

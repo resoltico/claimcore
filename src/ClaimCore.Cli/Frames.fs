@@ -130,6 +130,8 @@ module Frames =
             CliFailure.ContractMismatch, "CONTRACT_MISMATCH"
         ]
 
+    let failureCodes = localCodes |> List.map snd
+
     let failureCode =
         function
         | CliFailure.ConfigurationIssue _ -> "CLI_CONFIGURATION_INVALID"

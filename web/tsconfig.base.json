@@ -19,7 +19,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "paths": {
       "@contracts/*": ["../contracts/*"],
-      "@locales/*": ["../src/ClaimCore.Contract/Localization/*"]
+      "@locales/*": ["./locales/*"]
     }
   }
 }

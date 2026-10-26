@@ -138,7 +138,7 @@ export const createPresenter = (
     const group = correctionTargetGroup(name);
     return group === null
       ? metadata(preferences, "field", name, "label", definitions)
-      : `${metadata(preferences, "group", group, "label", definitions)} · ${translate(preferences, "ui.action")}`;
+      : `${metadata(preferences, "group", group, "label", definitions)} · ${translate(preferences, "label.action")}`;
   },
   fieldLabel: (name: string) => metadata(preferences, "field", name, "label", definitions),
   fieldMeaning: (name: string) => metadata(preferences, "field", name, "meaning", definitions),
