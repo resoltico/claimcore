@@ -118,7 +118,7 @@ let private byteBoundaries () =
 
 let private reply result delivery =
     {
-        Endpoint = Some "operation.execute"
+        Endpoint = Some(EndpointId.Actor ActorEndpoint.Execute)
         OperationId = Some id
         Delivery = delivery
         Result = result
@@ -239,7 +239,7 @@ let private refusingFrames () =
 
     let invalid =
         { reply (FrameResult.Reply typed) DeliveryState.Delivered with
-            Endpoint = Some Api.context.Token
+            Endpoint = Some(EndpointId.Actor ActorEndpoint.Context)
         }
 
     Expect.throws
@@ -260,7 +260,7 @@ let private operationEcho () =
                 }
 
         Expect.equal
-            (Correlation.matches
+            (ClaimCore.Tests.CliReplies.correlates
                 (Frames.endpoint prepared)
                 (Frames.input prepared)
                 (ServiceReply.json output))
@@ -299,7 +299,7 @@ let private grantEcho () =
         let output = Api.authorityGrants.Output.Write(ReadReply.Succeeded page)
 
         Expect.equal
-            (Correlation.matches endpoint input output)
+            (ClaimCore.Tests.CliReplies.correlates endpoint input output)
             expected
             "A grants page echoes its target actor."
 
@@ -307,7 +307,7 @@ let private grantEcho () =
         Api.authorityGrants.Output.Write(ReadReply.Rejected Refusal.ResourceUnavailable)
 
     Expect.isTrue
-        (Correlation.matches endpoint input refused)
+        (ClaimCore.Tests.CliReplies.correlates endpoint input refused)
         "A refusal carries no disclosed actor."
 
 [<Tests>]

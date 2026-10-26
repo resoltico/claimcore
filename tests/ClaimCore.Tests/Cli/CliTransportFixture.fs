@@ -48,10 +48,10 @@ let frameBytes invocation = Frames.encodeInvocation invocation
 let result invocation body =
     StrictJson.read Limits.MaximumResponseBytes body
     |> Result.bind (fun reply ->
-        Api.admitOutput (frameEndpoint invocation) reply
-        |> Result.bind (fun () ->
-            if Correlation.matches (frameEndpoint invocation) (Frames.input invocation) reply then
-                Ok reply
+        ServiceReply.read (frameEndpoint invocation) reply
+        |> Result.bind (fun decoded ->
+            if ServiceReply.correlates (Frames.input invocation) decoded then
+                Ok(ServiceReply.json decoded)
             else
                 Error { Path = "$"; Reason = "CORRELATION" }))
 

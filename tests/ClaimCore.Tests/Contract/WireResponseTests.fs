@@ -117,7 +117,7 @@ let private frames () =
 
     let reply: ClaimCore.Cli.FrameReply =
         {
-            Endpoint = Some "session.logout"
+            Endpoint = Some(EndpointId.Host HostEndpoint.Logout)
             OperationId = None
             Delivery = DeliveryState.Delivered
             Result =

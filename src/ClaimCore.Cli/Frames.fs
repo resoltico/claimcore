@@ -25,6 +25,67 @@ type CliFailure =
     | InvalidResponse
     | ContractMismatch
 
+[<RequireQualifiedAccess>]
+type CliFailureCode =
+    | ConfigurationInvalid
+    | AuthenticationFailed
+    | ServiceUnavailable
+    | Cancelled
+    | Internal
+    | InvalidFrame
+    | InvalidResponse
+    | ContractMismatch
+
+module CliFailureCodes =
+    let vocabulary =
+        Vocabulary.define
+            "cli-failure"
+            [
+                CliFailureCode.ConfigurationInvalid
+                CliFailureCode.AuthenticationFailed
+                CliFailureCode.ServiceUnavailable
+                CliFailureCode.Cancelled
+                CliFailureCode.Internal
+                CliFailureCode.InvalidFrame
+                CliFailureCode.InvalidResponse
+                CliFailureCode.ContractMismatch
+            ]
+            (function
+             | CliFailureCode.ConfigurationInvalid -> "CLI_CONFIGURATION_INVALID"
+             | CliFailureCode.AuthenticationFailed -> "CLI_AUTHENTICATION_FAILED"
+             | CliFailureCode.ServiceUnavailable -> "CLI_SERVICE_UNAVAILABLE"
+             | CliFailureCode.Cancelled -> "CLI_CANCELLED"
+             | CliFailureCode.Internal -> "CLI_INTERNAL"
+             | CliFailureCode.InvalidFrame -> "INVALID_FRAME"
+             | CliFailureCode.InvalidResponse -> "INVALID_RESPONSE"
+             | CliFailureCode.ContractMismatch -> "CONTRACT_MISMATCH")
+
+    let token = Vocabulary.token vocabulary
+    let codes = Vocabulary.tokens vocabulary
+
+    let ofFailure =
+        function
+        | CliFailure.ConfigurationInvalid
+        | CliFailure.ConfigurationIssue _ -> CliFailureCode.ConfigurationInvalid
+        | CliFailure.AuthenticationFailed -> CliFailureCode.AuthenticationFailed
+        | CliFailure.ServiceUnavailable -> CliFailureCode.ServiceUnavailable
+        | CliFailure.Cancelled -> CliFailureCode.Cancelled
+        | CliFailure.Internal -> CliFailureCode.Internal
+        | CliFailure.InvalidFrame -> CliFailureCode.InvalidFrame
+        | CliFailure.InvalidResponse -> CliFailureCode.InvalidResponse
+        | CliFailure.ContractMismatch -> CliFailureCode.ContractMismatch
+
+    let toFailure =
+        function
+        | CliFailureCode.ConfigurationInvalid -> CliFailure.ConfigurationInvalid
+        | CliFailureCode.AuthenticationFailed -> CliFailure.AuthenticationFailed
+        | CliFailureCode.ServiceUnavailable -> CliFailure.ServiceUnavailable
+        | CliFailureCode.Cancelled -> CliFailure.Cancelled
+        | CliFailureCode.Internal -> CliFailure.Internal
+        | CliFailureCode.InvalidFrame -> CliFailure.InvalidFrame
+        | CliFailureCode.InvalidResponse -> CliFailure.InvalidResponse
+        | CliFailureCode.ContractMismatch -> CliFailure.ContractMismatch
+
 [<RequireQualifiedAccess; NoComparison>]
 type FrameResult =
     | Reply of ServiceReply
@@ -34,7 +95,7 @@ type FrameResult =
 [<NoComparison>]
 type FrameReply =
     {
-        Endpoint: string option
+        Endpoint: EndpointId option
         OperationId: Guid option
         Delivery: DeliveryState
         Result: FrameResult
@@ -119,33 +180,24 @@ module Frames =
         |> Vocabulary.entries
         |> Codec.enumeration
 
-    let private localCodes =
-        [
-            CliFailure.ConfigurationInvalid, "CLI_CONFIGURATION_INVALID"
-            CliFailure.AuthenticationFailed, "CLI_AUTHENTICATION_FAILED"
-            CliFailure.ServiceUnavailable, "CLI_SERVICE_UNAVAILABLE"
-            CliFailure.Cancelled, "CLI_CANCELLED"
-            CliFailure.Internal, "CLI_INTERNAL"
-            CliFailure.InvalidFrame, "INVALID_FRAME"
-            CliFailure.InvalidResponse, "INVALID_RESPONSE"
-            CliFailure.ContractMismatch, "CONTRACT_MISMATCH"
-        ]
+    let failureCodes = CliFailureCodes.codes
 
-    let failureCodes = localCodes |> List.map snd
-
-    let failureCode =
-        function
-        | CliFailure.ConfigurationIssue _ -> "CLI_CONFIGURATION_INVALID"
-        | failure -> localCodes |> List.find (fst >> (=) failure) |> snd
+    let failureCode failure =
+        failure |> CliFailureCodes.ofFailure |> CliFailureCodes.token
 
     let private simpleFailure =
-        Codec.record id
-        |> Codec.field "code" id (Codec.enumeration localCodes)
+        Codec.record CliFailureCodes.toFailure
+        |> Codec.field
+            "code"
+            CliFailureCodes.ofFailure
+            (Codec.enumeration (Vocabulary.entries CliFailureCodes.vocabulary))
         |> Codec.build
 
     let private configurationFailure =
         Codec.record (fun setting issue -> setting, issue)
-        |> Protocol.ResponseScalars.fixedField "code" "CLI_CONFIGURATION_INVALID"
+        |> Protocol.ResponseScalars.fixedField
+            "code"
+            (CliFailureCodes.token CliFailureCode.ConfigurationInvalid)
         |> Codec.field "setting" fst (Codec.enumeration InputDiagnostics.settings)
         |> Codec.field "issue" snd (Codec.enumeration InputDiagnostics.configurationIssues)
         |> Codec.build
@@ -156,11 +208,9 @@ module Frames =
             [
                 Codec.branch
                     id
-                    (fun failure ->
-                        if localCodes |> List.exists (fst >> (=) failure) then
-                            Some failure
-                        else
-                            None)
+                    (function
+                    | CliFailure.ConfigurationIssue _ -> None
+                    | failure -> Some failure)
                     simpleFailure
                 Codec.branch
                     (fun (setting, issue) -> CliFailure.ConfigurationIssue(setting, issue))
@@ -209,7 +259,7 @@ module Frames =
                         readResult endpoint result
                         |> Result.map (fun result ->
                             {
-                                Endpoint = id
+                                Endpoint = endpoint |> Option.map _.Id
                                 OperationId = operation
                                 Delivery = delivered
                                 Result = result
@@ -233,18 +283,16 @@ module Frames =
         let value =
             JsonValue.Object
                 [
-                    "endpoint", (Codec.nullable (Codec.boundedText 1 80)).Write frame.Endpoint
+                    "endpoint",
+                    (Codec.nullable (Codec.boundedText 1 80))
+                        .Write(frame.Endpoint |> Option.map EndpointIds.token)
                     "operationId", (Codec.nullable Codec.uuid).Write frame.OperationId
                     "delivery", delivery.Write frame.Delivery
                     "result", resultValue frame.Result
                 ]
 
-        knownEndpoint frame.Endpoint
-        |> Result.defaultWith (fun _ -> invalidArg "frame" "Unknown reply endpoint.")
-        |> ignore
-
         match frame.Result with
-        | FrameResult.Reply reply when frame.Endpoint <> Some(EndpointIds.token reply.Endpoint) ->
+        | FrameResult.Reply reply when frame.Endpoint <> Some reply.Endpoint ->
             invalidArg "frame" "Reply endpoint and typed value differ."
         | _ -> ()
 
@@ -263,7 +311,14 @@ module Frames =
             | _ -> None)
 
     let private mutation frame =
-        frame.Endpoint |> Option.bind Api.tryFind |> Option.exists Api.executesLedger
+        frame.Endpoint
+        |> Option.exists (fun id ->
+            let endpoint =
+                match id with
+                | EndpointId.Host host -> Api.forHost host
+                | EndpointId.Actor actor -> Api.forActor actor
+
+            Api.executesLedger endpoint)
 
     let private outcomeExitCode reply =
         match outcome reply with

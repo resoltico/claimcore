@@ -157,7 +157,7 @@ let private executeOutcomes () =
 
             let frame: ClaimCore.Cli.FrameReply =
                 {
-                    Endpoint = Some "operation.execute"
+                    Endpoint = Some(EndpointId.Actor ActorEndpoint.Execute)
                     OperationId = Some id
                     Delivery =
                         if exit = 4 then

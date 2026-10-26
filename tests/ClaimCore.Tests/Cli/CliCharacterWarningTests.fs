@@ -131,7 +131,7 @@ let private rendered exampleName customize verify =
 
     let frame =
         {
-            Endpoint = Some endpoint
+            Endpoint = Some(ClaimCore.Tests.CliReplies.endpointId endpoint)
             OperationId = None
             Delivery = DeliveryState.Delivered
             Result =

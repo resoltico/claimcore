@@ -4,7 +4,11 @@ open Expecto
 open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Cli
+open ClaimCore.Json
 open CliTransportFixture
+
+let private admittedReply invocation value =
+    CliReply.result invocation value |> Fixtures.accepted
 
 [<Tests>]
 let tests =
@@ -22,10 +26,25 @@ let tests =
                         ResolveReply.Failed CoreFault.StoreUnavailable, 3
                     ] do
                     Expect.equal
-                        (CliReply.result request (Api.operationResolve.Output.Write outcome))
+                        (admittedReply request (Api.operationResolve.Output.Write outcome))
                             .ExitCode
                         expected
                         "Resolution outcome controls exit")
+            testCase "reply shape and identity failures are ordinary results" (fun () ->
+                let invocation = frame "operation.execute"
+
+                let contradictory =
+                    Api.operationExecute.Output.Write
+                        {
+                            OperationId = System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                            Outcome = ExecuteResult.Rejected Refusal.ResourceUnavailable
+                        }
+
+                for value in [ JsonValue.Null; contradictory ] do
+                    Expect.equal
+                        (CliReply.result invocation value)
+                        (Error CliFailure.InvalidResponse)
+                        "Untrusted validation failure must not throw or deliver a reply")
             testCase "fresh attempts retain definite refusals" (fun () ->
                 let request = frame "operation.execute"
 
@@ -44,7 +63,7 @@ let tests =
                             Outcome = ExecuteResult.Rejected Refusal.ResourceUnavailable
                         }
 
-                Expect.equal (CliReply.result request rejected).ExitCode 2 "Known business refusal")
+                Expect.equal (admittedReply request rejected).ExitCode 2 "Known business refusal")
             testCase "exact resend preserves frozen bytes" (fun () ->
                 let original = frame "operation.execute"
                 let resent = Frames.encodeInvocation original |> Frames.admit |> Fixtures.accepted
