@@ -11,13 +11,7 @@ module Execution =
             | Initialize zone ->
                 let! id = administration.Initialize(zone, CancellationToken.None)
 
-                return
-                    Replies.encode
-                        {|
-                            tag = "INITIALIZED"
-                            installationId = id
-                        |},
-                    0
+                return Replies.initialized id
             | ProvisionOwner ->
                 let operationId, principal = Inputs.owner ()
 
@@ -31,13 +25,7 @@ module Execution =
             | Head ->
                 let! head = administration.Head(CancellationToken.None)
 
-                return
-                    Replies.encode
-                        {|
-                            tag = "HEAD"
-                            position = Replies.position head
-                        |},
-                    0
+                return Replies.head head
             | Help
             | Version -> return invalidOp "Discovery does not open administration."
         }
@@ -51,12 +39,11 @@ module Execution =
                 try
                     use administration = new Administration(Inputs.connection ())
                     return! perform administration command
-                with
-                | :? System.Text.Json.JsonException -> return Replies.tag "REFUSED" 2
-                | error ->
+                with error ->
                     return
                         match AdministrationFailures.classify error with
-                        | AdministrationFailure.Refused -> Replies.tag "REFUSED" 2
-                        | AdministrationFailure.OutcomeUnknown -> Replies.tag "OUTCOME_UNKNOWN" 4
-                        | AdministrationFailure.Failed -> Replies.tag "FAILED" 3
+                        | AdministrationFailure.Refused -> Replies.outcome "REJECTED" 2
+                        | AdministrationFailure.OutcomeUnknown ->
+                            Replies.outcome "OUTCOME_UNKNOWN" 4
+                        | AdministrationFailure.Failed -> Replies.outcome "FAILED" 3
         }

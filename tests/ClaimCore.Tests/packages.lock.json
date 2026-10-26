@@ -447,6 +447,7 @@
           "ClaimCore.Application": "[0.11.0, )",
           "ClaimCore.Contract": "[0.11.0, )",
           "ClaimCore.HostSecurity": "[0.11.0, )",
+          "ClaimCore.Json": "[0.11.0, )",
           "ClaimCore.Postgres": "[0.11.0, )",
           "FSharp.Core": "[10.1.402, )"
         }

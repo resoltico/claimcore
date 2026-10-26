@@ -33,7 +33,7 @@ Supported PostgreSQL majors, minimum minors and qualified image pins live in
 scalar guards protect permanent formats, independently of current admission policy. Reference identity uses
 ASCII folding with C-collation semantics.
 
-Provision-owner bootstraps only empty authority. Outputs are structured tags and positions. Exit 0 succeeds;
+Provision-owner bootstraps only empty authority. Outputs are structured `kind` outcomes and shared positions (`sequence`, `entryHash`). `REJECTED` denotes refusal. Exit 0 succeeds;
 2 refuses invocation/input; 3 fails; 4 reports lost commit knowledge; 5 reports verification divergence.
 Lost output after durable work remains uncertain. See `help` for each command's exact syntax.
 
